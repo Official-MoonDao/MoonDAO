@@ -38,11 +38,12 @@ import ExplainerIcon from '@/components/launchpad/ExplainerIcon'
 import FeatureIcon from '@/components/launchpad/FeatureIcon'
 import LaunchpadBenefit from '@/components/launchpad/LaunchpadBenefit'
 import LaunchpadFAQs from '@/components/launchpad/LaunchpadFAQs'
-import Footer from '@/components/layout/Footer'
+import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import StandardButton from '@/components/layout/StandardButton'
 import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrollBar'
 import CreateMission from '@/components/mission/CreateMission'
 import MissionWideCard from '@/components/mission/MissionWideCard'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 
 const FEATURED_MISSION_INDEX = 21
 
@@ -133,6 +134,8 @@ export default function Launch({ missions }: any) {
     jbDirectoryContract,
     jbTokensContract,
   })
+
+  const { data: ethPrice } = useETHPrice(1)
 
   useEffect(() => {
     async function getUserTeamsAsManager() {
@@ -363,6 +366,7 @@ export default function Launch({ missions }: any) {
             showMore
             compact
             linkToMission
+            ethPrice={ethPrice}
           />
         </div>
       </section>
@@ -732,9 +736,14 @@ export default function Launch({ missions }: any) {
           <LaunchpadFAQs />
         </div>
       </section>
-      <div className="bg-[#020617] w-full flex justify-center">
-        <Footer darkBackground={true} centerContent />
-      </div>
+      <ExpandedFooter
+        callToActionTitle="Join the Network"
+        callToActionBody="Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!"
+        callToActionImage="/assets/SAN-logo-dark.svg"
+        callToActionButtonText="Join the Network"
+        callToActionButtonLink="/join"
+        hasCallToAction={true}
+      />
     </>
   )
 }
