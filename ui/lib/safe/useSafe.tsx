@@ -15,6 +15,7 @@ import ERC20ABI from 'const/abis/ERC20.json'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
+import { Chain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../privy/privy-wallet-context'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
@@ -50,11 +51,17 @@ export type SafeData = {
   ) => Promise<string>
 }
 
-export default function useSafe(safeAddress: string): SafeData {
+export default function useSafe(
+  safeAddress: string,
+  selectedChain?: Chain
+): SafeData {
   const account = useActiveAccount()
   const { wallets } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const { selectedChain } = useContext(ChainContextV5)
+  const { selectedChain: contextChain } = useContext(ChainContextV5)
+  if (!selectedChain) {
+    selectedChain = contextChain
+  }
 
   const [safe, setSafe] = useState<Safe>()
   const safeApiKit = useSafeApiKit(selectedChain)
@@ -500,7 +507,7 @@ export default function useSafe(safeAddress: string): SafeData {
       const contract = getContract({
         client,
         address: tokenAddress,
-        chain: selectedChain,
+        chain: selectedChain!,
         abi: ERC20ABI as any,
       })
 

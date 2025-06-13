@@ -6,6 +6,7 @@ import {
   base,
   baseSepolia,
   arbitrumSepolia,
+  optimismSepolia,
   ethereum,
   polygon,
   sepolia,
@@ -38,11 +39,13 @@ function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
 
 type NetworkSelectorProps = {
   iconsOnly?: boolean
+  compact?: boolean
   chains?: any[]
 }
 
 export default function NetworkSelector({
   iconsOnly,
+  compact = false,
   chains,
 }: NetworkSelectorProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
@@ -63,7 +66,11 @@ export default function NetworkSelector({
   }, [])
 
   return (
-    <div id="network-selector" className="w-[250px] flex flex-col">
+    //
+    <div
+      id="network-selector"
+      className={`${!compact && 'w-[250px]'} flex flex-col`}
+    >
       <div
         id="network-selector-dropdown-button"
         className="flex items-center gap-2 p-2 bg-darkest-cool rounded-lg"
@@ -87,7 +94,9 @@ export default function NetworkSelector({
       {dropdown && (
         <div
           id="network-selector-dropdown"
-          className="w-[250px] absolute flex flex-col items-start gap-2 text-black z-10"
+          className={`${
+            !compact && 'w-[250px]'
+          } absolute flex flex-col items-start gap-2 text-black z-10`}
         >
           {chains && chains.length > 0 ? (
             chains.map((chain) => (
@@ -112,6 +121,10 @@ export default function NetworkSelector({
                   />
                   <NetworkOption
                     chain={arbitrumSepolia}
+                    selectChain={selectChain}
+                  />
+                  <NetworkOption
+                    chain={optimismSepolia}
                     selectChain={selectChain}
                   />
                 </>

@@ -5,6 +5,7 @@ import {
   ethereum,
   sepolia,
   arbitrumSepolia,
+  optimismSepolia,
   Chain,
 } from 'thirdweb/chains'
 
@@ -79,6 +80,17 @@ const CHAIN_CONFIGS: ChainConfigMap = {
     },
     rpcUrls: ['https://sepolia-rollup.arbitrum.io/rpc'],
     blockExplorerUrls: ['https://sepolia.arbiscan.io'],
+  },
+  [optimismSepolia.id]: {
+      chainId: `0x${optimismSepolia.id.toString(16)}`,
+      chainName: 'Optimism Sepolia',
+      nativeCurrency: {
+          name: 'ETH',
+          symbol: 'ETH',
+          decimals: 18,
+      },
+      rpcUrls: ['https://sepolia.optimism.io'],
+      blockExplorerUrls: ['https://sepolia-optimism.etherscan.io'],
   },
 }
 
