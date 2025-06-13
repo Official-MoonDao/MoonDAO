@@ -5,7 +5,6 @@
 import { useWallets } from '@privy-io/react-auth'
 import { SafeMultisigTransactionListResponse } from '@safe-global/api-kit'
 import Safe from '@safe-global/protocol-kit'
-import { Chain } from 'thirdweb/chains'
 import {
   SafeTransaction,
   SafeTransactionData,
@@ -16,6 +15,7 @@ import ERC20ABI from 'const/abis/ERC20.json'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
+import { Chain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../privy/privy-wallet-context'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
@@ -58,7 +58,7 @@ export default function useSafe(
   const account = useActiveAccount()
   const { wallets } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const { contextChain } = useContext(ChainContextV5)
+  const { selectedChain: contextChain } = useContext(ChainContextV5)
   if (!selectedChain) {
     selectedChain = contextChain
   }
