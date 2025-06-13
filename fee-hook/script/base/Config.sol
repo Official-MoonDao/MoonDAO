@@ -142,11 +142,17 @@ contract Config is Script {
         V4_ROUTERS[ARB_SEP] = 0xeFd1D4bD4cf1e86Da286BB4CB1B8BcED9C10BA47;
         V4_ROUTERS[SEP] = 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b;
 
-        FEE_HOOK_ADDRESSES[ARB_SEP] = 0x07Aa57d11f104C9Cf0706aE6E5232f98a517C844;
-        FEE_HOOK_ADDRESSES[SEP] = 0x730051F4cffB74a4AD00ba74C18c148942528844;
+        FEE_HOOK_ADDRESSES[ARB_SEP] = 0xE54f753a89d76257fD7DD63642fd069dB339c844;
+        FEE_HOOK_ADDRESSES[SEP] = sepJson.readAddress(".FeeHook");
 
-        TEST_TOKEN_ADDRESSES[ARB_SEP] = 0xcA9b92A7F9FDabC52CBAED5e81F096490D20deDe;
-        TEST_TOKEN_ADDRESSES[SEP] = 0xB473156De5ADfCeC81F270D747233dB100c1D63C;
+        TEST_TOKEN_ADDRESSES[ARB_SEP] = 0x53acb7A819A579436527B22eFbf4be81f24EfC33;
+        TEST_TOKEN_ADDRESSES[SEP] = 0xee97C5BcD5d61342B379af466045a5201F17c57a;
 
+    }
+
+    function currentSalt() public view returns (bytes32) {
+        uint256 interval = 300; // 5 minutes in seconds
+        uint256 saltBase = block.timestamp / interval;
+        return keccak256(abi.encodePacked(saltBase));
     }
 }

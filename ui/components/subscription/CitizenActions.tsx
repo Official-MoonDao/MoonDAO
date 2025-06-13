@@ -14,8 +14,8 @@ import { TwitterIcon } from '../assets'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 
 type CitizenActionsProps = {
-  address?: string
-  nft?: any
+  nft: any
+  address: string
   incompleteProfile?: boolean
   isTeamMember?: boolean
   mooneyBalance?: number
@@ -24,8 +24,8 @@ type CitizenActionsProps = {
 }
 
 export default function CitizenActions({
-  address,
   nft,
+  address,
   incompleteProfile,
   isTeamMember,
   mooneyBalance,
@@ -44,7 +44,7 @@ export default function CitizenActions({
 
   return (
     <div id="citizen-actions-container" className="py-5 md:px-5 md:py-0 z-30">
-      {address === nft?.owner && (
+      {address.toLowerCase() === nft?.owner?.toLowerCase() && (
         <>
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 pr-12">
             <div className="flex gap-5 opacity-[50%]">
@@ -131,8 +131,7 @@ export default function CitizenActions({
                         width={30}
                       />
                     }
-                    onClick={() => router.push('/submit?tag=contribution')
-                    }
+                    onClick={() => router.push('/submit?tag=contribution')}
                   />
                   <Action
                     title="Explore Map"

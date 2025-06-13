@@ -15,6 +15,7 @@ interface DeploymentConfig {
   MarketplaceFeeSplit?: string
   VotingEscrowDepositor: string
   MoonDAOTeam: string
+  FeeHook: string
 }
 
 type Index = { [key: string]: string }
@@ -159,6 +160,10 @@ export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
 }
 export const VMOONEY_FAUCET_ADDRESSES: Index = {
   arbitrum: '0xE632A675C305F0aF36b1514e924BE99DC1AB9884',
+}
+
+export const FEE_HOOK_ADDRESSES: Index = {
+    sepolia: sepoliaConfig.FeeHook,
 }
 
 export const REVNET_ADDRESSES: Index = {
