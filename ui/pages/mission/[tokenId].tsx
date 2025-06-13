@@ -1,7 +1,5 @@
 import CitizenABI from 'const/abis/Citizen.json'
-import { ethers } from 'ethers'
 import HatsABI from 'const/abis/Hats.json'
-import { useNativeTokenSurplus } from 'juice-sdk-react'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
@@ -22,6 +20,8 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
+import { ethers } from 'ethers'
+import { useNativeTokenSurplus } from 'juice-sdk-react'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -314,8 +314,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                             </span>
                           </div>
                           <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
-                            ethers.utils.formatEther(nativeTokenSurplus || 0) *
-                              ethPrice
+                            (Number(nativeTokenSurplus || 0) / 1e18) * ethPrice
                           ).toLocaleString()} USD)`}</p>
                         </div>
 
@@ -341,7 +340,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       <div className="w-full">
                         <MissionFundingProgressBar
                           fundingGoal={fundingGoal}
-                          volume={ethers.utils.formatEther(nativeTokenSurplus || 0)}
+                          volume={ethers.utils.formatEther(
+                            nativeTokenSurplus || 0
+                          )}
                         />
                       </div>
 
