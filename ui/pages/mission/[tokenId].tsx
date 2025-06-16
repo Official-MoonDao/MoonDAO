@@ -78,6 +78,7 @@ type ProjectProfileProps = {
 }
 
 export default function MissionProfile({ mission }: ProjectProfileProps) {
+  const [isLoading, setIsLoading] = useState(false)
   const account = useActiveAccount()
 
   // const { selectedChain } = useContext(ChainContextV5)
@@ -280,54 +281,91 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   }, [jbTerminalContract, jbControllerContract, mission?.projectId])
 
   const sendReservedTokens = async () => {
-    if (!account) return
+    if (!account || !mission?.projectId) return
+
     try {
+      const reservedTokenBalance = await readContract({
+        contract: jbControllerContract,
+        method: 'currentOfTotalReservedTokens' as string,
+        params: [mission.projectId],
+      })
+
+      // Determine the balance from the result (it may return a bigint or an array)
+      let balance: bigint | undefined
+      if (typeof reservedTokenBalance === 'bigint') {
+        balance = reservedTokenBalance
+      } else if (Array.isArray(reservedTokenBalance)) {
+        balance = reservedTokenBalance[0] as bigint
+      }
+
+      if (!balance || balance === BigInt(0)) {
+        toast.error('No tokens to send.')
+        return
+      }
+
       const tx = prepareContractCall({
         contract: jbControllerContract,
         method: 'sendReservedTokensToSplitsOf' as string,
         params: [mission.projectId],
       })
+
       await sendAndConfirmTransaction({ transaction: tx, account })
-      toast.success('Reserved tokens sent.')
-    } catch (err) {
-      console.error(err)
-      toast.error('Failed to send reserved tokens.')
+      toast.success('Tokens sent.')
+    } catch (err: any) {
+      console.error('Token distribution error:', err)
+      toast.error('No tokens to send.')
     }
   }
 
   const sendPayouts = async () => {
-    if (!account) return
+    if (!account || !mission?.projectId) return
+
     try {
-      const storeAddress: any = await readContract({
+      const fundingCycleResult = await readContract({
+        contract: jbControllerContract,
+        method: 'currentFundingCycleOf' as string,
+        params: [mission.projectId],
+      })
+
+      // Cast the result to an array and extract metadata.
+      const fcResult = fundingCycleResult as unknown as readonly unknown[]
+      // Assuming metadata is stored at index 1 and it contains a target property.
+      const fcMetadata = fcResult[1] as { target: bigint } | undefined
+
+      if (!fcMetadata || fcMetadata.target === BigInt(0)) {
+        toast.error("Project didn't reach it's goal")
+        return
+      }
+
+      const availablePayouts = await readContract({
         contract: jbTerminalContract,
-        method: 'STORE' as string,
-        params: [],
-      })
-
-      const jbTerminalStoreContract = getContract({
-        client: serverClient,
-        address: storeAddress,
-        abi: IJBTerminalStoreABI.abi as any,
-        chain: selectedChain,
-      })
-
-      const balance: any = await readContract({
-        contract: jbTerminalStoreContract,
         method: 'balanceOf' as string,
-        params: [jbTerminalContract.address, mission.projectId, JB_NATIVE_TOKEN_ADDRESS],
+        params: [mission.projectId],
       })
+
+      let payouts: bigint | undefined
+      if (typeof availablePayouts === 'bigint') {
+        payouts = availablePayouts
+      } else if (Array.isArray(availablePayouts)) {
+        payouts = availablePayouts[0] as bigint
+      }
+
+      if (!payouts || payouts === BigInt(0)) {
+        toast.error('No payouts to send.')
+        return
+      }
 
       const tx = prepareContractCall({
         contract: jbTerminalContract,
-        method: 'sendPayoutsOf' as string,
-        params: [mission.projectId, JB_NATIVE_TOKEN_ADDRESS, balance, 61166, 0], // 61166 is the Memo ID for project payout transactions
+        method: 'sendPayouts' as string,
+        params: [mission.projectId],
       })
 
       await sendAndConfirmTransaction({ transaction: tx, account })
       toast.success('Payouts sent.')
-    } catch (err) {
-      console.error(err)
-      toast.error('Failed to send payouts.')
+    } catch (err: any) {
+      console.error('Payout distribution error:', err)
+      toast.error('No payouts to send.')
     }
   }
 
@@ -561,8 +599,8 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     </div>
                   )}
                     {/* Send payouts and tokens Buttons - only shown to managers */}
-                    {account && deadlinePassed && isManager && (
-                      <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto sm:absolute sm:right-3 sm:top-[250px]">
+                    {account && deadlinePassed && (
+                      <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto sm:absolute sm:right-2 sm:top-[250px]">
                         <PrivyWeb3Button
                           requiredChain={DEFAULT_CHAIN_V5}
                           className="gradient-2 rounded-full noPadding leading-none flex-1 sm:w-[180px]"
