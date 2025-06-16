@@ -34,7 +34,7 @@ describe('SafeTransactions', () => {
         {
           safeTxHash: '0x123',
           nonce: 1,
-          to: '0x456',
+          to: '0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b',
           value: ethers.utils.parseEther('1').toString(),
           data: '0x',
           dataDecoded: {
@@ -90,7 +90,10 @@ describe('SafeTransactions', () => {
         'contain',
         'Nonce: 1'
       )
-      cy.get('[data-testid="transaction-to-0x123"]').should('contain', '0x456')
+      cy.get('[data-testid="transaction-to-0x123"]').should(
+        'contain',
+        '0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b'
+      )
       cy.get('[data-testid="transaction-value-0x123"]').should(
         'contain',
         '1.0 ETH'
