@@ -207,7 +207,7 @@ export default function Fees() {
                         : 'Loading...'
                     }
                   />
-                  {feesAvailable > 0 && (
+                  {feesAvailable !== null && feesAvailable > 0 && (
                     <div className="mt-4 opacity-75">
                       {checkedInCount !== null
                         ? checkedInCount > 0
@@ -219,14 +219,16 @@ export default function Fees() {
                     </div>
                   )}
                 </div>
-                {feesAvailable > 0 && !isCheckedIn && (
-                  <PrivyWeb3Button
-                    action={handleCheckIn}
-                    label={isCheckedIn ? 'Checked In' : 'Check In'}
-                    className="w-full max-w-[250px] rounded-[5vmax] rounded-tl-[20px]"
-                    isDisabled={!address || isCheckedIn}
-                  />
-                )}
+                {feesAvailable !== null &&
+                  feesAvailable > 0 &&
+                  !isCheckedIn && (
+                    <PrivyWeb3Button
+                      action={handleCheckIn}
+                      label={isCheckedIn ? 'Checked In' : 'Check In'}
+                      className="w-full max-w-[250px] rounded-[5vmax] rounded-tl-[20px]"
+                      isDisabled={!address || isCheckedIn}
+                    />
+                  )}
               </div>
             </SectionCard>
           </ContentLayout>
