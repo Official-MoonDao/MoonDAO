@@ -267,7 +267,6 @@ export default function MissionInfo({
           <div ref={stickyRef}>
             <MissionPayRedeem
               stage={stage}
-              selectedChain={selectedChain}
               mission={mission}
               teamNFT={teamNFT}
               token={token}

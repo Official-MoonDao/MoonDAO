@@ -69,7 +69,6 @@ type ProjectProfileProps = {
 export default function MissionProfile({ mission }: ProjectProfileProps) {
   const account = useActiveAccount()
 
-  // const { selectedChain } = useContext(ChainContextV5)
   const selectedChain = sepolia
   const chainSlug = getChainSlug(selectedChain)
 
@@ -493,7 +492,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                 primaryTerminalAddress !==
                   '0x0000000000000000000000000000000000000000' ? (
                   <MissionPayRedeem
-                    selectedChain={selectedChain}
                     mission={mission}
                     teamNFT={teamNFT}
                     token={token}
