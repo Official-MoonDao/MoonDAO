@@ -1,14 +1,10 @@
+import { useWallets } from '@privy-io/react-auth'
 import FeeHook from 'const/abis/FeeHook.json'
 import { FEE_HOOK_ADDRESSES } from 'const/config'
 import { BigNumber } from 'ethers'
+import { ethers } from 'ethers'
 import React, { useState, useEffect, useContext } from 'react'
 import toast from 'react-hot-toast'
-import { useWallets } from '@privy-io/react-auth'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
-import SectionCard from '@/components/layout/SectionCard'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import useETHPrice from '@/lib/etherscan/useETHPrice'
-import Asset from '@/components/dashboard/treasury/balance/Asset'
 import {
   prepareContractCall,
   sendAndConfirmTransaction,
@@ -22,17 +18,21 @@ import {
   arbitrumSepolia,
   Chain,
 } from 'thirdweb/chains'
-import client from '@/lib/thirdweb/client'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import client from '@/lib/thirdweb/client'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
+import Asset from '@/components/dashboard/treasury/balance/Asset'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import SectionCard from '@/components/layout/SectionCard'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
-import { ethers } from 'ethers'
 
 export default function Fees() {
   const account = useActiveAccount()
@@ -69,7 +69,7 @@ export default function Fees() {
           const contract = getContract({
             client,
             address: hookAddress,
-            abi: FeeHook.abi,
+            abi: FeeHook.abi as any,
             chain,
           })
 
