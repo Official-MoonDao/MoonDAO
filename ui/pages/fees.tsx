@@ -1,7 +1,7 @@
 import FeeHook from 'const/abis/FeeHook.json'
 import { FEE_HOOK_ADDRESSES } from 'const/config'
 import { BigNumber } from 'ethers'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import toast from 'react-hot-toast'
 import SectionCard from '@/components/layout/SectionCard'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
@@ -21,6 +21,9 @@ import {
 } from 'thirdweb/chains'
 import client from '@/lib/thirdweb/client'
 import { useActiveAccount } from 'thirdweb/react'
+import { useWallets } from '@privy-io/react-auth'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
 import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -34,6 +37,9 @@ import { ethers } from 'ethers'
 export default function Fees() {
   const account = useActiveAccount()
   const address = account?.address
+  const { wallets } = useWallets()
+  const { selectedWallet } = useContext(PrivyWalletContext)
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
 
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains: Chain[] = isTestnet
@@ -133,8 +139,11 @@ export default function Fees() {
   const handleCheckIn = async () => {
     try {
       if (!account) throw new Error('No account found')
+      const currentChain = selectedChain
       for (const data of feeData) {
         if (BigNumber.from(data.balance || 0).gt(0)) {
+          setSelectedChain(data.chain)
+          await wallets[selectedWallet]?.switchChain(data.chain.id)
           const tx = prepareContractCall({
             contract: data.contract,
             method: 'checkIn' as string,
@@ -146,6 +155,7 @@ export default function Fees() {
           })
         }
       }
+      setSelectedChain(currentChain)
       toast.success('Checked in!', { style: toastStyle })
       setIsCheckedIn(true)
     } catch (error) {
