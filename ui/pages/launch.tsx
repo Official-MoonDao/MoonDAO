@@ -25,6 +25,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import useMissionData from '@/lib/mission/useMissionData'
@@ -43,7 +44,6 @@ import StandardButton from '@/components/layout/StandardButton'
 import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrollBar'
 import CreateMission from '@/components/mission/CreateMission'
 import MissionWideCard from '@/components/mission/MissionWideCard'
-import useETHPrice from '@/lib/etherscan/useETHPrice'
 
 const FEATURED_MISSION_INDEX = 21
 
@@ -366,7 +366,6 @@ export default function Launch({ missions }: any) {
             showMore
             compact
             linkToMission
-            ethPrice={ethPrice}
           />
         </div>
       </section>
