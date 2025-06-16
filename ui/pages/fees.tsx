@@ -1,7 +1,7 @@
 import FeeHook from 'const/abis/FeeHook.json'
 import { FEE_HOOK_ADDRESSES } from 'const/config'
 import { BigNumber } from 'ethers'
-import React, { useContext, useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import SectionCard from '@/components/layout/SectionCard'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
@@ -12,13 +12,18 @@ import {
   readContract,
   getContract,
 } from 'thirdweb'
+import {
+  arbitrum,
+  base,
+  sepolia,
+  arbitrumSepolia,
+  Chain,
+} from 'thirdweb/chains'
+import client from '@/lib/thirdweb/client'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
 import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import useContract from '@/lib/thirdweb/hooks/useContract'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -27,19 +32,14 @@ import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import { ethers } from 'ethers'
 
 export default function Fees() {
-  useChainDefault()
-
   const account = useActiveAccount()
   const address = account?.address
 
-  const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
+  const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
+  const chains: Chain[] = isTestnet
+    ? [arbitrumSepolia, sepolia]
+    : [arbitrum, base]
 
-  const feeHookContract = useContract({
-    address: FEE_HOOK_ADDRESSES[chainSlug],
-    abi: FeeHook.abi,
-    chain: selectedChain,
-  })
   const { isMobile } = useWindowSize()
   const { data: ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
@@ -49,68 +49,105 @@ export default function Fees() {
   const [canDistribute, setCanDistribute] = useState(false)
   const [checkedInCount, setCheckedInCount] = useState<number | null>(null)
   const [feesAvailable, setFeesAvailable] = useState<string | null>(null)
+  const [feeData, setFeeData] = useState<any[]>([])
 
   useEffect(() => {
     const fetchStatus = async () => {
-      if (!feeHookContract || !address) return
+      if (!address) return
 
       try {
-        const start = await readContract({
-          contract: feeHookContract,
-          method: 'weekStart' as string,
-          params: [],
-        })
+        const results: any[] = []
+        for (const chain of chains) {
+          const slug = getChainSlug(chain)
+          const hookAddress = FEE_HOOK_ADDRESSES[slug]
+          if (!hookAddress) continue
+          const contract = getContract({
+            client,
+            address: hookAddress,
+            abi: FeeHook.abi,
+            chain,
+          })
 
-        const last = await readContract({
-          contract: feeHookContract,
-          method: 'lastCheckIn' as string,
-          params: [address],
-        })
+          const start = await readContract({
+            contract,
+            method: 'weekStart' as string,
+            params: [],
+          })
 
-        const checkedInCount = await readContract({
-          contract: feeHookContract,
-          method: 'getCheckedInCount' as string,
-          params: [],
-        })
+          const last = await readContract({
+            contract,
+            method: 'lastCheckIn' as string,
+            params: [address],
+          })
 
-        const balance = await readContract({
-          contract: feeHookContract,
-          method: 'balanceOf' as string,
-          params: [],
-        })
+          const count = await readContract({
+            contract,
+            method: 'getCheckedInCount' as string,
+            params: [],
+          })
 
-        setIsCheckedIn(BigNumber.from(last).eq(BigNumber.from(start)))
-        setCheckedInCount(checkedInCount ? Number(checkedInCount) : 0)
-        setFeesAvailable(
-          balance ? ethers.utils.formatEther(Number(balance)) : '0'
-        )
-        setCanDistribute(
-          Math.floor(Date.now() / 1000) >=
-            BigNumber.from(start).add(WEEK).toNumber()
-        )
+          const balance = await readContract({
+            contract,
+            method: 'balanceOf' as string,
+            params: [],
+          })
+
+          results.push({ chain, slug, contract, start, last, count, balance })
+        }
+
+        setFeeData(results)
+
+        let totalFees = BigNumber.from(0)
+        let allChecked = true
+        let totalCount = 0
+        let distribute = false
+        const now = Math.floor(Date.now() / 1000)
+
+        for (const r of results) {
+          totalFees = totalFees.add(BigNumber.from(r.balance || 0))
+          totalCount += r.count ? Number(r.count) : 0
+          if (BigNumber.from(r.balance || 0).gt(0)) {
+            if (!BigNumber.from(r.last).eq(BigNumber.from(r.start))) {
+              allChecked = false
+            }
+          }
+          if (
+            BigNumber.from(r.start).add(WEEK).toNumber() <= now &&
+            BigNumber.from(r.balance || 0).gt(0)
+          ) {
+            distribute = true
+          }
+        }
+
+        setFeesAvailable(ethers.utils.formatEther(totalFees))
+        setCheckedInCount(totalCount)
+        setIsCheckedIn(allChecked)
+        setCanDistribute(distribute)
       } catch (error) {
         console.error('Error fetching fee status:', error)
       }
     }
     fetchStatus()
-  }, [feeHookContract, address, isCheckedIn])
+  }, [address, isCheckedIn])
 
   const handleCheckIn = async () => {
     try {
       if (!account) throw new Error('No account found')
-      const tx = prepareContractCall({
-        contract: feeHookContract,
-        method: 'checkIn' as string,
-        params: [],
-      })
-      const receipt = await sendAndConfirmTransaction({
-        transaction: tx,
-        account,
-      })
-      if (receipt) {
-        toast.success('Checked in!', { style: toastStyle })
-        setIsCheckedIn(true)
+      for (const data of feeData) {
+        if (BigNumber.from(data.balance || 0).gt(0)) {
+          const tx = prepareContractCall({
+            contract: data.contract,
+            method: 'checkIn' as string,
+            params: [],
+          })
+          await sendAndConfirmTransaction({
+            transaction: tx,
+            account,
+          })
+        }
       }
+      toast.success('Checked in!', { style: toastStyle })
+      setIsCheckedIn(true)
     } catch (error) {
       console.error('Error checking in:', error)
       toast.error('Error checking in. Please try again.', { style: toastStyle })
@@ -120,19 +157,21 @@ export default function Fees() {
   const handleDistributeFees = async () => {
     try {
       if (!account) throw new Error('No account found')
-      const tx = prepareContractCall({
-        contract: feeHookContract,
-        method: 'distributeFees' as string,
-        params: [],
-      })
-      const receipt = await sendAndConfirmTransaction({
-        transaction: tx,
-        account,
-      })
-      if (receipt) {
-        toast.success('Fees distributed!', { style: toastStyle })
-        setCanDistribute(false)
+      for (const data of feeData) {
+        if (BigNumber.from(data.balance || 0).gt(0)) {
+          const tx = prepareContractCall({
+            contract: data.contract,
+            method: 'distributeFees' as string,
+            params: [],
+          })
+          await sendAndConfirmTransaction({
+            transaction: tx,
+            account,
+          })
+        }
       }
+      toast.success('Fees distributed!', { style: toastStyle })
+      setCanDistribute(false)
     } catch (error) {
       console.error('Error distributing fees:', error)
       toast.error('Error distributing fees. Please try again.', {
