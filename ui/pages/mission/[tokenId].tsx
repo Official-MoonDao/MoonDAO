@@ -212,6 +212,12 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     )
   }, [ruleset])
 
+  const deadlinePassed = useMemo(() => {
+    if (!ruleset?.[0]?.start) return false
+    const deadline = new Date(ruleset[0].start * 1000 + 28 * 24 * 60 * 60 * 1000)
+    return Date.now() > deadline.getTime()
+  }, [ruleset])
+
   useEffect(() => {
     async function fetchAvailableAmounts() {
       if (!jbTerminalContract || mission?.projectId === undefined || mission?.projectId === null) return
@@ -555,30 +561,20 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     </div>
                   )}
                     {/* Send payouts and tokens Buttons - only shown to managers */}
-                    {account && isManager && (
-                      <div className="flex flex-col sm:flex-row gap-40 mt-4 w-full sm:w-auto sm:absolute sm:right-3 sm:top-[250px]">
-                        <Tooltip
-                          text={`${availableTokens}`}
-                          buttonClassName="bg-transparent"
-                        >
-                          <PrivyWeb3Button
-                            requiredChain={DEFAULT_CHAIN_V5}
-                            className="gradient-2 rounded-full noPadding text-xs leading-none flex-1 sm:w-[180px]"
-                            label={<span className="whitespace-nowrap">Send Tokens</span>}
-                            action={sendReservedTokens}
-                          />
-                        </Tooltip>
-                        <Tooltip
-                          text={`${availablePayouts}`}
-                          buttonClassName="bg-transparent"
-                        >
-                          <PrivyWeb3Button
-                            requiredChain={DEFAULT_CHAIN_V5}
-                            className="gradient-2 rounded-full noPadding text-xs leading-none flex-1 sm:w-[180px]"
-                            label={<span className="whitespace-nowrap">Send Payouts</span>}
-                            action={sendPayouts}
-                          />
-                        </Tooltip>
+                    {account && deadlinePassed &&  (
+                      <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto sm:absolute sm:right-3 sm:top-[250px]">
+                        <PrivyWeb3Button
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          className="gradient-2 rounded-full noPadding leading-none flex-1 sm:w-[180px]"
+                          label={<span className="whitespace-nowrap">Send Tokens</span>}
+                          action={sendReservedTokens}
+                        />
+                        <PrivyWeb3Button
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          className="gradient-2 rounded-full noPadding leading-none flex-1 sm:w-[180px]"
+                          label={<span className="whitespace-nowrap">Send Payouts</span>}
+                          action={sendPayouts}
+                        />
                       </div>
                     )}
                 </div>
