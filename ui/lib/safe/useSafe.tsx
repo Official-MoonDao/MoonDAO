@@ -398,7 +398,7 @@ export default function useSafe(safeAddress: string): SafeData {
     const provider: any = await wallet?.getEthereumProvider()
 
     if (!provider) return null
-    if (selectedChain.id !== +wallet?.chainId.split(':')[1]) return null
+    if (selectedChain?.id !== +wallet?.chainId.split(':')[1]) return null
 
     try {
       const newSafe = await Safe.init({
