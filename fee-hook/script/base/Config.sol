@@ -142,7 +142,9 @@ contract Config is Script {
         V4_ROUTERS[ARB_SEP] = 0xeFd1D4bD4cf1e86Da286BB4CB1B8BcED9C10BA47;
         V4_ROUTERS[SEP] = 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b;
 
-        FEE_HOOK_ADDRESSES[ARB_SEP] = 0xE54f753a89d76257fD7DD63642fd069dB339c844;
+        FEE_HOOK_ADDRESSES[ARBITRUM] = arbJson.readAddress(".FeeHook");
+        FEE_HOOK_ADDRESSES[BASE] = baseJson.readAddress(".FeeHook");
+        FEE_HOOK_ADDRESSES[ARB_SEP] = arbSepJson.readAddress(".FeeHook");
         FEE_HOOK_ADDRESSES[SEP] = sepJson.readAddress(".FeeHook");
 
         TEST_TOKEN_ADDRESSES[ARB_SEP] = 0x53acb7A819A579436527B22eFbf4be81f24EfC33;
