@@ -207,7 +207,7 @@ export default function Fees() {
                         : 'Loading...'
                     }
                   />
-                  {feesAvailable !== null && feesAvailable > 0 && (
+                  {feesAvailable !== null && Number(feesAvailable) > 0 && (
                     <div className="mt-4 opacity-75">
                       {checkedInCount !== null
                         ? checkedInCount > 0
@@ -220,7 +220,7 @@ export default function Fees() {
                   )}
                 </div>
                 {feesAvailable !== null &&
-                  feesAvailable > 0 &&
+                  Number(feesAvailable) > 0 &&
                   !isCheckedIn && (
                     <PrivyWeb3Button
                       action={handleCheckIn}
