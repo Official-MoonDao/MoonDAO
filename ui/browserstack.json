@@ -30,7 +30,7 @@
     "npm_dependencies": {
       "cypress": "latest"
     },
-    "cypress_config_file": "cypress.config.ts",
+    "cypress_config_file": "cypress.browserstack.config.js",
     "specs": "cypress/e2e/**/*.cy.{js,ts,jsx,tsx}",
     "baseUrl": "http://localhost:3000"
   },
