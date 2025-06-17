@@ -50,22 +50,30 @@ jobs:
       NEXTAUTH_SECRET: ${{secrets.NEXTAUTH_SECRET}}
       JB_SEPOLIA_SUBGRAPH_ENDPOINT: ${{secrets.JB_SEPOLIA_SUBGRAPH_ENDPOINT}}
       JB_SEPOLIA_SUBGRAPH_API_KEY: ${{secrets.JB_SEPOLIA_SUBGRAPH_API_KEY}}
+      BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+      BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      # Run cypress E2E tests
-      - name: Run Cypress E2E Testing
-        uses: cypress-io/github-action@v4.1.0
-        with:
-          working-directory: ui
-          install-command: yarn install
-          build: yarn build
-          start: yarn start
-          wait-on: "http://localhost:3000"
-          browser: chrome
-          install-browser: true
+      - name: Install dependencies
+        working-directory: ui
+        run: yarn install
+
+      - name: Install BrowserStack CLI
+        working-directory: ui
+        run: yarn add -D @browserstack/cli
+
+      # Run cypress E2E tests on BrowserStack
+      - name: Run Cypress E2E Testing on BrowserStack
+        working-directory: ui
+        run: |
+          npx browserstack-cypress run \
+            --username $BROWSERSTACK_USERNAME \
+            --access-key $BROWSERSTACK_ACCESS_KEY \
+            --parallels 5 \
+            --browsers chrome@latest,firefox@latest,safari@latest,edge@latest,chrome@latest-1
 
       #Run cypress component tests
       - name: Run Cypress Component Testing
