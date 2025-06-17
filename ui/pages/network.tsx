@@ -326,13 +326,12 @@ export default function Network({
       }`
 
       return (
-        <div className="justify-center flex" key={'team-citizen-' + I}>
+        <div className="justify-center flex transition-all" key={'team-citizen-' + I}>
           {viewMode === 'grid' ? (
             <Card
               inline
               metadata={nft.metadata}
               type={type}
-              hovertext="Explore Profile"
               link={link}
             />
           ) : (

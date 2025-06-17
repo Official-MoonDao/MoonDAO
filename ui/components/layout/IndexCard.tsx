@@ -136,7 +136,7 @@ export default function IndexCard({
   return (
     <span
       id="index-link-frame"
-      className="card-container h-full mb-5 z-30 w-full flex lg:flex-col rounded-[20px] relative overflow-hidden"
+      className="card-container h-full mb-5 z-30 w-full flex lg:flex-col rounded-[20px] relative overflow-hidden transition-all hover:ring-2 hover:ring-white"
     >
       <span
         id="index-Interactive-Element"
