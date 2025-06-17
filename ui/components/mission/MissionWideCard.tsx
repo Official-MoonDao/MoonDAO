@@ -91,17 +91,13 @@ export default function MissionWideCard({
         <div id="pay-modal">
           <MissionPayRedeem
             stage={stage}
-            selectedChain={selectedChain}
             mission={mission}
             token={token}
-            subgraphData={subgraphData}
-            ruleset={ruleset}
             teamNFT={teamNFT}
             onlyModal
             modalEnabled={payModalEnabled}
             setModalEnabled={setPayModalEnabled}
             primaryTerminalAddress={primaryTerminalAddress}
-            fundingGoal={fundingGoal}
           />
         </div>
       )}

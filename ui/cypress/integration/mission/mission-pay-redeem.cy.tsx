@@ -87,7 +87,6 @@ describe('<MissionPayRedeem />', () => {
     }).as('getEthPrice')
 
     props = {
-      selectedChain: CYPRESS_CHAIN_V5,
       mission: {
         id: '1',
         projectId: '1',
@@ -102,12 +101,6 @@ describe('<MissionPayRedeem />', () => {
         tokenAddress: CYPRESS_MISSION_TOKEN_ADDRESS,
         tokenSupply: '1000000000000000000', // 1 token
       },
-      fundingGoal: 100,
-      subgraphData: {
-        paymentsCount: 10,
-        volume: '1000000000000000000', // 1 ETH
-        last7DaysPercent: 5,
-      },
       teamNFT: {
         metadata: {
           name: 'Test Team NFT',
@@ -115,7 +108,6 @@ describe('<MissionPayRedeem />', () => {
         owner: '0x1234567890123456789012345678901234567890',
       },
       stage: 1, // Change to stage 1 or 2 to show payment inputs
-      ruleset: [{}, {}],
       primaryTerminalAddress: CYPRESS_MISSION_PRIMARY_TERMINAL_ADDRESS,
       jbControllerContract: mockJbControllerContract,
       forwardClient: cypressThirdwebClient,

@@ -1,9 +1,10 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
+import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useSafeBalances } from '@/lib/nance/SafeHooks'
 import { SafeData } from '@/lib/safe/useSafe'
-import useNetworkMistmatch from '@/lib/thirdweb/hooks/useNetworkMistmatch'
+import useNetworkMismatch from '@/lib/thirdweb/hooks/useNetworkMismatch'
 import { formatUnits } from 'ethers/lib/utils'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -37,7 +38,7 @@ export default function SafeSendModal({
   const [to, setTo] = useState('')
   const [selectedToken, setSelectedToken] = useState<string>('native')
   const [isValid, setIsValid] = useState(false)
-  const isNetworkMismatch = useNetworkMistmatch()
+  const isNetworkMismatch = useNetworkMismatch()
 
   const { data: safeBalances, isLoading } = useSafeBalances(
     safeAddress,
@@ -126,8 +127,18 @@ export default function SafeSendModal({
           <div>
             {/* Current Safe Info */}
             <div data-testid="safe-info" className="mb-4">
-              <p data-testid="safe-address" className="text-gray-400">
-                Address: {safeAddress.slice(0, 6)}...{safeAddress.slice(-4)}
+              <p data-testid="safe-address" className="text-gray-400 mb-2">
+                {'Address: '}
+                <Link
+                  className="hover:underline"
+                  href={`https://app.safe.global/home?safe=${
+                    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
+                  }:${safeAddress}`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  {safeAddress.slice(0, 6)}...{safeAddress.slice(-4)}
+                </Link>
               </p>
             </div>
 

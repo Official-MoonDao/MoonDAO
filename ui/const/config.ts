@@ -244,6 +244,10 @@ export const JBV4_DIRECTORY_ADDRESSES: Index = {
 export const JB_NATIVE_TOKEN_ADDRESS =
   '0x000000000000000000000000000000000000EEEe'
 
+export const JBV4_TERMINAL_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xdb9644369c79c3633cde70d2df50d827d7dc7dbc',
+}
 //Citzens & Teams Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
 //Citizens & Teams Arbitrum Hat Tree : https://app.hatsprotocol.xyz/trees/42161/42
 export const MOONDAO_HAT_TREE_IDS: Index = {
@@ -340,10 +344,15 @@ export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
   ethereum: '0xDc07FbCcF7Dd55014C8A2a605C671d01137B4937',
   base: '0xe5709Bc44427DCEF81fF2F718DFc6A032fD23bbF',
 }
+
+// Shared across chains
+export const MISSION_CROSS_CHAIN_PAY_ADDRESS = "0xDa05b72e03A621CED4b16831c4950201042Dcb7D"
+
 export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   [key: string]: number
 } = {
   'arbitrum-sepolia': 40161, //sepolia eid
+  'op-sepolia': 40161, //sepolia eid
   base: 30110, //arbitrum eid
   ethereum: 30110, //arbitrum eid
 }
