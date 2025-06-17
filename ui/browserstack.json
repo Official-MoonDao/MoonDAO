@@ -28,11 +28,13 @@
   "run_settings": {
     "parallels": 5,
     "npm_dependencies": {
-      "cypress": "latest"
+      "cypress": "latest",
+      "browserstack-cypress-cli": "latest"
     },
     "cypress_config_file": "cypress.browserstack.config.js",
     "specs": "cypress/e2e/**/*.cy.{js,ts,jsx,tsx}",
-    "baseUrl": "http://localhost:3000"
+    "baseUrl": "http://localhost:3000",
+    "spec_timeout": 1800
   },
   "connection_settings": {
     "local": true,
