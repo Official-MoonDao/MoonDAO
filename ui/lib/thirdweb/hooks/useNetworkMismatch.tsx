@@ -4,10 +4,14 @@ import { useContext } from 'react'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import ChainContextV5 from '../chain-context-v5'
 
-export default function useNetworkMistmatch() {
+export default function useNetworkMismatch() {
   const { selectedChain } = useContext(ChainContextV5)
   const { wallets } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)
 
-  return selectedChain.id !== +wallets[selectedWallet].chainId.split(':')[1]
+  if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
+    return false
+  }
+
+  return selectedChain.id !== +wallets?.[selectedWallet]?.chainId?.split(':')[1]
 }
