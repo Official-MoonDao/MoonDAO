@@ -326,14 +326,14 @@ export default function Network({
       }`
 
       return (
-        <div className="justify-center flex transition-all" key={'team-citizen-' + I}>
+        <div
+          className={`justify-center flex transition-all overflow-hidden ${
+            viewMode === 'grid' ? 'hover:ring-2 hover:ring-white' : ''
+          }`}
+          key={'team-citizen-' + I}
+        >
           {viewMode === 'grid' ? (
-            <Card
-              inline
-              metadata={nft.metadata}
-              type={type}
-              link={link}
-            />
+            <Card inline metadata={nft.metadata} type={type} link={link} />
           ) : (
             <StandardDetailCard
               title={nft.metadata.name}

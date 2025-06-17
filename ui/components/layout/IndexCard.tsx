@@ -41,7 +41,7 @@ export default function IndexCard({
   const cardContent = (
     <span
       id="index-card-container"
-      className="animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full"
+      className="group animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full"
     >
       <div
         id="index-card-styling"
@@ -53,9 +53,7 @@ export default function IndexCard({
       >
         <span
           id="index-content"
-          className={`animate-fadeIn relative z-50 flex flex-col items-center ${
-            isLoadingRoute && 'animate-pulse'
-          }`}
+          className="animate-fadeIn relative z-50 flex flex-col items-center"
         >
           {icon || iconAlt ? (
             <Image
@@ -82,9 +80,9 @@ export default function IndexCard({
           >
             <div
               id="index-description-and-id"
-              className="description text-left "
+              className="description text-left relative z-50 w-full opacity-100 group-hover:opacity-100"
             >
-              <div className="flex opacity-[70%]">{paragraph}</div>
+              <div className="flex">{paragraph}</div>
               {metadata?.id && (
                 <div id="index-details-container" className="mt-4">
                   <p id="index-org-description">
@@ -100,9 +98,9 @@ export default function IndexCard({
                 </div>
               )}
               {hovertext && metadata?.name && (
-                <span
-                  id="index-mobile-button-container"
-                  className="md:hidden flex pt-5 pb-5 justify-start w-full"
+                <div
+                  id="index-hovertext-always-container"
+                  className="mt-5 flex justify-start w-full relative z-50"
                 >
                   <StandardButton
                     textColor="text-white"
@@ -114,19 +112,9 @@ export default function IndexCard({
                   >
                     {hovertext}
                   </StandardButton>
-                </span>
+                </div>
               )}
             </div>
-            {hovertext && (
-              <span
-                id="index-hovertext-container"
-                className="hovertext absolute left-0 bottom-[-320px] ml-[-20px] w-[calc(100%+80px)] h-[calc(100%+300px)] p-[20px] text-lg text-white md:text-darkest-cool hovertext-bg flex justify-center z-50"
-              >
-                <span id="hovertext" className="hidden md:block">
-                  {hovertext}
-                </span>
-              </span>
-            )}
           </div>
         </span>
       </span>
@@ -140,8 +128,8 @@ export default function IndexCard({
     >
       <span
         id="index-Interactive-Element"
-        className="clip absolute h-full w-full z-10 transition-transform transform hover:scale-110"
-      ></span>
+        className="clip absolute h-full w-full z-10 transition-all pointer-events-none opacity-100"
+      />
       {link || onClick ? (
         <button
           id="index-card-link"
