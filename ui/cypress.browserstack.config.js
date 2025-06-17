@@ -22,4 +22,13 @@ module.exports = defineConfig({
     baseUrl: 'http://localhost:3000',
     supportFile: false,
   },
+  typescript: {
+    enable: true,
+  },
+  // Add these settings for local testing
+  video: false,
+  screenshotOnRunFailure: true,
+  defaultCommandTimeout: 10000,
+  requestTimeout: 10000,
+  responseTimeout: 10000,
 })
