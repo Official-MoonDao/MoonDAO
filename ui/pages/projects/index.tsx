@@ -73,7 +73,7 @@ export async function getStaticProps() {
     const currentProjects = []
     const pastProjects = []
     for (let i = 0; i < projects.length; i++) {
-      if (!blockedProjects.includes(i)) {
+      if (!blockedProjects.includes(projects[i].id)) {
         const current = projects[i].active
         if (!current) {
           pastProjects.push(projects[i])
@@ -82,6 +82,12 @@ export async function getStaticProps() {
         }
       }
     }
+    currentProjects.sort((a, b) => {
+      if (a.eligible === b.eligible) {
+        return 0
+      }
+      return a.eligible ? 1 : -1
+    })
 
     const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
     const distributions = await queryTable(chain, distributionStatement)

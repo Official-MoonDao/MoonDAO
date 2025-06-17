@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { getContract, NFT, readContract } from 'thirdweb'
+import { arbitrum } from 'thirdweb/chains'
 import { CitizenRow, citizenRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -117,8 +118,11 @@ export default function NetworkMap({
 export async function getStaticProps() {
   try {
     let citizensLocationData = []
-    if (process.env.NEXT_PUBLIC_ENV === 'prod') {
-      const chain = DEFAULT_CHAIN_V5
+    if (
+      process.env.NEXT_PUBLIC_ENV === 'prod' ||
+      process.env.NEXT_PUBLIC_TEST_ENV === 'true'
+    ) {
+      const chain = arbitrum
       const chainSlug = getChainSlug(chain)
 
       const citizenContract = getContract({
@@ -153,12 +157,10 @@ export async function getStaticProps() {
 
       //Get location data for each citizen
       for (const citizen of filteredValidCitizens) {
-        const citizenLocation = JSON.stringify(
-          getAttribute(
-            citizen?.metadata?.attributes as unknown as any[],
-            'location'
-          )?.value
-        )
+        const citizenLocation = getAttribute(
+          citizen?.metadata?.attributes as unknown as any[],
+          'location'
+        )?.value
 
         let locationData
 
