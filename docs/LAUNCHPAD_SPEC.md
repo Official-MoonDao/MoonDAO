@@ -25,7 +25,7 @@ This document summarizes how the Launchpad operates based on the current reposit
         }
     }
 ```
-【F:subscription-contracts/src/LaunchPadPayHook.sol†L106-L117】
+[LaunchPadPayHook.sol&nbsp;L106-L117](../subscription-contracts/src/LaunchPadPayHook.sol#L106-L117)
 
 ## Refunds
 
@@ -46,7 +46,7 @@ This document summarizes how the Launchpad operates based on the current reposit
         revert("Refund period has passed. Refunds are disabled.");
     }
 ```
-【F:subscription-contracts/src/LaunchPadPayHook.sol†L70-L86】
+[LaunchPadPayHook.sol&nbsp;L70-L86](../subscription-contracts/src/LaunchPadPayHook.sol#L70-L86)
 
 ## Tokenomics and Funding Allocation
 
@@ -62,7 +62,7 @@ Fund Allocation: Teams can withdraw up to 80% of their total raised funds. The r
   • 7.5% to MoonDAO to support the broader space acceleration ecosystem.
   • 2.5% to Juicebox, the underlying protocol powering the fundraising infrastructure.
 ```
-【F:ui/components/mission/MissionTokenomicsExplainer.tsx†L7-L21】
+[MissionTokenomicsExplainer.tsx&nbsp;L7-L21](../ui/components/mission/MissionTokenomicsExplainer.tsx#L7-L21)
 
 Additionally, `MissionTokenInfo` describes token distribution:
 
@@ -73,7 +73,7 @@ Additionally, `MissionTokenInfo` describes token distribution:
   • 30% of the token is locked for one year, and vested for three years, to be held by the Mission Team to distribute how they see fit.
 If the project does not launch (their funding goal was not met), then contributors can get their full contribution back.
 ```
-【F:ui/components/mission/MissionTokenInfo.tsx†L14-L32】
+[MissionTokenInfo.tsx&nbsp;L14-L32](../ui/components/mission/MissionTokenInfo.tsx#L14-L32)
 
 ### Smart Contract Implementation
 
@@ -93,7 +93,7 @@ splitGroups[0].splits[2] = JBSplit({
     beneficiary: toPayable
 });
 ```
-【F:subscription-contracts/src/MissionCreator.sol†L200-L227】
+[MissionCreator.sol&nbsp;L200-L227](../subscription-contracts/src/MissionCreator.sol#L200-L227)
 
 Token distribution uses reserved splits:
 
@@ -114,7 +114,7 @@ splitGroups[1].splits[2] = JBSplit({
     beneficiary: payable(address(poolDeployer))
 });
 ```
-【F:subscription-contracts/src/MissionCreator.sol†L229-L259】
+[MissionCreator.sol&nbsp;L229-L259](../subscription-contracts/src/MissionCreator.sol#L229-L259)
 
 These contract-defined percentages differ from the UI description above.
 
