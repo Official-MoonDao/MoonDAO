@@ -230,7 +230,6 @@ export default function MissionInfo({
                     __html: mission?.metadata?.description || '',
                   }}
                 />
-                
               </div>
             </div>
           )}
@@ -270,9 +269,6 @@ export default function MissionInfo({
               mission={mission}
               teamNFT={teamNFT}
               token={token}
-              fundingGoal={fundingGoal}
-              subgraphData={subgraphData}
-              ruleset={ruleset}
               primaryTerminalAddress={primaryTerminalAddress}
               jbTokensContract={jbTokensContract}
               jbControllerContract={jbControllerContract}
