@@ -28,7 +28,6 @@ import {
   ethereum,
   sepolia,
   optimismSepolia,
-  Chain,
 } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
@@ -54,23 +53,9 @@ import MissionDeployTokenModal from './MissionDeployTokenModal'
 import MissionTokenExchangeRates from './MissionTokenExchangeRates'
 import MissionTokenNotice from './MissionTokenNotice'
 
-function PayRedeemStat({ label, value, children }: any) {
-  return (
-    <div className="font-GoodTimes w-full flex-1 flex flex-col">
-      <h3 className="opacity-60 text-[60%]">{label}</h3>
-      <p>{value}</p>
-      {children}
-    </div>
-  )
-}
-
 function MissionPayRedeemContent({
   token,
-  ruleset,
-  subgraphData,
-  input,
   output,
-  setInput,
   redeem,
   setMissionPayModalEnabled,
   tokenBalance,
@@ -78,13 +63,12 @@ function MissionPayRedeemContent({
   stage,
   tokenCredit,
   claimTokenCredit,
-  usdInput,
   handleUsdInputChange,
   calculateEthAmount,
   formattedUsdInput,
   formatTokenAmount,
 }: any) {
-  const isRefundable = stage === 3 && subgraphData?.volume > 0
+  const isRefundable = stage === 3
 
   return (
     <div
@@ -277,11 +261,8 @@ function MissionPayRedeemContent({
 export type MissionPayRedeemProps = {
   mission: any
   token: any
-  fundingGoal: number
-  subgraphData: any
   teamNFT: any
   stage: any
-  ruleset: any
   onlyModal?: boolean
   modalEnabled?: boolean
   setModalEnabled?: (enabled: boolean) => void
@@ -294,11 +275,8 @@ export type MissionPayRedeemProps = {
 export default function MissionPayRedeem({
   mission,
   token,
-  fundingGoal,
-  subgraphData,
   teamNFT,
   stage,
-  ruleset,
   onlyModal = false,
   modalEnabled = false,
   setModalEnabled,
@@ -733,19 +711,14 @@ export default function MissionPayRedeem({
           <div className="mt-2">
             <MissionPayRedeemContent
               token={token}
-              ruleset={ruleset}
-              subgraphData={subgraphData}
-              input={input}
               output={output}
               redeem={redeemMissionToken}
-              setInput={setInput}
               setMissionPayModalEnabled={setMissionPayModalEnabled}
               tokenBalance={tokenBalance}
               tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
               claimTokenCredit={claimTokenCredit}
               currentStage={currentStage}
               stage={stage}
-              usdInput={usdInput}
               handleUsdInputChange={handleUsdInputChange}
               calculateEthAmount={calculateEthAmount}
               formattedUsdInput={formattedUsdInput}
