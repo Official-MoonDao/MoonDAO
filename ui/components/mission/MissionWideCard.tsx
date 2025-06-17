@@ -93,14 +93,11 @@ export default function MissionWideCard({
             stage={stage}
             mission={mission}
             token={token}
-            subgraphData={subgraphData}
-            ruleset={ruleset}
             teamNFT={teamNFT}
             onlyModal
             modalEnabled={payModalEnabled}
             setModalEnabled={setPayModalEnabled}
             primaryTerminalAddress={primaryTerminalAddress}
-            fundingGoal={fundingGoal}
           />
         </div>
       )}

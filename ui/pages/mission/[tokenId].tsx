@@ -495,9 +495,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     mission={mission}
                     teamNFT={teamNFT}
                     token={token}
-                    fundingGoal={fundingGoal}
-                    subgraphData={subgraphData}
-                    ruleset={ruleset}
                     stage={stage}
                     primaryTerminalAddress={primaryTerminalAddress}
                     jbControllerContract={jbControllerContract}
