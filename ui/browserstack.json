@@ -1,0 +1,46 @@
+{
+  "auth": {
+    "username": "${BROWSERSTACK_USERNAME}",
+    "access_key": "${BROWSERSTACK_ACCESS_KEY}"
+  },
+  "browsers": [
+    {
+      "browser": "chrome",
+      "os": "Windows 10",
+      "versions": ["latest"]
+    },
+    {
+      "browser": "firefox",
+      "os": "Windows 10",
+      "versions": ["latest"]
+    },
+    {
+      "browser": "safari",
+      "os": "OS X Monterey",
+      "versions": ["latest"]
+    },
+    {
+      "browser": "edge",
+      "os": "Windows 10",
+      "versions": ["latest"]
+    },
+    {
+      "browser": "chrome",
+      "os": "Windows 10",
+      "versions": ["latest-1"]
+    }
+  ],
+  "run_settings": {
+    "parallels": 5,
+    "npm_dependencies": {
+      "cypress": "latest"
+    },
+    "cypress_config_file": "cypress.config.ts",
+    "specs": "cypress/e2e/**/*.cy.{js,ts,jsx,tsx}",
+    "baseUrl": "http://localhost:3000"
+  },
+  "connection_settings": {
+    "local": true,
+    "local_identifier": "moon-dao-tests"
+  }
+}
