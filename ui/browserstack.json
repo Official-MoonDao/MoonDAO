@@ -42,9 +42,6 @@
   },
   "connection_settings": {
     "local": true,
-    "local_identifier": "moon-dao-tests",
-    "local_mode": true,
-    "local_proxy_host": "localhost",
-    "local_proxy_port": 3000
+    "local_mode": "always-on"
   }
 }

@@ -73,7 +73,7 @@ jobs:
           mv cypress.config.ts cypress.config.ts.bak
 
           # Run BrowserStack tests
-          npx browserstack-cypress run \
+          BROWSERSTACK_LOCAL=true npx browserstack-cypress run \
             --username $BROWSERSTACK_USERNAME \
             --access-key $BROWSERSTACK_ACCESS_KEY \
             --parallels 5 \
