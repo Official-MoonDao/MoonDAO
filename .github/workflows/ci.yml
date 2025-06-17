@@ -63,7 +63,7 @@ jobs:
 
       - name: Install BrowserStack CLI
         working-directory: ui
-        run: yarn add -D @browserstack/cli
+        run: yarn add -D @browserstack/cypress-cli
 
       # Run cypress E2E tests on BrowserStack
       - name: Run Cypress E2E Testing on BrowserStack
