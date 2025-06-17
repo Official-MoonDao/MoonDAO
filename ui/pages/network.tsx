@@ -360,21 +360,11 @@ export default function Network({
       <Container>
         <ContentLayout
           logo={
-            <Image
-              src="/assets/san-logo.svg"
-              alt="SAN Logo"
-              width={275}
-              height={275}
-            />
+            <Image src="/assets/san-logo.svg" alt="SAN Logo" width={275} height={275} />
           }
           header={
             <div className="flex flex-row items-center">
-              <Image
-                src="/assets/network-title.svg"
-                alt="Org"
-                width={300}
-                height={300}
-              />
+              <Image src="/assets/network-title.svg" alt="Org" width={300} height={300} />
             </div>
           }
           headerSize="max(20px, 3vw)"
@@ -387,19 +377,11 @@ export default function Network({
         >
           <>
             {viewMode === 'grid' ? (
-              <CardGridContainer xsCols={1} smCols={2} mdCols={3} maxCols={3}>
+              <CardGridContainer columns={3}>
                 {renderNFTs()}
               </CardGridContainer>
             ) : (
-              <CardGridContainer
-                xsCols={1}
-                smCols={1}
-                mdCols={1}
-                lgCols={2}
-                maxCols={2}
-                noGap
-                center
-              >
+              <CardGridContainer columns={2} center>
                 {renderNFTs()}
               </CardGridContainer>
             )}
@@ -437,9 +419,7 @@ export default function Network({
                     }
                   }}
                   className={`pagination-button ${
-                    pageIdx === maxPage
-                      ? 'opacity-10'
-                      : 'cursor-pointer opacity-100'
+                    pageIdx === maxPage ? 'opacity-10' : 'cursor-pointer opacity-100'
                   }`}
                   disabled={pageIdx === maxPage}
                 >
