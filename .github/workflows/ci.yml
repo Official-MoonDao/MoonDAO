@@ -69,11 +69,18 @@ jobs:
       - name: Run Cypress E2E Testing on BrowserStack
         working-directory: ui
         run: |
+          # Temporarily rename the original config file
+          mv cypress.config.ts cypress.config.ts.bak
+
+          # Run BrowserStack tests
           npx browserstack-cypress run \
             --username $BROWSERSTACK_USERNAME \
             --access-key $BROWSERSTACK_ACCESS_KEY \
             --parallels 5 \
             --config-file ./browserstack.json
+
+          # Restore the original config file
+          mv cypress.config.ts.bak cypress.config.ts
 
       #Run cypress component tests
       - name: Run Cypress Component Testing
