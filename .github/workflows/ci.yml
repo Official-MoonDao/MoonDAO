@@ -73,7 +73,6 @@ jobs:
             --username $BROWSERSTACK_USERNAME \
             --access-key $BROWSERSTACK_ACCESS_KEY \
             --parallels 5 \
-            --browsers chrome@latest,firefox@latest,safari@latest,edge@latest,chrome@latest-1 \
             --config-file ./browserstack.json
 
       #Run cypress component tests

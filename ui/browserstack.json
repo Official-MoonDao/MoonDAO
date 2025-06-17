@@ -5,28 +5,23 @@
   },
   "browsers": [
     {
+      "os": "Windows 10",
       "browser": "chrome",
+      "versions": ["latest", "latest-1"]
+    },
+    {
       "os": "Windows 10",
-      "versions": ["latest"]
-    },
-    {
-      "browser": "firefox",
-      "os": "Windows 10",
-      "versions": ["latest"]
-    },
-    {
-      "browser": "safari",
-      "os": "OS X Monterey",
-      "versions": ["latest"]
-    },
-    {
       "browser": "edge",
-      "os": "Windows 10",
       "versions": ["latest"]
     },
     {
-      "browser": "chrome",
+      "os": "OS X Big Sur",
+      "browser": "webkit",
+      "versions": ["latest"]
+    },
+    {
       "os": "Windows 10",
+      "browser": "firefox",
       "versions": ["latest-1"]
     }
   ],
