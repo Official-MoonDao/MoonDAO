@@ -4,7 +4,7 @@ import { useContext } from 'react'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import ChainContextV5 from '../chain-context-v5'
 
-export default function useNetworkMistmatch() {
+export default function useNetworkMismatch() {
   const { selectedChain } = useContext(ChainContextV5)
   const { wallets } = useWallets()
   const { selectedWallet } = useContext(PrivyWalletContext)

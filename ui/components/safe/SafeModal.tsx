@@ -5,7 +5,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { SafeData } from '@/lib/safe/useSafe'
-import useNetworkMistmatch from '@/lib/thirdweb/hooks/useNetworkMistmatch'
+import useNetworkMismatch from '@/lib/thirdweb/hooks/useNetworkMismatch'
 import { useENS } from '@/lib/utils/hooks/useENS'
 import Modal from '../layout/Modal'
 import Tooltip from '../layout/Tooltip'
@@ -38,7 +38,7 @@ export default function SafeModal({
   const [newThreshold, setNewThreshold] = useState<number>(safeData.threshold)
   const [isAddingSigner, setIsAddingSigner] = useState(false)
   const [isChangingThreshold, setIsChangingThreshold] = useState(false)
-  const isNetworkMismatch = useNetworkMistmatch()
+  const isNetworkMismatch = useNetworkMismatch()
 
   const ens = useENS(newSignerAddressOrENS)
   const newSignerAddress = ens?.data?.address || newSignerAddressOrENS

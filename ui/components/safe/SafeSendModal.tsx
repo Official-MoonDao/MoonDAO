@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useSafeBalances } from '@/lib/nance/SafeHooks'
 import { SafeData } from '@/lib/safe/useSafe'
-import useNetworkMistmatch from '@/lib/thirdweb/hooks/useNetworkMistmatch'
+import useNetworkMismatch from '@/lib/thirdweb/hooks/useNetworkMismatch'
 import { formatUnits } from 'ethers/lib/utils'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -38,7 +38,7 @@ export default function SafeSendModal({
   const [to, setTo] = useState('')
   const [selectedToken, setSelectedToken] = useState<string>('native')
   const [isValid, setIsValid] = useState(false)
-  const isNetworkMismatch = useNetworkMistmatch()
+  const isNetworkMismatch = useNetworkMismatch()
 
   const { data: safeBalances, isLoading } = useSafeBalances(
     safeAddress,

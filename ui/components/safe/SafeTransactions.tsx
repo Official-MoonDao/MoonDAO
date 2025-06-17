@@ -6,7 +6,7 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { PendingTransaction, SafeData } from '@/lib/safe/useSafe'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import useNetworkMistmatch from '@/lib/thirdweb/hooks/useNetworkMistmatch'
+import useNetworkMismatch from '@/lib/thirdweb/hooks/useNetworkMismatch'
 import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import SafeExecutionDisclaimer from './SafeExecutionDisclaimer'
@@ -36,7 +36,7 @@ export default function SafeTransactions({
   const [showDisclaimer, setShowDisclaimer] = useState(false)
   const [selectedTxHash, setSelectedTxHash] = useState<string | null>(null)
 
-  const isNetworkMismatch = useNetworkMistmatch()
+  const isNetworkMismatch = useNetworkMismatch()
 
   const handleSignTransaction = async (safeTxHash: string) => {
     try {
