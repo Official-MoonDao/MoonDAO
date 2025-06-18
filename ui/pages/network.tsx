@@ -147,10 +147,10 @@ export default function Network({
         .
       </div>
       <div className="relative w-full flex justify-between">
-        <div className="flex flex-col min-[1200px]:flex-row md:gap-2">
+        <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
           <div className="w-full flex flex-row min-[800px]:flex-row gap-4">
             <Frame
-              className="w-full h-fit flex-grow"
+              className="w-full h-fit flex-grow min-w-[55vw] md:min-w-0"
               bottomLeft="20px"
               topLeft="5vmax"
               noPadding
@@ -199,7 +199,7 @@ export default function Network({
               </Frame>
             </div>
 
-            <div className="w-full flex justify-start">
+            <div className="w-full flex justify-end md:justify-start">
               <StandardButton
                 className="gradient-2 rounded-full"
                 hoverEffect={false}
