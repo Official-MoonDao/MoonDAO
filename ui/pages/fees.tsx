@@ -174,7 +174,9 @@ export default function Fees() {
     <>
       <WebsiteHead
         title={'Liquidity Rewards'}
-        description={'Check in weekly and distribute accrued fees.'}
+        description={
+          'Check in weekly and distribute accrued fees. To check in you will need to sign one transaction per chain.'
+        }
       />
       <section className="w-[calc(100vw-20px)]">
         <Container>
@@ -192,13 +194,13 @@ export default function Fees() {
               <div className="mt-3 w-[25vw] flex flex-col gap-4">
                 <div className="mb-2">
                   <div className="text-xl font-GoodTimes opacity-80">
-                    Rewards This Week :
+                    Rewards This Week:
                   </div>
                   <Asset
                     name="ETH"
                     amount={
                       feesAvailable !== null
-                        ? Number(feesAvailable).toFixed(5)
+                        ? Number(feesAvailable).toFixed(4)
                         : 'Loading...'
                     }
                     usd={
