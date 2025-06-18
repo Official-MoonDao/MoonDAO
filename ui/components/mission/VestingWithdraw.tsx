@@ -30,6 +30,8 @@ export default function VestingWithdraw({
 
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
+  const [teamAddress, setTeamAddress] = useState<string>()
+  const [daoAddress, setDaoAddress] = useState<string>()
 
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
@@ -56,6 +58,8 @@ export default function VestingWithdraw({
         }),
       ])
       if (!teamAddr || !daoAddr) return
+      setTeamAddress(String(teamAddr))
+      setDaoAddress(String(daoAddr))
 
       const teamVesting = await getContract({
         client,
@@ -70,23 +74,18 @@ export default function VestingWithdraw({
         abi: VestingABI as any,
       })
 
-      const [teamBeneficiary, daoBeneficiary] = await Promise.all([
-        readContract({ contract: teamVesting, method: 'beneficiary' as string, params: [] }),
-        readContract({ contract: daoVesting, method: 'beneficiary' as string, params: [] }),
-      ])
 
-      if (teamBeneficiary && address?.toLowerCase() === String(teamBeneficiary).toLowerCase()) {
-        setVestingAddress(String(teamAddr))
-      } else if (daoBeneficiary && address?.toLowerCase() === String(daoBeneficiary).toLowerCase()) {
-        setVestingAddress(String(daoAddr))
-      }
+
     }
     fetchVestingAddress()
   }, [missionCreatorContract, address, missionId, selectedChain])
 
-  if (!hasToken || !vestingAddress) return null
+  if (!hasToken) return null
 
   return (
-    <VestingCard address={vestingAddress} chain={selectedChain} tokenSymbol={token?.tokenSymbol || ''} />
+    <>
+    {teamAddress && <VestingCard address={teamAddress} chain={selectedChain} isTeam={true} tokenSymbol={token?.tokenSymbol || ''} />}
+    {daoAddress && <VestingCard address={daoAddress} chain={selectedChain} tokenSymbol={token?.tokenSymbol || ''} />}
+    </>
   )
 }

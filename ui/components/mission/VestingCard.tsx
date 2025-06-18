@@ -10,10 +10,12 @@ export default function VestingCard({
   address,
   chain,
   tokenSymbol,
+  isTeam = false,
 }: {
   address: string
   chain: any
-  tokenSymbol: string
+  tokenSymbol: string,
+  isTeam?: boolean
 }) {
   const account = useActiveAccount()
   const [vestingContract, setVestingContract] = useState<any>()
@@ -58,16 +60,16 @@ export default function VestingCard({
     }
   }
 
-  if (!vestingContract) return null
-
+//
   return (
     <div className="flex flex-col gap-2 bg-dark-cool p-4 rounded-lg">
-      <p className="font-bold">Withdrawable</p>
+      <h2 className="text-lg">{isTeam ? "Team " : "MoonDAO "} Vesting</h2>
+      <p className="font-bold text-sm">Withdrawable</p>
       <p>
         {withdrawable} {tokenSymbol}
       </p>
-      <p className="font-bold">Total Vesting</p>
-      <p>{total}</p>
+      <p className="font-bold text-sm">Total Vesting</p>
+      <p>{total} {tokenSymbol}</p>
       <StandardButton className="gradient-2 rounded-full mt-2 w-fit" onClick={handleWithdraw}>
         Withdraw
       </StandardButton>
