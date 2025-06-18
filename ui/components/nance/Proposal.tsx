@@ -16,22 +16,23 @@ export default function Proposal({
   votingInfo,
 }: ProposalProps) {
   return (
-    <li
-      id="proposal-list-item"
-      key={proposal.uuid}
-      className="lg:mr-5 relative flex bg-dark-cool mt-5 rounded-[20px] justify-between gap-x-6 px-4 py-5 border-transparent border-[1px] hover:border-light-cool transition-all duration-150 sm:px-6"
+    <div
+      id="proposal-card"
+      className="relative flex flex-col h-full justify-between gap-y-4 px-4 py-5 sm:px-6"
     >
-      <ProposalInfo
-        showTitle={true}
-        showStatus={false}
-        proposalPacket={{
-          ...proposal,
-          proposalInfo: packet.proposalInfo,
-        }}
-        votingInfo={votingInfo}
-      />
-      <div className="hidden shrink-0 items-center gap-x-4 sm:flex">
-        <div className="flex sm:flex-col sm:items-end">
+      <div className="flex-1">
+        <ProposalInfo
+          showTitle={true}
+          showStatus={false}
+          proposalPacket={{
+            ...proposal,
+            proposalInfo: packet.proposalInfo,
+          }}
+          votingInfo={votingInfo}
+        />
+      </div>
+      <div className="flex justify-between items-center mt-4">
+        <div className="flex flex-col items-start">
           <p className="text-sm leading-6 text-gray-900 dark:text-white">
             {proposal.status}
           </p>
@@ -62,6 +63,6 @@ export default function Proposal({
           aria-hidden="true"
         />
       </div>
-    </li>
+    </div>
   )
 }
