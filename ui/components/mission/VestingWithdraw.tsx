@@ -20,11 +20,18 @@ import StandardButton from '@/components/layout/StandardButton'
 import toast from 'react-hot-toast'
 import client from '@/lib/thirdweb/client'
 
+
 export default function VestingWithdraw({
   missionId,
+  token,
 }: {
   missionId: number
+  token?: {
+    tokenAddress: string
+    tokenSymbol: string
+  }
 }) {
+  const hasToken = token?.tokenAddress !== ZERO_ADDRESS
   const account = useActiveAccount()
   const address = account?.address
 
@@ -37,100 +44,90 @@ export default function VestingWithdraw({
     chain: selectedChain,
   })
 
-  const [vestingAddress, setVestingAddress] = useState<string>()
-  const [tokenSymbol, setTokenSymbol] = useState<string>('')
   const [withdrawable, setWithdrawable] = useState<string>('0')
-  const [vestingContract, setVestingContract] = useState<any>()
-
+  const [total, setTotal] = useState<string>('0')
+  const [vestingContract, setVestingContract] = useState<any>(null)
   // Determine which vesting contract belongs to the connected account
   useEffect(() => {
     async function fetchVestingAddress() {
       if (!missionCreatorContract || !address) return
-      const [teamAddr, daoAddr] = await Promise.all([
-        readContract({
+      
+      const teamAddr = await readContract({
           contract: missionCreatorContract,
           method: 'missionIdToTeamVesting' as string,
           params: [missionId],
-        }),
-        readContract({
+        })
+      const daoAddr = await readContract({
           contract: missionCreatorContract,
           method: 'missionIdToMoonDAOVesting' as string,
           params: [missionId],
-        }),
-      ])
-      const candidates = [teamAddr as string, daoAddr as string]
-      for (const addr of candidates) {
-        const vc = getContract({
-          client,
-          chain: selectedChain,
-          address: addr,
-          abi: VestingABI as any,
         })
-        const beneficiary: any = await readContract({
-          contract: vc,
-          method: 'beneficiary' as string,
-          params: [],
-        })
-        if (
-          beneficiary &&
-          address?.toLowerCase() === (beneficiary as string).toLowerCase()
-        ) {
-          setVestingAddress(addr)
-          setVestingContract(vc)
-          break
-        }
-      }
-    }
-    fetchVestingAddress()
-  }, [missionCreatorContract, address, missionId, selectedChain])
-
-  // Fetch withdrawable amount and token info
-  useEffect(() => {
-    async function fetchData() {
-      if (!vestingContract) return
-      const [vested, withdrawn] = await Promise.all([
+        if (!teamAddr || !daoAddr) return
+      const teamVesting: any = await getContract({
+        client,
+        chain: selectedChain,
+        address: String(teamAddr),
+        abi: VestingABI as any,
+      })
+      const teamBeneficiary: any = await readContract({
+        contract: teamVesting,
+        method: 'beneficiary' as string,
+        params: [],
+      })
+      const daoVesting: any = await getContract({
+        client,
+        chain: selectedChain,
+        address: String(daoAddr),
+        abi: VestingABI as any,
+      })
+      const daoBeneficiary: any = await readContract({
+        contract: daoVesting,
+        method: 'beneficiary' as string,
+        params: [],
+      })
+      const [teamVested, teamWithdrawn, teamTotal] = await Promise.all([
         readContract({
-          contract: vestingContract,
+          contract: teamVesting,
           method: 'vestedAmount' as string,
           params: [],
         }),
         readContract({
-          contract: vestingContract,
+          contract: teamVesting,
           method: 'totalWithdrawn' as string,
           params: [],
         }),
-      ])
-      const available = BigInt(vested as bigint) - BigInt(withdrawn as bigint)
-      setWithdrawable((Number(available) / 1e18).toFixed(4))
-
-      const tokenAddr: any = await readContract({
-        contract: vestingContract,
-        method: 'token' as string,
-        params: [],
-      })
-      if (tokenAddr && tokenAddr !== ZERO_ADDRESS) {
-        const tokenContract = getContract({
-          client,
-          chain: selectedChain,
-          address: tokenAddr,
-          abi: ERC20,
+        readContract({
+          contract: teamVesting,
+          method: 'totalReceived' as string,
+          params: [],
         })
-        try {
-          const symbol: any = await readContract({
-            contract: tokenContract,
-            method: 'symbol' as string,
-            params: [],
-          })
-          setTokenSymbol(symbol)
-        } catch (err) {
-          console.error(err)
-        }
-      }
+      ])
+      const [moondaoVested, moondaoWithdrawn, moondaoTotal] = await Promise.all([
+        readContract({
+          contract: daoVesting,
+          method: 'vestedAmount' as string,
+          params: [],
+        }),
+        readContract({
+          contract: daoVesting,
+          method: 'totalWithdrawn' as string,
+          params: [],
+        }),
+        readContract({
+          contract: daoVesting,
+          method: 'totalReceived' as string,
+          params: [],
+        })
+      ])
+      const available = BigInt(String(teamVested)) - BigInt(String(teamWithdrawn))
+      setWithdrawable((Number(available) / 1e18).toFixed(4))
+      setTotal((Number(teamTotal) / 1e18).toFixed(4))
+      setVestingContract(teamVesting)
+      
     }
-    fetchData()
-    const interval = setInterval(fetchData, 60000)
-    return () => clearInterval(interval)
-  }, [vestingContract, selectedChain])
+    fetchVestingAddress()
+  }, [missionCreatorContract, address, missionId, selectedChain])
+
 
   const handleWithdraw = async () => {
     if (!account || !vestingContract) return
@@ -147,19 +144,28 @@ export default function VestingWithdraw({
       toast.error('Withdrawal failed')
     }
   }
-
+console.log('hasToken', hasToken)
   return (
     <div className="flex flex-col gap-2 bg-dark-cool p-4 rounded-lg">
-      <p className="font-bold">Withdrawable</p>
-      <p>
-        {withdrawable} {tokenSymbol}
-      </p>
-      <StandardButton
-        className="gradient-2 rounded-full mt-2 w-fit"
-        onClick={handleWithdraw}
-      >
-        Withdraw
-      </StandardButton>
+      {hasToken && (
+        <>
+          <p className="font-bold">Withdrawable</p>
+          <p>
+            {withdrawable} {token?.tokenSymbol}
+          </p>
+          <p className="font-bold">Total Vesting</p>
+          <p>
+            {total}
+          </p>
+          <StandardButton
+            className="gradient-2 rounded-full mt-2 w-fit"
+            onClick={handleWithdraw}
+          >
+            Withdraw
+          </StandardButton>
+        </>
+        
+      )}
     </div>
   )
 }

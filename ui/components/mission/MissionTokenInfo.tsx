@@ -86,7 +86,7 @@ export default function MissionTokenInfo({
           {'Juicebox'}
         </Link>
       </div>
-      <VestingWithdraw missionId={mission?.id} />
+      <VestingWithdraw missionId={mission?.id} token={token} />
     </div>
   )
 }
