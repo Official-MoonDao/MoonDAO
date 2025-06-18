@@ -327,7 +327,7 @@ export default function Network({
 
       return (
         <div
-          className={`justify-center flex transition-all overflow-hidden ${
+          className={`justify-center flex transition-all overflow-hidden w-full ${
             viewMode === 'grid' ? 'hover:ring-2 hover:ring-white' : ''
           }`}
           key={'team-citizen-' + I}
