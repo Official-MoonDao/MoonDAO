@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { useNativeTokenSurplus } from 'juice-sdk-react'
 import { useState } from 'react'
 import { useEffect } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
@@ -68,11 +69,12 @@ export default function MissionCard({
   }, [mission?.teamId, teamContract])
 
   function MissionFooter() {
+    const { data: nativeTokenSurplus } = useNativeTokenSurplus()
     return (
       <div id="missions-stats" className="flex gap-4">
         <MissionStat
           label="Total Raised"
-          value={'Ξ' + projectData?.subgraphData?.volume / 1e18}
+          value={'Ξ' + Number(nativeTokenSurplus || 0) / 1e18}
         />
         <MissionStat
           label="PAYMENTS"
