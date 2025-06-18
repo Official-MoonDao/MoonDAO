@@ -25,7 +25,7 @@ export default function VestingCard({
   useEffect(() => {
     async function fetchData() {
       if (!address) return
-      const vc = await getContract({
+      const vc = await getContract({ 
         client,
         chain,
         address: String(address),
