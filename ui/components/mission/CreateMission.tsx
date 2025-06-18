@@ -4,6 +4,7 @@ import {
   RocketLaunchIcon,
   XMarkIcon,
 } from '@heroicons/react/20/solid'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import { usePrivy } from '@privy-io/react-auth'
 import { DEFAULT_CHAIN_V5, IPFS_GATEWAY } from 'const/config'
@@ -309,9 +310,8 @@ export default function CreateMission({
         }
       )
 
-      const { cid: missionMetadataIpfsHash } = await pinBlobOrFile(
-        missionMetadataBlob
-      )
+      const { cid: missionMetadataIpfsHash } =
+        await pinBlobOrFile(missionMetadataBlob)
 
       let transaction
       if (process.env.NEXT_PUBLIC_CHAIN === 'mainnet') {
@@ -338,7 +338,7 @@ export default function CreateMission({
             teamMultisig,
             missionMetadataIpfsHash,
             fundingGoalInETH * 1e18,
-            Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60, // Expires in 300000 days
+            Math.floor(new Date().getTime() / 1000) + 10 * 60, // Expires in 300000 days
             missionData.token.tradeable,
             missionData?.token?.name,
             missionData?.token?.symbol,
@@ -667,9 +667,8 @@ export default function CreateMission({
                         file,
                         `${missionData.name} Mission Image`
                       )
-                      const { cid: missionLogoIpfsHash } = await pinBlobOrFile(
-                        renamedMissionImage
-                      )
+                      const { cid: missionLogoIpfsHash } =
+                        await pinBlobOrFile(renamedMissionImage)
                       setMissionLogoUri(`${IPFS_GATEWAY}${missionLogoIpfsHash}`)
                     }}
                     dimensions={[1024, 1024]}
@@ -942,25 +941,30 @@ export default function CreateMission({
                     />
                   }
                 >
-                  <MissionWideCard
-                    mission={
-                      {
-                        metadata: {
-                          name: missionData.name,
-                          tagline: missionData.tagline,
-                          description: missionData.description,
-                          logoUri: missionData.logoUri,
-                        },
-                      } as any
-                    }
-                    token={missionData.token}
-                    fundingGoal={fundingGoalInETH * 1e18 || 0}
-                    subgraphData={{}}
-                    missionImage={missionLogoUri}
-                    showMore={true}
-                    showMoreButton={false}
-                    onlyGoalStat
-                  />
+                  <JuiceProviders
+                    projectId={1}
+                    /** placeholder, not used **/ selectedChain={selectedChain}
+                  >
+                    <MissionWideCard
+                      mission={
+                        {
+                          metadata: {
+                            name: missionData.name,
+                            tagline: missionData.tagline,
+                            description: missionData.description,
+                            logoUri: missionData.logoUri,
+                          },
+                        } as any
+                      }
+                      token={missionData.token}
+                      fundingGoal={fundingGoalInETH * 1e18 || 0}
+                      subgraphData={{}}
+                      missionImage={missionLogoUri}
+                      showMore={true}
+                      showMoreButton={false}
+                      onlyGoalStat
+                    />
+                  </JuiceProviders>
                   <MissionTokenomicsExplainer />
                   <ConditionCheckbox
                     id="terms-checkbox"

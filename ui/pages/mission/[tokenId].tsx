@@ -667,7 +667,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
         <ContentLayout
           header={''}
           headerSize="max(20px, 3vw)"
-          description={ProfileHeader}
+          description={<ProfileHeader />}
           mainPadding
           mode="compact"
           popOverEffect={false}
