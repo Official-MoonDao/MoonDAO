@@ -1,5 +1,6 @@
 import { gsap } from 'gsap'
 import { useMemo, useRef, useState, useEffect } from 'react'
+import { useNativeTokenSurplus } from 'juice-sdk-react'
 import {
   CartesianGrid,
   Line,
