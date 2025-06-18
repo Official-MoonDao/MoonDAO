@@ -161,11 +161,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     jbTokensContract,
   })
 
-  const { adminHatId, isManager } = useTeamData(
-    teamContract,
-    hatsContract,
-    teamNFT
-  )
+  const { adminHatId, isManager } = useTeamData(teamContract, hatsContract, teamNFT)
 
   const teamHats = useSubHats(selectedChain, adminHatId)
 
@@ -219,20 +215,13 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   const deadlinePassed = useMemo(() => {
     if (!ruleset?.[0]?.start) return false
-    const deadline = new Date(
-      ruleset[0].start * 1000 + 28 * 24 * 60 * 60 * 1000
-    )
+    const deadline = new Date(ruleset[0].start * 1000 + 28 * 24 * 60 * 60 * 1000)
     return Date.now() > deadline.getTime()
   }, [ruleset])
 
   useEffect(() => {
     async function fetchAvailableAmounts() {
-      if (
-        !jbTerminalContract ||
-        mission?.projectId === undefined ||
-        mission?.projectId === null
-      )
-        return
+      if (!jbTerminalContract || mission?.projectId === undefined || mission?.projectId === null) return
 
       try {
         // Get available payouts
@@ -252,11 +241,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
         const balance: any = await readContract({
           contract: jbTerminalStoreContract,
           method: 'balanceOf' as string,
-          params: [
-            jbTerminalContract.address,
-            mission.projectId,
-            JB_NATIVE_TOKEN_ADDRESS,
-          ],
+          params: [jbTerminalContract.address, mission.projectId, JB_NATIVE_TOKEN_ADDRESS],
         })
 
         if (balance === 0) {
@@ -275,9 +260,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
         if (reservedTokenBalance === 0) {
           setAvailableTokens('No tokens to send.')
         } else {
-          setAvailableTokens(
-            `${(reservedTokenBalance / 1e18).toFixed(0)} Tokens`
-          )
+          setAvailableTokens(`${(reservedTokenBalance / 1e18).toFixed(0)} Tokens`)
         }
       } catch (err: any) {
         if (err?.message?.includes('store')) {

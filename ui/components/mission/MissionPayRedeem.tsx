@@ -68,7 +68,6 @@ function MissionPayRedeemContent({
   formattedUsdInput,
   formatTokenAmount,
 }: any) {
-  console.log('stage', stage)
   const isRefundable = stage === 3
 
   return (
