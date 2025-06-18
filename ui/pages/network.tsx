@@ -147,8 +147,8 @@ export default function Network({
         .
       </div>
       <div className="relative w-full flex justify-between">
-        <div className="w-fuil flex flex-col min-[1200px]:flex-row md:gap-2">
-          <div className="w-full flex flex-col min-[800px]:flex-row gap-4">
+        <div className="flex flex-col min-[1200px]:flex-row md:gap-2">
+          <div className="w-full flex flex-row min-[800px]:flex-row gap-4">
             <Frame
               className="w-full h-fit flex-grow"
               bottomLeft="20px"
@@ -205,7 +205,7 @@ export default function Network({
                 hoverEffect={false}
                 link="/join"
               >
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-start gap-2">
                   <PlusCircleIcon width={20} height={20} />
                   {'Join'}
                 </div>
