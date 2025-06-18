@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import VestingWithdraw from './VestingWithdraw'
 
 export default function MissionTokenInfo({
   mission,
@@ -59,6 +60,7 @@ export default function MissionTokenInfo({
                 : 'sepolia.etherscan.io'
             }/address/${token.tokenAddress}`}
             target="_blank"
+      <VestingWithdraw missionId={mission?.id} />
             rel="noopener noreferrer"
           >
             {'Etherscan'}
