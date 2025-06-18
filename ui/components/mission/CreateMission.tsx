@@ -942,8 +942,10 @@ export default function CreateMission({
                   }
                 >
                   <JuiceProviders
+                    /** placeholder, not used since this
+                     * project won't have an id yet **/
                     projectId={1}
-                    /** placeholder, not used **/ selectedChain={selectedChain}
+                    selectedChain={selectedChain}
                   >
                     <MissionWideCard
                       mission={
