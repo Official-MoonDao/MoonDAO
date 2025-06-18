@@ -148,8 +148,6 @@ export default function VestingWithdraw({
     }
   }
 
-  if (!vestingContract || Number(withdrawable) === 0) return null
-
   return (
     <div className="flex flex-col gap-2 bg-dark-cool p-4 rounded-lg">
       <p className="font-bold">Withdrawable</p>

@@ -22,7 +22,7 @@ export default function MissionTokenInfo({
         width={350}
         height={350}
       />
-      <p>{`If funding is completed successfully, the locked tokens are treated as follows: `}</p>
+      <p>{`If funding is completed successfully, the locked tokens are treated as follows:`}</p>
       {[
         '10% of the token is locked indefinitely on an Automated Market Maker (AMM).',
         "10% of the token is locked for one year, and vested for three years, to be held by MoonDAO's Treasury.",
@@ -60,7 +60,6 @@ export default function MissionTokenInfo({
                 : 'sepolia.etherscan.io'
             }/address/${token.tokenAddress}`}
             target="_blank"
-      <VestingWithdraw missionId={mission?.id} />
             rel="noopener noreferrer"
           >
             {'Etherscan'}
@@ -87,6 +86,7 @@ export default function MissionTokenInfo({
           {'Juicebox'}
         </Link>
       </div>
+      <VestingWithdraw missionId={mission?.id} />
     </div>
   )
 }
