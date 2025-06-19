@@ -56,14 +56,11 @@ export default function useMissionData({
 
   useEffect(() => {
     async function getStage() {
-      //console.log('missionCreatorContract', missionCreatorContract)
-      if (!missionCreatorContract || mission?.id !== null) return
       const stage: any = await readContract({
         contract: missionCreatorContract,
         method: 'stage' as string,
         params: [mission.id],
       })
-      console.log('Stage:', stage)
       setStage(+stage.toString() as MissionStage)
     }
     if (missionCreatorContract && mission?.id !== undefined) {
@@ -80,13 +77,11 @@ export default function useMissionData({
 
   useEffect(() => {
     async function getDeadline() {
-      if (!missionCreatorContract || mission?.id !== null) return
       const payHookAddress: any = await readContract({
         contract: missionCreatorContract,
         method: 'missionIdToPayHook' as string,
         params: [mission.id],
       })
-      console.log('PayHook Address:', payHookAddress)
       const payHookContract = getContract({
         client,
         address: payHookAddress,
@@ -99,9 +94,7 @@ export default function useMissionData({
         method: 'deadline' as string,
         params: [],
       })
-      console.log('Deadline:', deadline)
       setDeadline(+deadline.toString()) // Convert to milliseconds
-      console.log('le Deadline:', new Date(+deadline.toString()))
     }
     if (missionCreatorContract && mission?.id !== undefined) {
       getDeadline()
@@ -133,7 +126,6 @@ export default function useMissionData({
 
     return () => clearInterval(interval)
   }, [mission?.projectId])
-  //console.log('deadline', deadline)
 
   return { ...jbProjectData, fundingGoal, stage, backers, deadline }
 }
