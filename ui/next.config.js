@@ -21,6 +21,10 @@ module.exports = withTM(
     experimental: {
       serverComponentsExternalPackages: ['thirdweb'],
     },
+    typescript: {
+      // Enable faster TypeScript builds
+      tsconfigPath: './tsconfig.json',
+    },
     images: {
       domains: [
         'cdn.shopify.com',

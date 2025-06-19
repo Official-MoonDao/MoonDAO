@@ -3,6 +3,7 @@ import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import { usePrivy } from '@privy-io/react-auth'
 import { DEPLOYED_ORIGIN } from 'const/config'
 import dynamic from 'next/dynamic'
+import Image from 'next/image'
 import React, { useContext, useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -189,10 +190,12 @@ const ContributionEditor: React.FC = () => {
           />
           {isUploadingImage && (
             <div className="absolute inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50 rounded-b-[0px]">
-              <img
+              <Image
                 src="/assets/MoonDAO-Loading-Animation.svg"
                 alt="Uploading..."
-                className="w-16 h-16 mb-4"
+                width={64}
+                height={64}
+                className="mb-4"
               />
               <p className="text-white text-lg font-medium">
                 Uploading image...
