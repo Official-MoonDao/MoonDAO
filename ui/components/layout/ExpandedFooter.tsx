@@ -97,7 +97,7 @@ export function ExpandedFooter({
   const governLinks = [
     { text: 'Governance', href: '/governance' },
     { text: 'Proposals', href: '/vote' },
-    { text: 'Constitution', href: 'https://docs.moondao.com/Governance/Constitution?_gl=1*xwpa15*_ga*NDEyMzExNTE4LjE3MTcxMjYxODU.*_ga_QPFCD9VH46*czE3NDc4NjI2NTUkbzI1MCRnMSR0MTc0Nzg2Mjc1NCRqMCRsMCRoMA..' },
+    { text: 'Constitution', href: '/constitution' },
   ]
 
   const tokenLinks = [

@@ -76,18 +76,8 @@ module.exports = withTM(
           permanent: true,
         },
         {
-          source: '/docs/constitution',
-          destination: 'https://docs.moondao.com/Governance/Constitution',
-          permanent: true,
-        },
-        {
           source: '/docs/token',
           destination: 'https://docs.moondao.com/Governance/Governance-Tokens',
-          permanent: true,
-        },
-        {
-          source: '/docs/faq',
-          destination: 'https://docs.moondao.com/About/FAQ',
           permanent: true,
         },
         {
