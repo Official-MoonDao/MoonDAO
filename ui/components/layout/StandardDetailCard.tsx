@@ -39,14 +39,14 @@ export default function StandardDetailCard({
               {image && (
                 <div
                   id="team-citizen-image-container"
-                  className="z-40 w-[75px] h-[75px]"
+                  className="z-40 w-[120px] h-[120px]"
                 >
                   <Frame noPadding marginBottom="0px" className="aspect-square">
                     <IPFSRenderer
                       className="w-full h-full object-cover rounded-full"
                       src={image}
-                      width={50}
-                      height={50}
+                      width={120}
+                      height={120}
                       alt={title || ''}
                     />
                   </Frame>
