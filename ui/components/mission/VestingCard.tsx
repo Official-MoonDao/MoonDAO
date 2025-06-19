@@ -31,13 +31,15 @@ export default function VestingCard({
         address: String(address),
         abi: VestingABI as any,
       })
-      const [vested, withdrawn, totalReceived] = await Promise.all([
+      const [vested, withdrawn, totalReceived, beneficiary] = await Promise.all([
         readContract({ contract: vc, method: 'vestedAmount' as string, params: [] }),
         readContract({ contract: vc, method: 'totalWithdrawn' as string, params: [] }),
         readContract({ contract: vc, method: 'totalReceived' as string, params: [] }),
+        readContract({ contract: vc, method: 'beneficiary' as string, params: [] }),
+
       ])
       const available = BigInt(String(vested)) - BigInt(String(withdrawn))
-      setWithdrawable((Number(available) / 1e18).toFixed(4))
+      setWithdrawable((Number(available) / 1e18).toFixed(10))
       setTotal((Number(totalReceived) / 1e18).toFixed(4))
       setVestingContract(vc)
     }
@@ -60,7 +62,7 @@ export default function VestingCard({
     }
   }
 
-//
+
   return (
     <div className="flex flex-col gap-2 bg-dark-cool p-4 rounded-lg">
       <h2 className="text-lg">{isTeam ? "Team " : "MoonDAO "} Vesting</h2>
