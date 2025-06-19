@@ -310,9 +310,8 @@ export default function CreateMission({
         }
       )
 
-      const { cid: missionMetadataIpfsHash } = await pinBlobOrFile(
-        missionMetadataBlob
-      )
+      const { cid: missionMetadataIpfsHash } =
+        await pinBlobOrFile(missionMetadataBlob)
 
       let transaction
       if (process.env.NEXT_PUBLIC_CHAIN === 'mainnet') {
@@ -323,7 +322,9 @@ export default function CreateMission({
             selectedTeamId,
             teamMultisig,
             missionMetadataIpfsHash,
-            fundingGoalInETH * 1e18,
+            Math.trunc(fundingGoalInETH * 1e18),
+            Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60, // Expires in 28 days
+            28 * 24 * 60 * 60,
             missionData.token.tradeable,
             missionData?.token?.name,
             missionData?.token?.symbol,
@@ -338,8 +339,9 @@ export default function CreateMission({
             selectedTeamId,
             teamMultisig,
             missionMetadataIpfsHash,
-            fundingGoalInETH * 1e18,
-            Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60, // Expires in 300000 days
+            Math.trunc(fundingGoalInETH * 1e18),
+            Math.floor(new Date().getTime() / 1000) + 10 * 60, // Expires in 10 minutes
+            10 * 60, // refund period is 10 minutes
             missionData.token.tradeable,
             missionData?.token?.name,
             missionData?.token?.symbol,

@@ -5,7 +5,6 @@ import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
-import MissionCreatorSepABI from 'const/abis/MissionCreatorSep.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -46,7 +45,7 @@ import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrol
 import CreateMission from '@/components/mission/CreateMission'
 import MissionWideCard from '@/components/mission/MissionWideCard'
 
-const FEATURED_MISSION_INDEX = 21
+const FEATURED_MISSION_INDEX = 0
 
 export default function Launch({ missions }: any) {
   const router = useRouter()
@@ -80,10 +79,7 @@ export default function Launch({ missions }: any) {
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
     chain: selectedChain,
-    abi:
-      chainSlug === 'sepolia'
-        ? (MissionCreatorSepABI as any)
-        : (MissionCreatorABI as any),
+    abi: MissionCreatorABI.abi as any,
   })
 
   const missionTableContract = useContract({
@@ -119,22 +115,22 @@ export default function Launch({ missions }: any) {
   const userTeams = useTeamWearer(teamContract, selectedChain, address)
   const [userTeamsAsManager, setUserTeamsAsManager] = useState<any>()
 
-  const {
-    token: featuredMissionToken,
-    subgraphData: featuredMissionSubgraphData,
-    fundingGoal: featuredMissionFundingGoal,
-    primaryTerminalAddress: featuredMissionPrimaryTerminalAddress,
-    ruleset: featuredMissionRuleset,
-    stage: featuredMissionStage,
-    backers: featuredMissionBackers,
-  } = useMissionData({
-    mission: missions?.[FEATURED_MISSION_INDEX],
-    missionTableContract,
-    missionCreatorContract,
-    jbControllerContract,
-    jbDirectoryContract,
-    jbTokensContract,
-  })
+  //const {
+  //token: featuredMissionToken,
+  //subgraphData: featuredMissionSubgraphData,
+  //fundingGoal: featuredMissionFundingGoal,
+  //primaryTerminalAddress: featuredMissionPrimaryTerminalAddress,
+  //ruleset: featuredMissionRuleset,
+  //stage: featuredMissionStage,
+  //backers: featuredMissionBackers,
+  //} = useMissionData({
+  //mission: missions?.[FEATURED_MISSION_INDEX],
+  //missionTableContract,
+  //missionCreatorContract,
+  //jbControllerContract,
+  //jbDirectoryContract,
+  //jbTokensContract,
+  //})
 
   const { data: ethPrice } = useETHPrice(1)
 
@@ -344,36 +340,7 @@ export default function Launch({ missions }: any) {
         <div
           id="featured-missions-container"
           className="mt-[2vw] md:mt-[1vw] pb-[5vw] mb-[2vw] md:mb-[-5vw] md:pb-0 md:pt-0 relative flex flex-col justify-center items-center md:flex-row z-20 mb-[-5vw] w-full md:max-w-[1000px] mx-auto"
-        >
-          <JuiceProviders
-            projectId={missions?.[FEATURED_MISSION_INDEX].projectId}
-            selectedChain={selectedChain}
-          >
-            <MissionWideCard
-              mission={
-                {
-                  ...missions?.[FEATURED_MISSION_INDEX],
-                  metadata: {
-                    ...missions?.[FEATURED_MISSION_INDEX]?.metadata,
-                    description: '',
-                  },
-                } as any
-              }
-              stage={featuredMissionStage}
-              backers={featuredMissionBackers}
-              token={featuredMissionToken}
-              ruleset={featuredMissionRuleset}
-              subgraphData={featuredMissionSubgraphData}
-              fundingGoal={featuredMissionFundingGoal}
-              teamContract={teamContract}
-              selectedChain={selectedChain}
-              learnMore
-              showMore
-              compact
-              linkToMission
-            />
-          </JuiceProviders>
-        </div>
+        ></div>
       </section>
 
       <section

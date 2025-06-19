@@ -88,7 +88,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   const [teamNFT, setTeamNFT] = useState<any>()
 
   const [availableTokens, setAvailableTokens] = useState<string>('Loading...')
-  const [availablePayouts, setAvailablePayouts] = useState<string>('Loading...')
+  const [availablePayouts, setAvailablePayouts] = useState<number>(0)
 
   const hatsContract = useContract({
     address: HATS_ADDRESS,
@@ -140,7 +140,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
-    abi: MissionCreatorABI as any,
+    abi: MissionCreatorABI.abi as any,
     chain: selectedChain,
   })
 
@@ -152,6 +152,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     primaryTerminalAddress,
     stage,
     backers,
+    deadline,
   } = useMissionData({
     mission,
     missionTableContract,
@@ -161,7 +162,11 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     jbTokensContract,
   })
 
-  const { adminHatId, isManager } = useTeamData(teamContract, hatsContract, teamNFT)
+  const { adminHatId, isManager } = useTeamData(
+    teamContract,
+    hatsContract,
+    teamNFT
+  )
 
   const teamHats = useSubHats(selectedChain, adminHatId)
 
@@ -213,15 +218,23 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     )
   }, [ruleset])
 
-  const deadlinePassed = useMemo(() => {
-    if (!ruleset?.[0]?.start) return false
-    const deadline = new Date(ruleset[0].start * 1000 + 28 * 24 * 60 * 60 * 1000)
-    return Date.now() > deadline.getTime()
-  }, [ruleset])
+  //const deadlinePassed = useMemo(() => {
+  //if (!ruleset?.[0]?.start) return false
+  //const deadline = new Date(ruleset[0].start * 1000 + 28 * 24 * 60 * 60 * 1000)
+  //return Date.now() > deadline.getTime()
+  //}, [ruleset])
+  //const deadlinePassed = true // For now, we assume the deadline has passed for all missions
+  const deadlinePassed = Date.now() > deadline
+  //console.log('Deadline:', deadline)
 
   useEffect(() => {
     async function fetchAvailableAmounts() {
-      if (!jbTerminalContract || mission?.projectId === undefined || mission?.projectId === null) return
+      if (
+        !jbTerminalContract ||
+        mission?.projectId === undefined ||
+        mission?.projectId === null
+      )
+        return
 
       try {
         // Get available payouts
@@ -241,14 +254,14 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
         const balance: any = await readContract({
           contract: jbTerminalStoreContract,
           method: 'balanceOf' as string,
-          params: [jbTerminalContract.address, mission.projectId, JB_NATIVE_TOKEN_ADDRESS],
+          params: [
+            jbTerminalContract.address,
+            mission.projectId,
+            JB_NATIVE_TOKEN_ADDRESS,
+          ],
         })
 
-        if (balance === 0) {
-          setAvailablePayouts('No payouts to send.')
-        } else {
-          setAvailablePayouts(`${(balance / 1e18).toFixed(4)} ETH`)
-        }
+        setAvailablePayouts(balance)
 
         // Get available reserved tokens
         const reservedTokenBalance: any = await readContract({
@@ -256,23 +269,16 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
           method: 'reservedTokenBalanceOf' as string,
           params: [mission.projectId],
         })
+        //console.log('Reserved Token Balance:', reservedTokenBalance)
 
         if (reservedTokenBalance === 0) {
           setAvailableTokens('No tokens to send.')
         } else {
-          setAvailableTokens(`${(reservedTokenBalance / 1e18).toFixed(0)} Tokens`)
+          setAvailableTokens(
+            `${(Number(reservedTokenBalance) / 1e18).toFixed(0)} Tokens`
+          )
         }
       } catch (err: any) {
-        if (err?.message?.includes('store')) {
-          setAvailablePayouts('Contract not accessible.')
-        } else if (err?.message?.includes('balance')) {
-          setAvailablePayouts('Cannot check ETH balance.')
-        } else if (err?.message?.includes('token')) {
-          setAvailableTokens('Cannot check token balance.')
-        } else {
-          setAvailableTokens('No tokens to send.')
-          setAvailablePayouts('No payouts to send.')
-        }
         console.error('Error fetching available amounts:', err)
       }
     }
@@ -286,7 +292,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     try {
       const reservedTokenBalance = await readContract({
         contract: jbControllerContract,
-        method: 'currentOfTotalReservedTokens' as string,
+        method: 'pendingReservedTokenBalanceOf' as string,
         params: [mission.projectId],
       })
 
@@ -321,44 +327,36 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     if (!account || !mission?.projectId) return
 
     try {
-      const fundingCycleResult = await readContract({
-        contract: jbControllerContract,
-        method: 'currentFundingCycleOf' as string,
-        params: [mission.projectId],
-      })
-
-      // Cast the result to an array and extract metadata.
-      const fcResult = fundingCycleResult as unknown as readonly unknown[]
-      // Assuming metadata is stored at index 1 and it contains a target property.
-      const fcMetadata = fcResult[1] as { target: bigint } | undefined
-
-      if (!fcMetadata || fcMetadata.target === BigInt(0)) {
-        toast.error("Project didn't reach it's goal")
-        return
-      }
-
-      const availablePayouts = await readContract({
+      const storeAddress: any = await readContract({
         contract: jbTerminalContract,
-        method: 'balanceOf' as string,
-        params: [mission.projectId],
+        method: 'STORE' as string,
+        params: [],
+      })
+      const jbTerminalStoreContract = getContract({
+        client: serverClient,
+        address: storeAddress,
+        abi: IJBTerminalStoreABI.abi as any,
+        chain: selectedChain,
       })
 
-      let payouts: bigint | undefined
-      if (typeof availablePayouts === 'bigint') {
-        payouts = availablePayouts
-      } else if (Array.isArray(availablePayouts)) {
-        payouts = availablePayouts[0] as bigint
-      }
+      const balance: any = await readContract({
+        contract: jbTerminalStoreContract,
+        method: 'balanceOf' as string,
+        params: [
+          jbTerminalContract.address,
+          mission.projectId,
+          JB_NATIVE_TOKEN_ADDRESS,
+        ],
+      })
+      //console.log('Available payouts balance:', balance)
+      //console.log('JB_NATIVE_TOKEN_ADDRESS:', JB_NATIVE_TOKEN_ADDRESS)
+      //console.log('Mission projectId:', mission.projectId)
 
-      if (!payouts || payouts === BigInt(0)) {
-        toast.error('No payouts to send.')
-        return
-      }
-
+      //console.log('JBTerminalContract:', jbTerminalContract.address)
       const tx = prepareContractCall({
         contract: jbTerminalContract,
-        method: 'sendPayouts' as string,
-        params: [mission.projectId],
+        method: 'sendPayoutsOf' as string,
+        params: [mission.projectId, JB_NATIVE_TOKEN_ADDRESS, balance, 61166, 0],
       })
 
       await sendAndConfirmTransaction({ transaction: tx, account })
@@ -368,9 +366,14 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
       toast.error('No payouts to send.')
     }
   }
+  //console.log('isManager', isManager)
+  //console.log('account', account)
+  //console.log('deadlinePassed', deadlinePassed)
+  //
 
   function ProfileHeader() {
     const { data: nativeTokenSurplus } = useNativeTokenSurplus()
+
     return (
       <div id="citizenheader-container" className="w-[100vw]">
         <div className="w-full">
