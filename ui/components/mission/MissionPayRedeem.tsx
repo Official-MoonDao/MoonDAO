@@ -484,7 +484,7 @@ export default function MissionPayRedeem({
           method: 'quoteCrossChainPay' as string,
           params: [
             LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
-            inputValue * 1e18,
+            BigInt(Math.trunc(inputValue * 1e18)),
             mission?.projectId,
             address || ZERO_ADDRESS,
             output * 1e18,
@@ -498,7 +498,7 @@ export default function MissionPayRedeem({
           params: [
             LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
             mission?.projectId,
-            inputValue * 1e18,
+            BigInt(Math.trunc(inputValue * 1e18)),
             address || ZERO_ADDRESS,
             output * 0, // Don't put in mininum output for cross-chain pay to account for slippage
             message,
@@ -527,13 +527,13 @@ export default function MissionPayRedeem({
           params: [
             mission?.projectId,
             JB_NATIVE_TOKEN_ADDRESS,
-            inputValue * 1e18,
+            BigInt(Math.trunc(inputValue * 1e18)),
             address,
             output * 1e18,
             message,
             '0x00',
           ],
-          value: BigInt(inputValue * 1e18),
+          value: BigInt(Math.trunc(inputValue * 1e18)),
           gas: BigInt(500000),
         })
 
@@ -776,9 +776,10 @@ export default function MissionPayRedeem({
             {token?.tokenSymbol && (
               <div className="w-full flex justify-between">
                 <p>{'Receive'}</p>
-                <p id="token-output">{`${formatTokenAmount(output, 2)} ${
-                  token?.tokenSymbol
-                }`}</p>
+                <p id="token-output">{`${formatTokenAmount(
+                  output,
+                  2
+                )} ${token?.tokenSymbol}`}</p>
               </div>
             )}
 
