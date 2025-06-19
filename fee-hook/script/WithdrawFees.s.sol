@@ -13,7 +13,8 @@ contract WithdrawFees is Script, Config {
 
         address payable hookAddress = payable(FEE_HOOK_ADDRESSES[block.chainid]);
         FeeHook feeHook = FeeHook(hookAddress);
-        feeHook.checkIn();
+        //feeHook.checkIn();
+        feeHook.setWeekStart(block.timestamp - 8 days);
         feeHook.distributeFees();
 
         vm.stopBroadcast();
