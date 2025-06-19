@@ -8,11 +8,14 @@ import {
 import { useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useShallowQueryRoute } from '@/lib/utils/hooks/useShallowQueryRoute'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -22,6 +25,7 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import PaginationButtons from '@/components/layout/PaginationButtons'
 import Search from '@/components/layout/Search'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
+import BuyTeamListingModal from '@/components/subscription/BuyTeamListingModal'
 
 type MarketplaceListing = {
   id: number
@@ -45,14 +49,25 @@ type MarketplaceProps = {
 
 export default function Marketplace({ listings }: MarketplaceProps) {
   const { selectedChain } = useContext(ChainContextV5)
+  const { citizen } = useContext(CitizenContext)
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
+  const chainSlug = getChainSlug(selectedChain)
 
   const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>()
   const [input, setInput] = useState('')
   const [pageIdx, setPageIdx] = useState(1)
+  const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null)
+  const [teamNFTOwner, setTeamNFTOwner] = useState<string | null>(null)
+  const [enabledBuyListingModal, setEnabledBuyListingModal] = useState(false)
   
   const ITEMS_PER_PAGE = 8 // 4 items per row x 2 rows
+
+  const teamContract = useContract({
+    chain: selectedChain,
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI as any,
+  })
 
   useChainDefault()
 
@@ -67,6 +82,24 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   function handlePageChange(newPage: number) {
     setPageIdx(newPage)
     shallowQueryRoute({ page: newPage.toString() })
+  }
+
+  async function handleListingClick(listing: MarketplaceListing) {
+    try {
+      // Get the team NFT to find the owner (recipient for purchases)
+      const nft = await getNFT({
+        contract: teamContract,
+        tokenId: BigInt(listing.teamId),
+        includeOwner: true,
+      })
+      setTeamNFTOwner(nft?.owner || null)
+      setSelectedListing(listing)
+      setEnabledBuyListingModal(true)
+    } catch (error) {
+      console.error('Error fetching team NFT:', error)
+      // Fallback to redirect if modal fails
+      router.push(`/team/${listing.teamId}?listing=${listing.id}`)
+    }
   }
 
   useEffect(() => {
@@ -126,7 +159,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                     title={listing.title}
                     paragraph={listing.description}
                     image={listing.image}
-                    link={`/team/${listing.teamId}?listing=${listing.id}`}
+                    onClick={() => handleListingClick(listing)}
                   />
                 ))
               })()
@@ -154,6 +187,16 @@ export default function Marketplace({ listings }: MarketplaceProps) {
           )}
         </ContentLayout>
       </Container>
+
+      {/* Buy Listing Modal */}
+      {enabledBuyListingModal && selectedListing && (
+        <BuyTeamListingModal
+          selectedChain={selectedChain}
+          listing={selectedListing}
+          recipient={teamNFTOwner}
+          setEnabled={setEnabledBuyListingModal}
+        />
+      )}
     </section>
   )
 }
