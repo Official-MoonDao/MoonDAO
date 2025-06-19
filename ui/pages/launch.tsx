@@ -1,7 +1,6 @@
 import { useLogin, usePrivy } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
-import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
@@ -28,6 +27,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useMissionData from '@/lib/mission/useMissionData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -115,22 +115,22 @@ export default function Launch({ missions }: any) {
   const userTeams = useTeamWearer(teamContract, selectedChain, address)
   const [userTeamsAsManager, setUserTeamsAsManager] = useState<any>()
 
-  //const {
-  //token: featuredMissionToken,
-  //subgraphData: featuredMissionSubgraphData,
-  //fundingGoal: featuredMissionFundingGoal,
-  //primaryTerminalAddress: featuredMissionPrimaryTerminalAddress,
-  //ruleset: featuredMissionRuleset,
-  //stage: featuredMissionStage,
-  //backers: featuredMissionBackers,
-  //} = useMissionData({
-  //mission: missions?.[FEATURED_MISSION_INDEX],
-  //missionTableContract,
-  //missionCreatorContract,
-  //jbControllerContract,
-  //jbDirectoryContract,
-  //jbTokensContract,
-  //})
+  const {
+    token: featuredMissionToken,
+    subgraphData: featuredMissionSubgraphData,
+    fundingGoal: featuredMissionFundingGoal,
+    primaryTerminalAddress: featuredMissionPrimaryTerminalAddress,
+    ruleset: featuredMissionRuleset,
+    stage: featuredMissionStage,
+    backers: featuredMissionBackers,
+  } = useMissionData({
+    mission: missions?.[FEATURED_MISSION_INDEX],
+    missionTableContract,
+    missionCreatorContract,
+    jbControllerContract,
+    jbDirectoryContract,
+    jbTokensContract,
+  })
 
   const { data: ethPrice } = useETHPrice(1)
 
@@ -340,7 +340,36 @@ export default function Launch({ missions }: any) {
         <div
           id="featured-missions-container"
           className="mt-[2vw] md:mt-[1vw] pb-[5vw] mb-[2vw] md:mb-[-5vw] md:pb-0 md:pt-0 relative flex flex-col justify-center items-center md:flex-row z-20 mb-[-5vw] w-full md:max-w-[1000px] mx-auto"
-        ></div>
+        >
+          <JuiceProviders
+            projectId={missions?.[FEATURED_MISSION_INDEX].projectId}
+            selectedChain={selectedChain}
+          >
+            <MissionWideCard
+              mission={
+                {
+                  ...missions?.[FEATURED_MISSION_INDEX],
+                  metadata: {
+                    ...missions?.[FEATURED_MISSION_INDEX]?.metadata,
+                    description: '',
+                  },
+                } as any
+              }
+              stage={featuredMissionStage}
+              backers={featuredMissionBackers}
+              token={featuredMissionToken}
+              ruleset={featuredMissionRuleset}
+              subgraphData={featuredMissionSubgraphData}
+              fundingGoal={featuredMissionFundingGoal}
+              teamContract={teamContract}
+              selectedChain={selectedChain}
+              learnMore
+              showMore
+              compact
+              linkToMission
+            />
+          </JuiceProviders>
+        </div>
       </section>
 
       <section

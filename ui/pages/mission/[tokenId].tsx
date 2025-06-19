@@ -1,15 +1,14 @@
 import CitizenABI from 'const/abis/Citizen.json'
-import { useNativeTokenSurplus } from 'juice-sdk-react'
 import HatsABI from 'const/abis/Hats.json'
+import JBMultiTerminal from 'const/abis/IJBMultiTerminal.json'
+import IJBTerminalStoreABI from 'const/abis/IJBTerminalStore.json'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
-import IJBTerminalStoreABI from 'const/abis/IJBTerminalStore.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
-import JBMultiTerminal from 'const/abis/IJBMultiTerminal.json'
 import {
   CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
@@ -25,10 +24,12 @@ import {
   JB_NATIVE_TOKEN_ADDRESS,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
+import { useNativeTokenSurplus } from 'juice-sdk-react'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useEffect, useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
 import {
   getContract,
   readContract,
@@ -62,15 +63,14 @@ import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import StandardButton from '@/components/layout/StandardButton'
 import Tooltip from '@/components/layout/Tooltip'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionFundingProgressBar from '@/components/mission/MissionFundingProgressBar'
 import MissionInfo from '@/components/mission/MissionInfo'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionStat from '@/components/mission/MissionStat'
-import StandardButton from '@/components/layout/StandardButton'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
-import toast from 'react-hot-toast'
 import TeamMembers from '@/components/subscription/TeamMembers'
 
 type ProjectProfileProps = {
@@ -213,19 +213,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   useChainDefault()
 
   const duration = useMemo(() => {
-    return formatTimeUntilDeadline(
-      new Date(ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000)
-    )
+    return formatTimeUntilDeadline(new Date(deadline))
   }, [ruleset])
 
-  //const deadlinePassed = useMemo(() => {
-  //if (!ruleset?.[0]?.start) return false
-  //const deadline = new Date(ruleset[0].start * 1000 + 28 * 24 * 60 * 60 * 1000)
-  //return Date.now() > deadline.getTime()
-  //}, [ruleset])
-  //const deadlinePassed = true // For now, we assume the deadline has passed for all missions
   const deadlinePassed = Date.now() > deadline
-  //console.log('Deadline:', deadline)
 
   useEffect(() => {
     async function fetchAvailableAmounts() {
