@@ -14,6 +14,8 @@ import Container from '../components/layout/Container'
 import Footer from '../components/layout/Footer'
 import WebsiteHead from '../components/layout/Head'
 import PageEnder from '../components/layout/PreFooter'
+import { ExpandedFooter } from '../components/layout/ExpandedFooter'
+
 
 export default function Home({ linkSource }: any) {
   const router = useRouter()
@@ -50,7 +52,15 @@ export default function Home({ linkSource }: any) {
         <Callout3 />
         <PartnerSection />
         <PageEnder />
-        <Footer darkBackground={true} />
+        <ExpandedFooter 
+          callToActionImage="/images/footer-cta.png"
+          callToActionTitle="Join the Network"
+          callToActionButtonText="Learn More"
+          callToActionButtonLink="/join"
+          hasCallToAction={true}
+          darkBackground={true}
+          isFullwidth={false}
+        />
       </div>
     </Container>
   )
