@@ -23,16 +23,28 @@ function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
   const name = chain.name.replace('Testnet', '').replace('Mainnet', '')
   return (
     <button
-      className="w-full flex items-center gap-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
+      className="w-full flex items-center gap-3 bg-black/20 hover:bg-black/30 p-3 rounded-2xl border border-white/5 hover:border-white/10 transition-all duration-200"
       onClick={() => selectChain(chain)}
     >
       <Image
         src={`/icons/networks/${getChainSlug(chain)}.svg`}
-        width={13}
-        height={13}
+        width={20}
+        height={20}
         alt={chain.name}
+        onError={(e) => {
+          console.log(`NetworkSelector: Failed to load icon for chain: ${chain.name}, slug: ${getChainSlug(chain)}`)
+          const target = e.target as HTMLImageElement
+          const parent = target.parentElement
+          if (parent) {
+            target.style.display = 'none'
+            const fallback = document.createElement('div')
+            fallback.className = 'w-5 h-5 bg-white/10 rounded-full flex items-center justify-center text-white text-xs font-bold'
+            fallback.textContent = chain.name?.charAt(0) || '?'
+            parent.insertBefore(fallback, target)
+          }
+        }}
       />
-      {name}
+      <span className="text-white text-sm font-medium">{name}</span>
     </button>
   )
 }
@@ -66,14 +78,13 @@ export default function NetworkSelector({
   }, [])
 
   return (
-    //
     <div
       id="network-selector"
-      className={`${!compact && 'w-[250px]'} flex flex-col`}
+      className={`${!compact && 'w-[250px]'} flex flex-col relative`}
     >
       <div
         id="network-selector-dropdown-button"
-        className="flex items-center gap-2 p-2 bg-darkest-cool rounded-lg"
+        className="flex items-center gap-3 p-3 bg-black/20 rounded-2xl border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer"
         onClick={(e) => {
           if (e.detail === 0) return e.preventDefault()
           setDropdown((prev) => !prev)
@@ -86,9 +97,13 @@ export default function NetworkSelector({
           height={24}
           alt={selectedChain.name || ''}
         />
-        {!iconsOnly && <span>{selectedChain.name || ''}</span>}
-        <button className={`${dropdown && 'rotate-180'}`}>
-          <ChevronDownIcon height={14} width={14} />
+        {!iconsOnly && (
+          <span className="text-white text-sm font-medium flex-1">
+            {selectedChain.name || ''}
+          </span>
+        )}
+        <button className={`transition-transform duration-200 ${dropdown && 'rotate-180'}`}>
+          <ChevronDownIcon height={16} width={16} className="text-white" />
         </button>
       </div>
       {dropdown && (
@@ -96,7 +111,7 @@ export default function NetworkSelector({
           id="network-selector-dropdown"
           className={`${
             !compact && 'w-[250px]'
-          } absolute flex flex-col items-start gap-2 text-black z-10`}
+          } absolute top-full mt-2 flex flex-col gap-2 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl z-50 animate-fadeIn`}
         >
           {chains && chains.length > 0 ? (
             chains.map((chain) => (
@@ -112,23 +127,6 @@ export default function NetworkSelector({
               <NetworkOption chain={arbitrum} selectChain={selectChain} />
               <NetworkOption chain={base} selectChain={selectChain} />
               <NetworkOption chain={polygon} selectChain={selectChain} />
-              {process.env.NEXT_PUBLIC_ENV === 'dev' && (
-                <>
-                  <NetworkOption chain={sepolia} selectChain={selectChain} />
-                  <NetworkOption
-                    chain={baseSepolia}
-                    selectChain={selectChain}
-                  />
-                  <NetworkOption
-                    chain={arbitrumSepolia}
-                    selectChain={selectChain}
-                  />
-                  <NetworkOption
-                    chain={optimismSepolia}
-                    selectChain={selectChain}
-                  />
-                </>
-              )}
             </>
           )}
         </div>
