@@ -6,10 +6,11 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { PendingTransaction, SafeData } from '@/lib/safe/useSafe'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import useNetworkMistmatch from '@/lib/thirdweb/hooks/useNetworkMistmatch'
+import useNetworkMismatch from '@/lib/thirdweb/hooks/useNetworkMismatch'
 import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import SafeExecutionDisclaimer from './SafeExecutionDisclaimer'
+import SafeTransactionData from './SafeTransactionData'
 
 type SafeTransactionsProps = {
   address: string | undefined
@@ -35,7 +36,7 @@ export default function SafeTransactions({
   const [showDisclaimer, setShowDisclaimer] = useState(false)
   const [selectedTxHash, setSelectedTxHash] = useState<string | null>(null)
 
-  const isNetworkMismatch = useNetworkMistmatch()
+  const isNetworkMismatch = useNetworkMismatch()
 
   const handleSignTransaction = async (safeTxHash: string) => {
     try {
@@ -192,37 +193,17 @@ export default function SafeTransactions({
                           {tx.confirmationsRequired}
                         </p>
 
-                        {/* Transaction Data Dropdown */}
-                        <div className="mb-4">
-                          <button
-                            onClick={() =>
-                              setExpandedTx(
-                                expandedTx === tx.safeTxHash
-                                  ? null
-                                  : tx.safeTxHash
-                              )
-                            }
-                            className="text-sm text-gray-400 hover:text-gray-300 flex items-center gap-2"
-                            data-testid={`toggle-data-${tx.safeTxHash}`}
-                          >
-                            {expandedTx === tx.safeTxHash ? '▼' : '▶'} Show
-                            Transaction Data
-                          </button>
-                          {expandedTx === tx.safeTxHash && (
-                            <div
-                              className="mt-2 p-3 bg-gray-800/50 rounded-lg overflow-x-auto"
-                              data-testid={`transaction-data-${tx.safeTxHash}`}
-                            >
-                              <pre className="text-xs text-gray-300 whitespace-pre-wrap">
-                                {JSON.stringify(
-                                  tx.dataDecoded || tx.data,
-                                  null,
-                                  2
-                                )}
-                              </pre>
-                            </div>
-                          )}
-                        </div>
+                        <SafeTransactionData
+                          transaction={tx}
+                          expanded={expandedTx === tx.safeTxHash}
+                          onToggle={() =>
+                            setExpandedTx(
+                              expandedTx === tx.safeTxHash
+                                ? null
+                                : tx.safeTxHash
+                            )
+                          }
+                        />
 
                         <div
                           data-testid={`transaction-actions-${tx.safeTxHash}`}

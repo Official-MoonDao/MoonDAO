@@ -50,7 +50,6 @@ const IndexCardGrid: React.FC<CardGridProps> = ({
               paragraph={card.paragraph}
               link={card.link}
               onClick={card.onClick}
-              hovertext={card.hovertext}
             />
           </div>
         ))}

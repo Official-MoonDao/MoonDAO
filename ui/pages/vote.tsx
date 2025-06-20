@@ -119,7 +119,7 @@ export default function SpaceIndex() {
           popOverEffect={false}
           isProfile
         >
-          <div className="pb-10 w-full md:relative md:right-6">
+          <div className="pb-10 w-full">
             <NanceProvider apiUrl={NANCE_API_URL}>
               <ProposalList />
             </NanceProvider>

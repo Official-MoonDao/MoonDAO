@@ -25,8 +25,10 @@ import React, { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useMissionData from '@/lib/mission/useMissionData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -38,7 +40,7 @@ import ExplainerIcon from '@/components/launchpad/ExplainerIcon'
 import FeatureIcon from '@/components/launchpad/FeatureIcon'
 import LaunchpadBenefit from '@/components/launchpad/LaunchpadBenefit'
 import LaunchpadFAQs from '@/components/launchpad/LaunchpadFAQs'
-import Footer from '@/components/layout/Footer'
+import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import StandardButton from '@/components/layout/StandardButton'
 import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrollBar'
 import CreateMission from '@/components/mission/CreateMission'
@@ -133,6 +135,8 @@ export default function Launch({ missions }: any) {
     jbDirectoryContract,
     jbTokensContract,
   })
+
+  const { data: ethPrice } = useETHPrice(1)
 
   useEffect(() => {
     async function getUserTeamsAsManager() {
@@ -341,7 +345,10 @@ export default function Launch({ missions }: any) {
           id="featured-missions-container"
           className="mt-[2vw] md:mt-[1vw] pb-[5vw] mb-[2vw] md:mb-[-5vw] md:pb-0 md:pt-0 relative flex flex-col justify-center items-center md:flex-row z-20 mb-[-5vw] w-full md:max-w-[1000px] mx-auto"
         >
-          {missions?.[FEATURED_MISSION_INDEX] && (
+          <JuiceProviders
+            projectId={missions?.[FEATURED_MISSION_INDEX].projectId}
+            selectedChain={selectedChain}
+          >
             <MissionWideCard
               mission={
                 {
@@ -365,7 +372,7 @@ export default function Launch({ missions }: any) {
               compact
               linkToMission
             />
-          )}
+          </JuiceProviders>
         </div>
       </section>
 
@@ -734,9 +741,14 @@ export default function Launch({ missions }: any) {
           <LaunchpadFAQs />
         </div>
       </section>
-      <div className="bg-[#020617] w-full flex justify-center">
-        <Footer darkBackground={true} centerContent />
-      </div>
+      <ExpandedFooter
+        callToActionTitle="Join the Network"
+        callToActionBody="Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!"
+        callToActionImage="/assets/SAN-logo-dark.svg"
+        callToActionButtonText="Join the Network"
+        callToActionButtonLink="/join"
+        hasCallToAction={true}
+      />
     </>
   )
 }

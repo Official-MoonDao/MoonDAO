@@ -89,5 +89,41 @@ describe('<SafeModal />', () => {
       cy.get('[data-testid="threshold-input"]').should('exist')
       cy.get('[data-testid="threshold-max"]').should('contain', '/ 2')
     })
+
+    it('Updates threshold when valid value is entered', () => {
+      cy.get('[data-testid="threshold-input"]').clear()
+      cy.get('[data-testid="threshold-input"]').type('1')
+      cy.get('[data-testid="update-threshold-button"]').should(
+        'not.be.disabled'
+      )
+      cy.get('[data-testid="update-threshold-button"]').click()
+      cy.wrap(props.safeData.changeThreshold).should('have.been.calledWith', 1)
+    })
+
+    it('Disables threshold input when there is only one signer', () => {
+      // Mock safe data with only one owner
+      props.safeData.owners = ['0x123...']
+      props.safeData.threshold = 1
+
+      cy.mount(
+        <TestnetProviders>
+          <SafeModal {...props} />
+        </TestnetProviders>
+      )
+
+      cy.get('[data-testid="threshold-input"]').should('be.disabled')
+      cy.get('[data-testid="update-threshold-button"]').should('be.disabled')
+    })
+
+    it('Disables update button when threshold equals current value', () => {
+      cy.get('[data-testid="threshold-input"]').type('2') // Current threshold is 2
+      cy.get('[data-testid="update-threshold-button"]').should('be.disabled')
+    })
+
+    it('Prevents threshold from exceeding number of signers', () => {
+      cy.get('[data-testid="threshold-input"]').clear()
+      cy.get('[data-testid="threshold-input"]').type('3') // Try to set threshold to 3 when there are only 2 signers
+      cy.get('[data-testid="update-threshold-button"]').should('be.disabled')
+    })
   })
 })
