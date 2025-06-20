@@ -41,7 +41,7 @@ export default function useNavigation(citizen: any) {
           },
           {
             name: 'Constitution',
-            href: 'https://docs.moondao.com/Governance/Constitution',
+            href: '/constitution',
           },
           {
             name: '$MOONEY Token',
@@ -82,7 +82,7 @@ export default function useNavigation(citizen: any) {
           { name: 'About', href: '/about' },
           { name: 'Events', href: '/events' },
           { name: 'Analytics', href: '/analytics' },
-          { name: 'FAQ', href: 'https://docs.moondao.com/About/FAQ' },
+          { name: 'FAQ', href: '/faq' },
         ],
       },
       {

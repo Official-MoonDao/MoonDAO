@@ -67,7 +67,7 @@ const cardData = [
     icon: '/assets/icon-contract.svg',
     iconAlt: 'FAQ',
     header: 'FAQ',
-    link: 'https://docs.moondao.com/About/FAQ',
+    link: '/faq',
     hovertext: 'Read the FAQ',
     paragraph: (
       <>Find answers to common questions about MoonDAO, projects, and more.</>
