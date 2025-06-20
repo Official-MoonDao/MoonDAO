@@ -4,6 +4,7 @@ import {
   RocketLaunchIcon,
   XMarkIcon,
 } from '@heroicons/react/20/solid'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import { usePrivy } from '@privy-io/react-auth'
 import { DEFAULT_CHAIN_V5, IPFS_GATEWAY } from 'const/config'
@@ -942,25 +943,32 @@ export default function CreateMission({
                     />
                   }
                 >
-                  <MissionWideCard
-                    mission={
-                      {
-                        metadata: {
-                          name: missionData.name,
-                          tagline: missionData.tagline,
-                          description: missionData.description,
-                          logoUri: missionData.logoUri,
-                        },
-                      } as any
-                    }
-                    token={missionData.token}
-                    fundingGoal={fundingGoalInETH * 1e18 || 0}
-                    subgraphData={{}}
-                    missionImage={missionLogoUri}
-                    showMore={true}
-                    showMoreButton={false}
-                    onlyGoalStat
-                  />
+                  <JuiceProviders
+                    /** placeholder, not used since this
+                     * project won't have an id yet **/
+                    projectId={1}
+                    selectedChain={selectedChain}
+                  >
+                    <MissionWideCard
+                      mission={
+                        {
+                          metadata: {
+                            name: missionData.name,
+                            tagline: missionData.tagline,
+                            description: missionData.description,
+                            logoUri: missionData.logoUri,
+                          },
+                        } as any
+                      }
+                      token={missionData.token}
+                      fundingGoal={fundingGoalInETH * 1e18 || 0}
+                      subgraphData={{}}
+                      missionImage={missionLogoUri}
+                      showMore={true}
+                      showMoreButton={false}
+                      onlyGoalStat
+                    />
+                  </JuiceProviders>
                   <MissionTokenomicsExplainer />
                   <ConditionCheckbox
                     id="terms-checkbox"
