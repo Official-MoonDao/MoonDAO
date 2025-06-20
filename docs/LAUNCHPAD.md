@@ -135,7 +135,7 @@ These contract-defined percentages differ from the UI description above.
 ## Testing Plan
 
 0. Unit testing (MissionTest.t.sol) [done]
-0. (Code coverage)[https://app.codecov.io/gh/Official-MoonDao/MoonDAO/pull/553/tree/subscription-contracts/src?dropdown=coverage] (95% coverage) [currently at 89% average with 3 files under 95%]
+0. [Code coverage](https://app.codecov.io/gh/Official-MoonDao/MoonDAO/pull/553/tree/subscription-contracts/src?dropdown=coverage) (95% coverage) [currently at 89% average with 3 files under 95%]
 0. Cypress integration test [complete by 6/23]
 0. UI testing, check functionality against spec [complete by 6/24]
     - Test mission creation
