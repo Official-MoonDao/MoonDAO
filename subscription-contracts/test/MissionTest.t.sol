@@ -530,7 +530,7 @@ contract MissionTest is Test, Config {
         uint256 tokensTeamVesting = jbTokens.totalBalanceOf(address(teamVesting), projectId);
         uint256 tokensMoonDAOVesting = jbTokens.totalBalanceOf(address(moonDAOVesting), projectId);
         assertEq(tokensTeamVesting, 300 * 1e18);
-        assertEq(tokensMoonDAOVesting, 150 * 1e18);
+        assertEq(tokensMoonDAOVesting, 175 * 1e18);
         assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 0);
         assertEq(jbTokens.totalBalanceOf(teamAddress, projectId), 0);
 
@@ -539,25 +539,25 @@ contract MissionTest is Test, Config {
         assertEq(moonDAOVesting.vestedAmount(), 0);
         skip(165 days);
         assertEq(teamVesting.vestedAmount(), 300/4 * 1e18);
-        assertEq(moonDAOVesting.vestedAmount(), 150/4 * 1e18);
+        assertEq(moonDAOVesting.vestedAmount(), 175/4 * 1e18);
 
         vm.startPrank(TREASURY);
         moonDAOVesting.withdraw();
         vm.stopPrank();
-        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 150/4 * 1e18);
+        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 175/4 * 1e18);
 
         skip(365 days);
         assertEq(teamVesting.vestedAmount(), 300/2 * 1e18);
-        assertEq(moonDAOVesting.vestedAmount(), 150/2 * 1e18);
+        assertEq(moonDAOVesting.vestedAmount(), 175/2 * 1e18);
 
         vm.startPrank(TREASURY);
         moonDAOVesting.withdraw();
         vm.stopPrank();
-        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 150/2 * 1e18);
+        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 175/2 * 1e18);
 
         skip(730 days);
         assertEq(teamVesting.vestedAmount(), 300 * 1e18);
-        assertEq(moonDAOVesting.vestedAmount(), 150 * 1e18);
+        assertEq(moonDAOVesting.vestedAmount(), 175 * 1e18);
 
         vm.startPrank(teamAddress);
         vm.expectRevert("Only beneficiary can withdraw");
@@ -566,7 +566,7 @@ contract MissionTest is Test, Config {
 
         vm.startPrank(TREASURY);
         moonDAOVesting.withdraw();
-        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 150 * 1e18);
+        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 175 * 1e18);
 
         vm.expectRevert("No tokens available for withdrawal");
         moonDAOVesting.withdraw();
@@ -667,7 +667,7 @@ contract MissionTest is Test, Config {
 
         PoolDeployer poolDeployer = PoolDeployer(payable(missionCreator.missionIdToPoolDeployer(missionId)));
         uint256 tokensPoolDeployer = jbTokens.totalBalanceOf(address(poolDeployer), projectId);
-        assertEq(tokensPoolDeployer, 1_000 * 1e18);
+        assertEq(tokensPoolDeployer, 500 * 1e18);
         // JB splits have 7 decimals of precision, so check up to 6 decimals
         assertApproxEqRel(address(poolDeployer).balance, terminalBalance * 5 / 100, 0.0000001e18);
         poolDeployer.createAndAddLiquidity();
