@@ -101,31 +101,78 @@ function SendModal({
   formattedBalances,
 }: any) {
   const chainSlug = getChainSlug(selectedChain)
-  const [to, setTo] = useState<string>()
-  const [amount, setAmount] = useState<number>()
+  const [to, setTo] = useState<string>('')
+  const [amount, setAmount] = useState<string>('')
   const [selectedToken, setSelectedToken] = useState<string>('native')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const [balance, setBalance] = useState()
-
-  const selectedTokenIcon = useMemo(() => {
-    let icon
+  const balance = useMemo(() => {
     if (selectedToken === 'native') {
-      icon = networkIcon
+      return nativeBalance
     } else {
-      icon = (
-        <Image
-          src={`/coins/${selectedToken.toUpperCase()}.${
-            selectedToken === 'mooney' ? 'png' : 'svg'
-          }`}
-          width={30}
-          height={30}
-          alt=""
-        />
-      )
+      return formattedBalances[selectedToken] || 0
     }
+  }, [selectedToken, nativeBalance, formattedBalances])
 
-    return icon
-  }, [selectedToken, networkIcon])
+  const selectedTokenData = useMemo(() => {
+    const tokens = {
+      native: {
+        symbol: selectedNativeToken[chainSlug],
+        icon: networkIcon,
+        description: 'Native Token'
+      },
+      mooney: {
+        symbol: 'MOONEY',
+        icon: (
+          <Image
+            src="/coins/MOONEY.png"
+            width={24}
+            height={24}
+            alt="MOONEY"
+            className="rounded-full"
+          />
+        ),
+        description: 'Governance Token'
+      },
+      dai: {
+        symbol: 'DAI',
+        icon: (
+          <Image
+            src="/coins/DAI.svg"
+            width={24}
+            height={24}
+            alt="DAI"
+          />
+        ),
+        description: 'Stablecoin'
+      },
+      usdc: {
+        symbol: 'USDC',
+        icon: (
+          <Image
+            src="/coins/USDC.svg"
+            width={24}
+            height={24}
+            alt="USDC"
+          />
+        ),
+        description: 'USD Coin'
+      },
+      usdt: {
+        symbol: 'USDT',
+        icon: (
+          <Image
+            src="/coins/USDT.svg"
+            width={24}
+            height={24}
+            alt="USDT"
+          />
+        ),
+        description: 'Tether USD'
+      }
+    }
+    return tokens[selectedToken as keyof typeof tokens]
+  }, [selectedToken, networkIcon, chainSlug])
 
   const tokenContracts: { [key: string]: any } = {
     mooney: mooneyContract,
@@ -134,113 +181,183 @@ function SendModal({
     usdt: usdtContract,
   }
 
-  useEffect(() => {
-    if (selectedToken === 'native') {
-      setBalance(nativeBalance)
-    } else {
-      setBalance(formattedBalances[selectedToken])
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      if (!to || !amount) {
+        return toast.error('Please fill in all fields.')
+      } else if (to.length !== 42 || !to.startsWith('0x')) {
+        return toast.error('Invalid address.')
+      } else if (Number(amount) <= 0) {
+        return toast.error('Invalid amount.')
+      }
+
+      const numAmount = Number(amount)
+      const formattedAmount = ethers.utils.parseEther(amount.toString())
+
+      let receipt
+      if (selectedToken === 'native') {
+        if (numAmount > nativeBalance) {
+          return toast.error('Insufficient funds.')
+        }
+
+        receipt = await account?.sendTransaction({
+          to,
+          value: formattedAmount,
+        })
+      } else {
+        if (numAmount > formattedBalances[selectedToken]) {
+          return toast.error('Insufficient funds.')
+        }
+
+        const transaction = prepareContractCall({
+          contract: tokenContracts[selectedToken],
+          method: 'transfer' as string,
+          params: [to, formattedAmount],
+        })
+
+        receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+      }
+      
+      if (receipt) {
+        toast.success('Transaction sent successfully!')
+        setTo('')
+        setAmount('')
+        setEnabled(false)
+      }
+    } catch (err: any) {
+      console.error('Transaction error:', err)
+      toast.error(err?.message || 'Transaction failed. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
-  }, [selectedToken, nativeBalance, formattedBalances])
+  }
 
   return (
     <Modal id="send-modal-backdrop" setEnabled={setEnabled}>
-      <form
-        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md"
-        onSubmit={async (e) => {
-          e.preventDefault()
-
-          if (!to || !amount) {
-            return toast.error('Please fill in all fields.')
-          } else if (to.length !== 42 || !to.startsWith('0x')) {
-            return toast.error('Invalid address.')
-          } else if (amount <= 0) {
-            return toast.error('Invalid amount.')
-          }
-
-          const formattedAmount = ethers.utils.parseEther(amount.toString())
-
-          try {
-            let receipt
-            if (selectedToken === 'native') {
-              if (+amount > nativeBalance)
-                return toast.error('Insufficient funds.')
-
-              receipt = await account?.sendTransaction({
-                to,
-                value: formattedAmount,
-              })
-            } else {
-              if (+amount > formattedBalances[selectedToken])
-                return toast.error('Insufficient funds.')
-
-              const transaction = prepareContractCall({
-                contract: tokenContracts[selectedToken],
-                method: 'transfer' as string,
-                params: [to, formattedAmount],
-              })
-
-              receipt = await sendAndConfirmTransaction({
-                transaction,
-                account,
-              })
-            }
-            if (receipt) {
-              toast.success('Your funds have been transferred.')
-            }
-          } catch (err) {
-            console.log(err)
-          }
-        }}
-      >
-        <div className="w-full flex items-center justify-between">
-          <div>
-            <h2 className="font-GoodTimes">{'Send Funds'}</h2>
+      <div className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+              <ArrowUpRightIcon className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Send Funds</h2>
+              <p className="text-gray-300 text-sm">{selectedChain.name}</p>
+            </div>
           </div>
           <button
             type="button"
-            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200"
             onClick={() => setEnabled(false)}
           >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+            <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
           </button>
         </div>
 
-        <NetworkSelector iconsOnly />
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Token Selection */}
+          <div className="space-y-3">
+            <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+              Select Token
+            </label>
+            <div className="relative">
+              <select
+                className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white appearance-none cursor-pointer hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                value={selectedToken}
+                onChange={({ target }) => setSelectedToken(target.value)}
+              >
+                <option value="native">{selectedNativeToken[chainSlug]}</option>
+                <option value="mooney">MOONEY</option>
+                <option value="dai">DAI</option>
+                <option value="usdc">USDC</option>
+                <option value="usdt">USDT</option>
+              </select>
+              <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+            </div>
+            
+            {/* Selected Token Display */}
+            <div className="bg-black/20 rounded-lg p-4 border border-white/5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center">
+                    {selectedTokenData.icon}
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">{selectedTokenData.symbol}</p>
+                    <p className="text-gray-400 text-xs">{selectedTokenData.description}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-white">{Number(balance).toLocaleString()}</p>
+                  <p className="text-gray-400 text-xs">Available</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <div className="flex gap-4 items-center">
-          <select
-            className="`w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-            onChange={({ target }) => setSelectedToken(target.value)}
+          {/* Recipient Address */}
+          <div className="space-y-3">
+            <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+              Recipient Address
+            </label>
+            <input
+              type="text"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              placeholder="0x..."
+              className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+            />
+          </div>
+
+          {/* Amount */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+                Amount
+              </label>
+              <button
+                type="button"
+                className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
+                onClick={() => setAmount(balance.toString())}
+              >
+                Max: {Number(balance).toLocaleString()}
+              </button>
+            </div>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.0"
+              step="any"
+              min="0"
+              className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+            />
+          </div>
+
+          {/* Send Button */}
+          <button
+            type="submit"
+            disabled={isLoading || !to || !amount || Number(amount) <= 0}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50"
           >
-            <option value={'native'}>{selectedNativeToken[chainSlug]}</option>
-            <option value={'mooney'}>{'MOONEY'}</option>
-            <option value={'dai'}>{'DAI'}</option>
-            <option value={'usdc'}>{'USDC'}</option>
-            <option value={'usdt'}>{'USDT'}</option>
-          </select>
-
-          {selectedTokenIcon}
-
-          <p>{balance && balance}</p>
-        </div>
-
-        <FormInput
-          value={to}
-          onChange={({ target }: any) => setTo(target.value)}
-          placeholder="To"
-        />
-        <FormInput
-          value={amount}
-          onChange={({ target }: any) => setAmount(target.value)}
-          placeholder="Amount"
-        />
-        <PrivyWeb3Button
-          className="w-full"
-          label="Send"
-          type="submit"
-          action={() => {}}
-        />
-      </form>
+            {isLoading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Sending...</span>
+              </div>
+            ) : (
+              'Send Transaction'
+            )}
+          </button>
+        </form>
+      </div>
     </Modal>
   )
 }
