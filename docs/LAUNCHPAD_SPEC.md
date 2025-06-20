@@ -57,9 +57,9 @@ The UI component `MissionTokenomicsExplainer` outlines how funds are intended to
 ```
 Goal & Timeline: Missions have 28 days, or one lunar cycle, to raise their Funding Goal; otherwise, the Mission will not proceed and all contributions will be refunded.
 ETH Price Fluctuations: The value of ETH may fluctuate during the mission campaign, meaning the actual funds raised could be higher or lower than initially anticipated. Teams should account for potential volatility.
-Fund Allocation: Teams can withdraw up to 80% of their total raised funds. The remaining 20% is allocated as follows:
-  • 10% to liquidity to ensure tradability and market stability.
-  • 7.5% to MoonDAO to support the broader space acceleration ecosystem.
+Fund Allocation: Teams can withdraw up to 90% of their total raised funds. The remaining 20% is allocated as follows:
+  • 5% to liquidity to ensure tradability and market stability.
+  • 2.5% to MoonDAO to support the broader space acceleration ecosystem.
   • 2.5% to Juicebox, the underlying protocol powering the fundraising infrastructure.
 ```
 [MissionTokenomicsExplainer.tsx&nbsp;L7-L21](../ui/components/mission/MissionTokenomicsExplainer.tsx#L7-L21)
@@ -68,8 +68,8 @@ Additionally, `MissionTokenInfo` describes token distribution:
 
 ```
 50% of the total tokens will go to the contributor when funding the project, and the other 50% are locked for at least one year, allocated as follows:
-  • 10% of the token is locked indefinitely on an Automated Market Maker (AMM).
-  • 10% of the token is locked for one year, and vested for three years, to be held by MoonDAO's Treasury.
+  • 2.5% of the token is locked indefinitely on an Automated Market Maker (AMM).
+  • 17.5% of the token is locked for one year, and vested for three years, to be held by MoonDAO's Treasury.
   • 30% of the token is locked for one year, and vested for three years, to be held by the Mission Team to distribute how they see fit.
 If the project does not launch (their funding goal was not met), then contributors can get their full contribution back.
 ```
@@ -100,7 +100,7 @@ Token distribution uses reserved splits:
 ```solidity
 // MoonDAO token split
 splitGroups[1].splits[0] = JBSplit({
-    percent: 300_000_000, // 15% of total tokens
+    percent: 300_000_000, // 17.5% of total tokens
     beneficiary: payable(address(moonDAOVesting))
 });
 // Project team split
@@ -110,7 +110,7 @@ splitGroups[1].splits[1] = JBSplit({
 });
 // AMM liquidity split
 splitGroups[1].splits[2] = JBSplit({
-    percent: 100_000_000, // 5% of total tokens
+    percent: 50_000_000, // 2.5% of total tokens
     beneficiary: payable(address(poolDeployer))
 });
 ```
@@ -125,11 +125,11 @@ These contract-defined percentages differ from the UI description above.
 
 ## Observed Inconsistencies
 
-1. **Funding Allocation Percentages**  
+1. **Funding Allocation Percentages**
    The UI specifies 80% available to the team, with 10% liquidity, 7.5% to MoonDAO, and 2.5% to Juicebox. The contract splits give roughly 90% to the team, 5% to liquidity, and 2.5% to MoonDAO after the Juicebox fee. This indicates the code and UI are not aligned.
-2. **Token Distribution**  
-   The UI states 10% of total tokens go to liquidity, 10% to MoonDAO, and 30% to the team. The contract reserves 5% to liquidity, 15% to MoonDAO, and 30% to the team. Again the values do not match.
-3. **Refund Window**  
+2. **Token Distribution**
+   The UI states 10% of total tokens go to liquidity, 10% to MoonDAO, and 30% to the team. The contract reserves 2.5% to liquidity, 17.5% to MoonDAO, and 30% to the team. Again the values do not match.
+3. **Refund Window**
    The contracts enforce that refunds must be claimed within `refundPeriod` after the deadline. The UI text does not mention this explicit period, which could cause confusion.
 
 ## Conclusion
