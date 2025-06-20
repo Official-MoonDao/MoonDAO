@@ -23,6 +23,18 @@
       "browser": "edge",
       "os": "Windows 10",
       "versions": ["latest"]
+    },
+    {
+      "browser": "safari",
+      "os": "iOS",
+      "device": "iPhone 14",
+      "versions": ["latest"]
+    },
+    {
+      "browser": "chrome",
+      "os": "android",
+      "device": "Samsung Galaxy S23",
+      "versions": ["latest"]
     }
   ],
   "run_settings": {
@@ -36,7 +48,7 @@
       "@types/node": "latest"
     },
     "project_name": "MoonDAO",
-    "build_name": "MoonDAO-E2E-$(date +%Y-%m-%d_%H-%M-%S)",
+    "build_name": "MoonDAO-E2E-Tests",
     "parallels": 5,
     "exclude": [
       ".next/**",
