@@ -35,8 +35,8 @@
       "typescript": "latest",
       "@types/node": "latest"
     },
-    "project_name": "MoonDAO Cypress Tests",
-    "build_name": "BUILD_INFO",
+    "project_name": "MoonDAO",
+    "build_name": "MoonDAO-E2E-$(date +%Y-%m-%d_%H-%M-%S)",
     "parallels": 5,
     "exclude": [
       ".next/**",
