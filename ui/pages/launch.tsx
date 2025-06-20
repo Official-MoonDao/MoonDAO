@@ -179,7 +179,7 @@ export default function Launch({ missions }: any) {
         status: status,
       })
     }
-  }, [status])
+  }, [status, shallowQuery])
 
   useEffect(() => {
     if (router.query.status) {
@@ -192,7 +192,7 @@ export default function Launch({ missions }: any) {
     ) {
       login()
     }
-  }, [router.query.status, account])
+  }, [router.query.status, account, login])
 
   if (status === 'create') {
     return (
