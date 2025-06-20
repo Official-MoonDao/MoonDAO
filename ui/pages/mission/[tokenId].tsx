@@ -268,7 +268,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     fetchAvailableAmounts()
   }, [jbTerminalContract, jbControllerContract, mission?.projectId])
 
-
   const sendReservedTokens = async () => {
     if (!account || !mission?.projectId) return
 
@@ -565,6 +564,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       </div>
                     )}
                     {/* Send payouts and tokens Buttons - only shown to managers */}
+
                     {account && deadlinePassed && isManager && (
                       <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto sm:absolute sm:right-2 sm:top-[250px]">
                         <PrivyWeb3Button
@@ -572,7 +572,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           className="gradient-2 rounded-full noPadding leading-none flex-1 sm:w-[180px]"
                           label={
                             <span className="whitespace-nowrap">
-                              Send Tokens
+                              Withdraw Tokens
                             </span>
                           }
                           action={sendReservedTokens}
@@ -583,7 +583,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           className="gradient-2 rounded-full noPadding leading-none flex-1 sm:w-[180px]"
                           label={
                             <span className="whitespace-nowrap">
-                              Send Payouts
+                              Withdraw ETH
                             </span>
                           }
                           action={sendPayouts}
