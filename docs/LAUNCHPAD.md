@@ -132,6 +132,22 @@ These contract-defined percentages differ from the UI description above.
 3. **Refund Window**
    The contracts enforce that refunds must be claimed within `refundPeriod` after the deadline. The UI text does not mention this explicit period, which could cause confusion.
 
-## Conclusion
+## Testing Plan
 
-The Launchpad manages mission fundraising with a clear 28‑day timeline, defined stages, and an on-chain refund process. However, tokenomics in the UI differ from the percentages hard-coded in the smart contracts. Documentation or code updates are recommended to resolve these inconsistencies and ensure contributors have accurate expectations.
+0. Unit testing (MissionTest.t.sol)
+0. Code coverage (95% coverage)
+0. Cypress integration test
+0. UI testing
+    - Test mission creation
+    - Test mission funding
+    - Test mission refund
+    - Test mission payout
+    - Test mission token distribution
+    - Test mission stages
+    - Test token vesting
+    - Test token AMM liquidity
+    - Test vMOONEY AMM rewards
+0. Mainnet deployment
+    - Deploy contracts to mainnet (FeeHook, MissionCreator, MissionTable)
+    - Repeat unit testing, integration testing, and code coverage
+    - Repeat UI testing
