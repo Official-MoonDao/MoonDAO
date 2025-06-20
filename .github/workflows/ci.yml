@@ -91,7 +91,7 @@ jobs:
       # Run Cypress E2E tests on BrowserStack with local testing enabled
       - name: Run Cypress E2E Testing on BrowserStack
         working-directory: ui
-        run: BROWSERSTACK_LOCAL=true browserstack-cypress run
+        run: BROWSERSTACK_LOCAL=true browserstack-cypress run --force-upload
         env:
           BROWSERSTACK_LOCAL: true
 
