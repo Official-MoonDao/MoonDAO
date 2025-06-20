@@ -778,22 +778,22 @@ export const getStaticProps: GetStaticProps = async () => {
           const metadataURI = await readContract({
             contract: jbV4ControllerContract,
             method: 'uriOf' as string,
-            params: [missionRow.projectId],
+            params: [missionRow?.projectId],
           })
 
           const metadataRes = await fetch(getIPFSGateway(metadataURI))
           const metadata = await metadataRes.json()
           return {
-            id: missionRow.id,
-            teamId: missionRow.teamId,
-            projectId: missionRow.projectId,
+            id: missionRow?.id,
+            teamId: missionRow?.teamId,
+            projectId: missionRow?.projectId,
             metadata: metadata,
           }
         } catch (error) {
           return {
-            id: missionRow.id,
-            teamId: missionRow.teamId,
-            projectId: missionRow.projectId,
+            id: missionRow?.id,
+            teamId: missionRow?.teamId,
+            projectId: missionRow?.projectId,
           }
         }
       })
