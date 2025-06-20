@@ -535,8 +535,10 @@ contract MissionTest is Test, Config {
         assertEq(jbTokens.totalBalanceOf(teamAddress, projectId), 0);
 
         skip(200 days);
-        assertEq(teamVesting.vestedAmount(), 0);
-        assertEq(moonDAOVesting.vestedAmount(), 0);
+        if (block.chainid != SEP){ // Sepolia has a no cliff for easier testing
+          assertEq(teamVesting.vestedAmount(), 0);
+          assertEq(moonDAOVesting.vestedAmount(), 0);
+        }
         skip(165 days);
         assertEq(teamVesting.vestedAmount(), 300/4 * 1e18);
         assertEq(moonDAOVesting.vestedAmount(), 150/4 * 1e18);
