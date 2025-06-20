@@ -26,6 +26,7 @@ export default function useMissionData({
   const [stage, setStage] = useState<MissionStage>()
   const [backers, setBackers] = useState<any[]>([])
   const [deadline, setDeadline] = useState<number>(0)
+  const [totalRaised, setTotalRaised] = useState<number>(0)
 
   const jbProjectData = useJBProjectData({
     projectId: mission?.projectId,
