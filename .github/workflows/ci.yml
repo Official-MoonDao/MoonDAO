@@ -50,32 +50,52 @@ jobs:
       NEXTAUTH_SECRET: ${{secrets.NEXTAUTH_SECRET}}
       JB_SEPOLIA_SUBGRAPH_ENDPOINT: ${{secrets.JB_SEPOLIA_SUBGRAPH_ENDPOINT}}
       JB_SEPOLIA_SUBGRAPH_API_KEY: ${{secrets.JB_SEPOLIA_SUBGRAPH_API_KEY}}
-      BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
-      BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
+      # BrowserStack Environment Setup - Required before any other BrowserStack actions
+      - name: "BrowserStack Env Setup"
+        uses: "browserstack/github-actions/setup-env@master"
+        with:
+          username: ${{ secrets.BROWSERSTACK_USERNAME }}
+          access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          build-name: "BUILD_INFO"
+          project-name: "REPO_NAME"
+
       - name: Install dependencies
         working-directory: ui
         run: yarn install
 
-      - name: Install BrowserStack CLI
+      # Build the web application
+      - name: Build next app
         working-directory: ui
-        run: yarn add -D @browserstack/cli
+        run: yarn build
 
-      # Run cypress E2E tests on BrowserStack
+      # Start the web server for testing
+      - name: Start server
+        working-directory: ui
+        run: yarn next start -p 3000 &
+        env:
+          BROWSERSTACK_LOCAL: true
+
+      # Wait for the server to be ready
+      - name: Wait for server
+        run: sleep 10
+
+      # Install browserstack-cypress-cli globally
+      - name: Install browserstack-cypress-cli
+        run: npm install -g browserstack-cypress-cli
+
+      # Run Cypress E2E tests on BrowserStack with local testing enabled
       - name: Run Cypress E2E Testing on BrowserStack
         working-directory: ui
-        run: |
-          npx browserstack-cypress run \
-            --username $BROWSERSTACK_USERNAME \
-            --access-key $BROWSERSTACK_ACCESS_KEY \
-            --parallels 5 \
-            --browsers chrome@latest,firefox@latest,safari@latest,edge@latest,chrome@latest-1
+        run: BROWSERSTACK_LOCAL=true browserstack-cypress run
+        env:
+          BROWSERSTACK_LOCAL: true
 
-      #Run cypress component tests
+      # Run cypress component tests
       - name: Run Cypress Component Testing
         uses: cypress-io/github-action@v4.1.0
         with:
