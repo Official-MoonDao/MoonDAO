@@ -323,8 +323,8 @@ export default function CreateMission({
             teamMultisig,
             missionMetadataIpfsHash,
             Math.trunc(fundingGoalInETH * 1e18),
-            Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60, // Expires in 28 days
-            28 * 24 * 60 * 60,
+            Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60, // Deadline: 28 days
+            28 * 24 * 60 * 60, // Refund period: 28 days
             missionData.token.tradeable,
             missionData?.token?.name,
             missionData?.token?.symbol,
@@ -340,8 +340,8 @@ export default function CreateMission({
             teamMultisig,
             missionMetadataIpfsHash,
             Math.trunc(fundingGoalInETH * 1e18),
-            Math.floor(new Date().getTime() / 1000) + 10 * 60, // Expires in 10 minutes
-            10 * 60, // refund period is 10 minutes
+            Math.floor(new Date().getTime() / 1000) + 10 * 60, // Deadline: 10 minutes
+            10 * 60, // Refund period: 10 minutes
             missionData.token.tradeable,
             missionData?.token?.name,
             missionData?.token?.symbol,
