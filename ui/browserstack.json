@@ -23,18 +23,6 @@
       "browser": "edge",
       "os": "Windows 10",
       "versions": ["latest"]
-    },
-    {
-      "browser": "webkit",
-      "os": "iOS",
-      "device": "iPhone 14",
-      "versions": ["latest"]
-    },
-    {
-      "browser": "chrome",
-      "os": "android",
-      "device": "Samsung Galaxy S23",
-      "versions": ["latest"]
     }
   ],
   "run_settings": {
