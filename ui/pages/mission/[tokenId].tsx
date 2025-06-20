@@ -287,6 +287,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     }
   }
 
+  console.log('token', token)
   const sendPayouts = async () => {
     if (!account || !mission?.projectId) return
 
@@ -566,17 +567,17 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     {/* Send payouts and tokens Buttons - only shown to managers */}
 
                     {account && deadlinePassed && isManager && (
-                      <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto sm:absolute sm:right-2 sm:top-[250px]">
+                      <div className="flex flex-col gap-4 -mt-8 w-full sm:w-auto sm:absolute sm:right-2 sm:top-[250px]">
                         <PrivyWeb3Button
                           requiredChain={DEFAULT_CHAIN_V5}
-                          className="gradient-2 rounded-full noPadding leading-none flex-1 sm:w-[180px]"
+                          className="gradient-2 rounded-full w-full noPadding leading-none flex-1 sm:w-[250px]"
                           label={
                             <span className="whitespace-nowrap">
                               Withdraw{' '}
                               {ethers.utils.formatEther(
                                 availableTokens.toString()
                               )}{' '}
-                              Tokens
+                              {token?.tokenSymbol || 'Tokens'}
                             </span>
                           }
                           action={sendReservedTokens}
@@ -584,7 +585,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                         />
                         <PrivyWeb3Button
                           requiredChain={DEFAULT_CHAIN_V5}
-                          className="gradient-2 rounded-full noPadding leading-none flex-1 sm:w-[180px]"
+                          className="gradient-2 rounded-full noPadding w-full leading-none flex-1 sm:w-[250px]"
                           label={
                             <span className="whitespace-nowrap">
                               Withdraw{' '}
