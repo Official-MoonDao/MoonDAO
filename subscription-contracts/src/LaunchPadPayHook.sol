@@ -52,7 +52,19 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
     }
 
     function _totalFunding(address terminal, uint256 projectId) internal view returns (uint256) {
-        return jbTerminalStore.balanceOf(terminal, projectId, JBConstants.NATIVE_TOKEN);
+        uint256 balance = jbTerminalStore.balanceOf(
+            terminal,
+            projectId,
+            JBConstants.NATIVE_TOKEN
+        );
+        uint256 withdrawn = jbTerminalStore.usedPayoutLimitOf(
+          address(terminal),
+          projectId,
+          JBConstants.NATIVE_TOKEN,
+          2, // payout cycle
+          uint32(uint160(JBConstants.NATIVE_TOKEN))
+        );
+        return balance + withdrawn;
     }
 
     function beforePayRecordedWith(JBBeforePayRecordedContext calldata context) external view override returns (uint256 weight, JBPayHookSpecification[] memory hookSpecifications) {

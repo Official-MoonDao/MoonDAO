@@ -1,6 +1,6 @@
 import { gsap } from 'gsap'
 import { useMemo, useRef, useState, useEffect } from 'react'
-import { useNativeTokenSurplus } from 'juice-sdk-react'
+import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import {
   CartesianGrid,
   Line,
@@ -34,8 +34,8 @@ export default function MissionFundingMilestoneChart({
   const progressBarRef = useRef<HTMLDivElement>(null)
   const [chartDimensions, setChartDimensions] = useState({ width: 0, left: 0 })
 
-  const { data: nativeTokenSurplus } = useNativeTokenSurplus()
-  const volume = Number(nativeTokenSurplus || 0) / 1e18
+  const totalFunding = useTotalFunding(mission?.projectId)
+  const volume = Number(totalFunding || 0) / 1e18
 
   const points = useMemo(() => {
     return [

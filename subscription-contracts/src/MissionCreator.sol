@@ -233,7 +233,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
         });
         // moondao token split
         splitGroups[1].splits[0] = JBSplit({
-            percent: 300_000_000, // 30% out of 1_000_000_000, of the 50% reserved tokens = 15% of total tokens
+            percent: 350_000_000, // 35% out of 1_000_000_000, of the 50% reserved tokens = 17.5% of total tokens
             projectId: 0, // Not used.
             preferAddToBalance: false, // Not used, since projectId is 0.
             beneficiary: payable(address(moonDAOVesting)), // The beneficiary of the split.
@@ -251,7 +251,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
         });
         // amm token split
         splitGroups[1].splits[2] = JBSplit({
-            percent: 100_000_000, // 20% out of 1_000_000_000, of the 50% reserved tokens = 10% of total tokens
+            percent: 50_000_000, // 5% out of 1_000_000_000, of the 50% reserved tokens = 2.5% of total tokens
             projectId: 0, // Not used.
             preferAddToBalance: false, // Not used, since projectId is 0.
             beneficiary: payable(address(poolDeployer)), // The beneficiary of the split. This is the address that will receive the project's tokens issued from the payment.

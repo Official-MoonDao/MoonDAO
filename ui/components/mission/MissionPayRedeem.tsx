@@ -428,7 +428,7 @@ export default function MissionPayRedeem({
         params: [
           mission?.projectId,
           JB_NATIVE_TOKEN_ADDRESS,
-          inputValue * 1e18,
+          BigInt(Math.trunc(inputValue * 1e18)),
           address || ZERO_ADDRESS,
           output * 1e18,
           message,

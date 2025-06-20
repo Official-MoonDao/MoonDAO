@@ -63,10 +63,18 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook {
         view
         returns (uint256)
     {
-        return jbTerminalStore.balanceOf(
+        uint256 balance = jbTerminalStore.balanceOf(
             _terminal,
             projectId,
             JBConstants.NATIVE_TOKEN
         );
+        uint256 withdrawn = jbTerminalStore.usedPayoutLimitOf(
+          address(terminal),
+          projectId,
+          JBConstants.NATIVE_TOKEN,
+          2, // payout cycle
+          uint32(uint160(JBConstants.NATIVE_TOKEN))
+        );
+        return balance + withdrawn;
     }
 }

@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { useNativeTokenSurplus } from 'juice-sdk-react'
+import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
@@ -67,7 +67,7 @@ export default function MissionWideCard({
   const [teamNFT, setTeamNFT] = useState<any>(null)
 
   const { data: ethPrice } = useETHPrice(1)
-  const { data: nativeTokenSurplus } = useNativeTokenSurplus()
+  const totalFunding = useTotalFunding(mission?.projectId)
 
   const duration = useMemo(() => {
     return deadline ? formatTimeUntilDeadline(new Date(deadline)) : undefined
@@ -122,14 +122,14 @@ export default function MissionWideCard({
                         />
                         <span className="mr-2">
                           {truncateTokenValue(
-                            Number(nativeTokenSurplus || 0) / 1e18,
+                            Number(totalFunding || 0) / 1e18,
                             'ETH'
                           )}
                         </span>
                         <span className="text-sm md:text-base">ETH RAISED</span>
                       </div>
                       <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
-                        (Number(nativeTokenSurplus || 0) / 1e18) * ethPrice
+                        (Number(totalFunding || 0) / 1e18) * ethPrice
                       ).toLocaleString()} USD)`}</p>
                     </div>
                   )}
