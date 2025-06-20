@@ -134,10 +134,10 @@ These contract-defined percentages differ from the UI description above.
 
 ## Testing Plan
 
-0. Unit testing (MissionTest.t.sol)
-0. Code coverage (95% coverage)
-0. Cypress integration test
-0. UI testing
+0. Unit testing (MissionTest.t.sol) [done]
+0. (Code coverage)[https://app.codecov.io/gh/Official-MoonDao/MoonDAO/pull/553/tree/subscription-contracts/src?dropdown=coverage] (95% coverage) [currently at 89% average with 3 files under 95%]
+0. Cypress integration test [complete by 6/23]
+0. UI testing, check functionality against spec [complete by 6/24]
     - Test mission creation
     - Test mission funding
     - Test mission refund
@@ -147,7 +147,8 @@ These contract-defined percentages differ from the UI description above.
     - Test token vesting
     - Test token AMM liquidity
     - Test vMOONEY AMM rewards
-0. Mainnet deployment
+0. Mainnet deployment [complete by 6/25]
+0. Mainnet testing [complete by 6/26]
     - Deploy contracts to mainnet (FeeHook, MissionCreator, MissionTable)
     - Repeat unit testing, integration testing, and code coverage
     - Repeat UI testing
