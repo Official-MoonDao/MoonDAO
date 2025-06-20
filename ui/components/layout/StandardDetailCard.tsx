@@ -19,10 +19,10 @@ export default function StandardDetailCard({
   onClick,
 }: StandardDetailCardProps) {
   const CardContent = (
-    <div className="w-full min-w-[300px] flex items-center p-2 hover:bg-darkest-cool/20 rounded-lg transition-colors">
+    <div className="w-full flex items-center p-2 rounded-lg transition-colors">
       <span
         id="card-container"
-        className={`animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full md:w-[600px] rounded-[20px]`}
+        className={`animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full rounded-[20px] shadow-lg shadow-darkest-cool/50 border border-darkest-cool/30 hover:shadow-xl hover:shadow-darkest-cool/70 hover:border-darkest-cool/50 transition-all duration-200`}
       >
         {/* Ensure the card content takes full height */}
         <div className="flex-grow">
@@ -39,14 +39,14 @@ export default function StandardDetailCard({
               {image && (
                 <div
                   id="team-citizen-image-container"
-                  className="z-40 w-[120px] h-[120px]"
+                  className="z-40 w-[150px] h-[150px]"
                 >
                   <Frame noPadding marginBottom="0px" className="aspect-square">
                     <IPFSRenderer
                       className="w-full h-full object-cover rounded-full"
                       src={image}
-                      width={120}
-                      height={120}
+                      width={50}
+                      height={50}
                       alt={title || ''}
                     />
                   </Frame>
@@ -71,7 +71,7 @@ export default function StandardDetailCard({
     <span
       id="link-frame"
       className={`
-            card-container min-w-[300px] w-[65vw] md:w-full flex lg:flex-col rounded-[20px] relative overflow-hidden 
+            card-container w-full md:w-full flex lg:flex-col rounded-[20px] relative overflow-hidden 
             ${link ? 'cursor-pointer' : ''}
         `}
     >
