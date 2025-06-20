@@ -1,7 +1,6 @@
 const { defineConfig } = require('cypress')
 const dotenv = require('dotenv')
 const path = require('path')
-const browserstackTestObservabilityPlugin = require('browserstack-cypress-cli/bin/testObservability/plugin')
 
 dotenv.config({ path: path.resolve(__dirname, '.env.local') })
 
@@ -19,8 +18,6 @@ module.exports = defineConfig({
           return null
         },
       })
-
-      browserstackTestObservabilityPlugin(on, config)
 
       return config
     },
