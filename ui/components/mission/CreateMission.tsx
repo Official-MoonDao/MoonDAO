@@ -965,7 +965,6 @@ export default function CreateMission({
                       fundingGoal={fundingGoalInETH * 1e18 || 0}
                       subgraphData={{}}
                       missionImage={missionLogoUri}
-                      dead
                       showMore={true}
                       showMoreButton={false}
                       onlyGoalStat

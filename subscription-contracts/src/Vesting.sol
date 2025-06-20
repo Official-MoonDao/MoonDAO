@@ -20,7 +20,7 @@ contract Vesting {
         if (block.chainid != 11155111){
             cliffDuration = 365 days; // 1-year cliff
         } else {
-            cliffDuration = 0; // No cliff for Sepolia
+            cliffDuration = 0; // No cliff for Sepolia to make testing easier
         }
         start = block.timestamp; // Vesting starts immediately upon deployment
     }

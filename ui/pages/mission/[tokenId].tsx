@@ -268,8 +268,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     fetchAvailableAmounts()
   }, [jbTerminalContract, jbControllerContract, mission?.projectId])
 
-  console.log('availableTokens', availableTokens)
-  console.log('availablePayouts', availablePayouts)
 
   const sendReservedTokens = async () => {
     if (!account || !mission?.projectId) return
