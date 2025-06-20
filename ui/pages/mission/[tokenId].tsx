@@ -287,7 +287,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     }
   }
 
-  console.log('token', token)
   const sendPayouts = async () => {
     if (!account || !mission?.projectId) return
 
