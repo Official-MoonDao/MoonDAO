@@ -541,14 +541,27 @@ export function PrivyConnectWallet({
   }, [wallets, selectedWallet])
 
   useEffect(() => {
+    const wallet = wallets[selectedWallet]
+    const isAutoSwitchWallet = wallet?.walletClientType === 'coinbase_wallet' || wallet?.walletClientType === 'privy'
+    
     if (walletChainId !== selectedChain.id) {
-      setNetworkMismatch(true)
+      if (isAutoSwitchWallet) {
+        // Add delay for auto-switching wallets to prevent flashing
+        const timeout = setTimeout(() => {
+          const currentWalletChainId = +wallets?.[selectedWallet]?.chainId?.split(':')[1]
+          if (currentWalletChainId !== selectedChain.id) {
+            setNetworkMismatch(true)
+          }
+        }, 1000)
+        return () => clearTimeout(timeout)
+      } else {
+        setNetworkMismatch(true)
+      }
     } else {
       setNetworkMismatch(false)
-      // Update previous chain when there's no mismatch (successful switch or initial load)
       setPreviousChain(selectedChain)
     }
-  }, [walletChainId, selectedChain, selectedWallet])
+  }, [walletChainId, selectedChain, selectedWallet, wallets])
 
   //detect outside click
   function handleClickOutside({ target }: any) {
