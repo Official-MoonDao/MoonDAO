@@ -581,6 +581,7 @@ contract MissionTest is Test, Config {
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
         uint256 balance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
         assertEq(balance, 0);
+        assertEq(missionCreator.stage(missionId), 1);
 
         // Pay enough to pass goal and skip to deadline
         uint256 payAmount = 10_000_000_000_000_000_000;
@@ -598,10 +599,7 @@ contract MissionTest is Test, Config {
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
-        uint256 usedBefore = jbTerminalStore.usedSurplusAllowanceOf(
-          terminal,
-          projectId
-        );
+        assertEq(missionCreator.stage(missionId), 2);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -609,29 +607,31 @@ contract MissionTest is Test, Config {
             uint32(uint160(JBConstants.NATIVE_TOKEN)),
             0
         );
+        assertEq(missionCreator.stage(missionId), 2);
         uint256 used = jbTerminalStore.usedPayoutLimitOf(
-          terminal,
+          address(terminal),
           projectId,
           JBConstants.NATIVE_TOKEN,
+          2, // second cycle
+          uint32(uint160(JBConstants.NATIVE_TOKEN))
         );
-        console.log("usedBefore: %s, used: %s", usedBefore, used);
+        assertEq(used, payoutAmount);
 
-        //PoolDeployer poolDeployer = PoolDeployer(payable(missionCreator.missionIdToPoolDeployer(missionId)));
-        //vm.expectRevert("Token already set");
-        //poolDeployer.setToken(address(0));
-        //poolDeployer.setHookAddress(missionCreator.feeHookAddress());
+        PoolDeployer poolDeployer = PoolDeployer(payable(missionCreator.missionIdToPoolDeployer(missionId)));
+        vm.expectRevert("Token already set");
+        poolDeployer.setToken(address(0));
+        poolDeployer.setHookAddress(missionCreator.feeHookAddress());
 
-        //// JB splits have 7 decimals of precision, so check up to 6 decimals
-        //assertApproxEqRel(address(poolDeployer).balance, terminalBalance * 5/ 100, 0.0000001e18);
-        //assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 25/ 1000, 0.0000001e18);
-        //assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *90 / 100, 0.0000001e18);
-        //vm.stopPrank();
+        // JB splits have 7 decimals of precision, so check up to 6 decimals
+        assertApproxEqRel(address(poolDeployer).balance, terminalBalance * 5/ 100, 0.0000001e18);
+        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 25/ 1000, 0.0000001e18);
+        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *90 / 100, 0.0000001e18);
+        vm.stopPrank();
 
-        //vm.startPrank(user2);
-        //vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user2));
-        //poolDeployer.setHookAddress(address(0));
-        //vm.stopPrank();
-
+        vm.startPrank(user2);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user2));
+        poolDeployer.setHookAddress(address(0));
+        vm.stopPrank();
     }
 
     function testAMM() public {
