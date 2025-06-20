@@ -19,10 +19,10 @@ export default function StandardDetailCard({
   onClick,
 }: StandardDetailCardProps) {
   const CardContent = (
-    <div className="w-full min-w-[300px] flex items-center p-2 hover:bg-darkest-cool/20 rounded-lg transition-colors">
+    <div className="w-full flex items-center p-2 hover:bg-darkest-cool/20 rounded-lg transition-colors">
       <span
         id="card-container"
-        className={`animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full md:w-[600px] rounded-[20px]`}
+        className={`animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full rounded-[20px]`}
       >
         {/* Ensure the card content takes full height */}
         <div className="flex-grow">
@@ -35,11 +35,11 @@ export default function StandardDetailCard({
             className={`h-full p-[20px] rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-x-[3px] border-darkest-cool`}
           >
             {/* check if image is blcb */}
-            <div className="flex flex-row items-start gap-8">
+            <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-8">
               {image && (
                 <div
                   id="team-citizen-image-container"
-                  className="z-40 w-[150px] h-[150px]"
+                  className="z-40 w-[100px] h-[100px] sm:w-[150px] sm:h-[150px] flex-shrink-0"
                 >
                   <Frame noPadding marginBottom="0px" className="aspect-square">
                     <IPFSRenderer
@@ -52,7 +52,7 @@ export default function StandardDetailCard({
                   </Frame>
                 </div>
               )}
-              <div className="w-3/4 z-20">
+              <div className="flex-1 z-20">
                 <h1 className="font-bold font-GoodTimes">{title}</h1>
                 <p className="text-sm text-gray-500 overflow-hidden min-h-[80px]">
                   {paragraph && paragraph?.length > 200
@@ -71,7 +71,7 @@ export default function StandardDetailCard({
     <span
       id="link-frame"
       className={`
-            card-container min-w-[300px] w-[65vw] md:w-full flex lg:flex-col rounded-[20px] relative overflow-hidden 
+            card-container w-full flex lg:flex-col rounded-[20px] relative overflow-hidden 
             ${link ? 'cursor-pointer' : ''}
         `}
     >
