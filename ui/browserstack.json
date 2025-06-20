@@ -25,7 +25,7 @@
       "versions": ["latest"]
     },
     {
-      "browser": "safari",
+      "browser": "webkit",
       "os": "iOS",
       "device": "iPhone 14",
       "versions": ["latest"]
