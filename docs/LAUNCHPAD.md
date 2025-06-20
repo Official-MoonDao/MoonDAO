@@ -1,4 +1,27 @@
-# MoonDAO Launchpad Specification
+# MoonDAO Launchpad
+
+# Testing Plan
+
+0. Unit testing (MissionTest.t.sol) [done]
+0. [Code coverage](https://app.codecov.io/gh/Official-MoonDao/MoonDAO/pull/553/tree/subscription-contracts/src?dropdown=coverage) (95% coverage) [currently at 89% average with 3 files under 95%]
+0. Cypress integration test [complete by 6/23]
+0. UI testing, check functionality against spec [complete by 6/24]
+    - Test mission creation
+    - Test mission funding
+    - Test mission refund
+    - Test mission payout
+    - Test mission token distribution
+    - Test mission stages
+    - Test token vesting
+    - Test token AMM liquidity
+    - Test vMOONEY AMM rewards
+0. Mainnet deployment [complete by 6/25]
+0. Mainnet testing [complete by 6/26]
+    - Deploy contracts to mainnet (FeeHook, MissionCreator, MissionTable)
+    - Repeat unit testing, integration testing, and code coverage
+    - Repeat UI testing
+
+# Specification
 
 This document summarizes how the Launchpad operates based on the current repository. It focuses on tokenomics, mission stages, refund behavior, and payment distribution. Potential inconsistencies between smart contracts and UI explanations are noted.
 
@@ -132,23 +155,3 @@ These contract-defined percentages differ from the UI description above.
 3. **Refund Window**
    The contracts enforce that refunds must be claimed within `refundPeriod` after the deadline. The UI text does not mention this explicit period, which could cause confusion.
 
-## Testing Plan
-
-0. Unit testing (MissionTest.t.sol) [done]
-0. [Code coverage](https://app.codecov.io/gh/Official-MoonDao/MoonDAO/pull/553/tree/subscription-contracts/src?dropdown=coverage) (95% coverage) [currently at 89% average with 3 files under 95%]
-0. Cypress integration test [complete by 6/23]
-0. UI testing, check functionality against spec [complete by 6/24]
-    - Test mission creation
-    - Test mission funding
-    - Test mission refund
-    - Test mission payout
-    - Test mission token distribution
-    - Test mission stages
-    - Test token vesting
-    - Test token AMM liquidity
-    - Test vMOONEY AMM rewards
-0. Mainnet deployment [complete by 6/25]
-0. Mainnet testing [complete by 6/26]
-    - Deploy contracts to mainnet (FeeHook, MissionCreator, MissionTable)
-    - Repeat unit testing, integration testing, and code coverage
-    - Repeat UI testing
