@@ -17,14 +17,14 @@ export default function Bridge() {
           <ContentLayout
             header={t('bridgeTitle')}
             headerSize="max(20px, 3vw)"
-            description={t('bridgeDesc')}
+            description={<div className="max-w-2xl">{t('bridgeDesc')}</div>}
             preFooter={<NoticeFooter />}
             mainPadding
             isProfile
             mode="compact"
             popOverEffect={false}
           >
-            <div className="mt-3 w-full">
+            <div className="mt-3 w-full max-w-2xl">
               <ArbitrumBridge />
             </div>
           </ContentLayout>
