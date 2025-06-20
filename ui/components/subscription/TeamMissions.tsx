@@ -45,16 +45,22 @@ export function TeamMission({
   teamContract,
   isManager,
 }: TeamMissionProps) {
-  const { subgraphData, token, fundingGoal, ruleset, primaryTerminalAddress } =
-    useMissionData({
-      mission,
-      missionTableContract,
-      missionCreatorContract,
-      jbControllerContract,
-      jbDirectoryContract,
-      jbTokensContract,
-      teamContract,
-    })
+  const {
+    subgraphData,
+    token,
+    fundingGoal,
+    ruleset,
+    primaryTerminalAddress,
+    deadline,
+  } = useMissionData({
+    mission,
+    missionTableContract,
+    missionCreatorContract,
+    jbControllerContract,
+    jbDirectoryContract,
+    jbTokensContract,
+    teamContract,
+  })
 
   return (
     <JuiceProviders
@@ -67,6 +73,7 @@ export function TeamMission({
         subgraphData={subgraphData}
         fundingGoal={mission.fundingGoal}
         ruleset={ruleset}
+        deadline={deadline}
         contribute
         editable={isManager}
         showMore={false}

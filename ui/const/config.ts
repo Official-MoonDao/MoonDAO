@@ -244,6 +244,8 @@ export const JBV4_DIRECTORY_ADDRESSES: Index = {
 export const JB_NATIVE_TOKEN_ADDRESS =
   '0x000000000000000000000000000000000000EEEe'
 
+export const JB_NATIVE_TOKEN_ID = 61166
+
 export const JBV4_TERMINAL_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0xdb9644369c79c3633cde70d2df50d827d7dc7dbc',

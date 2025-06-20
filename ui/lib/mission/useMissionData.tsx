@@ -88,22 +88,16 @@ export default function useMissionData({
         chain: DEFAULT_CHAIN_V5,
         abi: LaunchPadPayHookABI.abi as any,
       })
-
       const deadline: any = await readContract({
         contract: payHookContract,
         method: 'deadline' as string,
         params: [],
       })
-      setDeadline(+deadline.toString()) // Convert to milliseconds
+      setDeadline(+deadline.toString() * 1000) // Convert to milliseconds
     }
     if (missionCreatorContract && mission?.id !== undefined) {
       getDeadline()
     }
-    const interval = setInterval(() => {
-      getStage()
-    }, 60000)
-
-    return () => clearInterval(interval)
   }, [missionCreatorContract, mission?.id])
 
   //Backers

@@ -22,6 +22,7 @@ import {
   TEAM_ADDRESSES,
   JBV4_TERMINAL_ADDRESSES,
   JB_NATIVE_TOKEN_ADDRESS,
+  JB_NATIVE_TOKEN_ID,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
 import { useNativeTokenSurplus } from 'juice-sdk-react'
@@ -87,7 +88,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   const [teamNFT, setTeamNFT] = useState<any>()
 
-  const [availableTokens, setAvailableTokens] = useState<string>('Loading...')
+  const [availableTokens, setAvailableTokens] = useState<number>(0)
   const [availablePayouts, setAvailablePayouts] = useState<number>(0)
 
   const hatsContract = useContract({
@@ -234,14 +235,12 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
           method: 'STORE' as string,
           params: [],
         })
-
         const jbTerminalStoreContract = getContract({
           client: serverClient,
           address: storeAddress,
           abi: IJBTerminalStoreABI.abi as any,
           chain: selectedChain,
         })
-
         const balance: any = await readContract({
           contract: jbTerminalStoreContract,
           method: 'balanceOf' as string,
@@ -252,23 +251,15 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
           ],
         })
 
-        setAvailablePayouts(balance)
+        setAvailablePayouts(+balance.toString())
 
-        // Get available reserved tokens
         const reservedTokenBalance: any = await readContract({
           contract: jbControllerContract,
-          method: 'reservedTokenBalanceOf' as string,
+          method: 'pendingReservedTokenBalanceOf' as string,
           params: [mission.projectId],
         })
-        //console.log('Reserved Token Balance:', reservedTokenBalance)
 
-        if (reservedTokenBalance === 0) {
-          setAvailableTokens('No tokens to send.')
-        } else {
-          setAvailableTokens(
-            `${(Number(reservedTokenBalance) / 1e18).toFixed(0)} Tokens`
-          )
-        }
+        setAvailableTokens(+reservedTokenBalance.toString())
       } catch (err: any) {
         console.error('Error fetching available amounts:', err)
       }
@@ -277,29 +268,13 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     fetchAvailableAmounts()
   }, [jbTerminalContract, jbControllerContract, mission?.projectId])
 
+  console.log('availableTokens', availableTokens)
+  console.log('availablePayouts', availablePayouts)
+
   const sendReservedTokens = async () => {
     if (!account || !mission?.projectId) return
 
     try {
-      const reservedTokenBalance = await readContract({
-        contract: jbControllerContract,
-        method: 'pendingReservedTokenBalanceOf' as string,
-        params: [mission.projectId],
-      })
-
-      // Determine the balance from the result (it may return a bigint or an array)
-      let balance: bigint | undefined
-      if (typeof reservedTokenBalance === 'bigint') {
-        balance = reservedTokenBalance
-      } else if (Array.isArray(reservedTokenBalance)) {
-        balance = reservedTokenBalance[0] as bigint
-      }
-
-      if (!balance || balance === BigInt(0)) {
-        toast.error('No tokens to send.')
-        return
-      }
-
       const tx = prepareContractCall({
         contract: jbControllerContract,
         method: 'sendReservedTokensToSplitsOf' as string,
@@ -329,7 +304,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
         abi: IJBTerminalStoreABI.abi as any,
         chain: selectedChain,
       })
-
       const balance: any = await readContract({
         contract: jbTerminalStoreContract,
         method: 'balanceOf' as string,
@@ -339,15 +313,16 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
           JB_NATIVE_TOKEN_ADDRESS,
         ],
       })
-      //console.log('Available payouts balance:', balance)
-      //console.log('JB_NATIVE_TOKEN_ADDRESS:', JB_NATIVE_TOKEN_ADDRESS)
-      //console.log('Mission projectId:', mission.projectId)
-
-      //console.log('JBTerminalContract:', jbTerminalContract.address)
       const tx = prepareContractCall({
         contract: jbTerminalContract,
         method: 'sendPayoutsOf' as string,
-        params: [mission.projectId, JB_NATIVE_TOKEN_ADDRESS, balance, 61166, 0],
+        params: [
+          mission.projectId,
+          JB_NATIVE_TOKEN_ADDRESS,
+          balance,
+          JB_NATIVE_TOKEN_ID,
+          0,
+        ],
       })
 
       await sendAndConfirmTransaction({ transaction: tx, account })
@@ -357,10 +332,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
       toast.error('No payouts to send.')
     }
   }
-  //console.log('isManager', isManager)
-  //console.log('account', account)
-  //console.log('deadlinePassed', deadlinePassed)
-  //
 
   function ProfileHeader() {
     const { data: nativeTokenSurplus } = useNativeTokenSurplus()
@@ -607,6 +578,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                             </span>
                           }
                           action={sendReservedTokens}
+                          isDisabled={!availableTokens}
                         />
                         <PrivyWeb3Button
                           requiredChain={DEFAULT_CHAIN_V5}
@@ -617,6 +589,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                             </span>
                           }
                           action={sendPayouts}
+                          isDisabled={!availablePayouts}
                         />
                       </div>
                     )}

@@ -670,9 +670,8 @@ export default function CreateMission({
                         file,
                         `${missionData.name} Mission Image`
                       )
-                      const { cid: missionLogoIpfsHash } = await pinBlobOrFile(
-                        renamedMissionImage
-                      )
+                      const { cid: missionLogoIpfsHash } =
+                        await pinBlobOrFile(renamedMissionImage)
                       setMissionLogoUri(`${IPFS_GATEWAY}${missionLogoIpfsHash}`)
                     }}
                     dimensions={[1024, 1024]}
@@ -966,6 +965,7 @@ export default function CreateMission({
                       fundingGoal={fundingGoalInETH * 1e18 || 0}
                       subgraphData={{}}
                       missionImage={missionLogoUri}
+                      dead
                       showMore={true}
                       showMoreButton={false}
                       onlyGoalStat

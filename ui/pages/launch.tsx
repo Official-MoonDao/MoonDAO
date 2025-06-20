@@ -123,6 +123,7 @@ export default function Launch({ missions }: any) {
     ruleset: featuredMissionRuleset,
     stage: featuredMissionStage,
     backers: featuredMissionBackers,
+    deadline: featuredMissionDeadline,
   } = useMissionData({
     mission: missions?.[FEATURED_MISSION_INDEX],
     missionTableContract,
@@ -356,6 +357,7 @@ export default function Launch({ missions }: any) {
                 } as any
               }
               stage={featuredMissionStage}
+              deadline={featuredMissionDeadline}
               backers={featuredMissionBackers}
               token={featuredMissionToken}
               ruleset={featuredMissionRuleset}
