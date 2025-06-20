@@ -153,7 +153,13 @@ export default function NativeToMooney({ selectedChain }: any) {
                 value={amount}
                 onChange={({ target }) => {
                   // Allow decimal input by keeping it as string
-                  const value = target.value.replace(/[^0-9.]/g, '') // Only allow numbers and decimal point
+                  let value = target.value.replace(/[^0-9.]/g, '') // Only allow numbers and decimal point
+                  
+                  // Prevent negative values (though regex above should handle this)
+                  if (parseFloat(value) < 0) {
+                    value = '0';
+                  }
+                  
                   const parts = value.split('.')
                   if (parts.length <= 2) { // Only allow one decimal point
                     setAmount(value)

@@ -290,6 +290,10 @@ export default function ArbitrumBridge() {
                   className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   onChange={({ target }) => {
                     let value = target.value;
+                    // Prevent negative values
+                    if (parseFloat(value) < 0) {
+                      value = '0';
+                    }
                     // Remove leading zero if user types a number after it
                     if (value.startsWith('0') && value.length > 1 && value[1] !== '.') {
                       value = value.substring(1);

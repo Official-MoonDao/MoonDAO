@@ -302,6 +302,10 @@ export default function Lock() {
                               }
                               onChange={(e: any) => {
                                 let value = e.target.value;
+                                // Prevent negative values
+                                if (parseFloat(value) < 0) {
+                                  value = '0';
+                                }
                                 // Remove leading zero if user types a number after it
                                 if (value.startsWith('0') && value.length > 1 && value[1] !== '.') {
                                   value = value.substring(1);
