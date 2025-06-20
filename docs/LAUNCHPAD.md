@@ -1,6 +1,6 @@
 # MoonDAO Launchpad
 
-# Testing Plan
+## Testing Plan
 
 0. Unit testing (MissionTest.t.sol) [done]
 0. [Code coverage](https://app.codecov.io/gh/Official-MoonDao/MoonDAO/pull/553/tree/subscription-contracts/src?dropdown=coverage) (95% coverage) [currently at 89% average with 3 files under 95%]
@@ -21,11 +21,11 @@
     - Repeat unit testing, integration testing, and code coverage
     - Repeat UI testing
 
-# Specification
+## Specification
 
 This document summarizes how the Launchpad operates based on the current repository. It focuses on tokenomics, mission stages, refund behavior, and payment distribution. Potential inconsistencies between smart contracts and UI explanations are noted.
 
-## Mission Lifecycle and Stages
+### Mission Lifecycle and Stages
 
 - Each mission has a funding goal and a deadline. If the network is not Sepolia, the deadline defaults to 28 days after mission creation.
 - The `LaunchPadPayHook` contract defines stages based on funding and deadline:
@@ -50,7 +50,7 @@ This document summarizes how the Launchpad operates based on the current reposit
 ```
 [LaunchPadPayHook.sol&nbsp;L106-L117](../subscription-contracts/src/LaunchPadPayHook.sol#L106-L117)
 
-## Refunds
+### Refunds
 
 - Refunds are controlled by `LaunchPadPayHook` through `beforeCashOutRecordedWith`.
 - Refund requests are only valid if:
@@ -71,9 +71,9 @@ This document summarizes how the Launchpad operates based on the current reposit
 ```
 [LaunchPadPayHook.sol&nbsp;L70-L86](../subscription-contracts/src/LaunchPadPayHook.sol#L70-L86)
 
-## Tokenomics and Funding Allocation
+### Tokenomics and Funding Allocation
 
-### UI Explanation
+#### UI Explanation
 
 The UI component `MissionTokenomicsExplainer` outlines how funds are intended to be distributed:
 
@@ -98,7 +98,7 @@ If the project does not launch (their funding goal was not met), then contributo
 ```
 [MissionTokenInfo.tsx&nbsp;L14-L32](../ui/components/mission/MissionTokenInfo.tsx#L14-L32)
 
-### Smart Contract Implementation
+#### Smart Contract Implementation
 
 In `MissionCreator`, ETH payouts are configured via splits:
 
@@ -141,12 +141,12 @@ splitGroups[1].splits[2] = JBSplit({
 
 These contract-defined percentages differ from the UI description above.
 
-## Payments
+### Payments
 
 - Contributions are accepted in ETH (`JBConstants.NATIVE_TOKEN`), verified during `beforePayRecordedWith`.
 - Once the funding goal is reached and the deadline has passed, the approval hook enables payouts. Reserved tokens and ETH are distributed according to the configured splits.
 
-## Observed Inconsistencies
+### Observed Inconsistencies
 
 1. **Funding Allocation Percentages**
    The UI specifies 80% available to the team, with 10% liquidity, 7.5% to MoonDAO, and 2.5% to Juicebox. The contract splits give roughly 90% to the team, 5% to liquidity, and 2.5% to MoonDAO after the Juicebox fee. This indicates the code and UI are not aligned.
