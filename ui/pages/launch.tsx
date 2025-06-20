@@ -1,11 +1,9 @@
 import { useLogin, usePrivy } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
-import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
-import MissionCreatorSepABI from 'const/abis/MissionCreatorSep.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -29,6 +27,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useMissionData from '@/lib/mission/useMissionData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -46,7 +45,7 @@ import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrol
 import CreateMission from '@/components/mission/CreateMission'
 import MissionWideCard from '@/components/mission/MissionWideCard'
 
-const FEATURED_MISSION_INDEX = 21
+const FEATURED_MISSION_INDEX = 0
 
 export default function Launch({ missions }: any) {
   const router = useRouter()
@@ -80,10 +79,7 @@ export default function Launch({ missions }: any) {
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
     chain: selectedChain,
-    abi:
-      chainSlug === 'sepolia'
-        ? (MissionCreatorSepABI as any)
-        : (MissionCreatorABI as any),
+    abi: MissionCreatorABI.abi as any,
   })
 
   const missionTableContract = useContract({
@@ -127,6 +123,7 @@ export default function Launch({ missions }: any) {
     ruleset: featuredMissionRuleset,
     stage: featuredMissionStage,
     backers: featuredMissionBackers,
+    deadline: featuredMissionDeadline,
   } = useMissionData({
     mission: missions?.[FEATURED_MISSION_INDEX],
     missionTableContract,
@@ -360,6 +357,7 @@ export default function Launch({ missions }: any) {
                 } as any
               }
               stage={featuredMissionStage}
+              deadline={featuredMissionDeadline}
               backers={featuredMissionBackers}
               token={featuredMissionToken}
               ruleset={featuredMissionRuleset}
