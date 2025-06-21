@@ -237,14 +237,16 @@ export default function FinalReportEditor({
 
       <div className="pt-2 w-full md:max-w-[1200px]">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="w-full py-0 rounded-[20px] flex justify-end">
-            <ProposalTitleInput
-              value={reportTitle}
-              onChange={(s) => {
-                console.debug('setReportTitle', s)
-              }}
-            />
-            <div className="flex flex-col gap-2">
+          <div className="w-full py-0 rounded-[20px] flex justify-between items-start gap-4">
+            <div className="mb-4 flex-shrink-0 w-2/3">
+              <ProposalTitleInput
+                value={reportTitle}
+                onChange={(s) => {
+                  console.debug('setReportTitle', s)
+                }}
+              />
+            </div>
+            <div className="flex flex-col gap-2 flex-shrink-0 w-1/3 mb-4">
               <ProjectsDropdown
                 projects={projectsFromLastQuarter}
                 setProposalId={setProposalId}
@@ -284,13 +286,68 @@ export default function FinalReportEditor({
 
           <div className="p-5 rounded-b-[20px] rounded-t-[0px] bg-dark-cool"></div>
 
-          <div className="mt-3 flex justify-end">
+          <div className="mt-6 flex flex-col gap-4">
+            {/* Project Manager Requirement Disclaimer */}
+            {address && selectedProject && !isManager && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-red-400 mb-1">Manager Access Required</h3>
+                    <p className="text-sm text-red-200/80">
+                      You must be a manager or owner of the selected project to submit a final report. Please select a project you manage or contact the project owner to add you as a manager.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* No Project Selected Disclaimer */}
+            {address && !selectedProject && (
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-blue-400 mb-1">Select a Project</h3>
+                    <p className="text-sm text-blue-200/80">
+                      Please select a project from the dropdown above to submit your final report.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Network Disclaimer */}
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <svg className="w-5 h-5 text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-yellow-400 mb-1">Network Notice</h3>
+                  <p className="text-sm text-yellow-200/80">
+                    Please ensure you're connected to the correct blockchain network before submitting. You may need to switch networks in your wallet to complete your submission successfully.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             {/* Submit buttons */}
-            <div className="flex justify-end space-x-5">
+            <div className="flex justify-end space-x-4">
               {/* SUBMIT */}
               <PrivyWeb3Button
                 requiredChain={DEFAULT_CHAIN_V5}
-                className="rounded-[20px] rounded-tl-[10px] px-5 py-3 gradient-2 border border-transparent font-RobotoMono duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40"
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
                 label={signingStatus === 'loading' ? 'Signing...' : isUploadingImage ? 'Uploading image...' : 'Submit'}
                 action={onSubmit}
                 isDisabled={buttonsDisabled || isUploadingImage}

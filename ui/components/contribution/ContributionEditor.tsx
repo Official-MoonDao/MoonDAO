@@ -164,13 +164,13 @@ const ContributionEditor: React.FC = () => {
       <div className="h-full">
         <div className="relative flex flex-col items-center">
           <button
-            className="flex items-center gap-2 relative -top-5"
+            className="flex items-center gap-2 relative -top-5 text-white/80 hover:text-white transition-colors duration-200 text-sm"
             onClick={() => setTemplateExpanded(!templateExpanded)}
           >
             <p>What should I write?</p>
             <ChevronDownIcon
-              className={`h-6 w-6 ${
-                templateExpanded ? 'rotate-180 duration-150' : ''
+              className={`h-5 w-5 transition-transform duration-200 ${
+                templateExpanded ? 'rotate-180' : ''
               }`}
             />
           </button>
@@ -207,15 +207,35 @@ const ContributionEditor: React.FC = () => {
           )}
         </div>
       </div>
-      <div className="mt-4 flex justify-end">
-        <button
-          type="submit"
-          className="gradient-2 hover:pl-7 disabled:pl-5 disabled:opacity-30 transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-5 px-5 py-3 inline-block disabled:transform-none disabled:cursor-not-allowed"
-          disabled={submitting || isUploadingImage}
-          onClick={handleSubmit}
-        >
-          {isUploadingImage ? 'Uploading image...' : 'Submit Contribution'}
-        </button>
+      
+      <div className="mt-6 flex flex-col gap-4">
+        {/* Network Disclaimer */}
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              <svg className="w-5 h-5 text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-yellow-400 mb-1">Network Notice</h3>
+              <p className="text-sm text-yellow-200/80">
+                Please ensure you're connected to the correct blockchain network before submitting. You may need to switch networks in your wallet to complete your submission successfully.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+            disabled={submitting || isUploadingImage}
+            onClick={handleSubmit}
+          >
+            {isUploadingImage ? 'Uploading image...' : 'Submit Contribution'}
+          </button>
+        </div>
       </div>
     </div>
   )
