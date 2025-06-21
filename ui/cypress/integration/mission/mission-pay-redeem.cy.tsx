@@ -235,9 +235,6 @@ describe('<MissionPayRedeem />', () => {
 
   describe('Token Redemption', () => {
     beforeEach(() => {
-      // Set stage to 3 and mock token balance
-      props.subgraphData.volume = '1000000000000000000' // 1 ETH
-
       // Mock token balance to be greater than 0
       cy.window().then((win) => {
         win.useWatchTokenBalance = () => 5
