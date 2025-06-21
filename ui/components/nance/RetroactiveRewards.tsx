@@ -78,21 +78,21 @@ function RewardAsset({
   const usd = Number(usdValue)
 
   return (
-    <div className="flex gap-3 items-center p-2">
+    <div className="flex gap-3 items-center">
       <Image
-        className="scale-[0.65] filter drop-shadow-lg"
+        className="scale-[0.55] filter drop-shadow-lg"
         src={image}
         alt={name}
         width={name === 'ETH' ? 42 : 50}
         height={name === 'ETH' ? 42 : 50}
       />
-      <div className="flex flex-col min-h-[60px]">
-        <div className="flex gap-2 font-GoodTimes text-xl text-white">
+      <div className="flex flex-col">
+        <div className="flex gap-2 font-GoodTimes text-lg text-white">
           <p className="text-white/80">{name}</p>
           <p className="text-white font-bold">{value}</p>
         </div>
         {usd > 0 && (
-          <p className="text-gray-400 text-sm">{`(${
+          <p className="text-gray-400 text-xs">{`(${
             approximateUSD ? '~' : ''
           }$${usd.toLocaleString()})`}</p>
         )}
@@ -343,36 +343,33 @@ export function RetroactiveRewards({
           isProfile
         >
           <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px]">
-            {/* Create Project Button - Moved to top left */}
-            <div className="flex justify-start">
-              <button
-                className="px-5 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2"
-                onClick={() => router.push('/submit')}
-              >
-                <Image
-                  src={'/assets/plus-icon.png'}
-                  width={16}
-                  height={16}
-                  alt="Create Project"
-                />
-                <span className="leading-none">Create Project</span>
-              </button>
-            </div>
-
-            <div className="bg-black/20 rounded-xl p-6 border border-white/10">
-              <h1 className="font-GoodTimes text-white/80 text-xl mb-4">{`Q${quarter}: ${year} Rewards`}</h1>
-              <div
-                id="rewards-asset-container"
-                className="flex flex-col justify-center gap-4"
-              >
-                <div className="bg-black/20 rounded-xl p-4 border border-white/10">
+            {/* Condensed Top Section - Rewards + Create Button */}
+            <div className="bg-black/20 rounded-xl p-4 border border-white/10">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                <h1 className="font-GoodTimes text-white/80 text-lg">{`Q${quarter}: ${year} Rewards`}</h1>
+                <button
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
+                  onClick={() => router.push('/submit')}
+                >
+                  <Image
+                    src={'/assets/plus-icon.png'}
+                    width={16}
+                    height={16}
+                    alt="Create Project"
+                  />
+                  <span className="leading-none">Create Project</span>
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                   <RewardAsset
                     name="ETH"
                     value={ethBudget.toFixed(4)}
                     usdValue={usdBudget.toFixed(2)}
                   />
                 </div>
-                <div className="bg-black/20 rounded-xl p-4 border border-white/10">
+                <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                   <RewardAsset
                     name="MOONEY"
                     value={Number(mooneyBudget.toPrecision(3)).toLocaleString()}

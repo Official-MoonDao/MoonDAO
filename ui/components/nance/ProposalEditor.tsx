@@ -141,6 +141,14 @@ export default function ProposalEditor() {
   }, [loadedProposal])
 
   const onSubmit: SubmitHandler<RequestBudget> = async (formData) => {
+    console.log('onSubmit called', {
+      formData,
+      proposalStatus,
+      attachBudget,
+      proposalTitle,
+      bodyLength: getMarkdown()?.length || 0
+    });
+
     let proposal = buildProposal(proposalStatus)
 
     if (attachBudget) {
@@ -184,21 +192,67 @@ export default function ProposalEditor() {
   }
 
   async function signAndSendProposal(proposal: Proposal) {
+    console.log('signAndSendProposal: Starting proposal submission', {
+      title: proposal.title,
+      bodyLength: proposal.body?.length || 0,
+      address,
+      nextSnapshotVote: !!nextSnapshotVote,
+      loadedProposalId: loadedProposal?.proposalId,
+      nextProposalId
+    });
+
     if (!proposal.title) {
+      console.error('signAndSendProposal: No title provided');
       toast.error('Please enter a title for the proposal.', {
         style: toastStyle,
       })
       return
     }
-    if (!nextSnapshotVote) return
+    
+    if (!proposal.body || proposal.body.trim().length === 0) {
+      console.error('signAndSendProposal: No content provided');
+      toast.error('Please write some content for the proposal.', {
+        style: toastStyle,
+      })
+      return
+    }
+    
+    if (!address) {
+      console.error('signAndSendProposal: No wallet address');
+      toast.error('Please connect your wallet to submit a proposal.', {
+        style: toastStyle,
+      })
+      return
+    }
+    
+    if (!nextSnapshotVote) {
+      console.error('signAndSendProposal: No next snapshot vote available', { spaceInfo, nextEvents });
+      toast.error('Unable to schedule proposal vote. Please try again later.', {
+        style: toastStyle,
+      })
+      return
+    }
+    
     setSigningStatus('loading')
     const t = toast.loading('Sign proposal...', {
       style: toastStyle,
     })
     const proposalId = loadedProposal?.proposalId || nextProposalId
     const preTitle = `${proposalIdPrefix}${proposalId}: `
+    
+    console.log('signAndSendProposal: About to sign proposal', {
+      proposalId,
+      preTitle,
+      nextSnapshotVote
+    });
+    
     signProposalAsync(proposal, preTitle, nextSnapshotVote)
       .then((res) => {
+        console.log('signAndSendProposal: Signature received', {
+          hasSignature: !!res.signature,
+          hasMessage: !!res.message,
+          address: res.address
+        });
         const { signature, message, address } = res
         trigger({
           proposal,
@@ -210,6 +264,7 @@ export default function ProposalEditor() {
           },
         })
           .then((res) => {
+            console.log('signAndSendProposal: Upload response', res);
             if (res.success) {
               setSigningStatus('success')
               clearProposalCache()
@@ -219,23 +274,26 @@ export default function ProposalEditor() {
               })
               router.push(`/proposal/${res.data.uuid}`)
             } else {
+              console.error('signAndSendProposal: Upload failed', res);
               setSigningStatus('error')
               toast.dismiss(t)
-              toast.error('Error saving proposal.', { style: toastStyle })
+              toast.error(`Error saving proposal: ${res.error || 'Unknown error'}`, { style: toastStyle })
             }
           })
           .catch((error) => {
+            console.error('signAndSendProposal: Upload error', error);
             setSigningStatus('error')
             toast.dismiss(t)
-            toast.error(`[API] Error submitting proposal:\n${error}`, {
+            toast.error(`[API] Error submitting proposal:\n${error.message || error}`, {
               style: toastStyle,
             })
           })
       })
       .catch((error) => {
+        console.error('signAndSendProposal: Signing error', error);
         setSigningStatus('idle')
         toast.dismiss(t)
-        toast.error(`[Wallet] Error signing proposal:\n${error}`, {
+        toast.error(`[Wallet] Error signing proposal:\n${error.message || error}`, {
           style: toastStyle,
         })
       })
@@ -405,6 +463,12 @@ export default function ProposalEditor() {
                   'text-sm px-6 py-3 bg-black/30 hover:bg-black/40 border border-white/20 hover:border-white/30 text-white/80 hover:text-white font-RobotoMono rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl'
                 )}
                 onClick={() => {
+                  console.log('Save Draft button clicked', {
+                    buttonsDisabled,
+                    address: !!address,
+                    signingStatus,
+                    isUploadingImage
+                  });
                   setProposalStatus('Draft')
                 }}
                 disabled={buttonsDisabled}
@@ -426,6 +490,13 @@ export default function ProposalEditor() {
                   'px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0'
                 )}
                 onClick={() => {
+                  console.log('Submit button clicked', {
+                    buttonsDisabled,
+                    address: !!address,
+                    signingStatus,
+                    isUploadingImage,
+                    loadedProposalStatus: loadedProposal?.status
+                  });
                   const status =
                     loadedProposal?.status === 'Temperature Check'
                       ? 'Temperature Check'

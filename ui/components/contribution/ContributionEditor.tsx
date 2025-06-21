@@ -82,6 +82,11 @@ const ContributionEditor: React.FC = () => {
       return
     }
 
+    if (!address) {
+      toast.error('No wallet address found. Please connect your wallet.')
+      return
+    }
+
     setSubmitting(true)
     const loadingToast = toast.loading('Submitting contribution...')
 
@@ -101,7 +106,25 @@ const ContributionEditor: React.FC = () => {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error)
+        console.error('Contribution submission failed:', {
+          status: res.status,
+          statusText: res.statusText,
+          error: data.error,
+          address: address?.slice(0, 6) + '...' + address?.slice(-4),
+          contentLength: getMarkdown()?.length || 0
+        });
+        
+        // Provide specific error messages based on status code
+        let errorMessage = 'Failed to submit contribution.';
+        if (res.status === 400) {
+          errorMessage = data.error || 'Invalid data provided.';
+        } else if (res.status === 401) {
+          errorMessage = 'You are not authorized. Please sign in again.';
+        } else if (res.status === 500) {
+          errorMessage = data.error || 'Server error. Please try again later.';
+        }
+        
+        throw new Error(errorMessage);
       }
 
       setCoordinapeLink(
@@ -124,8 +147,9 @@ const ContributionEditor: React.FC = () => {
       `
       )
       toast.success('Contribution submitted successfully!')
-    } catch (err) {
-      toast.error('Failed to submit contribution.')
+    } catch (err: any) {
+      console.error('Contribution submission error:', err);
+      toast.error(err.message || 'Failed to submit contribution.')
     } finally {
       toast.dismiss(loadingToast)
       setSubmitting(false)

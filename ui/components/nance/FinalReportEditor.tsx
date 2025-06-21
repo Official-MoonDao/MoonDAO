@@ -152,78 +152,179 @@ export default function FinalReportEditor({
   const { handleSubmit } = methods
 
   const onSubmit: SubmitHandler<RequestBudget> = async (formData) => {
-    console.debug('formData', formData)
+    console.debug('FinalReport.onSubmit called', {
+      formData,
+      reportTitle,
+      hasLoadedProposal: !!loadedProposal,
+      selectedProjectId: selectedProject?.id,
+      isManager,
+      address: address?.slice(0, 6) + '...' + address?.slice(-4)
+    });
 
+    // Validation checks
     if (!reportTitle || !loadedProposal) {
+      console.error('FinalReport: Missing project selection');
       return toast.error('Please select a project that you are a manager of.', {
         style: toastStyle,
-      })
+      });
     }
 
-    setSigningStatus('loading')
+    if (!selectedProject?.id) {
+      console.error('FinalReport: No selected project ID');
+      return toast.error('Please select a valid project.', {
+        style: toastStyle,
+      });
+    }
+
+    if (!isManager) {
+      console.error('FinalReport: User is not a manager');
+      return toast.error('You must be a manager or owner of the selected project.', {
+        style: toastStyle,
+      });
+    }
+
+    const markdown = getMarkdown();
+    if (!markdown || markdown.trim().length === 0) {
+      console.error('FinalReport: No content provided');
+      return toast.error('Please write some content for your final report.', {
+        style: toastStyle,
+      });
+    }
+
+    if (!account) {
+      console.error('FinalReport: No account found');
+      return toast.error('Please connect your wallet to submit the report.', {
+        style: toastStyle,
+      });
+    }
+
+    setSigningStatus('loading');
+    console.log('FinalReport: Starting submission process');
 
     try {
-      const markdown = getMarkdown()
-      if (!markdown) {
-        throw new Error('No markdown found')
-      }
-      if (!account) {
-        throw new Error('No account found')
-      }
-      const header = `# ${reportTitle}\n\n`
-      const fileName = `${reportTitle.replace(/\s+/g, '-')}.md`
+      const header = `# ${reportTitle}\n\n`;
+      const fileName = `${reportTitle.replace(/\s+/g, '-')}.md`;
       const file = new File([header + markdown], fileName, {
         type: 'text/markdown',
-      })
+      });
 
-      const { cid: markdownIpfsHash } = await pinBlobOrFile(file)
+      console.log('FinalReport: Uploading to IPFS');
+      const { cid: markdownIpfsHash } = await pinBlobOrFile(file);
+      console.log('FinalReport: IPFS upload successful:', markdownIpfsHash);
 
+      // Get project data from Tableland
+      console.log('FinalReport: Fetching project data from Tableland');
       const projectsTableName = await readContract({
         contract: projectTableContract,
         method: 'getTableName' as string,
         params: [],
-      })
-      const statement = `SELECT * FROM ${projectsTableName} WHERE MDP = ${loadedProposal?.proposalId}`
-      const projectRes = await fetch(
-        `/api/tableland/query?statement=${statement}`
-      )
-      const projectData = await projectRes.json()
-      const project = projectData[0]
+      });
+      
+      const statement = `SELECT * FROM ${projectsTableName} WHERE MDP = ${loadedProposal?.proposalId}`;
+      const projectRes = await fetch(`/api/tableland/query?statement=${statement}`);
+      
+      if (!projectRes.ok) {
+        throw new Error(`Failed to fetch project data: ${projectRes.statusText}`);
+      }
+      
+      const projectData = await projectRes.json();
+      
+      if (!projectData || projectData.length === 0) {
+        throw new Error('Project not found in database');
+      }
+      
+      const project = projectData[0];
+      console.log('FinalReport: Project data retrieved:', { projectId: project.id });
 
+      // Update the project with final report IPFS hash
+      console.log('FinalReport: Updating project with final report IPFS hash');
       const transaction = prepareContractCall({
         contract: projectTableContract,
         method: 'updateFinalReportIPFS' as string,
         params: [project.id, 'ipfs://' + markdownIpfsHash],
-      })
+      });
+      
       const receipt = await sendAndConfirmTransaction({
         transaction,
         account,
-      })
+      });
+      
+      console.log('FinalReport: Transaction successful:', receipt.transactionHash);
+
       if (receipt) {
-        setSelectedProject(undefined)
-        setMarkdown(FINAL_REPORT_TEMPLATE)
-        setLoadedProposal(undefined)
-        setQuery({ proposalId: undefined })
+        // Reset form state
+        setSelectedProject(undefined);
+        setMarkdown(FINAL_REPORT_TEMPLATE);
+        setLoadedProposal(undefined);
+        setQuery({ proposalId: undefined });
 
         toast.success('Final report uploaded successfully.', {
           style: toastStyle,
-        })
-        setSigningStatus('success')
+        });
+        setSigningStatus('success');
       }
-    } catch (err) {
-      console.log(err)
-      toast.error('Unable to upload final report, please contact support.', {
+    } catch (err: any) {
+      console.error('FinalReport: Submission failed:', err);
+      
+      let errorMessage = 'Unable to upload final report, please contact support.';
+      if (err.message?.includes('IPFS')) {
+        errorMessage = 'Failed to upload report to IPFS. Please try again.';
+      } else if (err.message?.includes('Project not found')) {
+        errorMessage = 'Project not found in database. Please contact support.';
+      } else if (err.message?.includes('transaction')) {
+        errorMessage = 'Transaction failed. Please check your wallet and try again.';
+      } else if (err.message?.includes('fetch project data')) {
+        errorMessage = 'Failed to fetch project data. Please try again.';
+      }
+      
+      toast.error(errorMessage, {
         style: toastStyle,
-      })
-      setSigningStatus('error')
+      });
+      setSigningStatus('error');
     }
+    
     setTimeout(() => {
-      setSigningStatus('idle')
-    }, 5000)
-  }
+      setSigningStatus('idle');
+    }, 5000);
+  };
 
   const buttonsDisabled =
     !address || signingStatus === 'loading' || !isManager || !selectedProject
+
+  // Debug logging for button state
+  useEffect(() => {
+    console.log('FinalReport: Button state debug', {
+      buttonsDisabled,
+      address: !!address,
+      signingStatus,
+      isManager,
+      selectedProject: !!selectedProject,
+      selectedProjectId: selectedProject?.id,
+      reportTitle,
+      hasLoadedProposal: !!loadedProposal
+    });
+  }, [buttonsDisabled, address, signingStatus, isManager, selectedProject, reportTitle, loadedProposal]);
+
+  const handleFormSubmit = async () => {
+    console.log('FinalReport: handleFormSubmit called', {
+      buttonsDisabled,
+      hasFormMethods: !!methods,
+      isManager,
+      selectedProject: !!selectedProject
+    });
+    
+    // Use react-hook-form's handleSubmit to trigger validation
+    await handleSubmit(onSubmit)();
+  };
+
+  const getButtonDisabledReason = () => {
+    if (!address) return 'Please connect your wallet';
+    if (signingStatus === 'loading') return 'Processing transaction...';
+    if (!selectedProject) return 'Please select a project';
+    if (!isManager) return 'You must be a project manager';
+    if (isUploadingImage) return 'Uploading image...';
+    return null;
+  };
 
   const setProposalId = function (id: string) {
     setQuery({ proposalId: id })
@@ -343,15 +444,19 @@ export default function FinalReportEditor({
             </div>
             
             {/* Submit buttons */}
-            <div className="flex justify-end space-x-4">
-              {/* SUBMIT */}
+            <div className="flex flex-col items-end space-y-2">
               <PrivyWeb3Button
                 requiredChain={DEFAULT_CHAIN_V5}
                 className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
-                label={signingStatus === 'loading' ? 'Signing...' : isUploadingImage ? 'Uploading image...' : 'Submit'}
-                action={onSubmit}
+                label={signingStatus === 'loading' ? 'Signing...' : isUploadingImage ? 'Uploading image...' : 'Submit Final Report'}
+                action={handleFormSubmit}
                 isDisabled={buttonsDisabled || isUploadingImage}
               />
+              {(buttonsDisabled || isUploadingImage) && getButtonDisabledReason() && (
+                <p className="text-sm text-yellow-400 font-medium">
+                  {getButtonDisabledReason()}
+                </p>
+              )}
             </div>
           </div>
         </form>
