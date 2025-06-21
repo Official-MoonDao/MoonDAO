@@ -56,7 +56,7 @@ const indexCardData = [
     icon: '/assets/icon-lander.svg',
     iconAlt: 'Lander',
     header: 'Moon Mission Landing',
-    link: 'https://docs.moondao.com/Governance/Constitution',
+    link: '/constitution',
     hovertext: 'Read the Constitution',
     paragraph: (
       <>

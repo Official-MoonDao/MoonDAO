@@ -21,6 +21,10 @@ module.exports = withTM(
     experimental: {
       serverComponentsExternalPackages: ['thirdweb'],
     },
+    typescript: {
+      // Enable faster TypeScript builds
+      tsconfigPath: './tsconfig.json',
+    },
     images: {
       domains: [
         'cdn.shopify.com',
@@ -76,18 +80,8 @@ module.exports = withTM(
           permanent: true,
         },
         {
-          source: '/docs/constitution',
-          destination: 'https://docs.moondao.com/Governance/Constitution',
-          permanent: true,
-        },
-        {
           source: '/docs/token',
           destination: 'https://docs.moondao.com/Governance/Governance-Tokens',
-          permanent: true,
-        },
-        {
-          source: '/docs/faq',
-          destination: 'https://docs.moondao.com/About/FAQ',
           permanent: true,
         },
         {

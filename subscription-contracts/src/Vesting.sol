@@ -11,12 +11,17 @@ contract Vesting {
     IERC20 public token;
     address public beneficiary;
     uint256 public immutable start;
-    uint256 public constant cliffDuration = 365 days;      // 1-year cliff
+    uint256 public immutable cliffDuration;      // 1-year cliff
     uint256 public constant vestingDuration = 4 * 365 days;  // 4-year vesting
     uint256 public totalWithdrawn;                         // Total tokens already withdrawn
 
     constructor(address _beneficiary) {
         beneficiary = _beneficiary;
+        if (block.chainid != 11155111){
+            cliffDuration = 365 days; // 1-year cliff
+        } else {
+            cliffDuration = 0; // No cliff for Sepolia to make testing easier
+        }
         start = block.timestamp; // Vesting starts immediately upon deployment
     }
 

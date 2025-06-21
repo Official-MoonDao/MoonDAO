@@ -39,7 +39,7 @@ const Governance: React.FC = () => {
       icon: '/assets/icon-constitution.svg',
       iconAlt: 'Constitution',
       header: ' Constitution',
-      link: 'https://docs.moondao.com/Governance/Constitution',
+      link: '/constitution',
       hovertext: 'Report a Bug',
       paragraph: <>Report a bug and help us improve MoonDAO.</>,
       inline: true,
