@@ -1,9 +1,5 @@
 import { PlusCircleIcon } from '@heroicons/react/20/solid'
-import {
-  GlobeAmericasIcon,
-  ListBulletIcon,
-  Squares2X2Icon,
-} from '@heroicons/react/24/outline'
+import { GlobeAmericasIcon, ListBulletIcon } from '@heroicons/react/24/outline'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
 import {
@@ -92,7 +88,7 @@ export default function Network({
     (newTab: string) => {
       setTab(newTab)
       setPageIdx(1)
-      shallowQueryRoute({ tab: newTab, page: '1', view: viewMode })
+      shallowQueryRoute({ tab: newTab, page: '1'})
     },
     [shallowQueryRoute]
   )
@@ -100,7 +96,7 @@ export default function Network({
   const handlePageChange = useCallback(
     (newPage: number) => {
       setPageIdx(newPage)
-      shallowQueryRoute({ tab, page: newPage.toString(), view: viewMode })
+      shallowQueryRoute({ tab, page: newPage.toString()})
     },
     [shallowQueryRoute]
   )
@@ -115,8 +111,8 @@ export default function Network({
         ? filterBySearch(filteredCitizens).length
         : filteredCitizens.length
 
-    if (tab === 'teams') setMaxPage(Math.ceil(totalTeams / 9))
-    if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 9))
+    if (tab === 'teams') setMaxPage(Math.ceil(totalTeams / 10))
+    if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 10))
   }, [tab, input, filteredCitizens, filteredTeams])
 
   const [cachedNFTs, setCachedNFTs] = useState<any[]>([])
@@ -124,15 +120,12 @@ export default function Network({
   const [pageIdx, setPageIdx] = useState(1)
 
   useEffect(() => {
-    const { tab: urlTab, page: urlPage, view: urlView } = router.query
+    const { tab: urlTab, page: urlPage } = router.query
     if (urlTab && (urlTab === 'teams' || urlTab === 'citizens')) {
       setTab(urlTab as string)
     }
     if (urlPage && !isNaN(Number(urlPage))) {
       setPageIdx(Number(urlPage))
-    }
-    if (urlView && (urlView === 'grid' || urlView === 'list')) {
-      setViewMode(urlView as 'grid' | 'list')
     }
   }, [router.query])
 
@@ -141,18 +134,6 @@ export default function Network({
   }, [tab, input, filteredTeams, filteredCitizens, router.query])
 
   useChainDefault()
-
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-
-  const handleViewModeChange = useCallback(
-    (newMode: 'grid' | 'list') => {
-      setViewMode(newMode)
-      setTimeout(() => {
-        shallowQueryRoute({ tab, page: pageIdx.toString(), view: newMode })
-      }, 30)
-    },
-    [shallowQueryRoute]
-  )
 
   const descriptionSection = (
     <div className="pt-2">
@@ -166,10 +147,10 @@ export default function Network({
         .
       </div>
       <div className="relative w-full flex justify-between">
-        <div className="w-fuil flex flex-col min-[1200px]:flex-row md:gap-2">
-          <div className="w-full flex flex-col min-[800px]:flex-row gap-4">
+        <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
+          <div className="w-full flex flex-row min-[800px]:flex-row gap-4">
             <Frame
-              className="w-full h-fit flex-grow"
+              className="w-full h-fit flex-grow min-w-[55vw] md:min-w-0"
               bottomLeft="20px"
               topLeft="5vmax"
               noPadding
@@ -218,39 +199,13 @@ export default function Network({
               </Frame>
             </div>
 
-            <div className="w-full flex justify-between gap-2">
-              <div className="flex gap-2">
-                <StandardButton
-                  className={`h-[40px] flex items-center justify-center ${
-                    viewMode === 'grid'
-                      ? 'gradient-2 opacity-100'
-                      : 'bg-mid-cool opacity-50'
-                  }`}
-                  onClick={() => handleViewModeChange('grid')}
-                  hoverEffect={false}
-                >
-                  <Squares2X2Icon width={30} height={30} />
-                </StandardButton>
-
-                <StandardButton
-                  className={`h-[40px] flex items-center justify-center ${
-                    viewMode === 'list'
-                      ? 'gradient-2 opacity-100'
-                      : 'bg-mid-cool opacity-50'
-                  }`}
-                  onClick={() => handleViewModeChange('list')}
-                  hoverEffect={false}
-                >
-                  <ListBulletIcon width={30} height={30} />
-                </StandardButton>
-              </div>
-
+            <div className="w-full flex justify-end md:justify-start">
               <StandardButton
                 className="gradient-2 rounded-full"
                 hoverEffect={false}
                 link="/join"
               >
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-start gap-2">
                   <PlusCircleIcon width={20} height={20} />
                   {'Join'}
                 </div>
@@ -301,16 +256,38 @@ export default function Network({
     if (!cachedNFTs?.[0]) {
       return (
         <>
-          {Array.from({ length: 9 }).map((_, i) => (
+          {Array.from({ length: 10 }).map((_, i) => (
             <CardSkeleton key={`card-skeleton-${i}`} />
           ))}
         </>
       )
     }
 
-    const nftsToShow = cachedNFTs?.slice((pageIdx - 1) * 9, pageIdx * 9)
+    // Always try to show 10 items on each full page
+    const startIndex = (pageIdx - 1) * 10
+    let endIndex = pageIdx * 10
 
-    return nftsToShow.map((nft: any, I: number) => {
+    // On the last page, show all remaining items
+    if (pageIdx === maxPage) {
+      endIndex = cachedNFTs.length
+    }
+
+    const nftsToShow = cachedNFTs?.slice(startIndex, endIndex)
+
+    // Fill the last row with empty divs if needed on non-last pages
+    const itemsToRender = [...nftsToShow]
+    if (pageIdx !== maxPage && itemsToRender.length < 10) {
+      const emptyCount = 10 - itemsToRender.length
+      for (let i = 0; i < emptyCount; i++) {
+        itemsToRender.push({ empty: true })
+      }
+    }
+
+    return itemsToRender.map((nft: any, i: number) => {
+      if (nft.empty) {
+        return <div key={`empty-${i}`} className="invisible" />
+      }
+
       if (nft.metadata.name === 'Failed to load NFT metadata') return null
 
       const type = nft.metadata.attributes.find(
@@ -326,22 +303,13 @@ export default function Network({
       }`
 
       return (
-        <div
-          className={`justify-center flex transition-all overflow-hidden w-full ${
-            viewMode === 'grid' ? 'hover:ring-2 hover:ring-white' : ''
-          }`}
-          key={'team-citizen-' + I}
-        >
-          {viewMode === 'grid' ? (
-            <Card inline metadata={nft.metadata} type={type} link={link} />
-          ) : (
-            <StandardDetailCard
-              title={nft.metadata.name}
-              paragraph={nft.metadata.description}
-              image={nft.metadata.image}
-              link={link}
-            />
-          )}
+        <div className="w-full h-full" key={'team-citizen-' + i}>
+          <StandardDetailCard
+            title={nft.metadata.name}
+            paragraph={nft.metadata.description}
+            image={nft.metadata.image}
+            link={link}
+          />
         </div>
       )
     })
@@ -385,23 +353,17 @@ export default function Network({
           isProfile
         >
           <>
-            {viewMode === 'grid' ? (
-              <CardGridContainer xsCols={1} smCols={2} mdCols={3} maxCols={3}>
-                {renderNFTs()}
-              </CardGridContainer>
-            ) : (
-              <CardGridContainer
-                xsCols={1}
-                smCols={1}
-                mdCols={1}
-                lgCols={2}
-                maxCols={2}
-                noGap
-                center
-              >
-                {renderNFTs()}
-              </CardGridContainer>
-            )}
+            <CardGridContainer
+              xsCols={1}
+              smCols={1}
+              mdCols={1}
+              lgCols={2}
+              maxCols={2}
+              noGap
+              center
+            >
+              {renderNFTs()}
+            </CardGridContainer>
 
             <Frame noPadding marginBottom="0px">
               <div

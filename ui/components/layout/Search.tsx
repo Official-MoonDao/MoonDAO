@@ -5,7 +5,7 @@ import { SearchIcon } from '../assets'
 export default function Search({ input, setInput, className }: any) {
   return (
     <div
-      className={`relative pl-4 bg-search w-full flex items-center space-x-2 text-black dark:text-white ${className} max-w-[300px]`}
+      className={`relative pl-4 bg-search w-full flex items-center space-x-2 text-black dark:text-white ${className} md:max-w-[500px]`}
     >
       <div id="search-icon-bg" className="bg-search"></div>
       <Image
