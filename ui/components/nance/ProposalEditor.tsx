@@ -141,6 +141,14 @@ export default function ProposalEditor() {
   }, [loadedProposal])
 
   const onSubmit: SubmitHandler<RequestBudget> = async (formData) => {
+    console.log('onSubmit called', {
+      formData,
+      proposalStatus,
+      attachBudget,
+      proposalTitle,
+      bodyLength: getMarkdown()?.length || 0
+    });
+
     let proposal = buildProposal(proposalStatus)
 
     if (attachBudget) {
@@ -184,21 +192,67 @@ export default function ProposalEditor() {
   }
 
   async function signAndSendProposal(proposal: Proposal) {
+    console.log('signAndSendProposal: Starting proposal submission', {
+      title: proposal.title,
+      bodyLength: proposal.body?.length || 0,
+      address,
+      nextSnapshotVote: !!nextSnapshotVote,
+      loadedProposalId: loadedProposal?.proposalId,
+      nextProposalId
+    });
+
     if (!proposal.title) {
+      console.error('signAndSendProposal: No title provided');
       toast.error('Please enter a title for the proposal.', {
         style: toastStyle,
       })
       return
     }
-    if (!nextSnapshotVote) return
+    
+    if (!proposal.body || proposal.body.trim().length === 0) {
+      console.error('signAndSendProposal: No content provided');
+      toast.error('Please write some content for the proposal.', {
+        style: toastStyle,
+      })
+      return
+    }
+    
+    if (!address) {
+      console.error('signAndSendProposal: No wallet address');
+      toast.error('Please connect your wallet to submit a proposal.', {
+        style: toastStyle,
+      })
+      return
+    }
+    
+    if (!nextSnapshotVote) {
+      console.error('signAndSendProposal: No next snapshot vote available', { spaceInfo, nextEvents });
+      toast.error('Unable to schedule proposal vote. Please try again later.', {
+        style: toastStyle,
+      })
+      return
+    }
+    
     setSigningStatus('loading')
     const t = toast.loading('Sign proposal...', {
       style: toastStyle,
     })
     const proposalId = loadedProposal?.proposalId || nextProposalId
     const preTitle = `${proposalIdPrefix}${proposalId}: `
+    
+    console.log('signAndSendProposal: About to sign proposal', {
+      proposalId,
+      preTitle,
+      nextSnapshotVote
+    });
+    
     signProposalAsync(proposal, preTitle, nextSnapshotVote)
       .then((res) => {
+        console.log('signAndSendProposal: Signature received', {
+          hasSignature: !!res.signature,
+          hasMessage: !!res.message,
+          address: res.address
+        });
         const { signature, message, address } = res
         trigger({
           proposal,
@@ -210,6 +264,7 @@ export default function ProposalEditor() {
           },
         })
           .then((res) => {
+            console.log('signAndSendProposal: Upload response', res);
             if (res.success) {
               setSigningStatus('success')
               clearProposalCache()
@@ -219,23 +274,26 @@ export default function ProposalEditor() {
               })
               router.push(`/proposal/${res.data.uuid}`)
             } else {
+              console.error('signAndSendProposal: Upload failed', res);
               setSigningStatus('error')
               toast.dismiss(t)
-              toast.error('Error saving proposal.', { style: toastStyle })
+              toast.error(`Error saving proposal: ${res.error || 'Unknown error'}`, { style: toastStyle })
             }
           })
           .catch((error) => {
+            console.error('signAndSendProposal: Upload error', error);
             setSigningStatus('error')
             toast.dismiss(t)
-            toast.error(`[API] Error submitting proposal:\n${error}`, {
+            toast.error(`[API] Error submitting proposal:\n${error.message || error}`, {
               style: toastStyle,
             })
           })
       })
       .catch((error) => {
+        console.error('signAndSendProposal: Signing error', error);
         setSigningStatus('idle')
         toast.dismiss(t)
-        toast.error(`[Wallet] Error signing proposal:\n${error}`, {
+        toast.error(`[Wallet] Error signing proposal:\n${error.message || error}`, {
           style: toastStyle,
         })
       })
@@ -282,7 +340,7 @@ export default function ProposalEditor() {
             />
           </div>
           <div className="py-0 rounded-[20px] flex flex-col md:flex-row justify-between gap-4">
-            <div className={`${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
+            <div className={`mb-4 flex-shrink-0 w-full md:w-2/3 ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
               <ProposalTitleInput
                 value={proposalTitle}
                 onChange={(s) => {
@@ -377,17 +435,40 @@ export default function ProposalEditor() {
             </FormProvider>
           )}
 
-          <div className="mt-3 flex justify-end">
+          <div className="mt-6 flex flex-col gap-4">
+            {/* Network Disclaimer */}
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <svg className="w-5 h-5 text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-yellow-400 mb-1">Network Notice</h3>
+                  <p className="text-sm text-yellow-200/80">
+                    Please ensure you're connected to the correct blockchain network before submitting. You may need to switch networks in your wallet to complete your submission successfully.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             {/* Submit buttons */}
-            <div className="flex justify-end space-x-5">
+            <div className="flex justify-end space-x-4">
               {/*  DRAFT */}
               <button
                 type="submit"
                 className={classNames(
                   buttonsDisabled && 'tooltip',
-                  'text-sm px-5 py-3 border border-dashed border-dark-warm font-RobotoMono rounded-[20px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
+                  'text-sm px-6 py-3 bg-black/30 hover:bg-black/40 border border-white/20 hover:border-white/30 text-white/80 hover:text-white font-RobotoMono rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl'
                 )}
                 onClick={() => {
+                  console.log('Save Draft button clicked', {
+                    buttonsDisabled,
+                    address: !!address,
+                    signingStatus,
+                    isUploadingImage
+                  });
                   setProposalStatus('Draft')
                 }}
                 disabled={buttonsDisabled}
@@ -406,9 +487,16 @@ export default function ProposalEditor() {
                 type="submit"
                 className={classNames(
                   buttonsDisabled && 'tooltip',
-                  'px-5 py-3 gradient-2 border border-transparent font-RobotoMono rounded-[20px] rounded-tl-[10px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40'
+                  'px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0'
                 )}
                 onClick={() => {
+                  console.log('Submit button clicked', {
+                    buttonsDisabled,
+                    address: !!address,
+                    signingStatus,
+                    isUploadingImage,
+                    loadedProposalStatus: loadedProposal?.status
+                  });
                   const status =
                     loadedProposal?.status === 'Temperature Check'
                       ? 'Temperature Check'

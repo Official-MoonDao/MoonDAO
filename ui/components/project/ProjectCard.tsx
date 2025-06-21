@@ -1,6 +1,6 @@
 //This component dipslays a project card using project data directly from tableland
 import Link from 'next/link'
-import React, { useContext, memo } from 'react'
+import React, { useContext, memo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
@@ -31,6 +31,11 @@ const ProjectCardContent = memo(
     userContributed,
     userHasVotingPower,
   }: any) => {
+    const [isExpanded, setIsExpanded] = useState(false)
+    const description = proposalJSON?.abstract || ''
+    const isLongText = description.length > 200
+    const shouldTruncate = isLongText && !isExpanded
+
     return (
       <div
         id="card-container"
@@ -84,22 +89,38 @@ const ProjectCardContent = memo(
         <div className="flex gap-2"></div>
         <div className="flex-1">
           <div className="pr-4 break-words">
-            <ReactMarkdown
-              components={{
-                p: ({ node, ...props }) => <p className="font-Lato text-[16px] break-words m-0" {...props} />,
-                a: ({ node, ...props }) => (
-                  <a 
-                    className="font-Lato text-[16px] text-moon-blue hover:text-moon-gold underline" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    onClick={(e) => e.stopPropagation()}
-                    {...props} 
-                  />
-                ),
-              }}
-            >
-              {proposalJSON?.abstract || ''}
-            </ReactMarkdown>
+            <div className={`md:max-h-none ${shouldTruncate ? 'max-h-24 overflow-hidden relative' : ''}`}>
+              <ReactMarkdown
+                components={{
+                  p: ({ node, ...props }) => <p className="font-Lato text-[16px] break-words m-0" {...props} />,
+                  a: ({ node, ...props }) => (
+                    <a 
+                      className="font-Lato text-[16px] text-moon-blue hover:text-moon-gold underline" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      onClick={(e) => e.stopPropagation()}
+                      {...props} 
+                    />
+                  ),
+                }}
+              >
+                {description}
+              </ReactMarkdown>
+              {shouldTruncate && (
+                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-900 to-transparent md:hidden"></div>
+              )}
+            </div>
+            {isLongText && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsExpanded(!isExpanded)
+                }}
+                className="text-blue-400 hover:text-blue-300 text-sm mt-2 underline md:hidden transition-colors"
+              >
+                {isExpanded ? 'Read less' : 'Read more'}
+              </button>
+            )}
           </div>
         </div>
       </div>

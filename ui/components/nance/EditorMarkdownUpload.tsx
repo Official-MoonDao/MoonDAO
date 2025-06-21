@@ -39,7 +39,7 @@ export default function EditorMarkdownUpload({
       <label htmlFor="markdown-upload">
         <button
           type="button"
-          className="p-1 w-full min-w-[200px] gradient-2 rounded-lg"
+          className="px-4 py-3 w-full min-w-[200px] bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 border border-green-500/30 hover:border-green-500/50 text-green-400 hover:text-green-300 font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl text-sm"
           onClick={() => fileInputRef.current?.click()}
         >
           Upload Markdown
