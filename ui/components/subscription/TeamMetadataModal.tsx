@@ -25,16 +25,17 @@ import DeleteProfileData from './DeleteProfileData'
 
 function TeamMetadataForm({ teamData, setTeamData }: any) {
   return (
-    <div className="w-full flex flex-col gap-2">
+    <div className="w-full flex flex-col gap-4">
       <FormInput
         id="team-name-input"
-        label="Name *"
+        label="Team Name *"
         value={teamData.name}
         onChange={({ target }: any) =>
           setTeamData((prev: any) => ({ ...prev, name: target.value }))
         }
-        placeholder="Enter your name"
+        placeholder="Enter your team name"
         maxLength={100}
+        mode="modern"
       />
       <FormInput
         id="team-bio-input"
@@ -43,12 +44,13 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
         onChange={({ target }: any) =>
           setTeamData((prev: any) => ({ ...prev, description: target.value }))
         }
-        placeholder="Enter your bio"
+        placeholder="Tell us about your team"
         maxLength={
           bytesOfString(teamData.description) >= 1024
             ? teamData.description.length
             : 1024
         }
+        mode="modern"
       />
       <FormInput
         id="team-twitter-input"
@@ -57,12 +59,13 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
         onChange={({ target }: any) =>
           setTeamData((prev: any) => ({ ...prev, twitter: target.value }))
         }
-        placeholder="Enter your twitter link"
+        placeholder="Twitter profile or handle"
         maxLength={
           bytesOfString(teamData.twitter) >= 1024
             ? teamData.twitter.length
             : 1024
         }
+        mode="modern"
       />
       <FormInput
         id="team-communications-input"
@@ -74,12 +77,13 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
             communications: target.value,
           }))
         }
-        placeholder="Enter your communications link"
+        placeholder="Discord, Slack, or other communication link"
         maxLength={
           bytesOfString(teamData.communications) >= 1024
             ? teamData.communications.length
             : 1024
         }
+        mode="modern"
       />
       <FormInput
         id="team-website-input"
@@ -88,12 +92,13 @@ function TeamMetadataForm({ teamData, setTeamData }: any) {
         onChange={({ target }: any) =>
           setTeamData((prev: any) => ({ ...prev, website: target.value }))
         }
-        placeholder="Enter your website link"
+        placeholder="Team website URL"
         maxLength={
           bytesOfString(teamData.website) >= 1024
             ? teamData.website.length
             : 1024
         }
+        mode="modern"
       />
     </div>
   )
@@ -168,25 +173,36 @@ export default function TeamMetadataModal({
 
   return (
     <Modal id="entity-metadata-modal-backdrop" setEnabled={setEnabled}>
-      <div className="w-full flex flex-col gap-2 items-start justify-start w-[100vw] md:w-[650px] p-5 bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto">
+      <div className="w-full flex flex-col gap-6 items-start justify-start w-[100vw] md:w-[700px] p-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl h-screen md:h-auto">
         <div className="w-full flex items-center justify-between">
-          <h1 className="text-2xl font-GoodTimes ">Update Info</h1>
+          <div className="flex flex-col gap-2">
+            <h1 className="text-2xl font-GoodTimes text-white">Update Team Info</h1>
+            <p className="text-slate-300 text-sm">Manage your team profile and settings</p>
+          </div>
           <button
             id="close-modal"
             type="button"
-            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+            className="flex h-10 w-10 border-2 border-slate-600 items-center justify-center rounded-full hover:border-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
             onClick={() => setEnabled(false)}
           >
             <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
           </button>
         </div>
         {stage === 0 && (
-          <ImageGenerator
-            setImage={setNewTeamImage}
-            nextStage={() => setStage(1)}
-            stage={stage}
-            currImage={currTeamImage}
-          />
+          <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 p-6">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <h3 className="text-lg font-semibold text-white">Team Image</h3>
+                <p className="text-slate-300 text-sm">Upload or update your team image</p>
+              </div>
+              <ImageGenerator
+                setImage={setNewTeamImage}
+                nextStage={() => setStage(1)}
+                stage={stage}
+                currImage={currTeamImage}
+              />
+            </div>
+          </div>
         )}
         {stage === 0 && (
           <DeleteProfileData
@@ -198,47 +214,72 @@ export default function TeamMetadataModal({
           />
         )}
         {stage === 1 && (
-          <>
-            <p>{"Would you like to update your team's email?"}</p>
-            <div className="flex gap-4">
-              <button
-                className="px-5 py-2 rounded-md gradient-2"
-                onClick={() => setStage(2)}
-              >
-                Yes
-              </button>
-              <button
-                className="px-5 py-2 rounded-md border-2 border-light-warm border-gradient-2"
-                onClick={() => setStage(3)}
-              >
-                No
-              </button>
+          <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 p-6">
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <h3 className="text-lg font-semibold text-white">Email Update</h3>
+                <p className="text-slate-300">{"Would you like to update your team's email address?"}</p>
+              </div>
+              <div className="flex gap-4">
+                <button
+                  className="px-6 py-3 rounded-2xl gradient-2 hover:scale-105 transition-transform font-medium text-white"
+                  onClick={() => setStage(2)}
+                >
+                  Yes, update email
+                </button>
+                <button
+                  className="px-6 py-3 rounded-2xl border-2 border-slate-600 hover:border-slate-400 transition-colors text-white font-medium"
+                  onClick={() => setStage(3)}
+                >
+                  No, skip this step
+                </button>
+              </div>
             </div>
-          </>
+          </div>
         )}
         {stage === 2 && (
-          <Widget
-            className="w-[100%] md:w-[100%]"
-            id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string}
-            onSubmit={submitTypeform}
-            height={500}
-          />
+          <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 overflow-hidden">
+            <div className="p-6 border-b border-slate-600/30">
+              <h3 className="text-lg font-semibold text-white">Update Email</h3>
+              <p className="text-slate-300 text-sm">Please fill out the form below to update your email</p>
+            </div>
+            <div className="relative">
+              <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
+                <Widget
+                  className="w-full"
+                  id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string}
+                  onSubmit={submitTypeform}
+                  height={500}
+                />
+              </div>
+              {/* Visible indicator for scroll/navigation */}
+              <div className="absolute bottom-4 right-4 bg-blue-600/80 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm border border-blue-400/30 shadow-lg pointer-events-none opacity-75 scroll-indicator">
+                ↕️ Scroll for more
+              </div>
+            </div>
+          </div>
         )}
         {stage === 3 && (
-          <>
-            <TeamMetadataForm teamData={teamData} setTeamData={setTeamData} />
-            <ConditionCheckbox
-              label="I acknowledge that this info will be stored permanently onchain."
-              agreedToCondition={agreedToOnChainData}
-              setAgreedToCondition={setAgreedToOnChainData}
-            />
-            <PrivyWeb3Button
-              v5
-              className="mt-4 w-full gradient-2 rounded-[5vmax]"
-              requiredChain={DEFAULT_CHAIN_V5}
-              label="Submit"
-              isDisabled={!agreedToOnChainData}
-              action={async () => {
+          <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 p-6">
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <h3 className="text-lg font-semibold text-white">Team Information</h3>
+                <p className="text-slate-300 text-sm">Update your team details and contact information</p>
+              </div>
+              <TeamMetadataForm teamData={teamData} setTeamData={setTeamData} />
+              <div className="border-t border-slate-600/30 pt-4">
+                <ConditionCheckbox
+                  label="I acknowledge that this info will be stored permanently onchain."
+                  agreedToCondition={agreedToOnChainData}
+                  setAgreedToCondition={setAgreedToOnChainData}
+                />
+              </div>
+              <PrivyWeb3Button
+                v5
+                className="mt-4 w-full gradient-2 hover:scale-105 transition-transform rounded-2xl py-3 font-medium"
+                requiredChain={DEFAULT_CHAIN_V5}
+                label="Update Team Information"
+                isDisabled={!agreedToOnChainData}                action={async () => {
                 if (!teamData.name || teamData.name.trim() === '') {
                   return toast.error('Please enter a name.')
                 }
@@ -336,8 +377,9 @@ export default function TeamMetadataModal({
                   console.log(err)
                 }
               }}
-            />
-          </>
+              />
+            </div>
+          </div>
         )}
       </div>
     </Modal>
