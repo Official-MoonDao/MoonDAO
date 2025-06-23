@@ -1,7 +1,7 @@
 export default async function waitForResponse(
   formId: string,
   responseId: string,
-  maxRetries: number = 10
+  maxRetries: number = 20
 ): Promise<boolean> {
   let retries = 0;
   
@@ -28,7 +28,7 @@ export default async function waitForResponse(
     
     retries++
     if (retries < maxRetries) {
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 5000))
     }
   }
   

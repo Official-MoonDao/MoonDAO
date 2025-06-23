@@ -148,7 +148,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
           description=""
         >
           <div className="flex flex-row w-full">
-            <div className="px-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 lg:p-8 rounded-[2vmax] shadow-2xl md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1200px]">
+            <div className="px-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 lg:p-8 rounded-[2vmax] shadow-2xl md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1000px]">
               <div className="flex p-2 pb-0 flex-row w-full justify-between max-w-[600px] items-start">
                 <Steps
                   className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
@@ -186,7 +186,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   title="Team Profile"
                   description="Please complete your team profile by filling out the form below."
                 >
-                  <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 overflow-hidden relative">
+                  <div className="w-full max-w-[900px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 overflow-hidden relative">
                     <Widget
                       className="w-full"
                       id={
@@ -355,7 +355,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   <PrivyWeb3Button
                     id="team-checkout-button"
                     label="Create Team"
-                    className="mt-6 w-full gradient-2 hover:scale-105 transition-transform rounded-2xl py-4 font-medium text-lg"
+                    className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base"
                     isDisabled={!agreedToCondition || isLoadingMint}
                     action={async () => {
                       if (!account || !address) {

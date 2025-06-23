@@ -13,9 +13,12 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
     if (!document.getElementById('teamPic'))
       return console.error('teamPic is not defined')
 
-    if (inputImage) {
-      // @ts-expect-error
-      await html2canvas(document.getElementById('teamPic')).then((canvas) => {
+    if (inputImage) {        // @ts-expect-error
+        await html2canvas(document.getElementById('teamPic'), {
+          width: 400,
+          height: 400,
+          scale: 1
+        }).then((canvas) => {
         const img = canvas.toDataURL('image/png')
 
         //Convert from base64 to file
@@ -61,13 +64,13 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
           {currImage && !inputImage && (
             <div
               id="teamPic"
-              className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] justify-left relative flex rounded-lg overflow-hidden"
+              className="w-[70vw] h-[70vw] md:w-[400px] md:h-[400px] justify-left relative flex rounded-lg overflow-hidden"
             >
               <IPFSRenderer
                 className="p-0 m-0 rounded-lg"
                 src={currImage}
-                width={600}
-                height={600}
+                width={400}
+                height={400}
                 alt="Team Image"
               />
             </div>
@@ -77,7 +80,7 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
           {inputImage && (
             <div
               id="teamPic"
-              className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/moondao-team-flag.png')] bg-cover justify-left relative flex rounded-lg overflow-hidden"
+              className="w-[70vw] h-[70vw] md:w-[400px] md:h-[400px] bg-[url('/moondao-team-flag.png')] bg-cover justify-left relative flex rounded-lg overflow-hidden"
             >
               <div
                 id="user-image"
@@ -93,7 +96,7 @@ export function ImageGenerator({ currImage, setImage, nextStage, stage }: any) {
           {!inputImage && !currImage && (
             <div
               id="teamPic"
-              className="w-[90vw] h-[90vw] md:w-[600px] md:h-[600px] bg-[url('/moondao-team-flag.png')] bg-cover justify-left relative flex rounded-lg overflow-hidden"
+              className="w-[70vw] h-[70vw] md:w-[400px] md:h-[400px] bg-[url('/moondao-team-flag.png')] bg-cover justify-left relative flex rounded-lg overflow-hidden"
             >
               <div
                 id="user-image"
