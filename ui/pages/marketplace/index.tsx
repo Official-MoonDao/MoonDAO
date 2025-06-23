@@ -159,6 +159,10 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                     title={listing.title}
                     paragraph={listing.description}
                     image={listing.image}
+                    price={listing.price}
+                    currency={listing.currency}
+                    isCitizen={citizen}
+                    shipping={listing.shipping}
                     onClick={() => handleListingClick(listing)}
                   />
                 ))
