@@ -25,7 +25,13 @@ export default function useTotalFunding(projectId: any) {
     chainId: chainId as SupportedChainId,
     args: [projectId ?? 0, JB_NATIVE_TOKEN_ADDRESS],
   })
+  if (!terminalAddress) {
+    return 0
+  }
   const { store } = useJBTerminalContext()
+  if (!store.data) {
+    return 0
+  }
   const { data: balance } = useReadJbTerminalStoreBalanceOf({
     address: store.data ?? undefined,
     chainId,
