@@ -17,6 +17,7 @@ export type MissionFundingMilestoneChartProps = {
   subgraphData: any
   fundingGoal: number
   height?: number
+  projectId?: number
 }
 
 export default function MissionFundingMilestoneChart({
