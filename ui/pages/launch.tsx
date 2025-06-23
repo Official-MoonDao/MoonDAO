@@ -115,7 +115,6 @@ export default function Launch({ missions }: any) {
   const userTeams = useTeamWearer(teamContract, selectedChain, address)
   const [userTeamsAsManager, setUserTeamsAsManager] = useState<any>()
 
-  console.log('Missions:', missions)
   const {
     token: featuredMissionToken,
     subgraphData: featuredMissionSubgraphData,
