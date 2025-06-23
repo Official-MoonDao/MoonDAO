@@ -5,26 +5,24 @@ import { SearchIcon } from '../assets'
 export default function Search({ input, setInput, className }: any) {
   return (
     <div
-      className={`relative pl-4 bg-search w-full flex items-center space-x-2 text-black dark:text-white ${className} md:max-w-[500px]`}
+      className={`relative w-60 flex items-center space-x-2 ${className}`}
     >
-      <div id="search-icon-bg" className="bg-search"></div>
       <Image
         src="/assets/icon-mag.svg"
         alt="Search Icon"
-        width={20}
-        height={20}
+        width={14}
+        height={14}
+        className="text-slate-400"
       />
       <div id="input-field-container" className="flex-grow">
-        <Frame noPadding marginBottom="0px">
-          <input
-            className="w-full rounded-sm px-4 pt-2 pb-3 bg-dark-cool text-white placeholder:text-grey outline-none"
-            onChange={({ target }) => setInput(target.value)}
-            value={input}
-            type="text"
-            name="search"
-            placeholder="Search..."
-          />
-        </Frame>
+        <input
+          className="w-full px-1 py-1 bg-transparent text-white placeholder:text-slate-400 outline-none border-0 focus:ring-0 text-sm leading-none h-7"
+          onChange={({ target }) => setInput(target.value)}
+          value={input}
+          type="text"
+          name="search"
+          placeholder="Search citizens and teams..."
+        />
       </div>
     </div>
   )
