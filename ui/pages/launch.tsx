@@ -22,10 +22,10 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import React, { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import { sepolia } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { sepolia } from '@/lib/infura/infuraChains'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useMissionData from '@/lib/mission/useMissionData'
@@ -343,7 +343,7 @@ export default function Launch({ missions }: any) {
           className="mt-[2vw] md:mt-[1vw] pb-[5vw] mb-[2vw] md:mb-[-5vw] md:pb-0 md:pt-0 relative flex flex-col justify-center items-center md:flex-row z-20 mb-[-5vw] w-full md:max-w-[1000px] mx-auto"
         >
           <JuiceProviders
-            projectId={missions?.[FEATURED_MISSION_INDEX].projectId}
+            projectId={missions?.[FEATURED_MISSION_INDEX]?.projectId}
             selectedChain={selectedChain}
           >
             <MissionWideCard

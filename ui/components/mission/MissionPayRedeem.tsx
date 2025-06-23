@@ -22,15 +22,15 @@ import {
   readContract,
   waitForReceipt,
 } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import {
   arbitrum,
   base,
   ethereum,
   sepolia,
   optimismSepolia,
-} from 'thirdweb/chains'
-import { useActiveAccount } from 'thirdweb/react'
-import useETHPrice from '@/lib/etherscan/useETHPrice'
+} from '@/lib/infura/infuraChains'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
 import useSafe from '@/lib/safe/useSafe'
@@ -776,10 +776,9 @@ export default function MissionPayRedeem({
             {token?.tokenSymbol && (
               <div className="w-full flex justify-between">
                 <p>{'Receive'}</p>
-                <p id="token-output">{`${formatTokenAmount(
-                  output,
-                  2
-                )} ${token?.tokenSymbol}`}</p>
+                <p id="token-output">{`${formatTokenAmount(output, 2)} ${
+                  token?.tokenSymbol
+                }`}</p>
               </div>
             )}
 

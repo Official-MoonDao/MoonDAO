@@ -10,7 +10,7 @@ import {
   ethereum,
   polygon,
   sepolia,
-} from 'thirdweb/chains'
+} from '@/lib/infura/infuraChains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 
@@ -35,7 +35,9 @@ function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
           className="group-hover:scale-110 transition-transform duration-200"
         />
       </div>
-      <span className="font-medium group-hover:text-blue-300 transition-colors">{name}</span>
+      <span className="font-medium group-hover:text-blue-300 transition-colors">
+        {name}
+      </span>
     </button>
   )
 }
@@ -76,7 +78,11 @@ export default function NetworkSelector({
     >
       <div
         id="network-selector-dropdown-button"
-        className={`flex items-center ${iconsOnly ? 'justify-center' : 'justify-between'} gap-2 p-2 bg-black/20 hover:bg-black/40 rounded-lg border border-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group ${compact ? 'w-full h-full' : ''}`}
+        className={`flex items-center ${
+          iconsOnly ? 'justify-center' : 'justify-between'
+        } gap-2 p-2 bg-black/20 hover:bg-black/40 rounded-lg border border-white/10 hover:border-white/20 cursor-pointer transition-all duration-200 group ${
+          compact ? 'w-full h-full' : ''
+        }`}
         onClick={(e) => {
           if (e.detail === 0) return e.preventDefault()
           setDropdown((prev) => !prev)
@@ -91,10 +97,16 @@ export default function NetworkSelector({
             className="group-hover:scale-110 transition-transform duration-200"
           />
         </div>
-        {!iconsOnly && <span className="text-white font-medium group-hover:text-blue-300 transition-colors">{selectedChain.name || ''}</span>}
         {!iconsOnly && (
-          <ChevronDownIcon 
-            className={`w-4 h-4 text-gray-400 group-hover:text-white transition-all duration-200 ${dropdown ? 'rotate-180' : ''}`}
+          <span className="text-white font-medium group-hover:text-blue-300 transition-colors">
+            {selectedChain.name || ''}
+          </span>
+        )}
+        {!iconsOnly && (
+          <ChevronDownIcon
+            className={`w-4 h-4 text-gray-400 group-hover:text-white transition-all duration-200 ${
+              dropdown ? 'rotate-180' : ''
+            }`}
           />
         )}
       </div>

@@ -1,6 +1,4 @@
 import useSWR, { Fetcher } from 'swr'
-import { Chain } from 'thirdweb'
-import { arbitrum, mainnet } from 'thirdweb/chains'
 
 export interface SafeBalanceUsdResponse {
   tokenAddress: string | null

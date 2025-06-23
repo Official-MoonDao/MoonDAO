@@ -37,11 +37,11 @@ import {
   prepareContractCall,
   sendAndConfirmTransaction,
 } from 'thirdweb'
-import { sepolia } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useSubHats } from '@/lib/hats/useSubHats'
+import { sepolia } from '@/lib/infura/infuraChains'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useMissionData from '@/lib/mission/useMissionData'
