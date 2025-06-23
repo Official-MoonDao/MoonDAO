@@ -106,14 +106,6 @@ const ContributionEditor: React.FC = () => {
       const data = await res.json()
 
       if (!res.ok) {
-        console.error('Contribution submission failed:', {
-          status: res.status,
-          statusText: res.statusText,
-          error: data.error,
-          address: address?.slice(0, 6) + '...' + address?.slice(-4),
-          contentLength: getMarkdown()?.length || 0
-        });
-        
         // Provide specific error messages based on status code
         let errorMessage = 'Failed to submit contribution.';
         if (res.status === 400) {
@@ -148,7 +140,6 @@ const ContributionEditor: React.FC = () => {
       )
       toast.success('Contribution submitted successfully!')
     } catch (err: any) {
-      console.error('Contribution submission error:', err);
       toast.error(err.message || 'Failed to submit contribution.')
     } finally {
       toast.dismiss(loadingToast)
