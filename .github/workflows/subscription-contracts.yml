@@ -50,7 +50,7 @@ jobs:
       - name: Run Local Chain with Anvil
         run: |
           anvil --fork-url https://11155111.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} &
-          anvil --fork-url https://1.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --port 8546 &
+          anvil --fork-url https://42161.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --port 8546 &
         id: local-chain
 
       - name: Install npm dependencies

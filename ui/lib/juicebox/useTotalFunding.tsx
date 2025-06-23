@@ -1,20 +1,29 @@
 import {
+  DEFAULT_CHAIN_V5,
+  JB_NATIVE_TOKEN_ADDRESS,
+  JB_NATIVE_TOKEN_ID,
+} from 'const/config'
+import {
   useJBTerminalContext,
   useReadJbTerminalStoreBalanceOf,
   useReadJbDirectoryPrimaryTerminalOf,
   useReadJbTerminalStoreUsedPayoutLimitOf,
 } from 'juice-sdk-react'
-import {
-  DEFAULT_CHAIN_V5,
-  JB_NATIVE_TOKEN_ADDRESS,
-  JB_NATIVE_TOKEN_ID,
-} from 'const/config'
 
 export default function useTotalFunding(projectId: any) {
   const chainId = DEFAULT_CHAIN_V5.id
+  type SupportedChainId =
+    | 1
+    | 10
+    | 42161
+    | 8453
+    | 84532
+    | 421614
+    | 11155111
+    | 11155420
   const { data: terminalAddress } = useReadJbDirectoryPrimaryTerminalOf({
-    chainId,
-    args: [projectId ?? 0n, JB_NATIVE_TOKEN_ADDRESS],
+    chainId: chainId as SupportedChainId,
+    args: [projectId ?? 0, JB_NATIVE_TOKEN_ADDRESS],
   })
   const { store } = useJBTerminalContext()
   const { data: balance } = useReadJbTerminalStoreBalanceOf({
