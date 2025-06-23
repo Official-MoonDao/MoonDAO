@@ -115,7 +115,7 @@ export default function Tier({
                 return (
                   <div
                     key={`${label}-tier-point-${i}`}
-                    className="flex flex-row items-start pb-4 rounded-lg bg-slate-800/30 border border-slate-600/30 p-4 mb-3 space-x-3"
+                    className="flex flex-row items-start pb-2 rounded-lg bg-slate-800/30 border border-slate-600/30 p-3 mb-2 space-x-3"
                   >
                     <Image
                       alt="Bullet Point"

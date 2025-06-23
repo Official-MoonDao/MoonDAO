@@ -93,27 +93,42 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   const { fundWallet } = useFundWallet()
 
   const submitTypeform = useCallback(async (formResponse: any) => {
-    //get response from form
-    const { formId, responseId } = formResponse
+    try {
+      //get response from form
+      const { formId, responseId } = formResponse
 
-    await waitForResponse(formId, responseId)
+      await waitForResponse(formId, responseId)
 
-    const responseRes = await fetch(
-      `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
-      {
-        method: 'POST',
+      const responseRes = await fetch(
+        `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
+        {
+          method: 'POST',
+        }
+      )
+      
+      if (!responseRes.ok) {
+        throw new Error(`API call failed with status: ${responseRes.status}`)
       }
-    )
-    const data = await responseRes.json()
+      
+      const data = await responseRes.json()
 
-    //format answers into an object
-    const teamFormData = formatTeamFormData(data.answers, responseId)
+      if (!data.answers) {
+        throw new Error('No answers found in response')
+      }
 
-    //escape single quotes and remove emojis
-    const cleanedTeamFormData = cleanData(teamFormData)
+      //format answers into an object
+      const teamFormData = formatTeamFormData(data.answers, responseId)
 
-    setTeamData(cleanedTeamFormData)
-    setStage(2)
+      //escape single quotes and remove emojis
+      const cleanedTeamFormData = cleanData(teamFormData)
+
+      setTeamData(cleanedTeamFormData)
+      setStage(2)
+    } catch (error) {
+      console.error('Error submitting typeform:', error)
+      // You might want to show an error message to the user here
+      alert('There was an error processing your form submission. Please try again.')
+    }
   }, [])
 
   return (
@@ -172,20 +187,14 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   description="Please complete your team profile by filling out the form below."
                 >
                   <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 overflow-hidden relative">
-                    <div className="min-h-[600px] max-h-[70vh] typeform-widget-container">
-                      <Widget
-                        className="w-full"
-                        id={
-                          process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string
-                        }
-                        onSubmit={submitTypeform}
-                        height={700}
-                      />
-                    </div>
-                    {/* Visible indicator for scroll/navigation */}
-                    <div className="absolute bottom-4 right-4 bg-blue-600/80 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm border border-blue-400/30 shadow-lg pointer-events-none opacity-75 scroll-indicator">
-                      ↕️ Scroll for more
-                    </div>
+                    <Widget
+                      className="w-full"
+                      id={
+                        process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string
+                      }
+                      onSubmit={submitTypeform}
+                      height={700}
+                    />
                   </div>
                 </StageContainer>
               )}
