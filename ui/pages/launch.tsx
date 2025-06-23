@@ -115,6 +115,7 @@ export default function Launch({ missions }: any) {
   const userTeams = useTeamWearer(teamContract, selectedChain, address)
   const [userTeamsAsManager, setUserTeamsAsManager] = useState<any>()
 
+  console.log('Missions:', missions)
   const {
     token: featuredMissionToken,
     subgraphData: featuredMissionSubgraphData,
@@ -343,7 +344,7 @@ export default function Launch({ missions }: any) {
           className="mt-[2vw] md:mt-[1vw] pb-[5vw] mb-[2vw] md:mb-[-5vw] md:pb-0 md:pt-0 relative flex flex-col justify-center items-center md:flex-row z-20 mb-[-5vw] w-full md:max-w-[1000px] mx-auto"
         >
           <JuiceProviders
-            projectId={missions?.[FEATURED_MISSION_INDEX].projectId}
+            projectId={missions?.[FEATURED_MISSION_INDEX]?.projectId}
             selectedChain={selectedChain}
           >
             <MissionWideCard
@@ -786,6 +787,7 @@ export const getStaticProps: GetStaticProps = async () => {
 
     const missions = await Promise.all(
       filteredMissionRows.map(async (missionRow) => {
+        console.log(`Fetching metadata for mission ${missionRow.id}...`)
         try {
           const metadataURI = await readContract({
             contract: jbV4ControllerContract,
