@@ -23,6 +23,7 @@ export default function MissionFundingMilestoneChart({
   subgraphData,
   fundingGoal,
   height = 300,
+  projectId = 0,
 }: MissionFundingMilestoneChartProps) {
   const stroke = 'white'
   const color = 'white'
@@ -34,7 +35,7 @@ export default function MissionFundingMilestoneChart({
   const progressBarRef = useRef<HTMLDivElement>(null)
   const [chartDimensions, setChartDimensions] = useState({ width: 0, left: 0 })
 
-  const totalFunding = useTotalFunding(mission?.projectId)
+  const totalFunding = useTotalFunding(projectId)
   const volume = Number(totalFunding || 0) / 1e18
 
   const points = useMemo(() => {
