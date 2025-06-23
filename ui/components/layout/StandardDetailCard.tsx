@@ -82,27 +82,29 @@ export default function StandardDetailCard({
                 {price && currency && (
                   <div className="flex flex-col gap-2 pt-2 border-t border-gray-600">
                     {/* Price Display */}
-                    <div className="flex items-center gap-2">
-                      <p className="text-lg font-bold text-moon-orange">
-                        {`${
-                          isCitizen
-                            ? truncateTokenValue(price, currency)
-                            : truncateTokenValue(+price * 1.1, currency)
-                        } ${currency}`}
-                      </p>
-                      {isCitizen && (
-                        <p className="line-through text-xs opacity-60">
-                          {`${truncateTokenValue(+price * 1.1, currency)} ${currency}`}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <p className="text-lg font-bold text-moon-orange">
+                          {`${
+                            isCitizen
+                              ? truncateTokenValue(price, currency)
+                              : truncateTokenValue(+price * 1.1, currency)
+                          } ${currency}`}
                         </p>
+                        {isCitizen && (
+                          <p className="line-through text-xs opacity-60">
+                            {`${truncateTokenValue(+price * 1.1, currency)} ${currency}`}
+                          </p>
+                        )}
+                      </div>
+                      
+                      {/* Savings Label for Non-Citizens */}
+                      {!isCitizen && (
+                        <div className="bg-gradient-to-r from-light-warm to-moon-gold text-dark-cool px-2 py-1 rounded text-xs font-medium">
+                          Save 10% with citizenship!
+                        </div>
                       )}
                     </div>
-                    
-                    {/* Savings Banner for Non-Citizens */}
-                    {!isCitizen && (
-                      <div className="bg-gradient-to-r from-light-warm to-moon-gold text-dark-cool px-2 py-1 rounded text-xs font-medium">
-                        Save {truncateTokenValue(+price * 0.1, currency)} {currency} with citizenship
-                      </div>
-                    )}
                     
                     {/* Shipping Info */}
                     {shipping === 'true' && (
