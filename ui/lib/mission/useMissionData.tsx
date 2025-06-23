@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
-import { readContract } from 'thirdweb'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
+import { readContract, getContract } from 'thirdweb'
+import LaunchPadPayHookABI from 'const/abis/LaunchPadPayHook.json'
+import client from '@/lib/thirdweb/client'
 import useJBProjectData from '../juicebox/useJBProjectData'
 
 /*
@@ -22,6 +25,7 @@ export default function useMissionData({
   const [fundingGoal, setFundingGoal] = useState(0)
   const [stage, setStage] = useState<MissionStage>()
   const [backers, setBackers] = useState<any[]>([])
+  const [deadline, setDeadline] = useState<number>(0)
 
   const jbProjectData = useJBProjectData({
     projectId: mission?.projectId,
@@ -71,6 +75,31 @@ export default function useMissionData({
     return () => clearInterval(interval)
   }, [missionCreatorContract, mission?.id])
 
+  useEffect(() => {
+    async function getDeadline() {
+      const payHookAddress: any = await readContract({
+        contract: missionCreatorContract,
+        method: 'missionIdToPayHook' as string,
+        params: [mission.id],
+      })
+      const payHookContract = getContract({
+        client,
+        address: payHookAddress,
+        chain: DEFAULT_CHAIN_V5,
+        abi: LaunchPadPayHookABI.abi as any,
+      })
+      const deadline: any = await readContract({
+        contract: payHookContract,
+        method: 'deadline' as string,
+        params: [],
+      })
+      setDeadline(+deadline.toString() * 1000) // Convert to milliseconds
+    }
+    if (missionCreatorContract && mission?.id !== undefined) {
+      getDeadline()
+    }
+  }, [missionCreatorContract, mission?.id])
+
   //Backers
   useEffect(() => {
     async function getBackers() {
@@ -92,5 +121,5 @@ export default function useMissionData({
     return () => clearInterval(interval)
   }, [mission?.projectId])
 
-  return { ...jbProjectData, fundingGoal, stage, backers }
+  return { ...jbProjectData, fundingGoal, stage, backers, deadline }
 }

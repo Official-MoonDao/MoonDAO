@@ -230,7 +230,6 @@ export default function MissionInfo({
                     __html: mission?.metadata?.description || '',
                   }}
                 />
-                
               </div>
             </div>
           )}
@@ -267,13 +266,9 @@ export default function MissionInfo({
           <div ref={stickyRef}>
             <MissionPayRedeem
               stage={stage}
-              selectedChain={selectedChain}
               mission={mission}
               teamNFT={teamNFT}
               token={token}
-              fundingGoal={fundingGoal}
-              subgraphData={subgraphData}
-              ruleset={ruleset}
               primaryTerminalAddress={primaryTerminalAddress}
               jbTokensContract={jbTokensContract}
               jbControllerContract={jbControllerContract}

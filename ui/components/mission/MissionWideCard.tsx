@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { useNativeTokenSurplus } from 'juice-sdk-react'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
@@ -22,6 +23,7 @@ export type MissionWideCardProps = {
   backers?: any[]
   contribute?: boolean
   stage?: number
+  deadline?: number
   ruleset?: any
   missionImage?: File | string
   teamContract?: any
@@ -43,6 +45,7 @@ export default function MissionWideCard({
   token,
   ruleset,
   stage,
+  deadline,
   subgraphData,
   fundingGoal,
   backers,
@@ -64,13 +67,10 @@ export default function MissionWideCard({
   const [teamNFT, setTeamNFT] = useState<any>(null)
 
   const { data: ethPrice } = useETHPrice(1)
+  const { data: nativeTokenSurplus } = useNativeTokenSurplus()
 
   const duration = useMemo(() => {
-    return ruleset?.[0]?.start
-      ? formatTimeUntilDeadline(
-          new Date(ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000)
-        )
-      : undefined
+    return deadline ? formatTimeUntilDeadline(new Date(deadline)) : undefined
   }, [ruleset])
 
   useEffect(() => {
@@ -91,17 +91,13 @@ export default function MissionWideCard({
         <div id="pay-modal">
           <MissionPayRedeem
             stage={stage}
-            selectedChain={selectedChain}
             mission={mission}
             token={token}
-            subgraphData={subgraphData}
-            ruleset={ruleset}
             teamNFT={teamNFT}
             onlyModal
             modalEnabled={payModalEnabled}
             setModalEnabled={setPayModalEnabled}
             primaryTerminalAddress={primaryTerminalAddress}
-            fundingGoal={fundingGoal}
           />
         </div>
       )}
@@ -126,14 +122,14 @@ export default function MissionWideCard({
                         />
                         <span className="mr-2">
                           {truncateTokenValue(
-                            subgraphData?.volume / 1e18 || 0,
+                            Number(nativeTokenSurplus || 0) / 1e18,
                             'ETH'
                           )}
                         </span>
                         <span className="text-sm md:text-base">ETH RAISED</span>
                       </div>
                       <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
-                        (subgraphData?.volume / 1e18 || 0) * ethPrice
+                        (Number(nativeTokenSurplus || 0) / 1e18) * ethPrice
                       ).toLocaleString()} USD)`}</p>
                     </div>
                   )}

@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import Footer from './Footer'
+import Disclaimer from './Disclaimer'
+import LegalLinks from './LegalLinks'
 
 type LinkItem = {
   text: string
@@ -42,6 +43,7 @@ type ExpandedFooterProps = {
   callToActionButtonLink: string
   hasCallToAction: boolean
   darkBackground?: boolean
+  isFullwidth?: boolean
 }
 
 export function ExpandedFooter({
@@ -52,6 +54,7 @@ export function ExpandedFooter({
   callToActionButtonLink = '/join',
   hasCallToAction = true,
   darkBackground = true,
+  isFullwidth = true,
 }: ExpandedFooterProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const isCitizen = useCitizen(selectedChain)
@@ -94,7 +97,7 @@ export function ExpandedFooter({
   const governLinks = [
     { text: 'Governance', href: '/governance' },
     { text: 'Proposals', href: '/vote' },
-    { text: 'Constitution', href: 'https://docs.moondao.com/Governance/Constitution?_gl=1*xwpa15*_ga*NDEyMzExNTE4LjE3MTcxMjYxODU.*_ga_QPFCD9VH46*czE3NDc4NjI2NTUkbzI1MCRnMSR0MTc0Nzg2Mjc1NCRqMCRsMCRoMA..' },
+    { text: 'Constitution', href: '/constitution' },
   ]
 
   const tokenLinks = [
@@ -123,9 +126,9 @@ export function ExpandedFooter({
 
   return (
     <>
-      <div id="expanded-menu" className="overflow-hidden relative bg-dark-cool px-6 text-white"> 
-        <div className="container mx-auto max-w-[1200px] pb-0 md:pt-[5vh] md:pl-[5vw] lg:pl-[2vw] flex flex-col lg:grid lg:grid-cols-6 gap-8 relative z-10">
-          {hasCallToAction && (
+      <div id="expanded-menu" className={`overflow-hidden relative ${isFullwidth ? 'bg-dark-cool' : ''} px-6 text-white`}> 
+        <div id="expanded-menu-container" className={`${isFullwidth ? 'container mx-auto md:pl-[5vw] lg:pl-[2vw] md:pb-[2vw] md:pt-[5vh]' : 'pb-[5vw] md:pt-[5vw]'} max-w-[1200px] pb-0 flex flex-col lg:grid lg:grid-cols-6 gap-8 relative z-10`}>
+          {hasCallToAction && isFullwidth && (
             <div className="flex flex-col pb-[5vh] p-[2vw]  md:p-0 py-0 lg:col-span-2 order-2 lg:order-1 relative min-h-[250px] lg:min-h-[300px]">
               <div className="overflow-visible absolute bottom-0 left-0 z-0 w-full flex items-end">
                 <Image 
@@ -138,20 +141,18 @@ export function ExpandedFooter({
               </div>
               <h2 className="z-50 text-2xl font-bold font-GoodTimes mb-3">{callToAction.title}</h2>
               {callToAction.body && <p className="max-w-[400px] mb-4 opacity-80">{callToAction.body}</p>}
-              <Link 
-                href={callToAction.buttonLink} 
-                className="inline-block"
-              >
-                <div
+              <div>
+                <Link 
+                  href={callToAction.buttonLink} 
                   className="gradient-2 hover:pl-7 transform transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-2 px-5 py-3 inline-block"
                 >
                   {callToAction.buttonText}
-                </div>
-              </Link>
+                </Link>
+              </div>
             </div>
           )}
           
-          <div className={`z-50 px-[2vw] pt-[5vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 order-1 lg:order-2 ${hasCallToAction ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
+          <div className={`z-50 px-[2vw] pt-[2vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 order-1 lg:order-2 ${hasCallToAction && isFullwidth ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
             {/* Always visible sections */}
             <LinkList title="NETWORK" links={networkLinks} />
             <LinkList title="GOVERN" links={governLinks} />
@@ -190,8 +191,17 @@ export function ExpandedFooter({
           </div>
         </div>
       </div>
-      <div id="bottom-footer" className="bg-darkest-cool flex items-center justify-center">
-        <Footer/>
+      <div id="bottom-footer" className={`bg-darkest-cool flex ${isFullwidth ? 'items-center justify-center' : 'items-start justify-start rounded-tl-[2vw]'}`}>
+        <div className={`${isFullwidth ? 'container mx-auto' : ''} px-[5vw] xl:px-[2vw] flex flex-col items-center pt-5 pb-10 max-w-[1200px] w-full h-full`}>
+          <div className={`${isFullwidth ? '' : 'pb-5'} `}>
+            <Disclaimer isCentered={false} />
+          </div>          
+          
+          <div>
+            <LegalLinks isCentered={true} />
+          </div>
+
+        </div>
       </div>
     </>
   )

@@ -4,7 +4,6 @@ import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
 import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
-import MissionCreatorSepABI from 'const/abis/MissionCreatorSep.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -25,8 +24,10 @@ import React, { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useMissionData from '@/lib/mission/useMissionData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -38,13 +39,13 @@ import ExplainerIcon from '@/components/launchpad/ExplainerIcon'
 import FeatureIcon from '@/components/launchpad/FeatureIcon'
 import LaunchpadBenefit from '@/components/launchpad/LaunchpadBenefit'
 import LaunchpadFAQs from '@/components/launchpad/LaunchpadFAQs'
-import Footer from '@/components/layout/Footer'
+import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import StandardButton from '@/components/layout/StandardButton'
 import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrollBar'
 import CreateMission from '@/components/mission/CreateMission'
 import MissionWideCard from '@/components/mission/MissionWideCard'
 
-const FEATURED_MISSION_INDEX = 21
+const FEATURED_MISSION_INDEX = 0
 
 export default function Launch({ missions }: any) {
   const router = useRouter()
@@ -78,10 +79,7 @@ export default function Launch({ missions }: any) {
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
     chain: selectedChain,
-    abi:
-      chainSlug === 'sepolia'
-        ? (MissionCreatorSepABI as any)
-        : (MissionCreatorABI as any),
+    abi: MissionCreatorABI.abi as any,
   })
 
   const missionTableContract = useContract({
@@ -125,14 +123,17 @@ export default function Launch({ missions }: any) {
     ruleset: featuredMissionRuleset,
     stage: featuredMissionStage,
     backers: featuredMissionBackers,
+    deadline: featuredMissionDeadline,
   } = useMissionData({
-    mission: missions?.[FEATURED_MISSION_INDEX],
+    mission: missions?.[FEATURED_MISSION_INDEX] || null,
     missionTableContract,
     missionCreatorContract,
     jbControllerContract,
     jbDirectoryContract,
     jbTokensContract,
   })
+
+  const { data: ethPrice } = useETHPrice(1)
 
   useEffect(() => {
     async function getUserTeamsAsManager() {
@@ -175,7 +176,7 @@ export default function Launch({ missions }: any) {
         status: status,
       })
     }
-  }, [status])
+  }, [status, shallowQuery])
 
   useEffect(() => {
     if (router.query.status) {
@@ -188,7 +189,7 @@ export default function Launch({ missions }: any) {
     ) {
       login()
     }
-  }, [router.query.status, account])
+  }, [router.query.status, account, login])
 
   if (status === 'create') {
     return (
@@ -341,29 +342,35 @@ export default function Launch({ missions }: any) {
           id="featured-missions-container"
           className="mt-[2vw] md:mt-[1vw] pb-[5vw] mb-[2vw] md:mb-[-5vw] md:pb-0 md:pt-0 relative flex flex-col justify-center items-center md:flex-row z-20 mb-[-5vw] w-full md:max-w-[1000px] mx-auto"
         >
-          <MissionWideCard
-            mission={
-              {
-                ...missions?.[FEATURED_MISSION_INDEX],
-                metadata: {
-                  ...missions?.[FEATURED_MISSION_INDEX]?.metadata,
-                  description: '',
-                },
-              } as any
-            }
-            stage={featuredMissionStage}
-            backers={featuredMissionBackers}
-            token={featuredMissionToken}
-            ruleset={featuredMissionRuleset}
-            subgraphData={featuredMissionSubgraphData}
-            fundingGoal={featuredMissionFundingGoal}
-            teamContract={teamContract}
+          <JuiceProviders
+            projectId={missions?.[FEATURED_MISSION_INDEX].projectId}
             selectedChain={selectedChain}
-            learnMore
-            showMore
-            compact
-            linkToMission
-          />
+          >
+            <MissionWideCard
+              mission={
+                {
+                  ...missions?.[FEATURED_MISSION_INDEX],
+                  metadata: {
+                    ...missions?.[FEATURED_MISSION_INDEX]?.metadata,
+                    description: '',
+                  },
+                } as any
+              }
+              stage={featuredMissionStage}
+              deadline={featuredMissionDeadline}
+              backers={featuredMissionBackers}
+              token={featuredMissionToken}
+              ruleset={featuredMissionRuleset}
+              subgraphData={featuredMissionSubgraphData}
+              fundingGoal={featuredMissionFundingGoal}
+              teamContract={teamContract}
+              selectedChain={selectedChain}
+              learnMore
+              showMore
+              compact
+              linkToMission
+            />
+          </JuiceProviders>
         </div>
       </section>
 
@@ -732,9 +739,14 @@ export default function Launch({ missions }: any) {
           <LaunchpadFAQs />
         </div>
       </section>
-      <div className="bg-[#020617] w-full flex justify-center">
-        <Footer darkBackground={true} centerContent />
-      </div>
+      <ExpandedFooter
+        callToActionTitle="Join the Network"
+        callToActionBody="Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!"
+        callToActionImage="/assets/SAN-logo-dark.svg"
+        callToActionButtonText="Join the Network"
+        callToActionButtonLink="/join"
+        hasCallToAction={true}
+      />
     </>
   )
 }
@@ -762,7 +774,7 @@ export const getStaticProps: GetStaticProps = async () => {
     const missionRows = await queryTable(chain, statement)
 
     const filteredMissionRows = missionRows.filter((mission) => {
-      return !blockedMissions.includes(mission.id)
+      return !blockedMissions.includes(mission.id) && mission && mission.id
     })
 
     const jbV4ControllerContract = getContract({
@@ -772,9 +784,28 @@ export const getStaticProps: GetStaticProps = async () => {
       chain: chain,
     })
 
+    // Process missions with rate limiting protection
     const missions = await Promise.all(
-      filteredMissionRows.map(async (missionRow) => {
+      filteredMissionRows.map(async (missionRow, index) => {
         try {
+          // Add delay between requests to avoid rate limiting
+          if (index > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 100))
+          }
+
+          if (!missionRow?.projectId) {
+            return {
+              id: missionRow?.id || `fallback-${index}`,
+              teamId: missionRow?.teamId || null,
+              projectId: null,
+              metadata: {
+                name: 'Mission Loading...',
+                description: 'Mission data is being loaded.',
+                image: '/assets/placeholder-mission.png',
+              },
+            }
+          }
+
           const metadataURI = await readContract({
             contract: jbV4ControllerContract,
             method: 'uriOf' as string,
@@ -783,6 +814,7 @@ export const getStaticProps: GetStaticProps = async () => {
 
           const metadataRes = await fetch(getIPFSGateway(metadataURI))
           const metadata = await metadataRes.json()
+
           return {
             id: missionRow.id,
             teamId: missionRow.teamId,
@@ -790,10 +822,16 @@ export const getStaticProps: GetStaticProps = async () => {
             metadata: metadata,
           }
         } catch (error) {
+          console.warn(`Failed to fetch mission ${missionRow?.id}:`, error)
           return {
-            id: missionRow.id,
-            teamId: missionRow.teamId,
-            projectId: missionRow.projectId,
+            id: missionRow?.id || `fallback-${index}`,
+            teamId: missionRow?.teamId || null,
+            projectId: missionRow?.projectId || null,
+            metadata: {
+              name: 'Mission Unavailable',
+              description: 'This mission is temporarily unavailable.',
+              image: '/assets/placeholder-mission.png',
+            },
           }
         }
       })
@@ -801,14 +839,31 @@ export const getStaticProps: GetStaticProps = async () => {
 
     return {
       props: {
-        missions,
+        missions: missions.filter((mission) => mission !== null),
       },
-      revalidate: 60,
+      revalidate: 60, // Increase revalidation time to reduce RPC calls
     }
   } catch (error) {
-    console.error(error)
+    console.error('Error in getStaticProps:', error)
+
+    // Return fallback data to prevent build failure
     return {
-      props: { missions: [] },
+      props: {
+        missions: [
+          {
+            id: 'fallback-1',
+            teamId: null,
+            projectId: null,
+            metadata: {
+              name: 'MoonDAO Launchpad',
+              description:
+                'Welcome to the MoonDAO Launchpad. Mission data is being loaded.',
+              image: '/Original.png',
+            },
+          },
+        ],
+      },
+      revalidate: 60,
     }
   }
 }

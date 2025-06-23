@@ -51,3 +51,5 @@ Run the integration (component) tests headlessly:
 ```
 yarn cy:run-ct
 ```
+
+*This project is tested with [Browser Stack](https://www.browserstack.com/).*

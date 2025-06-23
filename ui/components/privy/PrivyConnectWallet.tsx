@@ -2,6 +2,7 @@ import {
   ArrowDownOnSquareIcon,
   ArrowUpRightIcon,
   ChevronDownIcon,
+  ClipboardDocumentIcon,
   PlusIcon,
   WalletIcon,
   XMarkIcon,
@@ -100,31 +101,78 @@ function SendModal({
   formattedBalances,
 }: any) {
   const chainSlug = getChainSlug(selectedChain)
-  const [to, setTo] = useState<string>()
-  const [amount, setAmount] = useState<number>()
+  const [to, setTo] = useState<string>('')
+  const [amount, setAmount] = useState<string>('')
   const [selectedToken, setSelectedToken] = useState<string>('native')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const [balance, setBalance] = useState()
-
-  const selectedTokenIcon = useMemo(() => {
-    let icon
+  const balance = useMemo(() => {
     if (selectedToken === 'native') {
-      icon = networkIcon
+      return nativeBalance
     } else {
-      icon = (
-        <Image
-          src={`/coins/${selectedToken.toUpperCase()}.${
-            selectedToken === 'mooney' ? 'png' : 'svg'
-          }`}
-          width={30}
-          height={30}
-          alt=""
-        />
-      )
+      return formattedBalances[selectedToken] || 0
     }
+  }, [selectedToken, nativeBalance, formattedBalances])
 
-    return icon
-  }, [selectedToken, networkIcon])
+  const selectedTokenData = useMemo(() => {
+    const tokens = {
+      native: {
+        symbol: selectedNativeToken[chainSlug],
+        icon: networkIcon,
+        description: 'Native Token'
+      },
+      mooney: {
+        symbol: 'MOONEY',
+        icon: (
+          <Image
+            src="/coins/MOONEY.png"
+            width={24}
+            height={24}
+            alt="MOONEY"
+            className="rounded-full"
+          />
+        ),
+        description: 'Governance Token'
+      },
+      dai: {
+        symbol: 'DAI',
+        icon: (
+          <Image
+            src="/coins/DAI.svg"
+            width={24}
+            height={24}
+            alt="DAI"
+          />
+        ),
+        description: 'Stablecoin'
+      },
+      usdc: {
+        symbol: 'USDC',
+        icon: (
+          <Image
+            src="/coins/USDC.svg"
+            width={24}
+            height={24}
+            alt="USDC"
+          />
+        ),
+        description: 'USD Coin'
+      },
+      usdt: {
+        symbol: 'USDT',
+        icon: (
+          <Image
+            src="/coins/USDT.svg"
+            width={24}
+            height={24}
+            alt="USDT"
+          />
+        ),
+        description: 'Tether USD'
+      }
+    }
+    return tokens[selectedToken as keyof typeof tokens]
+  }, [selectedToken, networkIcon, chainSlug])
 
   const tokenContracts: { [key: string]: any } = {
     mooney: mooneyContract,
@@ -133,113 +181,183 @@ function SendModal({
     usdt: usdtContract,
   }
 
-  useEffect(() => {
-    if (selectedToken === 'native') {
-      setBalance(nativeBalance)
-    } else {
-      setBalance(formattedBalances[selectedToken])
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      if (!to || !amount) {
+        return toast.error('Please fill in all fields.')
+      } else if (to.length !== 42 || !to.startsWith('0x')) {
+        return toast.error('Invalid address.')
+      } else if (Number(amount) <= 0) {
+        return toast.error('Invalid amount.')
+      }
+
+      const numAmount = Number(amount)
+      const formattedAmount = ethers.utils.parseEther(amount.toString())
+
+      let receipt
+      if (selectedToken === 'native') {
+        if (numAmount > nativeBalance) {
+          return toast.error('Insufficient funds.')
+        }
+
+        receipt = await account?.sendTransaction({
+          to,
+          value: formattedAmount,
+        })
+      } else {
+        if (numAmount > formattedBalances[selectedToken]) {
+          return toast.error('Insufficient funds.')
+        }
+
+        const transaction = prepareContractCall({
+          contract: tokenContracts[selectedToken],
+          method: 'transfer' as string,
+          params: [to, formattedAmount],
+        })
+
+        receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+      }
+      
+      if (receipt) {
+        toast.success('Transaction sent successfully!')
+        setTo('')
+        setAmount('')
+        setEnabled(false)
+      }
+    } catch (err: any) {
+      console.error('Transaction error:', err)
+      toast.error(err?.message || 'Transaction failed. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
-  }, [selectedToken, nativeBalance, formattedBalances])
+  }
 
   return (
     <Modal id="send-modal-backdrop" setEnabled={setEnabled}>
-      <form
-        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md"
-        onSubmit={async (e) => {
-          e.preventDefault()
-
-          if (!to || !amount) {
-            return toast.error('Please fill in all fields.')
-          } else if (to.length !== 42 || !to.startsWith('0x')) {
-            return toast.error('Invalid address.')
-          } else if (amount <= 0) {
-            return toast.error('Invalid amount.')
-          }
-
-          const formattedAmount = ethers.utils.parseEther(amount.toString())
-
-          try {
-            let receipt
-            if (selectedToken === 'native') {
-              if (+amount > nativeBalance)
-                return toast.error('Insufficient funds.')
-
-              receipt = await account?.sendTransaction({
-                to,
-                value: formattedAmount,
-              })
-            } else {
-              if (+amount > formattedBalances[selectedToken])
-                return toast.error('Insufficient funds.')
-
-              const transaction = prepareContractCall({
-                contract: tokenContracts[selectedToken],
-                method: 'transfer' as string,
-                params: [to, formattedAmount],
-              })
-
-              receipt = await sendAndConfirmTransaction({
-                transaction,
-                account,
-              })
-            }
-            if (receipt) {
-              toast.success('Your funds have been transferred.')
-            }
-          } catch (err) {
-            console.log(err)
-          }
-        }}
-      >
-        <div className="w-full flex items-center justify-between">
-          <div>
-            <h2 className="font-GoodTimes">{'Send Funds'}</h2>
+      <div className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+              <ArrowUpRightIcon className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Send Funds</h2>
+              <p className="text-gray-300 text-sm">{selectedChain.name}</p>
+            </div>
           </div>
           <button
             type="button"
-            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200"
             onClick={() => setEnabled(false)}
           >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+            <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
           </button>
         </div>
 
-        <NetworkSelector iconsOnly />
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Token Selection */}
+          <div className="space-y-3">
+            <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+              Select Token
+            </label>
+            <div className="relative">
+              <select
+                className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white appearance-none cursor-pointer hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                value={selectedToken}
+                onChange={({ target }) => setSelectedToken(target.value)}
+              >
+                <option value="native">{selectedNativeToken[chainSlug]}</option>
+                <option value="mooney">MOONEY</option>
+                <option value="dai">DAI</option>
+                <option value="usdc">USDC</option>
+                <option value="usdt">USDT</option>
+              </select>
+              <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+            </div>
+            
+            {/* Selected Token Display */}
+            <div className="bg-black/20 rounded-lg p-4 border border-white/5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center">
+                    {selectedTokenData.icon}
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">{selectedTokenData.symbol}</p>
+                    <p className="text-gray-400 text-xs">{selectedTokenData.description}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-white">{Number(balance).toLocaleString()}</p>
+                  <p className="text-gray-400 text-xs">Available</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <div className="flex gap-4 items-center">
-          <select
-            className="`w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-            onChange={({ target }) => setSelectedToken(target.value)}
+          {/* Recipient Address */}
+          <div className="space-y-3">
+            <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+              Recipient Address
+            </label>
+            <input
+              type="text"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              placeholder="0x..."
+              className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+            />
+          </div>
+
+          {/* Amount */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+                Amount
+              </label>
+              <button
+                type="button"
+                className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
+                onClick={() => setAmount(balance.toString())}
+              >
+                Max: {Number(balance).toLocaleString()}
+              </button>
+            </div>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.0"
+              step="any"
+              min="0"
+              className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+            />
+          </div>
+
+          {/* Send Button */}
+          <button
+            type="submit"
+            disabled={isLoading || !to || !amount || Number(amount) <= 0}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50"
           >
-            <option value={'native'}>{selectedNativeToken[chainSlug]}</option>
-            <option value={'mooney'}>{'MOONEY'}</option>
-            <option value={'dai'}>{'DAI'}</option>
-            <option value={'usdc'}>{'USDC'}</option>
-            <option value={'usdt'}>{'USDT'}</option>
-          </select>
-
-          {selectedTokenIcon}
-
-          <p>{balance && balance}</p>
-        </div>
-
-        <FormInput
-          value={to}
-          onChange={({ target }: any) => setTo(target.value)}
-          placeholder="To"
-        />
-        <FormInput
-          value={amount}
-          onChange={({ target }: any) => setAmount(target.value)}
-          placeholder="Amount"
-        />
-        <PrivyWeb3Button
-          className="w-full"
-          label="Send"
-          type="submit"
-          action={() => {}}
-        />
-      </form>
+            {isLoading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Sending...</span>
+              </div>
+            ) : (
+              'Send Transaction'
+            )}
+          </button>
+        </form>
+      </div>
     </Modal>
   )
 }
@@ -315,6 +433,7 @@ export function PrivyConnectWallet({
 
   const [enabled, setEnabled] = useState(false)
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
+  const [previousChain, setPreviousChain] = useState(selectedChain)
 
   const mooneyContract = useContract({
     address: MOONEY_ADDRESSES[chainSlug],
@@ -387,37 +506,31 @@ export function PrivyConnectWallet({
 
   function NetworkIcon() {
     return (
-      <Image
-        src={`/icons/networks/${chainSlug}.svg`}
-        width={chainSlug === 'ethereum' || chainSlug === 'sepolia' ? 25 : 30}
-        height={chainSlug === 'ethereum' || chainSlug === 'sepolia' ? 25 : 30}
-        alt="Network Icon"
-      />
+      <div className="w-6 h-6 flex items-center justify-center">
+        <Image
+          src={`/icons/networks/${chainSlug}.svg`}
+          width={20}
+          height={20}
+          alt="Network Icon"
+          className="object-contain"
+        />
+      </div>
     )
   }
 
   function NativeTokenIcon() {
     return (
-      <Image
-        src={`/icons/networks/${
-          chainSlug === 'polygon' ? 'polygon' : 'ethereum'
-        }.svg`}
-        width={
-          chainSlug === 'ethereum' ||
-          chainSlug === 'arbitrum' ||
-          chainSlug === 'sepolia'
-            ? 25
-            : 30
-        }
-        height={
-          chainSlug === 'ethereum' ||
-          chainSlug === 'arbitrum' ||
-          chainSlug === 'sepolia'
-            ? 25
-            : 30
-        }
-        alt="Native Token Icon"
-      />
+      <div className="w-6 h-6 flex items-center justify-center">
+        <Image
+          src={`/icons/networks/${
+            chainSlug === 'polygon' ? 'polygon' : 'ethereum'
+          }.svg`}
+          width={20}
+          height={20}
+          alt="Native Token Icon"
+          className="object-contain"
+        />
+      </div>
     )
   }
 
@@ -428,9 +541,27 @@ export function PrivyConnectWallet({
   }, [wallets, selectedWallet])
 
   useEffect(() => {
-    if (walletChainId !== selectedChain.id) setNetworkMismatch(true)
-    else setNetworkMismatch(false)
-  }, [walletChainId, selectedChain, selectedWallet])
+    const wallet = wallets[selectedWallet]
+    const isAutoSwitchWallet = wallet?.walletClientType === 'coinbase_wallet' || wallet?.walletClientType === 'privy'
+    
+    if (walletChainId !== selectedChain.id) {
+      if (isAutoSwitchWallet) {
+        // Add delay for auto-switching wallets to prevent flashing
+        const timeout = setTimeout(() => {
+          const currentWalletChainId = +wallets?.[selectedWallet]?.chainId?.split(':')[1]
+          if (currentWalletChainId !== selectedChain.id) {
+            setNetworkMismatch(true)
+          }
+        }, 1000)
+        return () => clearTimeout(timeout)
+      } else {
+        setNetworkMismatch(true)
+      }
+    } else {
+      setNetworkMismatch(false)
+      setPreviousChain(selectedChain)
+    }
+  }, [walletChainId, selectedChain, selectedWallet, wallets])
 
   //detect outside click
   function handleClickOutside({ target }: any) {
@@ -439,7 +570,8 @@ export function PrivyConnectWallet({
       target.closest('#privy-connect-wallet') ||
       target.closest('#privy-modal-content') ||
       target.closest('#headlessui-dialog-panel') ||
-      target.closest('#send-modal-backdrop')
+      target.closest('#send-modal-backdrop') ||
+      target.closest('#network-selector')
     )
       return
     setEnabled(false)
@@ -456,9 +588,32 @@ export function PrivyConnectWallet({
     if (!walletButton) return { left: '0px', top: '0px' }
 
     const rect = walletButton.getBoundingClientRect()
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    const dropdownWidth = viewportWidth < 768 ? Math.min(viewportWidth - 32, 340) : 340
+    const dropdownHeight = 500 // Estimated height
+    
+    let left = rect.left
+    let top = rect.bottom + 8
+    
+    // Adjust for mobile or small screens
+    if (viewportWidth < 768) {
+      left = 16 // Add some margin from screen edge
+    } else {
+      // Make sure dropdown doesn't go off screen horizontally
+      if (left + dropdownWidth > viewportWidth) {
+        left = viewportWidth - dropdownWidth - 16
+      }
+    }
+    
+    // Adjust if dropdown would go below viewport
+    if (top + dropdownHeight > viewportHeight) {
+      top = rect.top - dropdownHeight - 8
+    }
+    
     return {
-      left: rect.left + 'px',
-      top: rect.bottom + 8 + 'px',
+      left: left + 'px',
+      top: top + 'px',
     }
   }
 
@@ -494,7 +649,7 @@ export function PrivyConnectWallet({
         <div className="w-full">
           <div
             id="privy-connect-wallet"
-            className={`cursor-pointer flex-wrap md:w-[175px] md:full relative flex flex-col items-right justify-center pl-5 pr-5 py-2 md:hover:pl-[25px] gradient-2 font-lato z-[10] rounded-[2vmax] rounded-tl-[10px] duration-300`}
+            className="cursor-pointer flex-wrap md:w-[175px] md:full relative flex flex-col items-right justify-center pl-5 pr-5 py-2 md:hover:pl-[25px] bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-lato z-[10] rounded-[2vmax] rounded-tl-[10px] duration-300 shadow-lg hover:shadow-xl transition-all"
             onClick={(e: any) => {
               setEnabled(!enabled)
             }}
@@ -520,7 +675,7 @@ export function PrivyConnectWallet({
             <Portal>
               <div
                 id="privy-connect-wallet-dropdown"
-                className="w-[260px] lg:w-[270px] fixed text-sm font-RobotoMono rounded-tr-[20px] rounded-br-[2vmax] animate-fadeIn p-2 flex flex-col gradient-14 text-white divide-y-2 divide-[#FFFFFF14] gap-2 z-[3000] lg:max-h-[70%] overflow-y-scroll"
+                className="w-[calc(100vw-2rem)] max-w-[340px] md:w-[320px] lg:w-[340px] fixed text-sm font-RobotoMono rounded-2xl animate-fadeIn p-4 md:p-6 flex flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white z-[3000] max-h-[80vh] md:max-h-[80vh] overflow-y-auto scrollbar-hide"
                 style={dropdownPosition}
               >
                 {sendModalEnabled && (
@@ -537,216 +692,345 @@ export function PrivyConnectWallet({
                     formattedBalances={formattedBalances}
                   />
                 )}
-                <div className={`w-full flex items-center justify-between`}>
-                  <div className="flex items-center justify-center gap-4">
-                    <div className="w-[50px]">
-                      <NetworkSelector iconsOnly />
-                    </div>
-                    {type === 'mobile' && (
-                      <div className="pt-2">
-                        <CitizenProfileLink />
+                
+                {/* Header Section */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                        <WalletIcon className="w-5 h-5 text-white" />
                       </div>
-                    )}
+                      <div>
+                        <h3 className="font-semibold text-lg text-white">Wallet</h3>
+                        <p className="text-gray-300 text-xs">{selectedChain.name}</p>
+                      </div>
+                    </div>
                   </div>
-                  <XMarkIcon
-                    className="w-6 h-6 text-black dark:text-white cursor-pointer"
+                  <button
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200"
                     onClick={() => setEnabled(false)}
-                  />
+                  >
+                    <XMarkIcon className="w-5 h-5 text-gray-300 hover:text-white" />
+                  </button>
                 </div>
-                <div className="relative mt-2">
-                  <div className="w-full mt-2 flex items-center">
-                    <div className="ml-2 bg-dark-cool">
-                      <p className="text-sm">{`${address?.slice(
-                        0,
-                        6
-                      )}...${address?.slice(-4)}`}</p>
+
+                {/* Address Section */}
+                <div className="bg-black/20 rounded-xl p-4 mb-6 border border-white/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
+                        <div className="w-3 h-3 bg-white rounded-full"></div>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">Address</p>
+                        <p className="text-white font-mono text-sm">
+                          {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                        </p>
+                      </div>
                     </div>
                     <button
-                      className="ml-4"
+                      className="p-2 hover:bg-white/10 rounded-lg transition-colors duration-200 group"
                       onClick={() => {
                         navigator.clipboard.writeText(address || '')
                         toast.success('Address copied to clipboard.')
                       }}
                     >
-                      <CopyIcon />
+                      <ClipboardDocumentIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
                     </button>
                   </div>
                 </div>
                 {networkMistmatch ? (
-                  <div>
-                    <button
-                      className="w-full mt-4 p-2 border hover:scale-105 transition-all duration-150 hover:border-light-warm hover:text-light-warm rounded-lg"
-                      onClick={() => {
-                        wallets[selectedWallet].switchChain(selectedChain.id)
-                      }}
-                    >
-                      {`Switch to ${selectedChain.name}`}
-                    </button>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <p className="text-red-400 font-medium">Network Mismatch</p>
+                      </div>
+                      <button
+                        className="p-1 hover:bg-red-500/20 rounded-full transition-colors duration-200 group"
+                        onClick={() => {
+                          // Revert to previous chain
+                          setSelectedChain(previousChain)
+                          setNetworkMismatch(false)
+                        }}
+                      >
+                        <XMarkIcon className="w-4 h-4 text-red-400 group-hover:text-red-300 transition-colors" />
+                      </button>
+                    </div>
+                    <p className="text-gray-300 text-sm mb-4">
+                      Your wallet is not connected to {selectedChain.name}. Switch networks in your wallet or revert to {previousChain.name}.
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:from-red-600 hover:to-pink-600 transition-all duration-200 transform hover:scale-105"
+                        onClick={() => {
+                          wallets[selectedWallet].switchChain(selectedChain.id)
+                        }}
+                      >
+                        Switch to {selectedChain.name}
+                      </button>
+                      <button
+                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
+                        onClick={() => {
+                          // Revert to previous chain
+                          setSelectedChain(previousChain)
+                          setNetworkMismatch(false)
+                        }}
+                      >
+                        Revert to {previousChain.name}
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <div className="w-full flex flex-col gap-2 py-2">
-                    <div className=" w-full flex justify-left items-center gap-4">
-                      <Image
-                        src="/coins/MOONEY.png"
-                        width={30}
-                        height={30}
-                        alt=""
-                      />
-                      <p>{formattedBalances.mooney + ' MOONEY'}</p>
+                    <div className="space-y-4 mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide">Balances</h4>
+                      <div className="flex items-center space-x-3">
+                        <div className="relative w-8 h-8">
+                          <NetworkSelector iconsOnly compact />
+                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center pointer-events-none">
+                            <ChevronDownIcon className="w-2 h-2 text-white" />
+                          </div>
+                        </div>
+                        {type === 'mobile' && (
+                          <div>
+                            <CitizenProfileLink />
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    
+                    <div className="space-y-3">
+                      {/* MOONEY Balance */}
+                      <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200">
+                              <Image
+                                src="/coins/MOONEY.png"
+                                width={24}
+                                height={24}
+                                alt="MOONEY"
+                                className="rounded-full"
+                              />
+                            </div>
+                            <div>
+                              <p className="font-medium text-white group-hover:text-blue-300 transition-colors">MOONEY</p>
+                              <p className="text-gray-400 text-xs">Governance Token</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">{formattedBalances.mooney.toLocaleString()}</p>
+                            <p className="text-gray-400 text-xs">MOONEY</p>
+                          </div>
+                        </div>
+                      </div>
 
-                    <div className=" w-full flex justify-left items-center gap-4">
-                      <NativeTokenIcon />
-                      <p>
-                        {nativeBalance + ' ' + selectedNativeToken[chainSlug]}
-                      </p>
+                      {/* Native Token Balance */}
+                      <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200 flex items-center justify-center">
+                              <NativeTokenIcon />
+                            </div>
+                            <div>
+                              <p className="font-medium text-white group-hover:text-blue-300 transition-colors">{selectedNativeToken[chainSlug]}</p>
+                              <p className="text-gray-400 text-xs">Native Token</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">{Number(nativeBalance).toFixed(4)}</p>
+                            <p className="text-gray-400 text-xs">{selectedNativeToken[chainSlug]}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* DAI Balance */}
+                      {formattedBalances.dai > 0 && (
+                        <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200">
+                                <Image
+                                  src="/coins/DAI.svg"
+                                  width={24}
+                                  height={24}
+                                  alt="DAI"
+                                />
+                              </div>
+                              <div>
+                                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">DAI</p>
+                                <p className="text-gray-400 text-xs">Stablecoin</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">{formattedBalances.dai.toLocaleString()}</p>
+                              <p className="text-gray-400 text-xs">DAI</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* USDC Balance */}
+                      {formattedBalances.usdc > 0 && (
+                        <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200">
+                                <Image
+                                  src="/coins/USDC.svg"
+                                  width={24}
+                                  height={24}
+                                  alt="USDC"
+                                />
+                              </div>
+                              <div>
+                                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">USDC</p>
+                                <p className="text-gray-400 text-xs">USD Coin</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">{formattedBalances.usdc.toLocaleString()}</p>
+                              <p className="text-gray-400 text-xs">USDC</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* USDT Balance */}
+                      {formattedBalances.usdt > 0 && (
+                        <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200">
+                                <Image
+                                  src="/coins/USDT.svg"
+                                  width={24}
+                                  height={24}
+                                  alt="USDT"
+                                />
+                              </div>
+                              <div>
+                                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">USDT</p>
+                                <p className="text-gray-400 text-xs">Tether USD</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">{formattedBalances.usdt.toLocaleString()}</p>
+                              <p className="text-gray-400 text-xs">USDT</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-
-                    {formattedBalances.dai > 0 && (
-                      <div className=" w-full flex justify-left items-center gap-4">
-                        <Image
-                          src="/coins/DAI.svg"
-                          width={30}
-                          height={30}
-                          alt=""
-                        />
-                        <p>{formattedBalances.dai + ' DAI'}</p>
-                      </div>
-                    )}
-
-                    {formattedBalances.usdc > 0 && (
-                      <div className=" w-full flex justify-left items-center gap-4">
-                        <Image
-                          src="/coins/USDC.svg"
-                          width={30}
-                          height={30}
-                          alt=""
-                        />
-                        <p>{usdcBalance + ' USDC'}</p>
-                      </div>
-                    )}
-                    {formattedBalances.usdt > 0 && (
-                      <div className=" w-full flex justify-left items-center gap-4">
-                        <Image
-                          src="/coins/USDT.svg"
-                          width={30}
-                          height={30}
-                          alt=""
-                        />
-                        <p>{usdtBalance + ' USDT'}</p>
-                      </div>
-                    )}
                   </div>
                 )}
 
-                <div
-                  id="wallet-actions-container"
-                  className="pt-4 pb-8 flex gap-5"
-                >
-                  <WalletAction
-                    id="wallet-fund-action"
-                    label="Fund"
-                    icon={<PlusIcon width={25} height={25} />}
-                    onClick={async () => {
-                      if (!address)
-                        return toast.error('Please connect your wallet.')
-                      fundWallet(address, {
-                        chain: viemChains[chainSlug],
-                        asset: 'native-currency',
-                      })
-                    }}
-                  />
-                  <WalletAction
-                    id="wallet-send-action"
-                    label="Send"
-                    icon={<ArrowUpRightIcon width={25} height={25} />}
-                    onClick={() => {
-                      setSendModalEnabled(true)
-                    }}
-                  />
-                  <WalletAction
-                    id="wallet-add-wallet-action"
-                    label="Add Wallet"
-                    icon={<WalletIcon width={25} height={25} />}
-                    onClick={() => {
-                      connectWallet()
-                    }}
-                  />
-                  {wallets[selectedWallet]?.walletClientType === 'privy' && (
+                {/* Wallet Actions */}
+                <div className="mb-6">
+                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">Quick Actions</h4>
+                  <div className="grid grid-cols-4 gap-2 md:gap-3">
                     <WalletAction
-                      id="wallet-export-action"
-                      label="Export"
-                      icon={<ArrowDownOnSquareIcon width={25} height={25} />}
-                      onClick={() => {
-                        exportWallet().catch(() => {
-                          toast.error('Please select a privy wallet to export.')
+                      id="wallet-fund-action"
+                      label="Fund"
+                      icon={<PlusIcon width={20} height={20} />}
+                      onClick={async () => {
+                        if (!address)
+                          return toast.error('Please connect your wallet.')
+                        fundWallet(address, {
+                          chain: viemChains[chainSlug],
+                          asset: 'native-currency',
                         })
                       }}
                     />
-                  )}
+                    <WalletAction
+                      id="wallet-send-action"
+                      label="Send"
+                      icon={<ArrowUpRightIcon width={20} height={20} />}
+                      onClick={() => {
+                        setSendModalEnabled(true)
+                      }}
+                    />
+                    <WalletAction
+                      id="wallet-add-wallet-action"
+                      label="Add"
+                      icon={<WalletIcon width={20} height={20} />}
+                      onClick={() => {
+                        connectWallet()
+                      }}
+                    />
+                    {wallets[selectedWallet]?.walletClientType === 'privy' && (
+                      <WalletAction
+                        id="wallet-export-action"
+                        label="Export"
+                        icon={<ArrowDownOnSquareIcon width={20} height={20} />}
+                        onClick={() => {
+                          exportWallet().catch(() => {
+                            toast.error('Please select a privy wallet to export.')
+                          })
+                        }}
+                      />
+                    )}
+                  </div>
                 </div>
 
-                <div className="pt-1">
-                  <p className="font-semibold">Wallets:</p>
-                  <div className="mt-1 flex flex-col justify-start gap-2">
+                {/* Connected Wallets */}
+                <div className="mb-6">
+                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">Connected Wallets</h4>
+                  <div className="space-y-2">
                     {wallets?.map((wallet, i) => (
                       <div
                         key={`wallet-${i}`}
-                        className="w-full flex gap-2 items-center text-[13px]"
+                        className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                          selectedWallet === i
+                            ? 'bg-blue-500/10 border-blue-500/30 shadow-lg'
+                            : 'bg-black/10 border-white/10 hover:bg-black/20'
+                        }`}
+                        onClick={() => setSelectedWallet(i)}
                       >
-                        {/*Button with tick */}
-                        <button
-                          onClick={() => setSelectedWallet(i)}
-                          className="w-4 h-6 "
-                        >
-                          {selectedWallet === i ? '■' : '□'}
-                        </button>
-                        <p>
-                          <span className="uppercase font-bold">
-                            {wallet?.walletClientType
-                              .slice(0, 1)
-                              .toUpperCase() +
-                              wallet?.walletClientType.slice(1)}
-                          </span>
-
-                          <br></br>
-                          {wallet?.address.slice(0, 6) +
-                            '...' +
-                            wallet?.address.slice(-4)}
-                        </p>
-                        {/*Wallet address and copy button*/}
-                        {wallet.walletClientType != 'metamask' &&
-                          wallet.walletClientType != 'privy' && (
-                            <button
-                              className="ml-12"
-                              onClick={() => wallet.disconnect()}
-                            >
-                              X
-                            </button>
-                          )}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-3 h-3 rounded-full ${
+                              selectedWallet === i ? 'bg-blue-500' : 'bg-gray-500'
+                            }`}></div>
+                            <div>
+                              <p className="font-medium text-white capitalize">
+                                {wallet?.walletClientType}
+                              </p>
+                              <p className="text-gray-400 text-xs font-mono">
+                                {wallet?.address.slice(0, 6)}...{wallet?.address.slice(-4)}
+                              </p>
+                            </div>
+                          </div>
+                          {wallet.walletClientType !== 'metamask' &&
+                            wallet.walletClientType !== 'privy' && (
+                              <button
+                                className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  wallet.disconnect()
+                                }}
+                              >
+                                <XMarkIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="pt-1">
+                {/* Account Management */}
+                <div className="border-t border-white/10 pt-4">
                   <LinkAccounts user={user} />
-                  <div className="flex justify-between">
-                    {/* <button
-                      className="w-2/5 mt-4 p-1 border text-white hover:scale-105 transition-all duration-150 border-white hover:bg-white hover:text-moon-orange"
-                      onClick={importToken}
-                    >
-                      <strong>Import Token</strong>
-                    </button> */}
-                    <button
-                      className="w-full mt-4 p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
-                      onClick={async () => {
-                        wallets.forEach((wallet) => wallet.disconnect())
-                        logout()
-                      }}
-                    >
-                      <strong>Log Out</strong>
-                    </button>
-                  </div>
+                  <button
+                    className="w-full mt-4 bg-gradient-to-r from-red-500/80 to-pink-500/80 hover:from-red-500 hover:to-pink-500 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg"
+                    onClick={async () => {
+                      wallets.forEach((wallet) => wallet.disconnect())
+                      logout()
+                    }}
+                  >
+                    <strong>Log Out</strong>
+                  </button>
                 </div>
               </div>
             </Portal>

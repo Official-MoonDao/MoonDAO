@@ -1,29 +1,48 @@
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
+import { waitForMessageReceived } from '@layerzerolabs/scan-client'
 import { useFundWallet } from '@privy-io/react-auth'
+import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBMultiTerminalABI from 'const/abis/JBV4MultiTerminal.json'
-import { JB_NATIVE_TOKEN_ADDRESS } from 'const/config'
+import {
+  DEFAULT_CHAIN_V5,
+  MISSION_CROSS_CHAIN_PAY_ADDRESS,
+  LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID,
+  JB_NATIVE_TOKEN_ADDRESS,
+} from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useState, useCallback } from 'react'
+import { useContext, useEffect, useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
   sendAndConfirmTransaction,
   simulateTransaction,
   ZERO_ADDRESS,
+  readContract,
+  waitForReceipt,
 } from 'thirdweb'
+import {
+  arbitrum,
+  base,
+  ethereum,
+  sepolia,
+  optimismSepolia,
+} from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
 import useSafe from '@/lib/safe/useSafe'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import viemChains from '@/lib/viem/viemChains'
+import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import { CopyIcon } from '../assets'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
@@ -34,23 +53,9 @@ import MissionDeployTokenModal from './MissionDeployTokenModal'
 import MissionTokenExchangeRates from './MissionTokenExchangeRates'
 import MissionTokenNotice from './MissionTokenNotice'
 
-function PayRedeemStat({ label, value, children }: any) {
-  return (
-    <div className="font-GoodTimes w-full flex-1 flex flex-col">
-      <h3 className="opacity-60 text-[60%]">{label}</h3>
-      <p>{value}</p>
-      {children}
-    </div>
-  )
-}
-
 function MissionPayRedeemContent({
   token,
-  ruleset,
-  subgraphData,
-  input,
   output,
-  setInput,
   redeem,
   setMissionPayModalEnabled,
   tokenBalance,
@@ -58,13 +63,12 @@ function MissionPayRedeemContent({
   stage,
   tokenCredit,
   claimTokenCredit,
-  usdInput,
   handleUsdInputChange,
   calculateEthAmount,
   formattedUsdInput,
   formatTokenAmount,
 }: any) {
-  const isRefundable = stage === 3 && subgraphData?.volume > 0
+  const isRefundable = stage === 3
 
   return (
     <div
@@ -255,14 +259,10 @@ function MissionPayRedeemContent({
 }
 
 export type MissionPayRedeemProps = {
-  selectedChain: any
   mission: any
   token: any
-  fundingGoal: number
-  subgraphData: any
   teamNFT: any
   stage: any
-  ruleset: any
   onlyModal?: boolean
   modalEnabled?: boolean
   setModalEnabled?: (enabled: boolean) => void
@@ -273,14 +273,10 @@ export type MissionPayRedeemProps = {
 }
 
 export default function MissionPayRedeem({
-  selectedChain,
   mission,
   token,
-  fundingGoal,
-  subgraphData,
   teamNFT,
   stage,
-  ruleset,
   onlyModal = false,
   modalEnabled = false,
   setModalEnabled,
@@ -289,8 +285,14 @@ export default function MissionPayRedeem({
   jbTokensContract,
   forwardClient,
 }: MissionPayRedeemProps) {
+  const { selectedChain } = useContext(ChainContextV5)
+  const defaultChainSlug = getChainSlug(sepolia)
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
+  const isTestnet = process.env.NEXT_PUBLIC_CHAIN != 'mainnet'
+  const chains = isTestnet
+    ? [sepolia, optimismSepolia]
+    : [arbitrum, base, ethereum]
 
   const [missionPayModalEnabled, setMissionPayModalEnabled] = useState(false)
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
@@ -366,7 +368,11 @@ export default function MissionPayRedeem({
   )
 
   const [isTeamSigner, setIsTeamSigner] = useState(false)
-  const { safe, queueSafeTx, lastSafeTxExecuted } = useSafe(teamNFT?.owner)
+  // Use default chain for safe so that cross chain payments don't update safe chain
+  const { safe, queueSafeTx, lastSafeTxExecuted } = useSafe(
+    teamNFT?.owner,
+    DEFAULT_CHAIN_V5
+  )
 
   const { fundWallet } = useFundWallet()
   const [agreedToCondition, setAgreedToCondition] = useState(false)
@@ -375,8 +381,15 @@ export default function MissionPayRedeem({
 
   const primaryTerminalContract = useContract({
     address: primaryTerminalAddress,
-    chain: selectedChain,
+    chain: DEFAULT_CHAIN_V5,
     abi: JBMultiTerminalABI as any,
+    forwardClient,
+  })
+
+  const crossChainPayContract = useContract({
+    address: MISSION_CROSS_CHAIN_PAY_ADDRESS,
+    chain: selectedChain,
+    abi: MISSION_CROSS_CHAIN_PAY_ABI.abi as any,
     forwardClient,
   })
 
@@ -451,7 +464,6 @@ export default function MissionPayRedeem({
     }
 
     const inputValue = parseFloat(input) || 0
-    console.log(inputValue)
     if (inputValue <= 0) {
       toast.error('Please enter a valid amount.', {
         style: toastStyle,
@@ -466,26 +478,70 @@ export default function MissionPayRedeem({
     }
 
     try {
-      const transaction = prepareContractCall({
-        contract: primaryTerminalContract,
-        method: 'pay' as string,
-        params: [
-          mission?.projectId,
-          JB_NATIVE_TOKEN_ADDRESS,
-          inputValue * 1e18,
-          address,
-          output * 1e18,
-          message,
-          '0x00',
-        ],
-        value: BigInt(inputValue * 1e18),
-        gas: BigInt(500000),
-      })
+      if (chainSlug !== defaultChainSlug) {
+        const quoteCrossChainPay: any = await readContract({
+          contract: crossChainPayContract,
+          method: 'quoteCrossChainPay' as string,
+          params: [
+            LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
+            BigInt(Math.trunc(inputValue * 1e18)),
+            mission?.projectId,
+            address || ZERO_ADDRESS,
+            output * 1e18,
+            message,
+            '0x00',
+          ],
+        })
+        const transaction = prepareContractCall({
+          contract: crossChainPayContract,
+          method: 'crossChainPay' as string,
+          params: [
+            LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
+            mission?.projectId,
+            BigInt(Math.trunc(inputValue * 1e18)),
+            address || ZERO_ADDRESS,
+            output * 0, // Don't put in mininum output for cross-chain pay to account for slippage
+            message,
+            '0x00',
+          ],
+          value: BigInt(quoteCrossChainPay),
+        })
 
-      const receipt = await sendAndConfirmTransaction({
-        transaction,
-        account,
-      })
+        const originReceipt: any = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+        const destinationMessage = await waitForMessageReceived(
+          isTestnet ? 19999 : 1, // 19999 resolves to testnet, 1 to mainnet, see https://cdn.jsdelivr.net/npm/@layerzerolabs/scan-client@0.0.8/dist/client.mjs
+          originReceipt.transactionHash
+        )
+        const receipt = await waitForReceipt({
+          client: client,
+          chain: DEFAULT_CHAIN_V5,
+          transactionHash: destinationMessage.dstTxHash as `0x${string}`,
+        })
+      } else {
+        const transaction = prepareContractCall({
+          contract: primaryTerminalContract,
+          method: 'pay' as string,
+          params: [
+            mission?.projectId,
+            JB_NATIVE_TOKEN_ADDRESS,
+            BigInt(Math.trunc(inputValue * 1e18)),
+            address,
+            output * 1e18,
+            message,
+            '0x00',
+          ],
+          value: BigInt(Math.trunc(inputValue * 1e18)),
+          gas: BigInt(500000),
+        })
+
+        const receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+      }
 
       toast.success('Mission token purchased.', {
         style: toastStyle,
@@ -655,19 +711,14 @@ export default function MissionPayRedeem({
           <div className="mt-2">
             <MissionPayRedeemContent
               token={token}
-              ruleset={ruleset}
-              subgraphData={subgraphData}
-              input={input}
               output={output}
               redeem={redeemMissionToken}
-              setInput={setInput}
               setMissionPayModalEnabled={setMissionPayModalEnabled}
               tokenBalance={tokenBalance}
               tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
               claimTokenCredit={claimTokenCredit}
               currentStage={currentStage}
               stage={stage}
-              usdInput={usdInput}
               handleUsdInputChange={handleUsdInputChange}
               calculateEthAmount={calculateEthAmount}
               formattedUsdInput={formattedUsdInput}
@@ -725,9 +776,10 @@ export default function MissionPayRedeem({
             {token?.tokenSymbol && (
               <div className="w-full flex justify-between">
                 <p>{'Receive'}</p>
-                <p id="token-output">{`${formatTokenAmount(output, 2)} ${
-                  token?.tokenSymbol
-                }`}</p>
+                <p id="token-output">{`${formatTokenAmount(
+                  output,
+                  2
+                )} ${token?.tokenSymbol}`}</p>
               </div>
             )}
 
@@ -797,6 +849,13 @@ export default function MissionPayRedeem({
               />
             </div>
 
+            <div className="w-full flex justify-between gap-4">
+              <NetworkSelector
+                chains={chains}
+                compact={true}
+                iconsOnly={true}
+              />
+            </div>
             <div className="w-full flex justify-between gap-4">
               <StandardButton
                 styleOnly

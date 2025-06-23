@@ -262,26 +262,34 @@ export async function getStaticProps() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
 
-  const projectTableContract = getContract({
-    client: serverClient,
-    address: PROJECT_TABLE_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: ProjectTableABI as any,
-  })
-  const projectTableName = await readContract({
-    contract: projectTableContract,
-    method: 'getTableName',
-  })
+  try {
+    const projectTableContract = getContract({
+      client: serverClient,
+      address: PROJECT_TABLE_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: ProjectTableABI as any,
+    })
+    const projectTableName = await readContract({
+      contract: projectTableContract,
+      method: 'getTableName',
+    })
 
-  const { quarter, year } = getRelativeQuarter(-1)
+    const { quarter, year } = getRelativeQuarter(-1)
 
-  const statement = `SELECT * FROM ${projectTableName} WHERE quarter = ${quarter} AND year = ${year}`
-  const projectsFromLastQuarter = await queryTable(chain, statement)
+    const statement = `SELECT * FROM ${projectTableName} WHERE quarter = ${quarter} AND year = ${year}`
+    const projectsFromLastQuarter = await queryTable(chain, statement)
 
-  return {
-    props: {
-      projectsFromLastQuarter,
-    },
-    revalidate: 60,
+    return {
+      props: {
+        projectsFromLastQuarter,
+      },
+      revalidate: 60,
+    }
+  } catch (error) {
+    return {
+      props: {
+        projectsFromLastQuarter: [],
+      },
+    }
   }
 }
