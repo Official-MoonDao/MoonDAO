@@ -204,18 +204,20 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   title="Review & Mint"
                   description="Please review your team information before finalizing your registration on the blockchain."
                 >
-                  <div className="w-full bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6 mb-6">
-                    <h3 className="text-lg font-semibold text-white mb-4">Team Image Preview</h3>
-                    <div className="flex justify-center">
-                      <Image
-                        src={URL.createObjectURL(teamImage)}
-                        alt="entity-image"
-                        width={300}
-                        height={300}
-                        className="rounded-xl border border-slate-600/50"
-                      />
+                  {teamImage && (
+                    <div className="w-full bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6 mb-6">
+                      <h3 className="text-lg font-semibold text-white mb-4">Team Image Preview</h3>
+                      <div className="flex justify-start">
+                        <Image
+                          src={URL.createObjectURL(teamImage)}
+                          alt="entity-image"
+                          width={300}
+                          height={300}
+                          className="rounded-xl border border-slate-600/50"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="flex flex-col w-full md:p-5 mt-8 max-w-[600px]">
                     <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
