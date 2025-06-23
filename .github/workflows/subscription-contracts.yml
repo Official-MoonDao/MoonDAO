@@ -58,6 +58,9 @@ jobs:
           cd subscription-contracts && npm install --legacy-peer-deps
         id: install-npm-dependencies
 
+      - name: Install lcov
+        run: sudo apt-get update && sudo apt-get install -y lcov
+
       - name: Run Forge build
         run: |
           forge --version
