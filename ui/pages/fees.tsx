@@ -138,7 +138,7 @@ export default function Fees() {
       }
     }
     fetchStatus()
-  }, [feeHookContract, address, isCheckedIn, WEEK])
+  }, [address, isCheckedIn, WEEK])
 
   const handleCheckIn = async () => {
     try {
