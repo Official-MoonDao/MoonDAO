@@ -2,6 +2,7 @@ import {
   DEFAULT_CHAIN_V5,
   JB_NATIVE_TOKEN_ADDRESS,
   JB_NATIVE_TOKEN_ID,
+  ZERO_ADDRESS,
 } from 'const/config'
 import {
   useJBTerminalContext,
@@ -25,31 +26,25 @@ export default function useTotalFunding(projectId: any) {
     chainId: chainId as SupportedChainId,
     args: [projectId ?? 0, JB_NATIVE_TOKEN_ADDRESS],
   })
-  if (!terminalAddress) {
-    return 0
-  }
   const { store } = useJBTerminalContext()
-  if (!store.data) {
-    return 0
-  }
   const { data: balance } = useReadJbTerminalStoreBalanceOf({
     address: store.data ?? undefined,
     chainId,
-    args: [terminalAddress, projectId, JB_NATIVE_TOKEN_ADDRESS],
+    args: [terminalAddress ?? ZERO_ADDRESS, projectId, JB_NATIVE_TOKEN_ADDRESS],
   })
   const { data: usedPayoutLimit, isLoading } =
     useReadJbTerminalStoreUsedPayoutLimitOf({
       address: store.data ?? undefined,
       chainId,
       args: [
-        terminalAddress,
-        projectId ?? 0n,
+        terminalAddress ?? ZERO_ADDRESS,
+        projectId ?? 0,
         JB_NATIVE_TOKEN_ADDRESS,
         BigInt(2), // Cycle number 2 for payout cycle
         BigInt(JB_NATIVE_TOKEN_ID),
       ],
     })
 
-  const totalFunding = balance + usedPayoutLimit
+  const totalFunding = (balance ?? BigInt(0)) + (usedPayoutLimit ?? BigInt(0))
   return totalFunding
 }
