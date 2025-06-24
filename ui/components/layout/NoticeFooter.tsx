@@ -21,6 +21,10 @@ type NoticeFooterProps = {
   defaultDescription?: string
   defaultButtonText?: string
   defaultButtonLink?: string
+  imageWidth?: number
+  imageHeight?: number
+  iconWidth?: number
+  iconHeight?: number
   darkBackground?: boolean
   citizenNotice?: boolean
   DisclaimerOnly?: boolean
@@ -42,6 +46,10 @@ export function NoticeFooter({
   citizenDescription = "Submit a ticket in the support channel on MoonDAO's Discord!",
   citizenButtonText = 'Submit a Ticket',
   citizenButtonLink = 'https://discord.com/channels/914720248140279868/1212113005836247050',
+  imageWidth = 450,
+  imageHeight = 450,
+  iconWidth = 40,
+  iconHeight = 40,
   darkBackground = true,
   citizenNotice = false,
   DisclaimerOnly = false,
@@ -106,20 +114,20 @@ export function NoticeFooter({
         <div id="Image container" className="hidden opacity-[90%] lg:block ">
           <Image
             src={notice.image}
-            alt="Space Acceleration Network Logo"
-            width={450}
-            height={450}
+            alt="Logo"
+            width={imageWidth}
+            height={imageHeight}
           />
         </div>
-        <div id="callout-container" className="flex flex-col mr-10 ml-5 xl:ml-0">
+        <div id="callout-container" className="flex flex-col mr-10 ml-5">
           <div className="flex wrap items-center">
             <div className="flex justify-center">
               <div id="Image container" className="lg:hidden">
                 <Image
                   src="../assets/icon-star.svg"
                   alt="MoonDAO Logo"
-                  width={40}
-                  height={40}
+                  width={iconWidth}
+                  height={iconHeight}
                 />
               </div>
               <h3 className="flex items-center justify-center ml-2 lg:ml-0 header opacity-80 font-GoodTimes !text-[5vw] sm:!text-[4vw] md:!text-[2vw]">
