@@ -1,10 +1,10 @@
-import { defineConfig } from 'cypress'
-import * as dotenv from 'dotenv'
-import path from 'path'
+const { defineConfig } = require('cypress')
+const dotenv = require('dotenv')
+const path = require('path')
 
 dotenv.config({ path: path.resolve(__dirname, '.env.local') })
 
-export default defineConfig({
+module.exports = defineConfig({
   e2e: {
     setupNodeEvents(on, config) {
       config.env = {
@@ -24,6 +24,11 @@ export default defineConfig({
     specPattern: 'cypress/e2e/**/*.cy.{js,ts,jsx,tsx}',
     baseUrl: 'http://localhost:3000',
     supportFile: false,
+    requestTimeout: 60000,
+    responseTimeout: 60000,
+    pageLoadTimeout: 120000,
+    defaultCommandTimeout: 60000,
+    video: false,
   },
   component: {
     setupNodeEvents(on, config) {

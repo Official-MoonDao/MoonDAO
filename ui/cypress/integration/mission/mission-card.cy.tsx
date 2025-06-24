@@ -1,4 +1,6 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
+import { CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import MissionCard from '@/components/mission/MissionCard'
 import { Mission } from '@/components/mission/MissionCard'
 
@@ -61,7 +63,12 @@ describe('MissionCard', () => {
     })
     cy.mount(
       <TestnetProviders>
-        <MissionCard {...defaultProps} />
+        <JuiceProviders
+          projectId={defaultProps.mission.projectId}
+          selectedChain={CYPRESS_CHAIN_V5}
+        >
+          <MissionCard {...defaultProps} />
+        </JuiceProviders>
       </TestnetProviders>
     )
   })

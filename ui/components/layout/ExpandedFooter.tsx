@@ -97,7 +97,7 @@ export function ExpandedFooter({
   const governLinks = [
     { text: 'Governance', href: '/governance' },
     { text: 'Proposals', href: '/vote' },
-    { text: 'Constitution', href: 'https://docs.moondao.com/Governance/Constitution?_gl=1*xwpa15*_ga*NDEyMzExNTE4LjE3MTcxMjYxODU.*_ga_QPFCD9VH46*czE3NDc4NjI2NTUkbzI1MCRnMSR0MTc0Nzg2Mjc1NCRqMCRsMCRoMA..' },
+    { text: 'Constitution', href: '/constitution' },
   ]
 
   const tokenLinks = [
@@ -141,16 +141,14 @@ export function ExpandedFooter({
               </div>
               <h2 className="z-50 text-2xl font-bold font-GoodTimes mb-3">{callToAction.title}</h2>
               {callToAction.body && <p className="max-w-[400px] mb-4 opacity-80">{callToAction.body}</p>}
-              <Link 
-                href={callToAction.buttonLink} 
-                className="inline-block"
-              >
-                <div
+              <div>
+                <Link 
+                  href={callToAction.buttonLink} 
                   className="gradient-2 hover:pl-7 transform transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-2 px-5 py-3 inline-block"
                 >
                   {callToAction.buttonText}
-                </div>
-              </Link>
+                </Link>
+              </div>
             </div>
           )}
           
