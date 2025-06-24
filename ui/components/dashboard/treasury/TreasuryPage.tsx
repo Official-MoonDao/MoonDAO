@@ -13,7 +13,7 @@ import TransactionSkeletons from './transactions/TransactionSkeletons'
 
 function Frame(props: any) {
   return (
-    <div className="px-5 lg:px-10 xl:px-10 py-5 bg-[#020617] rounded-2xl w-full lg:mt-10 lg:w-full lg:max-w-[1080px] flex flex-col gap-4 xl:flex-row">
+    <div className="md:mb-[5vw] 2xl:mb-[2vw] px-5 lg:px-10 xl:px-10 py-5 bg-[#020617] rounded-2xl w-full lg:mt-10 lg:w-full lg:max-w-[1200px] flex flex-col gap-4 xl:flex-row">
       {props.children}
     </div>
   )

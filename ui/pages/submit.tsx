@@ -57,12 +57,12 @@ export default function SubmissionPage({
             mode="compact"
             isProfile={true}
           >
-            <div className="flex flex-col gap-4 p-5 bg-slide-section rounded-tl-[2vw] rounded-bl-[2vw] max-w-[816px]">
+            <div className="w-full flex flex-col gap-4 p-5 bg-slide-section rounded-tl-[2vw] rounded-bl-[2vw] max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
               <Tab.Group
                 selectedIndex={selectedIndex}
                 onChange={setSelectedIndex}
               >
-                <Tab.List className="flex flex-col md:flex-row rounded-xl justify-center">
+                <Tab.List className="flex flex-col md:flex-row rounded-xl justify-start px-5 mt-5">
                   <Tab
                     className={({ selected }) =>
                       `rounded-lg py-2.5 px-5 font-GoodTimes leading-5 focus:outline-none
@@ -110,7 +110,7 @@ export default function SubmissionPage({
                   </Tab>
                 </Tab.List>
                 <Tab.Panels className="mt-4">
-                  <Tab.Panel className="flex flex-col items-center">
+                  <Tab.Panel className="flex flex-col items-start">
                     <div className="mb-8">
                       <div
                         id="instructions-container"

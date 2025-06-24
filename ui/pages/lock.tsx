@@ -221,7 +221,7 @@ export default function Lock() {
         <main className="animate-fadeIn font-Lato">
           <Head title="Voting Power" />
           <WithdrawVMooney />
-          <div className="mt-3 w-full">
+          <div className="mt-3 w-full md:mb-[5vw] 2xl:mb-[2vw]">
             <LockData
               hasLock={hasLock}
               VMOONEYBalance={VMOONEYBalance}
@@ -235,7 +235,7 @@ export default function Lock() {
             </div>
             {/*Available to Lock*/}
             {!hasExpired && (
-              <div className="xl:w-3/4 rounded-md text-xs sm:tracking-wide lg:text-base uppercase font-semibold xl:text-xl bg-dark-cool rounded-[20px] overflow-hidden px-2 py-3 lg:px-5 lg:py-4 flex items-center">
+              <div className="m-5 md:m-0 xl:w-3/4 rounded-md text-xs sm:tracking-wide lg:text-base uppercase font-semibold xl:text-xl bg-dark-cool rounded-[20px] overflow-hidden px-2 py-3 lg:px-5 lg:py-4 flex items-center">
                 <p className="text-slate-900 dark:text-white">
                   {t('lockAvailableMoney')}{' '}
                 </p>

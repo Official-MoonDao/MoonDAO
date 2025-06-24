@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import Footer from './Footer'
+import { ExpandedFooter } from './ExpandedFooter'
 
 type NoticeFooterProps = {
   managerTitle?: string
@@ -23,11 +23,12 @@ type NoticeFooterProps = {
   defaultButtonLink?: string
   darkBackground?: boolean
   citizenNotice?: boolean
+  DisclaimerOnly?: boolean
 }
 
 export function NoticeFooter({
   defaultTitle = 'Join the Network',
-  defaultImage = '../assets/MoonDAO-Logo-White.svg',
+  defaultImage = '../assets/logo-san-full-white.svg',
   defaultDescription = 'Be part of the Space Acceleration Network and play a role in establishing a permanent human presence on the Moon and beyond.',
   defaultButtonText = 'Learn More',
   defaultButtonLink = '/join',
@@ -43,6 +44,7 @@ export function NoticeFooter({
   citizenButtonLink = 'https://discord.com/channels/914720248140279868/1212113005836247050',
   darkBackground = true,
   citizenNotice = false,
+  DisclaimerOnly = false,
 }: NoticeFooterProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const isCitizen = useCitizen(selectedChain)
@@ -97,19 +99,19 @@ export function NoticeFooter({
     <div
       id="notice-footer"
       className={`pb-10 md:pb-0 ${
-        darkBackground ? 'md:pl-5 pb-10 w-full pt-5' : 'p-5'
+        darkBackground ? 'md:pl-5 pb-10 w-full pt-5' : 'p-5 mr-5'
       }`}
     >
-      <div className="md:pl-10 flex items-center gap-5 lg:ml-[80px] max-w-[970px] gradient-15 mx-5 md:ml-7 p-5 md:mr-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
-        <div id="Image container" className="hidden opacity-[90%] lg:block">
+      <div className="mx-[3vw] mb-5 py-5 sm:p-5 sm:pb-10 lg:pl-10 flex items-center lg:ml-[80px] 2xl:ml-[125px] 2xl:max-w-[1040px] gradient-15 rounded-[20px] sm:rounded-tr-0 sm:rounded-bl-0 2xl:rounded-tr-[20px] 2xl:rounded-bl-[20px]">
+        <div id="Image container" className="hidden opacity-[90%] lg:block ">
           <Image
             src={notice.image}
-            alt="MoonDAO Logo"
-            width={150}
-            height={150}
+            alt="Space Acceleration Network Logo"
+            width={450}
+            height={450}
           />
         </div>
-        <div id="callout-container" className="flex flex-col">
+        <div id="callout-container" className="flex flex-col mr-10 ml-5 xl:ml-0">
           <div className="flex wrap items-center">
             <div className="flex justify-center">
               <div id="Image container" className="lg:hidden">
@@ -120,7 +122,7 @@ export function NoticeFooter({
                   height={40}
                 />
               </div>
-              <h3 className="header opacity-80 font-GoodTimes">
+              <h3 className="flex items-center justify-center ml-2 lg:ml-0 header opacity-80 font-GoodTimes !text-[5vw] sm:!text-[4vw] md:!text-[2vw]">
                 {notice.title}
               </h3>
             </div>
@@ -141,7 +143,17 @@ export function NoticeFooter({
           </Link>
         </div>
       </div>
-      <Footer darkBackground={darkBackground} />
+      <ExpandedFooter 
+        callToActionImage={notice.image}
+        callToActionTitle={notice.title}
+        callToActionBody={notice.description}
+        callToActionButtonText={notice.buttonText}
+        callToActionButtonLink={notice.buttonLink}
+        hasCallToAction={true}
+        darkBackground={darkBackground}
+        isFullwidth={false}
+        DisclaimerOnly={DisclaimerOnly}
+      />
     </div>
   )
 }

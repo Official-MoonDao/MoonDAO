@@ -71,7 +71,7 @@ export default function GetMooney() {
             mode="compact"
             popOverEffect={false}
           >
-            <div className="mt-3 w-full">
+            <div className="mt-3 w-full md:mb-[5vw] 2xl:mb-[2vw] px-5 md:px-0">
               <NetworkSelector />
               <NativeToMooney selectedChain={selectedChain} />
             </div>

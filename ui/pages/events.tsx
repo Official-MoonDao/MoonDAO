@@ -24,7 +24,7 @@ export default function Events({ events }: any) {
             mode="compact"
             popOverEffect={false}
           >
-            <div className="mt-3 w-full flex grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="mt-3 w-full flex grid grid-cols-1 lg:grid-cols-2 gap-4 md:mb-[5vw] 2xl:mb-[2vw]">
               {!events?.[0] ? (
                 <>
                   {Array(6)
