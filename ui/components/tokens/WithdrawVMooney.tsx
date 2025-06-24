@@ -174,7 +174,6 @@ export default function WithdrawVMooney() {
         }, 5000)
       }
     } catch (error) {
-      console.error('Error withdrawing:', error)
       toast.error('Error withdrawing. Please try again.', {
         style: toastStyle,
       })

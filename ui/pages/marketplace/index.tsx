@@ -6,7 +6,9 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -14,49 +16,99 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { useShallowQueryRoute } from '@/lib/utils/hooks/useShallowQueryRoute'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
-import IndexCardGridContainer from '@/components/layout/IndexCardGridContainer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import PaginationButtons from '@/components/layout/PaginationButtons'
 import Search from '@/components/layout/Search'
-import TeamListing, {
-  TeamListing as TeamListingType,
-} from '@/components/subscription/TeamListing'
+import StandardDetailCard from '@/components/layout/StandardDetailCard'
+import BuyTeamListingModal from '@/components/subscription/BuyTeamListingModal'
+
+type MarketplaceListing = {
+  id: number
+  teamId: number
+  title: string
+  description: string
+  image: string
+  price: string
+  currency: string
+  startTime: number
+  endTime: number
+  timestamp: number
+  metadata: string
+  shipping: string
+  tag: string
+}
 
 type MarketplaceProps = {
-  listings: TeamListingType[]
+  listings: MarketplaceListing[]
 }
 
 export default function Marketplace({ listings }: MarketplaceProps) {
   const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
   const { citizen } = useContext(CitizenContext)
+  const router = useRouter()
+  const shallowQueryRoute = useShallowQueryRoute()
+  const chainSlug = getChainSlug(selectedChain)
 
-  const [filteredListings, setFilteredListings] = useState<TeamListingType[]>()
+  const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>()
   const [input, setInput] = useState('')
+  const [pageIdx, setPageIdx] = useState(1)
+  const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null)
+  const [teamNFTOwner, setTeamNFTOwner] = useState<string | null>(null)
+  const [enabledBuyListingModal, setEnabledBuyListingModal] = useState(false)
+  
+  const ITEMS_PER_PAGE = 8 // 4 items per row x 2 rows
 
   const teamContract = useContract({
     chain: selectedChain,
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI as any,
   })
-  const marketplaceTableContract = useContract({
-    chain: selectedChain,
-    address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
-    abi: MarketplaceABI as any,
-  })
 
   useChainDefault()
 
+  // Handle URL parameters for pagination
+  useEffect(() => {
+    const { page: urlPage } = router.query
+    if (urlPage && !isNaN(Number(urlPage))) {
+      setPageIdx(Number(urlPage))
+    }
+  }, [router.query])
+
+  function handlePageChange(newPage: number) {
+    setPageIdx(newPage)
+    shallowQueryRoute({ page: newPage.toString() })
+  }
+
+  async function handleListingClick(listing: MarketplaceListing) {
+    try {
+      // Get the team NFT to find the owner (recipient for purchases)
+      const nft = await getNFT({
+        contract: teamContract,
+        tokenId: BigInt(listing.teamId),
+        includeOwner: true,
+      })
+      setTeamNFTOwner(nft?.owner || null)
+      setSelectedListing(listing)
+      setEnabledBuyListingModal(true)
+    } catch (error) {
+      console.error('Error fetching team NFT:', error)
+      // Fallback to redirect if modal fails
+      router.push(`/team/${listing.teamId}?listing=${listing.id}`)
+    }
+  }
+
   useEffect(() => {
     if (listings && input != '') {
-      setFilteredListings(
-        listings.filter((listing: TeamListingType) => {
-          return listing.title.toLowerCase().includes(input.toLowerCase())
-        })
-      )
+      const filtered = listings.filter((listing: MarketplaceListing) => {
+        return listing.title.toLowerCase().includes(input.toLowerCase())
+      })
+      setFilteredListings(filtered)
+      setPageIdx(1) // Reset to first page when filtering
     } else {
       setFilteredListings(listings)
     }
@@ -94,22 +146,57 @@ export default function Marketplace({ listings }: MarketplaceProps) {
           popOverEffect={false}
           isProfile
         >
-          <IndexCardGridContainer>
-            {filteredListings &&
-              filteredListings.map((listing: TeamListingType, i: number) => (
-                <TeamListing
-                  key={`team-listing-${i}`}
-                  selectedChain={selectedChain}
-                  listing={listing}
-                  teamContract={teamContract}
-                  marketplaceTableContract={marketplaceTableContract}
-                  teamName
-                  isCitizen={citizen}
-                />
-              ))}
-          </IndexCardGridContainer>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {filteredListings && filteredListings.length > 0 ? (
+              (() => {
+                const startIdx = (pageIdx - 1) * ITEMS_PER_PAGE
+                const endIdx = startIdx + ITEMS_PER_PAGE
+                const paginatedListings = filteredListings.slice(startIdx, endIdx)
+                
+                return paginatedListings.map((listing: MarketplaceListing, i: number) => (
+                  <StandardDetailCard
+                    key={`marketplace-listing-${startIdx + i}`}
+                    title={listing.title}
+                    paragraph={listing.description}
+                    image={listing.image}
+                    onClick={() => handleListingClick(listing)}
+                  />
+                ))
+              })()
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <p className="text-gray-400">
+                  {input
+                    ? 'No listings match your search criteria.'
+                    : 'No marketplace listings available at this time.'}
+                </p>
+              </div>
+            )}
+          </div>
+          
+          {/* Pagination */}
+          {filteredListings && filteredListings.length > ITEMS_PER_PAGE && (
+            <div className="mt-8">
+              <PaginationButtons
+                handlePageChange={handlePageChange}
+                maxPage={Math.ceil(filteredListings.length / ITEMS_PER_PAGE)}
+                pageIdx={pageIdx}
+                label="Page"
+              />
+            </div>
+          )}
         </ContentLayout>
       </Container>
+
+      {/* Buy Listing Modal */}
+      {enabledBuyListingModal && selectedListing && (
+        <BuyTeamListingModal
+          selectedChain={selectedChain}
+          listing={selectedListing}
+          recipient={teamNFTOwner}
+          setEnabled={setEnabledBuyListingModal}
+        />
+      )}
     </section>
   )
 }
