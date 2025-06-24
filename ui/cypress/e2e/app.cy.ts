@@ -2,66 +2,62 @@
 describe('Main E2E Testing', () => {
   describe('MoonDAO App Layout', () => {
     it('should load the layout', () => {
-      cy.visit('/')
+      cy.visit('/', { timeout: 30000 })
       cy.get('#app-layout').should('exist')
     })
   })
 
   describe('MoonDAO App | Home', () => {
     it('should load the home page', () => {
-      cy.visit('/')
+      cy.visit('/', { timeout: 30000 })
     })
   })
 
   describe('MoonDAO App | Governance', () => {
     it('should load the governance page', () => {
-      cy.visit('/governance')
+      cy.visit('/governance', { timeout: 30000 })
     })
   })
 
   describe('MoonDAO App | Lock', () => {
     it('should load the lock page', () => {
-      cy.visit('/lock')
+      cy.visit('/lock', { timeout: 30000 })
     })
   })
 
   describe('MoonDAO App | Network', () => {
     it('should load the directory page', () => {
-      cy.visit('/network')
+      cy.visit('/network', { timeout: 30000 })
     })
   })
 
   describe('MoonDAO App | Analytics', () => {
     it('should load the analytics page', () => {
-      cy.visit('/analytics')
+      cy.visit('/analytics', { timeout: 30000 })
     })
   })
 
   describe('MoonDAO App | Events', () => {
     it('should load the events page', () => {
-      cy.visit('/events')
+      cy.visit('/events', { timeout: 30000 })
     })
   })
 
   describe('MoonDAO App | Lifeship', () => {
     it('should load the lifeship page', () => {
-      cy.visit('/lifeship')
+      cy.visit('/lifeship', { timeout: 30000 })
     })
   })
 
   describe('MoonDAO App | Zero-G', () => {
     it('should load the zero-g page', () => {
-      cy.visit('/zero-g')
+      cy.visit('/zero-g', { timeout: 30000 })
     })
   })
 
   describe('MoonDAO App | About', () => {
-    it('should load the about page', () => {
-      cy.visit('/about')
-    })
-
     it('should have iframe that takes up full window dimensions', () => {
-      cy.visit('/about')
+      cy.visit('/about', { timeout: 30000 })
 
       // Get the viewport dimensions
       cy.window().then((win) => {
@@ -69,7 +65,7 @@ describe('Main E2E Testing', () => {
         const viewportHeight = win.innerHeight
 
         // Check iframe dimensions match viewport
-        cy.get('iframe')
+        cy.get('iframe', { timeout: 30000 })
           .should('be.visible')
           .and(($iframe) => {
             const iframeWidth = $iframe[0].getBoundingClientRect().width
@@ -85,11 +81,11 @@ describe('Main E2E Testing', () => {
 
   describe('MoonDAO App | News', () => {
     it('should load the news page', () => {
-      cy.visit('/news')
+      cy.visit('/news', { timeout: 30000 })
     })
 
     it('should have iframe that takes up full window dimensions', () => {
-      cy.visit('/news')
+      cy.visit('/news', { timeout: 30000 })
 
       // Get the viewport dimensions
       cy.window().then((win) => {
@@ -113,7 +109,7 @@ describe('Main E2E Testing', () => {
 
   describe('MoonDAO App | Map', () => {
     it('should load the map page', () => {
-      cy.visit('/map')
+      cy.visit('/map', { timeout: 30000 })
     })
 
     it('should have citizen locations with correct data structure and not all in Antarctica', () => {

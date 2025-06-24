@@ -23,6 +23,7 @@ export type MissionWideCardProps = {
   backers?: any[]
   contribute?: boolean
   stage?: number
+  deadline?: number
   ruleset?: any
   missionImage?: File | string
   teamContract?: any
@@ -44,6 +45,7 @@ export default function MissionWideCard({
   token,
   ruleset,
   stage,
+  deadline,
   subgraphData,
   fundingGoal,
   backers,
@@ -68,11 +70,7 @@ export default function MissionWideCard({
   const { data: nativeTokenSurplus } = useNativeTokenSurplus()
 
   const duration = useMemo(() => {
-    return ruleset?.[0]?.start
-      ? formatTimeUntilDeadline(
-          new Date(ruleset?.[0]?.start * 1000 + 28 * 24 * 60 * 60 * 1000)
-        )
-      : undefined
+    return deadline ? formatTimeUntilDeadline(new Date(deadline)) : undefined
   }, [ruleset])
 
   useEffect(() => {

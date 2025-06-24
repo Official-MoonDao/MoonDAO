@@ -56,14 +56,14 @@ export default function ProposalLocalCache({
         <button
           type="button"
           onClick={() => restoreProposalCache(proposalCache?.title || "", proposalCache?.body || "")}
-          className="text-moon-blue hover:underline"
+          className="px-3 py-1 text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 hover:text-blue-300 rounded-md border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 font-RobotoMono"
         >
           restore
         </button>
         <button
           type="button"
           onClick={clearProposalCache}
-          className="text-moon-gold hover:underline"
+          className="px-3 py-1 text-xs bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 hover:text-yellow-300 rounded-md border border-yellow-500/30 hover:border-yellow-500/50 transition-all duration-200 font-RobotoMono"
         >
           clear
         </button>

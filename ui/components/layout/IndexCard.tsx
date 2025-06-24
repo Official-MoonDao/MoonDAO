@@ -80,9 +80,9 @@ export default function IndexCard({
           >
             <div
               id="index-description-and-id"
-              className="description text-left relative z-50 w-full opacity-100 group-hover:opacity-100"
+              className="description text-center relative z-50 w-full opacity-100 group-hover:opacity-100"
             >
-              <div className="flex">{paragraph}</div>
+              <div className="flex justify-center">{paragraph}</div>
               {metadata?.id && (
                 <div id="index-details-container" className="mt-4">
                   <p id="index-org-description">
