@@ -29,6 +29,7 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
+import { useVotesOfAddress } from '@/lib/snapshot'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { citizenRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
@@ -116,6 +117,8 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
   } = useCitizenData(nft, citizenContract)
 
   const isOwner = address?.toLowerCase() === nft?.owner?.toLowerCase()
+
+  const { data: votes } = useVotesOfAddress(nft?.owner)
 
   // Balances
   const nativeBalance = useNativeBalance()
@@ -444,6 +447,10 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                           ? Math.round(VMOONEYBalance).toLocaleString()
                           : 0}
                       </p>
+                    </div>
+                    <div>
+                      <p className="text-xl">{`Votes`}</p>
+                      <p className="text-2xl">{votes?.length}</p>
                     </div>
                   </div>
                   {isOwner && (

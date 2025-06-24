@@ -86,6 +86,24 @@ const votingPowerQuery = gql`
   }
 `
 
+const votesOfAddressQuery = gql`
+  query Votes($address: String!, $skip: Int) {
+    votes(
+      first: 1000
+      skip: $skip
+      where: { voter: $address, space: "tomoondao.eth" }
+    ) {
+      id
+      voter
+      choice
+      created
+      space {
+        id
+      }
+    }
+  }
+`
+
 export type ProposalType =
   | 'approval'
   | 'ranked-choice' // choice = [1,2,3]
@@ -129,6 +147,16 @@ export type SnapshotGraphqlVote = {
   choice: number | { [k: string]: number }
   choiceLabel?: string
   aha: string
+}
+
+export type SnapshotGraphqlVoteByAddress = {
+  id: string
+  voter: string
+  choice: number | { [k: string]: number }
+  created: number
+  space: {
+    id: string
+  }
 }
 
 export async function getVotingInfoOfProposals(
@@ -275,4 +303,46 @@ export function getChoiceLabel(
     // choice = 1
     return choices[(choice as number) - 1]
   }
+}
+
+export async function getVotesOfAddress(
+  address: string | undefined,
+  first: number = 1000
+): Promise<SnapshotGraphqlVoteByAddress[]> {
+  if (!address) {
+    return []
+  }
+
+  let allVotes: SnapshotGraphqlVoteByAddress[] = []
+  let skip = 0
+  let hasMore = true
+
+  while (hasMore) {
+    const variable = { address, first, skip }
+    const data = await graphQLClient.request<{
+      votes: SnapshotGraphqlVoteByAddress[]
+    }>(votesOfAddressQuery, variable)
+
+    allVotes = [...allVotes, ...data.votes]
+
+    // If we got fewer votes than requested, we've reached the end
+    if (data.votes.length < first) {
+      hasMore = false
+    } else {
+      skip += first
+    }
+  }
+
+  return allVotes
+}
+
+export function useVotesOfAddress(
+  address: string | undefined,
+  first: number = 1000,
+  shouldFetch: boolean = true
+) {
+  return useSWR(
+    shouldFetch ? [endpoint, 'useVotesOfAddress', address, first] : null,
+    async (url) => getVotesOfAddress(address, first)
+  )
 }
