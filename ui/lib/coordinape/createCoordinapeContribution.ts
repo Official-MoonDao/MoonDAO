@@ -32,13 +32,26 @@ export async function createContribution(
   }
 
   try {
+    console.log("createContribution: Creating contribution for user_id:", input.user_id);
     const res = await graphQLClient.request<CreateContributionResponse>(
       createContributionMutation,
       input
     );
+    console.log("createContribution: Successfully created contribution");
     return res;
-  } catch (error) {
-    console.log(error)
-    throw error
+  } catch (error: any) {
+    console.error("createContribution: Error:", error);
+    if (error.response?.errors) {
+      console.error("createContribution: GraphQL errors:", error.response.errors);
+      const errors = error.response.errors;
+      if (errors.some((e: any) => e.message.includes('user_id'))) {
+        throw new Error("Invalid user ID. Please try refreshing and submitting again.");
+      } else if (errors.some((e: any) => e.message.includes('circle'))) {
+        throw new Error("Unable to access the contribution circle. Please contact support.");
+      } else if (errors.some((e: any) => e.message.includes('permission'))) {
+        throw new Error("You don't have permission to create contributions.");
+      }
+    }
+    throw error;
   }
 }
