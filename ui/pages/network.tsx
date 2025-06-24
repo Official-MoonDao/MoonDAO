@@ -151,7 +151,7 @@ export default function Network({
         <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
           <div className="w-full flex flex-row min-[800px]:flex-row gap-4 items-center">
             {/* Search Bar */}
-            <div className="w-fit max-w-[260px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 px-3 py-1">
+            <div className="w-fit max-w-[500px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 px-3 py-1">
               <Search
                 className="w-full flex-grow"
                 input={input}
