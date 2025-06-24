@@ -37,33 +37,35 @@ export default function GetMooney() {
             header={t('mooneyTitle')}
             headerSize="max(20px, 3vw)"
             description={
-              <p>
-                {'Playing an active role in MoonDAO governance is simple: '}
-                <button
-                  className="underline"
-                  onClick={() => {
-                    if (!address)
-                      return toast.error('Please connect your wallet.')
-                    fundWallet(address, {
-                      chain: viemChains[chainSlug],
-                    })
-                  }}
-                >
-                  {'fund your account'}
-                </button>
-                {',  '}
-                <button className="underline">{'swap for $MOONEY'}</button>
-                {', our governance token, and '}
-                <button
-                  className="underline"
-                  onClick={() => {
-                    router.push('/lock')
-                  }}
-                >
-                  {'lock for voting power'}
-                </button>
-                {'.  '}
-              </p>
+              <div className="max-w-2xl">
+                <p>
+                  {'Playing an active role in MoonDAO governance is simple: '}
+                  <button
+                    className="underline"
+                    onClick={() => {
+                      if (!address)
+                        return toast.error('Please connect your wallet.')
+                      fundWallet(address, {
+                        chain: viemChains[chainSlug],
+                      })
+                    }}
+                  >
+                    {'fund your account'}
+                  </button>
+                  {',  '}
+                  <button className="underline">{'swap for $MOONEY'}</button>
+                  {', and '}
+                  <button
+                    className="underline"
+                    onClick={() => {
+                      router.push('/lock')
+                    }}
+                  >
+                    {'lock for voting power'}
+                  </button>
+                  {'.  '}
+                </p>
+              </div>
             }
             preFooter={<NoticeFooter />}
             mainPadding
@@ -71,7 +73,13 @@ export default function GetMooney() {
             mode="compact"
             popOverEffect={false}
           >
-            <div className="mt-3 w-full">
+            <div className="mt-3 w-full max-w-2xl">
+              <div className="mb-4">
+                <p className="text-gray-400 text-sm">
+                  Select the blockchain network where you want to buy MOONEY tokens. 
+                  Different networks offer different trading options and fee structures.
+                </p>
+              </div>
               <NetworkSelector />
               <NativeToMooney selectedChain={selectedChain} />
             </div>
