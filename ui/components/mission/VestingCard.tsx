@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import VestingABI from 'const/abis/Vesting.json'
-import { prepareContractCall, readContract, sendAndConfirmTransaction, getContract } from 'thirdweb'
+import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import StandardButton from '@/components/layout/StandardButton'
 import toast from 'react-hot-toast'
-import client from '@/lib/thirdweb/client'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export default function VestingCard({
   address,
@@ -18,48 +18,40 @@ export default function VestingCard({
   isTeam?: boolean
 }) {
   const account = useActiveAccount()
-  const [vestingContract, setVestingContract] = useState<any>()
+  const vestingContract = useContract({
+    chain,
+    address: String(address),
+    abi: VestingABI as any,
+  })
   const [withdrawable, setWithdrawable] = useState<string>('0')
   const [total, setTotal] = useState<string>('0')
 
   useEffect(() => {
     async function fetchData() {
-      if (!address) return
-      const vc = await getContract({ 
-        client,
-        chain,
-        address: String(address),
-        abi: VestingABI as any,
-      })
+      if (!address || !vestingContract) return
       const [vested, withdrawn, totalReceived, beneficiary] = await Promise.all([
-        readContract({ contract: vc, method: 'vestedAmount' as string, params: [] }),
-        readContract({ contract: vc, method: 'totalWithdrawn' as string, params: [] }),
-        readContract({ contract: vc, method: 'totalReceived' as string, params: [] }),
-        readContract({ contract: vc, method: 'beneficiary' as string, params: [] }),
+        readContract({ contract: vestingContract, method: 'vestedAmount' as string, params: [] }),
+        readContract({ contract: vestingContract, method: 'totalWithdrawn' as string, params: [] }),
+        readContract({ contract: vestingContract, method: 'totalReceived' as string, params: [] }),
+        readContract({ contract: vestingContract, method: 'beneficiary' as string, params: [] }),
 
       ])
       const available = BigInt(String(vested)) - BigInt(String(withdrawn))
       setWithdrawable((Number(available) / 1e18).toFixed(10))
       setTotal((Number(totalReceived) / 1e18).toFixed(4))
-      setVestingContract(vc)
     }
     fetchData()
-  }, [address, chain])
+  }, [address, chain, vestingContract])
 
   const handleWithdraw = async () => {
-    if (!account || !vestingContract) return
-    try {
-      const tx = prepareContractCall({
-        contract: vestingContract,
-        method: 'withdraw' as string,
-        params: [],
-      })
-      await sendAndConfirmTransaction({ transaction: tx, account })
-      toast.success('Withdrawal successful')
-    } catch (err) {
-      console.error('Withdraw error:', err)
-      toast.error('Withdrawal failed')
-    }
+    if (!vestingContract || !account) return
+    const tx = prepareContractCall({
+      contract: vestingContract,
+      method: 'withdraw' as string,
+      params: [],
+    })
+    await sendAndConfirmTransaction({ transaction: tx, account })
+    toast.success('Withdrawal successful')
   }
 
 
@@ -72,9 +64,16 @@ export default function VestingCard({
       </p>
       <p className="font-bold text-sm">Total Vesting</p>
       <p>{total} {tokenSymbol}</p>
-      <StandardButton className="gradient-2 rounded-full mt-2 w-fit" onClick={handleWithdraw}>
-        Withdraw
-      </StandardButton>
+      <PrivyWeb3Button
+        action={handleWithdraw}
+        label="Withdraw"
+        className="gradient-2 rounded-full mt-2 w-fit"
+        isDisabled={!vestingContract || Number(withdrawable) === 0}
+        onSuccess={() => {
+          // Refresh data after successful withdrawal
+          setWithdrawable('0')
+        }}
+      />
     </div>
   )
 }

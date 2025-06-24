@@ -24,7 +24,7 @@ export default function VestingWithdraw({
     tokenSymbol: string
   }
 }) {
-  const hasToken = token?.tokenAddress !== ZERO_ADDRESS
+  const hasToken = token?.tokenAddress && token.tokenAddress !== ZERO_ADDRESS
   const account = useActiveAccount()
   const address = account?.address
 
