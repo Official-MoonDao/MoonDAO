@@ -418,7 +418,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             )}
             {/* Upload & Create Image */}
             {stage === 1 && (
-              <StageContainer description="Please complete your citizen profile.">
+              <StageContainer
+                title="Citizen Profile"
+                description="Please complete your citizen profile."
+              >
                 <div className="w-full max-w-[900px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 overflow-hidden relative">
                   <Widget
                     className="w-full"
