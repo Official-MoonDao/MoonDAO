@@ -1,5 +1,4 @@
 import CitizenABI from 'const/abis/Citizen.json'
-import { useNativeTokenSurplus } from 'juice-sdk-react'
 import HatsABI from 'const/abis/Hats.json'
 import JBMultiTerminal from 'const/abis/IJBMultiTerminal.json'
 import IJBTerminalStoreABI from 'const/abis/IJBTerminalStore.json'
@@ -23,6 +22,7 @@ import {
   TEAM_ADDRESSES,
   JBV4_TERMINAL_ADDRESSES,
   JB_NATIVE_TOKEN_ADDRESS,
+  JB_NATIVE_TOKEN_ID,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
 import { useNativeTokenSurplus } from 'juice-sdk-react'
