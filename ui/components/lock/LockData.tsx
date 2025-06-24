@@ -41,19 +41,19 @@ export function LockData({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* vMOONEY Balance */}
             <div className="bg-black/20 rounded-xl p-4 border border-white/5">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center mb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
                     <MoonIcon className="h-4 w-4 text-blue-400" />
                   </div>
                   <div>
                     <p className="text-gray-400 text-xs">vMOONEY Balance</p>
-                    <p className="text-white text-sm font-medium">Voting Power Tokens</p>
+                    <p className="text-white text-sm font-medium">Voting Power</p>
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-white text-2xl font-RobotoMono font-semibold flex items-center justify-end gap-2">
+              <div className="flex items-center text-left">
+                <span className="text-blue-400 text-2xl font-RobotoMono font-semibold flex items-center">
                   <Balance
                     id="lock-data-vmooney-balance"
                     balance={VMOONEYBalance?.toString() / 10 ** 18}
@@ -66,15 +66,16 @@ export function LockData({
                         ? 2
                         : 8
                     }
+                    token=""
                   />
-                  <span className="text-blue-400 text-sm">vMOONEY</span>
-                </div>
+                  <span className="ml-1 text-base md:text-lg">vMOONEY</span>
+                </span>
               </div>
             </div>
 
             {/* Locked Amount */}
             <div className="bg-black/20 rounded-xl p-4 border border-white/5">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center mb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
                     <LockClosedIcon className="h-4 w-4 text-purple-400" />
@@ -85,8 +86,8 @@ export function LockData({
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-white text-2xl font-RobotoMono font-semibold flex items-center justify-end gap-2">
+              <div className="flex items-center text-left">
+                <div className="text-white text-2xl font-RobotoMono font-semibold flex items-center">
                   <Balance
                     id="lock-data-locked-mooney"
                     balance={VMOONEYLock && BigNumber.from(VMOONEYLock[0])}
@@ -121,7 +122,7 @@ export function LockData({
               </div>
             </div>
             <div className="text-right">
-              <p className="text-yellow-400 text-2xl font-RobotoMono font-bold">
+              <p className="text-blue-400 text-2xl font-RobotoMono font-bold">
                 {VMOONEYLock &&
                   dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))}
               </p>
