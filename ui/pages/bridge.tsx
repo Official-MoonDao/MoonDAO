@@ -19,7 +19,7 @@ export default function Bridge() {
             headerSize="max(20px, 3vw)"
             description={t('bridgeDesc')}
             preFooter={
-              <NoticeFooter 
+              <NoticeFooter
                 defaultImage="../assets/MoonDAO-Logo-White.svg"
                 defaultTitle="Need Help?"
                 defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
@@ -34,7 +34,7 @@ export default function Bridge() {
             mode="compact"
             popOverEffect={false}
           >
-            <div className="mt-3 w-full md:mb-[5vw] 2xl:mb-[2vw] p-5 md:p-0">
+            <div className="mt-3 w-full max-w-2xl">
               <ArbitrumBridge />
             </div>
           </ContentLayout>
