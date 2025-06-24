@@ -27,7 +27,7 @@ type NoticeFooterProps = {
   iconHeight?: number
   darkBackground?: boolean
   citizenNotice?: boolean
-  DisclaimerOnly?: boolean
+  disclaimerOnly?: boolean
 }
 
 export function NoticeFooter({
@@ -52,7 +52,7 @@ export function NoticeFooter({
   iconHeight = 40,
   darkBackground = true,
   citizenNotice = false,
-  DisclaimerOnly = false,
+  disclaimerOnly = false,
 }: NoticeFooterProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const isCitizen = useCitizen(selectedChain)
@@ -160,7 +160,7 @@ export function NoticeFooter({
         hasCallToAction={true}
         darkBackground={darkBackground}
         isFullwidth={false}
-        DisclaimerOnly={DisclaimerOnly}
+        disclaimerOnly={disclaimerOnly}
       />
     </div>
   )
