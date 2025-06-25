@@ -826,3 +826,51 @@ body {
   background-color: transparent !important;
   border-style: none !important;
 }
+
+/* Typeform Widget Improvements */
+.typeform-widget-container {
+  position: relative;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #475569 #1e293b;
+}
+
+.typeform-widget-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.typeform-widget-container::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+.typeform-widget-container::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.typeform-widget-container::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Ensure Typeform iframe content is properly sized */
+.typeform-widget-container iframe {
+  border: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 600px !important;
+}
+
+/* Scroll indicator animation */
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.scroll-indicator {
+  animation: bounce-gentle 2s infinite;
+}
