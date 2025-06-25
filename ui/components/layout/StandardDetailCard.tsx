@@ -29,9 +29,9 @@ export default function StandardDetailCard({
   const router = useRouter()
   const CardContent = (
     <div className="w-full p-4 bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 hover:border-slate-500/50 transition-all duration-200 hover:scale-[1.02] group">
-      <div className="flex flex-col sm:flex-row items-start gap-4 w-full">
+      <div className="flex flex-row items-start gap-4 w-full">
         {image && (
-          <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] flex-shrink-0">
+          <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] md:w-[120px] md:h-[120px] flex-shrink-0">
             <IPFSRenderer
               className="w-full h-full object-cover rounded-xl border border-slate-600/50"
               src={image}
