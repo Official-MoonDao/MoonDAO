@@ -176,10 +176,11 @@ export default function Launch({ missions }: any) {
         status: status,
       })
     }
-  }, [status, shallowQuery])
+  }, [status])
 
   useEffect(() => {
     if (router.query.status) {
+      console.log('set status')
       setStatus(router.query.status as any)
     }
     if (

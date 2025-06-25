@@ -4,7 +4,6 @@ import {
   RocketLaunchIcon,
   XMarkIcon,
 } from '@heroicons/react/20/solid'
-import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import { usePrivy } from '@privy-io/react-auth'
 import { DEFAULT_CHAIN_V5, IPFS_GATEWAY } from 'const/config'
@@ -27,6 +26,7 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
@@ -310,8 +310,9 @@ export default function CreateMission({
         }
       )
 
-      const { cid: missionMetadataIpfsHash } =
-        await pinBlobOrFile(missionMetadataBlob)
+      const { cid: missionMetadataIpfsHash } = await pinBlobOrFile(
+        missionMetadataBlob
+      )
 
       let transaction
       if (process.env.NEXT_PUBLIC_CHAIN === 'mainnet') {
@@ -372,8 +373,9 @@ export default function CreateMission({
       setCreatedMission(true)
 
       if (receipt) {
-        setTimeout(() => {
+        setTimeout(async () => {
           toast.success('Mission created successfully!')
+          clearMissionCache()
           setMissionData({
             name: '',
             description: '',
@@ -391,7 +393,6 @@ export default function CreateMission({
             },
           })
           setFormattedFundingGoal('')
-          clearMissionCache()
           setCreatedMission(false)
 
           router.push(`/mission/${missionId}`)
@@ -670,8 +671,9 @@ export default function CreateMission({
                         file,
                         `${missionData.name} Mission Image`
                       )
-                      const { cid: missionLogoIpfsHash } =
-                        await pinBlobOrFile(renamedMissionImage)
+                      const { cid: missionLogoIpfsHash } = await pinBlobOrFile(
+                        renamedMissionImage
+                      )
                       setMissionLogoUri(`${IPFS_GATEWAY}${missionLogoIpfsHash}`)
                     }}
                     dimensions={[1024, 1024]}
