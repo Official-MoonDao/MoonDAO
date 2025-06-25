@@ -180,7 +180,6 @@ export default function Launch({ missions }: any) {
 
   useEffect(() => {
     if (router.query.status) {
-      console.log('set status')
       setStatus(router.query.status as any)
     }
     if (
