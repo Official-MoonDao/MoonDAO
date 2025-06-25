@@ -71,16 +71,40 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     >
       {isHomepage ? (
         <>
-          {/* Top Navigation Bar - Homepage only */}
-          <TopNavBar
-            navigation={navigation}
-            lightMode={lightMode}
-            setLightMode={setLightMode}
-            citizenContract={citizenContract}
-          />
+          {/* Mobile menu top bar - for screens below lg that can't fit the nav bar */}
+          <div className="lg:hidden">
+            <MobileMenuTop
+              setSidebarOpen={setSidebarOpen}
+              lightMode={lightMode}
+              setLightMode={setLightMode}
+              citizenContract={citizenContract}
+              isFullscreen={false}
+              showOnMd={true}
+            />
+          </div>
 
-          {/* Main Content - Full width for homepage with negative top padding */}
-          <main className="pt-16 -mt-12 w-full min-h-screen">
+          <div className="lg:hidden">
+            <MobileSidebar
+              navigation={navigation}
+              lightMode={lightMode}
+              sidebarOpen={sidebarOpen}
+              setSidebarOpen={setSidebarOpen}
+              isFullscreen={false}
+            />
+          </div>
+
+          {/* Top Navigation Bar - Only on large screens (lg and up) */}
+          <div className="hidden lg:block">
+            <TopNavBar
+              navigation={navigation}
+              lightMode={lightMode}
+              setLightMode={setLightMode}
+              citizenContract={citizenContract}
+            />
+          </div>
+
+          {/* Main Content - Full width for homepage */}
+          <main className="lg:pt-16 lg:-mt-12 w-full min-h-screen">
             <div className="w-full min-h-screen">
               {children}
             </div>
