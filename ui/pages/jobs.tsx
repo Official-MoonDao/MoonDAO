@@ -58,16 +58,10 @@ export default function Jobs({ jobs }: JobsProps) {
   }, [jobs, input])
 
   const descriptionSection = (
-    <div>
-      <Frame
-        bottomLeft="20px"
-        topLeft="5vmax"
-        marginBottom="30px"
-        marginTop="30px"
-        noPadding
-      >
-        <Search input={input} setInput={setInput} />
-      </Frame>
+    <div className="pt-2">
+      <div className="w-fit max-w-[500px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 px-3 py-1">
+        <Search input={input} setInput={setInput} className="w-full flex-grow" placeholder="Search jobs..." />
+      </div>
     </div>
   )
 
@@ -109,8 +103,8 @@ export default function Jobs({ jobs }: JobsProps) {
               </div>
             )
           ) : (
-            <>
-              <p className="">
+            <div className="md:mb-[5vw] 2xl:mb-[2vw]">
+              <p className="p-5 md:p-0">
                 {
                   '⚠️ You must be a Citizen of the Space Acceleration Network to view the job board. If you are already a Citizen, please sign in.'
                 }
@@ -118,7 +112,7 @@ export default function Jobs({ jobs }: JobsProps) {
               <Link href="/citizen" passHref>
                 <CitizenTier setSelectedTier={() => {}} compact />
               </Link>
-            </>
+            </div>
           )}
         </ContentLayout>
       </Container>
