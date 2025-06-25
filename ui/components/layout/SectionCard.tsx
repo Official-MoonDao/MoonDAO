@@ -20,7 +20,7 @@ export default function SectionCard({
   return (
     <div
       id={id}
-      className={`mt-3 px-5 lg:px-10 xl:px-10 py-5 bg-[#020617] rounded-2xl w-full lg:mt-10 lg:w-full lg:max-w-[1080px] flex flex-col ${className}`}
+      className={`mt-3 mb-0 md:mb-[5vw] 2xl:mb-[2vw] px-5 lg:px-10 xl:px-10 py-5 bg-[#020617] rounded-2xl w-full lg:mt-10 lg:w-full lg:max-w-[1200px] flex flex-col ${className}`}
     >
       <div className="flex justify-between">
         <div className="flex gap-5 items-center opacity-50">

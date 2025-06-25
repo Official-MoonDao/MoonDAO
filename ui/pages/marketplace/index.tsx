@@ -146,7 +146,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
           popOverEffect={false}
           isProfile
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:mb-[5vw] 2xl:mb-[2vw]">
             {filteredListings && filteredListings.length > 0 ? (
               (() => {
                 const startIdx = (pageIdx - 1) * ITEMS_PER_PAGE

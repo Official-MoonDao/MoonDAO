@@ -59,7 +59,7 @@ import CrossChainMinterABI from '../../const/abis/CrossChainMinter.json'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import FileInput from '../layout/FileInput'
-import Footer from '../layout/Footer'
+import { ExpandedFooter } from '../layout/ExpandedFooter'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { ImageGenerator } from './CitizenImageGenerator'
@@ -308,7 +308,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         await tagToNetworkSignup(citizenData.email)
 
         const citizenNFT = await waitForERC721(citizenContract, +mintedTokenId)
-        const citizenName = citizenNFT?.metadata.name as string
+        const citizenName = citizenData.name
         const citizenPrettyLink = generatePrettyLinkWithId(
           citizenName,
           mintedTokenId
@@ -339,7 +339,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         headerSize="max(20px, 3vw)"
         preFooter={
           <>
-            <Footer></Footer>
+            <ExpandedFooter 
+              callToActionImage="/assets/MoonDAO-Logo-White.svg"
+              callToActionTitle="Join the Network"
+              callToActionButtonText="Learn More"
+              callToActionButtonLink="/join"
+              hasCallToAction={true}
+              darkBackground={true}
+              isFullwidth={false}
+            />
           </>
         }
         description=""

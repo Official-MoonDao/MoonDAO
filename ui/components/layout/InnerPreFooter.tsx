@@ -1,6 +1,6 @@
 import React from 'react';
 import MailingList from './MailingList';
-import Footer from './Footer';
+import { ExpandedFooter } from './ExpandedFooter';
 
 export default function InnerPreFooter() {
     return (
@@ -52,7 +52,15 @@ export default function InnerPreFooter() {
                     <div id="footer" 
                         className="min-h-[150px] md:min-h-[0px]"
                         >
-                        <Footer />
+                        <ExpandedFooter 
+                          callToActionImage="/assets/MoonDAO-Logo-White.svg"
+                          callToActionTitle="Join the Network"
+                          callToActionButtonText="Learn More"
+                          callToActionButtonLink="/join"
+                          hasCallToAction={true}
+                          darkBackground={true}
+                          isFullwidth={false}
+                        />
                     </div>
                 </div>
             </div>

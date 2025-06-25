@@ -109,8 +109,8 @@ export default function Jobs({ jobs }: JobsProps) {
               </div>
             )
           ) : (
-            <>
-              <p className="">
+            <div className="md:mb-[5vw] 2xl:mb-[2vw]">
+              <p className="p-5 md:p-0">
                 {
                   '⚠️ You must be a Citizen of the Space Acceleration Network to view the job board. If you are already a Citizen, please sign in.'
                 }
@@ -118,7 +118,7 @@ export default function Jobs({ jobs }: JobsProps) {
               <Link href="/citizen" passHref>
                 <CitizenTier setSelectedTier={() => {}} compact />
               </Link>
-            </>
+            </div>
           )}
         </ContentLayout>
       </Container>

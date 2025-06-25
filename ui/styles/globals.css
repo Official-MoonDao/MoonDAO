@@ -578,6 +578,23 @@ html {
   }
 }
 
+/* Mobile: Apply "hovered" state by default */
+@media (max-width: 767px) {
+  .card-container .clip {
+    width: 1000%;
+    height: 300%;
+  }
+
+  .card-container .description {
+    opacity: 0%;
+  }
+
+  .card-container .hovertext {
+    margin-bottom: 0px;
+    opacity: 100%;
+  }
+}
+
 @media (max-width: 768px) {
   .mailinglist-bg {
     background: linear-gradient(90deg, transparent 20%, #090d21 20%),

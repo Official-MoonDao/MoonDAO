@@ -73,8 +73,12 @@ export default function Tier({
             <div className="flex flex-col p-6 justify-between w-full items-start">
               <div className="w-full flex-col space-y-6">
                 <div className="md:rounded-2xl">
-                  <h2 className={'mt-6 font-GoodTimes text-3xl text-white'}>{label}</h2>
-                  <p className="text-slate-300 mt-3 leading-relaxed">{description}</p>
+                  <h2 className={'mt-6 font-GoodTimes text-3xl text-white'}>
+                    {label}
+                  </h2>
+                  <p className="text-slate-300 mt-3 leading-relaxed">
+                    {description}
+                  </p>
 
                   <div className="flex flex-col w-full mt-6">
                     <div className="flex flex-col pt-5 items-start">
@@ -125,7 +129,8 @@ export default function Tier({
                       className="mt-1 flex-shrink-0"
                     ></Image>
                     <p className="text-slate-300 leading-relaxed">
-                      <strong className="text-white">{title}:</strong> {description}
+                      <strong className="text-white">{title}:</strong>{' '}
+                      {description}
                     </p>
                   </div>
                 )

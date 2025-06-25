@@ -36,7 +36,17 @@ export default function Analytics({ vMooneyData, dateUpdated }: any) {
           header="Analytics"
           headerSize="max(20px, 3vw)"
           description={descriptionSection}
-          preFooter={<NoticeFooter />}
+          preFooter={
+            <NoticeFooter 
+              defaultImage="../assets/MoonDAO-Logo-White.svg"
+              defaultTitle="Need Help?"
+              defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+              defaultButtonText="Submit a Ticket"
+              defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+              imageWidth={200}
+              imageHeight={200}
+            />
+          }
           mainPadding
           mode="compact"
           popOverEffect={false}

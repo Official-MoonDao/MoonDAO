@@ -29,6 +29,13 @@ export enum NumberType {
   string = 'string',
 }
 
+// Utility function to format numbers with commas
+function formatNumberWithCommas(numStr: string): string {
+  const [integerPart, decimalPart] = numStr.split('.')
+  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger
+}
+
 export function transformNumber(
   num: number | BigNumber | string,
   to: NumberType,
@@ -54,15 +61,17 @@ export function transformNumber(
       return parseFloat(num).toFixed(decimals)
     }
   } else if (to === NumberType.string) {
-    if (typeof num === 'string') return num
+    if (typeof num === 'string') return formatNumberWithCommas(num)
 
     if (num instanceof ethers.BigNumber) {
-      return stringToNumber(
+      const formattedNum = stringToNumber(
         ethers.utils.formatUnits(num, 18),
         decimals
       ).toString()
+      return formatNumberWithCommas(formattedNum)
     } else if (typeof num === 'number') {
-      return num.toFixed(decimals).toString()
+      const formattedNum = num.toFixed(decimals).toString()
+      return formatNumberWithCommas(formattedNum)
     }
   }
   return 0
