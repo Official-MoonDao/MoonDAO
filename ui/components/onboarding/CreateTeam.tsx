@@ -35,7 +35,7 @@ import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
 import TeamABI from '../../const/abis/Team.json'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
-import Footer from '../layout/Footer'
+import { ExpandedFooter } from '../layout/ExpandedFooter'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { StageContainer } from './StageContainer'
@@ -127,7 +127,15 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
           headerSize="max(20px, 3vw)"
           preFooter={
             <>
-              <Footer></Footer>
+              <ExpandedFooter 
+                callToActionImage="/assets/MoonDAO-Logo-White.svg"
+                callToActionTitle="Join the Network"
+                callToActionButtonText="Learn More"
+                callToActionButtonLink="/join"
+                hasCallToAction={true}
+                darkBackground={true}
+                isFullwidth={false}
+              />
             </>
           }
           description=""

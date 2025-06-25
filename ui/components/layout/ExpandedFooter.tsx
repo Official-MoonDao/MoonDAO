@@ -44,6 +44,7 @@ type ExpandedFooterProps = {
   hasCallToAction: boolean
   darkBackground?: boolean
   isFullwidth?: boolean
+  disclaimerOnly?: boolean
 }
 
 export function ExpandedFooter({
@@ -55,6 +56,7 @@ export function ExpandedFooter({
   hasCallToAction = true,
   darkBackground = true,
   isFullwidth = true,
+  disclaimerOnly = false,
 }: ExpandedFooterProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const isCitizen = useCitizen(selectedChain)
@@ -126,73 +128,75 @@ export function ExpandedFooter({
 
   return (
     <>
-      <div id="expanded-menu" className={`overflow-hidden relative ${isFullwidth ? 'bg-dark-cool' : ''} px-6 text-white`}> 
-        <div id="expanded-menu-container" className={`${isFullwidth ? 'container mx-auto md:pl-[5vw] lg:pl-[2vw] md:pb-[2vw] md:pt-[5vh]' : 'pb-[5vw] md:pt-[5vw]'} max-w-[1200px] pb-0 flex flex-col lg:grid lg:grid-cols-6 gap-8 relative z-10`}>
-          {hasCallToAction && isFullwidth && (
-            <div className="flex flex-col pb-[5vh] p-[2vw]  md:p-0 py-0 lg:col-span-2 order-2 lg:order-1 relative min-h-[250px] lg:min-h-[300px]">
-              <div className="overflow-visible absolute bottom-0 left-0 z-0 w-full flex items-end">
-                <Image 
-                  className="overflow-visible object-contain object-left ml-[-10vw] md:ml-0 w-full " 
-                  src={callToAction.image} 
-                  alt="Join the Space Acceleration Network" 
-                  width={2000} 
-                  height={2000} 
-                />
+      {!disclaimerOnly && (
+        <div id="expanded-menu" className={`overflow-hidden relative ${isFullwidth ? 'bg-dark-cool' : ''} px-6 text-white`}> 
+          <div id="expanded-menu-container" className={`${isFullwidth ? 'container mx-auto md:pl-[5vw] lg:pl-[2vw] md:pb-[2vw] md:pt-[5vh]' : 'pb-[5vw] md:pt-[5vw]'} max-w-[1200px] pb-0 flex flex-col lg:grid lg:grid-cols-6 gap-8 relative z-10`}>
+            {hasCallToAction && isFullwidth && (
+              <div className="flex flex-col pb-[5vh] p-[2vw]  md:p-0 py-0 lg:col-span-2 order-2 lg:order-1 relative min-h-[250px] lg:min-h-[300px]">
+                <div className="overflow-visible absolute bottom-0 left-0 z-0 w-full flex items-end">
+                  <Image 
+                    className="overflow-visible object-contain object-left ml-[-10vw] md:ml-0 w-full " 
+                    src={callToAction.image} 
+                    alt="Join the Space Acceleration Network" 
+                    width={2000} 
+                    height={2000} 
+                  />
+                </div>
+                <h2 className="z-50 text-2xl font-bold font-GoodTimes mb-3">{callToAction.title}</h2>
+                {callToAction.body && <p className="max-w-[400px] mb-4 opacity-80">{callToAction.body}</p>}
+                <div>
+                  <Link 
+                    href={callToAction.buttonLink} 
+                    className="gradient-2 hover:pl-7 transform transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-2 px-5 py-3 inline-block"
+                  >
+                    {callToAction.buttonText}
+                  </Link>
+                </div>
               </div>
-              <h2 className="z-50 text-2xl font-bold font-GoodTimes mb-3">{callToAction.title}</h2>
-              {callToAction.body && <p className="max-w-[400px] mb-4 opacity-80">{callToAction.body}</p>}
-              <div>
-                <Link 
-                  href={callToAction.buttonLink} 
-                  className="gradient-2 hover:pl-7 transform transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-2 px-5 py-3 inline-block"
-                >
-                  {callToAction.buttonText}
-                </Link>
+            )}
+            
+            <div className={`z-50 px-[2vw] pt-[2vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 order-1 lg:order-2 ${hasCallToAction && isFullwidth ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
+              {/* Always visible sections */}
+              <LinkList title="NETWORK" links={networkLinks} />
+              <LinkList title="GOVERN" links={governLinks} />
+              
+              {/* Mobile only - swapped order */}
+              <div className="md:hidden">
+                <LinkList title="LEARN" links={learnLinks} />
               </div>
-            </div>
-          )}
-          
-          <div className={`z-50 px-[2vw] pt-[2vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 order-1 lg:order-2 ${hasCallToAction && isFullwidth ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
-            {/* Always visible sections */}
-            <LinkList title="NETWORK" links={networkLinks} />
-            <LinkList title="GOVERN" links={governLinks} />
-            
-            {/* Mobile only - swapped order */}
-            <div className="md:hidden">
-              <LinkList title="LEARN" links={learnLinks} />
-            </div>
-            <div className="md:hidden">
-              <LinkList title="$MOONEY TOKEN" links={tokenLinks} />
-            </div>
-            
-            {/* Tablet and up - original order */}
-            <div className="hidden md:block">
-              <LinkList title="$MOONEY TOKEN" links={tokenLinks} />
-            </div>
-            <div className="hidden md:block">
-              <LinkList title="LEARN" links={learnLinks} />
-            </div>
-            
-            {/* Desktop only: Combined contribute/marketplace column */}
-            <div className="hidden lg:block">
-              <LinkList title="CONTRIBUTE" links={contributeLinks} />
-              <div className="mt-8">
+              <div className="md:hidden">
+                <LinkList title="$MOONEY TOKEN" links={tokenLinks} />
+              </div>
+              
+              {/* Tablet and up - original order */}
+              <div className="hidden md:block">
+                <LinkList title="$MOONEY TOKEN" links={tokenLinks} />
+              </div>
+              <div className="hidden md:block">
+                <LinkList title="LEARN" links={learnLinks} />
+              </div>
+              
+              {/* Desktop only: Combined contribute/marketplace column */}
+              <div className="hidden lg:block">
+                <LinkList title="CONTRIBUTE" links={contributeLinks} />
+                <div className="mt-8">
+                  <LinkList title="MARKETPLACE" links={marketplaceLinks} />
+                </div>
+              </div>
+              
+              {/* Mobile and tablet: Separate contribute and marketplace columns */}
+              <div className="lg:hidden">
+                <LinkList title="CONTRIBUTE" links={contributeLinks} />
+              </div>
+              <div className="lg:hidden">
                 <LinkList title="MARKETPLACE" links={marketplaceLinks} />
               </div>
             </div>
-            
-            {/* Mobile and tablet: Separate contribute and marketplace columns */}
-            <div className="lg:hidden">
-              <LinkList title="CONTRIBUTE" links={contributeLinks} />
-            </div>
-            <div className="lg:hidden">
-              <LinkList title="MARKETPLACE" links={marketplaceLinks} />
-            </div>
           </div>
         </div>
-      </div>
-      <div id="bottom-footer" className={`bg-darkest-cool flex ${isFullwidth ? 'items-center justify-center' : 'items-start justify-start rounded-tl-[2vw]'}`}>
-        <div className={`${isFullwidth ? 'container mx-auto' : ''} px-[5vw] xl:px-[2vw] flex flex-col items-center pt-5 pb-10 max-w-[1200px] w-full h-full`}>
+      )}
+      <div id="bottom-footer" className={`bg-darkest-cool flex ${isFullwidth ? 'items-center justify-center' : 'items-start justify-start rounded-tl-[2vw]'} ${disclaimerOnly ? 'mt-16 md:mt-20' : ''}`}>
+        <div className={`${isFullwidth ? 'container mx-auto' : ''} px-[5vw] xl:px-[2vw] flex flex-col items-center ${disclaimerOnly ? 'pt-[5vw] sm:pt-[2vw]' : 'pt-5'} pb-10 max-w-[1200px] w-full h-full`}>
           <div className={`${isFullwidth ? '' : 'pb-5'} `}>
             <Disclaimer isCentered={false} />
           </div>          

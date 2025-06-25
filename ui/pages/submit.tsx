@@ -47,7 +47,7 @@ export default function SubmissionPage({
   return (
     <>
       <WebsiteHead title={title} description="" />
-      <section className="flex flex-col justify-center items-start animate-fadeIn w-[90vw] md:w-full">
+      <section className="flex flex-col justify-start px-5 mt-5 items-start animate-fadeIn w-[90vw] md:w-full">
         <Container>
           <ContentLayout
             header="Submissions"
@@ -57,12 +57,12 @@ export default function SubmissionPage({
             mode="compact"
             isProfile={true}
           >
-            <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[900px]">
+            <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
               <Tab.Group
                 selectedIndex={selectedIndex}
                 onChange={setSelectedIndex}
               >
-                <Tab.List className="flex flex-col md:flex-row rounded-xl justify-center bg-black/20 p-2 border border-white/10">
+                <Tab.List className="flex flex-col md:flex-row rounded-xl justify-start px-5 mt-5 bg-black/20 p-2 border border-white/10">
                   <Tab
                     className={({ selected }) =>
                       `rounded-lg py-3 px-6 font-GoodTimes leading-5 focus:outline-none transition-all duration-200 flex-1 text-center
@@ -110,7 +110,7 @@ export default function SubmissionPage({
                   </Tab>
                 </Tab.List>
                 <Tab.Panels className="mt-6">
-                  <Tab.Panel className="flex flex-col items-center">
+                  <Tab.Panel className="flex flex-col items-start">
                     <div className="mb-8 w-full bg-black/20 rounded-xl p-6 border border-white/10">
                       <div
                         id="instructions-container"
@@ -259,7 +259,15 @@ export default function SubmissionPage({
               </Tab.Group>
             </div>
           </ContentLayout>
-          <NoticeFooter />
+          <NoticeFooter 
+            defaultImage="../assets/MoonDAO-Logo-White.svg"
+            defaultTitle="Need Help?"
+            defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+            defaultButtonText="Submit a Ticket"
+            defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+            imageWidth={200}
+            imageHeight={200}
+          />
         </Container>
       </section>
     </>
