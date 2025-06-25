@@ -5,8 +5,8 @@ import {
   MARKETPLACE_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
-import { useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
+import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -53,13 +53,15 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   const shallowQueryRoute = useShallowQueryRoute()
   const chainSlug = getChainSlug(selectedChain)
 
-  const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>()
+  const [filteredListings, setFilteredListings] =
+    useState<MarketplaceListing[]>()
   const [input, setInput] = useState('')
   const [pageIdx, setPageIdx] = useState(1)
-  const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null)
+  const [selectedListing, setSelectedListing] =
+    useState<MarketplaceListing | null>(null)
   const [teamNFTOwner, setTeamNFTOwner] = useState<string | null>(null)
   const [enabledBuyListingModal, setEnabledBuyListingModal] = useState(false)
-  
+
   const ITEMS_PER_PAGE = 8 // 4 items per row x 2 rows
 
   const teamContract = useContract({
@@ -165,20 +167,25 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                   (() => {
                     const startIdx = (pageIdx - 1) * ITEMS_PER_PAGE
                     const endIdx = startIdx + ITEMS_PER_PAGE
-                    const paginatedListings = filteredListings.slice(startIdx, endIdx)
-                    
-                    return paginatedListings.map((listing: MarketplaceListing, i: number) => (
-                      <StandardDetailCard
-                        key={`marketplace-listing-${startIdx + i}`}
-                        title={listing.title}
-                        paragraph={listing.description}
-                        image={listing.image}
-                        price={listing.price}
-                        currency={listing.currency}
-                        isCitizen={!!citizen}
-                        onClick={() => handleListingClick(listing)}
-                      />
-                    ))
+                    const paginatedListings = filteredListings.slice(
+                      startIdx,
+                      endIdx
+                    )
+
+                    return paginatedListings.map(
+                      (listing: MarketplaceListing, i: number) => (
+                        <StandardDetailCard
+                          key={`marketplace-listing-${startIdx + i}`}
+                          title={listing.title}
+                          paragraph={listing.description}
+                          image={listing.image}
+                          price={listing.price}
+                          currency={listing.currency}
+                          isCitizen={!!citizen}
+                          onClick={() => handleListingClick(listing)}
+                        />
+                      )
+                    )
                   })()
                 ) : (
                   <div className="col-span-full text-center py-8">
@@ -190,14 +197,16 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                   </div>
                 )}
               </div>
-              
+
               {/* Pagination */}
               {filteredListings && filteredListings.length > ITEMS_PER_PAGE && (
                 <div className="w-full rounded-[2vmax] bg-gradient-to-b from-slate-700/20 to-slate-800/30 border border-slate-600/30 p-6 mt-8">
                   <div className="w-full flex justify-center">
                     <PaginationButtons
                       handlePageChange={handlePageChange}
-                      maxPage={Math.ceil(filteredListings.length / ITEMS_PER_PAGE)}
+                      maxPage={Math.ceil(
+                        filteredListings.length / ITEMS_PER_PAGE
+                      )}
                       pageIdx={pageIdx}
                       label="Page"
                     />

@@ -177,7 +177,7 @@ export default function ProposalList() {
       <>
         <div className="rounded-bl-20px overflow-hidden md:pt-5">
           <div className="font-[roboto] w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
               {proposals.map((proposal) => (
                 <div
                   key={proposal.uuid}
