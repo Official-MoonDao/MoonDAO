@@ -24,7 +24,7 @@ export default function useTotalFunding(projectId: any) {
     | 11155420
   const { data: terminalAddress } = useReadJbDirectoryPrimaryTerminalOf({
     chainId: chainId as SupportedChainId,
-    args: [projectId, JB_NATIVE_TOKEN_ADDRESS],
+    args: [projectId ?? 0, JB_NATIVE_TOKEN_ADDRESS],
   })
   const { store } = useJBTerminalContext()
   const { data: balance } = useReadJbTerminalStoreBalanceOf({
@@ -38,13 +38,16 @@ export default function useTotalFunding(projectId: any) {
       chainId,
       args: [
         terminalAddress ?? ZERO_ADDRESS,
-        projectId,
+        projectId ?? 0,
         JB_NATIVE_TOKEN_ADDRESS,
         BigInt(2), // Cycle number 2 for payout cycle
         BigInt(JB_NATIVE_TOKEN_ID),
       ],
     })
 
+  if (projectId == undefined) {
+    return 0
+  }
   const totalFunding = (balance ?? BigInt(0)) + (usedPayoutLimit ?? BigInt(0))
   return totalFunding
 }
