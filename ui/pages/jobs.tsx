@@ -58,16 +58,10 @@ export default function Jobs({ jobs }: JobsProps) {
   }, [jobs, input])
 
   const descriptionSection = (
-    <div>
-      <Frame
-        bottomLeft="20px"
-        topLeft="5vmax"
-        marginBottom="30px"
-        marginTop="30px"
-        noPadding
-      >
-        <Search input={input} setInput={setInput} />
-      </Frame>
+    <div className="pt-2">
+      <div className="w-fit max-w-[500px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 px-3 py-1">
+        <Search input={input} setInput={setInput} className="w-full flex-grow" placeholder="Search jobs..." />
+      </div>
     </div>
   )
 

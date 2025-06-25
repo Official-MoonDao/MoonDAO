@@ -146,34 +146,31 @@ export default function Network({
         </u>
         .
       </div>
-      <div className="relative w-full flex justify-between">
+      <div className="relative w-full flex flex-col gap-3">
+        {/* Search Bar and Tabs - Same Row */}
         <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
-          <div className="w-full flex flex-row min-[800px]:flex-row gap-4">
-            <Frame
-              className="w-full h-fit flex-grow min-w-[55vw] md:min-w-0"
-              bottomLeft="20px"
-              topLeft="5vmax"
-              noPadding
-              marginBottom="0px"
-            >
+          <div className="w-full flex flex-row min-[800px]:flex-row gap-4 items-center">
+            {/* Search Bar */}
+            <div className="w-fit max-w-[500px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 px-3 py-1">
               <Search
                 className="w-full flex-grow"
                 input={input}
                 setInput={setInput}
+                placeholder="Search citizens and teams..."
               />
-            </Frame>
+            </div>
 
             <div
               id="filter-container"
-              className="hidden min-[1150px]:flex max-w-[350px] border-b-5 border-black"
+              className="hidden min-[1150px]:flex flex-1"
             >
-              <Frame noPadding className="w-[300px] h-fit" marginBottom="0px">
-                <div className="flex flex-wrap text-sm bg-filter">
+              <div className="w-full h-fit bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 p-1.5">
+                <div className="flex text-sm gap-1">
                   <Tab
                     tab="citizens"
                     currentTab={tab}
                     setTab={handleTabChange}
-                    icon="/../.././assets/icon-passport.svg"
+                    icon="/assets/icon-passport.svg"
                   >
                     Citizens
                   </Tab>
@@ -181,7 +178,7 @@ export default function Network({
                     tab="teams"
                     currentTab={tab}
                     setTab={handleTabChange}
-                    icon="/../.././assets/icon-org.svg"
+                    icon="/assets/icon-org.svg"
                   >
                     Teams
                   </Tab>
@@ -196,12 +193,12 @@ export default function Network({
                     Map
                   </Tab>
                 </div>
-              </Frame>
+              </div>
             </div>
 
             <div className="w-full flex justify-end md:justify-start">
               <StandardButton
-                className="gradient-2 rounded-full"
+                className="gradient-2 rounded-2xl hover:scale-105 transition-transform"
                 hoverEffect={false}
                 link="/join"
               >
@@ -214,15 +211,15 @@ export default function Network({
           </div>
           <div
             id="filter-container"
-            className="min-[1150px]:hidden mt-4 min-[900px]:mt-2 border-b-5 border-black"
+            className="min-[1150px]:hidden mt-4 min-[900px]:mt-2"
           >
-            <Frame noPadding className="w-full h-fit" marginBottom="0px">
-              <div className="flex flex-wrap text-sm bg-filter">
+            <div className="w-full h-fit bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 p-1.5">
+              <div className="flex text-sm gap-1">
                 <Tab
                   tab="teams"
                   currentTab={tab}
                   setTab={handleTabChange}
-                  icon="/../.././assets/icon-org.svg"
+                  icon="/assets/icon-org.svg"
                 >
                   Teams
                 </Tab>
@@ -230,7 +227,7 @@ export default function Network({
                   tab="citizens"
                   currentTab={tab}
                   setTab={handleTabChange}
-                  icon="/../.././assets/icon-passport.svg"
+                  icon="/assets/icon-passport.svg"
                 >
                   Citizens
                 </Tab>
@@ -245,7 +242,7 @@ export default function Network({
                   Map
                 </Tab>
               </div>
-            </Frame>
+            </div>
           </div>
         </div>
       </div>
@@ -352,68 +349,69 @@ export default function Network({
           popOverEffect={false}
           isProfile
         >
-          <>
-            <CardGridContainer
-              xsCols={1}
-              smCols={1}
-              mdCols={1}
-              lgCols={2}
-              maxCols={2}
-              noGap
-              center
-            >
-              {renderNFTs()}
-            </CardGridContainer>
-
-            <Frame noPadding marginBottom="0px">
-              <div
-                id="pagination-container"
-                className="w-full mb-5 flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8"
+          <div className="flex flex-row w-full">
+            <div className="px-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 lg:p-8 rounded-[2vmax] shadow-2xl md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1400px]">
+              <CardGridContainer
+                xsCols={1}
+                smCols={1}
+                mdCols={1}
+                lgCols={2}
+                maxCols={2}
+                center
               >
-                <button
-                  onClick={() => {
-                    if (pageIdx > 1) {
-                      handlePageChange(pageIdx - 1)
-                    }
-                  }}
-                  className={`pagination-button ${
-                    pageIdx === 1 ? 'opacity-10' : 'cursor-pointer opacity-100'
-                  }`}
-                  disabled={pageIdx === 1}
+                {renderNFTs()}
+              </CardGridContainer>
+
+              <div className="w-full rounded-[2vmax] bg-gradient-to-b from-slate-700/20 to-slate-800/30 border border-slate-600/30 p-6 mt-8">
+                <div
+                  id="pagination-container"
+                  className="w-full flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8"
                 >
-                  <Image
-                    src="/../.././assets/icon-left.svg"
-                    alt="Left Arrow"
-                    width={35}
-                    height={35}
-                  />
-                </button>
-                <p id="page-number" className="px-5 font-bold">
-                  Page {pageIdx} of {maxPage}
-                </p>
-                <button
-                  onClick={() => {
-                    if (pageIdx < maxPage) {
-                      handlePageChange(pageIdx + 1)
-                    }
-                  }}
-                  className={`pagination-button ${
-                    pageIdx === maxPage
-                      ? 'opacity-10'
-                      : 'cursor-pointer opacity-100'
-                  }`}
-                  disabled={pageIdx === maxPage}
-                >
-                  <Image
-                    src="/../.././assets/icon-right.svg"
-                    alt="Right Arrow"
-                    width={35}
-                    height={35}
-                  />
-                </button>
+                  <button
+                    onClick={() => {
+                      if (pageIdx > 1) {
+                        handlePageChange(pageIdx - 1)
+                      }
+                    }}
+                    className={`pagination-button transition-opacity hover:scale-110 ${
+                      pageIdx === 1 ? 'opacity-30' : 'cursor-pointer opacity-100'
+                    }`}
+                    disabled={pageIdx === 1}
+                  >
+                    <Image
+                      src="/../.././assets/icon-left.svg"
+                      alt="Left Arrow"
+                      width={35}
+                      height={35}
+                    />
+                  </button>
+                  <p id="page-number" className="px-5 font-bold text-white">
+                    Page {pageIdx} of {maxPage}
+                  </p>
+                  <button
+                    onClick={() => {
+                      if (pageIdx < maxPage) {
+                        handlePageChange(pageIdx + 1)
+                      }
+                    }}
+                    className={`pagination-button transition-opacity hover:scale-110 ${
+                      pageIdx === maxPage
+                        ? 'opacity-30'
+                        : 'cursor-pointer opacity-100'
+                    }`}
+                    disabled={pageIdx === maxPage}
+                  >
+                    <Image
+                      src="/../.././assets/icon-right.svg"
+                      alt="Right Arrow"
+                      width={35}
+                      height={35}
+                    />
+                  </button>
+                </div>
               </div>
-            </Frame>
-          </>
+            </div>
+          </div>
         </ContentLayout>
       </Container>
     </section>
