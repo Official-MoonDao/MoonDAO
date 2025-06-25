@@ -7,11 +7,11 @@ export default function PartnerSection() {
     <>
       <section
         id="network-section-container"
-        className="mt-5 flex justify-center bg-white rounded-br-[5vmax] md:rounded-br-[0vmax] rounded-tl-[5vmax] rounded-bl-[5vmax] mb-5 w-full"
+        className="mt-5 flex justify-start bg-white rounded-br-[5vmax] md:rounded-br-[0vmax] rounded-tl-[5vmax] rounded-bl-[5vmax] mb-5"
       >
         <div
           id="network-section"
-          className="w-full max-w-[1200px] py-10 px-5 flex items-center flex-col"
+          className=" w-full py-10 px-5 flex items-center flex-col max-w-[1200px]"
         >
           <h2
             id="section-header"
@@ -69,11 +69,11 @@ export default function PartnerSection() {
 
       <section
         id="featured-section-container"
-        className="flex justify-center bg-white rounded-tl-[5vmax] rounded-tr-[5vmax] md:rounded-tr-[0vmax] w-full"
+        className="flex justify-start bg-white rounded-tl-[5vmax] rounded-tr-[5vmax] md:rounded-tr-[0vmax]"
       >
         <div
           id="feature-section"
-          className="w-full max-w-[1200px] pt-10 px-5 pb-5 flex items-center flex-col"
+          className=" w-full pt-10 px-5 pb-5 flex items-center flex-col max-w-[1200px]"
         >
           <h2
             id="section-header"

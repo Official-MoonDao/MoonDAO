@@ -9,7 +9,6 @@ interface MobileMenuTop {
   setLightMode: Function
   citizenContract: any
   isFullscreen: boolean
-  showOnMd?: boolean // New prop to control md screen visibility
 }
 
 const MobileMenuTop = ({
@@ -18,19 +17,18 @@ const MobileMenuTop = ({
   setLightMode,
   citizenContract,
   isFullscreen,
-  showOnMd = false,
 }: MobileMenuTop) => {
   return (
     <div
       className={`relative z-10 flex flex-1 flex-col ${
-        isFullscreen ? '' : showOnMd ? '' : 'md:hidden'
+        isFullscreen ? '' : 'md:hidden'
       }`}
     >
       <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 justify-between bg-white shadow dark:bg-slate-950">
         <button
           type="button"
           className={`px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:border-gray-600 dark:focus:text-moon-indigo ${
-            isFullscreen ? '' : showOnMd ? '' : 'md:hidden'
+            isFullscreen ? '' : 'md:hidden'
           }`}
           onClick={() => setSidebarOpen(true)}
         >
