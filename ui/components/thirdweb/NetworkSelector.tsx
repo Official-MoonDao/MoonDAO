@@ -10,7 +10,7 @@ import {
   ethereum,
   polygon,
   sepolia,
-} from 'thirdweb/chains'
+} from '@/lib/infura/infuraChains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 
@@ -32,13 +32,18 @@ function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
         height={20}
         alt={chain.name}
         onError={(e) => {
-          console.log(`NetworkSelector: Failed to load icon for chain: ${chain.name}, slug: ${getChainSlug(chain)}`)
+          console.log(
+            `NetworkSelector: Failed to load icon for chain: ${
+              chain.name
+            }, slug: ${getChainSlug(chain)}`
+          )
           const target = e.target as HTMLImageElement
           const parent = target.parentElement
           if (parent) {
             target.style.display = 'none'
             const fallback = document.createElement('div')
-            fallback.className = 'w-5 h-5 bg-white/10 rounded-full flex items-center justify-center text-white text-xs font-bold'
+            fallback.className =
+              'w-5 h-5 bg-white/10 rounded-full flex items-center justify-center text-white text-xs font-bold'
             fallback.textContent = chain.name?.charAt(0) || '?'
             parent.insertBefore(fallback, target)
           }
@@ -102,7 +107,11 @@ export default function NetworkSelector({
             {selectedChain.name || ''}
           </span>
         )}
-        <button className={`transition-transform duration-200 ${dropdown && 'rotate-180'}`}>
+        <button
+          className={`transition-transform duration-200 ${
+            dropdown && 'rotate-180'
+          }`}
+        >
           <ChevronDownIcon height={16} width={16} className="text-white" />
         </button>
       </div>

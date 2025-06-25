@@ -7,7 +7,7 @@ import {
   arbitrumSepolia,
   optimismSepolia,
   Chain,
-} from 'thirdweb/chains'
+} from '@/lib/infura/infuraChains'
 
 type ChainConfig = {
   chainId: string
@@ -82,15 +82,15 @@ const CHAIN_CONFIGS: ChainConfigMap = {
     blockExplorerUrls: ['https://sepolia.arbiscan.io'],
   },
   [optimismSepolia.id]: {
-      chainId: `0x${optimismSepolia.id.toString(16)}`,
-      chainName: 'Optimism Sepolia',
-      nativeCurrency: {
-          name: 'ETH',
-          symbol: 'ETH',
-          decimals: 18,
-      },
-      rpcUrls: ['https://sepolia.optimism.io'],
-      blockExplorerUrls: ['https://sepolia-optimism.etherscan.io'],
+    chainId: `0x${optimismSepolia.id.toString(16)}`,
+    chainName: 'Optimism Sepolia',
+    nativeCurrency: {
+      name: 'ETH',
+      symbol: 'ETH',
+      decimals: 18,
+    },
+    rpcUrls: ['https://sepolia.optimism.io'],
+    blockExplorerUrls: ['https://sepolia-optimism.etherscan.io'],
   },
 }
 
