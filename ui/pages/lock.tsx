@@ -149,20 +149,21 @@ export default function Lock() {
   //Lock time min/max
   useEffect(() => {
     if (hasLock && VMOONEYLock) {
+      const currentLockEnd = bigNumberToDate(BigNumber.from(VMOONEYLock[1]))
+      const maxLockTime = dateOut(new Date(), { days: 1461 }) // 4 years from now
+      
       setMinMaxLockTime({
         min: dateToReadable(oneWeekOut),
-        max: dateToReadable(dateOut(new Date(Date.now()), { days: 1461 })),
+        max: dateToReadable(maxLockTime),
       })
+      
       setCanIncrease({
         amount: (lockAmount &&
           ethers.utils.parseEther(lockAmount).gt(VMOONEYLock[0])) as boolean,
-        time:
+        time: 
           lockTime?.value &&
-          lockTime.value.gt(
-            +dateOut(bigNumberToDate(BigNumber.from(VMOONEYLock[1])), {
-              days: 7,
-            })
-          ),
+          lockTime.value.gt(BigNumber.from(VMOONEYLock[1]).mul(1000)) && // New time must be greater than current lock end
+          lockTime.value.lte(BigNumber.from(+maxLockTime)), // New time must be within 4 years from now
       })
     } else {
       setMinMaxLockTime({
@@ -308,8 +309,7 @@ export default function Lock() {
                               value={lockAmount || ''}
                               disabled={
                                 !MOONEYBalance ||
-                                +MOONEYBalance.toString() === 0 ||
-                                (hasLock && canIncrease.time)
+                                +MOONEYBalance.toString() === 0
                               }
                               min={
                                 VMOONEYLock
@@ -342,8 +342,7 @@ export default function Lock() {
                                 className="text-blue-400 hover:text-blue-300 font-medium transition-colors px-2 py-1 bg-blue-400/10 hover:bg-blue-400/20 rounded text-xs"
                                 disabled={
                                   !MOONEYBalance ||
-                                  +MOONEYBalance?.toString() === 0 ||
-                                  (hasLock && canIncrease.time)
+                                  +MOONEYBalance?.toString() === 0
                                 }
                                 onClick={() => {
                                   setLockAmount(
@@ -384,18 +383,24 @@ export default function Lock() {
                             const targetDate = dateOut(new Date(), { days })
                             const isSelected =
                               lockTime?.formatted === dateToReadable(targetDate)
+                            // Check if the target date is beyond the current lock end time
+                            const canSelectThisDate = !hasLock || 
+                              (VMOONEYLock && +targetDate > BigNumber.from(VMOONEYLock[1]).mul(1000).toNumber())
+                            
                             return (
                               <button
                                 key={label}
                                 className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                                   isSelected
                                     ? 'bg-blue-500 text-white border border-blue-400'
-                                    : 'bg-black/30 text-gray-300 border border-white/10 hover:border-blue-400/50 hover:bg-blue-500/10'
+                                    : canSelectThisDate
+                                    ? 'bg-black/30 text-gray-300 border border-white/10 hover:border-blue-400/50 hover:bg-blue-500/10'
+                                    : 'bg-gray-700/30 text-gray-500 border border-gray-600/30 cursor-not-allowed'
                                 }`}
                                 disabled={
                                   !MOONEYBalance ||
                                   +MOONEYBalance.toString() === 0 ||
-                                  (hasLock && canIncrease.amount)
+                                  !canSelectThisDate
                                 }
                                 onClick={() => {
                                   setLockTime({
@@ -417,14 +422,17 @@ export default function Lock() {
                             type="date"
                             className="w-full bg-transparent text-white text-lg font-RobotoMono focus:outline-none"
                             value={lockTime?.formatted}
-                            min={dateToReadable(
-                              dateOut(new Date(), { days: 7 })
-                            )}
+                            min={
+                              hasLock && VMOONEYLock
+                                ? dateToReadable(
+                                    dateOut(bigNumberToDate(BigNumber.from(VMOONEYLock[1])), { days: 1 })
+                                  )
+                                : dateToReadable(dateOut(new Date(), { days: 7 }))
+                            }
                             max={minMaxLockTime.max}
                             disabled={
                               !MOONEYBalance ||
-                              +MOONEYBalance.toString() === 0 ||
-                              (hasLock && canIncrease.amount)
+                              +MOONEYBalance.toString() === 0
                             }
                             onChange={(e: any) => {
                               const inputValue = e.target.value
