@@ -271,6 +271,11 @@ module.exports = withTM(
           destination: '/lock',
           permanent: true,
         },
+        {
+          source: '/launchpad',
+          destination: '/launch',
+          permanent: true,
+        },
       ]
     },
     webpack: (config, { isServer }) => {
