@@ -305,7 +305,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         await tagToNetworkSignup(citizenData.email)
 
         const citizenNFT = await waitForERC721(citizenContract, +mintedTokenId)
-        const citizenName = citizenNFT?.metadata.name as string
+        const citizenName = citizenData.name
         const citizenPrettyLink = generatePrettyLinkWithId(
           citizenName,
           mintedTokenId

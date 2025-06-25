@@ -491,7 +491,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                             teamContract,
                             mintedTokenId
                           )
-                          const teamName = teamNFT?.metadata.name as string
+                          const teamName = teamData.name
                           const teamPrettyLink = generatePrettyLink(teamName)
                           setTimeout(async () => {
                             await sendDiscordMessage(
