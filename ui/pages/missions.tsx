@@ -120,7 +120,7 @@ export default function Missions({ missions }: MissionsProps) {
               marginBottom="10px"
               noPadding
             >
-              <Search input={input} setInput={setInput} />
+              <Search input={input} setInput={setInput} placeholder="Search missions..." />
             </Frame>
             <div className="flex justify-start mt-4 mb-8">
               <StandardButtonPlus

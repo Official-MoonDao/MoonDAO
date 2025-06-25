@@ -97,7 +97,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
         <h1 className="font-GoodTimes opacity-60 text-2xl">Past Projects</h1>
         <br />
         <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
-          <Search input={input} setInput={setInput} />
+          <Search input={input} setInput={setInput} placeholder="Search projects..." />
         </Frame>
       </div>
       <CardGridContainer maxCols={2}>

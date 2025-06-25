@@ -129,6 +129,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                 className="w-full flex-grow"
                 input={input}
                 setInput={setInput}
+                placeholder="Search marketplace..."
               />
             </div>
           </div>

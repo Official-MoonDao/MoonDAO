@@ -156,6 +156,7 @@ export default function Network({
                 className="w-full flex-grow"
                 input={input}
                 setInput={setInput}
+                placeholder="Search citizens and teams..."
               />
             </div>
 

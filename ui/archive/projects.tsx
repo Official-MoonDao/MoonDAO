@@ -162,7 +162,7 @@ export default function Projects({
     <div className="pt-2">
       <div className="mb-4">{description}</div>
       <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
-        <Search input={input} setInput={setInput} />
+        <Search input={input} setInput={setInput} placeholder="Search projects..." />
       </Frame>
       <div className="w-full flex gap-4">
         <div

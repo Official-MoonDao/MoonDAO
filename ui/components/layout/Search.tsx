@@ -2,7 +2,14 @@ import Image from 'next/image'
 import Frame from '@/components/layout/Frame'
 import { SearchIcon } from '../assets'
 
-export default function Search({ input, setInput, className }: any) {
+interface SearchProps {
+  input: string
+  setInput: (value: string) => void
+  className?: string
+  placeholder?: string
+}
+
+export default function Search({ input, setInput, className, placeholder = "Search..." }: SearchProps) {
   return (
     <div
       className={`relative w-auto flex items-center space-x-2 ${className}`}
@@ -21,7 +28,7 @@ export default function Search({ input, setInput, className }: any) {
           value={input}
           type="text"
           name="search"
-          placeholder="Search citizens and teams..."
+          placeholder={placeholder}
         />
       </div>
     </div>

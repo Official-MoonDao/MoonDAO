@@ -25,4 +25,14 @@ describe('<Search />', () => {
       'Search...'
     )
   })
+
+  it('Uses custom placeholder when provided', () => {
+    cy.mount(<Search input="" setInput={() => {}} placeholder="Search jobs..." />)
+
+    cy.get('input[name="search"]').should(
+      'have.attr',
+      'placeholder',
+      'Search jobs...'
+    )
+  })
 })
