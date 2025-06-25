@@ -58,7 +58,7 @@ export default function Home({ linkSource }: any) {
           callToActionButtonLink="/join"
           hasCallToAction={true}
           darkBackground={true}
-          isFullwidth={false}
+          isFullwidth={true}
         />
       </div>
     </Container>

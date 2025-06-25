@@ -107,7 +107,7 @@ export default function Callout2() {
       >
         <div
           id="astronauts-container"
-          className="p-1 flex flex-wrap w-full justify-center sm:justify-around md:justify-start lg:ml-[5%] gap-5 scale-[90%] md:scale-[100%] lg:scale-[115%] my-[20px] z-50"
+          className="p-1 flex flex-wrap w-full justify-start md:justify-start lg:ml-[8%] xl:ml-[12%] gap-5 scale-[90%] md:scale-[100%] lg:scale-[115%] my-[20px] z-50"
         >
           <Speaker
             alt="Coby Cotton"
