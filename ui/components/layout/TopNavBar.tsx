@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
@@ -28,7 +28,38 @@ const TopNavBar = ({
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [isVisible, setIsVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
-  const [dropdownTimeouts, setDropdownTimeouts] = useState<Record<string, NodeJS.Timeout>>({})
+  const dropdownTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Handle hover-based dropdown with proper timeout management
+  const handleDropdownEnter = (itemName: string) => {
+    // Clear any existing timer
+    if (dropdownTimerRef.current) {
+      clearTimeout(dropdownTimerRef.current)
+      dropdownTimerRef.current = null
+    }
+    setOpenDropdown(itemName)
+  }
+
+  const handleDropdownLeave = () => {
+    // Clear any existing timer first
+    if (dropdownTimerRef.current) {
+      clearTimeout(dropdownTimerRef.current)
+    }
+    // Set a new timer
+    dropdownTimerRef.current = setTimeout(() => {
+      setOpenDropdown(null)
+      dropdownTimerRef.current = null
+    }, 500) // Increased to 500ms for better UX
+  }
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (dropdownTimerRef.current) {
+        clearTimeout(dropdownTimerRef.current)
+      }
+    }
+  }, [])
 
   // Handle scroll behavior
   useEffect(() => {
@@ -53,62 +84,8 @@ const TopNavBar = ({
     
     return () => {
       window.removeEventListener('scroll', handleScroll)
-      // Clear all timeouts on unmount
-      Object.values(dropdownTimeouts).forEach(timeout => clearTimeout(timeout))
     }
-  }, [lastScrollY, dropdownTimeouts])
-
-  // Clear timeouts when component unmounts
-  useEffect(() => {
-    return () => {
-      Object.values(dropdownTimeouts).forEach(timeout => clearTimeout(timeout))
-    }
-  }, [])
-
-  const clearDropdownTimeout = (itemName: string) => {
-    if (dropdownTimeouts[itemName]) {
-      clearTimeout(dropdownTimeouts[itemName])
-      setDropdownTimeouts(prev => {
-        const newTimeouts = { ...prev }
-        delete newTimeouts[itemName]
-        return newTimeouts
-      })
-    }
-  }
-
-  const handleMouseEnter = (itemName: string) => {
-    // Clear any existing timeout for this item
-    clearDropdownTimeout(itemName)
-    setOpenDropdown(itemName)
-  }
-
-  const handleMouseLeave = (itemName: string) => {
-    const timeout = setTimeout(() => {
-      setOpenDropdown(prev => prev === itemName ? null : prev)
-    }, 150) // Reduced delay for more responsive behavior
-    
-    setDropdownTimeouts(prev => ({
-      ...prev,
-      [itemName]: timeout
-    }))
-  }
-
-  const handleDropdownEnter = (itemName: string) => {
-    // Clear timeout when entering dropdown area
-    clearDropdownTimeout(itemName)
-    setOpenDropdown(itemName)
-  }
-
-  const handleDropdownLeave = (itemName: string) => {
-    const timeout = setTimeout(() => {
-      setOpenDropdown(prev => prev === itemName ? null : prev)
-    }, 100) // Quick close when leaving dropdown
-    
-    setDropdownTimeouts(prev => ({
-      ...prev,
-      [itemName]: timeout
-    }))
-  }
+  }, [lastScrollY])
 
   return (
     <>
@@ -138,23 +115,40 @@ const TopNavBar = ({
               return (
                 <div
                   key={i}
-                  className="relative group"
-                  onMouseEnter={() => item.children && handleMouseEnter(item.name)}
-                  onMouseLeave={() => item.children && handleMouseLeave(item.name)}
+                  className="relative dropdown-container"
+                  onMouseEnter={() => item.children && handleDropdownEnter(item.name)}
+                  onMouseLeave={() => item.children && handleDropdownLeave()}
                 >
                   {item.children ? (
-                    <Link
-                      href={item.href || '#'}
-                      className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
-                        isActive
-                          ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-400/30'
-                          : 'text-gray-300 hover:text-white hover:bg-white/10'
-                      }`}
-                    >
-                      <item.icon className="w-4 h-4 mr-2" />
-                      {t(item.name)}
-                      <ChevronDownIcon className="w-3 h-3 ml-1" />
-                    </Link>
+                    // For items with children, check if they also have an href
+                    item.href ? (
+                      // If they have both children and href, make it a clickable link with dropdown on hover
+                      <Link
+                        href={item.href}
+                        className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
+                          isActive
+                            ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-400/30'
+                            : 'text-gray-300 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        <item.icon className="w-4 h-4 mr-2" />
+                        {t(item.name)}
+                        <ChevronDownIcon className={`w-3 h-3 ml-1 transition-transform duration-200 ${openDropdown === item.name ? 'rotate-180' : ''}`} />
+                      </Link>
+                    ) : (
+                      // If they only have children (no href), keep as button
+                      <button
+                        className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
+                          isActive
+                            ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-400/30'
+                            : 'text-gray-300 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        <item.icon className="w-4 h-4 mr-2" />
+                        {t(item.name)}
+                        <ChevronDownIcon className={`w-3 h-3 ml-1 transition-transform duration-200 ${openDropdown === item.name ? 'rotate-180' : ''}`} />
+                      </button>
+                    )
                   ) : (
                     <Link
                       href={item.href}
@@ -171,18 +165,14 @@ const TopNavBar = ({
 
                   {/* Dropdown Menu */}
                   {item.children && openDropdown === item.name && (
-                    <div className="absolute top-full left-0 w-full z-50">
-                      {/* Invisible bridge to prevent hover gaps */}
-                      <div 
-                        className="w-full h-1 bg-transparent"
-                        onMouseEnter={() => handleDropdownEnter(item.name)}
-                        onMouseLeave={() => handleDropdownLeave(item.name)}
-                      />
-                      <div 
-                        className="w-56 bg-gradient-to-br from-gray-900/95 via-blue-900/50 to-purple-900/40 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl py-2"
-                        onMouseEnter={() => handleDropdownEnter(item.name)}
-                        onMouseLeave={() => handleDropdownLeave(item.name)}
-                      >
+                    <div 
+                      className="absolute top-full left-0 w-full z-50"
+                      onMouseEnter={() => handleDropdownEnter(item.name)}
+                      onMouseLeave={handleDropdownLeave}
+                    >
+                      {/* Invisible bridge to prevent dropdown from closing when moving mouse */}
+                      <div className="h-2 w-full"></div>
+                      <div className="w-56 bg-gradient-to-br from-gray-900/95 via-blue-900/50 to-purple-900/40 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl py-2">
                       {item.children.map((child: any, j: number) => {
                         if (!child.href) {
                           return (
