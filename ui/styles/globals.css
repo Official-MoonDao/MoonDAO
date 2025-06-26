@@ -8,16 +8,19 @@
 @font-face {
   font-family: 'Good Times';
   src: url('/fonts/goodtimesrg.otf') format('opentype');
+  font-display: swap;
 }
 
 @font-face {
   font-family: 'Roboto Mono';
   src: url('/fonts/RobotoMono-Regular.ttf') format('truetype');
+  font-display: swap;
 }
 
 @font-face {
   font-family: 'Lato';
   src: url('/fonts/Lato-Regular.ttf') format('truetype');
+  font-display: swap;
 }
 
 html,
@@ -863,7 +866,8 @@ body {
 
 /* Scroll indicator animation */
 @keyframes bounce-gentle {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
