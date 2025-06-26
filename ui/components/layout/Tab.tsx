@@ -1,5 +1,3 @@
-import Image from 'next/image'
-
 type TabProps = {
   tab: string
   currentTab: string
@@ -20,28 +18,43 @@ export default function Tab({
   return (
     <button
       className={`
-          flex flex-grow justify-center text-white px-4 py-2 pb-3 w-[100px]
-          ${currentTab === tab ? '' : 'bg-mid-cool opacity-80 text-opacity-50 '}
+          flex justify-center items-center text-white px-4 py-1 rounded-lg transition-all duration-200 h-9
+          ${currentTab === tab 
+            ? 'bg-gradient-to-b from-slate-600/50 to-slate-700/50 border border-slate-500/50 shadow-lg' 
+            : 'hover:bg-slate-700/30 border border-transparent'
+          }
           ${className}
         `}
       onClick={() => setTab(tab)}
     >
-      <div id="all-tab" className="flex items-center justify-start">
+      <div id="all-tab" className="flex items-center justify-center gap-2">
         {icon && (
           <div
             id="icon-container"
             className={`
-            ${currentTab === tab ? '' : 'opacity-80 '}
+            flex-shrink-0 flex items-center justify-center w-4 h-4
+            ${currentTab === tab ? 'text-white' : 'text-slate-300'}
+            transition-colors duration-200
           `}
           >
             {typeof icon === 'string' ? (
-              <Image src={icon} alt="" width={20} height={20} />
+              <img 
+                src={icon} 
+                alt="" 
+                width={16} 
+                height={16}
+                className="flex-shrink-0 object-contain"
+                onError={(e) => {
+                  console.error('Failed to load icon:', icon)
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
             ) : (
               icon
             )}
           </div>
         )}
-        <div id="text-container" className="pl-2">
+        <div id="text-container" className={`${currentTab === tab ? 'text-white font-medium' : 'text-slate-300'} transition-colors duration-200 whitespace-nowrap text-sm`}>
           {children}
         </div>
       </div>

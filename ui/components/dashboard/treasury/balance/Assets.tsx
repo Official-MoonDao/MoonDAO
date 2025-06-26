@@ -4,7 +4,7 @@ import Asset from './Asset'
 
 const Assets = ({ tokens }: any) => {
   return (
-    <section className="mt-8 flex flex-col">
+    <section className="flex flex-col">
       {tokens
         .filter((token: any) => allowedAssets[token.symbol])
         .map((token: any, i: number) => (

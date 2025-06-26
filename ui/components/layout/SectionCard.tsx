@@ -20,18 +20,18 @@ export default function SectionCard({
   return (
     <div
       id={id}
-      className={`mt-3 px-5 lg:px-10 xl:px-10 py-5 bg-[#020617] rounded-2xl w-full lg:mt-10 lg:w-full lg:max-w-[1080px] flex flex-col ${className}`}
+      className={`bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-lg mb-6 transition-all duration-300 hover:bg-white/10 hover:shadow-xl w-full ${className}`}
     >
       <div className="flex justify-between">
-        <div className="flex gap-5 items-center opacity-50">
+        <div className="flex gap-5 items-center">
           {iconSrc && (
-            <Image src={iconSrc} alt="Job icon" width={30} height={30} />
+            <Image src={iconSrc} alt="Section icon" width={30} height={30} />
           )}
-          {header && <h2 className="header font-GoodTimes">{header}</h2>}
+          {header && <h2 className="text-white font-GoodTimes text-2xl lg:text-3xl">{header}</h2>}
         </div>
         {action && action}
       </div>
-      <div className="mt-4">{children}</div>
+      <div className="mt-6">{children}</div>
     </div>
   )
 }

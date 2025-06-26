@@ -1,5 +1,5 @@
 import MailingList from '../layout/MailingList'; 
-import Footer from './Footer';
+import { ExpandedFooter } from './ExpandedFooter';
 
 
 function MailingListCallout() {
@@ -40,7 +40,15 @@ function MailingListCallout() {
                         </span>
                     </p>
                     <div className="min-h-[150px] md:min-h-[0px]">
-                        <Footer />
+                        <ExpandedFooter 
+                          callToActionImage="/assets/MoonDAO-Logo-White.svg"
+                          callToActionTitle="Join the Network"
+                          callToActionButtonText="Learn More"
+                          callToActionButtonLink="/join"
+                          hasCallToAction={true}
+                          darkBackground={true}
+                          isFullwidth={false}
+                        />
                     </div>
                 </div>
             </div>    

@@ -167,7 +167,17 @@ export default function ProjectProfile({
         mode="compact"
         popOverEffect={false}
         isProfile
-        preFooter={<NoticeFooter darkBackground={true} />}
+        preFooter={
+          <NoticeFooter 
+            defaultImage="../assets/MoonDAO-Logo-White.svg"
+            defaultTitle="Need Help?"
+            defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+            defaultButtonText="Submit a Ticket"
+            defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+            imageWidth={200}
+            imageHeight={200}
+          />
+        }
       >
         <div
           id="page-container"

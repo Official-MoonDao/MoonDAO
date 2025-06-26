@@ -44,8 +44,8 @@ export default function NetworkMap({
         to make connections locally and globally.
       </div>
       <div className="flex gap-4">
-        <Frame className="w-full max-w-[350px]" noPadding>
-          <div className="flex flex-wrap text-sm bg-filter">
+        <div className="w-fit h-fit bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 p-1.5">
+          <div className="flex text-sm gap-1">
             <Tab
               tab="earth"
               setTab={setTab}
@@ -63,7 +63,6 @@ export default function NetworkMap({
               Moon
             </Tab>
             <Tab
-              className="pr-6"
               tab="network"
               setTab={() => router.push('/network')}
               currentTab={tab}
@@ -72,7 +71,7 @@ export default function NetworkMap({
               Network
             </Tab>
           </div>
-        </Frame>
+        </div>
       </div>
     </div>
   )

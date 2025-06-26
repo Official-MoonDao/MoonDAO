@@ -12,6 +12,7 @@ describe('MissionFundingMilestoneChart', () => {
     subgraphData: mockSubgraphData,
     fundingGoal: 5000000000000000000, // 5 ETH in wei
     height: 300,
+    projectId: 0,
   }
 
   beforeEach(() => {

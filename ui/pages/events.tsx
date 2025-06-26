@@ -18,35 +18,49 @@ export default function Events({ events }: any) {
             header={t('eventsTitle')}
             headerSize="max(20px, 3vw)"
             description={t('eventsDesc')}
-            preFooter={<NoticeFooter />}
+            preFooter={
+              <NoticeFooter 
+                defaultImage="../assets/MoonDAO-Logo-White.svg"
+                defaultTitle="Need Help?"
+                defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+                defaultButtonText="Submit a Ticket"
+                defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+                imageWidth={200}
+                imageHeight={200}
+              />
+            }
             mainPadding
             isProfile
             mode="compact"
             popOverEffect={false}
           >
-            <div className="mt-3 w-full flex grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {!events?.[0] ? (
-                <>
-                  {Array(6)
-                    .fill(0)
-                    .map((_, i) => (
-                      <div
-                        key={`event-skeleton-${i}`}
-                        className="p-4 bg-darkest-cool flex flex-col w-full items-center gap-2 font-RobotoMono text-center lg:text-left lg:items-start lg:px-4"
-                      >
-                        <h1 className="font-bold text-light-warm lg:text-lg xl:text-[20px]">
-                          {'...Loading'}
-                        </h1>
-                      </div>
+            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-xl">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {!events?.[0] ? (
+                  <>
+                    {Array(6)
+                      .fill(0)
+                      .map((_, i) => (
+                        <div
+                          key={`event-skeleton-${i}`}
+                          className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-lg min-h-[140px] flex flex-col justify-center items-center"
+                        >
+                          <div className="animate-pulse space-y-3 w-full">
+                            <div className="h-4 bg-white/20 rounded w-3/4 mx-auto"></div>
+                            <div className="h-3 bg-white/10 rounded w-1/2 mx-auto"></div>
+                            <div className="h-3 bg-white/10 rounded w-2/3 mx-auto"></div>
+                          </div>
+                        </div>
+                      ))}
+                  </>
+                ) : (
+                  <>
+                    {events.map((event: any) => (
+                      <DiscordEvent key={event.id} discordEvent={event} />
                     ))}
-                </>
-              ) : (
-                <>
-                  {events.map((event: any) => (
-                    <DiscordEvent key={event.id} discordEvent={event} />
-                  ))}
-                </>
-              )}
+                  </>
+                )}
+              </div>
             </div>
           </ContentLayout>
         </Container>

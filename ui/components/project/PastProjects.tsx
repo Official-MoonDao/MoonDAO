@@ -94,12 +94,24 @@ export default function PastProjects({ projects }: PastProjectProps) {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="font-GoodTimes text-white/80 text-xl mb-4">Past Projects</h1>
+        <h1 className="font-GoodTimes text-white/80 text-xl mb-4">
+          Past Projects
+        </h1>
         <div className="bg-black/20 rounded-xl p-4 border border-white/10">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg
+                className="h-5 w-5 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
             </div>
             <input
@@ -119,7 +131,10 @@ export default function PastProjects({ projects }: PastProjectProps) {
             ?.slice((pageIdx - 1) * 9, pageIdx * 9)
             .map((project: any, I: number) => {
               return (
-                <div key={`project-card-${I}`} className="bg-black/20 rounded-xl border border-white/10 overflow-hidden">
+                <div
+                  key={`project-card-${I}`}
+                  className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+                >
                   <ProjectCard
                     key={`project-card-${I}`}
                     project={project}
@@ -132,7 +147,10 @@ export default function PastProjects({ projects }: PastProjectProps) {
         ) : (
           <>
             {Array.from({ length: 9 }).map((_, i) => (
-              <div key={`card-skeleton-${i}`} className="bg-black/20 rounded-xl border border-white/10 overflow-hidden">
+              <div
+                key={`card-skeleton-${i}`}
+                className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+              >
                 <CardSkeleton />
               </div>
             ))}
@@ -151,8 +169,8 @@ export default function PastProjects({ projects }: PastProjectProps) {
               }
             }}
             className={`pagination-button p-2 rounded-lg transition-all duration-200 ${
-              pageIdx === 1 
-                ? 'opacity-30 cursor-not-allowed' 
+              pageIdx === 1
+                ? 'opacity-30 cursor-not-allowed'
                 : 'cursor-pointer opacity-100 hover:bg-white/10 hover:scale-110'
             }`}
             disabled={pageIdx === 1}
@@ -174,8 +192,8 @@ export default function PastProjects({ projects }: PastProjectProps) {
               }
             }}
             className={`pagination-button p-2 rounded-lg transition-all duration-200 ${
-              pageIdx === maxPage 
-                ? 'opacity-30 cursor-not-allowed' 
+              pageIdx === maxPage
+                ? 'opacity-30 cursor-not-allowed'
                 : 'cursor-pointer opacity-100 hover:bg-white/10 hover:scale-110'
             }`}
             disabled={pageIdx === maxPage}

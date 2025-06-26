@@ -23,12 +23,6 @@ interface IAllowanceTransfer {
 contract PoolDeployer is Ownable {
     using CurrencyLibrary for Currency;
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
-    mapping(uint256 => address) public POSITION_MANAGERS;
-    uint256 MAINNET = 1;
-    uint256 ARBITRUM = 42161;
-    uint256 BASE = 8453;
-    uint256 ARB_SEP = 421614;
-    uint256 SEP = 11155111;
 
     PositionManager public posm;
     IERC20 public token;
