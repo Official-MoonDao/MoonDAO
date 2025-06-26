@@ -71,6 +71,7 @@ const selectedNativeToken: any = {
 }
 
 const PATHS_WITH_NO_SIGNIN_REDIRECT = [
+  '/',
   '/submit',
   '/withdraw',
   '/projects',
@@ -119,7 +120,7 @@ function SendModal({
       native: {
         symbol: selectedNativeToken[chainSlug],
         icon: networkIcon,
-        description: 'Native Token'
+        description: 'Native Token',
       },
       mooney: {
         symbol: 'MOONEY',
@@ -132,44 +133,23 @@ function SendModal({
             className="rounded-full"
           />
         ),
-        description: 'Governance Token'
+        description: 'Governance Token',
       },
       dai: {
         symbol: 'DAI',
-        icon: (
-          <Image
-            src="/coins/DAI.svg"
-            width={24}
-            height={24}
-            alt="DAI"
-          />
-        ),
-        description: 'Stablecoin'
+        icon: <Image src="/coins/DAI.svg" width={24} height={24} alt="DAI" />,
+        description: 'Stablecoin',
       },
       usdc: {
         symbol: 'USDC',
-        icon: (
-          <Image
-            src="/coins/USDC.svg"
-            width={24}
-            height={24}
-            alt="USDC"
-          />
-        ),
-        description: 'USD Coin'
+        icon: <Image src="/coins/USDC.svg" width={24} height={24} alt="USDC" />,
+        description: 'USD Coin',
       },
       usdt: {
         symbol: 'USDT',
-        icon: (
-          <Image
-            src="/coins/USDT.svg"
-            width={24}
-            height={24}
-            alt="USDT"
-          />
-        ),
-        description: 'Tether USD'
-      }
+        icon: <Image src="/coins/USDT.svg" width={24} height={24} alt="USDT" />,
+        description: 'Tether USD',
+      },
     }
     return tokens[selectedToken as keyof typeof tokens]
   }, [selectedToken, networkIcon, chainSlug])
@@ -223,7 +203,7 @@ function SendModal({
           account,
         })
       }
-      
+
       if (receipt) {
         toast.success('Transaction sent successfully!')
         setTo('')
@@ -281,7 +261,7 @@ function SendModal({
               </select>
               <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             </div>
-            
+
             {/* Selected Token Display */}
             <div className="bg-black/20 rounded-lg p-4 border border-white/5">
               <div className="flex items-center justify-between">
@@ -290,12 +270,18 @@ function SendModal({
                     {selectedTokenData.icon}
                   </div>
                   <div>
-                    <p className="font-medium text-white">{selectedTokenData.symbol}</p>
-                    <p className="text-gray-400 text-xs">{selectedTokenData.description}</p>
+                    <p className="font-medium text-white">
+                      {selectedTokenData.symbol}
+                    </p>
+                    <p className="text-gray-400 text-xs">
+                      {selectedTokenData.description}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-white">{Number(balance).toLocaleString()}</p>
+                  <p className="font-semibold text-white">
+                    {Number(balance).toLocaleString()}
+                  </p>
                   <p className="text-gray-400 text-xs">Available</p>
                 </div>
               </div>
@@ -542,13 +528,16 @@ export function PrivyConnectWallet({
 
   useEffect(() => {
     const wallet = wallets[selectedWallet]
-    const isAutoSwitchWallet = wallet?.walletClientType === 'coinbase_wallet' || wallet?.walletClientType === 'privy'
-    
+    const isAutoSwitchWallet =
+      wallet?.walletClientType === 'coinbase_wallet' ||
+      wallet?.walletClientType === 'privy'
+
     if (walletChainId !== selectedChain.id) {
       if (isAutoSwitchWallet) {
         // Add delay for auto-switching wallets to prevent flashing
         const timeout = setTimeout(() => {
-          const currentWalletChainId = +wallets?.[selectedWallet]?.chainId?.split(':')[1]
+          const currentWalletChainId =
+            +wallets?.[selectedWallet]?.chainId?.split(':')[1]
           if (currentWalletChainId !== selectedChain.id) {
             setNetworkMismatch(true)
           }
@@ -590,12 +579,13 @@ export function PrivyConnectWallet({
     const rect = walletButton.getBoundingClientRect()
     const viewportWidth = window.innerWidth
     const viewportHeight = window.innerHeight
-    const dropdownWidth = viewportWidth < 768 ? Math.min(viewportWidth - 32, 340) : 340
+    const dropdownWidth =
+      viewportWidth < 768 ? Math.min(viewportWidth - 32, 340) : 340
     const dropdownHeight = 500 // Estimated height
-    
+
     let left = rect.left
     let top = rect.bottom + 8
-    
+
     // Adjust for mobile or small screens
     if (viewportWidth < 768) {
       left = 16 // Add some margin from screen edge
@@ -605,12 +595,12 @@ export function PrivyConnectWallet({
         left = viewportWidth - dropdownWidth - 16
       }
     }
-    
+
     // Adjust if dropdown would go below viewport
     if (top + dropdownHeight > viewportHeight) {
       top = rect.top - dropdownHeight - 8
     }
-    
+
     return {
       left: left + 'px',
       top: top + 'px',
@@ -692,7 +682,7 @@ export function PrivyConnectWallet({
                     formattedBalances={formattedBalances}
                   />
                 )}
-                
+
                 {/* Header Section */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-4">
@@ -701,8 +691,12 @@ export function PrivyConnectWallet({
                         <WalletIcon className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-lg text-white">Wallet</h3>
-                        <p className="text-gray-300 text-xs">{selectedChain.name}</p>
+                        <h3 className="font-semibold text-lg text-white">
+                          Wallet
+                        </h3>
+                        <p className="text-gray-300 text-xs">
+                          {selectedChain.name}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -722,7 +716,9 @@ export function PrivyConnectWallet({
                         <div className="w-3 h-3 bg-white rounded-full"></div>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">Address</p>
+                        <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">
+                          Address
+                        </p>
                         <p className="text-white font-mono text-sm">
                           {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
                         </p>
@@ -744,7 +740,9 @@ export function PrivyConnectWallet({
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
                         <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                        <p className="text-red-400 font-medium">Network Mismatch</p>
+                        <p className="text-red-400 font-medium">
+                          Network Mismatch
+                        </p>
                       </div>
                       <button
                         className="p-1 hover:bg-red-500/20 rounded-full transition-colors duration-200 group"
@@ -758,7 +756,9 @@ export function PrivyConnectWallet({
                       </button>
                     </div>
                     <p className="text-gray-300 text-sm mb-4">
-                      Your wallet is not connected to {selectedChain.name}. Switch networks in your wallet or revert to {previousChain.name}.
+                      Your wallet is not connected to {selectedChain.name}.
+                      Switch networks in your wallet or revert to{' '}
+                      {previousChain.name}.
                     </p>
                     <div className="flex gap-3">
                       <button
@@ -782,11 +782,13 @@ export function PrivyConnectWallet({
                     </div>
                   </div>
                 ) : (
-                    <div className="space-y-4 mb-6">
+                  <div className="space-y-4 mb-6">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide">Balances</h4>
+                      <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+                        Balances
+                      </h4>
                       <div className="flex items-center space-x-3">
-                        <div className="relative w-8 h-8">
+                        <div className="relative w-10 h-10">
                           <NetworkSelector iconsOnly compact />
                           <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center pointer-events-none">
                             <ChevronDownIcon className="w-2 h-2 text-white" />
@@ -799,7 +801,7 @@ export function PrivyConnectWallet({
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="space-y-3">
                       {/* MOONEY Balance */}
                       <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
@@ -815,12 +817,18 @@ export function PrivyConnectWallet({
                               />
                             </div>
                             <div>
-                              <p className="font-medium text-white group-hover:text-blue-300 transition-colors">MOONEY</p>
-                              <p className="text-gray-400 text-xs">Governance Token</p>
+                              <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
+                                MOONEY
+                              </p>
+                              <p className="text-gray-400 text-xs">
+                                Governance Token
+                              </p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">{formattedBalances.mooney.toLocaleString()}</p>
+                            <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
+                              {formattedBalances.mooney.toLocaleString()}
+                            </p>
                             <p className="text-gray-400 text-xs">MOONEY</p>
                           </div>
                         </div>
@@ -834,13 +842,21 @@ export function PrivyConnectWallet({
                               <NativeTokenIcon />
                             </div>
                             <div>
-                              <p className="font-medium text-white group-hover:text-blue-300 transition-colors">{selectedNativeToken[chainSlug]}</p>
-                              <p className="text-gray-400 text-xs">Native Token</p>
+                              <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
+                                {selectedNativeToken[chainSlug]}
+                              </p>
+                              <p className="text-gray-400 text-xs">
+                                Native Token
+                              </p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">{Number(nativeBalance).toFixed(4)}</p>
-                            <p className="text-gray-400 text-xs">{selectedNativeToken[chainSlug]}</p>
+                            <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
+                              {Number(nativeBalance).toFixed(4)}
+                            </p>
+                            <p className="text-gray-400 text-xs">
+                              {selectedNativeToken[chainSlug]}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -859,12 +875,18 @@ export function PrivyConnectWallet({
                                 />
                               </div>
                               <div>
-                                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">DAI</p>
-                                <p className="text-gray-400 text-xs">Stablecoin</p>
+                                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
+                                  DAI
+                                </p>
+                                <p className="text-gray-400 text-xs">
+                                  Stablecoin
+                                </p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">{formattedBalances.dai.toLocaleString()}</p>
+                              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
+                                {formattedBalances.dai.toLocaleString()}
+                              </p>
                               <p className="text-gray-400 text-xs">DAI</p>
                             </div>
                           </div>
@@ -885,12 +907,18 @@ export function PrivyConnectWallet({
                                 />
                               </div>
                               <div>
-                                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">USDC</p>
-                                <p className="text-gray-400 text-xs">USD Coin</p>
+                                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
+                                  USDC
+                                </p>
+                                <p className="text-gray-400 text-xs">
+                                  USD Coin
+                                </p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">{formattedBalances.usdc.toLocaleString()}</p>
+                              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
+                                {formattedBalances.usdc.toLocaleString()}
+                              </p>
                               <p className="text-gray-400 text-xs">USDC</p>
                             </div>
                           </div>
@@ -911,12 +939,18 @@ export function PrivyConnectWallet({
                                 />
                               </div>
                               <div>
-                                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">USDT</p>
-                                <p className="text-gray-400 text-xs">Tether USD</p>
+                                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
+                                  USDT
+                                </p>
+                                <p className="text-gray-400 text-xs">
+                                  Tether USD
+                                </p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">{formattedBalances.usdt.toLocaleString()}</p>
+                              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
+                                {formattedBalances.usdt.toLocaleString()}
+                              </p>
                               <p className="text-gray-400 text-xs">USDT</p>
                             </div>
                           </div>
@@ -928,7 +962,9 @@ export function PrivyConnectWallet({
 
                 {/* Wallet Actions */}
                 <div className="mb-6">
-                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">Quick Actions</h4>
+                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">
+                    Quick Actions
+                  </h4>
                   <div className="grid grid-cols-4 gap-2 md:gap-3">
                     <WalletAction
                       id="wallet-fund-action"
@@ -966,7 +1002,9 @@ export function PrivyConnectWallet({
                         icon={<ArrowDownOnSquareIcon width={20} height={20} />}
                         onClick={() => {
                           exportWallet().catch(() => {
-                            toast.error('Please select a privy wallet to export.')
+                            toast.error(
+                              'Please select a privy wallet to export.'
+                            )
                           })
                         }}
                       />
@@ -976,7 +1014,9 @@ export function PrivyConnectWallet({
 
                 {/* Connected Wallets */}
                 <div className="mb-6">
-                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">Connected Wallets</h4>
+                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">
+                    Connected Wallets
+                  </h4>
                   <div className="space-y-2">
                     {wallets?.map((wallet, i) => (
                       <div
@@ -990,15 +1030,20 @@ export function PrivyConnectWallet({
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
-                            <div className={`w-3 h-3 rounded-full ${
-                              selectedWallet === i ? 'bg-blue-500' : 'bg-gray-500'
-                            }`}></div>
+                            <div
+                              className={`w-3 h-3 rounded-full ${
+                                selectedWallet === i
+                                  ? 'bg-blue-500'
+                                  : 'bg-gray-500'
+                              }`}
+                            ></div>
                             <div>
                               <p className="font-medium text-white capitalize">
                                 {wallet?.walletClientType}
                               </p>
                               <p className="text-gray-400 text-xs font-mono">
-                                {wallet?.address.slice(0, 6)}...{wallet?.address.slice(-4)}
+                                {wallet?.address.slice(0, 6)}...
+                                {wallet?.address.slice(-4)}
                               </p>
                             </div>
                           </div>

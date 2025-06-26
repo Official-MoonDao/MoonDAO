@@ -1,143 +1,172 @@
+import { useWallets } from '@privy-io/react-auth'
 import FeeHook from 'const/abis/FeeHook.json'
 import { FEE_HOOK_ADDRESSES } from 'const/config'
 import { BigNumber } from 'ethers'
-import React, { useContext, useState, useEffect } from 'react'
+import { ethers } from 'ethers'
+import React, { useState, useEffect, useContext } from 'react'
 import toast from 'react-hot-toast'
-import SectionCard from '@/components/layout/SectionCard'
-import useETHPrice from '@/lib/etherscan/useETHPrice'
-import Asset from '@/components/dashboard/treasury/balance/Asset'
 import {
   prepareContractCall,
   sendAndConfirmTransaction,
   readContract,
   getContract,
 } from 'thirdweb'
+import {
+  arbitrum,
+  base,
+  sepolia,
+  arbitrumSepolia,
+  Chain,
+} from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import useContract from '@/lib/thirdweb/hooks/useContract'
+import client from '@/lib/thirdweb/client'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
+import Asset from '@/components/dashboard/treasury/balance/Asset'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import SectionCard from '@/components/layout/SectionCard'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
-import { ethers } from 'ethers'
 
 export default function Fees() {
-  useChainDefault()
-
   const account = useActiveAccount()
   const address = account?.address
 
-  const { selectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
+  const { wallets } = useWallets()
+  const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
+  const chains: Chain[] = isTestnet
+    ? [sepolia, arbitrumSepolia]
+    : [arbitrum, base]
 
-  const feeHookContract = useContract({
-    address: FEE_HOOK_ADDRESSES[chainSlug],
-    abi: FeeHook.abi,
-    chain: selectedChain,
-  })
   const { isMobile } = useWindowSize()
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { data: ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
   const WEEK = 7 * 24 * 60 * 60
 
   const [isCheckedIn, setIsCheckedIn] = useState(false)
-  const [canDistribute, setCanDistribute] = useState(false)
   const [checkedInCount, setCheckedInCount] = useState<number | null>(null)
   const [feesAvailable, setFeesAvailable] = useState<string | null>(null)
+  const [feeData, setFeeData] = useState<any[]>([])
+  const { selectedWallet } = useContext(PrivyWalletContext)
 
   useEffect(() => {
     const fetchStatus = async () => {
-      if (!feeHookContract || !address) return
+      if (!address) return
 
       try {
-        const start = await readContract({
-          contract: feeHookContract,
-          method: 'weekStart' as string,
-          params: [],
-        })
+        const results: any[] = []
+        for (const chain of chains) {
+          const slug = getChainSlug(chain)
+          const hookAddress = FEE_HOOK_ADDRESSES[slug]
+          if (!hookAddress) continue
+          const contract = getContract({
+            client,
+            address: hookAddress,
+            abi: FeeHook.abi as any,
+            chain,
+          })
 
-        const last = await readContract({
-          contract: feeHookContract,
-          method: 'lastCheckIn' as string,
-          params: [address],
-        })
+          const start = await readContract({
+            contract,
+            method: 'weekStart' as string,
+            params: [],
+          })
 
-        const checkedInCount = await readContract({
-          contract: feeHookContract,
-          method: 'getCheckedInCount' as string,
-          params: [],
-        })
+          const last = await readContract({
+            contract,
+            method: 'lastCheckIn' as string,
+            params: [address],
+          })
 
-        const balance = await readContract({
-          contract: feeHookContract,
-          method: 'balanceOf' as string,
-          params: [],
-        })
+          const count = await readContract({
+            contract,
+            method: 'getCheckedInCount' as string,
+            params: [],
+          })
 
-        setIsCheckedIn(BigNumber.from(last).eq(BigNumber.from(start)))
-        setCheckedInCount(checkedInCount ? Number(checkedInCount) : 0)
-        setFeesAvailable(
-          balance ? ethers.utils.formatEther(Number(balance)) : '0'
-        )
-        setCanDistribute(
-          Math.floor(Date.now() / 1000) >=
-            BigNumber.from(start).add(WEEK).toNumber()
-        )
+          const balance = await readContract({
+            contract,
+            method: 'balanceOf' as string,
+            params: [],
+          })
+
+          const checkedInOnChain = BigNumber.from(last).eq(
+            BigNumber.from(start)
+          )
+
+          results.push({
+            chain,
+            slug,
+            contract,
+            start,
+            last,
+            count,
+            balance,
+            checkedInOnChain,
+          })
+        }
+
+        setFeeData(results)
+
+        let totalFees = BigNumber.from(0)
+        let allChecked = true
+        let totalCount = 0
+        const now = Math.floor(Date.now() / 1000)
+
+        for (const r of results) {
+          totalFees = totalFees.add(BigNumber.from(r.balance || 0))
+          totalCount += r.count ? Number(r.count) : 0
+          if (BigNumber.from(r.balance || 0).gt(0)) {
+            if (!BigNumber.from(r.last).eq(BigNumber.from(r.start))) {
+              allChecked = false
+            }
+          }
+        }
+
+        setFeesAvailable(ethers.utils.formatEther(totalFees))
+        setCheckedInCount(totalCount)
+        setIsCheckedIn(allChecked)
       } catch (error) {
         console.error('Error fetching fee status:', error)
       }
     }
     fetchStatus()
-  }, [feeHookContract, address, isCheckedIn, WEEK])
+  }, [address, isCheckedIn, WEEK])
 
   const handleCheckIn = async () => {
     try {
       if (!account) throw new Error('No account found')
-      const tx = prepareContractCall({
-        contract: feeHookContract,
-        method: 'checkIn' as string,
-        params: [],
-      })
-      const receipt = await sendAndConfirmTransaction({
-        transaction: tx,
-        account,
-      })
-      if (receipt) {
-        toast.success('Checked in!', { style: toastStyle })
-        setIsCheckedIn(true)
+      const currentChain = selectedChain
+      for (const data of feeData) {
+        if (data.checkedInOnChain) continue
+        if (BigNumber.from(data.balance || 0).gt(0)) {
+          if (selectedChain.id !== data.chain.id) {
+            setSelectedChain(data.chain)
+          }
+          const tx = prepareContractCall({
+            contract: data.contract,
+            method: 'checkIn' as string,
+            params: [],
+          })
+          await sendAndConfirmTransaction({
+            transaction: tx,
+            account,
+          })
+        }
       }
+      setSelectedChain(currentChain)
+      toast.success('Checked in!', { style: toastStyle })
+      setIsCheckedIn(true)
     } catch (error) {
       console.error('Error checking in:', error)
       toast.error('Error checking in. Please try again.', { style: toastStyle })
-    }
-  }
-
-  const handleDistributeFees = async () => {
-    try {
-      if (!account) throw new Error('No account found')
-      const tx = prepareContractCall({
-        contract: feeHookContract,
-        method: 'distributeFees' as string,
-        params: [],
-      })
-      const receipt = await sendAndConfirmTransaction({
-        transaction: tx,
-        account,
-      })
-      if (receipt) {
-        toast.success('Fees distributed!', { style: toastStyle })
-        setCanDistribute(false)
-      }
-    } catch (error) {
-      console.error('Error distributing fees:', error)
-      toast.error('Error distributing fees. Please try again.', {
-        style: toastStyle,
-      })
     }
   }
 
@@ -145,7 +174,9 @@ export default function Fees() {
     <>
       <WebsiteHead
         title={'Liquidity Rewards'}
-        description={'Check in weekly and distribute accrued fees.'}
+        description={
+          'Check in weekly and distribute accrued fees. To check in you will need to sign one transaction per chain.'
+        }
       />
       <section className="w-[calc(100vw-20px)]">
         <Container>
@@ -173,12 +204,14 @@ export default function Fees() {
               <div className="mt-3 w-[25vw] flex flex-col gap-4">
                 <div className="mb-2">
                   <div className="text-xl font-GoodTimes opacity-80">
-                    Rewards This Week :
+                    Rewards This Week:
                   </div>
                   <Asset
                     name="ETH"
                     amount={
-                      feesAvailable !== null ? feesAvailable : 'Loading...'
+                      feesAvailable !== null
+                        ? Number(feesAvailable).toFixed(4)
+                        : 'Loading...'
                     }
                     usd={
                       feesAvailable !== null && ethPrice
@@ -186,28 +219,28 @@ export default function Fees() {
                         : 'Loading...'
                     }
                   />
-                  <div className="mt-4 opacity-75">
-                    {checkedInCount !== null
-                      ? checkedInCount > 0
-                        ? checkedInCount === 1
-                          ? '1 person has checked in this week!'
-                          : `${checkedInCount} people have checked in this week!`
-                        : 'No one has checked in yet!'
-                      : 'Loading...'}
-                  </div>
+                  {feesAvailable !== null && Number(feesAvailable) > 0 && (
+                    <div className="mt-4 opacity-75">
+                      {checkedInCount !== null
+                        ? checkedInCount > 0
+                          ? checkedInCount === 1
+                            ? '1 check in this week!'
+                            : `${checkedInCount} check ins this week!`
+                          : 'No one has checked in yet!'
+                        : 'Loading...'}
+                    </div>
+                  )}
                 </div>
-                <PrivyWeb3Button
-                  action={handleCheckIn}
-                  label={isCheckedIn ? 'Checked In' : 'Check In'}
-                  className="w-full max-w-[250px] rounded-[5vmax] rounded-tl-[20px]"
-                  isDisabled={!address || isCheckedIn}
-                />
-                <PrivyWeb3Button
-                  action={handleDistributeFees}
-                  label="Distribute Fees"
-                  className="w-full max-w-[250px] rounded-[5vmax] rounded-tl-[20px]"
-                  isDisabled={!canDistribute}
-                />
+                {feesAvailable !== null &&
+                  Number(feesAvailable) > 0 &&
+                  !isCheckedIn && (
+                    <PrivyWeb3Button
+                      action={handleCheckIn}
+                      label={isCheckedIn ? 'Checked In' : 'Check In'}
+                      className="w-full max-w-[250px] rounded-[5vmax] rounded-tl-[20px]"
+                      isDisabled={!address || isCheckedIn}
+                    />
+                  )}
               </div>
             </SectionCard>
           </ContentLayout>

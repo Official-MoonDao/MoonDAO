@@ -107,16 +107,16 @@ const ContributionEditor: React.FC = () => {
 
       if (!res.ok) {
         // Provide specific error messages based on status code
-        let errorMessage = 'Failed to submit contribution.';
+        let errorMessage = 'Failed to submit contribution.'
         if (res.status === 400) {
-          errorMessage = data.error || 'Invalid data provided.';
+          errorMessage = data.error || 'Invalid data provided.'
         } else if (res.status === 401) {
-          errorMessage = 'You are not authorized. Please sign in again.';
+          errorMessage = 'You are not authorized. Please sign in again.'
         } else if (res.status === 500) {
-          errorMessage = data.error || 'Server error. Please try again later.';
+          errorMessage = data.error || 'Server error. Please try again later.'
         }
-        
-        throw new Error(errorMessage);
+
+        throw new Error(errorMessage)
       }
 
       setCoordinapeLink(
@@ -134,8 +134,7 @@ const ContributionEditor: React.FC = () => {
                 citizen?.id
               )})`
             : `${address.slice(0, 6)}...${address.slice(-4)}`
-        }**
-      ${getMarkdown()?.trim()}
+        }**\n${getMarkdown()?.trim()}
       `
       )
       toast.success('Contribution submitted successfully!')
@@ -222,25 +221,37 @@ const ContributionEditor: React.FC = () => {
           )}
         </div>
       </div>
-      
+
       <div className="mt-6 flex flex-col gap-4">
         {/* Network Disclaimer */}
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
-              <svg className="w-5 h-5 text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              <svg
+                className="w-5 h-5 text-yellow-400 mt-0.5"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
               </svg>
             </div>
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-yellow-400 mb-1">Network Notice</h3>
+              <h3 className="text-sm font-semibold text-yellow-400 mb-1">
+                Network Notice
+              </h3>
               <p className="text-sm text-yellow-200/80">
-                Please ensure you're connected to the correct blockchain network before submitting. You may need to switch networks in your wallet to complete your submission successfully.
+                Please ensure you're connected to the correct blockchain network
+                before submitting. You may need to switch networks in your
+                wallet to complete your submission successfully.
               </p>
             </div>
           </div>
         </div>
-        
+
         <div className="flex justify-end">
           <button
             type="submit"
