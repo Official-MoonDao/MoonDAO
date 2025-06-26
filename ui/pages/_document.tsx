@@ -6,8 +6,23 @@ class WebsiteDocument extends Document {
     return (
       <Html>
         <Head>
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          {/* Preload critical fonts to prevent FOUT */}
+          <link
+            rel="preload"
+            href="/fonts/Lato-Regular.ttf"
+            as="font"
+            type="font/ttf"
+            crossOrigin="anonymous"
+          />
+          <link
+            rel="preload"
+            href="/fonts/goodtimesrg.otf"
+            as="font"
+            type="font/otf"
+            crossOrigin="anonymous"
+          />
 
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" />
 
           <link
@@ -21,7 +36,6 @@ class WebsiteDocument extends Document {
           />
 
           <meta name="theme-color" content="#54c3ff" />
-
           <link rel="icon" href="/favicon.ico" />
 
           <script
