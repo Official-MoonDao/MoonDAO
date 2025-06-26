@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { parseISO } from 'd    <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-lg min-h-[140px] flex flex-col transition-all duration-300 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl">{te-fns'
+import { parseISO } from 'date-fns'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 
