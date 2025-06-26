@@ -56,7 +56,7 @@ export default function Callout2() {
         </div>
         <div
           id="content"
-          className="relative pt-[220px] lg:pt-20 md:pb-0 w-full pr-5 lg:w-[70%]"
+          className="relative pt-[220px] lg:pt-20 md:pb-0 w-full pr-5 lg:w-[70%] lg:ml-[8%] xl:ml-[12%]"
         >
           <h1 className="header font-GoodTimes">
             MoonDAO is <br></br>Permissionless

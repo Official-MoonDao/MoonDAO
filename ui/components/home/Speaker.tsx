@@ -13,7 +13,7 @@ interface SpeakerProps {
 export default function Card({ logo, alt, link, name, subtitle, isWhiteText = false }: SpeakerProps) {
     return (
         <div id="speaker-container"
-            className="m-2 md:p-0 md:m-5 mb-0 w-[150px] h-[230px] md:w-[170px] lg:w-[250px] 2xl:w-[300px] lg:h-[380px] flex flex-wrap justify-around items-center rounded-[100vw] group"
+            className="m-2 md:p-0 md:m-5 mb-0 w-[160px] h-[250px] md:w-[170px] lg:w-[250px] 2xl:w-[300px] lg:h-[380px] flex flex-wrap justify-around items-center rounded-[100vw] group"
         >
             {link ? (
                 <Link href={link} className="w-full h-full flex flex-col items-center justify-center">
@@ -29,11 +29,11 @@ export default function Card({ logo, alt, link, name, subtitle, isWhiteText = fa
                             className="rounded-full transition-transform duration-300 ease-in-out group-hover:scale-110"
                         />
                     </div>
-                    <div className="text-center min-h-[70px] mt-4 w-full min-w-[200px]">
-                        <h3 className={`text-sm md:text-md lg:text-lg font-semibold font-GoodTimes ${isWhiteText ? 'text-white' : 'text-black'}`}>
+                    <div className="text-center min-h-[80px] mt-4 w-full max-w-[160px] md:max-w-[200px]">
+                        <h3 className={`text-xs md:text-sm lg:text-lg font-semibold font-GoodTimes ${isWhiteText ? 'text-white' : 'text-black'} leading-tight`}>
                             {name}
                         </h3>
-                        <p className={`text-sm ${isWhiteText ? 'text-white' : 'text-black'}`}>
+                        <p className={`text-xs md:text-sm ${isWhiteText ? 'text-white' : 'text-black'} mt-1 leading-tight`}>
                             {subtitle}
                         </p>
                     </div>
@@ -53,12 +53,12 @@ export default function Card({ logo, alt, link, name, subtitle, isWhiteText = fa
                         />
                     </div>
                     <div 
-                        className="text-center mt-4"
+                        className="text-center mt-4 max-w-[160px] md:max-w-[200px]"
                     >
-                        <h3 className={`text-sm font-semibold font-GoodTimes ${isWhiteText ? 'text-white' : 'text-black'}`}>
+                        <h3 className={`text-xs md:text-sm font-semibold font-GoodTimes ${isWhiteText ? 'text-white' : 'text-black'} leading-tight`}>
                             {name}
                         </h3>
-                        <p className={`text-sm ${isWhiteText ? 'text-white' : 'text-black'}`}>
+                        <p className={`text-xs md:text-sm ${isWhiteText ? 'text-white' : 'text-black'} mt-1 leading-tight`}>
                             {subtitle}
                         </p>
                     </div>

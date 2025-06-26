@@ -26,7 +26,7 @@ export default function SpeakerSection() {
           >
             <div
               id="speakers"
-              className="p-3 pt-0 grid grid-cols-1 md:grid-cols-3 gap-4"
+              className="p-3 pt-0 grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4 justify-items-center"
             >
               <Speaker
                 alt="Charlie Duke"

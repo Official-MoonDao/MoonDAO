@@ -88,8 +88,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
             isFullscreen={false}
           />
 
-          {/* Top Navigation Bar - Only on large screens (lg and up) */}
-          <div className="hidden lg:block">
+          {/* Top Navigation Bar - Show on medium screens (md) and up */}
+          <div className="hidden md:block">
             <TopNavBar
               navigation={navigation}
               lightMode={lightMode}
