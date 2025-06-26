@@ -172,7 +172,7 @@ const TopNavBar = ({
                     >
                       {/* Invisible bridge to prevent dropdown from closing when moving mouse */}
                       <div className="h-2 w-full"></div>
-                      <div className="w-56 bg-gradient-to-br from-gray-900/95 via-blue-900/50 to-purple-900/40 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl py-2">
+                      <div className="w-56 bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 rounded-xl shadow-2xl py-2">
                       {item.children.map((child: any, j: number) => {
                         if (!child.href) {
                           return (
