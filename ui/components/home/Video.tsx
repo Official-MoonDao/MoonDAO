@@ -1,7 +1,7 @@
 export default function Video() {
     return (
         <section id="video-section" 
-            className="relative gradient-6 lg:mt-[-110px] md:mt-[-50px] mt-[-60px] flex justify-center px-[20px] md:px-[40px]"
+            className="relative bg-white lg:mt-[-110px] md:mt-[-50px] mt-[-60px] flex justify-center px-[20px] md:px-[40px]"
             >
             <div id="video-container" 
                 className="max-w-[1200px] w-full"
@@ -18,9 +18,6 @@ export default function Video() {
                     />
                 </div>
             </div>
-            <div 
-                className="bg-white absolute bottom-0 w-full left-0 lg:h-[150px] md:h-[100px] h-[100px] rounded-tl-[2vmax]"
-            ></div>
         </section>
     )
 }

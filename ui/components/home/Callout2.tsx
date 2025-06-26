@@ -56,7 +56,7 @@ export default function Callout2() {
         </div>
         <div
           id="content"
-          className="relative pt-[220px] lg:pt-20 md:pb-0 w-full pr-5 lg:w-[70%] lg:ml-[8%] xl:ml-[12%]"
+          className="relative pt-[220px] lg:pt-20 md:pb-0 w-full pr-5 lg:w-[70%] lg:ml-[12%] xl:ml-[17%] text-center lg:text-left"
         >
           <h1 className="header font-GoodTimes">
             MoonDAO is <br></br>Permissionless
@@ -69,7 +69,7 @@ export default function Callout2() {
             governed, and created by members. Co-govern the treasury by locking
             $MOONEY to become a voter.
           </p>
-          <div className="flex items-center gap-2 mb-5">
+          <div className="flex items-center justify-center lg:justify-start gap-2 mb-5">
             <button
               onClick={() => {
                 navigator.clipboard.writeText(
@@ -107,7 +107,7 @@ export default function Callout2() {
       >
         <div
           id="astronauts-container"
-          className="p-1 flex flex-wrap w-full justify-start md:justify-start lg:ml-[8%] xl:ml-[12%] gap-5 scale-[90%] md:scale-[100%] lg:scale-[115%] my-[20px] z-50"
+          className="p-1 flex flex-wrap w-full justify-center gap-5 scale-[90%] md:scale-[100%] lg:scale-[115%] my-[20px] z-50"
         >
           <Speaker
             alt="Coby Cotton"

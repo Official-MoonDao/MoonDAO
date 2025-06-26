@@ -10,7 +10,7 @@ export default function Callout1() {
       >
         <div
           id="content-container"
-          className="compact-lg flex flex-col-reverse justify-end lg:flex-row items-start lg:items-center min-h-[250px] md:min-h-[400px] p-5 pt-10 pb-0 md:p-10 md:pt-10 lg:max-w-[1200px]"
+          className="compact-lg flex flex-col-reverse justify-end lg:flex-row items-start lg:items-center min-h-[250px] md:min-h-[400px] p-5 pt-10 pb-0 md:p-10 md:pt-10 lg:max-w-[1200px] mx-auto"
         >
           <div
             id="featured-image"
@@ -25,7 +25,7 @@ export default function Callout1() {
           </div>
           <div
             id="content"
-            className="overflow-visible relative pb-10 md:pb-10 w-[100%]"
+            className="overflow-visible relative pb-10 md:pb-10 w-[100%] text-center lg:text-left"
           >
             <h1 className="header flex overflow-visible flex-col text-4xl font-GoodTimes font-bold bg-clip-text text-dark-cool bg-gradient-to-r from-red-500 to-blue-500 leading-none">
               Bringing the Space Industry Onchain

@@ -29,8 +29,8 @@ export default function Card({ logo, alt, link, name, subtitle, isWhiteText = fa
                             className="rounded-full transition-transform duration-300 ease-in-out group-hover:scale-110"
                         />
                     </div>
-                    <div className="text-center min-h-[80px] mt-4 w-full max-w-[160px] md:max-w-[200px]">
-                        <h3 className={`text-xs md:text-sm lg:text-lg font-semibold font-GoodTimes ${isWhiteText ? 'text-white' : 'text-black'} leading-tight`}>
+                    <div className="text-center min-h-[80px] mt-4 w-full max-w-[160px] md:max-w-[250px]">
+                        <h3 className={`text-xs md:text-sm lg:text-lg font-semibold font-GoodTimes ${isWhiteText ? 'text-white' : 'text-black'} leading-tight whitespace-nowrap`}>
                             {name}
                         </h3>
                         <p className={`text-xs md:text-sm ${isWhiteText ? 'text-white' : 'text-black'} mt-1 leading-tight`}>
@@ -53,9 +53,9 @@ export default function Card({ logo, alt, link, name, subtitle, isWhiteText = fa
                         />
                     </div>
                     <div 
-                        className="text-center mt-4 max-w-[160px] md:max-w-[200px]"
+                        className="text-center mt-4 max-w-[160px] md:max-w-[250px]"
                     >
-                        <h3 className={`text-xs md:text-sm font-semibold font-GoodTimes ${isWhiteText ? 'text-white' : 'text-black'} leading-tight`}>
+                        <h3 className={`text-xs md:text-sm font-semibold font-GoodTimes ${isWhiteText ? 'text-white' : 'text-black'} leading-tight whitespace-nowrap`}>
                             {name}
                         </h3>
                         <p className={`text-xs md:text-sm ${isWhiteText ? 'text-white' : 'text-black'} mt-1 leading-tight`}>
