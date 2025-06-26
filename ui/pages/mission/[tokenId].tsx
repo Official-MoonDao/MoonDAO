@@ -333,7 +333,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   function ProfileHeader() {
     const totalFunding = useTotalFunding(mission?.projectId)
-
     return (
       <div id="citizenheader-container" className="w-[100vw]">
         <div className="w-full">
@@ -564,7 +563,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       </div>
                     )}
                     {/* Send payouts and tokens Buttons - only shown to managers */}
-
                     {account && deadlinePassed && isManager && (
                       <div className="flex flex-col gap-4 -mt-8 w-full sm:w-auto sm:absolute sm:right-2 sm:top-[250px]">
                         <PrivyWeb3Button
