@@ -583,66 +583,6 @@ export function PrivyConnectWallet({
     }
   }, [enabled])
 
-  function getDropdownPosition() {
-    const walletButton = document.getElementById('privy-connect-wallet')
-    if (!walletButton) return { left: '0px', top: '0px' }
-
-    const rect = walletButton.getBoundingClientRect()
-    const viewportWidth = window.innerWidth
-    const viewportHeight = window.innerHeight
-    const dropdownWidth = viewportWidth < 768 ? Math.min(viewportWidth - 32, 340) : 340
-    const dropdownHeight = 500 // Estimated height
-    
-    let left = rect.left
-    let top = rect.bottom + 8
-    
-    // Adjust for mobile or small screens
-    if (viewportWidth < 768) {
-      left = 16 // Add some margin from screen edge
-    } else {
-      // Make sure dropdown doesn't go off screen horizontally
-      if (left + dropdownWidth > viewportWidth) {
-        left = viewportWidth - dropdownWidth - 16
-      }
-    }
-    
-    // Adjust if dropdown would go below viewport
-    if (top + dropdownHeight > viewportHeight) {
-      top = rect.top - dropdownHeight - 8
-    }
-    
-    return {
-      left: left + 'px',
-      top: top + 'px',
-    }
-  }
-
-  const [dropdownPosition, setDropdownPosition] = useState({
-    left: '0px',
-    top: '0px',
-  })
-
-  // Update position when enabled changes or on window resize
-  useEffect(() => {
-    if (!enabled) return
-
-    // Set initial position
-    setDropdownPosition(getDropdownPosition())
-
-    // Update position on window resize
-    const handleResize = () => {
-      setDropdownPosition(getDropdownPosition())
-    }
-
-    window.addEventListener('resize', handleResize)
-    window.addEventListener('scroll', handleResize)
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      window.removeEventListener('scroll', handleResize)
-    }
-  }, [enabled])
-
   return (
     <>
       {user && wallets?.[0] ? (
@@ -669,15 +609,17 @@ export function PrivyConnectWallet({
                 }`}
               />
             </div>
-            {/*Menu that opens up*/}
           </div>
-          {enabled && (
-            <Portal>
-              <div
-                id="privy-connect-wallet-dropdown"
-                className="w-[calc(100vw-2rem)] max-w-[340px] md:w-[320px] lg:w-[340px] fixed text-sm font-RobotoMono rounded-2xl animate-fadeIn p-4 md:p-6 flex flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white z-[3000] max-h-[80vh] md:max-h-[80vh] overflow-y-auto scrollbar-hide"
-                style={dropdownPosition}
-              >
+          
+          {/* Portal dropdown to avoid clipping */}
+          {enabled && createPortal(
+            <div
+              id="privy-connect-wallet-dropdown"
+              className="fixed top-20 right-4 w-[340px] text-sm font-RobotoMono rounded-2xl animate-fadeIn p-4 md:p-6 flex flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white z-[9999] max-h-[80vh] overflow-y-auto scrollbar-hide"
+              style={{ 
+                backgroundColor: 'rgba(17, 24, 39, 0.95)'
+              }}
+            >
                 {sendModalEnabled && (
                   <SendModal
                     account={account}
@@ -782,7 +724,7 @@ export function PrivyConnectWallet({
                     </div>
                   </div>
                 ) : (
-                    <div className="space-y-4 mb-6">
+                  <div className="space-y-4 mb-6">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide">Balances</h4>
                       <div className="flex items-center space-x-3">
@@ -1032,9 +974,10 @@ export function PrivyConnectWallet({
                     <strong>Log Out</strong>
                   </button>
                 </div>
-              </div>
-            </Portal>
-          )}
+              </div>,
+              document.body
+            )
+          }
         </div>
       ) : (
         <div className="w-full">
