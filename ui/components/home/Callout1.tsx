@@ -32,7 +32,7 @@ export default function Callout1() {
             </h1>
             <p
               id="paragraph"
-              className="pt-2 pb-5 text-black text-lg w-[100%] max-w-[500px]"
+              className="pt-2 pb-5 text-black text-lg w-[100%] max-w-[500px] mx-auto lg:mx-0"
             >
               The Space Acceleration Network is an onchain startup society
               that connects space visionaries and organizations with the
