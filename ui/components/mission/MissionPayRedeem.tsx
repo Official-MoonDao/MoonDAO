@@ -286,7 +286,7 @@ export default function MissionPayRedeem({
   forwardClient,
 }: MissionPayRedeemProps) {
   const { selectedChain } = useContext(ChainContextV5)
-  const defaultChainSlug = getChainSlug(sepolia)
+  const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN != 'mainnet'

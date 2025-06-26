@@ -22,7 +22,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import React, { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import { sepolia } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
@@ -66,8 +65,7 @@ export default function Launch({ missions }: any) {
     },
   })
 
-  // const { selectedChain } = useContext(ChainContextV5)
-  const selectedChain = sepolia
+  const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
 
   const teamContract = useContract({
@@ -753,7 +751,7 @@ export default function Launch({ missions }: any) {
 
 export const getStaticProps: GetStaticProps = async () => {
   try {
-    const chain = sepolia
+    const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
     const missionTableContract = getContract({
