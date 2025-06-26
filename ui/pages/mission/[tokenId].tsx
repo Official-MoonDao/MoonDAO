@@ -25,7 +25,7 @@ import {
   JB_NATIVE_TOKEN_ID,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
-import useTotalFunding from '@/lib/juicebox/useTotalFunding'
+import { ethers } from 'ethers'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -40,11 +40,11 @@ import {
 import { sepolia } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
-import { ethers } from 'ethers'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
+import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import useMissionData from '@/lib/mission/useMissionData'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
@@ -332,7 +332,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   }
 
   function ProfileHeader() {
-    const { data: nativeTokenSurplus } = useNativeTokenSurplus()
+    const totalFunding = useTotalFunding(mission?.projectId)
     return (
       <div id="citizenheader-container" className="w-[100vw]">
         <div className="w-full">

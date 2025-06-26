@@ -342,6 +342,7 @@ export default function Launch({ missions }: any) {
           <div
             id="featured-missions-container"
             className="mt-[2vw] md:mt-[1vw] pb-[5vw] mb-[2vw] md:mb-[-5vw] md:pb-0 md:pt-0 relative flex flex-col justify-center items-center md:flex-row z-20 mb-[-5vw] w-full md:max-w-[1000px] mx-auto"
+          >
             <JuiceProviders
               projectId={missions?.[FEATURED_MISSION_INDEX]?.projectId}
               selectedChain={selectedChain}
