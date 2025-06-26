@@ -84,7 +84,7 @@ export default function Callout3() {
   return (
     <section
       id="callout3-container"
-      className="relative items-start max-w-[1200px] justify-end md:items-start lg:items-start md:justify-end lg:justify-center mt-[5vmax]"
+      className="relative items-center justify-center max-w-[1200px] mx-auto mt-[5vmax]"
     >
       <div id="background-elements" className="overflow-visible"></div>
       <h2 className="header text-center font-GoodTimes pb-5">

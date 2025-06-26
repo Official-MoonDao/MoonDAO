@@ -592,6 +592,11 @@ html {
     opacity: 0%;
   }
 
+  /* Override for At A Glance cards - always show description on mobile */
+  .at-a-glance-card .description {
+    opacity: 100% !important;
+  }
+
   .card-container .hovertext {
     margin-bottom: 0px;
     opacity: 100%;

@@ -36,11 +36,11 @@ function LinkList({ title, links }: LinkListProps) {
 }
 
 type ExpandedFooterProps = {
-  callToActionImage: string
+  callToActionImage?: string
   callToActionBody?: string
-  callToActionTitle: string
-  callToActionButtonText: string
-  callToActionButtonLink: string
+  callToActionTitle?: string
+  callToActionButtonText?: string
+  callToActionButtonLink?: string
   hasCallToAction: boolean
   darkBackground?: boolean
   isFullwidth?: boolean

@@ -1,10 +1,10 @@
 export default function Video() {
     return (
         <section id="video-section" 
-            className="relative gradient-6 pr-[40px] md:pr-[80px] lg:mt-[-110px] md:mt-[-50px] mt-[-60px]"
+            className="relative bg-white lg:mt-[-110px] md:mt-[-50px] mt-[-60px] flex justify-center px-[20px] md:px-[40px]"
             >
             <div id="video-container" 
-                className="ml-[20px] md:ml-[40px] max-w-[1200px] w-full"
+                className="max-w-[1200px] w-full"
                 >
                 <div id="video-wrapper" 
                     className="pt-[56.25%] relative rounded-lg z-40"
@@ -18,9 +18,6 @@ export default function Video() {
                     />
                 </div>
             </div>
-            <div 
-                className="bg-white absolute bottom-0 w-full left-0 lg:h-[150px] md:h-[100px] h-[100px] rounded-tl-[2vmax]"
-            ></div>
         </section>
     )
 }
