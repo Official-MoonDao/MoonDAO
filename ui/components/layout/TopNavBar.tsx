@@ -70,7 +70,7 @@ const TopNavBar = ({
   const handleMouseLeave = () => {
     const timeout = setTimeout(() => {
       setOpenDropdown(null)
-    }, 300) // Increased delay to 300ms for better UX
+    }, 500) // Increased delay to 500ms for better reliability
     setDropdownTimeout(timeout)
   }
 
@@ -85,9 +85,18 @@ const TopNavBar = ({
   const handleDropdownMouseLeave = () => {
     const timeout = setTimeout(() => {
       setOpenDropdown(null)
-    }, 300) // Same delay for consistency
+    }, 300) // Shorter delay for dropdown leave
     setDropdownTimeout(timeout)
   }
+
+  // Clear any timeouts when component unmounts or openDropdown changes externally
+  useEffect(() => {
+    return () => {
+      if (dropdownTimeout) {
+        clearTimeout(dropdownTimeout)
+      }
+    }
+  }, [dropdownTimeout])
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-gray-900/95 via-blue-900/80 to-purple-900/70 backdrop-blur-xl border-b border-white/20 shadow-2xl transition-transform duration-300 ease-in-out ${
@@ -116,7 +125,7 @@ const TopNavBar = ({
               return (
                 <div
                   key={i}
-                  className="relative"
+                  className="relative group"
                   onMouseEnter={() => item.children && handleMouseEnter(item.name)}
                   onMouseLeave={handleMouseLeave}
                 >
@@ -149,11 +158,14 @@ const TopNavBar = ({
 
                   {/* Dropdown Menu */}
                   {item.children && openDropdown === item.name && (
-                    <div 
-                      className="absolute top-full left-0 mt-1 w-56 bg-gradient-to-br from-gray-900 via-blue-900/40 to-purple-900/30 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl py-2 z-50"
-                      onMouseEnter={() => handleDropdownMouseEnter(item.name)}
-                      onMouseLeave={handleDropdownMouseLeave}
-                    >
+                    <div className="absolute top-full left-0 w-full z-40">
+                      {/* Invisible bridge to prevent hover gaps */}
+                      <div className="w-full h-2" />
+                      <div 
+                        className="w-56 bg-gradient-to-br from-gray-900 via-blue-900/40 to-purple-900/30 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl py-2 z-50"
+                        onMouseEnter={() => handleDropdownMouseEnter(item.name)}
+                        onMouseLeave={handleDropdownMouseLeave}
+                      >
                       {item.children.map((child: any, j: number) => {
                         if (!child.href) {
                           return (
@@ -179,6 +191,7 @@ const TopNavBar = ({
                           </Link>
                         )
                       })}
+                      </div>
                     </div>
                   )}
                 </div>
