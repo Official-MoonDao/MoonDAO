@@ -109,14 +109,16 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         </>
       ) : (
         <>
-          {/*Mobile menu top bar*/}
-          <MobileMenuTop
-            setSidebarOpen={setSidebarOpen}
-            lightMode={lightMode}
-            setLightMode={setLightMode}
-            citizenContract={citizenContract}
-            isFullscreen={isFullscreen}
-          />
+          {/*Mobile menu top bar - for screens smaller than md */}
+          <div className="md:hidden">
+            <MobileMenuTop
+              setSidebarOpen={setSidebarOpen}
+              lightMode={lightMode}
+              setLightMode={setLightMode}
+              citizenContract={citizenContract}
+              isFullscreen={isFullscreen}
+            />
+          </div>
 
           <MobileSidebar
             navigation={navigation}
