@@ -15,6 +15,7 @@ import React, { useState, useEffect, useCallback, useContext } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { sepolia } from 'thirdweb/chains'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -120,7 +121,11 @@ export default function Missions({ missions }: MissionsProps) {
               marginBottom="10px"
               noPadding
             >
-              <Search input={input} setInput={setInput} placeholder="Search missions..." />
+              <Search
+                input={input}
+                setInput={setInput}
+                placeholder="Search missions..."
+              />
             </Frame>
             <div className="flex justify-start mt-4 mb-8">
               <StandardButtonPlus
@@ -146,11 +151,17 @@ export default function Missions({ missions }: MissionsProps) {
                 ?.slice((pageIdx - 1) * 9, pageIdx * 9)
                 .map((mission: any, I: number) => {
                   return (
-                    <MissionCard
+                    <JuiceProviders
                       key={`mission-card-${I}`}
-                      mission={mission}
-                      teamContract={teamContract}
-                    />
+                      projectId={mission.projectId}
+                      selectedChain={selectedChain}
+                    >
+                      <MissionCard
+                        key={`mission-card-${I}`}
+                        mission={mission}
+                        teamContract={teamContract}
+                      />
+                    </JuiceProviders>
                   )
                 })
             ) : (

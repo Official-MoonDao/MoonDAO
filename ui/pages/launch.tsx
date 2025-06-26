@@ -176,12 +176,25 @@ export default function Launch({ missions }: any) {
         status: status,
       })
     }
-  }, [status, shallowQuery])
+  }, [status])
 
   useEffect(() => {
     if (router.query.status) {
-      setStatus(router.query.status as any)
+      if (
+        !(
+          user &&
+          router.query.status === 'loggingIn' &&
+          (status === 'create' || status === 'apply')
+        )
+      ) {
+        setStatus(router.query.status as any)
+      }
+    } else {
+      setStatus('idle')
     }
+  }, [router.query.status, user])
+
+  useEffect(() => {
     if (
       (router.query.status === 'create' ||
         router.query.status === 'loggingIn') &&
