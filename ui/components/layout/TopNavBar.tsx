@@ -112,21 +112,6 @@ const TopNavBar = ({
 
   return (
     <>
-      <style jsx>{`
-        .wallet-container {
-          max-width: 200px !important;
-          overflow: hidden !important;
-        }
-        .wallet-container * {
-          max-width: 100% !important;
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
-          white-space: nowrap !important;
-        }
-        .wallet-container button {
-          max-width: 200px !important;
-        }
-      `}</style>
       <nav className={`fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-gray-900/95 via-blue-900/80 to-purple-900/70 backdrop-blur-xl border-b border-white/20 shadow-2xl transition-transform duration-300 ease-in-out ${
         isVisible ? 'translate-y-0' : '-translate-y-full'
       }`}>
@@ -235,7 +220,7 @@ const TopNavBar = ({
           <div className="flex items-center space-x-1 lg:space-x-2 xl:space-x-3 flex-shrink-0">
             {/* Wallet/Address Button */}
             <div className="flex items-center space-x-1">
-              <div className="wallet-container scale-90 lg:scale-95 xl:scale-100 min-w-0">
+              <div className="max-w-[200px] overflow-hidden scale-90 lg:scale-95 xl:scale-100 min-w-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap [&>button]:max-w-[200px]">
                 <PrivyConnectWallet
                   type="desktop"
                   citizenContract={citizenContract}
