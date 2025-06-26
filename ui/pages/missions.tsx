@@ -13,7 +13,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback, useContext } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import { sepolia } from 'thirdweb/chains'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -37,8 +36,7 @@ type MissionsProps = {
 }
 
 export default function Missions({ missions }: MissionsProps) {
-  // const { selectedChain } = useContext(ChainContextV5)
-  const selectedChain = sepolia
+  const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -120,7 +118,11 @@ export default function Missions({ missions }: MissionsProps) {
               marginBottom="10px"
               noPadding
             >
-              <Search input={input} setInput={setInput} placeholder="Search missions..." />
+              <Search
+                input={input}
+                setInput={setInput}
+                placeholder="Search missions..."
+              />
             </Frame>
             <div className="flex justify-start mt-4 mb-8">
               <StandardButtonPlus
@@ -222,7 +224,7 @@ export default function Missions({ missions }: MissionsProps) {
 
 export const getStaticProps: GetStaticProps = async () => {
   try {
-    const chain = sepolia
+    const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
     const missionTableContract = getContract({
