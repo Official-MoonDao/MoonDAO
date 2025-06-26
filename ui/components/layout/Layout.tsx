@@ -71,14 +71,16 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     >
       {isHomepage ? (
         <>
-          {/* Mobile menu top bar - for screens that can't fit the nav bar */}
-          <MobileMenuTop
-            setSidebarOpen={setSidebarOpen}
-            lightMode={lightMode}
-            setLightMode={setLightMode}
-            citizenContract={citizenContract}
-            isFullscreen={false}
-          />
+          {/* Mobile menu top bar - for screens smaller than lg */}
+          <div className="lg:hidden">
+            <MobileMenuTop
+              setSidebarOpen={setSidebarOpen}
+              lightMode={lightMode}
+              setLightMode={setLightMode}
+              citizenContract={citizenContract}
+              isFullscreen={false}
+            />
+          </div>
 
           <MobileSidebar
             navigation={navigation}
@@ -88,8 +90,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
             isFullscreen={false}
           />
 
-          {/* Top Navigation Bar - Show on medium screens (md) and up */}
-          <div className="hidden md:block">
+          {/* Top Navigation Bar - Show on large screens (lg) and up */}
+          <div className="hidden lg:block">
             <TopNavBar
               navigation={navigation}
               lightMode={lightMode}
