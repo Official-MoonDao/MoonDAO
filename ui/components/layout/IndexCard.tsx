@@ -69,21 +69,21 @@ export default function IndexCard({
           )}
           <h2
             id="index-main-header"
-            className="z-20 pt-[20px] mb-3 md:mb-5 static-sub-header font-GoodTimes text-center justify-center md:justify-start text-lg md:text-xl"
+            className="z-20 pt-[20px] mb-3 md:mb-5 static-sub-header font-GoodTimes text-left justify-start text-lg md:text-xl"
           >
             {header && header}
             {metadata?.name}
           </h2>
           <div
             id="index-description-and-id-container"
-            className="relative z-50 flex justify-center w-full"
+            className="relative z-50 flex justify-start w-full"
           >
             <div
               id="index-description-and-id"
-              className="description text-center relative z-50 w-full opacity-100 !opacity-100"
+              className="description text-left relative z-50 w-full opacity-100 !opacity-100"
               style={{ opacity: '1 !important' }}
             >
-              <div className="flex justify-center text-sm md:text-base">{paragraph}</div>
+              <div className="flex justify-start text-sm md:text-base">{paragraph}</div>
               {metadata?.id && (
                 <div id="index-details-container" className="mt-4">
                   <p id="index-org-description">

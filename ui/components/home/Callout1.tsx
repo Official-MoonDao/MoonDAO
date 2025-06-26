@@ -25,14 +25,14 @@ export default function Callout1() {
           </div>
           <div
             id="content"
-            className="overflow-visible relative pb-10 md:pb-10 w-[100%] text-center lg:text-left"
+            className="overflow-visible relative pb-10 md:pb-10 w-[100%] text-left"
           >
             <h1 className="header flex overflow-visible flex-col text-4xl font-GoodTimes font-bold bg-clip-text text-dark-cool bg-gradient-to-r from-red-500 to-blue-500 leading-none">
               Bringing the Space Industry Onchain
             </h1>
             <p
               id="paragraph"
-              className="pt-2 pb-5 text-black text-lg w-[100%] max-w-[500px] mx-auto lg:mx-0"
+              className="pt-2 pb-5 text-black text-lg w-[100%] max-w-[500px]"
             >
               The Space Acceleration Network is an onchain startup society
               that connects space visionaries and organizations with the
