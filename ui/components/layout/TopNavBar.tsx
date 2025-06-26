@@ -28,7 +28,7 @@ const TopNavBar = ({
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [isVisible, setIsVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
-  const [dropdownTimeout, setDropdownTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [dropdownTimeouts, setDropdownTimeouts] = useState<Record<string, NodeJS.Timeout>>({})
 
   // Handle scroll behavior
   useEffect(() => {
@@ -53,50 +53,62 @@ const TopNavBar = ({
     
     return () => {
       window.removeEventListener('scroll', handleScroll)
-      if (dropdownTimeout) {
-        clearTimeout(dropdownTimeout)
-      }
+      // Clear all timeouts on unmount
+      Object.values(dropdownTimeouts).forEach(timeout => clearTimeout(timeout))
     }
-  }, [lastScrollY, dropdownTimeout])
+  }, [lastScrollY, dropdownTimeouts])
 
-  const handleMouseEnter = (itemName: string) => {
-    if (dropdownTimeout) {
-      clearTimeout(dropdownTimeout)
-      setDropdownTimeout(null)
-    }
-    setOpenDropdown(itemName)
-  }
-
-  const handleMouseLeave = () => {
-    const timeout = setTimeout(() => {
-      setOpenDropdown(null)
-    }, 500) // Increased delay to 500ms for better reliability
-    setDropdownTimeout(timeout)
-  }
-
-  const handleDropdownMouseEnter = (itemName: string) => {
-    if (dropdownTimeout) {
-      clearTimeout(dropdownTimeout)
-      setDropdownTimeout(null)
-    }
-    setOpenDropdown(itemName)
-  }
-
-  const handleDropdownMouseLeave = () => {
-    const timeout = setTimeout(() => {
-      setOpenDropdown(null)
-    }, 300) // Shorter delay for dropdown leave
-    setDropdownTimeout(timeout)
-  }
-
-  // Clear any timeouts when component unmounts or openDropdown changes externally
+  // Clear timeouts when component unmounts
   useEffect(() => {
     return () => {
-      if (dropdownTimeout) {
-        clearTimeout(dropdownTimeout)
-      }
+      Object.values(dropdownTimeouts).forEach(timeout => clearTimeout(timeout))
     }
-  }, [dropdownTimeout])
+  }, [dropdownTimeouts])
+
+  const clearDropdownTimeout = (itemName: string) => {
+    if (dropdownTimeouts[itemName]) {
+      clearTimeout(dropdownTimeouts[itemName])
+      setDropdownTimeouts(prev => {
+        const newTimeouts = { ...prev }
+        delete newTimeouts[itemName]
+        return newTimeouts
+      })
+    }
+  }
+
+  const handleMouseEnter = (itemName: string) => {
+    // Clear any existing timeout for this item
+    clearDropdownTimeout(itemName)
+    setOpenDropdown(itemName)
+  }
+
+  const handleMouseLeave = (itemName: string) => {
+    const timeout = setTimeout(() => {
+      setOpenDropdown(prev => prev === itemName ? null : prev)
+    }, 150) // Reduced delay for more responsive behavior
+    
+    setDropdownTimeouts(prev => ({
+      ...prev,
+      [itemName]: timeout
+    }))
+  }
+
+  const handleDropdownEnter = (itemName: string) => {
+    // Clear timeout when entering dropdown area
+    clearDropdownTimeout(itemName)
+    setOpenDropdown(itemName)
+  }
+
+  const handleDropdownLeave = (itemName: string) => {
+    const timeout = setTimeout(() => {
+      setOpenDropdown(prev => prev === itemName ? null : prev)
+    }, 100) // Quick close when leaving dropdown
+    
+    setDropdownTimeouts(prev => ({
+      ...prev,
+      [itemName]: timeout
+    }))
+  }
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-gray-900/95 via-blue-900/80 to-purple-900/70 backdrop-blur-xl border-b border-white/20 shadow-2xl transition-transform duration-300 ease-in-out ${
@@ -105,7 +117,7 @@ const TopNavBar = ({
       <div className="max-w-full mx-auto px-2 lg:px-4 xl:px-6">
         <div className="flex items-center justify-between h-16 lg:h-18 min-w-0">
           {/* Logo - responsive sizing */}
-          <Link href="/" className="flex-shrink-0 ml-2 md:ml-4 mr-4 lg:mr-6 xl:mr-8">
+          <Link href="/" passHref className="flex-shrink-0 ml-2 md:ml-4 mr-4 lg:mr-6 xl:mr-8">
             <div className="flex items-center">
               <div className="w-24 md:w-28 lg:w-32 xl:w-36 hover:scale-105 transition-transform duration-200">
                 <LogoSidebar />
@@ -127,11 +139,12 @@ const TopNavBar = ({
                   key={i}
                   className="relative group"
                   onMouseEnter={() => item.children && handleMouseEnter(item.name)}
-                  onMouseLeave={handleMouseLeave}
+                  onMouseLeave={() => item.children && handleMouseLeave(item.name)}
                 >
                   {item.children ? (
                     <Link
                       href={item.href || '#'}
+                      passHref
                       className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
                         isActive
                           ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-400/30'
@@ -145,6 +158,7 @@ const TopNavBar = ({
                   ) : (
                     <Link
                       href={item.href}
+                      passHref
                       className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
                         isActive
                           ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-400/30'
@@ -158,13 +172,17 @@ const TopNavBar = ({
 
                   {/* Dropdown Menu */}
                   {item.children && openDropdown === item.name && (
-                    <div className="absolute top-full left-0 w-full z-40">
+                    <div className="absolute top-full left-0 w-full z-50">
                       {/* Invisible bridge to prevent hover gaps */}
-                      <div className="w-full h-2" />
                       <div 
-                        className="w-56 bg-gradient-to-br from-gray-900 via-blue-900/40 to-purple-900/30 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl py-2 z-50"
-                        onMouseEnter={() => handleDropdownMouseEnter(item.name)}
-                        onMouseLeave={handleDropdownMouseLeave}
+                        className="w-full h-1 bg-transparent"
+                        onMouseEnter={() => handleDropdownEnter(item.name)}
+                        onMouseLeave={() => handleDropdownLeave(item.name)}
+                      />
+                      <div 
+                        className="w-56 bg-gradient-to-br from-gray-900/95 via-blue-900/50 to-purple-900/40 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl py-2"
+                        onMouseEnter={() => handleDropdownEnter(item.name)}
+                        onMouseLeave={() => handleDropdownLeave(item.name)}
                       >
                       {item.children.map((child: any, j: number) => {
                         if (!child.href) {
@@ -181,6 +199,7 @@ const TopNavBar = ({
                           <Link
                             key={j}
                             href={child.href}
+                            passHref
                             className={`block px-4 py-2 text-sm transition-all duration-200 ${
                               isChildActive
                                 ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-l-2 border-blue-400'
