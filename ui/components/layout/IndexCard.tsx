@@ -83,7 +83,7 @@ export default function IndexCard({
               className="description text-left relative z-50 w-full opacity-100 !opacity-100"
               style={{ opacity: '1 !important' }}
             >
-              <div className="flex justify-start text-sm md:text-base">{paragraph}</div>
+              <div className="flex justify-center text-center text-sm md:text-base">{paragraph}</div>
               {metadata?.id && (
                 <div id="index-details-container" className="mt-4">
                   <p id="index-org-description">
