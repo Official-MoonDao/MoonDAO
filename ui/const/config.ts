@@ -398,3 +398,4 @@ export const STAKED_ETH_ADDRESS = '0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8'
 
 export const MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL =
   'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-sepolia/version/latest'
+
