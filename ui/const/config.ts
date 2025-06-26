@@ -164,12 +164,9 @@ export const VMOONEY_FAUCET_ADDRESSES: Index = {
 
 export const FEE_HOOK_ADDRESSES: Index = {
   sepolia: sepoliaConfig.FeeHook,
-<<<<<<< HEAD
-=======
   'arbitrum-sepolia': arbitrumSepoliaConfig.FeeHook,
   arbitrum: arbitrumConfig.FeeHook,
   base: baseConfig.FeeHook,
->>>>>>> d131800d7b2a18973da977508b086e20ba52796a
 }
 
 export const REVNET_ADDRESSES: Index = {
