@@ -83,7 +83,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   const [isLoading, setIsLoading] = useState(false)
   const account = useActiveAccount()
 
-  const selectedChain = useChainDefault
+  const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
   const [teamNFT, setTeamNFT] = useState<any>()
