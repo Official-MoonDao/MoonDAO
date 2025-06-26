@@ -29,7 +29,7 @@ export default function ArbitrumBridge() {
   const { wallets } = useWallets()
   const [amount, setAmount] = useState<any>(0)
   const [inputToken, setInputToken] = useState('eth')
-  const [bridgeType, setBridgeType] = useState('deposit')
+  const bridgeType = 'deposit'
   const [nativeBalance, setNativeBalance] = useState<any>(0)
   const [ethMooneyBalance, setEthMooneyBalance] = useState<any>()
   const [arbMooneyBalance, setArbMooneyBalance] = useState<any>()
@@ -226,30 +226,7 @@ export default function ArbitrumBridge() {
           params: [address, 'latest'],
         })
         const balance = ethers.utils.formatEther(balanceHex)
-        if (bridgeType === 'deposit') {
-          setNativeBalance(balance)
-        }
-      } catch (err) {
-        console.error(err)
-      }
-    }
-
-    async function getArbBalance() {
-      if (!wallet) return
-      const provider = EIP1193.toProvider({
-        wallet,
-        chain: arbitrum,
-        client,
-      })
-      try {
-        const balanceHex = await provider.request({
-          method: 'eth_getBalance',
-          params: [address, 'latest'],
-        })
-        const balance = ethers.utils.formatEther(balanceHex)
-        if (bridgeType === 'withdraw') {
-          setNativeBalance(balance)
-        }
+        setNativeBalance(balance)
       } catch (err) {
         console.error(err)
       }
@@ -257,162 +234,165 @@ export default function ArbitrumBridge() {
 
     if (address) {
       getEthBalance()
-      getArbBalance()
     }
-  }, [address, wallets, bridgeType, inputToken])
+  }, [address, wallets, inputToken])
 
   useEffect(() => {
     if (inputToken === 'eth') {
       setBalance(nativeBalance)
-    } else if (inputToken === 'mooney' && bridgeType === 'deposit') {
+    } else if (inputToken === 'mooney') {
       setBalance(ethMooneyBalance)
-    } else if (inputToken === 'mooney' && bridgeType === 'withdraw') {
-      setBalance(arbMooneyBalance)
     }
   }, [
     ethMooneyBalance,
-    arbMooneyBalance,
     nativeBalance,
     inputToken,
-    bridgeType,
   ])
 
   useEffect(() => {
     temporarilySkipNetworkCheck()
-    if (bridgeType === 'withdraw') {
-      setSelectedChain(arbitrum)
-    } else {
-      setSelectedChain(ethereum)
-    }
-  }, [bridgeType, setSelectedChain])
+    setSelectedChain(ethereum)
+  }, [setSelectedChain])
 
   return (
-    <div className="max-w-[500px] w-full flex flex-col gap-1">
-      <div className="ml-1">
-        <Frame noPadding>
-          <div className="flex flex-wrap text-sm bg-filter">
-            <Tab
-              tab="deposit"
-              currentTab={bridgeType}
-              setTab={setBridgeType}
-              icon=""
-            >
-              Deposit
-            </Tab>
-            <Tab
-              tab="withdraw"
-              currentTab={bridgeType}
-              setTab={setBridgeType}
-              icon=""
-            >
-              Withdraw
-            </Tab>
-          </div>
-        </Frame>
+    <div className="w-full max-w-2xl">
+      <div className="mb-4">
+        <p className="text-gray-400 text-sm">
+          This bridge transfers your ETH and MOONEY tokens from Ethereum mainnet to Arbitrum. 
+          Arbitrum offers faster transactions and lower fees while maintaining full security.
+        </p>
       </div>
-      <div className="flex flex-col p-4 gap-2 bg-darkest-cool min-h-[150px] rounded-lg">
-        <p className="opacity-50">You Pay</p>
-        <div className="flex justify-between">
-          <input
-            className="text-white bg-transparent md:text-2xl"
-            placeholder="Amount"
-            pattern="[0-9]*[.,]?[0-9]*"
-            onChange={({ target }) => {
-              setAmount(target.value)
+      
+      <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
+        
+        {/* Header */}
+        <div className="p-5 border-b border-white/10 bg-black/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-white">Bridge Assets</h2>
+              <p className="text-gray-400 text-xs mt-0.5">Transfer from Ethereum to Arbitrum</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bridge Interface */}
+        <div className="p-5 space-y-5">
+          
+          {/* You Pay Section */}
+          <div className="space-y-3">
+            <label className="text-gray-300 text-sm font-medium">You Pay</label>
+            <div className="bg-black/30 rounded-xl p-4 border border-white/10 focus-within:border-blue-400/50 transition-colors">
+              <div className="flex items-center justify-between mb-3">
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="0.0"
+                  className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  onChange={({ target }) => {
+                    let value = target.value;
+                    // Prevent negative values
+                    if (parseFloat(value) < 0) {
+                      value = '0';
+                    }
+                    // Remove leading zero if user types a number after it
+                    if (value.startsWith('0') && value.length > 1 && value[1] !== '.') {
+                      value = value.substring(1);
+                    }
+                    setAmount(value);
+                  }}
+                />
+                
+                {/* Token Selector */}
+                <button
+                  className="flex items-center gap-2 bg-black/50 hover:bg-black/70 transition-colors px-3 py-2 rounded-xl border border-white/10"
+                  onClick={() => {
+                    setInputToken(inputToken === 'eth' ? 'mooney' : 'eth')
+                  }}
+                >
+                  <TokenSymbol />
+                  <span className="text-white font-medium">{inputToken.toUpperCase()}</span>
+                  <ChevronUpDownIcon width={16} height={16} className="text-gray-400" />
+                </button>
+              </div>
+              
+              {address && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 text-sm">Balance: {Number(balance).toFixed(5)}</span>
+                  <button
+                    className="text-blue-400 hover:text-blue-300 font-medium transition-colors px-2 py-1 bg-blue-400/10 hover:bg-blue-400/20 rounded text-xs"
+                    onClick={() => setAmount(balance)}
+                  >
+                    MAX
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Arrow Divider */}
+          <div className="flex justify-center">
+            <div className="p-3 bg-black/50 rounded-full border border-white/10">
+              <ArrowDownIcon width={20} height={20} className="text-gray-400" />
+            </div>
+          </div>
+
+          {/* You Receive Section */}
+          <div className="space-y-3">
+            <label className="text-gray-300 text-sm font-medium">You Receive</label>
+            <div className="bg-black/30 rounded-xl p-4 border border-white/10">
+              <div className="flex items-center justify-between">
+                <span className="text-white text-2xl font-RobotoMono">
+                  {amount || '0.0'}
+                </span>
+                
+                <div className="flex items-center gap-2 bg-black/50 px-3 py-2 rounded-xl border border-white/10">
+                  <Image
+                    src="/icons/networks/arbitrum.svg"
+                    width={20}
+                    height={20}
+                    alt="Arbitrum"
+                  />
+                  <TokenSymbol />
+                  <span className="text-white font-medium">{inputToken.toUpperCase()}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Info Box */}
+          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-xl p-3 border border-amber-400/20">
+            <p className="text-amber-200 text-xs">
+              Bridging can take up to 15 minutes after the transaction has been confirmed.
+            </p>
+          </div>
+        </div>
+
+        {/* Action Button */}
+        <div className="p-5 border-t border-white/10 bg-black/10">
+          <PrivyWeb3Button
+            v5
+            skipNetworkCheck={skipNetworkCheck}
+            requiredChain={ethereum}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-[1.01] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
+            label="Bridge to Arbitrum"
+            action={async () => {
+              try {
+                if (inputToken === 'eth') {
+                  await depositEth()
+                } else {
+                  await depositMooney()
+                }
+              } catch (err: any) {
+                console.log(err.message)
+                if (
+                  err.message.includes('insufficient funds') ||
+                  err.message.includes('No retryable data found in error')
+                )
+                  toast.error('Insufficient balance.')
+              }
             }}
           />
-
-          <button
-            className="p-2 flex items-center gap-2 bg-black rounded-full"
-            onClick={() => {
-              setInputToken(inputToken === 'eth' ? 'mooney' : 'eth')
-            }}
-          >
-            {bridgeType === 'withdraw' && (
-              <Image
-                src="/icons/networks/arbitrum.svg"
-                width={20}
-                height={20}
-                alt=""
-              />
-            )}
-            <TokenSymbol />
-            <p>{inputToken.toLocaleUpperCase()}</p>
-            <ChevronUpDownIcon width={20} height={20} />
-          </button>
         </div>
-
-        {address && (
-          <p className="opacity-50">{`Balance: ${Number(balance).toFixed(
-            5
-          )}`}</p>
-        )}
-      </div>
-      <div className="h-0 w-full flex justify-center items-center z-[5]">
-        <div className="p-4 bg-[#29253f] rounded-full">
-          <ArrowDownIcon width={25} height={25} />
-        </div>
-      </div>
-
-      <div className="flex flex-col p-4 gap-2 bg-darkest-cool min-h-[150px] rounded-lg">
-        <p className="opacity-50">You Receive</p>
-        <div className="flex justify-between items-center">
-          <p className="md:text-2xl">{amount?.toLocaleString() || 0}</p>
-          <div className="p-2 flex items-center gap-2 bg-black rounded-full">
-            {bridgeType === 'deposit' && (
-              <Image
-                src="/icons/networks/arbitrum.svg"
-                width={20}
-                height={20}
-                alt=""
-              />
-            )}
-            <TokenSymbol />
-            <p>{inputToken.toLocaleUpperCase()}</p>
-          </div>
-        </div>
-      </div>
-
-      <PrivyWeb3Button
-        v5
-        skipNetworkCheck={skipNetworkCheck}
-        requiredChain={bridgeType === 'withdraw' ? arbitrum : ethereum}
-        className="mt-2 rounded-[5vmax] rounded-tl-[20px]"
-        label={bridgeType === 'deposit' ? 'Bridge' : 'Withdraw'}
-        action={async () => {
-          try {
-            if (bridgeType === 'withdraw') {
-              if (inputToken === 'eth') {
-                await withdrawEth()
-              } else {
-                await withdrawMooney()
-              }
-            } else {
-              if (inputToken === 'eth') {
-                await depositEth()
-              } else {
-                await depositMooney()
-              }
-            }
-          } catch (err: any) {
-            console.log(err.message)
-            if (
-              err.message.includes('insufficient funds') ||
-              err.message.includes('No retryable data found in error')
-            )
-              toast.error('Insufficient balance.')
-          }
-        }}
-      />
-      <div className="bg-darkest-cool p-4 rounded-lg">
-        <p className="opacity-[50%]">
-          {`${
-            bridgeType === 'deposit' ? 'Bridging' : 'Withdrawing'
-          } can take up to ${
-            bridgeType === 'deposit' ? '15 minutes' : '7 days'
-          } after
-          the transaction has been confirmed.`}
-        </p>
       </div>
     </div>
   )

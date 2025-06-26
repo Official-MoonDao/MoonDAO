@@ -146,6 +146,7 @@ contract Config is Script {
         FEE_HOOK_ADDRESSES[BASE] = baseJson.readAddress(".FeeHook");
         FEE_HOOK_ADDRESSES[ARB_SEP] = arbSepJson.readAddress(".FeeHook");
         FEE_HOOK_ADDRESSES[SEP] = sepJson.readAddress(".FeeHook");
+        FEE_HOOK_ADDRESSES[ARBITRUM] = arbJson.readAddress(".FeeHook");
 
         TEST_TOKEN_ADDRESSES[ARB_SEP] = 0x53acb7A819A579436527B22eFbf4be81f24EfC33;
         TEST_TOKEN_ADDRESSES[SEP] = 0x1304c1e9F06D36abC99095829048E52793eD9362;

@@ -25,7 +25,7 @@ import {
   JB_NATIVE_TOKEN_ID,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
-import { useNativeTokenSurplus } from 'juice-sdk-react'
+import { ethers } from 'ethers'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -44,6 +44,7 @@ import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
+import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import useMissionData from '@/lib/mission/useMissionData'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
@@ -331,8 +332,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   }
 
   function ProfileHeader() {
-    const { data: nativeTokenSurplus } = useNativeTokenSurplus()
-
+    const totalFunding = useTotalFunding(mission?.projectId)
     return (
       <div id="citizenheader-container" className="w-[100vw]">
         <div className="w-full">
@@ -443,7 +443,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                             />
                             <span className="mr-2">
                               {truncateTokenValue(
-                                Number(nativeTokenSurplus || 0) / 1e18,
+                                Number(totalFunding || 0) / 1e18,
                                 'ETH'
                               )}
                             </span>
@@ -452,8 +452,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                             </span>
                           </div>
                           <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
-                            (Number(nativeTokenSurplus || 0) / 1e18 || 0) *
-                              ethPrice
+                            (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
                           ).toLocaleString()} USD)`}</p>
                         </div>
 
@@ -479,7 +478,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       <div className="w-full">
                         <MissionFundingProgressBar
                           fundingGoal={fundingGoal}
-                          volume={Number(nativeTokenSurplus || 0) / 1e18}
+                          volume={Number(totalFunding || 0) / 1e18}
                         />
                       </div>
 
@@ -564,15 +563,14 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       </div>
                     )}
                     {/* Send payouts and tokens Buttons - only shown to managers */}
-
                     {account && deadlinePassed && isManager && (
-                      <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto sm:absolute sm:right-2 sm:top-[250px]">
+                      <div className="flex flex-col gap-4 -mt-8 w-full sm:w-auto sm:absolute sm:right-2 sm:top-[250px]">
                         <PrivyWeb3Button
                           requiredChain={DEFAULT_CHAIN_V5}
-                          className="gradient-2 rounded-full noPadding leading-none flex-1 sm:w-[180px]"
+                          className="gradient-2 rounded-full w-full noPadding leading-none flex-1 sm:w-[250px]"
                           label={
                             <span className="whitespace-nowrap">
-                              Withdraw Tokens
+                              Send Tokens
                             </span>
                           }
                           action={sendReservedTokens}
@@ -580,10 +578,10 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                         />
                         <PrivyWeb3Button
                           requiredChain={DEFAULT_CHAIN_V5}
-                          className="gradient-2 rounded-full noPadding leading-none flex-1 sm:w-[180px]"
+                          className="gradient-2 rounded-full noPadding w-full leading-none flex-1 sm:w-[250px]"
                           label={
                             <span className="whitespace-nowrap">
-                              Withdraw ETH
+                              Send Payouts
                             </span>
                           }
                           action={sendPayouts}

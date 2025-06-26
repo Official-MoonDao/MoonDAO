@@ -1,9 +1,9 @@
 import html2canvas from 'html2canvas-pro'
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import FileInput from '../layout/FileInput'
 import IPFSRenderer from '../layout/IPFSRenderer'
-import { StageButton } from './StageButton'
 
 export function ImageGenerator({
   currImage,
@@ -19,6 +19,30 @@ export function ImageGenerator({
     isLoading: generating,
     error: generateError,
   } = useImageGenerator('/api/image-gen/citizen-image', inputImage, setImage)
+  
+  const [hasGeneratedImage, setHasGeneratedImage] = useState(false)
+  const [showError, setShowError] = useState(false)
+
+  // Clear error when new input image is uploaded
+  useEffect(() => {
+    if (inputImage) {
+      setShowError(false)
+    }
+  }, [inputImage])
+
+  // Show error when generateError occurs
+  useEffect(() => {
+    if (generateError) {
+      setShowError(true)
+    }
+  }, [generateError])
+
+  // Track when image has been generated
+  useEffect(() => {
+    if (image && !generating) {
+      setHasGeneratedImage(true)
+    }
+  }, [image, generating])
 
   async function submitImage() {
     if (!document.getElementById('citizenPic'))
@@ -101,25 +125,29 @@ export function ImageGenerator({
           </>
         )}
       </div>
-      {generateError && (
+      {showError && generateError && (
         <p className="mt-2 ml-2 opacity-[50%]">{generateError}</p>
       )}
       {inputImage && (
-        <StageButton
-          className=""
+        <button
+          className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base"
           onClick={() => {
             setImage(null)
+            setHasGeneratedImage(false)
+            setShowError(false)
             generateImage()
-            if (generateInBG) {
-              nextStage()
-            }
           }}
         >
-          {generating ? 'loading...' : 'Generate'}
-        </StageButton>
+          {generating ? 'loading...' : hasGeneratedImage ? 'Regenerate Image' : 'Generate Image'}
+        </button>
       )}
       {(currImage && !inputImage) || image ? (
-        <StageButton onClick={submitImage}>Next</StageButton>
+        <button
+          className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base"
+          onClick={submitImage}
+        >
+          Next
+        </button>
       ) : (
         <></>
       )}

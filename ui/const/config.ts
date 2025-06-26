@@ -224,12 +224,12 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: '0xdA53970Ba11835DC841527E21d039B6b9B12D47A',
-  sepolia: '0x8793092F0A19175E2605dd5f29c62dCf3b7110E7',
+  sepolia: '0xeC737C2527f9b1ADBf68a38241d56e34e239F821',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
   arbitrum: '0x7f8f57a30b55018FE98627eC40884A812916E04e',
-  sepolia: '0x483c03F0B203C14f1A481e1eFa8c0c9978D23FA9',
+  sepolia: '0x84af43D3B911AFC210A2a99532c3f040f03d24c2',
 }
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {
@@ -401,3 +401,4 @@ export const STAKED_ETH_ADDRESS = '0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8'
 
 export const MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL =
   'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-sepolia/version/latest'
+

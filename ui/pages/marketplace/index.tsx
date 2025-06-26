@@ -5,8 +5,8 @@ import {
   MARKETPLACE_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
-import { useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
+import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -19,7 +19,6 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useShallowQueryRoute } from '@/lib/utils/hooks/useShallowQueryRoute'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
-import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import PaginationButtons from '@/components/layout/PaginationButtons'
@@ -54,13 +53,15 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   const shallowQueryRoute = useShallowQueryRoute()
   const chainSlug = getChainSlug(selectedChain)
 
-  const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>()
+  const [filteredListings, setFilteredListings] =
+    useState<MarketplaceListing[]>()
   const [input, setInput] = useState('')
   const [pageIdx, setPageIdx] = useState(1)
-  const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null)
+  const [selectedListing, setSelectedListing] =
+    useState<MarketplaceListing | null>(null)
   const [teamNFTOwner, setTeamNFTOwner] = useState<string | null>(null)
   const [enabledBuyListingModal, setEnabledBuyListingModal] = useState(false)
-  
+
   const ITEMS_PER_PAGE = 8 // 4 items per row x 2 rows
 
   const teamContract = useContract({
@@ -120,14 +121,27 @@ export default function Marketplace({ listings }: MarketplaceProps) {
         Discover space products and services from top innovators and teams in
         the Space Acceleration Network, available for direct on-chain purchase.
       </div>
-      <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
-        <Search input={input} setInput={setInput} />
-      </Frame>
+      <div className="relative w-full flex flex-col gap-3">
+        {/* Search Bar */}
+        <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
+          <div className="w-full flex flex-row min-[800px]:flex-row gap-4 items-center">
+            {/* Search Bar */}
+            <div className="w-fit max-w-[260px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 px-3 py-1">
+              <Search
+                className="w-full flex-grow"
+                input={input}
+                setInput={setInput}
+                placeholder="Search marketplace..."
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 
   return (
-    <section id="jobs-container" className="overflow-hidden">
+    <section id="marketplace-container" className="overflow-hidden">
       <Head
         title={'Marketplace'}
         description={
@@ -146,45 +160,61 @@ export default function Marketplace({ listings }: MarketplaceProps) {
           popOverEffect={false}
           isProfile
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredListings && filteredListings.length > 0 ? (
-              (() => {
-                const startIdx = (pageIdx - 1) * ITEMS_PER_PAGE
-                const endIdx = startIdx + ITEMS_PER_PAGE
-                const paginatedListings = filteredListings.slice(startIdx, endIdx)
-                
-                return paginatedListings.map((listing: MarketplaceListing, i: number) => (
-                  <StandardDetailCard
-                    key={`marketplace-listing-${startIdx + i}`}
-                    title={listing.title}
-                    paragraph={listing.description}
-                    image={listing.image}
-                    onClick={() => handleListingClick(listing)}
-                  />
-                ))
-              })()
-            ) : (
-              <div className="col-span-full text-center py-8">
-                <p className="text-gray-400">
-                  {input
-                    ? 'No listings match your search criteria.'
-                    : 'No marketplace listings available at this time.'}
-                </p>
+          <div className="flex flex-row w-full">
+            <div className="p-4 md:px-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 lg:p-8 rounded-[2vmax] shadow-2xl md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1400px]">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {filteredListings && filteredListings.length > 0 ? (
+                  (() => {
+                    const startIdx = (pageIdx - 1) * ITEMS_PER_PAGE
+                    const endIdx = startIdx + ITEMS_PER_PAGE
+                    const paginatedListings = filteredListings.slice(
+                      startIdx,
+                      endIdx
+                    )
+
+                    return paginatedListings.map(
+                      (listing: MarketplaceListing, i: number) => (
+                        <StandardDetailCard
+                          key={`marketplace-listing-${startIdx + i}`}
+                          title={listing.title}
+                          paragraph={listing.description}
+                          image={listing.image}
+                          price={listing.price}
+                          currency={listing.currency}
+                          isCitizen={!!citizen}
+                          onClick={() => handleListingClick(listing)}
+                        />
+                      )
+                    )
+                  })()
+                ) : (
+                  <div className="col-span-full text-center py-8">
+                    <p className="text-gray-400">
+                      {input
+                        ? 'No listings match your search criteria.'
+                        : 'No marketplace listings available at this time.'}
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          
-          {/* Pagination */}
-          {filteredListings && filteredListings.length > ITEMS_PER_PAGE && (
-            <div className="mt-8">
-              <PaginationButtons
-                handlePageChange={handlePageChange}
-                maxPage={Math.ceil(filteredListings.length / ITEMS_PER_PAGE)}
-                pageIdx={pageIdx}
-                label="Page"
-              />
+
+              {/* Pagination */}
+              {filteredListings && filteredListings.length > ITEMS_PER_PAGE && (
+                <div className="w-full rounded-[2vmax] bg-gradient-to-b from-slate-700/20 to-slate-800/30 border border-slate-600/30 p-6 mt-8">
+                  <div className="w-full flex justify-center">
+                    <PaginationButtons
+                      handlePageChange={handlePageChange}
+                      maxPage={Math.ceil(
+                        filteredListings.length / ITEMS_PER_PAGE
+                      )}
+                      pageIdx={pageIdx}
+                      label="Page"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </ContentLayout>
       </Container>
 

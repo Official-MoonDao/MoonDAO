@@ -174,7 +174,6 @@ export default function WithdrawVMooney() {
         }, 5000)
       }
     } catch (error) {
-      console.error('Error withdrawing:', error)
       toast.error('Error withdrawing. Please try again.', {
         style: toastStyle,
       })
@@ -187,36 +186,65 @@ export default function WithdrawVMooney() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-4">
-      <div className="flex flex-col gap-4 bg-dark-cool p-4">
-        <div className="flex gap-2">
-          <Image
-            src="/assets/vmooney-shield.svg"
-            alt="vMOONEY"
-            width={24}
-            height={24}
-          />
-          <p className="text-light-warm brightness-150 font-bold">vMOONEY</p>
-        </div>
-        <p className="text-2xl">
-          {String(
-            (Number(withdrawable) / 10 ** MOONEY_DECIMALS).toLocaleString()
-          )}
-        </p>
-        <StandardButton
-          className="gradient-2 rounded-full"
-          onClick={handleWithdraw}
-          disabled={Number(withdrawable) === 0}
-          data-tip="You dont have any vMOONEY to withdraw"
-        >
-          Withdraw Rewards
-        </StandardButton>
-      </div>
+    <div className="mb-6">
+      <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
+        <div className="p-5">
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Rewards Amount Section */}
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Image
+                    src="/assets/vmooney-shield.svg"
+                    alt="vMOONEY"
+                    width={20}
+                    height={20}
+                  />
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Unclaimed Rewards</p>
+                  <p className="text-white text-lg font-medium">vMOONEY Available</p>
+                </div>
+              </div>
+              
+              <div className="bg-black/20 rounded-xl p-4 border border-white/5 mb-4">
+                <div className="text-center">
+                  <p className="text-green-400 text-3xl font-RobotoMono font-bold mb-2">
+                    {String(
+                      (Number(withdrawable) / 10 ** MOONEY_DECIMALS).toLocaleString()
+                    )}
+                  </p>
+                  <p className="text-gray-400 text-sm">vMOONEY Tokens</p>
+                </div>
+              </div>
+              
+              <StandardButton
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 px-6 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-[1.01] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                onClick={handleWithdraw}
+                disabled={Number(withdrawable) === 0}
+                data-tip="You dont have any vMOONEY to withdraw"
+              >
+                Withdraw Rewards
+              </StandardButton>
+            </div>
 
-      <div className="flex flex-col gap-4 bg-dark-cool p-4 max-w-[700px]">
-        <h1 className="text-2xl font-GoodTimes">You have unclaimed rewards!</h1>
-        <p>{`Click the 'Withdraw Rewards' button to claim your vMOONEY rewards and increase your voting impact! You'll be prompted to create or increase the duration of your lock to 4 years. Expect to sign 2-4 transactions.`}</p>
-        <p>{`Increase your stake amount or duration at any time on this page for greater impact!`}</p>
+            {/* Information Section */}
+            <div className="flex-1 bg-black/10 rounded-xl p-4 border border-white/5">
+              <h3 className="text-lg font-bold text-white mb-3">💰 Claim Your Rewards!</h3>
+              <div className="space-y-3 text-sm text-gray-300">
+                <p>
+                  Click 'Withdraw Rewards' to claim your vMOONEY rewards and increase your voting impact!
+                </p>
+                <p>
+                  You'll be prompted to create or increase the duration of your lock to 4 years. Expect to sign 2-4 transactions.
+                </p>
+                <p className="text-blue-400">
+                  💡 Increase your stake amount or duration at any time for greater impact!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -55,29 +55,31 @@ function ProposalListSkeleton() {
   return (
     <div className="font-[roboto] mt-4 lg:mt-8">
       <div className="w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl">
-          {[...Array(8).keys()].map((n) => (
-            <div
-              key={n}
-              className="bg-dark-cool rounded-[20px] border-transparent border-[1px] p-4 sm:p-6"
-            >
-              <div className="flex flex-col h-full justify-between gap-y-4">
-                <div className="flex-1">
-                  <ProposalInfoSkeleton />
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex flex-col items-start">
-                    <div className="dark:bg-gray-7 rounded-md animate-pulse h-4 w-16"></div>
-                    <div className="mt-1 animate-pulse h-3 w-20 bg-gray-500"></div>
+        <div className="p-4 md:p-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl items-stretch">
+            {[...Array(8).keys()].map((n) => (
+              <div
+                key={n}
+                className="h-full bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-4 sm:p-6"
+              >
+                <div className="flex flex-col h-full justify-between gap-y-4">
+                  <div className="flex-1">
+                    <ProposalInfoSkeleton />
                   </div>
-                  <ChevronRightIcon
-                    className="h-5 w-5 flex-none text-gray-400"
-                    aria-hidden="true"
-                  />
+                  <div className="flex justify-between items-center">
+                    <div className="flex flex-col items-start">
+                      <div className="dark:bg-gray-7 rounded-md animate-pulse h-4 w-16"></div>
+                      <div className="mt-1 animate-pulse h-3 w-20 bg-gray-500"></div>
+                    </div>
+                    <ChevronRightIcon
+                      className="h-5 w-5 flex-none text-gray-400"
+                      aria-hidden="true"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -177,19 +179,21 @@ export default function ProposalList() {
       <>
         <div className="rounded-bl-20px overflow-hidden md:pt-5">
           <div className="font-[roboto] w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl">
-              {proposals.map((proposal) => (
-                <div
-                  key={proposal.uuid}
-                  className="bg-dark-cool rounded-[20px] border-transparent border-[1px] hover:border-light-cool transition-all duration-150"
-                >
-                  <Proposal
-                    proposal={proposal}
-                    packet={packet}
-                    votingInfo={votingInfoMap[proposal.voteURL || '']}
-                  />
-                </div>
-              ))}
+            <div className="p-4 md:p-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-stretch">
+                {proposals.map((proposal) => (
+                  <div
+                    key={proposal.uuid}
+                    className="h-full bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 hover:border-slate-500/50 transition-all duration-200 hover:scale-[1.02]"
+                  >
+                    <Proposal
+                      proposal={proposal}
+                      packet={packet}
+                      votingInfo={votingInfoMap[proposal.voteURL || '']}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

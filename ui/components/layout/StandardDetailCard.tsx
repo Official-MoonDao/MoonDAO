@@ -1,7 +1,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import Frame from '@/components/layout/Frame'
 import IPFSRenderer from './IPFSRenderer'
+import { truncateTokenValue } from '@/lib/utils/numbers'
 
 type StandardDetailCardProps = {
   title?: string
@@ -9,6 +11,9 @@ type StandardDetailCardProps = {
   image?: string
   link?: string
   onClick?: () => void
+  price?: string
+  currency?: string
+  isCitizen?: boolean
 }
 
 export default function StandardDetailCard({
@@ -17,95 +22,88 @@ export default function StandardDetailCard({
   image,
   link,
   onClick,
+  price,
+  currency,
+  isCitizen = false,
 }: StandardDetailCardProps) {
+  const router = useRouter()
   const CardContent = (
-    <div className="w-full flex items-center p-2 hover:bg-darkest-cool/20 rounded-lg transition-colors">
-      <span
-        id="card-container"
-        className={`animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full rounded-[20px] min-w-0`}
-      >
-        {/* Ensure the card content takes full height */}
-        <div className="flex-grow w-full">
-          <div
-            id="card-styling"
-            className="bg-darkest-cool rounded-[20px] w-[20%] h-[20%] absolute top-0 left-0 pb-5"
-          ></div>
-          <span
-            id="content-container"
-            className={`h-full p-[20px] rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-x-[3px] border-darkest-cool w-full`}
-          >
-            {/* check if image is blcb */}
-            <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-8 w-full">
-              {image && (
-                <div
-                  id="team-citizen-image-container"
-                  className="z-40 w-[100px] h-[100px] sm:w-[150px] sm:h-[150px] flex-shrink-0"
-                >
-                  <Frame noPadding marginBottom="0px" className="aspect-square">
-                    <IPFSRenderer
-                      className="w-full h-full object-cover rounded-full"
-                      src={image}
-                      width={500}
-                      height={500}
-                      alt={title || ''}
-                    />
-                  </Frame>
+    <div className="w-full p-4 bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 hover:border-slate-500/50 transition-all duration-200 hover:scale-[1.02] group">
+      <div className="flex flex-row items-start gap-4 w-full">
+        {image && (
+          <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] md:w-[120px] md:h-[120px] flex-shrink-0">
+            <IPFSRenderer
+              className="w-full h-full object-cover rounded-xl border border-slate-600/50"
+              src={image}
+              width={500}
+              height={500}
+              alt={title || ''}
+            />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <h1 className="font-bold font-GoodTimes text-xl text-white mb-3 break-words group-hover:text-slate-200 transition-colors text-left">
+            {title}
+          </h1>
+          <p className="text-sm text-slate-300 leading-relaxed break-words text-left">
+            {paragraph && paragraph?.length > 200
+              ? paragraph.slice(0, 200) + '...'
+              : paragraph}
+          </p>
+          
+          {/* Pricing Information */}
+          {price && currency && (
+            <div className="mt-3 text-sm">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <p className="font-bold text-white">
+                    {`${
+                      isCitizen
+                        ? truncateTokenValue(price, currency)
+                        : truncateTokenValue(+price * 1.1, currency)
+                    } ${currency}`}
+                  </p>
+                  {isCitizen && (
+                    <p className="line-through text-xs opacity-70 text-slate-400">
+                      {`${truncateTokenValue(+price * 1.1, currency)} ${currency}`}
+                    </p>
+                  )}
                 </div>
-              )}
-              <div className="flex-1 z-20 min-w-0">
-                <h1 className="font-bold font-GoodTimes w-full break-words">
-                  {title}
-                </h1>
-                <p className="text-sm text-gray-500 overflow-hidden min-h-[80px] break-words">
-                  {paragraph && paragraph?.length > 200
-                    ? paragraph.slice(0, 200) + '...'
-                    : paragraph}
-                </p>
+                {!isCitizen && (
+                  <div className="flex items-center text-sm text-slate-300">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        router.push('/citizen')
+                      }}
+                      className="bg-light-warm px-2 py-1 rounded mr-1 text-black hover:bg-light-warm/80 transition-colors"
+                    >
+                      Save 10%
+                    </button>
+                    {' with citizenship'}
+                  </div>
+                )}
               </div>
             </div>
-          </span>
+          )}
         </div>
-      </span>
+      </div>
     </div>
   )
 
   return (
-    <span
-      id="link-frame"
-      className={`
-            card-container w-full flex lg:flex-col rounded-[20px] relative overflow-hidden min-w-0
-            ${link ? 'cursor-pointer' : ''}
-        `}
-    >
-      {link || onClick ? (
-        <span
-          id="Interactive-Element"
-          className="clip absolute h-full w-full z-10"
-        ></span>
-      ) : (
-        <span
-          id="Static-Element"
-          className="divider-8 absolute w-[80%] h-full z-10"
-        ></span>
-      )}
-      {!link && !onClick && (
-        <span
-          id="Static-Element"
-          className="divider-8 absolute w-[80%] h-full z-10"
-        ></span>
-      )}
-
+    <div className={`w-full ${link || onClick ? 'cursor-pointer' : ''}`}>
       {onClick ? (
-        <button onClick={onClick} className="block">
+        <button onClick={onClick} className="block w-full">
           {CardContent}
         </button>
       ) : link ? (
-        <Link href={link} className="block">
+        <Link href={link} className="block w-full">
           {CardContent}
         </Link>
       ) : (
         CardContent
       )}
-    </span>
+    </div>
   )
 }
