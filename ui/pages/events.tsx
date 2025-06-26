@@ -34,7 +34,7 @@ export default function Events({ events }: any) {
             mode="compact"
             popOverEffect={false}
           >
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-xl">
+            <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {!events?.[0] ? (
                   <>
@@ -43,7 +43,7 @@ export default function Events({ events }: any) {
                       .map((_, i) => (
                         <div
                           key={`event-skeleton-${i}`}
-                          className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-lg min-h-[140px] flex flex-col justify-center items-center"
+                          className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-lg min-h-[140px] flex flex-col justify-center items-center"
                         >
                           <div className="animate-pulse space-y-3 w-full">
                             <div className="h-4 bg-white/20 rounded w-3/4 mx-auto"></div>

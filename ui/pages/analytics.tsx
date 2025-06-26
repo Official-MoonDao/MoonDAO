@@ -52,7 +52,7 @@ export default function Analytics({ vMooneyData, dateUpdated }: any) {
           popOverEffect={false}
           isProfile
         >
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-xl">
+          <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
             <div className="grid gap-6 xl:grid-cols-1 lg:w-full lg:max-w-[1380px] items-center justify-center">
               <AnalyticsPage vMooneyData={vMooneyData} />
               <TreasuryPage />
