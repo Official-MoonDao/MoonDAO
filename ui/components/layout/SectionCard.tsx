@@ -20,7 +20,7 @@ export default function SectionCard({
   return (
     <div
       id={id}
-      className={`bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-lg mb-6 transition-all duration-300 hover:bg-white/10 hover:shadow-xl w-full ${className}`}
+      className={`bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-lg mb-6 transition-all duration-300 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl w-full ${className}`}
     >
       <div className="flex justify-between">
         <div className="flex gap-5 items-center">

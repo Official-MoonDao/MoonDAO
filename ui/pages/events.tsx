@@ -43,7 +43,7 @@ export default function Events({ events }: any) {
                       .map((_, i) => (
                         <div
                           key={`event-skeleton-${i}`}
-                          className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-lg min-h-[140px] flex flex-col justify-center items-center"
+                          className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-lg min-h-[140px] flex flex-col justify-center items-center"
                         >
                           <div className="animate-pulse space-y-3 w-full">
                             <div className="h-4 bg-white/20 rounded w-3/4 mx-auto"></div>
