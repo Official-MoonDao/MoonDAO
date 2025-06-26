@@ -71,6 +71,7 @@ const selectedNativeToken: any = {
 }
 
 const PATHS_WITH_NO_SIGNIN_REDIRECT = [
+  '/',
   '/submit',
   '/withdraw',
   '/projects',
