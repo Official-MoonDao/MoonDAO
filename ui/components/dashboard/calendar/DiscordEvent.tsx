@@ -39,7 +39,7 @@ export function DiscordEvent({ discordEvent }: any) {
   const eventImageUrl = getEventImageUrl()
 
   return (
-    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-lg min-h-[140px] flex flex-col transition-all duration-300 hover:bg-white/10 hover:shadow-xl">
+    <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-lg min-h-[140px] flex flex-col transition-all duration-300 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl">
       {/* Event Image */}
       {eventImageUrl && (
         <div className="w-full mb-4 relative h-32 rounded-lg overflow-hidden">

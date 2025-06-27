@@ -13,7 +13,7 @@ import TransactionSkeletons from './transactions/TransactionSkeletons'
 
 function Frame(props: any) {
   return (
-    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-lg w-full transition-all duration-300 hover:bg-white/10 hover:shadow-xl">
+    <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-lg w-full transition-all duration-300 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl">
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 h-full">
         {props.children}
       </div>
