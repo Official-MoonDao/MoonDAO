@@ -59,9 +59,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     router.pathname === '/mission/[tokenId]' || 
     router.pathname === '/dude-perfect'
 
-  // Use top nav only for homepage
-  const isHomepage = router.pathname === '/'
-
+  // Use top nav for all pages now
   const layout = (
     <div
       id="app-layout"
@@ -69,134 +67,43 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         !lightMode ? 'dark background-dark' : 'background-light'
       } min-h-screen`}
     >
-      {isHomepage ? (
-        <>
-          {/* Mobile menu top bar - for screens smaller than lg */}
-          <div className="lg:hidden">
-            <MobileMenuTop
-              setSidebarOpen={setSidebarOpen}
-              lightMode={lightMode}
-              setLightMode={setLightMode}
-              citizenContract={citizenContract}
-              isFullscreen={false}
-            />
-          </div>
-
-          <MobileSidebar
-            navigation={navigation}
-            lightMode={lightMode}
-            sidebarOpen={sidebarOpen}
+      <>
+        {/* Mobile menu top bar - for screens smaller than lg */}
+        <div className="lg:hidden">
+          <MobileMenuTop
             setSidebarOpen={setSidebarOpen}
-            isFullscreen={false}
-          />
-
-          {/* Top Navigation Bar - Show on large screens (lg) and up */}
-          <div className="hidden lg:block">
-            <TopNavBar
-              navigation={navigation}
-              lightMode={lightMode}
-              setLightMode={setLightMode}
-              citizenContract={citizenContract}
-            />
-          </div>
-
-          {/* Main Content - Full width for homepage */}
-          <main className="lg:pt-16 lg:-mt-12 w-full min-h-screen">
-            <div className="w-full min-h-screen">
-              {children}
-            </div>
-          </main>
-        </>
-      ) : (
-        <>
-          {/*Mobile menu top bar - for screens smaller than md */}
-          <div className="md:hidden">
-            <MobileMenuTop
-              setSidebarOpen={setSidebarOpen}
-              lightMode={lightMode}
-              setLightMode={setLightMode}
-              citizenContract={citizenContract}
-              isFullscreen={isFullscreen}
-            />
-          </div>
-
-          <MobileSidebar
-            navigation={navigation}
             lightMode={lightMode}
-            sidebarOpen={sidebarOpen}
-            setSidebarOpen={setSidebarOpen}
+            setLightMode={setLightMode}
+            citizenContract={citizenContract}
             isFullscreen={isFullscreen}
           />
+        </div>
 
-          {/* Static sidebar for desktop */}
-          <div
-            className={`relative z-10 hidden ${
-              isFullscreen
-                ? ''
-                : 'md:inset-y-0 md:flex md:w-60 md:flex-col lg:w-[275px]'
-            }`}
-          >
-            {/* Sidebar component*/}
-            <div className="w-[250px] lg:w-[275px] flex flex-grow flex-col pt-5">
-              <Link href="/" passHref>
-                <div className="mt-2 ml-7 lg:ml-9 flex flex-shrink-0 items-center px-4 pl-6">
-                  <LogoSidebar />
-                </div>
-              </Link>
-              <div className="flex flex-grow flex-col pt-9 lg:pl-2">
-                <div className="h-[50px] pl-6 mb-4 flex justify-center items-center">
-                  <PrivyConnectWallet
-                    type="desktop"
-                    citizenContract={citizenContract}
-                  />
+        <MobileSidebar
+          navigation={navigation}
+          lightMode={lightMode}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          isFullscreen={isFullscreen}
+        />
 
-                  <div className="relative mt-1 lg:right-4">
-                    <CitizenProfileLink />
-                  </div>
-                </div>
-                <nav className="flex flex-col px-4 overflow-y-auto h-[calc(75vh-2rem)] pb-[4rem]">
-                  {navigation.map((item, i) => (
-                    <NavigationLink key={`nav-link-${i}`} item={item} />
-                  ))}
-                  {/*Language change, import button*/}
-                  <ul className="pt-4 px-3">
-                    {/*Language change button*/}
-                    <LanguageChange />
-                  </ul>
-                </nav>
-              </div>
+        {/* Top Navigation Bar - Show on large screens (lg) and up */}
+        <div className="hidden lg:block">
+          <TopNavBar
+            navigation={navigation}
+            lightMode={lightMode}
+            setLightMode={setLightMode}
+            citizenContract={citizenContract}
+          />
+        </div>
 
-              {/*Color mode and Social links*/}
-              <div
-                className={`fixed bottom-0 flex flex-col justify-center w-[230px] lg:w-[258px] p-4 pl-7 lg:pl-9 backdrop-blur-md`}
-              >
-                <ColorsAndSocials
-                  lightMode={lightMode}
-                  setLightMode={setLightMode}
-                />
-              </div>
-            </div>
+        {/* Main Content - Full width with top nav */}
+        <main className={`lg:pt-16 w-full min-h-screen ${isFullscreen ? '' : 'flex justify-center'}`}>
+          <div className={`w-full min-h-screen ${isFullscreen ? '' : 'max-w-7xl px-4 sm:px-6 lg:px-8'}`}>
+            {children}
           </div>
-
-          {/*The content, child rendered here*/}
-          <main
-            className={`flex justify-center ${
-              isFullscreen ? 'md:ml-0' : 'md:ml-60'
-            } relative`}
-          >
-            <section
-              className={`${
-                isFullscreen
-                  ? 'w-full '
-                  : 'mt-4 md:w-[90%] lg:px-14 xl:px-16 2xl:px-20'
-              } flex flex-col`}
-            >
-              {/*Connect Wallet and Preferred network warning*/}
-              {children}
-            </section>
-          </main>
-        </>
-      )}
+        </main>
+      </>
 
       <CookieBanner />
       <Toaster />
