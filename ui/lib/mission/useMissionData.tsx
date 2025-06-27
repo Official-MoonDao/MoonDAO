@@ -26,6 +26,7 @@ export default function useMissionData({
   const [stage, setStage] = useState<MissionStage>()
   const [backers, setBackers] = useState<any[]>([])
   const [deadline, setDeadline] = useState<number>(0)
+  const [poolDeployerAddress, setPoolDeployerAddress] = useState<string>()
 
   const jbProjectData = useJBProjectData({
     projectId: mission?.projectId,
@@ -76,6 +77,20 @@ export default function useMissionData({
   }, [missionCreatorContract, mission?.id])
 
   useEffect(() => {
+    async function getPoolDeployer() {
+      const address: any = await readContract({
+        contract: missionCreatorContract,
+        method: 'missionIdToPoolDeployer' as string,
+        params: [mission.id],
+      })
+      setPoolDeployerAddress(address)
+    }
+    if (missionCreatorContract && mission?.id !== undefined) {
+      getPoolDeployer()
+    }
+  }, [missionCreatorContract, mission?.id])
+
+  useEffect(() => {
     async function getDeadline() {
       const payHookAddress: any = await readContract({
         contract: missionCreatorContract,
@@ -121,5 +136,12 @@ export default function useMissionData({
     return () => clearInterval(interval)
   }, [mission?.projectId])
 
-  return { ...jbProjectData, fundingGoal, stage, backers, deadline }
+  return {
+    ...jbProjectData,
+    fundingGoal,
+    stage,
+    backers,
+    deadline,
+    poolDeployerAddress,
+  }
 }
