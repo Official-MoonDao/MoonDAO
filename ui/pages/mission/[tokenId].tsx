@@ -8,6 +8,7 @@ import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
+import PoolDeployerABI from 'const/abis/PoolDeployer.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
@@ -74,7 +75,6 @@ import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionStat from '@/components/mission/MissionStat'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import TeamMembers from '@/components/subscription/TeamMembers'
-import PoolDeployerABI from 'const/abis/PoolDeployer.json'
 
 type ProjectProfileProps = {
   tokenId: string
@@ -183,12 +183,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   const missionTokenContract = useContract({
     address: token.tokenAddress,
     abi: JBV4TokenABI as any,
-    chain: selectedChain,
-  })
-
-  const poolDeployerContract = useContract({
-    address: poolDeployerAddress,
-    abi: PoolDeployerABI as any,
     chain: selectedChain,
   })
 
@@ -340,7 +334,13 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   }
 
   const deployLiquidityPool = async () => {
-    if (!account || !poolDeployerContract) return
+    if (!account || !poolDeployerAddress) return
+    const poolDeployerContract = getContract({
+      client: serverClient,
+      address: poolDeployerAddress,
+      abi: PoolDeployerABI as any,
+      chain: selectedChain,
+    })
 
     try {
       const tx = prepareContractCall({
@@ -618,7 +618,9 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                             requiredChain={DEFAULT_CHAIN_V5}
                             className="gradient-2 rounded-full noPadding w-full leading-none flex-1 sm:w-[250px]"
                             label={
-                              <span className="whitespace-nowrap">Deploy Liquidity</span>
+                              <span className="whitespace-nowrap">
+                                Deploy Liquidity
+                              </span>
                             }
                             action={deployLiquidityPool}
                             isDisabled={!poolDeployerAddress}
