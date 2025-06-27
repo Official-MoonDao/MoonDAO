@@ -71,7 +71,6 @@
     "next": "^13.4.10",
     "next-auth": "^4.24.11",
     "next-query-params": "^3.0.0",
-    "next-s3-upload": "^0.3.4",
     "next-sitemap": "^4.2.3",
     "next-translate": "^1.6.0",
     "next-transpile-modules": "^10.0.1",
