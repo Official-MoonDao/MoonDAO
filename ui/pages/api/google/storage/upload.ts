@@ -46,9 +46,7 @@ export default async function handler(
       return res.status(400).json({ error: 'Original filename is missing' })
     }
 
-    const destination = `citizen-uploads/${
-      file.originalFilename + '-' + Date.now()
-    }`
+    const destination = `${file.originalFilename + '-' + Date.now()}`
 
     try {
       await bucket.upload(file.filepath, {
@@ -56,12 +54,15 @@ export default async function handler(
         metadata: {
           contentType: file.mimetype || 'application/octet-stream',
         },
-        public: true,
       })
 
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${destination}`
+      // Generate a signed URL for access (expires in 1 hour)
+      const [signedUrl] = await bucket.file(destination).getSignedUrl({
+        action: 'read',
+        expires: Date.now() + 60 * 60 * 1000, // 1 hour
+      })
 
-      res.status(200).json({ message: 'File uploaded', url: publicUrl })
+      res.status(200).json({ message: 'File uploaded', url: signedUrl })
     } catch (uploadError) {
       console.error(uploadError)
       res.status(500).json({ error: 'Upload failed' })
