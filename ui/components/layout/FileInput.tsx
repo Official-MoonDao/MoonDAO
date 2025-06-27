@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { isImageBlank } from '@/lib/utils/images'
-import { fitImage } from '@/lib/utils/images'
+import { fitImage, cropImage } from '@/lib/utils/images'
+import Tooltip from './Tooltip'
 
 type FileInputProps = {
   id?: string
@@ -11,8 +12,10 @@ type FileInputProps = {
   setFile: Function
   noBlankImages?: boolean
   dimensions?: number[]
+  crop?: boolean
   accept?: string
   acceptText?: string
+  tooltip?: string
 }
 
 export default function FileInput({
@@ -23,8 +26,10 @@ export default function FileInput({
   setFile,
   noBlankImages,
   dimensions,
+  crop,
   accept = 'image/*',
   acceptText = '',
+  tooltip,
 }: FileInputProps) {
   //get file name
   const [fileName, setFileName] = useState(
@@ -32,7 +37,10 @@ export default function FileInput({
   )
   return (
     <div id={id} className="relative flex flex-col gap-2 max-w-[250px]">
-      {label && <p className={`text-sm font-GoodTimes opacity-50`}>{label}</p>}
+      <div className="flex flex-row items-center gap-2">
+        {label && <p className={`text-sm font-GoodTimes`}>{label}</p>}
+        {tooltip && <Tooltip text={tooltip}>?</Tooltip>}
+      </div>
       <input
         type="file"
         accept={accept}
@@ -44,11 +52,9 @@ export default function FileInput({
           }
           setFileName(chosenFileName)
           if (dimensions) {
-            const resizedImage = await fitImage(
-              file,
-              dimensions[0],
-              dimensions[1]
-            )
+            const resizedImage = crop
+              ? await cropImage(file, dimensions[0], dimensions[1])
+              : await fitImage(file, dimensions[0], dimensions[1])
             setFile(resizedImage)
           } else {
             setFile(file)
