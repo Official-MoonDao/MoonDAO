@@ -1,7 +1,6 @@
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { useContext, useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import {
   arbitrum,
   base,
@@ -68,27 +67,11 @@ export default function NetworkSelector({
 }: NetworkSelectorProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const [dropdown, setDropdown] = useState(false)
-  const [dropdownPosition, setDropdownPosition] = useState({
-    top: 0,
-    left: 0,
-    width: 0,
-  })
   const triggerRef = useRef<HTMLDivElement>(null)
 
   function selectChain(chain: any) {
     setSelectedChain(chain)
     setDropdown(false)
-  }
-
-  function updateDropdownPosition() {
-    if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect()
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 8, // 8px gap (mt-2)
-        left: rect.left + window.scrollX,
-        width: 250,
-      })
-    }
   }
 
   function handleClickOutside({ target }: any) {
@@ -105,30 +88,10 @@ export default function NetworkSelector({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  useEffect(() => {
-    if (dropdown) {
-      updateDropdownPosition()
-      // Update position on scroll/resize
-      const handlePositionUpdate = () => updateDropdownPosition()
-      window.addEventListener('scroll', handlePositionUpdate, true)
-      window.addEventListener('resize', handlePositionUpdate)
-
-      return () => {
-        window.removeEventListener('scroll', handlePositionUpdate, true)
-        window.removeEventListener('resize', handlePositionUpdate)
-      }
-    }
-  }, [dropdown, compact])
-
   const dropdownContent = dropdown && (
     <div
       id="network-selector-dropdown"
-      className="fixed flex flex-col gap-2 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl z-[9999] animate-fadeIn"
-      style={{
-        top: dropdownPosition.top,
-        left: dropdownPosition.left,
-        width: dropdownPosition.width,
-      }}
+      className="absolute top-full mt-1 w-full flex flex-col gap-2 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl z-[9999] animate-fadeIn max-h-[300px] overflow-y-auto"
     >
       {chains && chains.length > 0 ? (
         chains.map((chain) => (
@@ -185,9 +148,7 @@ export default function NetworkSelector({
           </button>
         )}
       </div>
-      {typeof window !== 'undefined' &&
-        dropdownContent &&
-        createPortal(dropdownContent, document.body)}
+      {dropdownContent}
     </div>
   )
 }
