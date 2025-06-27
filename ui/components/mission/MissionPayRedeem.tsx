@@ -234,7 +234,7 @@ function MissionPayRedeemContent({
                 )} $${token?.tokenSymbol}`}</p>
               </div>
             )}
-            {isRefundable && (
+            {isRefundable && (tokenBalance > 0 || tokenCredit > 0) && (
               <>
                 <PrivyWeb3Button
                   id="redeem-button"
@@ -776,10 +776,9 @@ export default function MissionPayRedeem({
             {token?.tokenSymbol && (
               <div className="w-full flex justify-between">
                 <p>{'Receive'}</p>
-                <p id="token-output">{`${formatTokenAmount(
-                  output,
-                  2
-                )} ${token?.tokenSymbol}`}</p>
+                <p id="token-output">{`${formatTokenAmount(output, 2)} ${
+                  token?.tokenSymbol
+                }`}</p>
               </div>
             )}
 

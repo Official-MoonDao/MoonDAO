@@ -6,7 +6,12 @@ import {
 } from '@heroicons/react/20/solid'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import { usePrivy } from '@privy-io/react-auth'
-import { DEFAULT_CHAIN_V5, IPFS_GATEWAY } from 'const/config'
+import MissionTableABI from 'const/abis/MissionTable.json'
+import {
+  DEFAULT_CHAIN_V5,
+  IPFS_GATEWAY,
+  MISSION_TABLE_ADDRESSES,
+} from 'const/config'
 import { getUnixTime } from 'date-fns'
 import { ethers } from 'ethers'
 import { marked } from 'marked'
@@ -18,6 +23,7 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useLocalStorage } from 'react-use'
 import {
+  getContract,
   prepareContractCall,
   readContract,
   sendAndConfirmTransaction,
@@ -28,7 +34,11 @@ import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { waitForRowById } from '@/lib/tableland/waitForRow'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/client'
 import { renameFile } from '@/lib/utils/files'
+import { isValidYouTubeUrl } from '@/lib/utils/links'
 import { getAttribute } from '@/lib/utils/nft'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
@@ -373,30 +383,69 @@ export default function CreateMission({
       setCreatedMission(true)
 
       if (receipt) {
-        setTimeout(async () => {
-          toast.success('Mission created successfully!')
-          clearMissionCache()
-          setMissionData({
-            name: '',
-            description: '',
-            infoUri: '',
-            logoUri: '',
-            socialLink: '',
-            tagline: '',
-            fundingGoal: undefined,
-            youtubeLink: '',
-            token: {
-              name: '',
-              symbol: '',
-              decimals: 18,
-              tradeable: false,
-            },
+        // Wait for the mission to appear in the Tableland database
+        try {
+          const chainSlug = getChainSlug(selectedChain)
+          const missionTableContract = getContract({
+            client: serverClient,
+            address: MISSION_TABLE_ADDRESSES[chainSlug],
+            abi: MissionTableABI as any,
+            chain: selectedChain,
           })
-          setFormattedFundingGoal('')
-          setCreatedMission(false)
 
+          const missionTableName = await readContract({
+            contract: missionTableContract,
+            method: 'getTableName' as string,
+            params: [],
+          })
+
+          const result = await waitForRowById(
+            missionTableName,
+            'id',
+            missionId,
+            {
+              pollInterval: 1000, // Check every 1 second
+              timeout: 120000, // Wait up to 2 minutes
+              maxRetries: 120,
+            }
+          )
+
+          if (result.success) {
+            toast.success('Mission created successfully!')
+            clearMissionCache()
+            setMissionData({
+              name: '',
+              description: '',
+              infoUri: '',
+              logoUri: '',
+              socialLink: '',
+              tagline: '',
+              fundingGoal: undefined,
+              youtubeLink: '',
+              token: {
+                name: '',
+                symbol: '',
+                decimals: 18,
+                tradeable: false,
+              },
+            })
+            setFormattedFundingGoal('')
+            router.push(`/mission/${missionId}`)
+          } else {
+            toast.error(
+              `Mission created but database sync failed: ${result.error}. Redirecting anyway...`
+            )
+            setCreatedMission(false)
+            router.push(`/mission/${missionId}`)
+          }
+        } catch (dbError) {
+          console.error('Database polling error:', dbError)
+          toast.error(
+            'Mission created but database sync failed. Redirecting anyway...'
+          )
+          setCreatedMission(false)
           router.push(`/mission/${missionId}`)
-        }, 30000)
+        }
       }
     } catch (err: any) {
       console.error(err)
@@ -520,10 +569,23 @@ export default function CreateMission({
                         style: toastStyle,
                       })
                     }
+                    if (missionData.tagline.length === 0) {
+                      return toast.error('Please enter a tagline.', {
+                        style: toastStyle,
+                      })
+                    }
                     if (!missionLogoUri) {
                       return toast.error('Please upload a mission image.', {
                         style: toastStyle,
                       })
+                    }
+                    if (!isValidYouTubeUrl(missionData.youtubeLink)) {
+                      return toast.error(
+                        'Please enter a valid YouTube video link.',
+                        {
+                          style: toastStyle,
+                        }
+                      )
                     }
                     return true
                   }}
@@ -605,7 +667,7 @@ export default function CreateMission({
                     />
                     <FormInput
                       id="mission-tagline"
-                      label="Tagline"
+                      label="Tagline *"
                       placeholder="Enter a tagline for your mission"
                       value={missionData.tagline}
                       onChange={(e: any) =>
@@ -648,7 +710,7 @@ export default function CreateMission({
                     />
                     <FormInput
                       id="mission-youtube"
-                      label="YouTube Video Link"
+                      label="YouTube Video Link *"
                       placeholder="Enter a YouTube video link"
                       value={missionData.youtubeLink}
                       onChange={(e: any) =>
@@ -677,8 +739,10 @@ export default function CreateMission({
                       setMissionLogoUri(`${IPFS_GATEWAY}${missionLogoIpfsHash}`)
                     }}
                     dimensions={[1024, 1024]}
+                    crop
                     accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
                     acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
+                    tooltip="This will be the main image for your mission. Please use a square image (1:1 aspect ratio) for the best results."
                   />
                   <div>
                     {missionLogoUri && (
@@ -960,6 +1024,7 @@ export default function CreateMission({
                             tagline: missionData.tagline,
                             description: missionData.description,
                             logoUri: missionData.logoUri,
+                            youtubeLink: missionData.youtubeLink,
                           },
                         } as any
                       }
@@ -1029,7 +1094,7 @@ export default function CreateMission({
                   {createdMission && (
                     <div className="px-2 flex justify-center items-center gap-4">
                       <LoadingSpinner />
-                      <p>{`You will be redirected to the Mission page once your payment has been processed. Expect to wait about 30 seconds.`}</p>
+                      <p>{`You will be redirected to the Mission page once your payment has been processed. Expect to wait up to 30 seconds.`}</p>
                     </div>
                   )}
                 </CreateMissionStage>

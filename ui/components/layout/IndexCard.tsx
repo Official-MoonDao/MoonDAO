@@ -49,7 +49,7 @@ export default function IndexCard({
       ></div>
       <span
         id="index-content-container"
-        className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-x-[3px] border-darkest-cool"
+        className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-x-[3px] border-darkest-cool min-h-[250px] md:min-h-[320px]"
       >
         <span
           id="index-content"
@@ -62,27 +62,28 @@ export default function IndexCard({
               alt={iconAlt || ''}
               width="250"
               height="250"
-              className="z-20 w-[100px] h-[100px] pb-5"
+              className="z-20 w-[60px] h-[60px] md:w-[100px] md:h-[100px] pb-3 md:pb-5"
             />
           ) : (
             <></>
           )}
           <h2
             id="index-main-header"
-            className="z-20 pt-[20px] mb-5 static-sub-header font-GoodTimes text-center justify-center md:justify-start"
+            className="z-20 pt-[20px] mb-3 md:mb-5 static-sub-header font-GoodTimes text-left justify-start text-lg md:text-xl"
           >
             {header && header}
             {metadata?.name}
           </h2>
           <div
             id="index-description-and-id-container"
-            className="relative z-50 flex justify-center w-full"
+            className="relative z-50 flex justify-start w-full"
           >
             <div
               id="index-description-and-id"
-              className="description text-center relative z-50 w-full opacity-100 group-hover:opacity-100"
+              className="description text-left relative z-50 w-full opacity-100 !opacity-100"
+              style={{ opacity: '1 !important' }}
             >
-              <div className="flex justify-center">{paragraph}</div>
+              <div className="flex justify-center text-center text-sm md:text-base">{paragraph}</div>
               {metadata?.id && (
                 <div id="index-details-container" className="mt-4">
                   <p id="index-org-description">
@@ -124,7 +125,7 @@ export default function IndexCard({
   return (
     <span
       id="index-link-frame"
-      className="card-container h-full mb-5 z-30 w-full flex lg:flex-col rounded-[20px] relative overflow-hidden transition-all hover:ring-2 hover:ring-white"
+      className="card-container at-a-glance-card h-full mb-5 z-30 w-full flex lg:flex-col rounded-[20px] relative overflow-hidden transition-all hover:ring-2 hover:ring-white"
     >
       <span
         id="index-Interactive-Element"

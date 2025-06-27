@@ -1,11 +1,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { formatTimeUntilDeadline } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import StandardButton from '../layout/StandardButton'
@@ -218,12 +218,29 @@ export default function MissionWideCard({
           </div>
         }
         paragraph={
-          <div
-            className="prose prose-invert max-w-none"
-            dangerouslySetInnerHTML={{
-              __html: mission?.metadata?.description || '',
-            }}
-          />
+          <>
+            {mission?.metadata?.youtubeLink && (
+              <div className="my-4 w-full h-full">
+                <iframe
+                  src={mission?.metadata?.youtubeLink?.replace(
+                    'watch?v=',
+                    'embed/'
+                  )}
+                  width="100%"
+                  height="500"
+                  allowFullScreen
+                  allow="autoplay; fullscreen"
+                  className="rounded-2xl"
+                />
+              </div>
+            )}
+            <div
+              className="prose prose-invert max-w-none"
+              dangerouslySetInnerHTML={{
+                __html: mission?.metadata?.description || '',
+              }}
+            />
+          </>
         }
         image={
           missionImage

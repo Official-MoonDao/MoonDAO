@@ -9,7 +9,7 @@ import BarChart from './BarChart'
 
 function Data({ text, value }: any) {
   return (
-    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-center min-h-[120px] transition-all duration-300 hover:bg-white/10">
+    <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-center min-h-[120px] transition-all duration-300 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40">
       <p className="text-white/70 text-sm lg:text-base font-medium uppercase tracking-wider mb-3">
         {text}
       </p>
@@ -74,7 +74,7 @@ export default function AnalyticsPage({ vMooneyData }: any) {
             ).toLocaleString('en-US')}
           />
           {/*Pie chart*/}
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-center min-h-[120px] transition-all duration-300 hover:bg-white/10">
+          <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-center min-h-[120px] transition-all duration-300 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40">
             <p className="text-white/70 text-sm lg:text-base font-medium uppercase tracking-wider mb-4">
               Percent $MOONEY Locked
             </p>

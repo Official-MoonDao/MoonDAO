@@ -8,6 +8,7 @@ import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
+import PoolDeployerABI from 'const/abis/PoolDeployer.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
@@ -154,6 +155,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     stage,
     backers,
     deadline,
+    poolDeployerAddress,
   } = useMissionData({
     mission,
     missionTableContract,
@@ -215,7 +217,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   const duration = useMemo(() => {
     return formatTimeUntilDeadline(new Date(deadline))
-  }, [ruleset])
+  }, [ruleset, deadline])
 
   const deadlinePassed = Date.now() > deadline
 
@@ -327,6 +329,30 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     } catch (err: any) {
       console.error('Payout distribution error:', err)
       toast.error('No payouts to send.')
+    }
+  }
+
+  const deployLiquidityPool = async () => {
+    if (!account || !poolDeployerAddress) return
+    const poolDeployerContract = getContract({
+      client: serverClient,
+      address: poolDeployerAddress,
+      abi: PoolDeployerABI as any,
+      chain: selectedChain,
+    })
+
+    try {
+      const tx = prepareContractCall({
+        contract: poolDeployerContract,
+        method: 'createAndAddLiquidity' as string,
+        params: [],
+      })
+
+      await sendAndConfirmTransaction({ transaction: tx, account })
+      toast.success('Liquidity pool deployed.')
+    } catch (err: any) {
+      console.error('Liquidity deployment error:', err)
+      toast.error('Failed to deploy liquidity pool.')
     }
   }
 
@@ -563,7 +589,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                     )}
                     {/* Send payouts and tokens Buttons - only shown to managers */}
                     {account && deadlinePassed && isManager && (
-                      <div className="flex flex-col gap-4 -mt-8 w-full sm:w-auto sm:absolute sm:right-2 sm:top-[250px]">
+                      <div className="flex flex-col gap-4 mt-8 md:-mt-8 w-full sm:w-auto sm:absolute sm:right-2 sm:top-[250px]">
                         <PrivyWeb3Button
                           requiredChain={DEFAULT_CHAIN_V5}
                           className="gradient-2 rounded-full w-full noPadding leading-none flex-1 sm:w-[250px]"
@@ -586,6 +612,19 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           action={sendPayouts}
                           isDisabled={!availablePayouts}
                         />
+                        {stage === 2 && (
+                          <PrivyWeb3Button
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="gradient-2 rounded-full noPadding w-full leading-none flex-1 sm:w-[250px]"
+                            label={
+                              <span className="whitespace-nowrap">
+                                Deploy Liquidity
+                              </span>
+                            }
+                            action={deployLiquidityPool}
+                            isDisabled={!poolDeployerAddress}
+                          />
+                        )}
                       </div>
                     )}
                   </div>
@@ -635,19 +674,17 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             {/* Youtube Video Section */}
             {mission?.metadata?.youtubeLink &&
               mission?.metadata?.youtubeLink !== '' && (
-                <div className="w-full px-[5vw]">
-                  <div className="w-full h-full">
-                    <iframe
-                      src={mission?.metadata?.youtubeLink?.replace(
-                        'watch?v=',
-                        'embed/'
-                      )}
-                      width="100%"
-                      height="500"
-                      allowFullScreen
-                      className="rounded-lg"
-                    />
-                  </div>
+                <div className="w-full p-4 2xl:p-0 max-w-[1200px]">
+                  <iframe
+                    src={mission?.metadata?.youtubeLink?.replace(
+                      'watch?v=',
+                      'embed/'
+                    )}
+                    width="100%"
+                    height="500"
+                    allowFullScreen
+                    className="rounded-2xl"
+                  />
                 </div>
               )}
             {/* Pay & Redeem Section */}

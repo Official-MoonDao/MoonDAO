@@ -7,7 +7,7 @@ export default function Hero() {
     <section id="hero-section" className="overflow-visible relative w-full">
       <div
         id="hero-container"
-        className="flex flex-col md:h-[80vh] items-end justify-end lg:items-start lg:justify-end md:min-h-[90vmin] md:items-start md:pl-10 md:pr-10 min-h-[575px] mt-[-1px] p-5 pb-[80px] lg:pb-40 lg:min-h-[800px] relative z-10"
+        className="flex flex-col md:h-[80vh] items-end justify-end lg:items-start lg:justify-end md:min-h-[90vmin] md:items-start px-[20px] md:px-[40px] min-h-[575px] mt-[-1px] p-5 pb-[80px] lg:pb-40 lg:min-h-[800px] relative z-10"
       >
         <div
           id="background"
@@ -70,8 +70,10 @@ export default function Hero() {
         </div>
         <div
           id="content"
-          className="relative w-[100%] pt-0 md:w-[95%] lg:w-[70%]"
+          className="relative w-full max-w-[1200px] mx-auto"
         >
+          <div className="relative w-[100%] pt-0 md:w-[95%] lg:w-[70%]"
+          >
           <h1
             id="header"
             className="flex flex-col font-GoodTimes leading-none text-4xl"
@@ -112,6 +114,7 @@ export default function Hero() {
           >
             Join the Network
           </StandardButton>
+          </div>
         </div>
       </div>
     </section>

@@ -5,28 +5,28 @@ import Speaker from '../home/Speaker'
 
 export default function SpeakerSection() {
   return (
-    <section className="bg-white rounded-tl-[5vmax] rounded-bl-[5vmax] rounded-br-[5vmax] md:rounded-br-[0px] pb-10">
+    <section className="bg-white rounded-tl-[5vmax] rounded-bl-[5vmax] rounded-br-[5vmax] md:rounded-br-[0px] pb-6 w-full">
       <div
         id="speaker-section-container"
-        className="px-2 md:px-5 relative flex justify-start"
+        className="px-8 md:px-12 lg:px-16 relative flex justify-center"
       >
         <div
           id="speaker-section"
-          className=" w-full pt-10 pb-5 flex items-center flex-col max-w-[1200px]"
+          className="w-full max-w-[1200px] pt-6 pb-3 flex items-center flex-col"
         >
           <h2
             id="section-header"
-            className="header font-GoodTimes text-center text-dark-cool"
+            className="header font-GoodTimes text-center text-dark-cool mb-4"
           >
             Past Speakers
           </h2>
           <div
             id="speaker-container"
-            className="w-full max-w-[1200px] m-5 mb-0"
+            className="w-full max-w-[1200px] mb-0"
           >
             <div
               id="speakers"
-              className="p-5 pt-0 flex flex-row flex flex-row flex-wrap justify-around"
+              className="p-3 pt-0 grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4 justify-items-center"
             >
               <Speaker
                 alt="Charlie Duke"
@@ -76,7 +76,7 @@ export default function SpeakerSection() {
       </div>
       <div
         id="youtube-callout-container"
-        className="flex px-5 justify-center max-w-[1200px]"
+        className="flex px-5 justify-center w-full max-w-[1200px] mx-auto"
       >
         <Link href="https://www.youtube.com/@officialmoondao?sub_confirmation=1">
           <div

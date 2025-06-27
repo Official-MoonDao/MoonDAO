@@ -41,8 +41,8 @@ const Transaction = ({ data, loading }: any) => {
         className={`${
           !loading && !Object.keys(allowedAssets).includes(data.tokenSymbol)
             ? 'opacity-60 bg-red-500/10 border-red-500/20'
-            : 'bg-white/5 border-white/10 hover:bg-white/10 hover:shadow-lg'
-        } backdrop-blur-md border rounded-xl p-4 mt-4 flex items-center transition-all duration-300 ${
+            : 'bg-gradient-to-b from-slate-700/20 to-slate-800/30 border-white/10 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-lg'
+        } backdrop-blur-xl border rounded-xl p-4 mt-4 flex items-center transition-all duration-300 ${
           loading && 'animate-pulse'
         }`}
       >

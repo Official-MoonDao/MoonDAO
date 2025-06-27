@@ -53,13 +53,9 @@ export default function Home({ linkSource }: any) {
         <PartnerSection />
         <PageEnder />
         <ExpandedFooter 
-          callToActionImage="/images/footer-cta.png"
-          callToActionTitle="Join the Network"
-          callToActionButtonText="Learn More"
-          callToActionButtonLink="/join"
-          hasCallToAction={true}
+          hasCallToAction={false}
           darkBackground={true}
-          isFullwidth={false}
+          isFullwidth={true}
         />
       </div>
     </Container>
