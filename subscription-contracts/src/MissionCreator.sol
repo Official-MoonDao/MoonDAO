@@ -101,9 +101,6 @@ contract MissionCreator is Ownable, IERC721Receiver {
         PoolDeployer poolDeployer = new PoolDeployer(feeHookAddress, positionManagerAddress, owner());
 
 
-        if (block.chainid != 11155111) {
-            deadline = block.timestamp + 28 days;
-        }
         LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, to);
         LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, address(terminal));
         // Ruleset 0 is funding/refunds

@@ -3,8 +3,8 @@
 ## Testing Plan
 
 0. Unit testing (MissionTest.t.sol) [done]
-0. [Code coverage](https://app.codecov.io/gh/Official-MoonDao/MoonDAO/pull/553/tree/subscription-contracts/src?dropdown=coverage) (95% coverage) [currently at 89% average with 3 files under 95%]
-0. Cypress integration test [complete by 6/23]
+0. [Code coverage](https://app.codecov.io/gh/Official-MoonDao/MoonDAO/pull/553/tree/subscription-contracts/src?dropdown=coverage) (95% coverage) [done]
+0. Cypress integration test [done]
 0. UI testing, check functionality against spec [complete by 6/24]
     - Test mission creation
     - Test mission funding
@@ -154,4 +154,5 @@ These contract-defined percentages differ from the UI description above.
    The UI states 10% of total tokens go to liquidity, 10% to MoonDAO, and 30% to the team. The contract reserves 2.5% to liquidity, 17.5% to MoonDAO, and 30% to the team. Again the values do not match.
 3. **Refund Window**
    The contracts enforce that refunds must be claimed within `refundPeriod` after the deadline. The UI text does not mention this explicit period, which could cause confusion.
-
+4. **28 day deadline**
+   We might want something other than a 28 day deadline.

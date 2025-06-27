@@ -38,7 +38,6 @@ import {
   prepareContractCall,
   sendAndConfirmTransaction,
 } from 'thirdweb'
-import { sepolia } from 'thirdweb/chains'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
@@ -85,7 +84,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   const [isLoading, setIsLoading] = useState(false)
   const account = useActiveAccount()
 
-  const selectedChain = sepolia
+  const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
   const [teamNFT, setTeamNFT] = useState<any>()
@@ -780,7 +779,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   try {
     const tokenId: any = params?.tokenId
 
-    const chain = sepolia
+    const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
     if (tokenId === undefined) {
