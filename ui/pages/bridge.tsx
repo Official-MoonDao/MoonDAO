@@ -12,7 +12,7 @@ export default function Bridge() {
   return (
     <>
       <WebsiteHead title={t('bridgeTitle')} description={t('bridgeDesc')} />
-      <section className="w-[calc(100vw-20px)]">
+      <section className="w-full min-h-screen bg-gradient-to-b from-gray-900 to-black">
         <Container>
           <ContentLayout
             header={t('bridgeTitle')}
@@ -34,8 +34,10 @@ export default function Bridge() {
             mode="compact"
             popOverEffect={false}
           >
-            <div className="mt-3 w-full max-w-2xl">
-              <ArbitrumBridge />
+            <div className="w-full">
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-8 shadow-2xl max-w-2xl mx-auto">
+                <ArbitrumBridge />
+              </div>
             </div>
           </ContentLayout>
         </Container>

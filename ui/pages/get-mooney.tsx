@@ -31,13 +31,13 @@ export default function GetMooney() {
   return (
     <>
       <WebsiteHead title={t('mooneyTitle')} description={t('mooneyDesc')} />
-      <section className="w-[calc(100vw-20px)]">
+      <section className="w-full min-h-screen bg-gradient-to-b from-gray-900 to-black">
         <Container>
           <ContentLayout
             header={t('mooneyTitle')}
             headerSize="max(20px, 3vw)"
             description={
-              <div className="max-w-2xl">
+              <div className="max-w-full">
                 <p>
                   {'Playing an active role in MoonDAO governance is simple: '}
                   <button
@@ -83,16 +83,20 @@ export default function GetMooney() {
             mode="compact"
             popOverEffect={false}
           >
-            <div className="mt-3 w-full max-w-2xl">
-              <div className="mb-4">
-                <p className="text-gray-400 text-sm">
-                  Select the blockchain network where you want to buy MOONEY
-                  tokens. Different networks offer different trading options and
-                  fee structures.
-                </p>
+            <div className="w-full">
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-8 shadow-2xl max-w-2xl mx-auto">
+                <div className="mb-6">
+                  <p className="text-gray-300 text-base leading-relaxed">
+                    Select the blockchain network where you want to buy MOONEY
+                    tokens. Different networks offer different trading options and
+                    fee structures.
+                  </p>
+                </div>
+                <div className="space-y-6">
+                  <NetworkSelector />
+                  <NativeToMooney selectedChain={selectedChain} />
+                </div>
               </div>
-              <NetworkSelector />
-              <NativeToMooney selectedChain={selectedChain} />
             </div>
           </ContentLayout>
         </Container>
