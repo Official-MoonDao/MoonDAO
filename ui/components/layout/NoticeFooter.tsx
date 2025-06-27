@@ -141,7 +141,10 @@ export function NoticeFooter({
             <Link
               href={notice.buttonLink}
               className="inline-block w-fit mx-auto lg:mx-0"
-              target="_blank"
+              {...(notice.buttonLink?.startsWith('http') && {
+                target: "_blank",
+                rel: "noopener noreferrer"
+              })}
               passHref
             >
               <div className="gradient-2 hover:scale-105 transform transition-all ease-in-out duration-300 rounded-full px-8 py-4 inline-block text-white font-medium text-lg hover:shadow-lg">
