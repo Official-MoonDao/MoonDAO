@@ -2,11 +2,11 @@ import { Storage } from '@google-cloud/storage'
 import { NextApiRequest, NextApiResponse } from 'next'
 
 const credentials = JSON.parse(
-  Buffer.from(process.env.GOOGLE_CREDENTIALS || '', 'base64').toString('utf-8')
+  Buffer.from(process.env.GCS_CREDENTIALS || '', 'base64').toString('utf-8')
 )
 
 const storage = new Storage({ credentials })
-const bucket = storage.bucket(process.env.GCS_BUCKET_NAME || 'storage-uploader')
+const bucket = storage.bucket(process.env.GCS_BUCKET_NAME || '')
 
 export default async function handler(
   req: NextApiRequest,
