@@ -74,6 +74,7 @@ import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionStat from '@/components/mission/MissionStat'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import TeamMembers from '@/components/subscription/TeamMembers'
+import PoolDeployerABI from 'const/abis/PoolDeployer.json'
 
 type ProjectProfileProps = {
   tokenId: string
@@ -155,6 +156,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     stage,
     backers,
     deadline,
+    poolDeployerAddress,
   } = useMissionData({
     mission,
     missionTableContract,
@@ -181,6 +183,12 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   const missionTokenContract = useContract({
     address: token.tokenAddress,
     abi: JBV4TokenABI as any,
+    chain: selectedChain,
+  })
+
+  const poolDeployerContract = useContract({
+    address: poolDeployerAddress,
+    abi: PoolDeployerABI as any,
     chain: selectedChain,
   })
 
@@ -328,6 +336,24 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     } catch (err: any) {
       console.error('Payout distribution error:', err)
       toast.error('No payouts to send.')
+    }
+  }
+
+  const deployLiquidityPool = async () => {
+    if (!account || !poolDeployerContract) return
+
+    try {
+      const tx = prepareContractCall({
+        contract: poolDeployerContract,
+        method: 'createAndAddLiquidity' as string,
+        params: [],
+      })
+
+      await sendAndConfirmTransaction({ transaction: tx, account })
+      toast.success('Liquidity pool deployed.')
+    } catch (err: any) {
+      console.error('Liquidity deployment error:', err)
+      toast.error('Failed to deploy liquidity pool.')
     }
   }
 
@@ -587,6 +613,17 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           action={sendPayouts}
                           isDisabled={!availablePayouts}
                         />
+                        {stage === 2 && (
+                          <PrivyWeb3Button
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="gradient-2 rounded-full noPadding w-full leading-none flex-1 sm:w-[250px]"
+                            label={
+                              <span className="whitespace-nowrap">Deploy Liquidity</span>
+                            }
+                            action={deployLiquidityPool}
+                            isDisabled={!poolDeployerAddress}
+                          />
+                        )}
                       </div>
                     )}
                   </div>
