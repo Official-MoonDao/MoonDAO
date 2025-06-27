@@ -8,6 +8,7 @@ import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
+import PoolDeployerABI from 'const/abis/PoolDeployer.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
@@ -155,6 +156,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     stage,
     backers,
     deadline,
+    poolDeployerAddress,
   } = useMissionData({
     mission,
     missionTableContract,
@@ -328,6 +330,30 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     } catch (err: any) {
       console.error('Payout distribution error:', err)
       toast.error('No payouts to send.')
+    }
+  }
+
+  const deployLiquidityPool = async () => {
+    if (!account || !poolDeployerAddress) return
+    const poolDeployerContract = getContract({
+      client: serverClient,
+      address: poolDeployerAddress,
+      abi: PoolDeployerABI as any,
+      chain: selectedChain,
+    })
+
+    try {
+      const tx = prepareContractCall({
+        contract: poolDeployerContract,
+        method: 'createAndAddLiquidity' as string,
+        params: [],
+      })
+
+      await sendAndConfirmTransaction({ transaction: tx, account })
+      toast.success('Liquidity pool deployed.')
+    } catch (err: any) {
+      console.error('Liquidity deployment error:', err)
+      toast.error('Failed to deploy liquidity pool.')
     }
   }
 
@@ -587,6 +613,19 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                           action={sendPayouts}
                           isDisabled={!availablePayouts}
                         />
+                        {stage === 2 && (
+                          <PrivyWeb3Button
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="gradient-2 rounded-full noPadding w-full leading-none flex-1 sm:w-[250px]"
+                            label={
+                              <span className="whitespace-nowrap">
+                                Deploy Liquidity
+                              </span>
+                            }
+                            action={deployLiquidityPool}
+                            isDisabled={!poolDeployerAddress}
+                          />
+                        )}
                       </div>
                     )}
                   </div>
