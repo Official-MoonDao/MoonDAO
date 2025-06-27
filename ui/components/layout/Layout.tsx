@@ -59,6 +59,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     router.pathname === '/mission/[tokenId]' || 
     router.pathname === '/dude-perfect'
 
+  const isHomepage = router.pathname === '/'
+
   // Use top nav for all pages now
   const layout = (
     <div
@@ -98,8 +100,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         </div>
 
         {/* Main Content - Full width with top nav */}
-        <main className={`lg:pt-16 w-full min-h-screen ${isFullscreen ? '' : 'flex justify-center'}`}>
-          <div className={`w-full min-h-screen ${isFullscreen ? '' : 'max-w-7xl px-4 sm:px-6 lg:px-8'}`}>
+        <main className={`lg:pt-16 w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'flex justify-center'}`}>
+          <div className={`w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'max-w-7xl px-4 sm:px-6 lg:px-8'}`}>
             {children}
           </div>
         </main>
