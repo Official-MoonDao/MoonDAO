@@ -178,66 +178,67 @@ export default function Lock() {
   return (
     <>
       <Head title="Lock $MOONEY" />
-      <section className="w-full min-h-screen bg-gradient-to-b from-gray-900 to-black">
-        <Container>
-          <ContentLayout
-            header="Lock $MOONEY"
-            headerSize="max(20px, 3vw)"
-            description={
-              <div className="max-w-full">
-                <p>
-                  {'Playing an active role in MoonDAO governance is simple: '}
-                  <button
-                    className="underline"
-                    onClick={() => {
-                      if (!address)
-                        return toast.error('Please connect your wallet.')
-                      fundWallet(address, {
-                        chain: viemChains[selectedChain.slug],
-                      })
-                    }}
-                  >
-                    {'fund your account'}
-                  </button>
-                  {',  '}
-                  <button
-                    className="underline"
-                    onClick={() => router.push('/get-mooney')}
-                  >
-                    {'swap for $MOONEY'}
-                  </button>
-                  {', and '}
-                  <button
-                    className="underline"
-                    onClick={() => {
-                      router.push('/lock')
-                    }}
-                  >
-                    {'lock for voting power'}
-                  </button>
-                  {'.'}
-                </p>
-              </div>
-            }
-            preFooter={
-              <NoticeFooter
-                defaultImage="../assets/MoonDAO-Logo-White.svg"
-                defaultTitle="Need Help?"
-                defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
-                defaultButtonText="Submit a Ticket"
-                defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
-                imageWidth={200}
-                imageHeight={200}
-              />
-            }
-            mainPadding
-            isProfile
-            mode="compact"
-            popOverEffect={false}
-          >
-            <div className="w-full">
-              <WithdrawVMooney />
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-8 shadow-2xl max-w-2xl mx-auto">
+      <div className="w-full">
+        <ContentLayout
+          header="Lock $MOONEY"
+          headerSize="max(20px, 3vw)"
+          description={
+            <div className="max-w-full">
+              <p>
+                {'Playing an active role in MoonDAO governance is simple: '}
+                <button
+                  className="underline"
+                  onClick={() => {
+                    if (!address)
+                      return toast.error('Please connect your wallet.')
+                    fundWallet(address, {
+                      chain: viemChains[selectedChain.slug],
+                    })
+                  }}
+                >
+                  {'fund your account'}
+                </button>
+                {',  '}
+                <button
+                  className="underline"
+                  onClick={() => router.push('/get-mooney')}
+                >
+                  {'swap for $MOONEY'}
+                </button>
+                {', and '}
+                <button
+                  className="underline"
+                  onClick={() => {
+                    router.push('/lock')
+                  }}
+                >
+                  {'lock for voting power'}
+                </button>
+                {'.'}
+              </p>
+            </div>
+          }
+          preFooter={
+            <NoticeFooter
+              defaultImage="../assets/MoonDAO-Logo-White.svg"
+              defaultTitle="Need Help?"
+              defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+              defaultButtonText="Submit a Ticket"
+              defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+              imageWidth={200}
+              imageHeight={200}
+            />
+          }
+          mainPadding
+          isProfile
+          mode="compact"
+          popOverEffect={false}
+        >
+          <section className="w-full min-h-[80vh] bg-gradient-to-b from-gray-900 to-black rounded-3xl">
+            <Container>
+              <div className="py-12">
+                <WithdrawVMooney />
+                <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-8 shadow-2xl max-w-2xl mx-auto">
                 <LockData
                   hasLock={hasLock}
                   VMOONEYBalance={VMOONEYBalance}
@@ -724,9 +725,10 @@ export default function Lock() {
                 </div>
               </div>
             </div>
-          </ContentLayout>
-        </Container>
-      </section>
+            </Container>
+          </section>
+        </ContentLayout>
+      </div>
     </>
   )
 }
