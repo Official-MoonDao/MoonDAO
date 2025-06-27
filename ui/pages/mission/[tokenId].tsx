@@ -164,8 +164,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     jbTokensContract,
   })
 
-  console.log(new Date(deadline))
-
   const { adminHatId, isManager } = useTeamData(
     teamContract,
     hatsContract,
