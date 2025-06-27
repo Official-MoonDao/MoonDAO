@@ -47,3 +47,5 @@ public/sitemap*.xml
 # generated files
 scripts/generated/*
 !scripts/generated/.gitkeep
+
+gc-citizen-storage-credentials.json

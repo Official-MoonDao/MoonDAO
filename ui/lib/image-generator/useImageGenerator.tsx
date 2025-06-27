@@ -1,5 +1,4 @@
 import { usePrivy } from '@privy-io/react-auth'
-import { useS3Upload } from 'next-s3-upload'
 import { useState } from 'react'
 import { fitImage } from '../utils/images'
 
@@ -12,17 +11,60 @@ export default function useImageGenerator(
   const [error, setError] = useState<string>()
 
   const { getAccessToken } = usePrivy()
-  const { uploadToS3 } = useS3Upload()
+
+  // Upload image to Google Cloud Storage
+  async function uploadToGoogleStorage(
+    file: File
+  ): Promise<{ url: string; filename: string }> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch('/api/google/storage/upload', {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to upload image to Google Storage')
+    }
+
+    const result = await response.json()
+
+    // Extract filename from URL for later deletion
+    const urlParts = result.url.split('/')
+    const filename = urlParts.slice(4).join('/') // Everything after bucket name
+
+    return { url: result.url, filename }
+  }
+
+  // Delete image from Google Cloud Storage
+  async function deleteFromGoogleStorage(filename: string) {
+    try {
+      await fetch('/api/google/storage/delete', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ filename }),
+      })
+    } catch (err) {
+      console.error('Failed to delete image from Google Storage:', err)
+      // Don't throw here - we don't want deletion failures to break the main flow
+    }
+  }
 
   async function generateImage() {
     setIsLoading(true)
+    let uploadedFilename: string | null = null
 
     if (!inputImage) {
       return console.error('inputImage is not defined')
     }
 
     try {
-      const { url } = await uploadToS3(inputImage)
+      // Upload to Google Cloud Storage
+      const { url, filename } = await uploadToGoogleStorage(inputImage)
+      uploadedFilename = filename
 
       const accessToken = await getAccessToken()
 
@@ -51,19 +93,24 @@ export default function useImageGenerator(
         throw new Error('Failed to create a comfy icu job')
       }
 
-      await checkJobStatus(jobId.id)
+      await checkJobStatus(jobId.id, uploadedFilename)
     } catch (err: any) {
       console.log(err)
       setIsLoading(false)
+
+      // Clean up uploaded file on error
+      if (uploadedFilename) {
+        await deleteFromGoogleStorage(uploadedFilename)
+      }
+
       const fittedImage = await fitImage(inputImage, 1024, 1024)
       setImage(fittedImage)
       setError('Unable to generate an image, please try again later.')
     }
   }
 
-  const checkJobStatus = async (jobId: string) => {
+  const checkJobStatus = async (jobId: string, uploadedFilename: string) => {
     let jobs = await fetch(generateApiRoute).then((res) => res.json())
-
     let job = jobs.find((job: any) => job.id === jobId)
 
     while (
@@ -86,6 +133,8 @@ export default function useImageGenerator(
         const fittedImage = await fitImage(inputImage, 1024, 1024)
         setImage(fittedImage)
       }
+      // Clean up uploaded file
+      await deleteFromGoogleStorage(uploadedFilename)
     }
 
     if (job.status === 'INSUFFICIENT_CREDIT') {
@@ -96,6 +145,8 @@ export default function useImageGenerator(
         const fittedImage = await fitImage(inputImage, 1024, 1024)
         setImage(fittedImage)
       }
+      // Clean up uploaded file
+      await deleteFromGoogleStorage(uploadedFilename)
     }
 
     if (job.status === 'COMPLETED') {
@@ -106,15 +157,16 @@ export default function useImageGenerator(
         },
         body: JSON.stringify({ url: job.output[0].url }),
       })
-      //get the text from the res
-      const blob = await res.blob()
 
-      // Create a File object from the blob
-      const fileName = `image_${jobId}.png` // You can customize the file name
+      const blob = await res.blob()
+      const fileName = `image_${jobId}.png`
       const file = new File([blob], fileName, { type: blob.type })
-      // Set the image as a File object
+
       setImage(file)
       setIsLoading(false)
+
+      // Clean up uploaded file after successful generation
+      await deleteFromGoogleStorage(uploadedFilename)
     }
   }
 
