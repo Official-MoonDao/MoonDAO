@@ -1,6 +1,7 @@
 import {
   BuildingLibraryIcon,
   BuildingStorefrontIcon,
+  CircleStackIcon,
   ClipboardDocumentListIcon,
   DocumentIcon,
   FolderIcon,
@@ -43,9 +44,13 @@ export default function useNavigation(citizen: any) {
             name: 'Constitution',
             href: '/constitution',
           },
-          {
-            name: '$MOONEY Token',
-          },
+        ],
+      },
+      {
+        name: '$MOONEY Token',
+        icon: CircleStackIcon,
+        href: '/get-mooney',
+        children: [
           {
             name: 'Buy',
             href: '/get-mooney',

@@ -5,7 +5,6 @@ import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
-import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import LanguageChange from './Sidebar/LanguageChange'
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { LogoSidebar } from '../assets'
@@ -207,31 +206,23 @@ const TopNavBar = ({
           </div>
 
           {/* Right side - Wallet and Settings - Desktop only */}
-          <div className="flex items-center space-x-1 lg:space-x-2 xl:space-x-3 flex-shrink-0">
+          <div className="flex items-center space-x-2 lg:space-x-3 xl:space-x-4 flex-shrink-0">
             {/* Wallet/Address Button */}
-            <div className="flex items-center space-x-1">
-              <div className="max-w-[200px] overflow-hidden scale-90 lg:scale-95 xl:scale-100 min-w-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap [&>button]:max-w-[200px]">
+            <div className="flex items-center space-x-2">
+              <div className="max-w-[200px] overflow-hidden scale-90 lg:scale-100 xl:scale-105 min-w-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap [&>button]:max-w-[200px]">
                 <PrivyConnectWallet
                   type="desktop"
                   citizenContract={citizenContract}
                 />
               </div>
-              <div className="scale-90 lg:scale-95 xl:scale-100 flex-shrink-0">
+              <div className="scale-90 lg:scale-100 xl:scale-105 flex-shrink-0">
                 <CitizenProfileLink />
               </div>
             </div>
             
-            {/* Settings */}
-            <div className="flex items-center space-x-1">
-              <div className="scale-90 lg:scale-95 xl:scale-100">
-                <LanguageChange />
-              </div>
-              <div className="scale-90 lg:scale-95 xl:scale-100">
-                <ColorsAndSocials
-                  lightMode={lightMode}
-                  setLightMode={setLightMode}
-                />
-              </div>
+            {/* Language Settings Only */}
+            <div className="scale-90 lg:scale-100 xl:scale-105">
+              <LanguageChange />
             </div>
           </div>
         </div>
