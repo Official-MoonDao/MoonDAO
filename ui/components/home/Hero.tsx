@@ -7,67 +7,17 @@ export default function Hero() {
     <section id="hero-section" className="overflow-visible relative w-full">
       <div
         id="hero-container"
-        className="flex flex-col md:h-[80vh] items-end justify-end lg:items-start lg:justify-end md:min-h-[90vmin] md:items-start px-[20px] md:px-[40px] min-h-[575px] mt-[-1px] p-5 pb-[80px] lg:pb-40 lg:min-h-[800px] relative z-10"
+        className="flex flex-col md:h-[80vh] items-end justify-end lg:items-start lg:justify-end md:min-h-[90vmin] md:items-start px-[20px] md:px-[40px] min-h-[575px] mt-[-1px] p-5 pb-[120px] lg:pb-60 lg:min-h-[800px] relative z-10"
       >
         <div
           id="background"
-          className="gradient-1 w-full h-full absolute top-0 right-0 rounded-bl-[2vmax] overflow-hidden z-0"
+          className="w-full h-full absolute top-0 right-0 overflow-hidden z-0 bg-cover bg-no-repeat"
+          style={{backgroundImage: 'url("https://sdmntprnorthcentralus.oaiusercontent.com/files/00000000-24ac-622f-91f1-7216e8ada7cb/raw?se=2025-06-28T05%3A29%3A55Z&sp=r&sv=2024-08-04&sr=b&scid=2a7d17cc-e6e0-554a-ba8b-f2088f491576&skoid=e9d2f8b1-028a-4cff-8eb1-d0e66fbefcca&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-06-27T20%3A53%3A12Z&ske=2025-06-28T20%3A53%3A12Z&sks=b&skv=2024-08-04&sig=y61yWthSWUwNH3S5EiPRlk50vmCylCtZDtewzSBFFQs%3D")', backgroundPosition: 'center 150%'}}
         ></div>
         <div
           id="tl-divider"
-          className="divider-1 absolute h-[90%] left-[-2px] top-0 w-[45%]"
+          className="absolute h-[90%] left-[-2px] top-0 w-[45%]"
         ></div>
-        <div
-          id="featured-image-container"
-          className="absolute h-[100%] left-0 overflow-hidden top-0 w-[100%]"
-        >
-          <div
-            id="feature-below-1400"
-            className="hide-xl absolute h-full mt-5 right-0 top-0 w-[80vmin] lg:w-[50vmax] md:w-[70%] max-[676px]:right-[50%] max-[676px]:translate-x-[50%]"
-          >
-            <Image
-              src="/assets/feature-1.png"
-              alt="Feature 1"
-              width={675}
-              height={675}
-            />
-          </div>
-          <div
-            id="feature-above-1200"
-            className="show-xl absolute h-full mt-5 right-0 top-0 w-[850px]"
-          >
-            <Image
-              src="/assets/feature-1.png"
-              alt="Feature 1"
-              width={850}
-              height={850}
-            />
-          </div>
-        </div>
-        <div
-          id="bottom-right-divider-below-1400"
-          className="hide-xl absolute bottom-[-2px] h-full hidden md:block md:right-0 md:w-[80%] right-[-20%] w-[60%] lg:w-[60%]"
-        >
-          <Image
-            className="absolute bottom-[-2px] right-0"
-            src="/assets/divider-2.svg"
-            alt="Divider 2"
-            width={1000}
-            height={1000}
-          />
-        </div>
-        <div
-          id="bottom-right-divider-above-1400"
-          className="show-xl absolute bottom-[-2px] right-0 h-full w-[900px]"
-        >
-          <Image
-            className="absolute bottom-[-2px] right-0"
-            src="/assets/divider-2.svg"
-            alt="Divider 2"
-            width={900}
-            height={900}
-          />
-        </div>
         <div
           id="content"
           className="relative w-full max-w-[1200px] mx-auto"
@@ -80,7 +30,7 @@ export default function Hero() {
           >
             <span
               style={{ fontSize: 'calc(min(4.5vmin, 30px))' }}
-              className="md:mt-[5vmax]"
+              className=""
             >
               The Internet's
             </span>

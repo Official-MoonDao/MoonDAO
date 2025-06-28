@@ -85,10 +85,10 @@ export default function Video() {
 
     return (
         <section id="video-section" 
-            className="relative bg-white lg:mt-[-110px] md:mt-[-50px] mt-[-60px] flex justify-center px-[20px] md:px-[40px]"
+            className="relative bg-white lg:mt-[-120px] md:mt-[-60px] mt-[-40px] flex justify-center px-[20px] md:px-[40px]"
             >
             <div id="video-container" 
-                className="max-w-[1200px] w-full"
+                className="max-w-[1200px] w-full pt-16"
                 >
                 <div id="video-wrapper" 
                     className="pt-[56.25%] relative rounded-lg z-40 group"

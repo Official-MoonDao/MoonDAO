@@ -6,7 +6,7 @@ export default function Callout1() {
     <section id="callout1-section" className="bg-dark-warm md:bg-transparent">
       <div
         id="callout1-container"
-        className="md:rounded-bl-[5vmax] z-20 relative w-[100%] h-[100%] bg-white mt-[-2vmax] pt-[2vmax] pb-0 lg:pb-10"
+        className="z-20 relative w-[100%] h-[100%] bg-white mt-[-2vmax] pt-[2vmax] pb-0 lg:pb-10"
       >
         <div
           id="content-container"
