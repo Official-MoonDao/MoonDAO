@@ -125,7 +125,7 @@ const TopNavBar = ({
                       // If they have both children and href, make it a clickable link with dropdown on hover
                       <Link
                         href={item.href}
-                        className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
+                        className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                           isActive
                             ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-400/30'
                             : 'text-gray-300 hover:text-white hover:bg-white/10'
@@ -138,7 +138,7 @@ const TopNavBar = ({
                     ) : (
                       // If they only have children (no href), keep as button
                       <button
-                        className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
+                        className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                           isActive
                             ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-400/30'
                             : 'text-gray-300 hover:text-white hover:bg-white/10'
@@ -152,7 +152,7 @@ const TopNavBar = ({
                   ) : (
                     <Link
                       href={item.href}
-                      className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
+                      className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                         isActive
                           ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-400/30'
                           : 'text-gray-300 hover:text-white hover:bg-white/10'
@@ -172,7 +172,7 @@ const TopNavBar = ({
                     >
                       {/* Invisible bridge to prevent dropdown from closing when moving mouse */}
                       <div className="h-2 w-full"></div>
-                      <div className="w-56 bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 rounded-xl shadow-2xl py-2">
+                      <div className="w-56 bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl py-2">
                       {item.children.map((child: any, j: number) => {
                         if (!child.href) {
                           return (

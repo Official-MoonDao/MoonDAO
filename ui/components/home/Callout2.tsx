@@ -29,30 +29,6 @@ export default function Callout2() {
               height={1000}
             />
           </div>
-          <div
-            id="featured-image-large"
-            className="hide-xl absolute top-0 right-0 w-[80vmin] md:w-[70%] lg:w-[45vmax] mt-[-5vmax] h-full mt-5"
-          >
-            <Image
-              className="absolute top-0 right-0"
-              src="/assets/feature-3.svg"
-              alt="Feature 3"
-              width={400}
-              height={400}
-            />
-          </div>
-          <div
-            id="featured-image-extra-large"
-            className="show-xl absolute top-0 right-0 w-[900px] h-[50vw]"
-          >
-            <Image
-              className="absolute top-0 right-0"
-              src="/assets/feature-3.svg"
-              alt="Feature 3"
-              width={650}
-              height={650}
-            />
-          </div>
         </div>
         <div
           id="content"
