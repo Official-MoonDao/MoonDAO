@@ -103,7 +103,7 @@ const TopNavBar = ({
           </Link>
 
           {/* Navigation Links - Show on large screens and up (1024px+) */}
-          <div className="hidden lg:flex items-center space-x-1 xl:space-x-2 flex-1 justify-center max-w-4xl mx-auto">
+          <div className="hidden lg:flex items-center space-x-1 xl:space-x-2 flex-1 justify-center max-w-[1024px] mx-auto">
             {navigation.filter(item => item && item.name !== 'Join').map((item, i) => {
               if (!item) return null
               
@@ -190,7 +190,7 @@ const TopNavBar = ({
                             className={`block px-4 py-2 text-sm transition-all duration-200 ${
                               isChildActive
                                 ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-l-2 border-blue-400'
-                                : 'text-gray-300 hover:text-white hover:bg-white/10'
+                                : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
                             }`}
                           >
                             {child.name}
