@@ -70,8 +70,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       } min-h-screen`}
     >
       <>
-        {/* Mobile menu top bar - for screens smaller than lg */}
-        <div className="lg:hidden">
+        {/* Mobile menu top bar - for screens smaller than xl */}
+        <div className="xl:hidden">
           <MobileMenuTop
             setSidebarOpen={setSidebarOpen}
             lightMode={lightMode}
@@ -89,8 +89,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
           isFullscreen={isFullscreen}
         />
 
-        {/* Top Navigation Bar - Show on large screens (lg) and up */}
-        <div className="hidden lg:block">
+        {/* Top Navigation Bar - Show on extra large screens (xl) and up */}
+        <div className="hidden xl:block">
           <TopNavBar
             navigation={navigation}
             lightMode={lightMode}
@@ -100,7 +100,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         </div>
 
         {/* Main Content - Full width with top nav */}
-        <main className={`lg:pt-16 w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'flex justify-center'}`}>
+        <main className={`xl:pt-16 w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'flex justify-center'}`}>
           <div className={`w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'max-w-7xl px-4 sm:px-6 lg:px-8'}`}>
             {children}
           </div>

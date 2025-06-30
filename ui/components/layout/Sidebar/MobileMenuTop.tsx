@@ -41,7 +41,7 @@ const MobileMenuTop = ({
         <div className="ml-2 w-full flex justify-center items-center">
           <PrivyConnectWallet type="mobile" citizenContract={citizenContract} />
         </div>
-        <div className={`flex items-center ${isFullscreen && 'mr-8'}`}>
+        <div className={`flex items-center pr-4 md:pr-6 ${isFullscreen && 'mr-8'}`}>
           <LanguageChange />
 
           <ColorsAndSocials lightMode={lightMode} setLightMode={setLightMode} />
