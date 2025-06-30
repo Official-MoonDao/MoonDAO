@@ -3,9 +3,6 @@ import { Chain as ThirdwebChain } from 'thirdweb/chains'
 
 const infuraKey = process.env.NEXT_PUBLIC_INFURA_KEY
 const etherscanApiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
-const arbiscanApiKey = process.env.NEXT_PUBLIC_ARBISCAN_API_KEY
-const basescanApiKey = process.env.NEXT_PUBLIC_BASESCAN_API_KEY
-const polygonscanApiKey = process.env.NEXT_PUBLIC_POLYGONSCAN_API_KEY
 
 export type Chain = ThirdwebChain
 
@@ -22,7 +19,7 @@ export const ethereum = defineChain({
     {
       name: 'Etherscan',
       url: 'https://etherscan.io',
-      apiUrl: `https://api.etherscan.io/api?apikey=${etherscanApiKey}`,
+      apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=1`,
     },
   ],
 })
@@ -40,7 +37,7 @@ export const arbitrum = defineChain({
     {
       name: 'Arbiscan',
       url: 'https://arbiscan.io',
-      apiUrl: `https://api.arbiscan.io/api?apikey=${arbiscanApiKey}`,
+      apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=42161`,
     },
   ],
 })
@@ -58,7 +55,7 @@ export const base = defineChain({
     {
       name: 'Basescan',
       url: 'https://basescan.org',
-      apiUrl: `https://api.basescan.org/api?apikey=${basescanApiKey}`,
+      apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=8453`,
     },
   ],
 })
@@ -76,7 +73,7 @@ export const polygon = defineChain({
     {
       name: 'PolygonScan',
       url: 'https://polygonscan.com',
-      apiUrl: `https://api.polygonscan.com/api?apikey=${polygonscanApiKey}`,
+      apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=137`,
     },
   ],
 })
@@ -94,7 +91,7 @@ export const sepolia = defineChain({
     {
       name: 'Etherscan',
       url: 'https://sepolia.etherscan.io',
-      apiUrl: `https://api-sepolia.etherscan.io/api?apikey=${etherscanApiKey}`,
+      apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=11155111`,
     },
   ],
 })
@@ -112,7 +109,7 @@ export const arbitrumSepolia = defineChain({
     {
       name: 'Arbiscan',
       url: 'https://sepolia.arbiscan.io',
-      apiUrl: `https://api-sepolia.arbiscan.io/api?apikey=${arbiscanApiKey}`,
+      apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=421611`,
     },
   ],
 })
@@ -130,7 +127,7 @@ export const optimismSepolia = defineChain({
     {
       name: 'Etherscan',
       url: 'https://sepolia-optimism.etherscan.io',
-      apiUrl: `https://api-sepolia-optimism.etherscan.io/api?apikey=${etherscanApiKey}`,
+      apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=11155420`,
     },
   ],
 })
@@ -148,7 +145,7 @@ export const baseSepolia = defineChain({
     {
       name: 'Basescan',
       url: 'https://sepolia.basescan.org',
-      apiUrl: `https://api-sepolia.basescan.org/api?apikey=${basescanApiKey}`,
+      apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=84532`,
     },
   ],
 })
