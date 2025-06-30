@@ -164,6 +164,9 @@ export const VMOONEY_FAUCET_ADDRESSES: Index = {
 
 export const FEE_HOOK_ADDRESSES: Index = {
   sepolia: sepoliaConfig.FeeHook,
+  'arbitrum-sepolia': arbitrumSepoliaConfig.FeeHook,
+  arbitrum: arbitrumConfig.FeeHook,
+  base: baseConfig.FeeHook,
 }
 
 export const REVNET_ADDRESSES: Index = {
@@ -220,13 +223,13 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 }
 
 export const MISSION_TABLE_ADDRESSES: Index = {
-  arbitrum: '0xdA53970Ba11835DC841527E21d039B6b9B12D47A',
-  sepolia: '0x8793092F0A19175E2605dd5f29c62dCf3b7110E7',
+  arbitrum: '0x7F44DcfD7c4b15696080c8A5A5F8171BB4eA47c9',
+  sepolia: '0xa908f5d4b158Dc927f99934787501eA31026f7CC',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
-  arbitrum: '0x7f8f57a30b55018FE98627eC40884A812916E04e',
-  sepolia: '0x483c03F0B203C14f1A481e1eFa8c0c9978D23FA9',
+  arbitrum: '0x94655918322DdaB02d93b01C2e8a7817B93965bC',
+  sepolia: '0xeE63fe6c7532394a48daA73f78F1a30D331ab44e',
 }
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {
@@ -349,7 +352,7 @@ export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
 
 // Shared across chains
 export const MISSION_CROSS_CHAIN_PAY_ADDRESS =
-  '0xDa05b72e03A621CED4b16831c4950201042Dcb7D'
+  '0xb55014C350C214aEc6d97D6ab112f1814c30e553'
 
 export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   [key: string]: number
@@ -395,4 +398,6 @@ export const BASE_ASSETS_URL =
 export const STAKED_ETH_ADDRESS = '0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8'
 
 export const MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL =
-  'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-sepolia/version/latest'
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    ? 'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-arb/version/latest'
+    : 'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-sepolia/version/latest'

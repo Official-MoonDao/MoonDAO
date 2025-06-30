@@ -8,6 +8,7 @@ import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
+import PoolDeployerABI from 'const/abis/PoolDeployer.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
@@ -25,7 +26,7 @@ import {
   JB_NATIVE_TOKEN_ID,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
-import { useNativeTokenSurplus } from 'juice-sdk-react'
+import { ethers } from 'ethers'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -44,6 +45,7 @@ import { useSubHats } from '@/lib/hats/useSubHats'
 import { sepolia } from '@/lib/infura/infuraChains'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
+import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import useMissionData from '@/lib/mission/useMissionData'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
@@ -83,7 +85,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   const [isLoading, setIsLoading] = useState(false)
   const account = useActiveAccount()
 
-  const selectedChain = sepolia
+  const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
   const [teamNFT, setTeamNFT] = useState<any>()
@@ -154,6 +156,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     stage,
     backers,
     deadline,
+    poolDeployerAddress,
   } = useMissionData({
     mission,
     missionTableContract,
@@ -215,7 +218,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 
   const duration = useMemo(() => {
     return formatTimeUntilDeadline(new Date(deadline))
-  }, [ruleset])
+  }, [ruleset, deadline])
 
   const deadlinePassed = Date.now() > deadline
 
@@ -330,9 +333,32 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     }
   }
 
-  function ProfileHeader() {
-    const { data: nativeTokenSurplus } = useNativeTokenSurplus()
+  const deployLiquidityPool = async () => {
+    if (!account || !poolDeployerAddress) return
+    const poolDeployerContract = getContract({
+      client: serverClient,
+      address: poolDeployerAddress,
+      abi: PoolDeployerABI as any,
+      chain: selectedChain,
+    })
 
+    try {
+      const tx = prepareContractCall({
+        contract: poolDeployerContract,
+        method: 'createAndAddLiquidity' as string,
+        params: [],
+      })
+
+      await sendAndConfirmTransaction({ transaction: tx, account })
+      toast.success('Liquidity pool deployed.')
+    } catch (err: any) {
+      console.error('Liquidity deployment error:', err)
+      toast.error('Failed to deploy liquidity pool.')
+    }
+  }
+
+  function ProfileHeader() {
+    const totalFunding = useTotalFunding(mission?.projectId)
     return (
       <div id="citizenheader-container" className="w-[100vw]">
         <div className="w-full">
@@ -443,7 +469,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                             />
                             <span className="mr-2">
                               {truncateTokenValue(
-                                Number(nativeTokenSurplus || 0) / 1e18,
+                                Number(totalFunding || 0) / 1e18,
                                 'ETH'
                               )}
                             </span>
@@ -452,8 +478,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                             </span>
                           </div>
                           <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
-                            (Number(nativeTokenSurplus || 0) / 1e18 || 0) *
-                              ethPrice
+                            (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
                           ).toLocaleString()} USD)`}</p>
                         </div>
 
@@ -479,7 +504,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       <div className="w-full">
                         <MissionFundingProgressBar
                           fundingGoal={fundingGoal}
-                          volume={Number(nativeTokenSurplus || 0) / 1e18}
+                          volume={Number(totalFunding || 0) / 1e18}
                         />
                       </div>
 
@@ -564,15 +589,14 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                       </div>
                     )}
                     {/* Send payouts and tokens Buttons - only shown to managers */}
-
                     {account && deadlinePassed && isManager && (
-                      <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto sm:absolute sm:right-2 sm:top-[250px]">
+                      <div className="flex flex-col gap-4 mt-8 md:-mt-8 w-full sm:w-auto sm:absolute sm:right-2 sm:top-[250px]">
                         <PrivyWeb3Button
                           requiredChain={DEFAULT_CHAIN_V5}
-                          className="gradient-2 rounded-full noPadding leading-none flex-1 sm:w-[180px]"
+                          className="gradient-2 rounded-full w-full noPadding leading-none flex-1 sm:w-[250px]"
                           label={
                             <span className="whitespace-nowrap">
-                              Withdraw Tokens
+                              Send Tokens
                             </span>
                           }
                           action={sendReservedTokens}
@@ -580,15 +604,28 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
                         />
                         <PrivyWeb3Button
                           requiredChain={DEFAULT_CHAIN_V5}
-                          className="gradient-2 rounded-full noPadding leading-none flex-1 sm:w-[180px]"
+                          className="gradient-2 rounded-full noPadding w-full leading-none flex-1 sm:w-[250px]"
                           label={
                             <span className="whitespace-nowrap">
-                              Withdraw ETH
+                              Send Payouts
                             </span>
                           }
                           action={sendPayouts}
                           isDisabled={!availablePayouts}
                         />
+                        {stage === 2 && (
+                          <PrivyWeb3Button
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="gradient-2 rounded-full noPadding w-full leading-none flex-1 sm:w-[250px]"
+                            label={
+                              <span className="whitespace-nowrap">
+                                Deploy Liquidity
+                              </span>
+                            }
+                            action={deployLiquidityPool}
+                            isDisabled={!poolDeployerAddress}
+                          />
+                        )}
                       </div>
                     )}
                   </div>
@@ -638,19 +675,17 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             {/* Youtube Video Section */}
             {mission?.metadata?.youtubeLink &&
               mission?.metadata?.youtubeLink !== '' && (
-                <div className="w-full px-[5vw]">
-                  <div className="w-full h-full">
-                    <iframe
-                      src={mission?.metadata?.youtubeLink?.replace(
-                        'watch?v=',
-                        'embed/'
-                      )}
-                      width="100%"
-                      height="500"
-                      allowFullScreen
-                      className="rounded-lg"
-                    />
-                  </div>
+                <div className="w-full p-4 2xl:p-0 max-w-[1200px]">
+                  <iframe
+                    src={mission?.metadata?.youtubeLink?.replace(
+                      'watch?v=',
+                      'embed/'
+                    )}
+                    width="100%"
+                    height="500"
+                    allowFullScreen
+                    className="rounded-2xl"
+                  />
                 </div>
               )}
             {/* Pay & Redeem Section */}
@@ -745,7 +780,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   try {
     const tokenId: any = params?.tokenId
 
-    const chain = sepolia
+    const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
     if (tokenId === undefined) {

@@ -4,7 +4,9 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
 
 const subgraphClient = createClient({
-  url: process.env.JB_SEPOLIA_SUBGRAPH_ENDPOINT as string,
+    url: (process.env.NEXT_PUBLIC_CHAIN == "mainnet" ?
+            process.env.JB_ARBITRUM_SUBGRAPH_ENDPOINT :
+            process.env.JB_SEPOLIA_SUBGRAPH_ENDPOINT) as string,
   exchanges: [fetchExchange, cacheExchange],
   fetchOptions: {
     headers: {

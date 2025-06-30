@@ -1,6 +1,7 @@
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   arbitrum,
   base,
@@ -67,20 +68,86 @@ export default function NetworkSelector({
 }: NetworkSelectorProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const [dropdown, setDropdown] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  })
+  const triggerRef = useRef<HTMLDivElement>(null)
 
   function selectChain(chain: any) {
     setSelectedChain(chain)
     setDropdown(false)
   }
 
+  function updateDropdownPosition() {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 8, // 8px gap (mt-2)
+        left: rect.left + window.scrollX,
+        width: 250,
+      })
+    }
+  }
+
   function handleClickOutside({ target }: any) {
-    if (target.closest('#network-selector')) return
+    if (
+      target.closest('#network-selector') ||
+      target.closest('#network-selector-dropdown')
+    )
+      return
     setDropdown(false)
   }
+
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    if (dropdown) {
+      updateDropdownPosition()
+      // Update position on scroll/resize
+      const handlePositionUpdate = () => updateDropdownPosition()
+      window.addEventListener('scroll', handlePositionUpdate, true)
+      window.addEventListener('resize', handlePositionUpdate)
+
+      return () => {
+        window.removeEventListener('scroll', handlePositionUpdate, true)
+        window.removeEventListener('resize', handlePositionUpdate)
+      }
+    }
+  }, [dropdown, compact])
+
+  const dropdownContent = dropdown && (
+    <div
+      id="network-selector-dropdown"
+      className="fixed flex flex-col gap-2 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl z-[9999] animate-fadeIn"
+      style={{
+        top: dropdownPosition.top,
+        left: dropdownPosition.left,
+        width: dropdownPosition.width,
+      }}
+    >
+      {chains && chains.length > 0 ? (
+        chains.map((chain) => (
+          <NetworkOption
+            key={chain.id}
+            chain={chain}
+            selectChain={selectChain}
+          />
+        ))
+      ) : (
+        <>
+          <NetworkOption chain={ethereum} selectChain={selectChain} />
+          <NetworkOption chain={arbitrum} selectChain={selectChain} />
+          <NetworkOption chain={base} selectChain={selectChain} />
+          <NetworkOption chain={polygon} selectChain={selectChain} />
+        </>
+      )}
+    </div>
+  )
 
   return (
     <div
@@ -88,6 +155,7 @@ export default function NetworkSelector({
       className={`${!compact && 'w-[250px]'} flex flex-col relative`}
     >
       <div
+        ref={triggerRef}
         id="network-selector-dropdown-button"
         className="flex items-center gap-3 p-3 bg-black/20 rounded-2xl border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer"
         onClick={(e) => {
@@ -107,39 +175,19 @@ export default function NetworkSelector({
             {selectedChain.name || ''}
           </span>
         )}
-        <button
-          className={`transition-transform duration-200 ${
-            dropdown && 'rotate-180'
-          }`}
-        >
-          <ChevronDownIcon height={16} width={16} className="text-white" />
-        </button>
+        {!iconsOnly && (
+          <button
+            className={`transition-transform duration-200 ${
+              dropdown && 'rotate-180'
+            }`}
+          >
+            <ChevronDownIcon height={16} width={16} className="text-white" />
+          </button>
+        )}
       </div>
-      {dropdown && (
-        <div
-          id="network-selector-dropdown"
-          className={`${
-            !compact && 'w-[250px]'
-          } absolute top-full mt-2 flex flex-col gap-2 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl z-50 animate-fadeIn`}
-        >
-          {chains && chains.length > 0 ? (
-            chains.map((chain) => (
-              <NetworkOption
-                key={chain.id}
-                chain={chain}
-                selectChain={selectChain}
-              />
-            ))
-          ) : (
-            <>
-              <NetworkOption chain={ethereum} selectChain={selectChain} />
-              <NetworkOption chain={arbitrum} selectChain={selectChain} />
-              <NetworkOption chain={base} selectChain={selectChain} />
-              <NetworkOption chain={polygon} selectChain={selectChain} />
-            </>
-          )}
-        </div>
-      )}
+      {typeof window !== 'undefined' &&
+        dropdownContent &&
+        createPortal(dropdownContent, document.body)}
     </div>
   )
 }

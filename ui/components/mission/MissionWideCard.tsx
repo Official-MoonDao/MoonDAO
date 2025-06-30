@@ -1,11 +1,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { useNativeTokenSurplus } from 'juice-sdk-react'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { formatTimeUntilDeadline } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import StandardButton from '../layout/StandardButton'
@@ -67,7 +67,7 @@ export default function MissionWideCard({
   const [teamNFT, setTeamNFT] = useState<any>(null)
 
   const { data: ethPrice } = useETHPrice(1)
-  const { data: nativeTokenSurplus } = useNativeTokenSurplus()
+  const totalFunding = useTotalFunding(mission?.projectId)
 
   const duration = useMemo(() => {
     return deadline ? formatTimeUntilDeadline(new Date(deadline)) : undefined
@@ -122,14 +122,14 @@ export default function MissionWideCard({
                         />
                         <span className="mr-2">
                           {truncateTokenValue(
-                            Number(nativeTokenSurplus || 0) / 1e18,
+                            Number(totalFunding || 0) / 1e18,
                             'ETH'
                           )}
                         </span>
                         <span className="text-sm md:text-base">ETH RAISED</span>
                       </div>
                       <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
-                        (Number(nativeTokenSurplus || 0) / 1e18) * ethPrice
+                        (Number(totalFunding || 0) / 1e18) * ethPrice
                       ).toLocaleString()} USD)`}</p>
                     </div>
                   )}
@@ -218,12 +218,29 @@ export default function MissionWideCard({
           </div>
         }
         paragraph={
-          <div
-            className="prose prose-invert max-w-none"
-            dangerouslySetInnerHTML={{
-              __html: mission?.metadata?.description || '',
-            }}
-          />
+          <>
+            {mission?.metadata?.youtubeLink && (
+              <div className="my-4 w-full h-full">
+                <iframe
+                  src={mission?.metadata?.youtubeLink?.replace(
+                    'watch?v=',
+                    'embed/'
+                  )}
+                  width="100%"
+                  height="500"
+                  allowFullScreen
+                  allow="autoplay; fullscreen"
+                  className="rounded-2xl"
+                />
+              </div>
+            )}
+            <div
+              className="prose prose-invert max-w-none"
+              dangerouslySetInnerHTML={{
+                __html: mission?.metadata?.description || '',
+              }}
+            />
+          </>
         }
         image={
           missionImage

@@ -234,7 +234,7 @@ function MissionPayRedeemContent({
                 )} $${token?.tokenSymbol}`}</p>
               </div>
             )}
-            {isRefundable && (
+            {isRefundable && (tokenBalance > 0 || tokenCredit > 0) && (
               <>
                 <PrivyWeb3Button
                   id="redeem-button"
@@ -286,7 +286,7 @@ export default function MissionPayRedeem({
   forwardClient,
 }: MissionPayRedeemProps) {
   const { selectedChain } = useContext(ChainContextV5)
-  const defaultChainSlug = getChainSlug(sepolia)
+  const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN != 'mainnet'
@@ -428,7 +428,7 @@ export default function MissionPayRedeem({
         params: [
           mission?.projectId,
           JB_NATIVE_TOKEN_ADDRESS,
-          inputValue * 1e18,
+          BigInt(Math.trunc(inputValue * 1e18)),
           address || ZERO_ADDRESS,
           output * 1e18,
           message,

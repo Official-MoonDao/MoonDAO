@@ -21,19 +21,20 @@ export default function Home({ linkSource }: any) {
   const { citizen } = useContext(CitizenContext)
 
   //If the user is loading the page directly and has a citizen nft, redirect to their citizen page
-  useEffect(() => {
-    if (
-      linkSource === 'direct' &&
-      citizen?.metadata?.name &&
-      citizen?.metadata?.id
-    )
-      router.push(
-        `/citizen/${generatePrettyLinkWithId(
-          citizen?.metadata?.name as string,
-          citizen?.metadata?.id
-        )}`
-      )
-  }, [linkSource, citizen, router])
+  // Commented out to allow users to stay on homepage even if they have a citizen NFT
+  // useEffect(() => {
+  //   if (
+  //     linkSource === 'direct' &&
+  //     citizen?.metadata?.name &&
+  //     citizen?.metadata?.id
+  //   )
+  //     router.push(
+  //       `/citizen/${generatePrettyLinkWithId(
+  //         citizen?.metadata?.name as string,
+  //         citizen?.metadata?.id
+  //       )}`
+  //     )
+  // }, [linkSource, citizen, router])
 
   return (
     <Container>
@@ -52,13 +53,9 @@ export default function Home({ linkSource }: any) {
         <PartnerSection />
         <PageEnder />
         <ExpandedFooter 
-          callToActionImage="/images/footer-cta.png"
-          callToActionTitle="Join the Network"
-          callToActionButtonText="Learn More"
-          callToActionButtonLink="/join"
-          hasCallToAction={true}
+          hasCallToAction={false}
           darkBackground={true}
-          isFullwidth={false}
+          isFullwidth={true}
         />
       </div>
     </Container>

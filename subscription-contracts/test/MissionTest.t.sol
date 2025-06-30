@@ -530,7 +530,7 @@ contract MissionTest is Test, Config {
         uint256 tokensTeamVesting = jbTokens.totalBalanceOf(address(teamVesting), projectId);
         uint256 tokensMoonDAOVesting = jbTokens.totalBalanceOf(address(moonDAOVesting), projectId);
         assertEq(tokensTeamVesting, 300 * 1e18);
-        assertEq(tokensMoonDAOVesting, 150 * 1e18);
+        assertEq(tokensMoonDAOVesting, 175 * 1e18);
         assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 0);
         assertEq(jbTokens.totalBalanceOf(teamAddress, projectId), 0);
 
@@ -541,25 +541,25 @@ contract MissionTest is Test, Config {
         }
         skip(165 days);
         assertEq(teamVesting.vestedAmount(), 300/4 * 1e18);
-        assertEq(moonDAOVesting.vestedAmount(), 150/4 * 1e18);
+        assertEq(moonDAOVesting.vestedAmount(), 175/4 * 1e18);
 
         vm.startPrank(TREASURY);
         moonDAOVesting.withdraw();
         vm.stopPrank();
-        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 150/4 * 1e18);
+        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 175/4 * 1e18);
 
         skip(365 days);
         assertEq(teamVesting.vestedAmount(), 300/2 * 1e18);
-        assertEq(moonDAOVesting.vestedAmount(), 150/2 * 1e18);
+        assertEq(moonDAOVesting.vestedAmount(), 175/2 * 1e18);
 
         vm.startPrank(TREASURY);
         moonDAOVesting.withdraw();
         vm.stopPrank();
-        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 150/2 * 1e18);
+        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 175/2 * 1e18);
 
         skip(730 days);
         assertEq(teamVesting.vestedAmount(), 300 * 1e18);
-        assertEq(moonDAOVesting.vestedAmount(), 150 * 1e18);
+        assertEq(moonDAOVesting.vestedAmount(), 175 * 1e18);
 
         vm.startPrank(teamAddress);
         vm.expectRevert("Only beneficiary can withdraw");
@@ -568,7 +568,7 @@ contract MissionTest is Test, Config {
 
         vm.startPrank(TREASURY);
         moonDAOVesting.withdraw();
-        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 150 * 1e18);
+        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 175 * 1e18);
 
         vm.expectRevert("No tokens available for withdrawal");
         moonDAOVesting.withdraw();
@@ -583,6 +583,7 @@ contract MissionTest is Test, Config {
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
         uint256 balance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
         assertEq(balance, 0);
+        assertEq(missionCreator.stage(missionId), 1);
 
         // Pay enough to pass goal and skip to deadline
         uint256 payAmount = 10_000_000_000_000_000_000;
@@ -600,6 +601,7 @@ contract MissionTest is Test, Config {
         uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
         uint256 treasuryBalanceBefore = address(TREASURY).balance;
         uint256 teamBalanceBefore = address(teamAddress).balance;
+        assertEq(missionCreator.stage(missionId), 2);
         uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -607,6 +609,15 @@ contract MissionTest is Test, Config {
             uint32(uint160(JBConstants.NATIVE_TOKEN)),
             0
         );
+        assertEq(missionCreator.stage(missionId), 2);
+        uint256 used = jbTerminalStore.usedPayoutLimitOf(
+          address(terminal),
+          projectId,
+          JBConstants.NATIVE_TOKEN,
+          2, // second cycle
+          uint32(uint160(JBConstants.NATIVE_TOKEN))
+        );
+        assertEq(used, payoutAmount);
 
         PoolDeployer poolDeployer = PoolDeployer(payable(missionCreator.missionIdToPoolDeployer(missionId)));
         vm.expectRevert("Token already set");
@@ -623,7 +634,6 @@ contract MissionTest is Test, Config {
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user2));
         poolDeployer.setHookAddress(address(0));
         vm.stopPrank();
-
     }
 
     function testAMM() public {
@@ -659,7 +669,7 @@ contract MissionTest is Test, Config {
 
         PoolDeployer poolDeployer = PoolDeployer(payable(missionCreator.missionIdToPoolDeployer(missionId)));
         uint256 tokensPoolDeployer = jbTokens.totalBalanceOf(address(poolDeployer), projectId);
-        assertEq(tokensPoolDeployer, 1_000 * 1e18);
+        assertEq(tokensPoolDeployer, 500 * 1e18);
         // JB splits have 7 decimals of precision, so check up to 6 decimals
         assertApproxEqRel(address(poolDeployer).balance, terminalBalance * 5 / 100, 0.0000001e18);
         poolDeployer.createAndAddLiquidity();

@@ -66,8 +66,7 @@ export default function Launch({ missions }: any) {
     },
   })
 
-  // const { selectedChain } = useContext(ChainContextV5)
-  const selectedChain = sepolia
+  const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
 
   const teamContract = useContract({
@@ -176,12 +175,25 @@ export default function Launch({ missions }: any) {
         status: status,
       })
     }
-  }, [status, shallowQuery])
+  }, [status])
 
   useEffect(() => {
     if (router.query.status) {
-      setStatus(router.query.status as any)
+      if (
+        !(
+          user &&
+          router.query.status === 'loggingIn' &&
+          (status === 'create' || status === 'apply')
+        )
+      ) {
+        setStatus(router.query.status as any)
+      }
+    } else {
+      setStatus('idle')
     }
+  }, [router.query.status, user])
+
+  useEffect(() => {
     if (
       (router.query.status === 'create' ||
         router.query.status === 'loggingIn') &&
@@ -338,6 +350,7 @@ export default function Launch({ missions }: any) {
           width={500}
           height={500}
         />
+<<<<<<< HEAD
         <div
           id="featured-missions-container"
           className="mt-[2vw] md:mt-[1vw] pb-[5vw] mb-[2vw] md:mb-[-5vw] md:pb-0 md:pt-0 relative flex flex-col justify-center items-center md:flex-row z-20 mb-[-5vw] w-full md:max-w-[1000px] mx-auto"
@@ -345,33 +358,45 @@ export default function Launch({ missions }: any) {
           <JuiceProviders
             projectId={missions?.[FEATURED_MISSION_INDEX]?.projectId}
             selectedChain={selectedChain}
+=======
+        {missions?.[FEATURED_MISSION_INDEX]?.projectId !== undefined ? (
+          <div
+            id="featured-missions-container"
+            className="mt-[2vw] md:mt-[1vw] pb-[5vw] mb-[2vw] md:mb-[-5vw] md:pb-0 md:pt-0 relative flex flex-col justify-center items-center md:flex-row z-20 mb-[-5vw] w-full md:max-w-[1000px] mx-auto"
+>>>>>>> a77564367af168ad52fb5e1958b365e69c929223
           >
-            <MissionWideCard
-              mission={
-                {
-                  ...missions?.[FEATURED_MISSION_INDEX],
-                  metadata: {
-                    ...missions?.[FEATURED_MISSION_INDEX]?.metadata,
-                    description: '',
-                  },
-                } as any
-              }
-              stage={featuredMissionStage}
-              deadline={featuredMissionDeadline}
-              backers={featuredMissionBackers}
-              token={featuredMissionToken}
-              ruleset={featuredMissionRuleset}
-              subgraphData={featuredMissionSubgraphData}
-              fundingGoal={featuredMissionFundingGoal}
-              teamContract={teamContract}
+            <JuiceProviders
+              projectId={missions?.[FEATURED_MISSION_INDEX]?.projectId || 0}
               selectedChain={selectedChain}
-              learnMore
-              showMore
-              compact
-              linkToMission
-            />
-          </JuiceProviders>
-        </div>
+            >
+              <MissionWideCard
+                mission={
+                  {
+                    ...missions?.[FEATURED_MISSION_INDEX],
+                    metadata: {
+                      ...missions?.[FEATURED_MISSION_INDEX]?.metadata,
+                      description: '',
+                    },
+                  } as any
+                }
+                stage={featuredMissionStage}
+                backers={featuredMissionBackers}
+                token={featuredMissionToken}
+                ruleset={featuredMissionRuleset}
+                subgraphData={featuredMissionSubgraphData}
+                fundingGoal={featuredMissionFundingGoal}
+                teamContract={teamContract}
+                selectedChain={selectedChain}
+                learnMore
+                showMore
+                compact
+                linkToMission
+              />
+            </JuiceProviders>
+          </div>
+        ) : (
+          <></>
+        )}
       </section>
 
       <section
@@ -753,7 +778,7 @@ export default function Launch({ missions }: any) {
 
 export const getStaticProps: GetStaticProps = async () => {
   try {
-    const chain = sepolia
+    const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
     const missionTableContract = getContract({

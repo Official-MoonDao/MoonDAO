@@ -46,8 +46,8 @@ export function NoticeFooter({
   citizenDescription = "Submit a ticket in the support channel on MoonDAO's Discord!",
   citizenButtonText = 'Submit a Ticket',
   citizenButtonLink = 'https://discord.com/channels/914720248140279868/1212113005836247050',
-  imageWidth = 450,
-  imageHeight = 450,
+  imageWidth = 120,
+  imageHeight = 120,
   iconWidth = 40,
   iconHeight = 40,
   darkBackground = true,
@@ -110,18 +110,19 @@ export function NoticeFooter({
         darkBackground ? 'md:pl-5 pb-10 w-full pt-5' : 'p-5 mr-5'
       }`}
     >
-      <div className="mx-[3vw] mb-5 py-5 sm:p-5 sm:pb-10 lg:pl-10 flex items-center lg:ml-[80px] 2xl:ml-[125px] 2xl:max-w-[1040px] gradient-15 rounded-[20px] sm:rounded-tr-0 sm:rounded-bl-0 2xl:rounded-tr-[20px] 2xl:rounded-bl-[20px]">
-        <div id="Image container" className="hidden opacity-[90%] lg:block ">
-          <Image
-            src={notice.image}
-            alt="Logo"
-            width={imageWidth}
-            height={imageHeight}
-          />
-        </div>
-        <div id="callout-container" className="flex flex-col mr-10 ml-5">
-          <div className="flex wrap items-center">
-            <div className="flex justify-center">
+      <div className="mx-[3vw] mb-5 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl lg:ml-[80px] 2xl:ml-[125px] 2xl:max-w-[1040px]">
+        <div className="bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-[2vmax] border border-slate-600/30 p-8 flex flex-col lg:flex-row items-center gap-6">
+          <div id="Image container" className="hidden lg:block flex-shrink-0">
+            <Image
+              src={notice.image}
+              alt="Logo"
+              width={imageWidth}
+              height={imageHeight}
+              className="opacity-90 w-32 h-32 lg:w-40 lg:h-40 object-contain"
+            />
+          </div>
+          <div id="callout-container" className="flex flex-col flex-1 text-center lg:text-left">
+            <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
               <div id="Image container" className="lg:hidden">
                 <Image
                   src="../assets/icon-star.svg"
@@ -130,25 +131,27 @@ export function NoticeFooter({
                   height={iconHeight}
                 />
               </div>
-              <h3 className="flex items-center justify-center ml-2 lg:ml-0 header opacity-80 font-GoodTimes !text-[5vw] sm:!text-[4vw] md:!text-[2vw]">
+              <h3 className="font-GoodTimes text-white text-2xl md:text-3xl lg:text-4xl">
                 {notice.title}
               </h3>
             </div>
-          </div>
-          <p className="opacity-60 pt-2">{notice.description}</p>
-          <Link
-            href={notice.buttonLink}
-            className="inline-block"
-            target="_blank"
-            passHref
-          >
-            <div
-              id="button-container"
-              className="gradient-2 hover:pl-7 transform transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-5 px-5 py-3 inline-block"
+            <p className="text-slate-300 text-base md:text-lg mb-6 leading-relaxed">
+              {notice.description}
+            </p>
+            <Link
+              href={notice.buttonLink}
+              className="inline-block w-fit mx-auto lg:mx-0"
+              {...(notice.buttonLink?.startsWith('http') && {
+                target: "_blank",
+                rel: "noopener noreferrer"
+              })}
+              passHref
             >
-              {notice.buttonText}
-            </div>
-          </Link>
+              <div className="gradient-2 hover:scale-105 transform transition-all ease-in-out duration-300 rounded-full px-8 py-4 inline-block text-white font-medium text-lg hover:shadow-lg">
+                {notice.buttonText}
+              </div>
+            </Link>
+          </div>
         </div>
       </div>
       <ExpandedFooter 

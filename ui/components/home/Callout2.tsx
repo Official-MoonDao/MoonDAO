@@ -56,20 +56,20 @@ export default function Callout2() {
         </div>
         <div
           id="content"
-          className="relative pt-[220px] lg:pt-20 md:pb-0 w-full pr-5 lg:w-[70%]"
+          className="relative pt-[220px] lg:pt-20 md:pb-0 w-full lg:w-[70%] mx-auto text-center"
         >
-          <h1 className="header font-GoodTimes">
+          <h1 className="header font-GoodTimes text-left max-w-[500px] mx-auto">
             MoonDAO is <br></br>Permissionless
           </h1>
           <p
             id="paragraph"
-            className="pt-2 pb-5 text-lg w-[100%] md:w-[100%] lg:max-w-[500px]"
+            className="pt-2 pb-5 text-lg max-w-[500px] text-left mx-auto"
           >
             This is an open source space platform where everything is proposed,
             governed, and created by members. Co-govern the treasury by locking
             $MOONEY to become a voter.
           </p>
-          <div className="flex items-center gap-2 mb-5">
+          <div className="flex items-center justify-start gap-2 mb-5 max-w-[500px] mx-auto">
             <button
               onClick={() => {
                 navigator.clipboard.writeText(
@@ -90,15 +90,17 @@ export default function Callout2() {
               </span>
             </button>
           </div>
-          <StandardButton
-            backgroundColor="bg-white"
-            textColor="text-dark-cool"
-            borderRadius="rounded-tl-[10px] rounded-[2vmax]"
-            link="/get-mooney"
-            paddingOnHover="pl-5"
-          >
-            Buy $MOONEY
-          </StandardButton>
+          <div className="max-w-[500px] mx-auto flex justify-start">
+            <StandardButton
+              backgroundColor="bg-white"
+              textColor="text-dark-cool"
+              borderRadius="rounded-tl-[10px] rounded-[2vmax]"
+              link="/get-mooney"
+              paddingOnHover="pl-5"
+            >
+              Buy $MOONEY
+            </StandardButton>
+          </div>
         </div>
       </div>
       <div
@@ -107,7 +109,7 @@ export default function Callout2() {
       >
         <div
           id="astronauts-container"
-          className="p-1 flex flex-wrap w-full justify-center sm:justify-around md:justify-start lg:ml-[5%] gap-5 scale-[90%] md:scale-[100%] lg:scale-[115%] my-[20px] z-50"
+          className="p-1 flex flex-wrap w-full justify-center gap-5 scale-[90%] md:scale-[100%] lg:scale-[115%] my-[20px] z-50"
         >
           <Speaker
             alt="Coby Cotton"
