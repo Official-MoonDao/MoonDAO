@@ -1,5 +1,5 @@
 import { createThirdwebClient } from 'thirdweb'
-import { sepolia } from 'thirdweb/chains'
+import { sepolia } from '@/lib/infura/infuraChains'
 
 export const cypressThirdwebClient = createThirdwebClient({
   clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string,

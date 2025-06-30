@@ -3,10 +3,10 @@ import { BigNumber } from 'ethers'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import { readContract } from 'thirdweb'
-import { polygon } from 'thirdweb/chains'
 import { getOwnedNFTs } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { polygon } from '@/lib/infura/infuraChains'
 
 type SubmitInfoModalProps = {
   balance: any

@@ -25,6 +25,7 @@ import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { sepolia } from '@/lib/infura/infuraChains'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useMissionData from '@/lib/mission/useMissionData'
@@ -349,10 +350,20 @@ export default function Launch({ missions }: any) {
           width={500}
           height={500}
         />
+<<<<<<< HEAD
+        <div
+          id="featured-missions-container"
+          className="mt-[2vw] md:mt-[1vw] pb-[5vw] mb-[2vw] md:mb-[-5vw] md:pb-0 md:pt-0 relative flex flex-col justify-center items-center md:flex-row z-20 mb-[-5vw] w-full md:max-w-[1000px] mx-auto"
+        >
+          <JuiceProviders
+            projectId={missions?.[FEATURED_MISSION_INDEX]?.projectId}
+            selectedChain={selectedChain}
+=======
         {missions?.[FEATURED_MISSION_INDEX]?.projectId !== undefined ? (
           <div
             id="featured-missions-container"
             className="mt-[2vw] md:mt-[1vw] pb-[5vw] mb-[2vw] md:mb-[-5vw] md:pb-0 md:pt-0 relative flex flex-col justify-center items-center md:flex-row z-20 mb-[-5vw] w-full md:max-w-[1000px] mx-auto"
+>>>>>>> a77564367af168ad52fb5e1958b365e69c929223
           >
             <JuiceProviders
               projectId={missions?.[FEATURED_MISSION_INDEX]?.projectId || 0}

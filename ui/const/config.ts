@@ -1,4 +1,4 @@
-import { arbitrum, sepolia, arbitrumSepolia } from 'thirdweb/chains'
+import { arbitrum, sepolia, arbitrumSepolia } from '../lib/infura/infuraChains'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -351,7 +351,8 @@ export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
 }
 
 // Shared across chains
-export const MISSION_CROSS_CHAIN_PAY_ADDRESS = "0xb55014C350C214aEc6d97D6ab112f1814c30e553"
+export const MISSION_CROSS_CHAIN_PAY_ADDRESS =
+  '0xb55014C350C214aEc6d97D6ab112f1814c30e553'
 
 export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   [key: string]: number
@@ -386,10 +387,7 @@ export const CHAIN_TOKEN_NAMES: Index = {
   sepolia: 'ETH',
 }
 
-export const IPFS_GATEWAY =
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? 'https://gray-main-toad-36.mypinata.cloud/ipfs/'
-    : 'https://gray-main-toad-36.mypinata.cloud/ipfs/' // Use mainnet gateway for testnet too since testnet gateway returns 403
+export const IPFS_GATEWAY = 'https://gray-main-toad-36.mypinata.cloud/ipfs/'
 
 export const ARBITRUM_ASSETS_URL =
   'https://safe-client.safe.global/v1/chains/42161/safes/0xAF26a002d716508b7e375f1f620338442F5470c0/balances/usd?trusted=true'

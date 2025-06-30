@@ -11,7 +11,7 @@ import {
   ethereum,
   polygon,
   sepolia,
-} from 'thirdweb/chains'
+} from '@/lib/infura/infuraChains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 

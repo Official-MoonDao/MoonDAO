@@ -1,5 +1,6 @@
 import { useContext, useEffect } from 'react'
-import { ethereum, mumbai, polygon } from 'thirdweb/chains'
+import { mumbai } from 'thirdweb/chains'
+import { ethereum, polygon } from '@/lib/infura/infuraChains'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'

@@ -25,6 +25,12 @@ import {
   sendAndConfirmTransaction,
   waitForReceipt,
 } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
+import useWindowSize from '../../lib/team/use-window-size'
+import useSubscribe from '@/lib/convert-kit/useSubscribe'
+import useTag from '@/lib/convert-kit/useTag'
+import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
+import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import {
   arbitrum,
   base,
@@ -32,13 +38,7 @@ import {
   sepolia,
   arbitrumSepolia,
   Chain,
-} from 'thirdweb/chains'
-import { useActiveAccount } from 'thirdweb/react'
-import useWindowSize from '../../lib/team/use-window-size'
-import useSubscribe from '@/lib/convert-kit/useSubscribe'
-import useTag from '@/lib/convert-kit/useTag'
-import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
-import useImageGenerator from '@/lib/image-generator/useImageGenerator'
+} from '@/lib/infura/infuraChains'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'

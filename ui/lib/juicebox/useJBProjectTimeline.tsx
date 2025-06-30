@@ -1,7 +1,7 @@
 import EthDater from 'ethereum-block-by-date'
 import { useEffect, useMemo, useState } from 'react'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
-import { sepolia } from 'thirdweb/chains'
+import { sepolia } from '@/lib/infura/infuraChains'
 import client from '../thirdweb/client'
 import { wadToFloat } from '../utils/numbers'
 import { daysToMS, minutesToMS } from '../utils/timestamp'
