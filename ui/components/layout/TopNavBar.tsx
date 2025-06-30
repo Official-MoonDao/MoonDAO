@@ -5,7 +5,6 @@ import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
-import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import LanguageChange from './Sidebar/LanguageChange'
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { LogoSidebar } from '../assets'
@@ -104,7 +103,7 @@ const TopNavBar = ({
           </Link>
 
           {/* Navigation Links - Show on large screens and up (1024px+) */}
-          <div className="hidden lg:flex items-center space-x-1 xl:space-x-2 flex-1 justify-center max-w-4xl mx-auto">
+          <div className="hidden lg:flex items-center space-x-1 xl:space-x-2 flex-1 justify-center max-w-[1024px] mx-auto">
             {navigation.filter(item => item && item.name !== 'Join').map((item, i) => {
               if (!item) return null
               
@@ -191,7 +190,7 @@ const TopNavBar = ({
                             className={`block px-4 py-2 text-sm transition-all duration-200 ${
                               isChildActive
                                 ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-l-2 border-blue-400'
-                                : 'text-gray-300 hover:text-white hover:bg-white/10'
+                                : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
                             }`}
                           >
                             {child.name}
@@ -207,31 +206,23 @@ const TopNavBar = ({
           </div>
 
           {/* Right side - Wallet and Settings - Desktop only */}
-          <div className="flex items-center space-x-1 lg:space-x-2 xl:space-x-3 flex-shrink-0">
+          <div className="flex items-center space-x-2 lg:space-x-3 xl:space-x-4 flex-shrink-0">
             {/* Wallet/Address Button */}
-            <div className="flex items-center space-x-1">
-              <div className="max-w-[200px] overflow-hidden scale-90 lg:scale-95 xl:scale-100 min-w-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap [&>button]:max-w-[200px]">
+            <div className="flex items-center space-x-2">
+              <div className="max-w-[200px] overflow-hidden scale-90 lg:scale-100 xl:scale-105 min-w-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap [&>button]:max-w-[200px]">
                 <PrivyConnectWallet
                   type="desktop"
                   citizenContract={citizenContract}
                 />
               </div>
-              <div className="scale-90 lg:scale-95 xl:scale-100 flex-shrink-0">
+              <div className="scale-90 lg:scale-100 xl:scale-105 flex-shrink-0">
                 <CitizenProfileLink />
               </div>
             </div>
             
-            {/* Settings */}
-            <div className="flex items-center space-x-1">
-              <div className="scale-90 lg:scale-95 xl:scale-100">
-                <LanguageChange />
-              </div>
-              <div className="scale-90 lg:scale-95 xl:scale-100">
-                <ColorsAndSocials
-                  lightMode={lightMode}
-                  setLightMode={setLightMode}
-                />
-              </div>
+            {/* Language Settings Only */}
+            <div className="scale-90 lg:scale-100 xl:scale-105">
+              <LanguageChange />
             </div>
           </div>
         </div>

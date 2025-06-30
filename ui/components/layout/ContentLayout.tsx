@@ -132,7 +132,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                   <div
                     id="header-element"
                     className={`
-                                            w-full leading-[1] font-GoodTimes 
+                                            w-full max-w-[1200px] leading-[1] font-GoodTimes 
                                             ${isCompact ? 'pt-0' : 'lg:pt-20'} 
                                         `}
                     style={{ fontSize: headerSize || 'max(25px, 4vw)' }}
