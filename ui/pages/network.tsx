@@ -88,7 +88,7 @@ export default function Network({
     (newTab: string) => {
       setTab(newTab)
       setPageIdx(1)
-      shallowQueryRoute({ tab: newTab, page: '1'})
+      shallowQueryRoute({ tab: newTab, page: '1' })
     },
     [shallowQueryRoute]
   )
@@ -96,7 +96,7 @@ export default function Network({
   const handlePageChange = useCallback(
     (newPage: number) => {
       setPageIdx(newPage)
-      shallowQueryRoute({ tab, page: newPage.toString()})
+      shallowQueryRoute({ tab, page: newPage.toString() })
     },
     [shallowQueryRoute]
   )
@@ -374,7 +374,9 @@ export default function Network({
                       }
                     }}
                     className={`pagination-button transition-opacity hover:scale-110 ${
-                      pageIdx === 1 ? 'opacity-30' : 'cursor-pointer opacity-100'
+                      pageIdx === 1
+                        ? 'opacity-30'
+                        : 'cursor-pointer opacity-100'
                     }`}
                     disabled={pageIdx === 1}
                   >
@@ -545,6 +547,7 @@ export async function getStaticProps() {
     console.error(error)
     return {
       props: { filteredTeams: [], filteredCitizens: [] },
+      revalidate: 60,
     }
   }
 }
