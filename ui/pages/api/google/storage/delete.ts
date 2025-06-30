@@ -23,7 +23,7 @@ try {
 
   bucket = storage.bucket(process.env.GCS_BUCKET_NAME)
 } catch (initError) {
-  console.error('Google Cloud Storage initialization error:', initError)
+  // ... existing code ...
 }
 
 function extractFilenameFromUrl(url: string): string | null {
@@ -54,7 +54,6 @@ function extractFilenameFromUrl(url: string): string | null {
     const filename = pathParts.slice(bucketIndex + 1).join('/')
     return filename || null
   } catch (error) {
-    console.error('Error parsing URL:', error)
     return null
   }
 }
@@ -63,21 +62,17 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  console.log('Delete API called with method:', req.method)
-
   if (req.method !== 'DELETE' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   // Check if storage is properly initialized
   if (!storage || !bucket) {
-    console.error('Google Cloud Storage not properly initialized')
     return res.status(500).json({ error: 'Storage service not available' })
   }
 
   try {
     const { filename, url } = req.body
-    console.log('Delete request body:', { filename, url })
 
     if (!filename && !url) {
       return res.status(400).json({
@@ -89,36 +84,28 @@ export default async function handler(
     let fileToDelete = filename
     if (url && !filename) {
       fileToDelete = extractFilenameFromUrl(url)
-      console.log('Extracted filename from URL:', fileToDelete)
     }
 
     if (!fileToDelete) {
-      console.log('Invalid filename or url provided')
       return res.status(400).json({ error: 'Invalid filename or url' })
     }
 
-    console.log('Attempting to delete file:', fileToDelete)
     const file = bucket.file(fileToDelete)
 
     // Check if file exists
-    console.log('Checking if file exists...')
     const [exists] = await file.exists()
     if (!exists) {
-      console.log('File not found:', fileToDelete)
       return res.status(404).json({ error: 'File not found' })
     }
 
     // Delete the file
-    console.log('Deleting file...')
     await file.delete()
 
-    console.log('File deleted successfully:', fileToDelete)
     return res.status(200).json({
       message: 'File deleted successfully',
       filename: fileToDelete,
     })
   } catch (error) {
-    console.error('Delete error:', error)
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown delete error'
     return res.status(500).json({
