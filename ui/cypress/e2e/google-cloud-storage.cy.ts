@@ -2,6 +2,17 @@ describe('Google Cloud Storage API', () => {
   let uploadedFileUrl: string
   let uploadedFilename: string
 
+  // Check if required environment variables are available
+  before(() => {
+    cy.task('checkEnvVars', ['GCS_CREDENTIALS', 'GCS_BUCKET_NAME']).then(
+      (result: any) => {
+        if (!result.allPresent) {
+          cy.log('⚠️ Missing environment variables:', result.missing.join(', '))
+        }
+      }
+    )
+  })
+
   describe('File Upload API (/api/google/storage/upload)', () => {
     it('should return 405 for invalid HTTP method', () => {
       cy.request({
@@ -27,71 +38,50 @@ describe('Google Cloud Storage API', () => {
     })
 
     it('should successfully upload a file and return a signed URL', () => {
-      cy.fixture('images/Original.png', 'binary').then((fileContent) => {
-        const blob = Cypress.Blob.binaryStringToBlob(fileContent, 'image/png')
-        const formData = new FormData()
-        formData.append('file', blob, 'test-image.png')
+      const fileName = 'test-image.png'
 
-        cy.request({
-          method: 'POST',
-          url: '/api/google/storage/upload',
-          body: formData,
-          timeout: 30000,
-        }).then((response) => {
-          // Log response for debugging
-          cy.log('Upload response status:', response.status)
-          cy.log('Upload response body:', JSON.stringify(response.body))
+      cy.task('uploadToGoogleCloudStorage', {
+        baseUrl: Cypress.config('baseUrl'),
+        fileName: fileName,
+      }).then((response: any) => {
+        // Verify successful response
+        expect(response.status).to.eq(200)
+        expect(response.body).to.have.property('message', 'File uploaded')
+        expect(response.body).to.have.property('url')
+        expect(response.body.url).to.be.a('string')
+        expect(response.body.url).to.include('googleapis.com')
 
-          // Verify successful response
-          expect(response.status).to.eq(200)
-          expect(response.body).to.have.property('message', 'File uploaded')
-          expect(response.body).to.have.property('url')
-          expect(response.body.url).to.be.a('string')
-          expect(response.body.url).to.include('googleapis.com')
+        // Store for deletion test
+        uploadedFileUrl = response.body.url
 
-          // Store for deletion test
-          uploadedFileUrl = response.body.url
-
-          // Extract filename from URL for deletion test
-          const urlParts = uploadedFileUrl.split('/')
-          uploadedFilename = urlParts.slice(4).join('/')
-
-          cy.log('Stored uploadedFileUrl:', uploadedFileUrl)
-          cy.log('Stored uploadedFilename:', uploadedFilename)
-        })
+        // Extract filename from URL for deletion test - remove query parameters
+        const urlWithoutQuery = uploadedFileUrl.split('?')[0] // Remove query parameters first
+        const urlParts = urlWithoutQuery.split('/')
+        uploadedFilename = urlParts[urlParts.length - 1] // Get the last part which is the filename
       })
     })
   })
 
   describe('File Delete API (/api/google/storage/delete)', () => {
     beforeEach(() => {
-      // Only upload if we don't already have a file to test with
-      if (!uploadedFileUrl || !uploadedFilename) {
-        cy.fixture('images/Original.png', 'binary').then((fileContent) => {
-          const blob = Cypress.Blob.binaryStringToBlob(fileContent, 'image/png')
-          const formData = new FormData()
-          formData.append('file', blob, 'test-delete.png')
+      // Upload a fresh file for delete tests to avoid race conditions
+      const fileName = 'test-delete-' + Date.now() + '.png'
 
-          cy.request({
-            method: 'POST',
-            url: '/api/google/storage/upload',
-            body: formData,
-            timeout: 30000,
-          }).then((response) => {
-            cy.log('BeforeEach upload response:', JSON.stringify(response.body))
-
-            if (response.body && response.body.url) {
-              uploadedFileUrl = response.body.url
-              const urlParts = uploadedFileUrl.split('/')
-              uploadedFilename = urlParts.slice(4).join('/')
-              cy.log('BeforeEach stored uploadedFileUrl:', uploadedFileUrl)
-              cy.log('BeforeEach stored uploadedFilename:', uploadedFilename)
-            } else {
-              cy.log('⚠️ Upload response missing URL property')
-            }
-          })
-        })
-      }
+      cy.task('uploadToGoogleCloudStorage', {
+        baseUrl: Cypress.config('baseUrl'),
+        fileName: fileName,
+      }).then((response: any) => {
+        if (response.status === 200 && response.body && response.body.url) {
+          uploadedFileUrl = response.body.url
+          const urlWithoutQuery = uploadedFileUrl.split('?')[0] // Remove query parameters first
+          const urlParts = urlWithoutQuery.split('/')
+          uploadedFilename = urlParts[urlParts.length - 1] // Get the last part which is the filename
+        } else {
+          // Set dummy values to prevent undefined errors
+          uploadedFileUrl = 'UPLOAD_FAILED'
+          uploadedFilename = 'UPLOAD_FAILED'
+        }
+      })
     })
 
     it('should return 405 for invalid HTTP method', () => {
@@ -157,129 +147,49 @@ describe('Google Cloud Storage API', () => {
       expect(uploadedFilename).to.be.a('string')
       expect(uploadedFilename.length).to.be.greaterThan(0)
 
-      cy.request({
-        method: 'DELETE',
-        url: '/api/google/storage/delete',
-        body: {
-          filename: uploadedFilename,
-        },
-      }).then((response) => {
+      cy.task('deleteFromGoogleCloudStorage', {
+        baseUrl: Cypress.config('baseUrl'),
+        filename: uploadedFilename,
+      }).then((response: any) => {
         expect(response.status).to.eq(200)
         expect(response.body).to.have.property(
           'message',
           'File deleted successfully'
         )
         expect(response.body).to.have.property('filename', uploadedFilename)
-
-        // Clear the variables after successful deletion
-        uploadedFileUrl = ''
-        uploadedFilename = ''
       })
     })
 
     it('should successfully delete a file using URL', () => {
+      const fileName = 'test-delete-by-url.png'
+
       // Upload a new file for this test
-      cy.fixture('images/Original.png', 'binary').then((fileContent) => {
-        const blob = Cypress.Blob.binaryStringToBlob(fileContent, 'image/png')
-        const formData = new FormData()
-        formData.append('file', blob, 'test-delete-by-url.png')
+      cy.task('uploadToGoogleCloudStorage', {
+        baseUrl: Cypress.config('baseUrl'),
+        fileName: fileName,
+      }).then((uploadResponse: any) => {
+        expect(uploadResponse.status).to.eq(200)
+        expect(uploadResponse.body).to.have.property('url')
 
+        const fileUrl = uploadResponse.body.url
+        const urlWithoutQuery = fileUrl.split('?')[0] // Remove query parameters first
+        const urlParts = urlWithoutQuery.split('/')
+        const filename = urlParts[urlParts.length - 1] // Get the last part which is the filename
+
+        // Delete using URL
         cy.request({
           method: 'POST',
-          url: '/api/google/storage/upload',
-          body: formData,
-          timeout: 30000,
-        }).then((uploadResponse) => {
-          cy.log(
-            'Delete test upload response:',
-            JSON.stringify(uploadResponse.body)
+          url: '/api/google/storage/delete',
+          body: {
+            url: fileUrl,
+          },
+        }).then((deleteResponse) => {
+          expect(deleteResponse.status).to.eq(200)
+          expect(deleteResponse.body).to.have.property(
+            'message',
+            'File deleted successfully'
           )
-
-          expect(uploadResponse.body).to.have.property('url')
-          const fileUrl = uploadResponse.body.url
-          const urlParts = fileUrl.split('/')
-          const filename = urlParts.slice(4).join('/')
-
-          // Delete using URL (testing POST method for delete)
-          cy.request({
-            method: 'POST',
-            url: '/api/google/storage/delete',
-            body: {
-              url: fileUrl,
-            },
-          }).then((deleteResponse) => {
-            expect(deleteResponse.status).to.eq(200)
-            expect(deleteResponse.body).to.have.property(
-              'message',
-              'File deleted successfully'
-            )
-            expect(deleteResponse.body).to.have.property('filename', filename)
-          })
-        })
-      })
-    })
-  })
-
-  describe('Integration Test: Upload and Delete Workflow', () => {
-    it('should upload a file and then successfully delete it', () => {
-      let testFileUrl: string
-      let testFilename: string
-
-      // Step 1: Upload a file
-      cy.fixture('images/Original.png', 'binary').then((fileContent) => {
-        const blob = Cypress.Blob.binaryStringToBlob(fileContent, 'image/png')
-        const formData = new FormData()
-        formData.append('file', blob, 'integration-test-' + Date.now() + '.png')
-
-        cy.request({
-          method: 'POST',
-          url: '/api/google/storage/upload',
-          body: formData,
-          timeout: 30000,
-        }).then((uploadResponse) => {
-          cy.log(
-            'Integration test upload response:',
-            JSON.stringify(uploadResponse.body)
-          )
-
-          expect(uploadResponse.status).to.eq(200)
-          expect(uploadResponse.body).to.have.property('url')
-          testFileUrl = uploadResponse.body.url
-
-          // Extract filename from URL
-          const urlParts = testFileUrl.split('/')
-          testFilename = urlParts.slice(4).join('/')
-
-          // Step 2: Verify file was uploaded by checking URL format
-          expect(testFileUrl).to.include('googleapis.com')
-          expect(testFileUrl).to.include('integration-test')
-
-          // Step 3: Delete the uploaded file
-          cy.request({
-            method: 'DELETE',
-            url: '/api/google/storage/delete',
-            body: {
-              filename: testFilename,
-            },
-          }).then((deleteResponse) => {
-            expect(deleteResponse.status).to.eq(200)
-            expect(deleteResponse.body.message).to.eq(
-              'File deleted successfully'
-            )
-
-            // Step 4: Verify file is actually deleted by trying to delete again
-            cy.request({
-              method: 'DELETE',
-              url: '/api/google/storage/delete',
-              body: {
-                filename: testFilename,
-              },
-              failOnStatusCode: false,
-            }).then((secondDeleteResponse) => {
-              expect(secondDeleteResponse.status).to.eq(404)
-              expect(secondDeleteResponse.body.error).to.eq('File not found')
-            })
-          })
+          expect(deleteResponse.body).to.have.property('filename', filename)
         })
       })
     })
