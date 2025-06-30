@@ -23,7 +23,7 @@ try {
 
   bucket = storage.bucket(process.env.GCS_BUCKET_NAME)
 } catch (initError) {
-  // ... existing code ...
+  console.error('❌ GCS initialization failed:', initError)
 }
 
 function extractFilenameFromUrl(url: string): string | null {

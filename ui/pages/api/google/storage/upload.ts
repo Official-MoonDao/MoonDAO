@@ -30,7 +30,7 @@ try {
 
   bucket = storage.bucket(process.env.GCS_BUCKET_NAME)
 } catch (initError) {
-  console.error('Google Cloud Storage initialization error:', initError)
+  console.error('❌ GCS initialization failed:', initError)
 }
 
 export default async function handler(
