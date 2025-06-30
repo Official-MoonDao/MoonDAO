@@ -12,7 +12,7 @@ export default function Hero() {
         <div
           id="background"
           className="w-full h-full absolute top-0 right-0 overflow-hidden z-0 bg-cover bg-no-repeat"
-          style={{backgroundImage: 'url("https://sdmntprnorthcentralus.oaiusercontent.com/files/00000000-24ac-622f-91f1-7216e8ada7cb/raw?se=2025-06-28T05%3A29%3A55Z&sp=r&sv=2024-08-04&sr=b&scid=2a7d17cc-e6e0-554a-ba8b-f2088f491576&skoid=e9d2f8b1-028a-4cff-8eb1-d0e66fbefcca&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-06-27T20%3A53%3A12Z&ske=2025-06-28T20%3A53%3A12Z&sks=b&skv=2024-08-04&sig=y61yWthSWUwNH3S5EiPRlk50vmCylCtZDtewzSBFFQs%3D")', backgroundPosition: 'center 150%'}}
+          style={{backgroundImage: 'url("/assets/Lunar-Colony.png")', backgroundPosition: 'center 150%'}}
         ></div>
         <div
           id="tl-divider"
