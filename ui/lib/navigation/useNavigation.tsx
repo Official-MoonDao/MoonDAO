@@ -47,7 +47,7 @@ export default function useNavigation(citizen: any) {
         ],
       },
       {
-        name: '$MOONEY Token',
+        name: '$MOONEY',
         icon: CircleStackIcon,
         href: '/get-mooney',
         children: [
