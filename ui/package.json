@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@arbitrum/sdk": "^3.3.3",
+    "@google-cloud/storage": "^7.16.0",
     "@hatsprotocol/sdk-v1-core": "^0.9.0",
     "@hatsprotocol/sdk-v1-subgraph": "^0.4.3",
     "@headlessui/react": "^2.0.4",
@@ -55,6 +56,7 @@
     "discord-oauth2": "^2.11.0",
     "ethereum-block-by-date": "^1.5.0",
     "ethers": "5.7",
+    "form-data": "^4.0.3",
     "formidable": "^3.5.1",
     "google-spreadsheet": "^3.3.0",
     "graphql": "^16.8.1",
@@ -70,7 +72,6 @@
     "next": "^13.4.10",
     "next-auth": "^4.24.11",
     "next-query-params": "^3.0.0",
-    "next-s3-upload": "^0.3.4",
     "next-sitemap": "^4.2.3",
     "next-translate": "^1.6.0",
     "next-transpile-modules": "^10.0.1",
