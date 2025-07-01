@@ -1,7 +1,6 @@
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { useContext, useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import {
   arbitrum,
   base,
@@ -69,11 +68,6 @@ export default function NetworkSelector({
 }: NetworkSelectorProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const [dropdown, setDropdown] = useState(false)
-  const [dropdownPosition, setDropdownPosition] = useState({
-    top: 0,
-    left: 0,
-    width: 0,
-  })
   const triggerRef = useRef<HTMLDivElement>(null)
 
   function selectChain(chain: any) {
@@ -140,21 +134,6 @@ export default function NetworkSelector({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  useEffect(() => {
-    if (dropdown) {
-      updateDropdownPosition()
-      // Update position on scroll/resize
-      const handlePositionUpdate = () => updateDropdownPosition()
-      window.addEventListener('scroll', handlePositionUpdate, true)
-      window.addEventListener('resize', handlePositionUpdate)
-
-      return () => {
-        window.removeEventListener('scroll', handlePositionUpdate, true)
-        window.removeEventListener('resize', handlePositionUpdate)
-      }
-    }
-  }, [dropdown, compact])
-
   const dropdownContent = dropdown && (
     <div
       id="network-selector-dropdown"
@@ -220,9 +199,7 @@ export default function NetworkSelector({
           </button>
         )}
       </div>
-      {typeof window !== 'undefined' &&
-        dropdownContent &&
-        createPortal(dropdownContent, document.body)}
+      {dropdownContent}
     </div>
   )
 }
