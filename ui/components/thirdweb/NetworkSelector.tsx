@@ -75,51 +75,6 @@ export default function NetworkSelector({
     setDropdown(false)
   }
 
-  function updateDropdownPosition() {
-    if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect()
-      const dropdownWidth = 250
-      const dropdownHeight = 200 // Approximate height for 4 options
-      const viewportWidth = window.innerWidth
-      const viewportHeight = window.innerHeight
-      const padding = 16 // 16px padding from viewport edge
-
-      // Calculate initial left position
-      let left = rect.left
-
-      // Check if dropdown would overflow on the right side
-      if (left + dropdownWidth > viewportWidth - padding) {
-        // Position dropdown to the left of the trigger, aligned with its right edge
-        left = rect.right - dropdownWidth
-      }
-
-      // Ensure it doesn't go off the left side either
-      if (left < padding) {
-        left = padding
-      }
-
-      // Calculate vertical position
-      let top = rect.bottom + 8 // 8px gap (mt-2)
-
-      // Check if dropdown would overflow on the bottom
-      if (rect.bottom + dropdownHeight > viewportHeight - padding) {
-        // Position dropdown above the trigger
-        top = rect.top - dropdownHeight - 8
-      }
-
-      // Ensure it doesn't go off the top either
-      if (top < padding) {
-        top = rect.bottom + 8 // fallback to below
-      }
-
-      setDropdownPosition({
-        top: top,
-        left: left,
-        width: dropdownWidth,
-      })
-    }
-  }
-
   function handleClickOutside({ target }: any) {
     if (
       target.closest('#network-selector') ||
@@ -137,12 +92,7 @@ export default function NetworkSelector({
   const dropdownContent = dropdown && (
     <div
       id="network-selector-dropdown"
-      className="fixed flex flex-col gap-2 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl z-[9999] animate-fadeIn max-w-[250px]"
-      style={{
-        top: dropdownPosition.top,
-        left: dropdownPosition.left,
-        width: dropdownPosition.width,
-      }}
+      className="absolute top-full mt-2 flex flex-col gap-2 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl z-[9999] animate-fadeIn w-[250px] right-0"
     >
       {chains && chains.length > 0 ? (
         chains.map((chain) => (
