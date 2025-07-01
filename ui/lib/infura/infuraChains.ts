@@ -94,6 +94,7 @@ export const sepolia = defineChain({
       apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=11155111`,
     },
   ],
+  testnet: true,
 })
 
 export const arbitrumSepolia = defineChain({
@@ -112,6 +113,7 @@ export const arbitrumSepolia = defineChain({
       apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=421614`,
     },
   ],
+  testnet: true,
 })
 
 export const optimismSepolia = defineChain({
@@ -130,6 +132,7 @@ export const optimismSepolia = defineChain({
       apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=11155420`,
     },
   ],
+  testnet: true,
 })
 
 export const baseSepolia = defineChain({
@@ -148,4 +151,5 @@ export const baseSepolia = defineChain({
       apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=84532`,
     },
   ],
+  testnet: true,
 })

@@ -70,131 +70,136 @@ function MissionPayRedeemContent({
 }: any) {
   const isRefundable = stage === 3
 
+  if (
+    isRefundable &&
+    (!tokenCredit || tokenCredit <= 0) &&
+    (!tokenBalance || tokenBalance <= 0)
+  ) {
+    return null
+  }
+
   return (
     <div
       id="mission-pay-redeem-container"
       className="z-50 bg-[#020617] rounded-[5vw] md:rounded-[2vw] w-full flex flex-col gap-4 lg:min-w-[430px] xl:items-stretch"
     >
-      {(!isRefundable ||
-        (token?.tokenSymbol && +tokenCredit?.toString() > 0)) && (
-        <div
-          id="mission-pay-container"
-          className="lg:rounded-lg w-full flex-1 p-5 xl:p-5 flex flex-col gap-4 rounded-2xl justify-between"
-        >
-          {/* You pay */}
-          {!isRefundable && (
-            <div className="relative flex flex-col gap-4">
-              {/* You pay - USD input with ETH display */}
-              <div className="relative">
-                <div className="p-4 pb-12 flex flex-col gap-3 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-t-2xl">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-sm opacity-60">You pay</h3>
-                  </div>
-
-                  <div className="flex justify-between sm:items-center flex-col sm:flex-row ">
-                    <div className="flex items-center gap-1">
-                      <span className="text-xl font-bold">$</span>
-                      <input
-                        id="usd-contribution-input"
-                        type="text"
-                        className="bg-transparent border-none outline-none text-xl font-bold min-w-[1ch] w-auto [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        value={formattedUsdInput}
-                        onChange={handleUsdInputChange}
-                        placeholder="0"
-                        maxLength={9}
-                        style={{
-                          width: `${Math.max(
-                            formattedUsdInput.length || 1,
-                            1
-                          )}ch`,
-                        }}
-                      />
-                      <span className="text-xl font-bold">USD</span>
-                    </div>
-                    <div className="flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full sm:px-3 py-1">
-                      <Image
-                        src="/coins/ETH.svg"
-                        alt="ETH"
-                        width={16}
-                        height={16}
-                        className="w-5 h-5 bg-light-cool rounded-full"
-                      />
-                      <span className="text-base">
-                        {calculateEthAmount()} ETH
-                      </span>
-                    </div>
-                  </div>
+      <div
+        id="mission-pay-container"
+        className="lg:rounded-lg w-full flex-1 p-5 xl:p-5 flex flex-col gap-4 rounded-2xl justify-between"
+      >
+        {/* You pay */}
+        {!isRefundable && (
+          <div className="relative flex flex-col gap-4">
+            {/* You pay - USD input with ETH display */}
+            <div className="relative">
+              <div className="p-4 pb-12 flex flex-col gap-3 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-t-2xl">
+                <div className="flex justify-between items-start">
+                  <h3 className="text-sm opacity-60">You pay</h3>
                 </div>
 
-                {token?.tokenSymbol && (
-                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center">
-                    <ArrowDownIcon
-                      className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
-                      color={'#121C42'}
+                <div className="flex justify-between sm:items-center flex-col sm:flex-row ">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xl font-bold">$</span>
+                    <input
+                      id="usd-contribution-input"
+                      type="text"
+                      className="bg-transparent border-none outline-none text-xl font-bold min-w-[1ch] w-auto [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      value={formattedUsdInput}
+                      onChange={handleUsdInputChange}
+                      placeholder="0"
+                      maxLength={9}
+                      style={{
+                        width: `${Math.max(
+                          formattedUsdInput.length || 1,
+                          1
+                        )}ch`,
+                      }}
                     />
+                    <span className="text-xl font-bold">USD</span>
                   </div>
-                )}
+                  <div className="flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full sm:px-3 py-1">
+                    <Image
+                      src="/coins/ETH.svg"
+                      alt="ETH"
+                      width={16}
+                      height={16}
+                      className="w-5 h-5 bg-light-cool rounded-full"
+                    />
+                    <span className="text-base">
+                      {calculateEthAmount()} ETH
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* You receive */}
               {token?.tokenSymbol && (
-                <div className="p-4 pb-12 flex flex-col gap-3 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-b-2xl">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-sm opacity-60">You receive</h3>
-                  </div>
-
-                  <div className="sm:flex justify-between items-center">
-                    <p id="token-output" className="text-xl font-bold">
-                      {formatTokenAmount(output, 2)}
-                    </p>
-                    <div className="relative flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full p-1 sm:px-2">
-                      <Image
-                        src="/assets/icon-star.svg"
-                        alt="Token"
-                        width={20}
-                        height={20}
-                        className="bg-orange-500 rounded-full p-1 w-5 h-5"
-                      />
-                      {token?.tokenSymbol}
-                    </div>
-                  </div>
+                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center">
+                  <ArrowDownIcon
+                    className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
+                    color={'#121C42'}
+                  />
                 </div>
               )}
             </div>
-          )}
-          {!isRefundable && (
-            <>
-              <StandardButton
-                id="open-contribute-modal"
-                className="rounded-full gradient-2 rounded-full w-full py-1"
-                onClick={() => setMissionPayModalEnabled(true)}
-                hoverEffect={false}
-              >
-                Contribute
-              </StandardButton>
-              <div className="w-full">
-                <AcceptedPaymentMethods />
-                <p className="xl:text-sm text-center">
-                  {'Want to contribute by wire transfer?'}
-                  <br />
-                  {'Email us at info@moondao.com'}
-                </p>
+
+            {/* You receive */}
+            {token?.tokenSymbol && (
+              <div className="p-4 pb-12 flex flex-col gap-3 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-b-2xl">
+                <div className="flex justify-between items-start">
+                  <h3 className="text-sm opacity-60">You receive</h3>
+                </div>
+
+                <div className="sm:flex justify-between items-center">
+                  <p id="token-output" className="text-xl font-bold">
+                    {formatTokenAmount(output, 2)}
+                  </p>
+                  <div className="relative flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full p-1 sm:px-2">
+                    <Image
+                      src="/assets/icon-star.svg"
+                      alt="Token"
+                      width={20}
+                      height={20}
+                      className="bg-orange-500 rounded-full p-1 w-5 h-5"
+                    />
+                    {token?.tokenSymbol}
+                  </div>
+                </div>
               </div>
-            </>
-          )}
-          {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
+            )}
+          </div>
+        )}
+        {!isRefundable && (
+          <>
             <StandardButton
-              id="claim-button"
+              id="open-contribute-modal"
               className="rounded-full gradient-2 rounded-full w-full py-1"
-              onClick={claimTokenCredit}
+              onClick={() => setMissionPayModalEnabled(true)}
               hoverEffect={false}
             >
-              Claim {formatTokenAmount(tokenCredit.toString() / 1e18, 0)} $
-              {token?.tokenSymbol}
+              Contribute
             </StandardButton>
-          )}
-        </div>
-      )}
+            <div className="w-full">
+              <AcceptedPaymentMethods />
+              <p className="xl:text-sm text-center">
+                {'Want to contribute by wire transfer?'}
+                <br />
+                {'Email us at info@moondao.com'}
+              </p>
+            </div>
+          </>
+        )}
+        {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
+          <StandardButton
+            id="claim-button"
+            className="rounded-full gradient-2 rounded-full w-full py-1"
+            onClick={claimTokenCredit}
+            hoverEffect={false}
+          >
+            Claim {formatTokenAmount(tokenCredit.toString() / 1e18, 0)} $
+            {token?.tokenSymbol}
+          </StandardButton>
+        )}
+      </div>
       {/* Token stats and redeem container */}
       <div className="xl:pt-4 flex flex-row justify-between gap-4 w-full">
         {token?.tokenSupply > 0 && !isRefundable && (
@@ -270,6 +275,7 @@ export type MissionPayRedeemProps = {
   jbControllerContract?: any
   jbTokensContract?: any
   forwardClient?: any
+  refreshBackers?: () => void
 }
 
 export default function MissionPayRedeem({
@@ -284,6 +290,7 @@ export default function MissionPayRedeem({
   jbControllerContract,
   jbTokensContract,
   forwardClient,
+  refreshBackers,
 }: MissionPayRedeemProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -547,8 +554,8 @@ export default function MissionPayRedeem({
         style: toastStyle,
       })
 
+      refreshBackers?.()
       setMissionPayModalEnabled(false)
-      router.reload()
     } catch (error) {
       console.error('Error purchasing tokens:', error)
       toast.error('Failed to purchase tokens', {

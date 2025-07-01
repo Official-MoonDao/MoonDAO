@@ -307,6 +307,7 @@ export const getStaticProps: GetStaticProps = async () => {
     console.error(err)
     return {
       props: { missions: [] },
+      revalidate: 60,
     }
   }
 }
