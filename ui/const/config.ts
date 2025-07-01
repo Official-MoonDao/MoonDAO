@@ -145,6 +145,12 @@ export const PROJECT_TABLE_ADDRESSES: Index = {
   'arbitrum-sepolia': '0x51a5cA8966cA71ac0A0D58DbeF2ec6a932e1490E',
 }
 
+export const PROJECT_TABLE_NAMES: Index = {
+  arbitrum: 'PROJECT_42161_122',
+  sepolia: 'PROJECT_11155111_1888',
+  'arbitrum-sepolia': 'PROJECT_421614_1060',
+}
+
 export const COMPETITOR_TABLE_ADDRESSES: Index = {
   sepolia: '0x9057Fff69e8b016a214C4f894430F71dad50b42c',
   'arbitrum-sepolia': '0x18200Aec1FE277bbA7cA3cBfecF822F099807fFd',
@@ -153,6 +159,11 @@ export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
   arbitrum: '0xabD8D3693439A72393220d87aee159952261Ad1f',
   sepolia: '0x5217A95F335cd026c877Eb5C1B0Ae6C82945178D',
   'arbitrum-sepolia': '0x9f0496702Df4889C17b7c6Ef88c74ee0dF14998e',
+}
+export const DISTRIBUTION_TABLE_NAMES: Index = {
+  arbitrum: 'DISTRIBUTION_42161_104',
+  sepolia: 'DISTRIBUTION_11155111_1875',
+  'arbitrum-sepolia': 'DISTRIBUTION_421614_1062',
 }
 export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.VotingEscrowDepositor,

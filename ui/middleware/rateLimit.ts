@@ -9,7 +9,7 @@ const redis = new Redis({
 
 const ratelimit = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(5, '10 s'), // 5 requests per 10 seconds
+  limiter: Ratelimit.slidingWindow(5, '1 s'), // 5 requests per second
 })
 
 export async function rateLimit(

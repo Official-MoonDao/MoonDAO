@@ -1,5 +1,5 @@
 import { Solve } from '@bygdle/javascript-lp-solver'
-import { utils } from "ethers";
+import { utils } from 'ethers'
 import _ from 'lodash'
 import { Distribution } from '@/components/nance/RetroactiveRewards'
 
@@ -216,52 +216,58 @@ export function runQuadraticVoting(
   return projectIdToEstimatedPercentage
 }
 
-
 export function zeroOutDistributionForContributors(
-    citizenDistributions: any,
-    projects: any) {
-    // 1. if a citizen is listed in the rewardDistribution for a projects, zero out that value
-    const newDistributions = []
-    for (const d of citizenDistributions) {
-      const { id, address, year, quarter, distribution: dist } = d
-      const newDist: { [key: string]: number } = {}
-      for (const project of projects) {
-        const contributors: { [key: string]: number } = normalizeJsonString(project.rewardDistribution)
-        if (Object.keys(contributors).some(contributor => contributor.toLowerCase() === address.toLowerCase())) {
-          newDist[project.id] = 0
-        } else if (project.id in dist) {
-          newDist[project.id] = dist[project.id]
-        }
+  citizenDistributions: any,
+  projects: any
+) {
+  // 1. if a citizen is listed in the rewardDistribution for a projects, zero out that value
+  const newDistributions = []
+  for (const d of citizenDistributions) {
+    const { id, address, year, quarter, distribution: dist } = d
+    const newDist: { [key: string]: number } = {}
+    for (const project of projects) {
+      const contributors: { [key: string]: number } = normalizeJsonString(
+        project.rewardDistribution
+      )
+      if (
+        Object.keys(contributors).some(
+          (contributor) => contributor.toLowerCase() === address.toLowerCase()
+        )
+      ) {
+        newDist[project.id] = 0
+      } else if (project.id in dist) {
+        newDist[project.id] = dist[project.id]
       }
-      newDistributions.push({
-        id: id,
-        address,
-        year,
-        quarter,
-        distribution: newDist,
-      })
     }
-    // 2. normalize the distribution to add up to 100
-    const normalizedDistributions = []
-    for (const d of newDistributions) {
-      const { id, address, year, quarter, distribution: dist } = d
-      const sum = _.sum(Object.values(dist))
-      const normDist: { [key: string]: number } = {}
-      for (const [key, value] of Object.entries(dist)) {
-        if (value === 0) {
-          continue
-        }
-        normDist[key] = (value / sum) * 100
+    newDistributions.push({
+      id: id,
+      address,
+      year,
+      quarter,
+      distribution: newDist,
+    })
+  }
+  // 2. normalize the distribution to add up to 100
+  const normalizedDistributions = []
+  for (const d of newDistributions) {
+    const { id, address, year, quarter, distribution: dist } = d
+    const sum = _.sum(Object.values(dist))
+    const normDist: { [key: string]: number } = {}
+    for (const [key, value] of Object.entries(dist)) {
+      if (value === 0) {
+        continue
       }
-      normalizedDistributions.push({
-        id: id,
-        address,
-        year,
-        quarter,
-        distribution: normDist,
-      })
+      normDist[key] = (value / sum) * 100
     }
-    return normalizedDistributions
+    normalizedDistributions.push({
+      id: id,
+      address,
+      year,
+      quarter,
+      distribution: normDist,
+    })
+  }
+  return normalizedDistributions
 }
 
 export function computeRewardPercentages(
@@ -270,10 +276,8 @@ export function computeRewardPercentages(
   projects: any,
   addressToQuadraticVotingPower: any
 ) {
-  const citizenDistributionsWithZeroedOutContributors = zeroOutDistributionForContributors(
-    citizenDistributions,
-    projects
-  )
+  const citizenDistributionsWithZeroedOutContributors =
+    zeroOutDistributionForContributors(citizenDistributions, projects)
   const [filledInCitizenDistributions, votes] = runIterativeNormalization(
     citizenDistributionsWithZeroedOutContributors,
     projects
@@ -304,7 +308,7 @@ export function getBudget(tokens: any, year: number, quarter: number) {
     ethPrice = ethToken.usd / ethToken.balance
     for (const token of tokens) {
       if (token.symbol !== 'MOONEY') {
-        if (token.symbol == "stETH"){
+        if (token.symbol == 'stETH') {
           usdValue += token.balance * ethPrice
         } else {
           usdValue += token.usd
@@ -330,19 +334,16 @@ export function getBudget(tokens: any, year: number, quarter: number) {
   }
 }
 
-function normalizeJsonString(jsonString: string) {
-    const nonEmptyJsonString = jsonString || '{}'
-    // replace fancy double quotes with regular double quotes
-    // and add leading double quotes if needed
-    return JSON.parse(nonEmptyJsonString.replace(
-        /[\u201C\u201D]/g,
-        '"').replace(
-      /(\b0x[a-fA-F0-9]{40}\b):/g,
-      '"$1":'
-    ));
+export function normalizeJsonString(jsonString: string) {
+  const nonEmptyJsonString = jsonString || '{}'
+  // replace fancy double quotes with regular double quotes
+  // and add leading double quotes if needed
+  return JSON.parse(
+    nonEmptyJsonString
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/(\b0x[a-fA-F0-9]{40}\b):/g, '"$1":')
+  )
 }
-
-
 
 export function getPayouts(
   projectIdToEstimatedPercentage: any,
@@ -368,8 +369,12 @@ export function getPayouts(
       projectId == -1
         ? COMMUNITY_CIRCLE_PERCENTAGE
         : projectIdToEstimatedPercentage[projectId]
-    const contributors: { [key: string]: number } = normalizeJsonString(project.rewardDistribution)
-    const upfrontPayments: { [key: string]: number } = normalizeJsonString(project.upfrontPayments)
+    const contributors: { [key: string]: number } = normalizeJsonString(
+      project.rewardDistribution
+    )
+    const upfrontPayments: { [key: string]: number } = normalizeJsonString(
+      project.upfrontPayments
+    )
 
     for (const [contributerAddress, contributorPercentage] of Object.entries(
       contributors
@@ -402,19 +407,21 @@ export function getPayouts(
   for (const [address, mooneyPayout] of Object.entries(addressToMooneyPayout)) {
     addressToPayoutProportion[address] = mooneyPayout / mooneyBudget
   }
-  const ethPayoutCSV = 'token_type,token_address,receiver,amount,id\n' + Object.entries(addressToEthPayout)
-    .map(([address, eth]) => `native,,${address},${eth},`)
-    .join('\n')
+  const ethPayoutCSV =
+    'token_type,token_address,receiver,amount,id\n' +
+    Object.entries(addressToEthPayout)
+      .map(([address, eth]) => `native,,${address},${eth},`)
+      .join('\n')
   const vMooneyPayoutCSV = Object.entries(addressToMooneyPayout)
     .map(([address, mooney]) => `${address},${mooney}`)
     .join('\n')
   const vMooneyAddresses = Object.keys(addressToMooneyPayout).join(',')
   const vMooneyAmounts = Object.values(addressToMooneyPayout)
     .map((mooney) => {
-        if (!mooney || mooney === 0) {
-            return '0x0'
-        }
-        return `"${utils.parseUnits(mooney.toString(), 18).toHexString()}"`
+      if (!mooney || mooney === 0) {
+        return '0x0'
+      }
+      return `"${utils.parseUnits(mooney.toString(), 18).toHexString()}"`
     })
     .join(',')
 
