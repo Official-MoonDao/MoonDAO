@@ -90,10 +90,14 @@ export default function Lock() {
       )
   }, [VMOONEYLock, VMOONEYLockLoading, address])
 
-  const [lockAmount, setLockAmount] = useState<string>('0')
+  const [lockAmount, setLockAmount] = useState<string>('')
   //reset lock amount on chain switch
   useEffect(() => {
-    setLockAmount('0')
+    setLockAmount('')
+    setLockTime({
+      value: ethers.BigNumber.from(+oneWeekOut),
+      formatted: dateToReadable(oneWeekOut),
+    })
   }, [selectedChain])
 
   const oneWeekOut = dateOut(new Date(), { days: 7 })
@@ -128,16 +132,19 @@ export default function Lock() {
   //Current lock
   useEffect(() => {
     if (hasLock && VMOONEYLock) {
-      !lockAmount && setLockAmount(ethers.utils.formatEther(VMOONEYLock[0]))
+      if (!lockAmount || lockAmount === '' || lockAmount === '0') {
+        setLockAmount(ethers.utils.formatEther(VMOONEYLock[0]))
+      }
       const origTime = {
         value: BigNumber.from(VMOONEYLock[1]),
         formatted: dateToReadable(bigNumberToDate(VMOONEYLock[1])),
       }
-      !lockTime && lockTime.orig
-      setLockTime({
-        ...origTime,
-        orig: origTime,
-      })
+      if (!lockTime?.orig) {
+        setLockTime({
+          ...origTime,
+          orig: origTime,
+        })
+      }
     } else {
       setLockTime({
         value: ethers.BigNumber.from(+oneWeekOut),
@@ -158,8 +165,8 @@ export default function Lock() {
       })
       
       setCanIncrease({
-        amount: (lockAmount &&
-          ethers.utils.parseEther(lockAmount).gt(VMOONEYLock[0])) as boolean,
+        amount: lockAmount && lockAmount !== '' && lockAmount !== '0' && VMOONEYLock &&
+          ethers.utils.parseEther(lockAmount).gt(VMOONEYLock[0]),
         time: 
           lockTime?.value &&
           lockTime.value.gt(BigNumber.from(VMOONEYLock[1]).mul(1000)) && // New time must be greater than current lock end
@@ -169,6 +176,10 @@ export default function Lock() {
       setMinMaxLockTime({
         min: dateToReadable(oneWeekOut),
         max: dateToReadable(dateOut(new Date(), { days: 1461 })),
+      })
+      setCanIncrease({
+        amount: !!(lockAmount && lockAmount !== '' && lockAmount !== '0'),
+        time: lockTime?.value && lockTime.value.gt(ethers.BigNumber.from(+oneWeekOut)),
       })
     }
   }, [hasLock, lockAmount, lockTime, VMOONEYLock, address])
@@ -313,8 +324,7 @@ export default function Lock() {
                                   className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                   value={lockAmount || ''}
                                   disabled={
-                                    !MOONEYBalance ||
-                                    +MOONEYBalance.toString() === 0
+                                    (!MOONEYBalance || +MOONEYBalance.toString() === 0) && !hasLock
                                   }
                                   min={
                                     VMOONEYLock
@@ -346,15 +356,14 @@ export default function Lock() {
                                   <button
                                     className="text-blue-400 hover:text-blue-300 font-medium transition-colors px-2 py-1 bg-blue-400/10 hover:bg-blue-400/20 rounded text-xs"
                                     disabled={
-                                      !MOONEYBalance ||
-                                      +MOONEYBalance?.toString() === 0
+                                      (!MOONEYBalance || +MOONEYBalance?.toString() === 0) && !hasLock
                                     }
                                     onClick={() => {
                                       setLockAmount(
                                         VMOONEYLock
                                           ? ethers.utils.formatEther(
                                               BigNumber.from(VMOONEYLock[0]).add(
-                                                MOONEYBalance
+                                                MOONEYBalance || 0
                                               )
                                             )
                                           : ethers.utils.formatEther(
@@ -366,6 +375,17 @@ export default function Lock() {
                                   >
                                     MAX
                                   </button>
+                                  {hasLock && VMOONEYLock && (
+                                    <button
+                                      className="text-orange-400 hover:text-orange-300 font-medium transition-colors px-2 py-1 bg-orange-400/10 hover:bg-orange-400/20 rounded text-xs"
+                                      onClick={() => {
+                                        setLockAmount(ethers.utils.formatEther(VMOONEYLock[0]))
+                                        setWantsToIncrease(true)
+                                      }}
+                                    >
+                                      CURRENT
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -403,8 +423,7 @@ export default function Lock() {
                                         : 'bg-gray-700/30 text-gray-500 border border-gray-600/30 cursor-not-allowed'
                                     }`}
                                     disabled={
-                                      !MOONEYBalance ||
-                                      +MOONEYBalance.toString() === 0 ||
+                                      ((!MOONEYBalance || +MOONEYBalance.toString() === 0) && !hasLock) ||
                                       !canSelectThisDate
                                     }
                                     onClick={() => {
@@ -436,8 +455,7 @@ export default function Lock() {
                                 }
                                 max={minMaxLockTime.max}
                                 disabled={
-                                  !MOONEYBalance ||
-                                  +MOONEYBalance.toString() === 0
+                                  (!MOONEYBalance || +MOONEYBalance.toString() === 0) && !hasLock
                                 }
                                 onChange={(e: any) => {
                                   const inputValue = e.target.value
@@ -583,15 +601,13 @@ export default function Lock() {
                             label={
                               !hasLock
                                 ? 'Lock MOONEY'
-                                : `Increase ${
-                                    canIncrease.amount && !canIncrease.time
-                                      ? 'Amount'
-                                      : ''
-                                  } ${
-                                    !canIncrease.amount && canIncrease.time
-                                      ? 'Duration'
-                                      : ''
-                                  }`
+                                : canIncrease.amount && canIncrease.time
+                                ? 'Increase Lock'
+                                : canIncrease.amount && !canIncrease.time
+                                ? 'Increase Amount'
+                                : !canIncrease.amount && canIncrease.time
+                                ? 'Extend Duration'
+                                : 'Update Lock'
                             }
                             action={async () => {
                               try {
@@ -605,14 +621,13 @@ export default function Lock() {
                                   ? lockAmountBigNum.sub(lockedMooney)
                                   : lockAmountBigNum
 
-                                if (increaseAmount.gt(tokenAllowance)) {
-                                  const neededAllowance =
-                                    lockAmountBigNum.sub(lockedMooney)
+                                // Only check approval if we're actually increasing the amount
+                                if (increaseAmount.gt(0) && increaseAmount.gt(tokenAllowance)) {
                                   const approvalReceipt = await approveToken({
                                     account,
                                     tokenContract: mooneyContract,
                                     spender: VMOONEY_ADDRESSES[chainSlug],
-                                    allowance: neededAllowance,
+                                    allowance: increaseAmount,
                                   })
                                   approvalReceipt &&
                                     toast.success(
@@ -625,11 +640,7 @@ export default function Lock() {
                                       account,
                                       votingEscrowContract: vMooneyContract,
                                       newAmount:
-                                        lockAmount &&
-                                        VMOONEYLock &&
-                                        ethers.utils
-                                          .parseEther(lockAmount)
-                                          .sub(VMOONEYLock[0]),
+                                        increaseAmount.gt(0) ? increaseAmount : undefined,
                                       currentTime: VMOONEYLock && VMOONEYLock[1],
                                       newTime: lockTime?.value.div(1000),
                                     })
@@ -655,20 +666,10 @@ export default function Lock() {
                               }
                             }}
                             isDisabled={
-                              (!canIncrease.amount &&
-                                !canIncrease.time &&
-                                Number(lockAmount) <=
-                                  Number(VMOONEYLock?.[0].toString() / 10 ** 18)) ||
-                              (!canIncrease.amount &&
-                                !canIncrease.time &&
-                                Date.parse(lockTime?.formatted) <
-                                  Date.parse(
-                                    dateToReadable(
-                                      bigNumberToDate(
-                                        BigNumber.from(VMOONEYLock?.[1])
-                                      )
-                                    )
-                                  ))
+                              // For new locks, require both amount and time
+                              !hasLock ? (!lockAmount || lockAmount === '' || lockAmount === '0' || !canIncrease.time) :
+                              // For existing locks, allow if either amount or time can be increased
+                              (!canIncrease.amount && !canIncrease.time)
                             }
                           />
 
