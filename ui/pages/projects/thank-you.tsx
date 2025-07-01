@@ -74,7 +74,7 @@ export default function RewardsThankYou({
             <p>
               {`Thank you for performing your duty as a member of the MoonDAO community! Your allocation has been received. You can update your allocation at any time before the end of the quarter by resubmitting on the `}
               <Link href="/projects" className="text-light-warm">
-                rewards
+                projects
               </Link>
               {` page`}
             </p>
