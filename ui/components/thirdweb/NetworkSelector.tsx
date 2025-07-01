@@ -28,9 +28,10 @@ function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
     >
       <Image
         src={`/icons/networks/${getChainSlug(chain)}.svg`}
-        width={20}
-        height={20}
+        width={16}
+        height={16}
         alt={chain.name}
+        className="w-4 h-4"
         onError={(e) => {
           console.log(
             `NetworkSelector: Failed to load icon for chain: ${
@@ -43,7 +44,7 @@ function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
             target.style.display = 'none'
             const fallback = document.createElement('div')
             fallback.className =
-              'w-5 h-5 bg-white/10 rounded-full flex items-center justify-center text-white text-xs font-bold'
+              'w-4 h-4 bg-white/10 rounded-full flex items-center justify-center text-white text-xs font-bold'
             fallback.textContent = chain.name?.charAt(0) || '?'
             parent.insertBefore(fallback, target)
           }
@@ -91,7 +92,7 @@ export default function NetworkSelector({
   const dropdownContent = dropdown && (
     <div
       id="network-selector-dropdown"
-      className="absolute top-full mt-1 w-full flex flex-col gap-2 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl z-[9999] animate-fadeIn max-h-[300px] overflow-y-auto"
+      className="absolute top-full mt-2 flex flex-col gap-2 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl z-[9999] animate-fadeIn w-[250px] right-0"
     >
       {chains && chains.length > 0 ? (
         chains.map((chain) => (
