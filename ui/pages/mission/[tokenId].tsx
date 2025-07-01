@@ -24,6 +24,7 @@ import {
   JBV4_TERMINAL_ADDRESSES,
   JB_NATIVE_TOKEN_ADDRESS,
   JB_NATIVE_TOKEN_ID,
+  MISSION_TABLE_NAMES,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
 import { ethers } from 'ethers'
@@ -217,6 +218,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
   useChainDefault()
 
   const duration = useMemo(() => {
+    console.log('deadline', deadline)
     return formatTimeUntilDeadline(new Date(deadline))
   }, [ruleset, deadline])
 
@@ -672,22 +674,6 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
             id="page-container"
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
-            {/* Youtube Video Section */}
-            {mission?.metadata?.youtubeLink &&
-              mission?.metadata?.youtubeLink !== '' && (
-                <div className="w-full p-4 2xl:p-0 max-w-[1200px]">
-                  <iframe
-                    src={mission?.metadata?.youtubeLink?.replace(
-                      'watch?v=',
-                      'embed/'
-                    )}
-                    width="100%"
-                    height="500"
-                    allowFullScreen
-                    className="rounded-2xl"
-                  />
-                </div>
-              )}
             {/* Pay & Redeem Section */}
             <div className="flex z-20 xl:hidden w-full px-[5vw]">
               <div
@@ -777,77 +763,60 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-  try {
-    const tokenId: any = params?.tokenId
+  const tokenId: any = params?.tokenId
 
-    const chain = DEFAULT_CHAIN_V5
-    const chainSlug = getChainSlug(chain)
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
 
-    if (tokenId === undefined) {
-      return {
-        notFound: true,
-      }
-    }
-
-    const missionTableContract = getContract({
-      client: serverClient,
-      address: MISSION_TABLE_ADDRESSES[chainSlug],
-      abi: MissionTableABI as any,
-      chain: chain,
-    })
-
-    const missionTableName = await readContract({
-      contract: missionTableContract,
-      method: 'getTableName' as string,
-      params: [],
-    })
-
-    const statement = `SELECT * FROM ${missionTableName} WHERE id = ${tokenId}`
-
-    const missionRows = await queryTable(chain, statement)
-    const missionRow = missionRows?.[0]
-
-    if (!missionRow || blockedMissions.includes(Number(tokenId))) {
-      return {
-        notFound: true,
-      }
-    }
-
-    const jbV4ControllerContract = getContract({
-      client: serverClient,
-      address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
-      abi: JBV4ControllerABI as any,
-      chain: chain,
-    })
-
-    const metadataURI = await readContract({
-      contract: jbV4ControllerContract,
-      method: 'uriOf' as string,
-      params: [missionRow.projectId],
-    })
-
-    const ipfsHash = metadataURI.startsWith('ipfs://')
-      ? metadataURI.replace('ipfs://', '')
-      : metadataURI
-
-    const metadataRes = await fetch(`${IPFS_GATEWAY}${ipfsHash}`)
-    const metadata = await metadataRes.json()
-
-    const mission = {
-      id: missionRow.id,
-      teamId: missionRow.teamId,
-      projectId: missionRow.projectId,
-      metadata: metadata,
-    }
-
-    return {
-      props: {
-        mission,
-      },
-    }
-  } catch (error) {
+  if (tokenId === undefined) {
     return {
       notFound: true,
     }
+  }
+
+  const missionTableName = MISSION_TABLE_NAMES[chainSlug]
+
+  const statement = `SELECT * FROM ${missionTableName} WHERE id = ${tokenId}`
+
+  const missionRows = await queryTable(chain, statement)
+  const missionRow = missionRows?.[0]
+
+  if (!missionRow || blockedMissions.includes(Number(tokenId))) {
+    return {
+      notFound: true,
+    }
+  }
+
+  const jbV4ControllerContract = getContract({
+    client: serverClient,
+    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
+    abi: JBV4ControllerABI as any,
+    chain: chain,
+  })
+
+  const metadataURI = await readContract({
+    contract: jbV4ControllerContract,
+    method: 'uriOf' as string,
+    params: [missionRow.projectId],
+  })
+
+  const ipfsHash = metadataURI.startsWith('ipfs://')
+    ? metadataURI.replace('ipfs://', '')
+    : metadataURI
+
+  const metadataRes = await fetch(`${IPFS_GATEWAY}${ipfsHash}`)
+  const metadata = await metadataRes.json()
+
+  const mission = {
+    id: missionRow.id,
+    teamId: missionRow.teamId,
+    projectId: missionRow.projectId,
+    metadata: metadata,
+  }
+
+  return {
+    props: {
+      mission,
+    },
   }
 }

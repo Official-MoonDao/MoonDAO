@@ -227,6 +227,11 @@ export const MISSION_TABLE_ADDRESSES: Index = {
   sepolia: '0xa908f5d4b158Dc927f99934787501eA31026f7CC',
 }
 
+export const MISSION_TABLE_NAMES: Index = {
+  arbitrum: 'MISSIONTABLE_42161_142',
+  sepolia: 'MISSIONTABLE_11155111_1949',
+}
+
 export const MISSION_CREATOR_ADDRESSES: Index = {
   arbitrum: '0x94655918322DdaB02d93b01C2e8a7817B93965bC',
   sepolia: '0xeE63fe6c7532394a48daA73f78F1a30D331ab44e',

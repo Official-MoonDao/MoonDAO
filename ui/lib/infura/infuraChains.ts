@@ -97,7 +97,7 @@ export const sepolia = defineChain({
 })
 
 export const arbitrumSepolia = defineChain({
-  id: 421611,
+  id: 421614,
   name: 'Arbitrum Sepolia',
   rpc: `https://arbitrum-sepolia.infura.io/v3/${infuraKey}`,
   nativeCurrency: {
@@ -109,7 +109,7 @@ export const arbitrumSepolia = defineChain({
     {
       name: 'Arbiscan',
       url: 'https://sepolia.arbiscan.io',
-      apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=421611`,
+      apiUrl: `https://api.etherscan.io/v2/api?apikey=${etherscanApiKey}&chainid=421614`,
     },
   ],
 })

@@ -224,6 +224,21 @@ export default function MissionInfo({
                   title="About the Mission"
                   icon="/assets/icon-star-blue.svg"
                 />
+                {mission?.metadata?.youtubeLink &&
+                  mission?.metadata?.youtubeLink !== '' && (
+                    <div className="w-full p-4 2xl:p-0 max-w-[1200px]">
+                      <iframe
+                        src={mission?.metadata?.youtubeLink?.replace(
+                          'watch?v=',
+                          'embed/'
+                        )}
+                        width="100%"
+                        height="500"
+                        allowFullScreen
+                        className="rounded-2xl"
+                      />
+                    </div>
+                  )}
                 <div
                   className="mt-4 prose prose-invert w-full max-w-none"
                   dangerouslySetInnerHTML={{
