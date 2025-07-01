@@ -1,12 +1,13 @@
 //This component dipslays a project card using project data directly from tableland
 import Link from 'next/link'
-import React, { useContext, memo, useState } from 'react'
+import React, { useContext, memo, useState, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import { normalizeJsonString } from '@/lib/utils/rewards'
 import NumberStepper from '../layout/NumberStepper'
 import StandardButton from '../layout/StandardButton'
 
@@ -30,6 +31,7 @@ const ProjectCardContent = memo(
     distribute,
     userContributed,
     userHasVotingPower,
+    isMembershipDataLoading,
   }: any) => {
     const [isExpanded, setIsExpanded] = useState(false)
     const description = proposalJSON?.abstract || ''
@@ -70,7 +72,14 @@ const ProjectCardContent = memo(
           </div>
           {distribute &&
             (userContributed ? (
-              <p>Contributed</p>
+              <div className="flex flex-col items-end">
+                <p className="text-gray-400">
+                  {isMembershipDataLoading ? 'Checking...' : 'Contributed'}
+                </p>
+                {isMembershipDataLoading && (
+                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mt-1"></div>
+                )}
+              </div>
             ) : (
               <NumberStepper
                 number={distribution?.[project?.id] || 0}
@@ -89,17 +98,26 @@ const ProjectCardContent = memo(
         <div className="flex gap-2"></div>
         <div className="flex-1">
           <div className="pr-4 break-words">
-            <div className={`md:max-h-none ${shouldTruncate ? 'max-h-24 overflow-hidden relative' : ''}`}>
+            <div
+              className={`md:max-h-none ${
+                shouldTruncate ? 'max-h-24 overflow-hidden relative' : ''
+              }`}
+            >
               <ReactMarkdown
                 components={{
-                  p: ({ node, ...props }) => <p className="font-Lato text-[16px] break-words m-0" {...props} />,
+                  p: ({ node, ...props }) => (
+                    <p
+                      className="font-Lato text-[16px] break-words m-0"
+                      {...props}
+                    />
+                  ),
                   a: ({ node, ...props }) => (
-                    <a 
-                      className="font-Lato text-[16px] text-moon-blue hover:text-moon-gold underline" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
+                    <a
+                      className="font-Lato text-[16px] text-moon-blue hover:text-moon-gold underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      {...props} 
+                      {...props}
                     />
                   ),
                 }}
@@ -151,14 +169,50 @@ export default function ProjectCard({
   const hats = useSubHats(selectedChain, adminHatId)
   const wearers = useUniqueHatWearers(hats)
 
-  let userContributed = false
-  if (wearers && address) {
-    wearers.forEach((wearer: { address: string }) => {
-      if (address.toLowerCase() === wearer['address'].toLowerCase()) {
-        userContributed = true
+  // Improved contributor detection with both hat-based and rewardDistribution-based checks
+  const userContributed = useMemo(() => {
+    if (!address || !project) return false
+
+    let isContributor = false
+    if (wearers && address) {
+      wearers.forEach((wearer: { address: string }) => {
+        if (address.toLowerCase() === wearer['address'].toLowerCase()) {
+          isContributor = true
+        }
+      })
+    }
+
+    let rewardDistributionContribution = false
+    if (project.rewardDistribution) {
+      try {
+        const contributors: { [key: string]: number } = normalizeJsonString(
+          project.rewardDistribution
+        )
+        rewardDistributionContribution = Object.keys(contributors).some(
+          (contributor) => contributor.toLowerCase() === address.toLowerCase()
+        )
+      } catch (error) {
+        console.error('Error parsing rewardDistribution:', error)
       }
-    })
-  }
+    }
+
+    return isContributor || rewardDistributionContribution
+  }, [wearers, address, project])
+
+  const isMembershipDataLoading = useMemo(() => {
+    // Still loading if we have an adminHatId but no hats or wearers data yet
+    const hatDataLoading = !!(adminHatId && (!hats || !wearers))
+
+    const contributionCheckLoading =
+      distribute &&
+      address &&
+      project &&
+      !project.rewardDistribution && // No rewardDistribution data
+      adminHatId && // Has adminHatId (so should have hat data)
+      !wearers // But no wearers data yet
+
+    return hatDataLoading || contributionCheckLoading
+  }, [adminHatId, hats, wearers, distribute, address, project])
 
   if (!project) return null
 
@@ -173,6 +227,7 @@ export default function ProjectCard({
           handleDistributionChange={handleDistributionChange}
           proposalJSON={proposalJSON}
           userHasVotingPower={userHasVotingPower}
+          isMembershipDataLoading={isMembershipDataLoading}
         />
       ) : (
         <Link href={`/project/${project?.id}`} passHref>
