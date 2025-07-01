@@ -197,7 +197,7 @@ export default function ProjectCard({
     }
 
     return isContributor || rewardDistributionContribution
-  }, [wearers, address, project])
+  }, [wearers, account, project])
 
   const isMembershipDataLoading = useMemo(() => {
     // Still loading if we have an adminHatId but no hats or wearers data yet

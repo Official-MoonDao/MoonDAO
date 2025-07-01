@@ -5,6 +5,7 @@ export function useSubHats(selectedChain: any, hatId: any) {
 
   useEffect(() => {
     async function getSubHats() {
+      if (!hatId || !selectedChain) return
       try {
         const res = await fetch('/api/hats/sub-hats', {
           method: 'POST',
