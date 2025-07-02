@@ -20,7 +20,7 @@ interface MissionProfileHeaderProps {
   ruleset: any
   fundingGoal: number
   backers: any[]
-  deadline: number
+  deadline: number | undefined
   stage: number
   poolDeployerAddress: string | undefined
   isManager: boolean
@@ -58,7 +58,7 @@ const MissionProfileHeader = React.memo(
         : '...loading'
     }, [deadline])
 
-    const deadlinePassed = Date.now() > deadline
+    const deadlinePassed = deadline ? Date.now() > deadline : false
 
     return (
       <div id="citizenheader-container" className="w-[100vw]">
