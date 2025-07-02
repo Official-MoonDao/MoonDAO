@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 
-export function useSubHats(selectedChain: any, hatId: any) {
+export function useSubHats(
+  selectedChain: any,
+  hatId: any,
+  enabled: boolean = true
+) {
   const [subHats, setSubHats] = useState<any>()
 
   useEffect(() => {
     async function getSubHats() {
-      if (!hatId || !selectedChain) return
+      if (!hatId || !selectedChain || !enabled) return
       try {
         const res = await fetch('/api/hats/sub-hats', {
           method: 'POST',
@@ -24,8 +28,8 @@ export function useSubHats(selectedChain: any, hatId: any) {
       }
     }
 
-    if (hatId && selectedChain) getSubHats()
-  }, [selectedChain, hatId])
+    if (hatId && selectedChain && enabled) getSubHats()
+  }, [selectedChain, hatId, enabled])
 
-  return subHats
+  return enabled ? subHats : []
 }
