@@ -149,7 +149,7 @@ export function RetroactiveRewards({
   }, [userAddress, distributions, quarter, year])
 
   const handleDistributionChange = (projectId: string, value: number) => {
-    const newValue = Math.min(100, Math.max(1, +value))
+    const newValue = Math.min(100, Math.max(0, +value))
     setDistribution((prev) => ({
       ...prev,
       [projectId]: newValue,
@@ -235,50 +235,60 @@ export function RetroactiveRewards({
   const { tokens: baseTokens } = useAssets(BASE_ASSETS_URL)
   const { stakedEth, error } = useStakedEth()
 
-  const tokens = mainnetTokens
-    .concat(arbitrumTokens)
-    .concat(polygonTokens)
-    .concat(baseTokens)
-    .concat([{ symbol: 'stETH', balance: stakedEth }])
+  // Memoize the tokens array to prevent unnecessary re-renders
+  const tokens = useMemo(() => {
+    return mainnetTokens
+      .concat(arbitrumTokens)
+      .concat(polygonTokens)
+      .concat(baseTokens)
+      .concat([{ symbol: 'stETH', balance: stakedEth }])
+  }, [mainnetTokens, arbitrumTokens, polygonTokens, baseTokens, stakedEth])
 
   const {
     ethBudget: ethBudgetCurrent,
     mooneyBudget,
     ethPrice,
-  } = getBudget(tokens, year, quarter)
-  console.log('Retroactive Rewards ETH Budget (current):', ethBudgetCurrent)
+  } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
+
   const ethBudget = 15.4072
   const usdBudget = ethBudget * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
   useEffect(() => {
-    async function getMooneyBudgetUSD() {
-      const route = await pregenSwapRoute(ethereum, mooneyBudget, MOONEY, DAI)
+    let isCancelled = false
 
-      const usd = route?.route[0].rawQuote.toString() / 1e18
-      setMooneyBudgetUSD(usd)
+    async function getMooneyBudgetUSD() {
+      try {
+        // Skip if mooneyBudget is 0 or very small to avoid unnecessary calls
+        if (!mooneyBudget || mooneyBudget < 0.01) {
+          setMooneyBudgetUSD(0)
+          return
+        }
+
+        const route = await pregenSwapRoute(ethereum, mooneyBudget, MOONEY, DAI)
+
+        if (!isCancelled && route?.route[0]?.rawQuote) {
+          const usd = route.route[0].rawQuote.toString() / 1e18
+          setMooneyBudgetUSD(usd)
+        }
+      } catch (error) {
+        console.error('Error fetching Mooney budget USD:', error)
+        if (!isCancelled) {
+          // Set a fallback value or keep the previous value
+          setMooneyBudgetUSD(0)
+        }
+      }
     }
 
-    if (mooneyBudget) {
+    if (mooneyBudget && MOONEY && DAI) {
       getMooneyBudgetUSD()
     }
-  }, [mooneyBudget, DAI, MOONEY])
 
-  const {
-    addressToEthPayout,
-    addressToMooneyPayout,
-    ethPayoutCSV,
-    vMooneyPayoutCSV,
-    vMooneyAddresses,
-    vMooneyAmounts,
-  } = getPayouts(
-    projectIdToEstimatedPercentage,
-    currentProjects,
-    communityCircle,
-    ethBudget,
-    mooneyBudget
-  )
+    return () => {
+      isCancelled = true
+    }
+  }, [mooneyBudget, DAI, MOONEY])
 
   const handleSubmit = async () => {
     const totalPercentage = Object.values(distribution).reduce(
@@ -360,7 +370,7 @@ export function RetroactiveRewards({
                   <span className="leading-none">Create Project</span>
                 </button>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                   <RewardAsset
@@ -380,7 +390,10 @@ export function RetroactiveRewards({
               </div>
             </div>
 
-            <div id="projects-container" className="bg-black/20 rounded-xl p-6 border border-white/10">
+            <div
+              id="projects-container"
+              className="bg-black/20 rounded-xl p-6 border border-white/10"
+            >
               <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
                 Active Projects
               </h1>
@@ -388,7 +401,10 @@ export function RetroactiveRewards({
               <div className="flex flex-col gap-6">
                 {currentProjects && currentProjects?.length > 0 ? (
                   currentProjects.map((project: any, i) => (
-                    <div key={`project-card-${i}`} className="bg-black/20 rounded-xl border border-white/10 overflow-hidden">
+                    <div
+                      key={`project-card-${i}`}
+                      className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+                    >
                       <ProjectCard
                         key={`project-card-${i}`}
                         project={project}

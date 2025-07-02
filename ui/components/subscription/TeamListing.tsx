@@ -1,6 +1,6 @@
 import { PencilIcon, ShareIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
@@ -74,7 +74,7 @@ export default function TeamListing({
 
   const [teamNFT, setTeamNFT] = useState<any>()
 
-  const [retries, setRetries] = useState(0)
+  const retriesRef = useRef(0)
 
   useEffect(() => {
     async function getTeamNFT() {
@@ -85,15 +85,21 @@ export default function TeamListing({
           includeOwner: true,
         })
         if (listing.title.startsWith('Cultura')) console.log(nft)
-        if (nft?.metadata?.name) setTeamNFT(nft)
+        // Set teamNFT even if metadata.name doesn't exist, we'll handle the fallback in the display
+        if (nft) setTeamNFT(nft)
       } catch (err) {
-        setTimeout(() => {
-          setRetries(retries + 1)
-          if (retries < 3) getTeamNFT()
-        }, 2000)
+        retriesRef.current += 1
+        if (retriesRef.current < 3) {
+          setTimeout(() => {
+            getTeamNFT()
+          }, 2000)
+        }
       }
     }
-    if (teamContract && listing.teamId !== undefined) getTeamNFT()
+    if (teamContract && listing.teamId !== undefined) {
+      retriesRef.current = 0
+      getTeamNFT()
+    }
   }, [listing.teamId, teamContract])
 
   useEffect(() => {
@@ -194,7 +200,7 @@ export default function TeamListing({
     <div className="flex items-center gap-4">
       <ShareButton
         link={`${window.location.origin}/team/${
-          teamNFT ? generatePrettyLink(teamNFT.metadata.name) : listing.teamId
+          teamNFT?.metadata?.name ? generatePrettyLink(teamNFT.metadata.name) : listing.teamId
         }?listing=${listing.id}`}
       />
       {editable && (
@@ -253,7 +259,7 @@ export default function TeamListing({
       <StandardCard
         title={listing.title}
         headerLink={`/team/${listing.teamId}`}
-        headerLinkLabel={teamNFT?.metadata?.name}
+        headerLinkLabel={teamNFT?.metadata?.name || `Team ${listing.teamId}`}
         paragraph={listing.description}
         footer={listingFooter}
         actions={listingActions}

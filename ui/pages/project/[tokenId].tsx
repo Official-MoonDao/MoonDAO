@@ -106,7 +106,7 @@ export default function ProjectProfile({
   const safeData = useSafe(owner)
   const isSigner = safeOwners.includes(address || '')
   //Hats
-  const hats = useSubHats(selectedChain, adminHatId)
+  const hats = useSubHats(selectedChain, adminHatId, true)
 
   useChainDefault()
 
@@ -168,7 +168,7 @@ export default function ProjectProfile({
         popOverEffect={false}
         isProfile
         preFooter={
-          <NoticeFooter 
+          <NoticeFooter
             defaultImage="../assets/MoonDAO-Logo-White.svg"
             defaultTitle="Need Help?"
             defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"

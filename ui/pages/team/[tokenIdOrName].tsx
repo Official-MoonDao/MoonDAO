@@ -180,7 +180,7 @@ export default function TeamDetailPage({
     isLoading: isLoadingTeamData,
   } = useTeamData(teamContract, hatsContract, nft)
 
-  const hats = useSubHats(selectedChain, adminHatId)
+  const hats = useSubHats(selectedChain, adminHatId, true)
 
   const safeData = useSafe(nft?.owner)
 

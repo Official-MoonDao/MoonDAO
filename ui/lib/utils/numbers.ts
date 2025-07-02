@@ -20,7 +20,8 @@ export function truncateTokenValue(value: number | string, token: string) {
   } else {
     truncatedValue = Number(value)
   }
-  return parseFloat(String(truncatedValue)).toString()
+  const numericValue = parseFloat(String(truncatedValue))
+  return formatNumberWithCommas(numericValue.toString())
 }
 
 export enum NumberType {
@@ -30,7 +31,7 @@ export enum NumberType {
 }
 
 // Utility function to format numbers with commas
-function formatNumberWithCommas(numStr: string): string {
+export function formatNumberWithCommas(numStr: string): string {
   const [integerPart, decimalPart] = numStr.split('.')
   const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
   return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger

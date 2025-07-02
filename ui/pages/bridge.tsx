@@ -12,34 +12,38 @@ export default function Bridge() {
   return (
     <>
       <WebsiteHead title={t('bridgeTitle')} description={t('bridgeDesc')} />
-      <section className="w-[calc(100vw-20px)]">
-        <Container>
-          <ContentLayout
-            header={t('bridgeTitle')}
-            headerSize="max(20px, 3vw)"
-            description={t('bridgeDesc')}
-            preFooter={
-              <NoticeFooter
-                defaultImage="../assets/MoonDAO-Logo-White.svg"
-                defaultTitle="Need Help?"
-                defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
-                defaultButtonText="Submit a Ticket"
-                defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
-                imageWidth={200}
-                imageHeight={200}
-              />
-            }
-            mainPadding
-            isProfile
-            mode="compact"
-            popOverEffect={false}
-          >
-            <div className="mt-3 w-full max-w-2xl">
-              <ArbitrumBridge />
-            </div>
-          </ContentLayout>
-        </Container>
-      </section>
+      <div className="w-full">
+        <ContentLayout
+          header={t('bridgeTitle')}
+          headerSize="max(20px, 3vw)"
+          description={t('bridgeDesc')}
+          preFooter={
+            <NoticeFooter
+              defaultImage="../assets/MoonDAO-Logo-White.svg"
+              defaultTitle="Need Help?"
+              defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+              defaultButtonText="Submit a Ticket"
+              defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+              imageWidth={200}
+              imageHeight={200}
+            />
+          }
+          mainPadding
+          isProfile
+          mode="compact"
+          popOverEffect={false}
+        >
+          <section className="w-full min-h-[60vh] bg-gradient-to-b from-gray-900 to-black rounded-3xl">
+            <Container>
+              <div className="py-12">
+                <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-8 shadow-2xl max-w-2xl mx-auto">
+                  <ArbitrumBridge />
+                </div>
+              </div>
+            </Container>
+          </section>
+        </ContentLayout>
+      </div>
     </>
   )
 }

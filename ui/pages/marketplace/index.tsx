@@ -279,6 +279,7 @@ export async function getStaticProps() {
     console.error(error)
     return {
       props: { listings: [] },
+      revalidate: 60,
     }
   }
 }
