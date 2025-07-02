@@ -291,21 +291,6 @@ export function RetroactiveRewards({
     }
   }, [mooneyBudget, DAI, MOONEY])
 
-  const {
-    addressToEthPayout,
-    addressToMooneyPayout,
-    ethPayoutCSV,
-    vMooneyPayoutCSV,
-    vMooneyAddresses,
-    vMooneyAmounts,
-  } = getPayouts(
-    projectIdToEstimatedPercentage,
-    currentProjects,
-    communityCircle,
-    ethBudget,
-    mooneyBudget
-  )
-
   const handleSubmit = async () => {
     const totalPercentage = Object.values(distribution).reduce(
       (sum, value) => sum + value,
