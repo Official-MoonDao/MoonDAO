@@ -41,15 +41,11 @@ export default function IndexCard({
   const cardContent = (
     <span
       id="index-card-container"
-      className="group animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full"
+      className="group animate-fadeIn flex flex-col relative bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-full h-full"
     >
-      <div
-        id="index-card-styling"
-        className="bg-darkest-cool rounded-[20px] w-[30%] h-[30%] absolute top-0 left-0 pb-5"
-      ></div>
       <span
         id="index-content-container"
-        className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-x-[3px] border-darkest-cool min-h-[250px] md:min-h-[320px]"
+        className="h-full p-[20px] md:pb-10 rounded-2xl overflow-hidden flex flex-col justify-between min-h-[200px] md:min-h-[240px]"
       >
         <span
           id="index-content"
@@ -125,12 +121,8 @@ export default function IndexCard({
   return (
     <span
       id="index-link-frame"
-      className="card-container at-a-glance-card h-full mb-5 z-30 w-full flex lg:flex-col rounded-[20px] relative overflow-hidden transition-all hover:ring-2 hover:ring-white"
+      className="card-container at-a-glance-card h-full mb-5 z-30 w-full flex lg:flex-col rounded-2xl relative overflow-hidden transition-all hover:ring-2 hover:ring-white/50 hover:scale-[1.02]"
     >
-      <span
-        id="index-Interactive-Element"
-        className="clip absolute h-full w-full z-10 transition-all pointer-events-none opacity-100"
-      />
       {link || onClick ? (
         <button
           id="index-card-link"

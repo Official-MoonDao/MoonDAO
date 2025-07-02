@@ -166,7 +166,7 @@ const ContentLayout: React.FC<ContentProps> = ({
       </section>
 
       {children && (
-        <section id="main-section-container" className="popout-base-bg">
+        <section id="main-section-container" className="">
           <div
             id="main-section"
             className={`
@@ -181,19 +181,6 @@ const ContentLayout: React.FC<ContentProps> = ({
                         }
                     `}
           >
-            {popOverEffect ? null : (
-              <div
-                id="popout-bg-element"
-                className={`
-                                z-0 popout-bg absolute w-full md:w-[calc(100%-40px)] lg:w-[calc(100%-100px)] 2xl:w-full left-0 md:left-[50px] lg:left-[100px] 2xl:left-[150px] rounded-bl-[20px] 
-                                ${
-                                  !isProfile
-                                    ? `h-[calc(100%-200px)] top-[200px]`
-                                    : 'h-full top-0'
-                                }
-                                `}
-              ></div>
-            )}
             <div
               id="main-section-content-container"
               className={`relative z-10 

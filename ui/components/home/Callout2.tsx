@@ -8,7 +8,14 @@ import TeamTier from '../onboarding/TeamTier'
 
 export default function Callout2() {
   return (
-    <section>
+    <section
+      style={{
+        backgroundImage: 'url("/assets/mission-hero-bg.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
       <div
         id="callout2-container"
         className="z-10 md:rounded-tl-[5vmax] relative flex flex-col items-end lg:items-start justify-end pt-0 lg:pt-5 p-5 pb-[5vmax] md:pr-10 md:pl-10 min-h-[250px] lg:min-h-[600px] bg-gradient-to-bl from-transparent via-[#090D21] via-10% to-transparent to-40%"
@@ -27,30 +34,6 @@ export default function Callout2() {
               alt="Divider 4"
               width={1000}
               height={1000}
-            />
-          </div>
-          <div
-            id="featured-image-large"
-            className="hide-xl absolute top-0 right-0 w-[80vmin] md:w-[70%] lg:w-[45vmax] mt-[-5vmax] h-full mt-5"
-          >
-            <Image
-              className="absolute top-0 right-0"
-              src="/assets/feature-3.svg"
-              alt="Feature 3"
-              width={400}
-              height={400}
-            />
-          </div>
-          <div
-            id="featured-image-extra-large"
-            className="show-xl absolute top-0 right-0 w-[900px] h-[50vw]"
-          >
-            <Image
-              className="absolute top-0 right-0"
-              src="/assets/feature-3.svg"
-              alt="Feature 3"
-              width={650}
-              height={650}
             />
           </div>
         </div>
