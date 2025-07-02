@@ -166,7 +166,7 @@ export default function ProjectCard({
   )
 
   const { selectedChain } = useContext(ChainContextV5)
-  const hats = useSubHats(selectedChain, adminHatId)
+  const hats = useSubHats(selectedChain, adminHatId, !!project?.eligible)
   const wearers = useUniqueHatWearers(hats)
 
   // Improved contributor detection with both hat-based and rewardDistribution-based checks
@@ -197,7 +197,7 @@ export default function ProjectCard({
     }
 
     return isContributor || rewardDistributionContribution
-  }, [wearers, account, project])
+  }, [wearers, address, project])
 
   const isMembershipDataLoading = useMemo(() => {
     // Still loading if we have an adminHatId but no hats or wearers data yet
@@ -221,7 +221,9 @@ export default function ProjectCard({
       {distribute ? (
         <ProjectCardContent
           project={project}
-          distribute={distribute}
+          distribute={
+            distribute && (project!.finalReportLink || project!.finalReportIPFS)
+          }
           userContributed={userContributed}
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}

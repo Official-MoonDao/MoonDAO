@@ -172,7 +172,7 @@ export default function MissionProfile({ mission }: ProjectProfileProps) {
     teamNFT
   )
 
-  const teamHats = useSubHats(selectedChain, adminHatId)
+  const teamHats = useSubHats(selectedChain, adminHatId, true)
 
   const { points, isLoading: isLoadingPoints } = useJBProjectTimeline(
     selectedChain,
