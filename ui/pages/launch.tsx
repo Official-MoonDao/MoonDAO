@@ -219,83 +219,116 @@ export default function Launch({ missions }: any) {
 
   return (
     <>
-      <section id="hero-section">
-        <div id="hero-content-container" className="">
-          <div
-            id="hero-content"
-            className="relative md:pt-0 md:pb-0 h-[45vw] md:h-[max(30vh,400px)] 2xl:h-[400px] flex justify-between items-center overflow-hidden"
-          >
-            <div className="relative h-full w-full 2xl:hidden">
-              <video
-                id="video-background-mobile"
-                className="bg-[#010618] min-w-[100vw] h-full w-full object-contain object-right md:h-[max(30vh,400px)]"
-                autoPlay
-                loop
-                muted
-                playsInline
-              >
-                <source
-                  src="/assets/moondao-video-cropped-fade-left.mp4"
-                  type="video/mp4"
+      <section className="relative h-screen overflow-hidden">
+        {/* High-quality background image */}
+        <div className="absolute inset-0">
+          <Image
+            src="/assets/Lunar-Colony.png"
+            alt="Lunar base under construction with rocket launch"
+            fill
+            className="object-cover object-center"
+            priority
+            quality={100}
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#010618]/80 via-[#010618]/60 to-transparent"></div>
+        </div>
+
+        {/* Hero content - positioned higher up from bottom */}
+        <div className="relative z-10 h-full flex flex-col justify-end">
+          <div className="px-8 md:px-12 lg:px-16 pb-20 md:pb-24 lg:pb-32">
+            <div className="max-w-2xl">
+              {/* MoonDAO Logo */}
+              <div className="mb-6">
+                <Image
+                  src="/assets/Tagline Animation - inline centered.svg"
+                  alt="MoonDAO"
+                  width={300}
+                  height={75}
+                  className="w-48 md:w-64 lg:w-72"
                 />
-              </video>
-              <div className="absolute inset-0 bg-gradient-to-tr md:bg-gradient-to-r w-full from-[10%] from-[#010618] to-transparent"></div>
-            </div>
-            <div className="relative hidden 2xl:block w-full 2xl:flex 2xl:justify-end">
-              <video
-                id="video-background-desktop"
-                className="min-w-[100vw] md:w-full object-cover 2xl:h-[400px] 2xl:object-contain 2xl:object-right 2xl:w-[100vw] bg-[#010618]"
-                autoPlay
-                loop
-                muted
-                playsInline
-              >
-                <source
-                  src="/assets/moondao-video-san-surface.mp4"
-                  type="video/mp4"
-                />
-              </video>
-              <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#010618] to-transparent opacity-80"></div>
-            </div>
-            <div
-              id="content-container"
-              className="flex items-center overflow-hidden"
-            >
-              <Image
-                id="hero-divider-bottom-right"
-                className="absolute right-[-2px] bottom-[-2px] z-0 w-[50vw] md:w-[25vw] 2xl:w-[10vw]"
-                src="/assets/launchpad/blue-divider-rl.svg"
-                alt="Divider"
-                width={250}
-                height={250}
-              />
-              <div
-                id="logo-and-graphics-container"
-                className="absolute w-full h-full md:h-auto left-[0] md:pl-[2vw] justify-center flex-col md:flex-row flex items-center md:justify-center z-[1]"
-              >
-                <div
-                  id="graphics-container"
-                  className="md:h-full flex flex-col items-center justify-center md:pb-0"
-                >
-                  <div
-                    id="desktop-tagline-container"
-                    className="w-full justify-center items-center px-[2vw] md:px-[5vw]"
+              </div>
+              
+              {/* Main heading */}
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-GoodTimes text-white mb-6 leading-tight">
+                Launchpad
+              </h1>
+              
+              {/* Description */}
+              <p className="text-lg md:text-xl lg:text-2xl text-white/90 mb-8 leading-relaxed max-w-xl">
+                Fund the future of space exploration with decentralized crowdfunding that connects global communities to groundbreaking missions.
+              </p>
+              
+              {/* CTA Button - enhanced with flair */}
+              <div className="flex justify-start">
+                <div className="relative group">
+                  {/* Glow effect */}
+                  <div className="absolute -inset-1 bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] rounded-full blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  
+                  {/* Main button */}
+                  <StandardButton
+                    className="relative bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] text-white font-semibold text-base px-8 py-3 rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border border-white/10 backdrop-blur-sm text-center"
+                    onClick={handleCreateMission}
+                    hoverEffect={false}
                   >
-                    <Image
-                      id="desktop-tagline"
-                      className="w-[70vw] md:w-[max(50vw,500px)] h-auto md:w-[min(70vw,650px)]"
-                      src="/assets/Tagline Animation - inline centered.svg"
-                      alt="Org"
-                      width={450}
-                      height={450}
-                    />
-                  </div>
-                  <h1 className="font-GoodTimes text-left text-white text-[9vw] md:text-[max(3.5vw,45px)]">
-                    {'Launchpad'}
-                  </h1>
+                    <div className="flex items-center justify-center w-full text-center">
+                      <span className="relative text-center ml-6">
+                        Launch Your Mission
+                        {/* Text glow effect */}
+                        <span className="absolute inset-0 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent blur-sm opacity-50"></span>
+                      </span>
+                      
+                      {/* Arrow icon */}
+                      <svg 
+                        className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300 ml-2" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </div>
+                  </StandardButton>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Decorative elements */}
+        <Image
+          src="/assets/launchpad/blue-divider-rl.svg"
+          alt=""
+          width={200}
+          height={200}
+          className="absolute bottom-0 right-0 w-32 md:w-48 opacity-50"
+        />
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+          <div className="flex flex-col items-center text-white/70 hover:text-white/90 transition-colors duration-300 cursor-pointer group">
+            <span className="text-sm font-medium mb-2 tracking-wider uppercase">Scroll to explore</span>
+            <div className="relative">
+              {/* Animated scroll arrow */}
+              <svg 
+                className="w-6 h-6 animate-bounce group-hover:animate-pulse" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                />
+              </svg>
+              
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-white/20 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </div>
+            
+            {/* Scroll line indicator */}
+            <div className="mt-3 w-px h-8 bg-gradient-to-b from-white/50 to-transparent"></div>
           </div>
         </div>
       </section>
