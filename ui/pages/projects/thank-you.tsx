@@ -119,7 +119,7 @@ export async function getStaticProps() {
 
     const { quarter, year } = getRelativeQuarter(-1)
 
-    const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter} AND eligible IS NOT 0`
+    const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter} AND eligible != 0`
     const projects = await queryTable(chain, projectStatement)
     const filteredProjects = projects.filter(
       (project: any) => !blockedProjects.includes(project?.id)

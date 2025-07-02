@@ -5,7 +5,7 @@ export function useSubHats(
   hatId: any,
   enabled: boolean = true
 ) {
-  const [subHats, setSubHats] = useState<any>()
+  const [subHats, setSubHats] = useState<any[]>([])
 
   useEffect(() => {
     async function getSubHats() {
