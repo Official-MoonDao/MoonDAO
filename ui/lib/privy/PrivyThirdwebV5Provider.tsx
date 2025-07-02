@@ -13,6 +13,7 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const setActiveWallet = useSetActiveWallet()
+  const [isSigningIn, setIsSigningIn] = useState(false)
 
   useEffect(() => {
     async function setActive() {
@@ -62,8 +63,9 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
 
   useEffect(() => {
     async function handleAuth() {
-      if (ready && authenticated && user) {
+      if (ready && authenticated && user && !isSigningIn) {
         try {
+          setIsSigningIn(true)
           // Sign in to NextAuth with the Privy token
           const accessToken = await getAccessToken()
           const result = await signIn('credentials', {
@@ -76,12 +78,14 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
           }
         } catch (error) {
           console.error('Auth error:', error)
+        } finally {
+          setIsSigningIn(false)
         }
       }
     }
 
     handleAuth()
-  }, [ready, authenticated, user, getAccessToken])
+  }, [ready, authenticated, user, getAccessToken, isSigningIn])
 
   useEffect(() => {
     if (ready && !authenticated) {
