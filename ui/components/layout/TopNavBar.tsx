@@ -208,7 +208,7 @@ const TopNavBar = ({
           {/* Right side - Wallet and Settings - Desktop only */}
           <div className="flex items-center space-x-2 lg:space-x-3 xl:space-x-4 flex-shrink-0">
             {/* Wallet/Address Button */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-4 lg:space-x-6">
               <div className="max-w-[200px] overflow-hidden scale-90 lg:scale-100 xl:scale-105 min-w-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap [&>button]:max-w-[200px]">
                 <PrivyConnectWallet
                   type="desktop"
