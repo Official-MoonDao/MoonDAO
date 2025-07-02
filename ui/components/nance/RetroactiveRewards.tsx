@@ -149,7 +149,7 @@ export function RetroactiveRewards({
   }, [userAddress, distributions, quarter, year])
 
   const handleDistributionChange = (projectId: string, value: number) => {
-    const newValue = Math.min(100, Math.max(1, +value))
+    const newValue = Math.min(100, Math.max(0, +value))
     setDistribution((prev) => ({
       ...prev,
       [projectId]: newValue,
@@ -250,7 +250,6 @@ export function RetroactiveRewards({
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
 
-  console.log('Retroactive Rewards ETH Budget (current):', ethBudgetCurrent)
   const ethBudget = 15.4072
   const usdBudget = ethBudget * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
@@ -290,21 +289,6 @@ export function RetroactiveRewards({
       isCancelled = true
     }
   }, [mooneyBudget, DAI, MOONEY])
-
-  const {
-    addressToEthPayout,
-    addressToMooneyPayout,
-    ethPayoutCSV,
-    vMooneyPayoutCSV,
-    vMooneyAddresses,
-    vMooneyAmounts,
-  } = getPayouts(
-    projectIdToEstimatedPercentage,
-    currentProjects,
-    communityCircle,
-    ethBudget,
-    mooneyBudget
-  )
 
   const handleSubmit = async () => {
     const totalPercentage = Object.values(distribution).reduce(
