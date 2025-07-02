@@ -28,6 +28,7 @@ import useTeamEmail from '@/lib/team/useTeamEmail'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { truncateTokenValue } from '@/lib/utils/numbers'
 import { TeamListing } from '@/components/subscription/TeamListing'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import Modal from '../layout/Modal'
@@ -283,7 +284,9 @@ export default function BuyTeamListingModal({
               <p className="font-GoodTimes">{listing.title}</p>
               <p className="text-[75%]">{listing.description}</p>
               <p id="listing-price" className="font-bold">{`${
-                citizen ? listing.price : +listing.price * 1.1
+                citizen 
+                  ? truncateTokenValue(listing.price, listing.currency)
+                  : truncateTokenValue(+listing.price * 1.1, listing.currency)
               } ${listing.currency}`}</p>
             </div>
           </div>
