@@ -481,7 +481,7 @@ export default function MissionProfile({
                 </div>
                 <SlidingCardMenu>
                   <div className="flex gap-4"></div>
-                  {teamHats?.[0].id && (
+                  {teamHats?.[0]?.id && (
                     <TeamMembers
                       hats={teamHats}
                       hatsContract={hatsContract}
