@@ -12,7 +12,7 @@ export default function Hero() {
         <div
           id="background"
           className="w-full h-full absolute top-0 right-0 overflow-hidden z-0 bg-cover bg-no-repeat"
-          style={{backgroundImage: 'url("/assets/Lunar-Colony.png")', backgroundPosition: 'center 150%'}}
+          style={{backgroundImage: 'url("/assets/Lunar-Colony-Dark.png")', backgroundPosition: 'center 150%'}}
         ></div>
         <div
           id="tl-divider"
