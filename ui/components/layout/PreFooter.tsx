@@ -6,7 +6,7 @@ export default function PreFooter({ mode = 'Default' }) {
         <section id="prefooter-container" className="m-width-[100vw]">
             <div id="prefooter" className={`relative flex ${mode === 'compact' ? 'md:min-h-[500px] lg:min-h-[0px] md:ml-0 lg:ml-5 md:p-0' : ''}`}>
                 <div id="background">
-                    <div id="background-gradient" className={`gradient-1 w-full h-full absolute bottom-0 left-0 overflow-hidden md:rounded-bl-[5vmax] ${mode === 'compact' ? 'rounded-tr-[5vmax] rounded-tl-[5vmax] md:rounded-tl-[20px]' : ''}`}>
+                    <div id="background-gradient" className={`w-full h-full absolute bottom-0 left-0 overflow-hidden bg-gradient-to-r from-light-cool via-mid-cool to-dark-cool ${mode === 'compact' ? 'rounded-tr-[5vmax] rounded-tl-[5vmax] md:rounded-tl-[20px]' : ''}`}>
                     </div>
                     {mode === 'Default' && (
                         <div id="bottom-right-divider" className="hidden md:block  bg-bottom absolute bottom-[-2px] right-[-20%] md:right-0 w-[60%] md:w-[60%] lg:w-[40%] h-full">

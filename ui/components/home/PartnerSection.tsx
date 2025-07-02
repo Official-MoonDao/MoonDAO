@@ -7,7 +7,7 @@ export default function PartnerSection() {
     <>
       <section
         id="network-section-container"
-        className="mt-3 md:mt-5 flex justify-center bg-white rounded-br-[5vmax] md:rounded-br-[0vmax] rounded-tl-[5vmax] rounded-bl-[5vmax] mb-3 md:mb-5"
+        className="flex justify-center bg-white md:rounded-br-[0vmax]"
       >
         <div
           id="network-section"
@@ -69,11 +69,11 @@ export default function PartnerSection() {
 
       <section
         id="featured-section-container"
-        className="flex justify-center bg-white rounded-tl-[5vmax] rounded-tr-[5vmax] md:rounded-tr-[0vmax]"
+        className="flex justify-center bg-white md:rounded-tr-[0vmax]"
       >
         <div
           id="feature-section"
-          className="w-full pt-8 md:pt-10 px-3 md:px-5 pb-5 flex items-center flex-col max-w-[1200px]"
+          className="w-full px-3 md:px-5 pb-5 flex items-center flex-col max-w-[1200px]"
         >
           <h2
             id="section-header"
