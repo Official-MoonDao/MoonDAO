@@ -335,35 +335,30 @@ export default function Launch({ missions }: any) {
       </section>
       {/* Featured Mission Section - Fullscreen */}
       {missions?.[FEATURED_MISSION_INDEX]?.projectId !== undefined && (
-        <section className="relative h-screen flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#1B1C4B] to-[#010618]">
+        <section className="relative h-screen flex items-center justify-center overflow-hidden">
+          {/* Background image */}
+          <div className="absolute inset-0">
+            <Image
+              src="/assets/launchpad/launchpad-featured-mission.png"
+              alt="Featured Mission Background"
+              fill
+              className="object-cover object-center"
+              priority
+              quality={100}
+            />
+          </div>
+          
           {/* Background gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#010618]/80 via-[#1B1C4B]/60 to-[#010618]/80"></div>
           
-          {/* Inspiring Mission Background */}
-          <div className="absolute inset-0 overflow-hidden">
-            {/* Space-themed gradient orbs */}
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-purple-500/15 to-blue-500/15 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-br from-pink-500/15 to-purple-500/15 rounded-full blur-3xl"></div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full blur-3xl"></div>
-            
-            {/* Constellation-like dots */}
-            <div className="absolute top-1/5 right-1/3 w-1 h-1 bg-white/40 rounded-full"></div>
-            <div className="absolute top-2/5 left-1/5 w-1 h-1 bg-cyan-400/50 rounded-full"></div>
-            <div className="absolute top-3/5 right-1/4 w-1 h-1 bg-purple-400/40 rounded-full"></div>
-            <div className="absolute bottom-1/3 left-1/3 w-1 h-1 bg-pink-400/50 rounded-full"></div>
-            <div className="absolute bottom-1/4 right-1/5 w-1 h-1 bg-blue-400/40 rounded-full"></div>
-            
-            {/* Nebula-like swirls */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-purple-500/5 via-transparent to-blue-500/5 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-pink-500/5 via-transparent to-purple-500/5 rounded-full blur-3xl"></div>
-          </div>
+
           
           {/* Text readability overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/30"></div>
           
           {/* Featured Mission Header */}
-          <div className="absolute top-16 md:top-20 left-1/2 transform -translate-x-1/2 z-20">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-GoodTimes text-white text-center">
+          <div className="absolute top-4 md:top-20 left-1/2 transform -translate-x-1/2 z-20">
+            <h2 className="text-lg md:text-3xl lg:text-4xl xl:text-5xl font-GoodTimes text-white text-center whitespace-nowrap">
               Featured Mission
             </h2>
           </div>
@@ -412,11 +407,11 @@ export default function Launch({ missions }: any) {
                   {/* Mission Title & Tagline */}
                   <div className="space-y-3 lg:space-y-4">
                     <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-GoodTimes text-white leading-tight">
-                      {missions?.[FEATURED_MISSION_INDEX]?.metadata?.name || 'Featured Mission'}
+                      {missions?.[FEATURED_MISSION_INDEX]?.metadata?.name || 'Welcome to the MoonDAO Launchpad'}
                     </h1>
-                    {missions?.[FEATURED_MISSION_INDEX]?.metadata?.tagline && (
+                    {(missions?.[FEATURED_MISSION_INDEX]?.metadata?.tagline || missions?.[FEATURED_MISSION_INDEX]?.metadata?.description) && (
                       <p className="text-lg md:text-xl lg:text-2xl text-white/80 font-light">
-                        {missions?.[FEATURED_MISSION_INDEX]?.metadata?.tagline}
+                        {missions?.[FEATURED_MISSION_INDEX]?.metadata?.tagline || missions?.[FEATURED_MISSION_INDEX]?.metadata?.description}
                       </p>
                     )}
                   </div>
@@ -528,20 +523,20 @@ export default function Launch({ missions }: any) {
                   {/* CTA Buttons */}
                   <div className="flex flex-row gap-2 md:gap-4 pt-4">
                     <StandardButton
-                      className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white font-semibold text-xs md:text-sm px-4 md:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border border-white/20 text-center flex-1"
+                      className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white font-semibold text-xs md:text-sm px-4 md:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border border-white/20 text-center flex-1 flex items-center justify-center"
                       onClick={() => router.push(`/mission/${missions?.[FEATURED_MISSION_INDEX]?.id}`)}
                       hoverEffect={false}
                     >
-                      <span className="text-center">Learn More</span>
+                      <span className="ml-2">Learn More</span>
                     </StandardButton>
                     <StandardButton
-                      className="bg-white/10 backdrop-blur-sm text-white font-semibold text-xs md:text-sm px-4 md:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:bg-white/20 transition-all duration-300 border border-white/20 text-center flex-1"
+                      className="bg-white/10 backdrop-blur-sm text-white font-semibold text-xs md:text-sm px-4 md:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:bg-white/20 transition-all duration-300 border border-white/20 text-center flex-1 flex items-center justify-center"
                       onClick={() => {
                         // Handle buy action
                       }}
                       hoverEffect={false}
                     >
-                      <span className="text-center">
+                      <span className="ml-2">
                         {featuredMissionToken?.symbol ? `Buy ${featuredMissionToken.symbol}` : 'Contribute'}
                       </span>
                     </StandardButton>
