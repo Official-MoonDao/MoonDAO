@@ -249,15 +249,15 @@ export const MISSION_CREATOR_ADDRESSES: Index = {
 }
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0xb291844f213047eb9e1621ae555b1eae6700d553',
   sepolia: '0xb291844F213047Eb9e1621AE555B1Eae6700d553',
 }
 export const JBV4_TOKENS_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0xa59e9f424901fb9dbd8913a9a32a081f9425bf36',
   sepolia: '0xA59e9F424901fB9DBD8913a9A32A081F9425bf36',
 }
 export const JBV4_DIRECTORY_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0x0bc9f153dee4d3d474ce0903775b9b2aaae9aa41',
   sepolia: '0x0bC9F153DEe4d3D474ce0903775b9b2AAae9AA41',
 }
 export const JB_NATIVE_TOKEN_ADDRESS =
