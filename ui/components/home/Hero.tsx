@@ -1,13 +1,14 @@
 import Image from 'next/image'
 import MailingList from '../layout/MailingList'
 import StandardButton from '../layout/StandardButton'
+import Video from './Video'
 
 export default function Hero() {
   return (
     <section id="hero-section" className="overflow-visible relative w-full">
       <div
         id="hero-container"
-        className="flex flex-col md:h-[80vh] items-end justify-end lg:items-start lg:justify-end md:min-h-[90vmin] md:items-start px-[20px] md:px-[40px] min-h-[575px] mt-[-1px] p-5 pb-[120px] lg:pb-60 lg:min-h-[800px] relative z-10"
+        className="flex flex-col md:h-[80vh] items-end justify-end lg:items-start lg:justify-end md:min-h-[90vmin] md:items-start px-[20px] md:px-[40px] min-h-[800px] mt-[-1px] p-5 pb-[140px] md:pb-[160px] lg:pb-[280px] xl:pb-[300px] lg:min-h-[800px] relative z-10"
       >
         <div
           id="background"
@@ -67,6 +68,7 @@ export default function Hero() {
           </div>
         </div>
       </div>
+      <Video />
     </section>
   )
 }

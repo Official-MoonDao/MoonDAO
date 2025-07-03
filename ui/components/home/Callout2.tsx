@@ -18,7 +18,7 @@ export default function Callout2() {
     >
       <div
         id="callout2-container"
-        className="z-10 md:rounded-tl-[5vmax] relative flex flex-col items-end lg:items-start justify-end pt-0 lg:pt-5 p-5 pb-[5vmax] md:pr-10 md:pl-10 min-h-[250px] lg:min-h-[600px] bg-gradient-to-bl from-transparent via-[#090D21] via-10% to-transparent to-40%"
+        className="z-10 md:rounded-tl-[5vmax] relative flex flex-col-reverse lg:flex-row items-center justify-center lg:justify-between pt-5 p-5 pb-[120px] md:pr-10 md:pl-10 min-h-[800px] bg-gradient-to-bl from-transparent via-[#090D21] via-10% to-transparent to-40%"
       >
         <div id="background-elements">
           <div
@@ -39,60 +39,59 @@ export default function Callout2() {
         </div>
         <div
           id="content"
-          className="relative pt-[220px] lg:pt-20 md:pb-0 w-full lg:w-[70%] mx-auto text-center"
+          className="relative w-full lg:w-[50%] text-center lg:text-left lg:pl-[80px]"
         >
-          <h1 className="header font-GoodTimes text-left max-w-[500px] mx-auto">
-            MoonDAO is <br></br>Permissionless
-          </h1>
-          <p
-            id="paragraph"
-            className="pt-2 pb-5 text-lg max-w-[500px] text-left mx-auto"
-          >
-            This is an open source space platform where everything is proposed,
-            governed, and created by members. Co-govern the treasury by locking
-            $MOONEY to become a voter.
-          </p>
-          <div className="flex items-center justify-start gap-2 mb-5 max-w-[500px] mx-auto">
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(
-                  '0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395'
-                )
-                toast.success('Address copied to clipboard.')
-              }}
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-            >
-              <Image
-                src="/assets/icon-copy.svg"
-                alt="Copy address"
-                width={20}
-                height={20}
-              />
-              <span className="font-mono break-all text-left">
-                0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395
-              </span>
-            </button>
-          </div>
-          <div className="max-w-[500px] mx-auto flex justify-start">
-            <StandardButton
-              backgroundColor="bg-white"
-              textColor="text-dark-cool"
-              borderRadius="rounded-tl-[10px] rounded-[2vmax]"
-              link="/get-mooney"
-              paddingOnHover="pl-5"
-            >
-              Buy $MOONEY
-            </StandardButton>
+          <div className="max-w-[1200px] mx-auto lg:mx-0">
+            <div className="md:w-[95%] lg:w-[70%]">
+              <h1 className="header font-GoodTimes text-left max-w-[500px] mx-auto lg:mx-0">
+                MoonDAO is <br></br>Permissionless
+              </h1>
+              <p
+                id="paragraph"
+                className="pt-2 pb-5 text-lg max-w-[500px] text-left mx-auto lg:mx-0"
+              >
+                This is an open source space platform where everything is proposed,
+                governed, and created by members. Co-govern the treasury by locking
+                $MOONEY to become a voter.
+              </p>
+              <div className="flex items-center justify-start gap-2 mb-5 max-w-[500px] mx-auto lg:mx-0">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      '0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395'
+                    )
+                    toast.success('Address copied to clipboard.')
+                  }}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                >
+                  <Image
+                    src="/assets/icon-copy.svg"
+                    alt="Copy address"
+                    width={20}
+                    height={20}
+                  />
+                  <span className="font-mono text-left">
+                    0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395
+                  </span>
+                </button>
+              </div>
+              <div className="max-w-[500px] mx-auto lg:mx-0 flex justify-start">
+                <StandardButton
+                  backgroundColor="bg-white"
+                  textColor="text-dark-cool"
+                  borderRadius="rounded-tl-[10px] rounded-[2vmax]"
+                  link="/get-mooney"
+                  paddingOnHover="pl-5"
+                >
+                  Buy $MOONEY
+                </StandardButton>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-      <div
-        id="our-astronauts-section"
-        className="sm:px-2 md:p-5 z-50 flex flex-col items-start overflow-hidden"
-      >
         <div
           id="astronauts-container"
-          className="p-1 flex flex-wrap w-full justify-center gap-5 scale-[90%] md:scale-[100%] lg:scale-[115%] my-[20px] z-50"
+          className="w-full lg:w-[50%] flex flex-row justify-center lg:justify-end items-center gap-5 mt-10 lg:mt-0"
         >
           <Speaker
             alt="Coby Cotton"

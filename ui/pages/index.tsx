@@ -9,7 +9,6 @@ import Feature from '../components/home/Feature'
 import Hero from '../components/home/Hero'
 import PartnerSection from '../components/home/PartnerSection'
 import SpeakerSection from '../components/home/SpeakerSection'
-import Video from '../components/home/Video'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import PageEnder from '../components/layout/PreFooter'
@@ -44,7 +43,6 @@ export default function Home({ linkSource }: any) {
       />
       <div>
         <Hero />
-        <Video />
         <Callout1 />
         <Callout2 />
         <Feature />
