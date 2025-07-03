@@ -5,7 +5,7 @@ import Speaker from '../home/Speaker'
 
 export default function SpeakerSection() {
   return (
-    <section className="bg-white md:rounded-br-[0px] w-full min-h-[800px] md:h-[80vh] md:min-h-[90vmin] lg:min-h-[800px] 2xl:min-h-[900px] 3xl:min-h-[1000px] flex flex-col">
+    <section className="bg-white md:rounded-br-[0px] w-full flex flex-col pb-8 lg:pb-12 xl:pb-16 2xl:pb-20 3xl:pb-24">
       <div
         id="speaker-section-container"
         className="px-8 md:px-12 lg:px-16 2xl:px-24 3xl:px-32 relative flex justify-center pt-4 lg:pt-6 xl:pt-8 2xl:pt-12 3xl:pt-16 flex-1"
