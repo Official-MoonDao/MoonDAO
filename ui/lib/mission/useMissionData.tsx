@@ -100,7 +100,6 @@ export default function useMissionData({
 
   useEffect(() => {
     async function getDeadline() {
-<<<<<<< HEAD
       const payHookAddress: any = await readContract({
         contract: missionCreatorContract,
         method: 'missionIdToPayHook' as string,
@@ -113,43 +112,12 @@ export default function useMissionData({
         abi: LaunchPadPayHookABI.abi as any,
       })
       if (payHookContract) {
-=======
-      try {
-        const payHookAddress: any = await readContract({
-          contract: missionCreatorContract,
-          method: 'missionIdToPayHook' as string,
-          params: [mission.id],
-        })
-        
-        // Check if payHookAddress is valid
-        if (!payHookAddress || payHookAddress === '0x0000000000000000000000000000000000000000') {
-          console.warn('Invalid payHookAddress for mission:', mission.id)
-          setDeadline(0)
-          return
-        }
-        
-        const payHookContract = getContract({
-          client,
-          address: payHookAddress,
-          chain: DEFAULT_CHAIN_V5,
-          abi: LaunchPadPayHookABI.abi as any,
-        })
-        
->>>>>>> d1a18a06 (Redesign launchpad page with modern UI and fix mission data errors)
         const deadline: any = await readContract({
           contract: payHookContract,
           method: 'deadline' as string,
           params: [],
         })
-<<<<<<< HEAD
         setDeadline(+deadline.toString() * 1000) // Convert to milliseconds
-=======
-        
-        setDeadline(+deadline.toString() * 1000) // Convert to milliseconds
-      } catch (error) {
-        console.error('Error fetching deadline for mission:', mission.id, error)
-        setDeadline(0)
->>>>>>> d1a18a06 (Redesign launchpad page with modern UI and fix mission data errors)
       }
     }
     if (missionCreatorContract && mission?.id !== undefined) {
