@@ -18,23 +18,36 @@ export default function ProgressBar({
 }: ProgressBarProps) {
   const progressBarRef = useRef<HTMLDivElement>(null)
   const labelRef = useRef<HTMLSpanElement>(null)
+  const previousProgress = useRef<number | null>(null)
 
   useEffect(() => {
-    if (progressBarRef.current) {
-      gsap.to(progressBarRef.current, {
-        width: `${Math.min(progress, 100)}%`,
-        duration: 2.5,
-        ease: 'power1.inOut',
-      })
+    // Only animate if it's the first render or if progress changed significantly
+    const isFirstRender = previousProgress.current === null
+    const progressDiff = isFirstRender
+      ? Infinity
+      : Math.abs(progress - (previousProgress.current || 0))
+    const shouldAnimate = isFirstRender || progressDiff >= 0.1 // Only animate if change is >= 0.1%
+
+    if (shouldAnimate) {
+      if (progressBarRef.current) {
+        gsap.to(progressBarRef.current, {
+          width: `${Math.min(progress, 100)}%`,
+          duration: 2.5,
+          ease: 'power1.inOut',
+        })
+      }
+
+      if (labelRef.current) {
+        gsap.to(labelRef.current, {
+          opacity: 1,
+          duration: 2.5,
+          ease: 'power1.inOut',
+        })
+      }
     }
 
-    if (labelRef.current) {
-      gsap.to(labelRef.current, {
-        opacity: 1,
-        duration: 2.5,
-        ease: 'power1.inOut',
-      })
-    }
+    // Update the previous progress value
+    previousProgress.current = progress
   }, [progress, compact])
 
   return (

@@ -38,6 +38,7 @@ export type MissionWideCardProps = {
   compact?: boolean
   onClick?: () => void
   onlyGoalStat?: boolean
+  youtubeVideo?: boolean
 }
 
 export default function MissionWideCard({
@@ -61,6 +62,7 @@ export default function MissionWideCard({
   compact,
   onClick,
   onlyGoalStat,
+  youtubeVideo,
 }: MissionWideCardProps) {
   const router = useRouter()
   const [payModalEnabled, setPayModalEnabled] = useState(false)
@@ -133,7 +135,7 @@ export default function MissionWideCard({
                       ).toLocaleString()} USD)`}</p>
                     </div>
                   )}
-                  {!onlyGoalStat && (
+                  {!onlyGoalStat && stage !== 3 && (
                     <div className="w-full">
                       <MissionFundingProgressBar
                         fundingGoal={fundingGoal || 0}
@@ -146,7 +148,7 @@ export default function MissionWideCard({
               )}
               <div />
             </div>
-            <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            <div className="mt-4 w-full grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
               <div className={`${onlyGoalStat ? 'col-span-3' : 'col-span-1'}`}>
                 <MissionStat
                   icon="/assets/target.png"
@@ -189,7 +191,9 @@ export default function MissionWideCard({
               )}
               {learnMore && (
                 <StandardButton
-                  className="gradient-2 rounded-full"
+                  className={`gradient-2 rounded-full ${
+                    stage === 3 ? 'min-w-[225px]' : ''
+                  }`}
                   hoverEffect={false}
                   onClick={(e: any) => {
                     e.preventDefault()
@@ -197,7 +201,7 @@ export default function MissionWideCard({
                     router.push(`/mission/${mission.id}`)
                   }}
                 >
-                  Learn More
+                  {stage === 3 ? 'Redemptions Available' : 'Learn More'}
                 </StandardButton>
               )}
             </div>
@@ -219,7 +223,7 @@ export default function MissionWideCard({
         }
         paragraph={
           <>
-            {mission?.metadata?.youtubeLink && (
+            {youtubeVideo && mission?.metadata?.youtubeLink && (
               <div className="my-4 w-full h-full">
                 <iframe
                   src={mission?.metadata?.youtubeLink?.replace(

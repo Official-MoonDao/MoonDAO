@@ -579,7 +579,10 @@ export default function CreateMission({
                         style: toastStyle,
                       })
                     }
-                    if (!isValidYouTubeUrl(missionData.youtubeLink)) {
+                    if (
+                      missionData.youtubeLink.trim() &&
+                      !isValidYouTubeUrl(missionData.youtubeLink)
+                    ) {
                       return toast.error(
                         'Please enter a valid YouTube video link.',
                         {
@@ -710,7 +713,7 @@ export default function CreateMission({
                     />
                     <FormInput
                       id="mission-youtube"
-                      label="YouTube Video Link *"
+                      label="YouTube Video Link"
                       placeholder="Enter a YouTube video link"
                       value={missionData.youtubeLink}
                       onChange={(e: any) =>
@@ -1035,6 +1038,7 @@ export default function CreateMission({
                       showMore={true}
                       showMoreButton={false}
                       onlyGoalStat
+                      youtubeVideo
                     />
                   </JuiceProviders>
                   <MissionTokenomicsExplainer />
