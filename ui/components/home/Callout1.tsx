@@ -5,7 +5,7 @@ export default function Callout1() {
   return (
     <section 
       id="callout1-section" 
-      className="min-h-screen xl:min-h-[120vh] 2xl:min-h-[140vh] flex items-end"
+      className="min-h-[800px] md:h-[80vh] md:min-h-[90vmin] lg:min-h-[800px] 2xl:min-h-[900px] 3xl:min-h-[1000px] flex items-end"
       style={{
         backgroundImage: 'url("/assets/Moon-Launch.png")',
         backgroundSize: 'cover',
@@ -19,18 +19,18 @@ export default function Callout1() {
       >
         <div
           id="content-container"
-          className="compact-lg flex justify-start w-full p-5 md:p-5 lg:pl-0 lg:pr-10 lg:max-w-[1200px] mx-auto"
+          className="compact-lg flex justify-start w-full p-5 md:p-5 lg:pl-[80px] lg:pr-10 2xl:pl-[100px] 2xl:pr-20 3xl:pl-[120px] 3xl:pr-32 lg:max-w-[1200px] 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto"
         >
           <div
             id="content"
             className="overflow-visible relative w-full text-left"
           >
-            <h1 className="header flex overflow-visible flex-col text-4xl font-GoodTimes font-bold leading-none text-white max-w-[500px]">
+            <h1 className="header flex overflow-visible flex-col text-4xl 2xl:text-6xl 3xl:text-7xl font-GoodTimes font-bold leading-none text-white max-w-[500px] 2xl:max-w-[700px] 3xl:max-w-[900px]">
               Bringing the Space Industry Onchain
             </h1>
             <p
               id="paragraph"
-              className="pt-2 pb-5 text-white text-lg w-[100%] max-w-[500px]"
+              className="pt-2 pb-5 text-white text-lg 2xl:text-xl 3xl:text-2xl w-[100%] max-w-[500px] 2xl:max-w-[600px] 3xl:max-w-[700px]"
             >
               The Space Acceleration Network is an onchain startup society
               that connects space visionaries and organizations with the
