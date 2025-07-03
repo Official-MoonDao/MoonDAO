@@ -34,7 +34,27 @@ export default function Events({ events }: any) {
             mode="compact"
             popOverEffect={false}
           >
+            {/* Luma Events Iframe */}
+            <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl mb-8">
+              <h2 className="text-2xl font-bold text-white mb-4 text-center">Upcoming Events</h2>
+              <div className="w-full">
+                <iframe
+                  src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
+                  width="100%"
+                  height="600"
+                  frameBorder="0"
+                  style={{ border: '1px solid #bfcbda88', borderRadius: '4px' }}
+                  allowFullScreen
+                  aria-hidden="false"
+                  tabIndex={0}
+                  className="rounded-lg"
+                />
+              </div>
+            </div>
+
+            {/* Discord Events */}
             <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
+              <h2 className="text-2xl font-bold text-white mb-4 text-center">Discord Events</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {!events?.[0] ? (
                   <>
