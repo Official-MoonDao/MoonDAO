@@ -441,9 +441,23 @@ a {
   }
 }
 
-@media (min-width: 1400px) {
+@media (min-width: 1400px) and (max-width: 1919px) {
   .header {
     font-size: 40px;
+    line-height: 1.2;
+  }
+}
+
+@media (min-width: 1920px) and (max-width: 2559px) {
+  .header {
+    font-size: 48px;
+    line-height: 1.2;
+  }
+}
+
+@media (min-width: 2560px) {
+  .header {
+    font-size: 56px;
     line-height: 1.2;
   }
 }
