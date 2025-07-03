@@ -26,6 +26,7 @@ export default function useJBProjectData({
   jbTokensContract,
   projectMetadata,
   projectSubgraphData,
+  _token,
 }: {
   projectId: number | undefined
   jbControllerContract: any
@@ -33,19 +34,22 @@ export default function useJBProjectData({
   jbTokensContract: any
   projectMetadata?: any
   projectSubgraphData?: any
+  _token?: any
 }) {
   const { selectedChain } = useContext(ChainContextV5)
 
   const [metadata, setMetadata] = useState<any>(projectMetadata)
   const [ruleset, setRuleset] = useState<any>()
-  const [token, setToken] = useState<any>({
-    tokenAddress: '',
-    tokenName: '',
-    tokenSymbol: '',
-    tokenSupply: '',
-    reservedTokens: '',
-    reservedRate: '',
-  })
+  const [token, setToken] = useState<any>(
+    _token || {
+      tokenAddress: '',
+      tokenName: '',
+      tokenSymbol: '',
+      tokenSupply: '',
+      reservedTokens: '',
+      reservedRate: '',
+    }
+  )
   const [subgraphData, setSubgraphData] = useState<any>(projectSubgraphData)
 
   const last7DaysPercent = useJBProjectTrendingPercentageIncrease(
