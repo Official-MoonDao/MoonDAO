@@ -103,9 +103,9 @@ export function ExpandedFooter({
   ]
 
   const tokenLinks = [
-    { text: 'Buy $MOONEY', href: '/get-mooney' },
-    { text: 'Lock $MOONEY', href: '/lock' },
-    { text: 'Bridge $MOONEY', href: '/bridge' },
+    { text: 'Buy', href: '/get-mooney' },
+    { text: 'Lock', href: '/lock' },
+    { text: 'Bridge', href: '/bridge' },
   ]
 
   const contributeLinks = [

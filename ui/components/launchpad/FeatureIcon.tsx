@@ -17,18 +17,18 @@ export default function FeatureIcon({
 }: FeatureIconProps) {
   return (
     <div
-      className={`px-[1vw] pb-[5vw] md:pb-0 flex flex-col md:text-center w-full md:w-[27.5vw] h-auto items-center mb-[5vw] md:mb-[2vw]`}
+      className={`px-[1vw] pb-[5vw] md:pb-0 flex flex-col md:text-center w-full md:w-[20vw] h-auto items-center mb-[5vw] md:mb-[1vw]`}
     >
       <div className={`${gradient || numberBackground} rounded-full m-[2vw]`}>
         {typeof icon === 'string' ? (
-          <div className="flex items-start mix-blend-screen justify-center w-fit h-fit rounded-full p-8 aspect-square">
+          <div className="flex items-start mix-blend-screen justify-center w-fit h-fit rounded-full p-6 aspect-square">
             <Image
               id="feature-icon-image"
               className=""
               src={icon}
               alt={title}
-              width={200}
-              height={200}
+              width={120}
+              height={120}
             />
           </div>
         ) : (
@@ -38,12 +38,12 @@ export default function FeatureIcon({
         )}
       </div>
       <div id="feature-icon-title" className="">
-        <h2 className="mt-[5vw] mb-[1vw] md:mt-0 text-[4vw] md:text-[2vw] font-GoodTimes">
+        <h2 className="mt-[5vw] mb-[1vw] md:mt-0 text-[3vw] md:text-[1.5vw] font-GoodTimes">
           {title}
         </h2>
         <p
           id="feature-icon-description"
-          className="md:text-[max(1.2vw,16px)] 2xl:text-[18px]"
+          className="md:text-[max(1vw,14px)] 2xl:text-[16px]"
         >
           {description}
         </p>
