@@ -33,15 +33,9 @@ export default function Bridge() {
           mode="compact"
           popOverEffect={false}
         >
-          <section className="w-full min-h-[60vh] bg-gradient-to-b from-gray-900 to-black rounded-3xl">
-            <Container>
-              <div className="py-12">
-                <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-8 shadow-2xl max-w-2xl mx-auto">
-                  <ArbitrumBridge />
-                </div>
-              </div>
-            </Container>
-          </section>
+          <div className="max-w-2xl mx-auto">
+            <ArbitrumBridge />
+          </div>
         </ContentLayout>
       </div>
     </>
