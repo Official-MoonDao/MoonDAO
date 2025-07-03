@@ -43,8 +43,8 @@ export default function Callout2() {
         >
           <div className="max-w-[1200px] 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto lg:mx-0">
             <div className="md:w-[95%] lg:w-[70%] 2xl:w-[85%] 3xl:w-[90%]">
-              <h1 className="header font-GoodTimes text-left 2xl:text-6xl 3xl:text-7xl max-w-[500px] 2xl:max-w-[700px] 3xl:max-w-[900px] mx-auto lg:mx-0">
-                MoonDAO is <br></br>Permissionless
+              <h1 className="header font-GoodTimes text-left 2xl:text-6xl 3xl:text-7xl max-w-[500px] 2xl:max-w-[800px] 3xl:max-w-[900px] mx-auto lg:mx-0">
+                <span className="whitespace-nowrap">MoonDAO is</span> <br></br>Permissionless
               </h1>
               <p
                 id="paragraph"
@@ -91,7 +91,7 @@ export default function Callout2() {
         </div>
         <div
           id="astronauts-container"
-          className="w-full lg:w-[50%] 2xl:w-[55%] 3xl:w-[60%] flex flex-row justify-center lg:justify-end items-center gap-5 2xl:gap-8 3xl:gap-12 mt-10 lg:mt-0 mb-6 md:mb-8 lg:mb-0"
+          className="w-full lg:w-[50%] 2xl:w-[55%] 3xl:w-[60%] flex flex-row justify-center lg:justify-end items-center gap-5 2xl:gap-8 3xl:gap-12 mt-10 lg:mt-0"
         >
           <Speaker
             alt="Coby Cotton"
