@@ -18,7 +18,7 @@ export default function Callout2() {
     >
       <div
         id="callout2-container"
-        className="z-10 md:rounded-tl-[5vmax] relative flex flex-col-reverse lg:flex-row items-center justify-center lg:justify-between pt-5 p-5 pb-[120px] md:pr-10 md:pl-10 min-h-[800px] bg-gradient-to-bl from-transparent via-[#090D21] via-10% to-transparent to-40%"
+        className="z-10 md:rounded-tl-[5vmax] relative flex flex-col-reverse lg:flex-row items-center justify-center lg:justify-between pt-5 p-5 pb-[120px] md:pr-10 md:pl-10 2xl:pr-20 2xl:pl-20 3xl:pr-32 3xl:pl-32 min-h-[800px] md:h-[80vh] md:min-h-[90vmin] lg:min-h-[800px] 2xl:min-h-[900px] 3xl:min-h-[1000px] bg-gradient-to-bl from-transparent via-[#090D21] via-10% to-transparent to-40%"
       >
         <div id="background-elements">
           <div
@@ -39,22 +39,22 @@ export default function Callout2() {
         </div>
         <div
           id="content"
-          className="relative w-full lg:w-[50%] text-center lg:text-left lg:pl-[80px]"
+          className="relative w-full lg:w-[50%] 2xl:w-[45%] 3xl:w-[40%] text-center lg:text-left lg:pl-[80px] 2xl:pl-[100px] 3xl:pl-[120px] mt-8 md:mt-12 lg:mt-0"
         >
-          <div className="max-w-[1200px] mx-auto lg:mx-0">
-            <div className="md:w-[95%] lg:w-[70%]">
-              <h1 className="header font-GoodTimes text-left max-w-[500px] mx-auto lg:mx-0">
+          <div className="max-w-[1200px] 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto lg:mx-0">
+            <div className="md:w-[95%] lg:w-[70%] 2xl:w-[85%] 3xl:w-[90%]">
+              <h1 className="header font-GoodTimes text-left 2xl:text-6xl 3xl:text-7xl max-w-[500px] 2xl:max-w-[700px] 3xl:max-w-[900px] mx-auto lg:mx-0">
                 MoonDAO is <br></br>Permissionless
               </h1>
               <p
                 id="paragraph"
-                className="pt-2 pb-5 text-lg max-w-[500px] text-left mx-auto lg:mx-0"
+                className="pt-2 pb-5 text-lg 2xl:text-xl 3xl:text-2xl max-w-[500px] 2xl:max-w-[600px] 3xl:max-w-[700px] text-left mx-auto lg:mx-0"
               >
                 This is an open source space platform where everything is proposed,
                 governed, and created by members. Co-govern the treasury by locking
                 $MOONEY to become a voter.
               </p>
-              <div className="flex items-center justify-start gap-2 mb-5 max-w-[500px] mx-auto lg:mx-0">
+              <div className="flex items-center justify-start gap-2 mb-5 max-w-[500px] 2xl:max-w-[600px] 3xl:max-w-[700px] mx-auto lg:mx-0">
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(
@@ -70,12 +70,12 @@ export default function Callout2() {
                     width={20}
                     height={20}
                   />
-                  <span className="font-mono text-left">
+                  <span className="font-mono text-left text-sm 2xl:text-base">
                     0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395
                   </span>
                 </button>
               </div>
-              <div className="max-w-[500px] mx-auto lg:mx-0 flex justify-start">
+              <div className="max-w-[500px] 2xl:max-w-[600px] 3xl:max-w-[700px] mx-auto lg:mx-0 flex justify-start">
                 <StandardButton
                   backgroundColor="bg-white"
                   textColor="text-dark-cool"
@@ -91,7 +91,7 @@ export default function Callout2() {
         </div>
         <div
           id="astronauts-container"
-          className="w-full lg:w-[50%] flex flex-row justify-center lg:justify-end items-center gap-5 mt-10 lg:mt-0"
+          className="w-full lg:w-[50%] 2xl:w-[55%] 3xl:w-[60%] flex flex-row justify-center lg:justify-end items-center gap-5 2xl:gap-8 3xl:gap-12 mt-10 lg:mt-0 mb-6 md:mb-8 lg:mb-0"
         >
           <Speaker
             alt="Coby Cotton"
