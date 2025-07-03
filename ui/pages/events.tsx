@@ -54,7 +54,7 @@ export default function Events({ events }: any) {
 
             {/* Discord Events */}
             <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
-              <h2 className="text-2xl font-bold text-white mb-4 text-center">Discord Events</h2>
+              <h2 className="text-2xl font-bold text-white mb-4 text-center">Upcoming Launches</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {!events?.[0] ? (
                   <>
