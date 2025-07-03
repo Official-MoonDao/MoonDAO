@@ -306,7 +306,18 @@ export default function Launch({ missions }: any) {
 
         {/* Scroll indicator */}
         <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 z-20">
-          <div className="flex flex-col items-center text-white/70 hover:text-white/90 transition-colors duration-300 cursor-pointer group">
+          <div 
+            className="flex flex-col items-center text-white/70 hover:text-white/90 transition-colors duration-300 cursor-pointer group"
+            onClick={() => {
+              const featuredMissionSection = document.getElementById('featured-mission');
+              if (featuredMissionSection) {
+                featuredMissionSection.scrollIntoView({ 
+                  behavior: 'smooth',
+                  block: 'start'
+                });
+              }
+            }}
+          >
             <span className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 tracking-wider uppercase">Scroll to explore</span>
             <div className="relative">
               {/* Animated scroll arrow */}
@@ -335,7 +346,7 @@ export default function Launch({ missions }: any) {
       </section>
       {/* Featured Mission Section - Fullscreen */}
       {missions?.[FEATURED_MISSION_INDEX]?.projectId !== undefined && (
-        <section className="relative h-screen flex items-center justify-center overflow-hidden">
+        <section id="featured-mission" className="relative min-h-screen overflow-hidden">
           {/* Background image */}
           <div className="absolute inset-0">
             <Image
@@ -351,20 +362,17 @@ export default function Launch({ missions }: any) {
           {/* Background gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#010618]/80 via-[#1B1C4B]/60 to-[#010618]/80"></div>
           
-
-          
           {/* Text readability overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/30"></div>
           
-          {/* Featured Mission Header */}
-          <div className="absolute top-4 md:top-20 left-1/2 transform -translate-x-1/2 z-20">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-GoodTimes text-white text-center whitespace-nowrap mb-8 md:mb-12">
-              Featured Mission
-            </h2>
-          </div>
-
           {/* Mission Content - Direct Display */}
-          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-16 md:py-24 lg:py-32">
+            {/* Featured Mission Header */}
+            <div className="text-center mb-8 md:mb-12 lg:mb-16 xl:mb-20">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-GoodTimes text-white whitespace-nowrap">
+                Featured Mission
+              </h2>
+            </div>
             <JuiceProviders
               projectId={missions?.[FEATURED_MISSION_INDEX]?.projectId || 0}
               selectedChain={selectedChain}
@@ -546,21 +554,7 @@ export default function Launch({ missions }: any) {
             </JuiceProviders>
           </div>
 
-          {/* Decorative elements */}
-          <Image
-            src="/assets/launchpad/blue-divider-rl.svg"
-            alt=""
-            width={200}
-            height={200}
-            className="absolute bottom-0 right-0 w-32 md:w-48 opacity-50"
-          />
-          <Image
-            src="/assets/launchpad/divider-13.svg"
-            alt=""
-            width={200}
-            height={200}
-            className="absolute top-0 left-0 w-32 md:w-48 opacity-50"
-          />
+
         </section>
       )}
 
@@ -684,21 +678,7 @@ export default function Launch({ missions }: any) {
           </div>
         </div>
 
-        {/* Decorative elements */}
-        <Image
-          src="/assets/launchpad/blue-divider-rl.svg"
-          alt=""
-          width={200}
-          height={200}
-          className="absolute bottom-0 right-0 w-32 md:w-48 opacity-50"
-        />
-        <Image
-          src="/assets/launchpad/divider-13.svg"
-          alt=""
-          width={200}
-          height={200}
-          className="absolute top-0 left-0 w-32 md:w-48 opacity-50"
-        />
+
       </section>
 
       {/* Proven Financing Model Section - Fullscreen Space Theme */}
