@@ -27,16 +27,17 @@ const IndexCardGrid: React.FC<CardGridProps> = ({
   threeCol = false,
 }) => {
   return (
-    <div className="rounded-bl-[20px] mb-5">        <div
+    <div className="rounded-bl-[20px] mb-5">
+      <div
         id="index-grid-container"
         className={`
-            grid gap-4 2xl:gap-6 3xl:gap-8
+            grid gap-4
             ${
               singleCol
                 ? 'grid-cols-1'
                 : threeCol
-                ? 'grid-cols-1 lg:grid-cols-3 2xl:grid-cols-3 3xl:grid-cols-3'
-                : 'grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 3xl:grid-cols-3'
+                ? 'grid-cols-1 lg:grid-cols-3'
+                : 'grid-cols-1 lg:grid-cols-2'
             }
           `}
       >
