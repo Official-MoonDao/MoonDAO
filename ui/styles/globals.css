@@ -897,3 +897,46 @@ body {
 .scroll-indicator {
   animation: bounce-gentle 2s infinite;
 }
+
+/* Hero section improvements to prevent button cutoff */
+#hero-section {
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+#hero-container {
+  /* Ensure content is always visible by using max-height instead of fixed height */
+  max-height: calc(100vh - 64px); /* Account for navigation */
+}
+
+/* Responsive adjustments to prevent button cutoff on smaller screens */
+@media (max-height: 700px) {
+  #hero-container {
+    padding-bottom: 60px !important;
+    min-height: 600px !important;
+  }
+}
+
+@media (max-height: 600px) {
+  #hero-container {
+    padding-bottom: 40px !important;
+    min-height: 500px !important;
+  }
+}
+
+@media (max-height: 500px) {
+  #hero-container {
+    padding-bottom: 20px !important;
+    min-height: 400px !important;
+  }
+}
+
+/* Video intersection observer performance improvements */
+#video-section {
+  contain: layout style paint;
+}
+
+/* Smooth video transitions */
+#video-wrapper {
+  transition: opacity 0.3s ease-in-out;
+}

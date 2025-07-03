@@ -5,14 +5,14 @@ import Video from './Video'
 
 export default function Hero() {
   return (
-    <section id="hero-section" className="overflow-visible relative w-full">
+    <section id="hero-section" className="overflow-x-hidden overflow-y-visible relative w-full min-h-screen">
       <div
         id="hero-container"
-        className="flex flex-col md:h-[80vh] items-end justify-end lg:items-start lg:justify-end md:min-h-[90vmin] md:items-start px-[20px] md:px-[40px] 2xl:px-[80px] 3xl:px-[120px] min-h-[800px] mt-[-1px] p-5 pb-[140px] md:pb-[160px] lg:pb-[280px] xl:pb-[300px] 2xl:pb-[350px] 3xl:pb-[400px] lg:min-h-[800px] 2xl:min-h-[900px] 3xl:min-h-[1000px] relative z-10"
+        className="flex flex-col md:min-h-[80vh] items-end justify-end lg:items-start lg:justify-end md:items-start px-[20px] md:px-[40px] 2xl:px-[80px] 3xl:px-[120px] min-h-[800px] mt-[-1px] p-5 pb-[100px] md:pb-[120px] lg:pb-[200px] xl:pb-[240px] 2xl:pb-[280px] 3xl:pb-[320px] lg:min-h-[800px] 2xl:min-h-[900px] 3xl:min-h-[1000px] relative z-10"
       >
         <div
           id="background"
-          className="w-full h-full absolute top-0 right-0 overflow-hidden z-0 bg-cover bg-no-repeat"
+          className="w-full h-full absolute top-0 right-0 overflow-hidden z-0 bg-cover bg-no-repeat pointer-events-none"
           style={{backgroundImage: 'url("/assets/Lunar-Colony-Dark.png")', backgroundPosition: 'center 150%'}}
         ></div>
         <div
@@ -21,9 +21,9 @@ export default function Hero() {
         ></div>
         <div
           id="content"
-          className="relative w-full max-w-[1200px] 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto lg:pl-[80px] 2xl:pl-[100px] 3xl:pl-[120px]"
+          className="relative w-full max-w-[1200px] 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto lg:pl-[80px] 2xl:pl-[100px] 3xl:pl-[120px] flex flex-col justify-center min-h-[400px]"
         >
-          <div className="relative w-[100%] pt-0 md:w-[95%] lg:w-[70%] 2xl:w-[60%] 3xl:w-[55%]"
+          <div className="relative w-[100%] pt-0 md:w-[95%] lg:w-[70%] 2xl:w-[60%] 3xl:w-[55%] mb-8 md:mb-12 lg:mb-16"
           >
           <h1
             id="header"
@@ -55,16 +55,18 @@ export default function Hero() {
             MoonDAO is an open platform to fund, collaborate, and compete on
             challenges that get us closer to a lunar settlement.
           </p>
-          <StandardButton
-            backgroundColor="bg-white"
-            textColor="text-dark-cool"
-            hoverColor="bg-mid-cool"
-            borderRadius="rounded-tl-[10px] rounded-[2vmax]"
-            link="/join"
-            paddingOnHover="pl-5"
-          >
-            Join the Network
-          </StandardButton>
+          <div className="flex items-start justify-start min-h-[60px] mb-4 relative z-20">
+            <StandardButton
+              backgroundColor="bg-white"
+              textColor="text-dark-cool"
+              hoverColor="bg-mid-cool"
+              borderRadius="rounded-tl-[10px] rounded-[2vmax]"
+              link="/join"
+              paddingOnHover="pl-5"
+            >
+              Join the Network
+            </StandardButton>
+          </div>
           </div>
         </div>
       </div>
