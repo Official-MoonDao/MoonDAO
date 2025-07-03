@@ -5,28 +5,28 @@ import Speaker from '../home/Speaker'
 
 export default function SpeakerSection() {
   return (
-    <section className="bg-white md:rounded-br-[0px] w-full min-h-[800px] md:h-[80vh] md:min-h-[90vmin] lg:min-h-[800px] 2xl:min-h-[900px] 3xl:min-h-[1000px] flex flex-col">
+    <section className="bg-white md:rounded-br-[0px] pb-6 w-full">
       <div
         id="speaker-section-container"
-        className="px-8 md:px-12 lg:px-16 2xl:px-24 3xl:px-32 relative flex justify-center pt-4 lg:pt-6 xl:pt-8 2xl:pt-12 3xl:pt-16 flex-1"
+        className="px-8 md:px-12 lg:px-16 relative flex justify-center"
       >
         <div
           id="speaker-section"
-          className="w-full max-w-[1400px] 2xl:max-w-[1600px] 3xl:max-w-[1800px] flex items-center flex-col"
+          className="w-full max-w-[1200px] pt-6 pb-3 flex items-center flex-col"
         >
           <h2
             id="section-header"
-            className="header font-GoodTimes text-center text-dark-cool mb-2 lg:mb-4 xl:mb-6 2xl:mb-8 3xl:mb-10 text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl 3xl:text-7xl"
+            className="header font-GoodTimes text-center text-dark-cool mb-4"
           >
             Past Speakers
           </h2>
           <div
             id="speaker-container"
-            className="w-full max-w-[1400px] 2xl:max-w-[1600px] 3xl:max-w-[1800px] mb-2 lg:mb-4 xl:mb-6 2xl:mb-8 3xl:mb-10"
+            className="w-full max-w-[1200px] mb-0"
           >
             <div
               id="speakers"
-              className="grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-3 3xl:grid-cols-3 gap-x-4 gap-y-6 lg:gap-x-6 lg:gap-y-8 xl:gap-x-8 xl:gap-y-10 2xl:gap-x-10 2xl:gap-y-12 3xl:gap-x-12 3xl:gap-y-14 justify-items-center"
+              className="p-3 pt-0 grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4 justify-items-center"
             >
               <Speaker
                 alt="Charlie Duke"
@@ -73,6 +73,38 @@ export default function SpeakerSection() {
             </div>
           </div>
         </div>
+      </div>
+      <div
+        id="youtube-callout-container"
+        className="flex px-5 justify-center w-full max-w-[1200px] mx-auto"
+      >
+        <Link href="https://www.youtube.com/@officialmoondao?sub_confirmation=1">
+          <div
+            id="youtube-callout"
+            className="inline-flex items-center justify-center group"
+          >
+            <div
+              id="youtube-icon"
+              className="transition-transform duration-300 group-hover:scale-110"
+            >
+              <Image
+                src="/../assets/icon-youtube.svg"
+                alt="Subscribe on YouTube"
+                width="50"
+                height="50"
+              />
+            </div>
+            <div id="youtube-text">
+              <p
+                id="youtube-text"
+                className="md:text-center px-5 leading-none font-GoodTimes text-dark-cool"
+              >
+                <span className="block md:inline">Subscribe &nbsp;</span>
+                <span className="block md:inline">on YouTube</span>
+              </p>
+            </div>
+          </div>
+        </Link>
       </div>
     </section>
   )

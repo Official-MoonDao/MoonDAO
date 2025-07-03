@@ -84,17 +84,17 @@ export default function Callout3() {
   return (
     <section
       id="callout3-container"
-      className="relative items-center justify-center max-w-[1200px] 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto mt-[5vmax] px-4 2xl:px-8 3xl:px-12"
+      className="relative items-center justify-center max-w-[1200px] mx-auto mt-[5vmax]"
     >
       <div id="background-elements" className="overflow-visible"></div>
-      <h2 className="header text-center font-GoodTimes pb-5 2xl:pb-8 3xl:pb-12 text-4xl 2xl:text-6xl 3xl:text-7xl">
+      <h2 className="header text-center font-GoodTimes pb-5">
         At A Glance
       </h2>
       <div
         id="cards-container"
-        className="rounded-[5vmax] rounded-tr-[0px] p-5 md:p-10 2xl:p-16 3xl:p-20 overflow-hidden max-w-[1200px] 2xl:max-w-[1400px] 3xl:max-w-[1600px]"
+        className="rounded-[5vmax] rounded-tr-[0px] p-5 md:p-10 overflow-hidden max-w-[1200px]"
       >
-        <IndexCardGrid cards={indexCardData} threeCol={true} />
+        <IndexCardGrid cards={indexCardData} />
       </div>
     </section>
   )
