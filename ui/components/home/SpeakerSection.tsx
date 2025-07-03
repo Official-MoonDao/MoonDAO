@@ -5,14 +5,14 @@ import Speaker from '../home/Speaker'
 
 export default function SpeakerSection() {
   return (
-    <section className="bg-white md:rounded-br-[0px] pb-6 w-full">
+    <section className="bg-white md:rounded-br-[0px] w-full min-h-[800px] flex flex-col justify-center">
       <div
         id="speaker-section-container"
         className="px-8 md:px-12 lg:px-16 relative flex justify-center"
       >
         <div
           id="speaker-section"
-          className="w-full max-w-[1200px] pt-6 pb-3 flex items-center flex-col"
+          className="w-full max-w-[1200px] flex items-center flex-col"
         >
           <h2
             id="section-header"
@@ -22,11 +22,11 @@ export default function SpeakerSection() {
           </h2>
           <div
             id="speaker-container"
-            className="w-full max-w-[1200px] mb-0"
+            className="w-full max-w-[1200px] mb-1"
           >
             <div
               id="speakers"
-              className="p-3 pt-0 grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4 justify-items-center"
+              className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-0 justify-items-center"
             >
               <Speaker
                 alt="Charlie Duke"
@@ -72,39 +72,39 @@ export default function SpeakerSection() {
               />
             </div>
           </div>
-        </div>
-      </div>
-      <div
-        id="youtube-callout-container"
-        className="flex px-5 justify-center w-full max-w-[1200px] mx-auto"
-      >
-        <Link href="https://www.youtube.com/@officialmoondao?sub_confirmation=1">
           <div
-            id="youtube-callout"
-            className="inline-flex items-center justify-center group"
+            id="youtube-callout-container"
+            className="flex justify-center w-full"
           >
-            <div
-              id="youtube-icon"
-              className="transition-transform duration-300 group-hover:scale-110"
-            >
-              <Image
-                src="/../assets/icon-youtube.svg"
-                alt="Subscribe on YouTube"
-                width="50"
-                height="50"
-              />
-            </div>
-            <div id="youtube-text">
-              <p
-                id="youtube-text"
-                className="md:text-center px-5 leading-none font-GoodTimes text-dark-cool"
+            <Link href="https://www.youtube.com/@officialmoondao?sub_confirmation=1">
+              <div
+                id="youtube-callout"
+                className="inline-flex items-center justify-center group"
               >
-                <span className="block md:inline">Subscribe &nbsp;</span>
-                <span className="block md:inline">on YouTube</span>
-              </p>
-            </div>
+                <div
+                  id="youtube-icon"
+                  className="transition-transform duration-300 group-hover:scale-110"
+                >
+                  <Image
+                    src="/../assets/icon-youtube.svg"
+                    alt="Subscribe on YouTube"
+                    width="50"
+                    height="50"
+                  />
+                </div>
+                <div id="youtube-text">
+                  <p
+                    id="youtube-text"
+                    className="md:text-center px-5 leading-none font-GoodTimes text-dark-cool"
+                  >
+                    <span className="block md:inline">Subscribe &nbsp;</span>
+                    <span className="block md:inline">on YouTube</span>
+                  </p>
+                </div>
+              </div>
+            </Link>
           </div>
-        </Link>
+        </div>
       </div>
     </section>
   )

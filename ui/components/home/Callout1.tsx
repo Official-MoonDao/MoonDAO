@@ -3,36 +3,34 @@ import StandardButton from '../layout/StandardButton'
 
 export default function Callout1() {
   return (
-    <section id="callout1-section" className="bg-dark-warm md:bg-transparent">
+    <section 
+      id="callout1-section" 
+      className="min-h-screen xl:min-h-[120vh] 2xl:min-h-[140vh] flex items-end"
+      style={{
+        backgroundImage: 'url("/assets/Moon-Launch.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
       <div
         id="callout1-container"
-        className="z-20 relative w-[100%] h-[100%] bg-white mt-[-2vmax] pt-[2vmax] pb-0 lg:pb-10"
+        className="z-20 relative w-full h-full flex items-end pb-10 md:pb-0"
       >
         <div
           id="content-container"
-          className="compact-lg flex flex-col-reverse justify-end lg:flex-row items-start lg:items-center min-h-[250px] md:min-h-[400px] p-5 pt-10 pb-0 md:p-10 md:pt-10 lg:max-w-[1200px] mx-auto"
+          className="compact-lg flex justify-start w-full p-5 md:p-5 lg:pl-0 lg:pr-10 lg:max-w-[1200px] mx-auto"
         >
           <div
-            id="featured-image"
-            className=" compact-lg hide-lg lg:min-h-[450px] mt-5 md:mr-10 w-[100%] h-[250px] md:h-[70vmax] lg:h-[60vh]"
-          >
-            <Image
-              src="/assets/feature-2.png"
-              alt="Feature 2"
-              width={1000}
-              height={1000}
-            />
-          </div>
-          <div
             id="content"
-            className="overflow-visible relative pb-10 md:pb-10 w-[100%] text-left"
+            className="overflow-visible relative w-full text-left"
           >
-            <h1 className="header flex overflow-visible flex-col text-4xl font-GoodTimes font-bold bg-clip-text text-dark-cool bg-gradient-to-r from-red-500 to-blue-500 leading-none">
+            <h1 className="header flex overflow-visible flex-col text-4xl font-GoodTimes font-bold leading-none text-white max-w-[500px]">
               Bringing the Space Industry Onchain
             </h1>
             <p
               id="paragraph"
-              className="pt-2 pb-5 text-black text-lg w-[100%] max-w-[500px]"
+              className="pt-2 pb-5 text-white text-lg w-[100%] max-w-[500px]"
             >
               The Space Acceleration Network is an onchain startup society
               that connects space visionaries and organizations with the
@@ -40,9 +38,9 @@ export default function Callout1() {
               reality.
             </p>
             <StandardButton
-              backgroundColor="bg-dark-cool"
-              textColor="text-white"
-              hoverColor="bg-mid-cool"
+              backgroundColor="bg-white"
+              textColor="text-black"
+              hoverColor="bg-gray-200"
               borderRadius="rounded-tl-[10px] rounded-[2vmax]"
               link="/network"
               paddingOnHover="pl-5"

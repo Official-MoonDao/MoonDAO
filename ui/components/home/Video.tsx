@@ -85,22 +85,23 @@ export default function Video() {
 
     return (
         <section id="video-section" 
-            className="relative bg-white lg:mt-[-120px] md:mt-[-60px] mt-[-40px] flex justify-center px-[20px] md:px-[40px]"
+            className="relative bg-dark-cool -mt-[30vmin] md:-mt-[20vmin] lg:-mt-[20vmin] xl:-mt-[15vmin]"
             >
             <div id="video-container" 
-                className="max-w-[1200px] w-full pt-16"
+                className="w-full h-full"
                 >
                 <div id="video-wrapper" 
-                    className="pt-[56.25%] relative rounded-lg z-40 group"
+                    className="w-full aspect-video relative z-40 group"
                     >
                     <iframe 
                         ref={videoRef}
                         id="video" 
-                        className="absolute left-0 rounded-[20px] top-0 bg-dark-cool" 
+                        className="absolute left-0 top-0 bg-dark-cool w-full h-full object-cover" 
                         src="https://player.vimeo.com/video/944146258?badge=0&amp;autopause=0&amp;autoplay=1&amp;muted=1&amp;loop=1&amp;controls=0&amp;player_id=0&amp;app_id=58479" 
                         allowFullScreen 
                         width="100%" height="100%" 
-                        allow="autoplay; fullscreen" 
+                        allow="autoplay; fullscreen"
+                        style={{ objectFit: 'cover' }}
                     />
                     
                     {/* Custom Controls */}
