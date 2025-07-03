@@ -35,6 +35,7 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import { truncateTokenValue } from '@/lib/utils/numbers'
 import ExplainerIcon from '@/components/launchpad/ExplainerIcon'
 import FeatureIcon from '@/components/launchpad/FeatureIcon'
 import LaunchpadBenefit from '@/components/launchpad/LaunchpadBenefit'
@@ -235,7 +236,7 @@ export default function Launch({ missions }: any) {
 
         {/* Hero content - positioned higher up from bottom */}
         <div className="relative z-10 h-full flex flex-col justify-end">
-          <div className="px-8 md:px-12 lg:px-16 pb-20 md:pb-24 lg:pb-32">
+          <div className="px-8 md:px-12 lg:px-16 pb-16 md:pb-20 lg:pb-24">
             <div className="max-w-2xl">
               {/* MoonDAO Logo */}
               <div className="mb-6">
@@ -262,16 +263,16 @@ export default function Launch({ missions }: any) {
               <div className="flex justify-start">
                 <div className="relative group">
                   {/* Glow effect */}
-                  <div className="absolute -inset-1 bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] rounded-full blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute -inset-1 bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
                   
                   {/* Main button */}
                   <StandardButton
-                    className="relative bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] text-white font-semibold text-base px-8 py-3 rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border border-white/10 backdrop-blur-sm text-center"
+                    className="relative bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] text-white font-semibold text-base px-8 py-3 rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border-0 backdrop-blur-sm text-center"
                     onClick={handleCreateMission}
                     hoverEffect={false}
                   >
                     <div className="flex items-center justify-center w-full text-center">
-                      <span className="relative text-center ml-6">
+                      <span className="relative text-center pl-4">
                         Launch Your Mission
                         {/* Text glow effect */}
                         <span className="absolute inset-0 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent blur-sm opacity-50"></span>
@@ -304,7 +305,7 @@ export default function Launch({ missions }: any) {
         />
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
           <div className="flex flex-col items-center text-white/70 hover:text-white/90 transition-colors duration-300 cursor-pointer group">
             <span className="text-sm font-medium mb-2 tracking-wider uppercase">Scroll to explore</span>
             <div className="relative">
@@ -332,95 +333,250 @@ export default function Launch({ missions }: any) {
           </div>
         </div>
       </section>
-      <section
-        id="initial-callout-section"
-        className="z-10 overflow-visible relative px-[5vw] flex flex-row items-center justify-center text-center pt-[5vw] md:pt-[2vw] lg:pt-[0px] pb-[2vw] lg:pb-[0px] md:pb-[2vw] gap-4 md:gap-4 bg-gradient-to-b md:bg-gradient-to-l from-[#010618] from-[0%] md:from-[20%] to-[#1B1C4B] to-[100%] md:to-[60%]"
-      >
-        <div className="flex flex-row items-center gap-4">
-          <Image
-            id="spotlight-icon"
-            src="/assets/spotlight.svg"
-            alt="Spotlight Icon"
-            width={100}
-            height={100}
-            className="z-20 w-[10vw] md:w-[min(3vw,80px)]"
-          />
-          <p
-            id="callout"
-            className="z-20 text-white font-GoodTimes text-[5vw] md:text-[max(2vw,35px)] leading-[6vw]"
-          >
-            {'Mission Spotlight'}
-          </p>
-        </div>
-        <div className="absolute overflow-visible top-0 left-0">
-          <Image
-            src="/assets/blue-divider-tl.svg"
-            alt="divider-element"
-            width={100}
-            height={100}
-            className="w-[100vw] md:w-[15vw] 2xl:w-[35vw] "
-          />
-        </div>
-      </section>
+      {/* Featured Mission Section - Fullscreen */}
+      {missions?.[FEATURED_MISSION_INDEX]?.projectId !== undefined && (
+        <section className="relative h-screen flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#1B1C4B] to-[#010618]">
+          {/* Background gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#010618]/80 via-[#1B1C4B]/60 to-[#010618]/80"></div>
+          
+          {/* Inspiring Mission Background */}
+          <div className="absolute inset-0 overflow-hidden">
+            {/* Space-themed gradient orbs */}
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-purple-500/15 to-blue-500/15 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-br from-pink-500/15 to-purple-500/15 rounded-full blur-3xl"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full blur-3xl"></div>
+            
+            {/* Constellation-like dots */}
+            <div className="absolute top-1/5 right-1/3 w-1 h-1 bg-white/40 rounded-full"></div>
+            <div className="absolute top-2/5 left-1/5 w-1 h-1 bg-cyan-400/50 rounded-full"></div>
+            <div className="absolute top-3/5 right-1/4 w-1 h-1 bg-purple-400/40 rounded-full"></div>
+            <div className="absolute bottom-1/3 left-1/3 w-1 h-1 bg-pink-400/50 rounded-full"></div>
+            <div className="absolute bottom-1/4 right-1/5 w-1 h-1 bg-blue-400/40 rounded-full"></div>
+            
+            {/* Nebula-like swirls */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-purple-500/5 via-transparent to-blue-500/5 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-pink-500/5 via-transparent to-purple-500/5 rounded-full blur-3xl"></div>
+          </div>
+          
+          {/* Text readability overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/30"></div>
+          
+          {/* Featured Mission Header */}
+          <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-20">
+            <div className="flex items-center gap-4 text-center">
+              <Image
+                src="/assets/spotlight.svg"
+                alt=""
+                width={40}
+                height={40}
+                className="w-8 h-8 md:w-10 md:h-10"
+              />
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-GoodTimes text-white">
+                Featured Mission
+              </h2>
+            </div>
+          </div>
 
-      <section
-        id="featured-project-section"
-        className="relative px-[5vw] overflow-visible flex flex-col gap-12 bg-gradient-to-b from-[#010618] to-[#1B1C4B]"
-      >
-        <Image
-          id="white-divider-bottom-right"
-          className="absolute bottom-[-2px] right-[-2px] -scale-x-100 w-[80vw] md:w-[20vw]"
-          src="/assets/launchpad/white-divider-lr.svg"
-          alt="divider"
-          width={500}
-          height={500}
-        />
-        <Image
-          id="blue-divider-top-left"
-          className="absolute top-[-2px] left-[-2px] w-[90vw] md:w-[35vw] 2xl:w-[40vw]"
-          src="/assets/launchpad/divider-13.svg"
-          alt="divider"
-          width={500}
-          height={500}
-        />
-        {missions?.[FEATURED_MISSION_INDEX]?.projectId !== undefined ? (
-          <div
-            id="featured-missions-container"
-            className="mt-[2vw] md:mt-[1vw] pb-[5vw] mb-[2vw] md:mb-[-5vw] md:pb-0 md:pt-0 relative flex flex-col justify-center items-center md:flex-row z-20 mb-[-5vw] w-full md:max-w-[1000px] mx-auto"
-          >
+          {/* Mission Content - Direct Display */}
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-6">
             <JuiceProviders
               projectId={missions?.[FEATURED_MISSION_INDEX]?.projectId || 0}
               selectedChain={selectedChain}
             >
-              <MissionWideCard
-                mission={
-                  {
-                    ...missions?.[FEATURED_MISSION_INDEX],
-                    metadata: {
-                      ...missions?.[FEATURED_MISSION_INDEX]?.metadata,
-                      description: '',
-                    },
-                  } as any
-                }
-                stage={featuredMissionStage}
-                backers={featuredMissionBackers}
-                token={featuredMissionToken}
-                ruleset={featuredMissionRuleset}
-                subgraphData={featuredMissionSubgraphData}
-                fundingGoal={featuredMissionFundingGoal}
-                teamContract={teamContract}
-                selectedChain={selectedChain}
-                learnMore
-                showMore
-                compact
-                linkToMission
-              />
+              <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                {/* Left Column - Mission Image */}
+                <div className="flex justify-center lg:justify-start order-2 lg:order-1">
+                  <div className="relative w-full max-w-sm lg:max-w-md">
+                    <div className="relative rounded-3xl overflow-hidden shadow-2xl">
+                      <Image
+                        src={
+                          getIPFSGateway(missions?.[FEATURED_MISSION_INDEX]?.metadata?.logoUri) ||
+                          '/assets/project-default.png'
+                        }
+                        alt={missions?.[FEATURED_MISSION_INDEX]?.metadata?.name || 'Mission'}
+                        width={500}
+                        height={500}
+                        className="w-full h-auto object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                    </div>
+                    
+                    {/* Team Image */}
+                    {missions?.[FEATURED_MISSION_INDEX]?.team?.metadata?.logoUri && (
+                      <div className="absolute -bottom-4 -right-4 bg-white/10 backdrop-blur-sm rounded-full p-2 shadow-lg border border-white/20">
+                        <Image
+                          src={getIPFSGateway(missions?.[FEATURED_MISSION_INDEX]?.team?.metadata?.logoUri)}
+                          alt={missions?.[FEATURED_MISSION_INDEX]?.team?.metadata?.name || 'Team'}
+                          width={48}
+                          height={48}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Column - Mission Info */}
+                <div className="space-y-6 lg:space-y-8 order-1 lg:order-2">
+                  {/* Mission Title & Tagline */}
+                  <div className="space-y-3 lg:space-y-4">
+                    <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-GoodTimes text-white leading-tight">
+                      {missions?.[FEATURED_MISSION_INDEX]?.metadata?.name || 'Featured Mission'}
+                    </h1>
+                    {missions?.[FEATURED_MISSION_INDEX]?.metadata?.tagline && (
+                      <p className="text-lg md:text-xl lg:text-2xl text-white/80 font-light">
+                        {missions?.[FEATURED_MISSION_INDEX]?.metadata?.tagline}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Team Information */}
+                  {missions?.[FEATURED_MISSION_INDEX]?.team && (
+                    <div className="flex items-center gap-4 p-4 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
+                      <div className="relative">
+                        <Image
+                          src={
+                            getIPFSGateway(missions?.[FEATURED_MISSION_INDEX]?.team?.metadata?.logoUri) ||
+                            '/assets/project-default.png'
+                          }
+                          alt={missions?.[FEATURED_MISSION_INDEX]?.team?.metadata?.name || 'Team'}
+                          width={64}
+                          height={64}
+                          className="w-16 h-16 rounded-full object-cover border-2 border-white/20"
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-white/60 text-sm font-medium">Launched by</span>
+                        <span className="text-white font-semibold text-lg">
+                          {missions?.[FEATURED_MISSION_INDEX]?.team?.metadata?.name || 'Unknown Team'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+
+
+                  {/* Mission Stats Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
+                    {/* Amount Raised */}
+                    <div className="bg-gradient-to-br from-[#6C407D]/20 to-[#5F4BA2]/20 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-white/20 flex flex-col justify-center">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Image
+                          src="/assets/icon-raised-tokens.svg"
+                          alt="Raised"
+                          width={24}
+                          height={24}
+                          className="w-6 h-6"
+                        />
+                        <span className="text-white/70 text-sm font-medium">Raised</span>
+                      </div>
+                      <p className="text-2xl font-bold text-white">
+                        {truncateTokenValue(Number(featuredMissionSubgraphData?.volume || 0) / 1e18, 'ETH')} ETH
+                      </p>
+                    </div>
+
+                    {/* Funding Goal */}
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-white/20 flex flex-col justify-center">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Image
+                          src="/assets/target.png"
+                          alt="Goal"
+                          width={24}
+                          height={24}
+                          className="w-6 h-6"
+                        />
+                        <span className="text-white/70 text-sm font-medium">Goal</span>
+                      </div>
+                      <p className="text-2xl font-bold text-white">
+                        {featuredMissionFundingGoal
+                          ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
+                          : '0'} ETH
+                      </p>
+                    </div>
+
+                    {/* Backers */}
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-white/20 flex flex-col justify-center">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Image
+                          src="/assets/icon-backers.svg"
+                          alt="Backers"
+                          width={24}
+                          height={24}
+                          className="w-6 h-6"
+                        />
+                        <span className="text-white/70 text-sm font-medium">Backers</span>
+                      </div>
+                      <p className="text-2xl font-bold text-white">
+                        {featuredMissionBackers?.length || 0}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/80 font-medium">Funding Progress</span>
+                      <span className="text-white font-bold">
+                        {featuredMissionFundingGoal && featuredMissionFundingGoal > 0
+                          ? Math.round((Number(featuredMissionSubgraphData?.volume || 0) / featuredMissionFundingGoal) * 100)
+                          : 0}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] h-full rounded-full transition-all duration-1000"
+                        style={{
+                          width: `${featuredMissionFundingGoal && featuredMissionFundingGoal > 0
+                            ? Math.min((Number(featuredMissionSubgraphData?.volume || 0) / featuredMissionFundingGoal) * 100, 100)
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* CTA Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                    <StandardButton
+                      className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white font-semibold px-8 py-3 rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border border-white/20 text-center"
+                      onClick={() => router.push(`/mission/${missions?.[FEATURED_MISSION_INDEX]?.id}`)}
+                      hoverEffect={false}
+                    >
+                      <span className="text-center pl-4">Learn More</span>
+                    </StandardButton>
+                    <StandardButton
+                      className="bg-white/10 backdrop-blur-sm text-white font-semibold px-8 py-3 rounded-xl hover:bg-white/20 transition-all duration-300 border border-white/20 text-center"
+                      onClick={() => {
+                        // Handle buy action
+                      }}
+                      hoverEffect={false}
+                    >
+                      <span className="text-center pl-4">
+                        {featuredMissionToken?.symbol ? `Buy ${featuredMissionToken.symbol}` : 'Contribute'}
+                      </span>
+                    </StandardButton>
+                  </div>
+                </div>
+              </div>
             </JuiceProviders>
           </div>
-        ) : (
-          <></>
-        )}
-      </section>
+
+          {/* Decorative elements */}
+          <Image
+            src="/assets/launchpad/blue-divider-rl.svg"
+            alt=""
+            width={200}
+            height={200}
+            className="absolute bottom-0 right-0 w-32 md:w-48 opacity-50"
+          />
+          <Image
+            src="/assets/launchpad/divider-13.svg"
+            alt=""
+            width={200}
+            height={200}
+            className="absolute top-0 left-0 w-32 md:w-48 opacity-50"
+          />
+        </section>
+      )}
 
       <section
         id="launchpad-features-section"
