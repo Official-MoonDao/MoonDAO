@@ -193,20 +193,19 @@ export function ExpandedFooter({
               </div>
             </div>
           </div>
+          
+          {/* Footer content moved into main section */}
+          <div className="container mx-auto px-[5vw] xl:px-[2vw] flex flex-col items-center pt-8 pb-10 max-w-[1200px] w-full">
+            <div className="pb-5">
+              <Disclaimer isCentered={false} />
+            </div>          
+            
+            <div>
+              <LegalLinks isCentered={true} />
+            </div>
+          </div>
         </div>
       )}
-      <div id="bottom-footer" className={`bg-darkest-cool flex ${isFullwidth ? 'items-center justify-center' : 'items-start justify-start rounded-tl-[2vw]'} ${disclaimerOnly ? 'mt-16 md:mt-20' : ''}`}>
-        <div className={`${isFullwidth ? 'container mx-auto' : ''} px-[5vw] xl:px-[2vw] flex flex-col items-center ${disclaimerOnly ? 'pt-[5vw] sm:pt-[2vw]' : 'pt-5'} pb-10 max-w-[1200px] w-full h-full`}>
-          <div className={`${isFullwidth ? '' : 'pb-5'} `}>
-            <Disclaimer isCentered={false} />
-          </div>          
-          
-          <div>
-            <LegalLinks isCentered={true} />
-          </div>
-
-        </div>
-      </div>
     </>
   )
 }
