@@ -82,25 +82,19 @@ export default function GetMooney() {
           mode="compact"
           popOverEffect={false}
         >
-          <section className="w-full min-h-[60vh] bg-gradient-to-b from-gray-900 to-black rounded-3xl">
-            <Container>
-              <div className="py-12">
-                <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-8 shadow-2xl max-w-2xl mx-auto">
-                  <div className="mb-6">
-                    <p className="text-gray-300 text-base leading-relaxed">
-                      Select the blockchain network where you want to buy MOONEY
-                      tokens. Different networks offer different trading options and
-                      fee structures.
-                    </p>
-                  </div>
-                  <div className="space-y-6">
-                    <NetworkSelector />
-                    <NativeToMooney selectedChain={selectedChain} />
-                  </div>
-                </div>
-              </div>
-            </Container>
-          </section>
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-6">
+              <p className="text-gray-300 text-base leading-relaxed">
+                Select the blockchain network where you want to buy MOONEY
+                tokens. Different networks offer different trading options and
+                fee structures.
+              </p>
+            </div>
+            <div className="space-y-6">
+              <NetworkSelector />
+              <NativeToMooney selectedChain={selectedChain} />
+            </div>
+          </div>
         </ContentLayout>
       </div>
     </>

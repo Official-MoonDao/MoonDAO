@@ -245,51 +245,48 @@ export default function Lock() {
           mode="compact"
           popOverEffect={false}
         >
-          <section className="w-full min-h-[80vh] bg-gradient-to-b from-gray-900 to-black rounded-3xl">
-            <Container>
-              <div className="py-12">
-                <WithdrawVMooney />
-                <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 p-8 shadow-2xl max-w-2xl mx-auto">
-                <LockData
-                  hasLock={hasLock}
-                  VMOONEYBalance={VMOONEYBalance}
-                  VMOONEYBalanceLoading={VMOONEYBalanceLoading}
-                  VMOONEYLock={VMOONEYLock}
-                  VMOONEYLockLoading={VMOONEYLockLoading}
-                />
+          <div className="max-w-2xl mx-auto">
+            <WithdrawVMooney />
+            <LockData
+              hasLock={hasLock}
+              VMOONEYBalance={VMOONEYBalance}
+              VMOONEYBalanceLoading={VMOONEYBalanceLoading}
+              VMOONEYLock={VMOONEYLock}
+              VMOONEYLockLoading={VMOONEYLockLoading}
+            />
 
-                <div className="mb-6">
-                  <div className="mb-3">
-                    <p className="text-gray-300 text-base leading-relaxed">
-                      Select the blockchain network where you want to lock your
-                      MOONEY tokens. Each network has its own voting escrow
-                      contract.
-                    </p>
-                  </div>
-                  <NetworkSelector />
-                </div>
+            <div className="mb-6">
+              <div className="mb-3">
+                <p className="text-gray-300 text-base leading-relaxed">
+                  Select the blockchain network where you want to lock your
+                  MOONEY tokens. Each network has its own voting escrow
+                  contract.
+                </p>
+              </div>
+              <NetworkSelector />
+            </div>
 
-                {/* Main Lock Interface */}
-                <div className="w-full mt-6">
-                  <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
-                    {!hasExpired ? (
-                      <div>
-                        {/* Compact Header */}
-                        <div className="p-5 border-b border-white/10 bg-black/20">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h2 className="text-xl font-bold text-white">
-                                Lock MOONEY
-                              </h2>
-                              <p className="text-gray-400 text-xs mt-0.5">
-                                Earn voting power
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="text-right">
-                                <p className="text-gray-400 text-xs">Available</p>
-                                <div className="text-white text-lg font-RobotoMono font-semibold flex items-center gap-2">
-                                  <div className="text-white">
+            {/* Main Lock Interface */}
+            <div className="w-full mt-6">
+              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
+                {!hasExpired ? (
+                  <div>
+                    {/* Compact Header */}
+                    <div className="p-5 border-b border-white/10 bg-black/20">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h2 className="text-xl font-bold text-white">
+                            Lock MOONEY
+                          </h2>
+                          <p className="text-gray-400 text-xs mt-0.5">
+                            Earn voting power
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-right">
+                            <p className="text-gray-400 text-xs">Available</p>
+                            <div className="text-white text-lg font-RobotoMono font-semibold flex items-center gap-2">
+                              <div className="text-white">
                                     <Balance
                                       balance={MOONEYBalance?.toString() / 1e18}
                                       loading={MOONEYBalanceLoading}
@@ -724,10 +721,7 @@ export default function Lock() {
                     )}
                   </div>
                 </div>
-              </div>
             </div>
-            </Container>
-          </section>
         </ContentLayout>
       </div>
     </>
