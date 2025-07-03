@@ -44,7 +44,6 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useSubHats } from '@/lib/hats/useSubHats'
-import { sepolia } from '@/lib/infura/infuraChains'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
@@ -78,6 +77,54 @@ import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import MissionStat from '@/components/mission/MissionStat'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import TeamMembers from '@/components/subscription/TeamMembers'
+
+const CHAIN = DEFAULT_CHAIN_V5
+const CHAIN_SLUG = getChainSlug(CHAIN)
+
+const jbControllerContract = getContract({
+  client: serverClient,
+  address: JBV4_CONTROLLER_ADDRESSES[CHAIN_SLUG],
+  abi: JBV4ControllerABI as any,
+  chain: CHAIN,
+})
+
+const missionCreatorContract = getContract({
+  client: serverClient,
+  address: MISSION_CREATOR_ADDRESSES[CHAIN_SLUG],
+  abi: MissionCreatorABI as any,
+  chain: CHAIN,
+})
+
+const IPFS_GATEWAYS = [
+  IPFS_GATEWAY,
+  'https://cf-ipfs.com/ipfs/',
+  'https://gateway.pinata.cloud/ipfs/',
+  'https://dweb.link/ipfs/',
+]
+
+// Try multiple IPFS gateways with timeout
+const fetchFromIPFSWithFallback = async (ipfsHash: string, timeout = 3000) => {
+  for (const gateway of IPFS_GATEWAYS) {
+    try {
+      const response = await Promise.race([
+        fetch(`${gateway}${ipfsHash}`),
+        new Promise<Response>((_, reject) =>
+          setTimeout(() => reject(new Error('IPFS fetch timeout')), timeout)
+        ),
+      ])
+
+      if (response.ok) {
+        return await response.json()
+      }
+    } catch (error) {
+      console.warn(`Failed to fetch from gateway ${gateway}:`, error)
+      continue // Try next gateway
+    }
+  }
+
+  // All gateways failed, return fallback
+  throw new Error('All IPFS gateways failed')
+}
 
 type ProjectProfileProps = {
   tokenId: string
@@ -120,12 +167,6 @@ export default function MissionProfile({
     chain: selectedChain,
   })
 
-  const jbControllerContract = useContract({
-    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
-    abi: JBV4ControllerABI as any,
-    chain: selectedChain,
-  })
-
   const jbTerminalContract = useContract({
     address: JBV4_TERMINAL_ADDRESSES[chainSlug],
     abi: JBMultiTerminal.abi as any,
@@ -147,12 +188,6 @@ export default function MissionProfile({
   const missionTableContract = useContract({
     address: MISSION_TABLE_ADDRESSES[chainSlug],
     abi: MissionTableABI as any,
-    chain: selectedChain,
-  })
-
-  const missionCreatorContract = useContract({
-    address: MISSION_CREATOR_ADDRESSES[chainSlug],
-    abi: MissionCreatorABI as any,
     chain: selectedChain,
   })
 
@@ -512,10 +547,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     }
 
     const missionTableName = MISSION_TABLE_NAMES[chainSlug]
-
     const statement = `SELECT * FROM ${missionTableName} WHERE id = ${tokenId}`
 
     const missionRows = await queryTable(chain, statement)
+
     const missionRow = missionRows?.[0]
 
     if (!missionRow || blockedMissions.includes(Number(tokenId))) {
@@ -524,65 +559,77 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
-    const jbV4ControllerContract = getContract({
-      client: serverClient,
-      address: JBV4_CONTROLLER_ADDRESSES['sepolia'],
-      abi: JBV4ControllerABI as any,
-      chain: DEFAULT_CHAIN_V5,
-    })
-
-    const metadataURI = await readContract({
-      contract: jbV4ControllerContract,
-      method: 'uriOf' as string,
-      params: [missionRow.projectId],
-    })
+    const [metadataURI, stage, payHookAddress] = await Promise.all([
+      readContract({
+        contract: jbControllerContract,
+        method: 'uriOf' as string,
+        params: [missionRow.projectId],
+      }).then((result) => {
+        return result
+      }),
+      readContract({
+        contract: missionCreatorContract,
+        method: 'stage' as string,
+        params: [tokenId],
+      }).then((result) => {
+        return result
+      }),
+      readContract({
+        contract: missionCreatorContract,
+        method: 'missionIdToPayHook' as string,
+        params: [tokenId],
+      })
+        .then((result) => {
+          return result
+        })
+        .catch(() => null), // Don't fail if this fails
+    ])
 
     const ipfsHash = metadataURI.startsWith('ipfs://')
       ? metadataURI.replace('ipfs://', '')
       : metadataURI
 
-    const metadataRes = await fetch(`${IPFS_GATEWAY}${ipfsHash}`)
-    const metadata = await metadataRes.json()
+    const promises = [
+      // IPFS metadata fetch with multiple gateway fallbacks
+      fetchFromIPFSWithFallback(ipfsHash).catch((error: any) => {
+        console.warn('All IPFS gateways failed:', error)
+        return {
+          name: 'Mission Loading...',
+          description: 'Metadata is loading...',
+          logoUri: '',
+        }
+      }),
+    ]
+
+    if (
+      payHookAddress &&
+      payHookAddress !== '0x0000000000000000000000000000000000000000'
+    ) {
+      const payHookContract = getContract({
+        client: serverClient,
+        address: payHookAddress,
+        chain: chain,
+        abi: LaunchPadPayHookABI.abi as any,
+      })
+
+      promises.push(
+        readContract({
+          contract: payHookContract,
+          method: 'deadline' as string,
+          params: [],
+        })
+          .then((dl: any) => +dl.toString() * 1000)
+          .catch(() => undefined)
+      )
+    }
+
+    const [metadata, deadline] = await Promise.all(promises)
 
     const mission = {
       id: missionRow.id,
       teamId: missionRow.teamId,
       projectId: missionRow.projectId,
       metadata: metadata,
-    }
-
-    const missionCreatorContract = getContract({
-      client: serverClient,
-      address: MISSION_CREATOR_ADDRESSES['sepolia'],
-      abi: MissionCreatorABI as any,
-      chain: DEFAULT_CHAIN_V5,
-    })
-
-    const stage = await readContract({
-      contract: missionCreatorContract,
-      method: 'stage' as string,
-      params: [mission.id],
-    })
-
-    const payHookAddress: any = await readContract({
-      contract: missionCreatorContract,
-      method: 'missionIdToPayHook' as string,
-      params: [mission.id],
-    })
-    const payHookContract = getContract({
-      client,
-      address: payHookAddress,
-      chain: DEFAULT_CHAIN_V5,
-      abi: LaunchPadPayHookABI.abi as any,
-    })
-    let deadline: number | undefined
-    if (payHookContract) {
-      const dl: any = await readContract({
-        contract: payHookContract,
-        method: 'deadline' as string,
-        params: [],
-      })
-      deadline = +dl.toString() * 1000 // Convert to milliseconds
     }
 
     return {
@@ -593,7 +640,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       },
     }
   } catch (error) {
-    console.error(error)
+    console.error('getServerSideProps error:', error)
     return {
       notFound: true,
     }
