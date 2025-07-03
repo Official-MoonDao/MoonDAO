@@ -1,7 +1,7 @@
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import React from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
@@ -52,13 +52,18 @@ const MissionProfileHeader = React.memo(
     const { data: ethPrice } = useETHPrice(1, 'ETH_TO_USD')
     const totalFunding = useTotalFunding(mission?.projectId)
 
-    const duration = useMemo(() => {
-      return deadline !== undefined
-        ? formatTimeUntilDeadline(new Date(deadline))
-        : '...loading'
-    }, [deadline])
+    const [duration, setDuration] = useState<any>()
 
     const deadlinePassed = deadline ? Date.now() > deadline : false
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        if (deadline !== undefined) {
+          setDuration(formatTimeUntilDeadline(new Date(deadline)))
+        }
+      }, 1000)
+      return () => clearInterval(interval)
+    }, [deadline])
 
     return (
       <div id="citizenheader-container" className="w-[100vw]">
@@ -244,8 +249,8 @@ const MissionProfileHeader = React.memo(
                           />
                           <div className="ml-2">
                             <p className="text-gray-400 text-sm">DEADLINE</p>
-                            <p className="text-white font-GoodTimes">
-                              {duration}
+                            <p className="text-white font-GoodTimes min-w-[250px]">
+                              {stage === 3 ? 'REFUND' : duration}
                             </p>
                           </div>
                         </div>
