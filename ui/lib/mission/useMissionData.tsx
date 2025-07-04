@@ -55,12 +55,17 @@ export default function useMissionData({
 
   useEffect(() => {
     async function getStage() {
-      const stage: any = await readContract({
-        contract: missionCreatorContract,
-        method: 'stage' as string,
-        params: [mission.id],
-      })
-      setStage(+stage.toString() as MissionStage)
+      try {
+        const stage: any = await readContract({
+          contract: missionCreatorContract,
+          method: 'stage' as string,
+          params: [mission.id],
+        })
+        setStage(+stage.toString() as MissionStage)
+      } catch (error) {
+        console.error('Error fetching stage for mission:', mission.id, error)
+        setStage(1) // Default to stage 1
+      }
     }
     if (missionCreatorContract && mission?.id !== undefined) {
       getStage()
@@ -76,12 +81,17 @@ export default function useMissionData({
 
   useEffect(() => {
     async function getPoolDeployer() {
-      const address: any = await readContract({
-        contract: missionCreatorContract,
-        method: 'missionIdToPoolDeployer' as string,
-        params: [mission.id],
-      })
-      setPoolDeployerAddress(address)
+      try {
+        const address: any = await readContract({
+          contract: missionCreatorContract,
+          method: 'missionIdToPoolDeployer' as string,
+          params: [mission.id],
+        })
+        setPoolDeployerAddress(address)
+      } catch (error) {
+        console.error('Error fetching pool deployer for mission:', mission.id, error)
+        setPoolDeployerAddress(undefined)
+      }
     }
     if (missionCreatorContract && mission?.id !== undefined) {
       getPoolDeployer()
