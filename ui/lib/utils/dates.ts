@@ -50,18 +50,18 @@ export function daysUntilDate(date: Date) {
 export function formatTimeUntilDeadline(deadline: Date): string {
   const now = new Date()
   const timeDifference = deadline.getTime() - now.getTime()
-  
+
   // If deadline has passed
   if (timeDifference <= 0) {
-    return "PASSED"
+    return 'PASSED'
   }
-  
+
   // Calculate time units
   const seconds = Math.floor(timeDifference / 1000) % 60
   const minutes = Math.floor(timeDifference / (1000 * 60)) % 60
   const hours = Math.floor(timeDifference / (1000 * 60 * 60)) % 24
   const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24))
-  
+
   // Format based on remaining time
   if (days >= 2) {
     // More than 48 hours: show days and hours
@@ -71,10 +71,14 @@ export function formatTimeUntilDeadline(deadline: Date): string {
     return `${days} DAY, ${hours} HOURS`
   } else if (hours >= 1) {
     // Less than 24 hours: show hours and minutes
-    return `${hours} ${hours === 1 ? 'HOUR' : 'HOURS'}, ${minutes} ${minutes === 1 ? 'MINUTE' : 'MINUTES'}`
+    return `${hours} ${hours === 1 ? 'HOUR' : 'HOURS'}, ${minutes} ${
+      minutes === 1 ? 'MINUTE' : 'MINUTES'
+    }`
   } else if (minutes >= 1) {
     // Less than 1 hour: show minutes and seconds
-    return `${minutes} ${minutes === 1 ? 'MINUTE' : 'MINUTES'}, ${seconds} ${seconds === 1 ? 'SECOND' : 'SECONDS'}`
+    return `${minutes} ${minutes === 1 ? 'MINUTE' : 'MINUTES'}, ${seconds} ${
+      seconds === 1 ? 'SECOND' : 'SECONDS'
+    }`
   } else {
     // Less than 1 minute: show only seconds
     return `${seconds} ${seconds === 1 ? 'SECOND' : 'SECONDS'}`
@@ -96,11 +100,7 @@ export function daysUntilDay(date: Date, day: string) {
 
 export function isRewardsCycle(date: Date) {
   const lastQuarter = getRelativeQuarter(-1)
-  const endOfQuarter = new Date(
-    lastQuarter.year,
-    lastQuarter.quarter * 3,
-    0
-  )
+  const endOfQuarter = new Date(lastQuarter.year, lastQuarter.quarter * 3, 0)
   const nextQuarterStart = new Date(
     lastQuarter.year,
     lastQuarter.quarter * 3,
@@ -108,7 +108,9 @@ export function isRewardsCycle(date: Date) {
   )
 
   const fourteenDaysIntoNextQuarter = new Date(nextQuarterStart)
-  fourteenDaysIntoNextQuarter.setDate(fourteenDaysIntoNextQuarter.getDate() + 14)
+  fourteenDaysIntoNextQuarter.setDate(
+    fourteenDaysIntoNextQuarter.getDate() + 14
+  )
 
   const firstTuesdayAfterFourteenDays = new Date(fourteenDaysIntoNextQuarter)
   const daysUntilTuesday = daysUntilDay(fourteenDaysIntoNextQuarter, 'Tuesday')
