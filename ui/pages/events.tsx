@@ -37,7 +37,13 @@ export default function Events({ events }: any) {
             {/* Luma Events Iframe */}
             <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl mb-8">
               <h2 className="text-2xl font-bold text-white mb-4 text-center">Upcoming Events</h2>
-              <div className="w-full">
+              <div className="w-full relative">
+                <div id="luma-loading" className="absolute inset-0 bg-gray-800 rounded-lg flex items-center justify-center">
+                  <div className="text-white text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                    <p className="text-sm">Loading events...</p>
+                  </div>
+                </div>
                 <iframe
                   src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
                   width="100%"
@@ -47,8 +53,34 @@ export default function Events({ events }: any) {
                   allowFullScreen
                   aria-hidden="false"
                   tabIndex={0}
-                  className="rounded-lg"
+                  className="rounded-lg relative z-10"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="MoonDAO Events Calendar"
+                  onLoad={(e) => {
+                    const loadingDiv = document.getElementById('luma-loading');
+                    if (loadingDiv) {
+                      loadingDiv.style.display = 'none';
+                    }
+                  }}
                 />
+                {/* Fallback link */}
+                <div className="mt-4 text-center">
+                  <p className="text-white/70 text-sm mb-2">
+                    Can't see the calendar? 
+                  </p>
+                  <a 
+                    href="https://lu.ma/moondao" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+                  >
+                    View events on lu.ma
+                    <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
               </div>
             </div>
 
