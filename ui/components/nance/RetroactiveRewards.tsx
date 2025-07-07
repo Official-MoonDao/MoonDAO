@@ -255,6 +255,16 @@ export function RetroactiveRewards({
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
+  const eligibleProjects = useMemo(
+    () => currentProjects.filter((p) => p.eligible),
+    [currentProjects]
+  )
+
+  const ineligibleProjects = useMemo(
+    () => currentProjects.filter((p) => !p.eligible),
+    [currentProjects]
+  )
+
   useEffect(() => {
     let isCancelled = false
 
@@ -395,12 +405,12 @@ export function RetroactiveRewards({
               className="bg-black/20 rounded-xl p-6 border border-white/10"
             >
               <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
-                Active Projects
+                Eligible Projects
               </h1>
 
               <div className="flex flex-col gap-6">
-                {currentProjects && currentProjects?.length > 0 ? (
-                  currentProjects.map((project: any, i) => (
+                {eligibleProjects && eligibleProjects.length > 0 ? (
+                  eligibleProjects.map((project: any, i) => (
                     <div
                       key={`project-card-${i}`}
                       className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
@@ -431,7 +441,7 @@ export function RetroactiveRewards({
 
                 {active && (
                   <div className="mt-6 w-full flex justify-end">
-                    {currentProjects && userHasVotingPower ? (
+                    {eligibleProjects && userHasVotingPower ? (
                       <span className="flex flex-col md:flex-row md:items-center gap-2">
                         <PrivyWeb3Button
                           action={handleSubmit}
@@ -456,6 +466,30 @@ export function RetroactiveRewards({
                   </div>
                 )}
               </div>
+
+              {ineligibleProjects && ineligibleProjects.length > 0 && (
+                <>
+                  <h1 className="font-GoodTimes text-white/80 text-xl mt-10 mb-6">
+                    Active Projects (Not Eligible)
+                  </h1>
+                  <div className="flex flex-col gap-6">
+                    {ineligibleProjects.map((project: any, i) => (
+                      <div
+                        key={`ineligible-project-card-${i}`}
+                        className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+                      >
+                        <ProjectCard
+                          key={`ineligible-project-card-${i}`}
+                          project={project}
+                          projectContract={projectContract}
+                          hatsContract={hatsContract}
+                          userHasVotingPower={userHasVotingPower}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
             <div className="bg-black/20 rounded-xl border border-white/10 overflow-hidden">
               <PastProjects projects={pastProjects} />
