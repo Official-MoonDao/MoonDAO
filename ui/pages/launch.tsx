@@ -559,25 +559,18 @@ export default function Launch({ missions }: any) {
       )}
 
       {/* Go Further Together Section - Fullscreen Space Theme */}
-      <section className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#1B1C4B] to-[#010618]">
-        {/* Background gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#010618]/80 via-[#1B1C4B]/60 to-[#010618]/80"></div>
-        
-        {/* Space-themed decorative elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Gradient orbs */}
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 rounded-full blur-3xl"></div>
-          
-          {/* Constellation dots */}
-          <div className="absolute top-2/5 left-1/5 w-1 h-1 bg-cyan-400/40 rounded-full"></div>
-          <div className="absolute top-3/5 right-1/4 w-1 h-1 bg-purple-400/30 rounded-full"></div>
-          <div className="absolute bottom-1/4 right-1/5 w-1 h-1 bg-blue-400/30 rounded-full"></div>
+      <section className="relative min-h-screen overflow-hidden">
+        {/* Background image */}
+        <div className="absolute inset-0">
+          <Image
+            src="/assets/launchpad/Astronaut-Handshake.png"
+            alt="Astronaut Handshake Background"
+            fill
+            className="object-cover object-center"
+            priority
+            quality={100}
+          />
         </div>
-        
-        {/* Text readability overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/30"></div>
         
         {/* Main Content Container */}
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
@@ -593,7 +586,7 @@ export default function Launch({ missions }: any) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-12 items-center">
             
                          {/* Finance Card */}
-             <div className="bg-gradient-to-br from-[#6C407D]/20 to-[#5F4BA2]/20 backdrop-blur-sm rounded-3xl p-4 md:p-6 lg:p-8 border border-white/20 hover:border-white/40 transition-all duration-300 group h-full">
+             <div className="bg-gradient-to-br from-[#6C407D]/40 to-[#5F4BA2]/40 backdrop-blur-sm rounded-3xl p-4 md:p-6 lg:p-8 border border-white/20 hover:border-white/40 transition-all duration-300 group h-full">
                <div className="flex flex-col items-center text-center space-y-4 md:space-y-6 h-full">
                  <div className="bg-gradient-to-br from-[#6C407D] to-[#5F4BA2] rounded-full p-3 md:p-4 group-hover:scale-110 transition-transform duration-300">
                    <Image
@@ -616,7 +609,7 @@ export default function Launch({ missions }: any) {
              </div>
 
             {/* Coordinate Card */}
-            <div className="bg-gradient-to-br from-[#5F4BA2]/20 to-[#5159CC]/20 backdrop-blur-sm rounded-3xl p-4 md:p-6 lg:p-8 border border-white/20 hover:border-white/40 transition-all duration-300 group h-full">
+            <div className="bg-gradient-to-br from-[#5F4BA2]/60 to-[#5159CC]/60 backdrop-blur-sm rounded-3xl p-4 md:p-6 lg:p-8 border border-white/20 hover:border-white/40 transition-all duration-300 group h-full">
               <div className="flex flex-col items-center text-center space-y-4 md:space-y-6 h-full">
                 <div className="bg-gradient-to-br from-[#5F4BA2] to-[#5159CC] rounded-full p-3 md:p-4 group-hover:scale-110 transition-transform duration-300">
                   <Image
@@ -639,7 +632,7 @@ export default function Launch({ missions }: any) {
             </div>
 
                          {/* Verify Card */}
-             <div className="bg-gradient-to-br from-[#5159CC]/20 to-[#4660E7]/20 backdrop-blur-sm rounded-3xl p-4 md:p-6 lg:p-8 border border-white/20 hover:border-white/40 transition-all duration-300 group h-full">
+             <div className="bg-gradient-to-br from-[#5159CC]/60 to-[#4660E7]/60 backdrop-blur-sm rounded-3xl p-4 md:p-6 lg:p-8 border border-white/20 hover:border-white/40 transition-all duration-300 group h-full">
                <div className="flex flex-col items-center text-center space-y-4 md:space-y-6 h-full">
                  <div className="bg-gradient-to-br from-[#5159CC] to-[#4660E7] rounded-full p-3 md:p-4 group-hover:scale-110 transition-transform duration-300">
                    <Image
@@ -682,17 +675,17 @@ export default function Launch({ missions }: any) {
       </section>
 
       {/* Proven Financing Model Section - Fullscreen Space Theme */}
-      <section className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#0F0F23] via-[#1E1E3F] to-[#2D1B69]">
-        {/* Background */}
+      <section className="relative min-h-screen overflow-hidden">
+        {/* Background image */}
         <div className="absolute inset-0">
-          {/* Animated orbs */}
-          <div className="absolute top-1/4 right-1/4 w-32 h-32 bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] rounded-full opacity-20 blur-xl animate-pulse"></div>
-          <div className="absolute bottom-1/3 left-1/4 w-24 h-24 bg-gradient-to-r from-[#5159CC] to-[#4660E7] rounded-full opacity-30 blur-lg animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/3 w-20 h-20 bg-gradient-to-r from-[#4660E7] to-[#6C407D] rounded-full opacity-25 blur-lg animate-pulse delay-2000"></div>
-          
-          {/* Nebula swirls */}
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-[#6C407D]/10 to-[#5F4BA2]/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-[#5159CC]/10 to-[#4660E7]/10 rounded-full blur-3xl"></div>
+          <Image
+            src="/assets/launchpad/Lunar-Crystals.png"
+            alt="Lunar Crystals Background"
+            fill
+            className="object-cover object-center"
+            priority
+            quality={100}
+          />
         </div>
 
         {/* Main Content Container */}
@@ -826,18 +819,16 @@ export default function Launch({ missions }: any) {
 
       {/* Power of Decentralization Section - Fullscreen Space Theme */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A] via-[#1A1A2E] to-[#16213E]">
-          {/* Animated orbs */}
-          <div className="absolute top-1/4 right-1/4 w-32 h-32 bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] rounded-full opacity-20 blur-xl animate-pulse"></div>
-          <div className="absolute bottom-1/3 left-1/4 w-24 h-24 bg-gradient-to-r from-[#5159CC] to-[#4660E7] rounded-full opacity-30 blur-lg animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/3 w-20 h-20 bg-gradient-to-r from-[#4660E7] to-[#6C407D] rounded-full opacity-25 blur-lg animate-pulse delay-2000"></div>
-          
-          {/* Nebula swirls */}
-          <div className="absolute top-0 left-0 w-full h-full">
-            <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-[#6C407D]/10 to-[#5F4BA2]/10 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-gradient-to-r from-[#5159CC]/10 to-[#4660E7]/10 rounded-full blur-3xl"></div>
-          </div>
+        {/* Background image */}
+        <div className="absolute inset-0">
+          <Image
+            src="/assets/launchpad/Lunar-Satellites.png"
+            alt="Lunar Satellites Background"
+            fill
+            className="object-cover object-center"
+            priority
+            quality={100}
+          />
         </div>
 
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
