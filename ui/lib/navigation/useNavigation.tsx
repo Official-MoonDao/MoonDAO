@@ -92,7 +92,6 @@ export default function useNavigation(citizen: any) {
       },
       {
         name: 'Marketplace',
-
         icon: BuildingStorefrontIcon,
         href: '/marketplace',
       },

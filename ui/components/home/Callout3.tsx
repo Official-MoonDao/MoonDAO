@@ -6,8 +6,8 @@ const indexCardData = [
     icon: '/assets/icon-astronaut.svg',
     iconAlt: 'Astronaut',
     header: 'Human Spaceflight',
-    link: '/sweepstakes',
-    hovertext: 'Meet the Astronauts',
+    link: '/about',
+    hovertext: 'Learn About Our Mission',
     paragraph: (
       <>
         Sent the first crowdraised astronaut to space, selected via onchain voting, and a second everyday person randomly via onchain sweepstakes.
