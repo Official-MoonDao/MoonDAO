@@ -8,12 +8,12 @@ export default function Hero() {
     <section id="hero-section" className="overflow-x-hidden overflow-y-visible relative w-full min-h-screen">
       <div
         id="hero-container"
-        className="flex flex-col md:min-h-[80vh] items-end justify-end lg:items-start lg:justify-end md:items-start px-[20px] md:px-[40px] 2xl:px-[80px] 3xl:px-[120px] min-h-[800px] mt-[-1px] p-5 pb-[100px] md:pb-[120px] lg:pb-[200px] xl:pb-[240px] 2xl:pb-[280px] 3xl:pb-[320px] lg:min-h-[800px] 2xl:min-h-[900px] 3xl:min-h-[1000px] relative z-10"
+        className="flex flex-col min-h-screen items-end justify-end lg:items-start lg:justify-end md:items-start px-[20px] md:px-[40px] 2xl:px-[80px] 3xl:px-[120px] mt-[-1px] p-5 pb-[100px] md:pb-[120px] lg:pb-[200px] xl:pb-[240px] 2xl:pb-[280px] 3xl:pb-[320px] relative z-10"
       >
         <div
           id="background"
           className="w-full h-full absolute top-0 right-0 overflow-hidden z-0 bg-cover bg-no-repeat pointer-events-none"
-          style={{backgroundImage: 'url("/assets/Lunar-Colony-Dark.png")', backgroundPosition: 'center 150%'}}
+          style={{backgroundImage: 'url("/assets/Lunar-Colony-Dark.png")', backgroundPosition: 'center 80%'}}
         ></div>
         <div
           id="tl-divider"

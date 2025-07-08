@@ -137,7 +137,7 @@ export default function Video() {
         <section 
             ref={sectionRef}
             id="video-section" 
-            className="relative bg-dark-cool -mt-[30vmin] md:-mt-[20vmin] lg:-mt-[20vmin] xl:-mt-[15vmin] 2xl:-mt-[12vmin] 3xl:-mt-[10vmin]"
+            className="relative bg-dark-cool"
             >
             <div id="video-container" 
                 className="w-full h-full max-w-[1920px] 2xl:max-w-[2560px] mx-auto"
