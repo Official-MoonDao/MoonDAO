@@ -21,7 +21,7 @@ export default function MissionTokenomicsExplainer() {
         <SubPoint point="2.5% to Juicebox" />
       </div>
 
-      <Point point="Token Allocation" />
+      <Point point="Token Allocation: Teams can withdraw up to 50% of their total raised funds. The remaining 50% is allocated as follows:" />
       <div className="ml-8 flex flex-col">
         <SubPoint point="50% to Contributors" />
         <SubPoint point="30% to Mission Team" />
