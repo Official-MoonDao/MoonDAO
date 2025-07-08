@@ -240,7 +240,7 @@ export const MISSION_TABLE_ADDRESSES: Index = {
 
 export const MISSION_TABLE_NAMES: Index = {
   arbitrum: 'MISSIONTABLE_42161_142',
-  sepolia: 'MISSIONTABLE_11155111_1949',
+  sepolia: 'MISSIONTABLE_11155111_1950',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
@@ -249,8 +249,8 @@ export const MISSION_CREATOR_ADDRESSES: Index = {
 }
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {
-  arbitrum: '0xb291844f213047eb9e1621ae555b1eae6700d553',
-  sepolia: '0xb291844F213047Eb9e1621AE555B1Eae6700d553',
+  arbitrum: '0xD1c436Eb62e1d23e66842701B09E3d65aA8522E8',
+  sepolia: '0xD1c436Eb62e1d23e66842701B09E3d65aA8522E8',
 }
 export const JBV4_TOKENS_ADDRESSES: Index = {
   arbitrum: '0xa59e9f424901fb9dbd8913a9a32a081f9425bf36',

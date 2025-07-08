@@ -93,7 +93,11 @@ export default function useMissionData({
         })
         setPoolDeployerAddress(address)
       } catch (error) {
-        console.error('Error fetching pool deployer for mission:', mission.id, error)
+        console.error(
+          'Error fetching pool deployer for mission:',
+          mission.id,
+          error
+        )
         setPoolDeployerAddress(undefined)
       }
     }
