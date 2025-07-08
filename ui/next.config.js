@@ -2,16 +2,16 @@ const nextTranslate = require('next-translate')
 const withTM = require('next-transpile-modules')(['thirdweb', 'ox'])
 const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://www.googletagmanager.com;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://*.ipfscdn.io https://r2.comfy.icu https://ipfs.io https://cdn.discordapp.com https://cdn.stamp.fyi https://cdn.shopify.com https://cryptologos.cc https://ipfs.cf-ipfs.com https://*.walletconnect.com https://unpkg.com ipfs://* https://gray-main-toad-36.mypinata.cloud  https://safe-transaction-assets.safe.global;
-    font-src 'self' https://fonts.gstatic.com;
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://www.googletagmanager.com https://*.lu.ma https://lu.ma;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.lu.ma https://lu.ma;
+    img-src 'self' blob: data: https://*.ipfscdn.io https://r2.comfy.icu https://ipfs.io https://cdn.discordapp.com https://cdn.stamp.fyi https://cdn.shopify.com https://cryptologos.cc https://ipfs.cf-ipfs.com https://*.walletconnect.com https://unpkg.com ipfs://* https://gray-main-toad-36.mypinata.cloud  https://safe-transaction-assets.safe.global https://*.lu.ma https://lu.ma;
+    font-src 'self' https://fonts.gstatic.com https://*.lu.ma https://lu.ma;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
-    connect-src 'self' https://auth.privy.io https://*.privy.systems https://*.thirdweb.com https://*.nance.app https://*.walletconnect.com wss://*.walletconnect.com https://www.walletlink.org wss://*.walletlink.org https://*.safe.global https://*.ipfscdn.io https://*.ensideas.com https://*.amazonaws.com https://apple.com https://google.com https://www.apple.com https://www.google.com https://*.snapshot.org https://testnets.tableland.network https://tableland.network https://*.coinbase.com https://ipfs.io https://cloudflare-ipfs.com/* https://*.etherscan.io https://*.vimeo.com https://*.uniswap.org https://*.layerzero-scan.com https://docs.google.com https://docs.moondao.com https://*.layerzero-scan.com https://*.juicebox.money https://rpc2.base.org https://rpc2.arbitrum.org https://rpc2.sepolia.org https://rpc2.mainnet.org https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://google-analytics.com https://*.google-analytics.com https://*.infura.io;
-    frame-src 'self' https://*.youtube.com https://*.privy.io https://*.moondao.com https://*.typeform.com https://*.snapshot.org https://*.coinbase.com https://moondao.ck.page https://moondao.kit.com https://*.vimeo.com https://docs.google.com https://docs.moondao.com https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud;
+    connect-src 'self' https://auth.privy.io https://*.privy.systems https://*.thirdweb.com https://*.nance.app https://*.walletconnect.com wss://*.walletconnect.com https://www.walletlink.org wss://*.walletlink.org https://*.safe.global https://*.ipfscdn.io https://*.ensideas.com https://*.amazonaws.com https://apple.com https://google.com https://www.apple.com https://www.google.com https://*.snapshot.org https://testnets.tableland.network https://tableland.network https://*.coinbase.com https://ipfs.io https://cloudflare-ipfs.com/* https://*.etherscan.io https://*.vimeo.com https://*.uniswap.org https://*.layerzero-scan.com https://docs.google.com https://docs.moondao.com https://*.layerzero-scan.com https://*.juicebox.money https://rpc2.base.org https://rpc2.arbitrum.org https://rpc2.sepolia.org https://rpc2.mainnet.org https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://google-analytics.com https://*.google-analytics.com https://*.infura.io https://*.lu.ma https://lu.ma;
+    frame-src 'self' https://*.youtube.com https://*.privy.io https://*.moondao.com https://*.typeform.com https://*.snapshot.org https://*.coinbase.com https://moondao.ck.page https://moondao.kit.com https://*.vimeo.com https://docs.google.com https://docs.moondao.com https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://*.lu.ma https://lu.ma;
     upgrade-insecure-requests;
 `
 

@@ -441,9 +441,23 @@ a {
   }
 }
 
-@media (min-width: 1400px) {
+@media (min-width: 1400px) and (max-width: 1919px) {
   .header {
     font-size: 40px;
+    line-height: 1.2;
+  }
+}
+
+@media (min-width: 1920px) and (max-width: 2559px) {
+  .header {
+    font-size: 48px;
+    line-height: 1.2;
+  }
+}
+
+@media (min-width: 2560px) {
+  .header {
+    font-size: 56px;
     line-height: 1.2;
   }
 }
@@ -741,7 +755,7 @@ html {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  background: linear-gradient(to top, var(--dark-warm-color), transparent);
+  background: linear-gradient(to top, var(--dark-cool-color), transparent);
 }
 
 body {
@@ -882,4 +896,47 @@ body {
 
 .scroll-indicator {
   animation: bounce-gentle 2s infinite;
+}
+
+/* Hero section improvements to prevent button cutoff */
+#hero-section {
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+#hero-container {
+  /* Ensure content is always visible by using max-height instead of fixed height */
+  max-height: calc(100vh - 64px); /* Account for navigation */
+}
+
+/* Responsive adjustments to prevent button cutoff on smaller screens */
+@media (max-height: 700px) {
+  #hero-container {
+    padding-bottom: 60px !important;
+    min-height: 600px !important;
+  }
+}
+
+@media (max-height: 600px) {
+  #hero-container {
+    padding-bottom: 40px !important;
+    min-height: 500px !important;
+  }
+}
+
+@media (max-height: 500px) {
+  #hero-container {
+    padding-bottom: 20px !important;
+    min-height: 400px !important;
+  }
+}
+
+/* Video intersection observer performance improvements */
+#video-section {
+  contain: layout style paint;
+}
+
+/* Smooth video transitions */
+#video-wrapper {
+  transition: opacity 0.3s ease-in-out;
 }

@@ -234,8 +234,8 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 }
 
 export const MISSION_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x7F44DcfD7c4b15696080c8A5A5F8171BB4eA47c9',
-  sepolia: '0xa908f5d4b158Dc927f99934787501eA31026f7CC',
+  arbitrum: '0xD4a9F99120BF01aaB2154993827fFC7836Eb8480',
+  sepolia: '0xDDD7122193b1d79D95f4E321F2de22467C6cCDCf',
 }
 
 export const MISSION_TABLE_NAMES: Index = {
@@ -244,20 +244,20 @@ export const MISSION_TABLE_NAMES: Index = {
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
-  arbitrum: '0x94655918322DdaB02d93b01C2e8a7817B93965bC',
-  sepolia: '0xeE63fe6c7532394a48daA73f78F1a30D331ab44e',
+  arbitrum: '0xeC737C2527f9b1ADBf68a38241d56e34e239F821',
+  sepolia: '0x61377F01c904E32A4d3755EB230605673460c7F6',
 }
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0xb291844f213047eb9e1621ae555b1eae6700d553',
   sepolia: '0xb291844F213047Eb9e1621AE555B1Eae6700d553',
 }
 export const JBV4_TOKENS_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0xa59e9f424901fb9dbd8913a9a32a081f9425bf36',
   sepolia: '0xA59e9F424901fB9DBD8913a9A32A081F9425bf36',
 }
 export const JBV4_DIRECTORY_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0x0bc9f153dee4d3d474ce0903775b9b2aaae9aa41',
   sepolia: '0x0bC9F153DEe4d3D474ce0903775b9b2AAae9AA41',
 }
 export const JB_NATIVE_TOKEN_ADDRESS =

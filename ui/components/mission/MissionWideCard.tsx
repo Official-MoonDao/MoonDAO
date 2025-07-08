@@ -77,14 +77,19 @@ export default function MissionWideCard({
 
   useEffect(() => {
     async function getTeamNFT() {
-      const teamNFT = await getNFT({
-        contract: teamContract,
-        tokenId: BigInt(mission?.teamId),
-      })
-      setTeamNFT(teamNFT)
+      try {
+        const teamNFT = await getNFT({
+          contract: teamContract,
+          tokenId: BigInt(mission?.teamId),
+        })
+        setTeamNFT(teamNFT)
+      } catch (error) {
+        console.error('Error fetching team NFT:', error)
+        setTeamNFT(null)
+      }
     }
 
-    if (teamContract && mission?.teamId !== undefined) getTeamNFT()
+    if (teamContract && mission?.teamId !== undefined && mission?.teamId !== null) getTeamNFT()
   }, [teamContract, mission?.teamId])
 
   return (
@@ -222,29 +227,12 @@ export default function MissionWideCard({
           </div>
         }
         paragraph={
-          <>
-            {youtubeVideo && mission?.metadata?.youtubeLink && (
-              <div className="my-4 w-full h-full">
-                <iframe
-                  src={mission?.metadata?.youtubeLink?.replace(
-                    'watch?v=',
-                    'embed/'
-                  )}
-                  width="100%"
-                  height="500"
-                  allowFullScreen
-                  allow="autoplay; fullscreen"
-                  className="rounded-2xl"
-                />
-              </div>
-            )}
-            <div
-              className="prose prose-invert max-w-none"
-              dangerouslySetInnerHTML={{
-                __html: mission?.metadata?.description || '',
-              }}
-            />
-          </>
+          <div
+            className="prose prose-invert max-w-none"
+            dangerouslySetInnerHTML={{
+              __html: mission?.metadata?.description || '',
+            }}
+          />
         }
         image={
           missionImage
