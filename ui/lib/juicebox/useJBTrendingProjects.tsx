@@ -17,7 +17,7 @@ export default function useJBTrendingProjects() {
       })
 
       const data = await res.json()
-      setTrendingProjects(data.data)
+      setTrendingProjects(data.projects?.items || [])
       setIsLoading(false)
     }
     getTrendingProjects()

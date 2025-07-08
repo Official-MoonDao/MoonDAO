@@ -151,7 +151,7 @@ export default function useJBProjectData({
           }
         )
         const data = await res.json()
-        const projectSubgraphData = data.projects?.[0]
+        const projectSubgraphData = data.projects?.items?.[0] // Updated to access .items[0]
         setSubgraphData(projectSubgraphData)
       } catch (error) {
         console.error(error)

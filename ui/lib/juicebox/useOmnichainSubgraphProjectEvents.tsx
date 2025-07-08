@@ -53,9 +53,10 @@ const useOmnichainSubgraphProjectEvents = ({
       const res = await fetch(`/api/juicebox/query?query=${query}`)
       const data = await res.json()
 
-      const mightHaveNextPage = data.projectEvents.length === PAGE_SIZE
+      const projectEvents = data.projectEvents?.items || []
+      const mightHaveNextPage = projectEvents.length === PAGE_SIZE
       return {
-        data,
+        data: { ...data, projectEvents }, // Keep the same structure but use items
         nextCursor: mightHaveNextPage ? pageParam + PAGE_SIZE : undefined,
       }
     },
