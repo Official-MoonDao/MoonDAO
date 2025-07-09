@@ -239,8 +239,8 @@ export const MISSION_TABLE_ADDRESSES: Index = {
 }
 
 export const MISSION_TABLE_NAMES: Index = {
-  arbitrum: 'MISSIONTABLE_42161_142',
-  sepolia: 'MISSIONTABLE_11155111_1949',
+  arbitrum: 'MISSIONTABLE_42161_143',
+  sepolia: 'MISSIONTABLE_11155111_1950',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
