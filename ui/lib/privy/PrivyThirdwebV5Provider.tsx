@@ -85,7 +85,7 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
     }
 
     handleAuth()
-  }, [ready, authenticated, user, getAccessToken, isSigningIn])
+  }, [ready, authenticated, user, getAccessToken])
 
   useEffect(() => {
     if (ready && !authenticated) {
