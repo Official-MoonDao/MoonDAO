@@ -61,218 +61,277 @@ const MissionProfileHeader = React.memo(
     const deadlinePassed = deadline ? Date.now() > deadline : false
 
     return (
-      <div className="w-full bg-gradient-to-br from-dark-cool via-darkest-cool to-dark-cool relative overflow-hidden">
-        {/* Background decorative elements */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.1),transparent_50%)] pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(99,102,241,0.05),transparent_50%)] pointer-events-none" />
-        
-        <div className="relative z-10 w-full px-8 sm:px-12 lg:px-16 py-6 lg:py-8">
-          <div className="flex flex-col lg:flex-row gap-x-8 items-center max-w-7xl mx-auto ml-8 lg:ml-16">
-            
-            {/* Left Column - Mission Image */}
-            <div className="flex justify-center lg:justify-start">
-              <div className="relative group">
+      <div id="citizenheader-container" className="w-[100vw]">
+        <div className="w-full">
+          <div id="frame-content-container" className="w-full">
+            <div
+              id="frame-content"
+              className="w-full sm:px-[5vw] flex flex-col lg:flex-row items-start xl:px-0 xl:w-[1200px]"
+            >
+              <div
+                id="profile-description-section"
+                className="flex w-full flex-col lg:flex-row items-start lg:items-center"
+              >
                 {mission?.metadata?.logoUri ? (
-                  <div className="relative">
-                    {/* Main mission image with enhanced styling */}
-                    <div className="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-[320px] lg:h-[320px]">
-                      <div className="absolute inset-0 bg-gradient-to-br from-purple-400/15 to-blue-400/15 rounded-2xl blur-xl group-hover:blur-lg transition-all duration-500" />
+                  <div className="pr-0 md:pr-[2vw] pb-[5vw] md:pb-[2vw]">
+                    <div
+                      id="mission-image-container"
+                      className="pl-0 relative w-full h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
+                    >
                       <IPFSRenderer
                         src={mission?.metadata?.logoUri}
-                        className="relative rounded-2xl shadow-xl border border-white/10 group-hover:shadow-purple-500/20 transition-all duration-500 w-full h-full object-cover"
-                        height={320}
-                        width={320}
+                        className="sm:rounded-full rounded-tr-none sm:rounded-tr-full mt-[-3vw] sm:mt-0 w-[100vw] sm:w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
+                        height={576}
+                        width={576}
                         alt="Mission Image"
                       />
-                      
-                      {/* Floating team NFT badge */}
                       {teamNFT?.metadata?.image && (
-                        <div className="absolute -bottom-3 -right-3 lg:-bottom-4 lg:-right-4">
-                          <div className="relative group/team">
-                            <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-md opacity-60 group-hover/team:opacity-80 transition-opacity duration-300" />
-                            <IPFSRenderer
-                              src={teamNFT?.metadata?.image}
-                              className="relative w-16 h-16 lg:w-20 lg:h-20 rounded-full border-3 border-white/20 shadow-lg"
-                              height={80}
-                              width={80}
-                              alt="Team Image"
-                            />
-                          </div>
+                        <div
+                          id="team-nft-container"
+                          className="absolute bottom-0 lg:right-0 mb-[-5vw] md:mb-[-2vw] mr-[-5vw] md:mr-[-2vw]"
+                        >
+                          <IPFSRenderer
+                            src={teamNFT?.metadata?.image}
+                            className="top-[2vw] rounded-full ml-[5vw] sm:ml-0"
+                            height={150}
+                            width={150}
+                            alt="Team Image"
+                          />
                         </div>
                       )}
                     </div>
                   </div>
                 ) : (
-                  <div className="w-64 h-64 sm:w-80 sm:h-80 lg:w-[320px] lg:h-[320px] bg-gradient-to-br from-slate-700 to-slate-600 rounded-2xl border border-white/10 flex items-center justify-center">
-                    <div className="text-center p-6">
-                      <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                        <Image src="/assets/icon-star-blue.svg" alt="Mission" width={24} height={24} />
-                      </div>
-                      <p className="text-gray-400">Mission Image</p>
-                    </div>
-                  </div>
+                  <></>
                 )}
-              </div>
-            </div>
-
-            {/* Right Column - Mission Info */}
-            <div className="flex flex-col justify-center space-y-3 lg:space-y-4 flex-grow">
-              
-              {/* Mission Title & Tagline */}
-              <div className="space-y-2">
-                {mission?.metadata?.name && (
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-GoodTimes bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent leading-tight">
-                    {mission.metadata.name}
-                  </h1>
-                )}
-                
-                {mission?.metadata?.tagline && (
-                  <p className="text-lg sm:text-xl text-gray-300 leading-relaxed">
-                    {mission.metadata.tagline}
-                  </p>
-                )}
-              </div>
-
-              {/* Team Attribution */}
-              {ruleset && teamNFT?.metadata?.name && (
-                <div className="flex flex-wrap items-center gap-2 text-gray-400 text-sm">
-                  <span>Created on {new Date(ruleset?.[0]?.start * 1000).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })} by</span>
-                  <Link
-                    href={`/team/${generatePrettyLink(teamNFT?.metadata?.name)}`}
-                    className="font-GoodTimes text-white hover:text-purple-300 underline transition-colors duration-200"
+                <div className="flex items-start justify-start w-full sm:w-auto">
+                  <div
+                    id="mission-name"
+                    className="flex px-[5vw] sm:px-0 w-full flex-col justify-center lg:ml-5 max-w-[650px]"
                   >
-                    {teamNFT?.metadata?.name}
-                  </Link>
-                </div>
-              )}
-
-              {/* Enhanced Funding Stats Card */}
-              <div className="bg-gradient-to-br from-dark-cool to-darkest-cool backdrop-blur-lg rounded-xl p-4 lg:p-5 border border-white/10 shadow-xl w-full max-w-2xl">
-                
-                {/* Raised Amount Badge */}
-                <div className="mb-3">
-                  <div className="inline-flex items-center bg-gradient-to-r from-blue-500 to-purple-600 text-white font-GoodTimes py-2 px-4 rounded-full shadow-lg">
-                    <Image
-                      src="/assets/icon-raised-tokens.svg"
-                      alt="Raised"
-                      width={20}
-                      height={20}
-                      className="mr-2"
-                    />
-                    <span className="text-base lg:text-lg mr-2">
-                      {truncateTokenValue(Number(totalFunding || 0) / 1e18, 'ETH')}
-                    </span>
-                    <span className="text-xs opacity-90">ETH RAISED</span>
-                  </div>
-                  <p className="text-gray-400 text-xs mt-1 ml-4">
-                    ≈ ${Math.round((Number(totalFunding || 0) / 1e18 || 0) * ethPrice).toLocaleString()} USD
-                  </p>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="mb-3">
-                  <MissionFundingProgressBar
-                    fundingGoal={fundingGoal}
-                    volume={Number(totalFunding || 0) / 1e18}
-                    compact={true}
-                  />
-                </div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-3 gap-2 lg:gap-3">
-                  {/* Goal */}
-                  <div className="bg-slate-700/40 rounded-lg p-2 lg:p-3 border border-white/5">
-                    <div className="flex items-center mb-1">
-                      <Image
-                        src="/assets/launchpad/target.svg"
-                        alt="Goal"
-                        width={14}
-                        height={14}
-                        className="mr-1"
-                      />
-                      <div className="flex items-center gap-1">
-                        <span className="text-gray-400 text-xs uppercase tracking-wide">Goal</span>
-                        <Tooltip
-                          text={`≈ $${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()} USD`}
-                          buttonClassName="scale-75"
+                    <div
+                      id="mission-name-container"
+                      className="mt-5 lg:mt-0 flex flex-col w-full items-start justify-start"
+                    >
+                      {mission ? (
+                        <h1 className="max-w-[450px] text-black opacity-[80%] lg:block font-GoodTimes header dark:text-white text-3xl">
+                          {mission?.metadata?.name}
+                        </h1>
+                      ) : (
+                        <></>
+                      )}
+                    </div>
+                    <div id="profile-container">
+                      {mission?.metadata?.tagline ? (
+                        <p
+                          id="profile-description-container"
+                          className="w-full pr-12 text-gray-300 pb-5"
                         >
-                          ?
-                        </Tooltip>
+                          {mission?.metadata?.tagline || ''}
+                        </p>
+                      ) : (
+                        <></>
+                      )}
+                    </div>
+
+                    {ruleset && teamNFT?.metadata?.name && (
+                      <div className="hidden sm:flex pb-2 flex-col sm:flex-row items-start ">
+                        <p className="opacity-60">
+                          {`Created on ${new Date(
+                            ruleset?.[0]?.start * 1000
+                          ).toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })} by: `}
+                        </p>
+                        <Link
+                          href={`/team/${generatePrettyLink(
+                            teamNFT?.metadata?.name
+                          )}`}
+                          className="font-GoodTimes text-white underline sm:pl-2"
+                        >
+                          {teamNFT?.metadata?.name}
+                        </Link>
+                      </div>
+                    )}
+
+                    <div className="max-w-[500px] w-full bg-gradient-to-r from-[#3343A5] to-[#18183F] p-4 rounded-xl">
+                      {/* Purple raised amount tag */}
+                      <div className="mb-4 flex flex-col sm:flex-row md:items-center md:justify-between">
+                        <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-start w-fit flex flex-col">
+                          <div className="flex items-center">
+                            <Image
+                              src="/assets/icon-raised-tokens.svg"
+                              alt="Raised"
+                              width={24}
+                              height={24}
+                              className="mr-2"
+                            />
+                            <span className="mr-2">
+                              {truncateTokenValue(
+                                Number(totalFunding || 0) / 1e18,
+                                'ETH'
+                              )}
+                            </span>
+                            <span className="text-sm md:text-base">
+                              ETH RAISED
+                            </span>
+                          </div>
+                          <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
+                            (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
+                          ).toLocaleString()} USD)`}</p>
+                        </div>
+
+                        {/* Contributors section - visible on md screens and above */}
+                        <div className="hidden sm:flex items-center ml-2 md:mt-0">
+                          <Image
+                            src="/assets/icon-backers.svg"
+                            alt="Backers"
+                            width={24}
+                            height={24}
+                          />
+                          <div className="mx-2">
+                            <p className="sm:hidden text-gray-400 text-sm">
+                              BACKERS
+                            </p>
+                            <p className="text-white font-GoodTimes">
+                              {backers?.length || 0}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="w-full">
+                        <MissionFundingProgressBar
+                          fundingGoal={fundingGoal}
+                          volume={Number(totalFunding || 0) / 1e18}
+                        />
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-between sm:justify-start">
+                        <div className="flex items-center">
+                          <Image
+                            src="/assets/launchpad/target.svg"
+                            alt="Goal"
+                            width={24}
+                            height={24}
+                          />
+                          <div className="ml-2">
+                            <div className="flex items-center gap-1">
+                              <p className="text-gray-400 text-sm">GOAL</p>
+                              <Tooltip
+                                text={`~ $${Math.round(
+                                  (fundingGoal / 1e18) * ethPrice
+                                ).toLocaleString()} USD`}
+                                buttonClassName="scale-75"
+                              >
+                                ?
+                              </Tooltip>
+                            </div>
+                            <p className="text-white font-GoodTimes">
+                              {+(fundingGoal / 1e18).toFixed(3)} ETH
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center">
+                          <Image
+                            src="/assets/launchpad/clock.svg"
+                            alt="Deadline"
+                            width={24}
+                            height={24}
+                          />
+                          <div className="ml-2">
+                            <p className="text-gray-400 text-sm">DEADLINE</p>
+                            <p className="text-white font-GoodTimes">
+                              {duration}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Contributors section - visible only on smaller screens */}
+                        <div className="flex sm:hidden items-center">
+                          <Image
+                            src="/assets/icon-backers.svg"
+                            alt="Backers"
+                            width={24}
+                            height={24}
+                          />
+                          <div className="ml-2">
+                            <p className="text-gray-400 text-sm">BACKERS</p>
+                            <p className="text-white font-GoodTimes">
+                              {backers?.length || 0}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <p className="text-white font-GoodTimes text-xs lg:text-sm">
-                      {+(fundingGoal / 1e18).toFixed(3)} ETH
-                    </p>
-                  </div>
 
-                  {/* Deadline */}
-                  <div className="bg-slate-700/40 rounded-lg p-2 lg:p-3 border border-white/5">
-                    <div className="flex items-center mb-1">
-                      <Image
-                        src="/assets/launchpad/clock.svg"
-                        alt="Deadline"
-                        width={14}
-                        height={14}
-                        className="mr-1"
-                      />
-                      <span className="text-gray-400 text-xs uppercase tracking-wide">Deadline</span>
-                    </div>
-                    <p className="text-white font-GoodTimes text-xs lg:text-sm">
-                      {duration}
-                    </p>
-                  </div>
-
-                  {/* Backers */}
-                  <div className="bg-slate-700/40 rounded-lg p-2 lg:p-3 border border-white/5">
-                    <div className="flex items-center mb-1">
-                      <Image
-                        src="/assets/icon-backers.svg"
-                        alt="Backers"
-                        width={14}
-                        height={14}
-                        className="mr-1"
-                      />
-                      <span className="text-gray-400 text-xs uppercase tracking-wide">Backers</span>
-                    </div>
-                    <p className="text-white font-GoodTimes text-xs lg:text-sm">
-                      {backers?.length || 0}
-                    </p>
+                    {ruleset && teamNFT?.metadata?.name && (
+                      <div className="flex sm:hidden pt-2 flex-col sm:flex-row items-start ">
+                        <p className="opacity-60">
+                          {`Created on ${new Date(
+                            ruleset?.[0]?.start * 1000
+                          ).toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })} by: `}
+                        </p>
+                        <Link
+                          href={`/team/${generatePrettyLink(
+                            teamNFT?.metadata?.name
+                          )}`}
+                          className="font-GoodTimes text-white underline"
+                        >
+                          {teamNFT?.metadata?.name}
+                        </Link>
+                      </div>
+                    )}
+                    {/* Send payouts and tokens Buttons - only shown to managers */}
+                    {account && deadlinePassed && isManager && (
+                      <div className="flex flex-col gap-4 mt-8 md:-mt-8 w-full sm:w-auto sm:absolute sm:right-2 sm:top-[250px]">
+                        <PrivyWeb3Button
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          className="gradient-2 rounded-full w-full noPadding leading-none flex-1 sm:w-[250px]"
+                          label={
+                            <span className="whitespace-nowrap">
+                              Send Tokens
+                            </span>
+                          }
+                          action={sendReservedTokens}
+                          isDisabled={!availableTokens}
+                        />
+                        <PrivyWeb3Button
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          className="gradient-2 rounded-full noPadding w-full leading-none flex-1 sm:w-[250px]"
+                          label={
+                            <span className="whitespace-nowrap">
+                              Send Payouts
+                            </span>
+                          }
+                          action={sendPayouts}
+                          isDisabled={!availablePayouts}
+                        />
+                        {stage === 2 && (
+                          <PrivyWeb3Button
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="gradient-2 rounded-full noPadding w-full leading-none flex-1 sm:w-[250px]"
+                            label={
+                              <span className="whitespace-nowrap">
+                                Deploy Liquidity
+                              </span>
+                            }
+                            action={deployLiquidityPool}
+                            isDisabled={!poolDeployerAddress}
+                          />
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-
-              {/* Manager Actions */}
-              {account && deadlinePassed && isManager && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <PrivyWeb3Button
-                    requiredChain={DEFAULT_CHAIN_V5}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs"
-                    label="Send Tokens"
-                    action={sendReservedTokens}
-                    isDisabled={!availableTokens}
-                  />
-                  <PrivyWeb3Button
-                    requiredChain={DEFAULT_CHAIN_V5}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs"
-                    label="Send Payouts"
-                    action={sendPayouts}
-                    isDisabled={!availablePayouts}
-                  />
-                  {stage === 2 && (
-                    <PrivyWeb3Button
-                      requiredChain={DEFAULT_CHAIN_V5}
-                      className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg sm:col-span-2 text-xs"
-                      label="Deploy Liquidity"
-                      action={deployLiquidityPool}
-                      isDisabled={!poolDeployerAddress}
-                    />
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>

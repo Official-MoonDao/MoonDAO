@@ -13,9 +13,9 @@ export default function MissionFundingProgressBar({
     volume && fundingGoal ? (volume / (fundingGoal / 1e18)) * 100 : 0
 
   return (
-    <div className={`relative ${compact ? 'mb-2' : 'mb-4'} max-w-[800px]`}>
+    <div className={`relative mb-4 max-w-[800px]`}>
       <ProgressBar
-        height={compact ? '24px' : '32px'}
+        height={compact ? '20px' : '25px'}
         progress={stageProgress}
         label={`${
           stageProgress < 1

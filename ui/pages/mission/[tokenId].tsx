@@ -398,24 +398,6 @@ export default function MissionProfile({
       projectId={mission?.projectId}
       selectedChain={selectedChain}
     >
-      {/* Full-width Mission Header outside Container */}
-      <MissionProfileHeader
-        mission={mission}
-        teamNFT={teamNFT}
-        ruleset={ruleset}
-        fundingGoal={fundingGoal}
-        backers={backers}
-        deadline={deadline}
-        stage={stage}
-        poolDeployerAddress={poolDeployerAddress}
-        isManager={isManager}
-        availableTokens={availableTokens}
-        availablePayouts={availablePayouts}
-        sendReservedTokens={sendReservedTokens}
-        sendPayouts={sendPayouts}
-        deployLiquidityPool={deployLiquidityPool}
-      />
-      
       <Container containerwidth={true}>
         <Head
           title={mission?.metadata?.name}
@@ -425,7 +407,24 @@ export default function MissionProfile({
         <ContentLayout
           header={''}
           headerSize="max(20px, 3vw)"
-          description={''}
+          description={
+            <MissionProfileHeader
+              mission={mission}
+              teamNFT={teamNFT}
+              ruleset={ruleset}
+              fundingGoal={fundingGoal}
+              backers={backers}
+              deadline={deadline}
+              stage={stage}
+              poolDeployerAddress={poolDeployerAddress}
+              isManager={isManager}
+              availableTokens={availableTokens}
+              availablePayouts={availablePayouts}
+              sendReservedTokens={sendReservedTokens}
+              sendPayouts={sendPayouts}
+              deployLiquidityPool={deployLiquidityPool}
+            />
+          }
           mainPadding
           mode="compact"
           popOverEffect={false}
