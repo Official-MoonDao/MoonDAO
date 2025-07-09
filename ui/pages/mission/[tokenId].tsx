@@ -60,7 +60,7 @@ import useRead from '@/lib/thirdweb/hooks/useRead'
 import { formatTimeUntilDeadline } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import Container from '@/components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayoutMission'
+import ContentLayout from '@/components/layout/ContentLayout'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
@@ -398,51 +398,36 @@ export default function MissionProfile({
       projectId={mission?.projectId}
       selectedChain={selectedChain}
     >
-      <Container containerwidth={true}>
-        <Head
-          title={mission?.metadata?.name}
-          description={mission?.metadata?.description}
-          image={mission?.metadata?.logoUri}
-        />
-        <ContentLayout
-          header={''}
-          headerSize="max(20px, 3vw)"
-          description={
-            <MissionProfileHeader
-              mission={mission}
-              teamNFT={teamNFT}
-              ruleset={ruleset}
-              fundingGoal={fundingGoal}
-              backers={backers}
-              deadline={deadline}
-              stage={stage}
-              poolDeployerAddress={poolDeployerAddress}
-              isManager={isManager}
-              availableTokens={availableTokens}
-              availablePayouts={availablePayouts}
-              sendReservedTokens={sendReservedTokens}
-              sendPayouts={sendPayouts}
-              deployLiquidityPool={deployLiquidityPool}
-            />
-          }
-          mainPadding
-          mode="compact"
-          popOverEffect={false}
-          isProfile
-          preFooter={
-            <ExpandedFooter
-              callToActionTitle="Join the Network"
-              callToActionBody="Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!"
-              callToActionImage="/assets/SAN-logo-dark.svg"
-              callToActionButtonText="Join the Network"
-              callToActionButtonLink="/join"
-              hasCallToAction={true}
-            />
-          }
-        >
+      <Head
+        title={mission?.metadata?.name}
+        description={mission?.metadata?.description}
+        image={mission?.metadata?.logoUri}
+      />
+
+      {/* Fullscreen Mission Header */}
+      <MissionProfileHeader
+        mission={mission}
+        teamNFT={teamNFT}
+        ruleset={ruleset}
+        fundingGoal={fundingGoal}
+        backers={backers}
+        deadline={deadline}
+        stage={stage}
+        poolDeployerAddress={poolDeployerAddress}
+        isManager={isManager}
+        availableTokens={availableTokens}
+        availablePayouts={availablePayouts}
+        sendReservedTokens={sendReservedTokens}
+        sendPayouts={sendPayouts}
+        deployLiquidityPool={deployLiquidityPool}
+      />
+
+      {/* Page content */}
+      <div className="w-full flex justify-center">
+        <div className="w-full max-w-[1200px]">
           <div
             id="page-container"
-            className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
+            className="animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
             {/* Pay & Redeem Section */}
             <div className="flex z-20 xl:hidden w-full px-[5vw]">
@@ -480,25 +465,45 @@ export default function MissionProfile({
               </div>
             </div>
             {/* Project Overview */}
-            <div className="px-[5vw] w-full flex items-center justify-center">
-              <div className="z-50 w-[100%] md:pb-[2vw] md:pr-0 overflow-hidden xl:px-[2vw] max-w-[1200px] xl:min-w-[1200px] xl:bg-gradient-to-r from-[#020617] to-[#090d21] to-90% rounded-[2vw]">
-                <MissionInfo
-                  selectedChain={selectedChain}
-                  mission={mission}
-                  stage={stage}
-                  teamNFT={teamNFT}
-                  ruleset={ruleset}
-                  jbDirectoryContract={jbDirectoryContract}
-                  jbTokensContract={jbTokensContract}
-                  jbControllerContract={jbControllerContract}
-                  points={points}
-                  isLoadingPoints={isLoadingPoints}
-                  subgraphData={subgraphData}
-                  fundingGoal={fundingGoal}
-                  token={token}
-                  userMissionTokenBalance={userMissionTokenBalance}
-                  primaryTerminalAddress={primaryTerminalAddress}
-                />
+            <div className="w-full px-[5vw] py-[5vw]">
+              <div className="w-full bg-gradient-to-br from-[#1e293b]/90 via-[#334155]/70 to-[#1e293b]/90 backdrop-blur-2xl border border-slate-500/20 rounded-[3vw] p-[4vw] shadow-2xl shadow-black/60 relative overflow-hidden">
+                {/* Subtle animated background pattern */}
+                <div className="absolute inset-0 bg-[url('/assets/grid-pattern.svg')] opacity-5 animate-pulse"></div>
+
+                <div className="relative z-10">
+                  <div className="mb-[3vw] flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
+                      <Image
+                        src="/assets/icon-star-blue.svg"
+                        alt="Mission icon"
+                        width={24}
+                        height={24}
+                        className="filter brightness-200 drop-shadow-lg"
+                      />
+                    </div>
+                    <h2 className="text-4xl lg:text-5xl font-GoodTimes bg-gradient-to-r from-slate-100 via-blue-200 to-indigo-300 bg-clip-text text-transparent drop-shadow-sm">
+                      Project Overview
+                    </h2>
+                  </div>
+
+                  <MissionInfo
+                    selectedChain={selectedChain}
+                    mission={mission}
+                    stage={stage}
+                    teamNFT={teamNFT}
+                    ruleset={ruleset}
+                    jbDirectoryContract={jbDirectoryContract}
+                    jbTokensContract={jbTokensContract}
+                    jbControllerContract={jbControllerContract}
+                    points={points}
+                    isLoadingPoints={isLoadingPoints}
+                    subgraphData={subgraphData}
+                    fundingGoal={fundingGoal}
+                    token={token}
+                    userMissionTokenBalance={userMissionTokenBalance}
+                    primaryTerminalAddress={primaryTerminalAddress}
+                  />
+                </div>
               </div>
             </div>
             <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] bg-gradient-to-b from-dark-cool to-darkest-cool flex justify-center">
@@ -527,8 +532,16 @@ export default function MissionProfile({
               </div>
             </div>
           </div>
-        </ContentLayout>
-      </Container>
+        </div>
+      </div>
+      <ExpandedFooter
+        callToActionTitle="Join the Network"
+        callToActionBody="Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!"
+        callToActionImage="/assets/SAN-logo-dark.svg"
+        callToActionButtonText="Join the Network"
+        callToActionButtonLink="/join"
+        hasCallToAction={true}
+      />
     </JuiceProviders>
   )
 }

@@ -61,281 +61,198 @@ const MissionProfileHeader = React.memo(
     const deadlinePassed = deadline ? Date.now() > deadline : false
 
     return (
-      <div id="citizenheader-container" className="w-[100vw]">
-        <div className="w-full">
-          <div id="frame-content-container" className="w-full">
-            <div
-              id="frame-content"
-              className="w-full sm:px-[5vw] flex flex-col lg:flex-row items-start xl:px-0 xl:w-[1200px]"
-            >
-              <div
-                id="profile-description-section"
-                className="flex w-full flex-col lg:flex-row items-start lg:items-center"
-              >
-                {mission?.metadata?.logoUri ? (
-                  <div className="pr-0 md:pr-[2vw] pb-[5vw] md:pb-[2vw]">
-                    <div
-                      id="mission-image-container"
-                      className="pl-0 relative w-full h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
-                    >
-                      <IPFSRenderer
-                        src={mission?.metadata?.logoUri}
-                        className="sm:rounded-full rounded-tr-none sm:rounded-tr-full mt-[-3vw] sm:mt-0 w-[100vw] sm:w-full h-full sm:max-w-[350px] sm:max-h-[350px]"
-                        height={576}
-                        width={576}
-                        alt="Mission Image"
-                      />
-                      {teamNFT?.metadata?.image && (
-                        <div
-                          id="team-nft-container"
-                          className="absolute bottom-0 lg:right-0 mb-[-5vw] md:mb-[-2vw] mr-[-5vw] md:mr-[-2vw]"
-                        >
-                          <IPFSRenderer
-                            src={teamNFT?.metadata?.image}
-                            className="top-[2vw] rounded-full ml-[5vw] sm:ml-0"
-                            height={150}
-                            width={150}
-                            alt="Team Image"
-                          />
-                        </div>
-                      )}
-                    </div>
+
+<section className="relative min-h-screen overflow-hidden">
+        {/* Background image */}
+        <div className="absolute inset-0">
+          <Image
+            src="/assets/launchpad/launchpad-featured-mission.png"
+            alt="Featured Mission Background"
+            fill
+            className="object-cover object-center"
+            priority
+            quality={100}
+          />
+        </div>
+        
+        {/* Background gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#010618]/80 via-[#1B1C4B]/60 to-[#010618]/80"></div>
+        
+        {/* Text readability overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/30"></div>
+        
+        {/* Mission Content - Direct Display */}
+        <div className="relative z-10 w-full mx-auto px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20 py-16 md:py-24 lg:py-32">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 lg:gap-16 xl:gap-20 items-center">
+            {/* Left Column - Mission Image */}
+            <div className="flex justify-center lg:justify-start order-1 lg:order-1 px-4 md:px-0">
+              <div className="relative w-full max-w-md lg:max-w-lg xl:max-w-xl">
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl">
+                  {mission?.metadata?.logoUri && (
+                    <IPFSRenderer
+                      src={mission?.metadata?.logoUri}
+                      className="w-full h-auto object-cover"
+                      width={500}
+                      height={500}
+                      alt="Mission Image"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                </div>
+                
+                {/* Team Image */}
+                {teamNFT?.metadata?.image && (
+                  <div className="absolute -bottom-4 -right-4 bg-white/10 backdrop-blur-sm rounded-full p-2 shadow-lg border border-white/20">
+                    <IPFSRenderer
+                      src={teamNFT?.metadata?.image}
+                      className="w-12 h-12 rounded-full object-cover"
+                      width={48}
+                      height={48}
+                      alt="Team Image"
+                    />
                   </div>
-                ) : (
-                  <></>
                 )}
-                <div className="flex items-start justify-start w-full sm:w-auto">
-                  <div
-                    id="mission-name"
-                    className="flex px-[5vw] sm:px-0 w-full flex-col justify-center lg:ml-5 max-w-[650px]"
-                  >
-                    <div
-                      id="mission-name-container"
-                      className="mt-5 lg:mt-0 flex flex-col w-full items-start justify-start"
+              </div>
+            </div>
+
+            {/* Right Column - Mission Info */}
+            <div className="space-y-6 lg:space-y-8 order-2 lg:order-2">
+              {/* Mission Title & Tagline */}
+              <div className="space-y-2 md:space-y-3 lg:space-y-4">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-GoodTimes text-white leading-tight">
+                  {mission?.metadata?.name || 'Welcome to the MoonDAO Launchpad'}
+                </h1>
+                {(mission?.metadata?.tagline || mission?.metadata?.description) && (
+                  <p className="text-sm md:text-lg lg:text-xl xl:text-2xl text-white/80 font-light">
+                    {mission?.metadata?.tagline || mission?.metadata?.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Team Information */}
+              {teamNFT?.metadata?.name && (
+                <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-white/5 backdrop-blur-sm rounded-xl md:rounded-2xl border border-white/10">
+                  <div className="relative">
+                    {teamNFT?.metadata?.image && (
+                      <IPFSRenderer
+                        src={teamNFT?.metadata?.image}
+                        className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover border-2 border-white/20"
+                        width={64}
+                        height={64}
+                        alt="Team Image"
+                      />
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-white/60 text-xs md:text-sm font-medium">
+                      {ruleset ? `Created ${new Date(ruleset?.[0]?.start * 1000).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })} by` : 'Launched by'}
+                    </span>
+                    <Link
+                      href={`/team/${generatePrettyLink(teamNFT?.metadata?.name)}`}
+                      className="text-white font-semibold text-sm md:text-lg hover:text-[#6C407D] transition-colors duration-200"
                     >
-                      {mission ? (
-                        <h1 className="max-w-[450px] text-black opacity-[80%] lg:block font-GoodTimes header dark:text-white text-3xl">
-                          {mission?.metadata?.name}
-                        </h1>
-                      ) : (
-                        <></>
-                      )}
-                    </div>
-                    <div id="profile-container">
-                      {mission?.metadata?.tagline ? (
-                        <p
-                          id="profile-description-container"
-                          className="w-full pr-12 text-gray-300 pb-5"
-                        >
-                          {mission?.metadata?.tagline || ''}
-                        </p>
-                      ) : (
-                        <></>
-                      )}
-                    </div>
+                      {teamNFT?.metadata?.name || 'Unknown Team'}
+                    </Link>
+                  </div>
+                </div>
+              )}
 
-                    {ruleset && teamNFT?.metadata?.name && (
-                      <div className="hidden sm:flex pb-2 flex-col sm:flex-row items-start ">
-                        <p className="opacity-60">
-                          {`Created on ${new Date(
-                            ruleset?.[0]?.start * 1000
-                          ).toLocaleDateString('en-US', {
-                            month: 'long',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })} by: `}
-                        </p>
-                        <Link
-                          href={`/team/${generatePrettyLink(
-                            teamNFT?.metadata?.name
-                          )}`}
-                          className="font-GoodTimes text-white underline sm:pl-2"
-                        >
-                          {teamNFT?.metadata?.name}
-                        </Link>
-                      </div>
-                    )}
+              {/* Mission Stats Grid */}
+              <div className="grid grid-cols-3 gap-1 md:gap-2 lg:gap-4 xl:gap-6">
+                {/* Amount Raised */}
+                <div className="bg-gradient-to-br from-[#6C407D]/20 to-[#5F4BA2]/20 backdrop-blur-sm rounded-xl md:rounded-2xl p-2 md:p-4 lg:p-6 border border-white/20 flex flex-col justify-center">
+                  <div className="flex items-center gap-1 md:gap-3 mb-1 md:mb-3">
+                    <span className="text-white/70 text-xs md:text-sm font-medium">Raised</span>
+                  </div>
+                  <p className="text-sm md:text-lg lg:text-2xl font-bold text-white">
+                    {truncateTokenValue(Number(totalFunding || 0) / 1e18, 'ETH')} ETH
+                  </p>
+                </div>
 
-                    <div className="max-w-[500px] w-full bg-gradient-to-r from-[#3343A5] to-[#18183F] p-4 rounded-xl">
-                      {/* Purple raised amount tag */}
-                      <div className="mb-4 flex flex-col sm:flex-row md:items-center md:justify-between">
-                        <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-start w-fit flex flex-col">
-                          <div className="flex items-center">
-                            <Image
-                              src="/assets/icon-raised-tokens.svg"
-                              alt="Raised"
-                              width={24}
-                              height={24}
-                              className="mr-2"
-                            />
-                            <span className="mr-2">
-                              {truncateTokenValue(
-                                Number(totalFunding || 0) / 1e18,
-                                'ETH'
-                              )}
-                            </span>
-                            <span className="text-sm md:text-base">
-                              ETH RAISED
-                            </span>
-                          </div>
-                          <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
-                            (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
-                          ).toLocaleString()} USD)`}</p>
-                        </div>
+                {/* Funding Goal */}
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-2 md:p-4 lg:p-6 border border-white/20 flex flex-col justify-center">
+                  <div className="flex items-center gap-1 md:gap-3 mb-1 md:mb-3">
+                    <span className="text-white/70 text-xs md:text-sm font-medium">Goal</span>
+                  </div>
+                  <p className="text-sm md:text-lg lg:text-2xl font-bold text-white">
+                    {fundingGoal
+                      ? truncateTokenValue(fundingGoal / 1e18, 'ETH')
+                      : '0'} ETH
+                  </p>
+                </div>
 
-                        {/* Contributors section - visible on md screens and above */}
-                        <div className="hidden sm:flex items-center ml-2 md:mt-0">
-                          <Image
-                            src="/assets/icon-backers.svg"
-                            alt="Backers"
-                            width={24}
-                            height={24}
-                          />
-                          <div className="mx-2">
-                            <p className="sm:hidden text-gray-400 text-sm">
-                              BACKERS
-                            </p>
-                            <p className="text-white font-GoodTimes">
-                              {backers?.length || 0}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                {/* Backers */}
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-2 md:p-4 lg:p-6 border border-white/20 flex flex-col justify-center">
+                  <div className="flex items-center gap-1 md:gap-3 mb-1 md:mb-3">
+                    <span className="text-white/70 text-xs md:text-sm font-medium">Backers</span>
+                  </div>
+                  <p className="text-sm md:text-lg lg:text-2xl font-bold text-white">
+                    {backers?.length || 0}
+                  </p>
+                </div>
+              </div>
 
-                      <div className="w-full">
-                        <MissionFundingProgressBar
-                          fundingGoal={fundingGoal}
-                          volume={Number(totalFunding || 0) / 1e18}
-                        />
-                      </div>
+              {/* Progress Bar */}
+              <div className="space-y-3 md:space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-white/80 text-sm md:text-base font-medium">Funding Progress</span>
+                  <span className="text-white font-bold text-sm md:text-base">
+                    {fundingGoal && fundingGoal > 0
+                      ? Math.round((Number(totalFunding || 0) / fundingGoal) * 100)
+                      : 0}%
+                  </span>
+                </div>
+                <div className="w-full bg-white/20 rounded-full h-2 md:h-3 overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] h-full rounded-full transition-all duration-1000"
+                    style={{
+                      width: `${fundingGoal && fundingGoal > 0
+                        ? Math.min((Number(totalFunding || 0) / fundingGoal) * 100, 100)
+                        : 0}%`
+                    }}
+                  />
+                </div>
+              </div>
 
-                      <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-between sm:justify-start">
-                        <div className="flex items-center">
-                          <Image
-                            src="/assets/launchpad/target.svg"
-                            alt="Goal"
-                            width={24}
-                            height={24}
-                          />
-                          <div className="ml-2">
-                            <div className="flex items-center gap-1">
-                              <p className="text-gray-400 text-sm">GOAL</p>
-                              <Tooltip
-                                text={`~ $${Math.round(
-                                  (fundingGoal / 1e18) * ethPrice
-                                ).toLocaleString()} USD`}
-                                buttonClassName="scale-75"
-                              >
-                                ?
-                              </Tooltip>
-                            </div>
-                            <p className="text-white font-GoodTimes">
-                              {+(fundingGoal / 1e18).toFixed(3)} ETH
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center">
-                          <Image
-                            src="/assets/launchpad/clock.svg"
-                            alt="Deadline"
-                            width={24}
-                            height={24}
-                          />
-                          <div className="ml-2">
-                            <p className="text-gray-400 text-sm">DEADLINE</p>
-                            <p className="text-white font-GoodTimes">
-                              {duration}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Contributors section - visible only on smaller screens */}
-                        <div className="flex sm:hidden items-center">
-                          <Image
-                            src="/assets/icon-backers.svg"
-                            alt="Backers"
-                            width={24}
-                            height={24}
-                          />
-                          <div className="ml-2">
-                            <p className="text-gray-400 text-sm">BACKERS</p>
-                            <p className="text-white font-GoodTimes">
-                              {backers?.length || 0}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {ruleset && teamNFT?.metadata?.name && (
-                      <div className="flex sm:hidden pt-2 flex-col sm:flex-row items-start ">
-                        <p className="opacity-60">
-                          {`Created on ${new Date(
-                            ruleset?.[0]?.start * 1000
-                          ).toLocaleDateString('en-US', {
-                            month: 'long',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })} by: `}
-                        </p>
-                        <Link
-                          href={`/team/${generatePrettyLink(
-                            teamNFT?.metadata?.name
-                          )}`}
-                          className="font-GoodTimes text-white underline"
-                        >
-                          {teamNFT?.metadata?.name}
-                        </Link>
-                      </div>
-                    )}
-                    {/* Send payouts and tokens Buttons - only shown to managers */}
-                    {account && deadlinePassed && isManager && (
-                      <div className="flex flex-col gap-4 mt-8 md:-mt-8 w-full sm:w-auto sm:absolute sm:right-2 sm:top-[250px]">
-                        <PrivyWeb3Button
-                          requiredChain={DEFAULT_CHAIN_V5}
-                          className="gradient-2 rounded-full w-full noPadding leading-none flex-1 sm:w-[250px]"
-                          label={
-                            <span className="whitespace-nowrap">
-                              Send Tokens
-                            </span>
-                          }
-                          action={sendReservedTokens}
-                          isDisabled={!availableTokens}
-                        />
-                        <PrivyWeb3Button
-                          requiredChain={DEFAULT_CHAIN_V5}
-                          className="gradient-2 rounded-full noPadding w-full leading-none flex-1 sm:w-[250px]"
-                          label={
-                            <span className="whitespace-nowrap">
-                              Send Payouts
-                            </span>
-                          }
-                          action={sendPayouts}
-                          isDisabled={!availablePayouts}
-                        />
-                        {stage === 2 && (
-                          <PrivyWeb3Button
-                            requiredChain={DEFAULT_CHAIN_V5}
-                            className="gradient-2 rounded-full noPadding w-full leading-none flex-1 sm:w-[250px]"
-                            label={
-                              <span className="whitespace-nowrap">
-                                Deploy Liquidity
-                              </span>
-                            }
-                            action={deployLiquidityPool}
-                            isDisabled={!poolDeployerAddress}
-                          />
-                        )}
-                      </div>
+              {/* Manager Actions */}
+              {account && deadlinePassed && isManager && (
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 border border-white/10">
+                  <p className="text-white/70 text-sm font-medium mb-3">Manager Actions</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={sendReservedTokens}
+                      disabled={!availableTokens}
+                      className="px-4 py-2 text-sm bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white rounded-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 border border-white/20"
+                    >
+                      Send Tokens
+                    </button>
+                    <button
+                      onClick={sendPayouts}
+                      disabled={!availablePayouts}
+                      className="px-4 py-2 text-sm bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all duration-300 disabled:opacity-50 border border-white/20"
+                    >
+                      Send Payouts
+                    </button>
+                    {stage === 2 && (
+                      <button
+                        onClick={deployLiquidityPool}
+                        disabled={!poolDeployerAddress}
+                        className="px-4 py-2 text-sm bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all duration-300 disabled:opacity-50 border border-white/20"
+                      >
+                        Deploy Liquidity
+                      </button>
                     )}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
+      </section>
     )
   }
 )
