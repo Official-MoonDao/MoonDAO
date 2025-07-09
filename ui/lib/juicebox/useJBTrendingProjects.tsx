@@ -9,11 +9,12 @@ export default function useJBTrendingProjects() {
     async function getTrendingProjects() {
       setIsLoading(true)
       const query = trendingProjectsQuery(10)
-      const res = await fetch(`/api/juicebox/query?query=${query}`, {
+      const res = await fetch('/api/juicebox/query', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ query }),
       })
 
       const data = await res.json()

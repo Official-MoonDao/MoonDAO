@@ -3,8 +3,12 @@ import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
 
+const subgraphUrl = `https://${
+  process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' && 'testnet.'
+}bendystraw.xyz/${process.env.BENDYSTRAW_KEY}/graphql`
+
 const subgraphClient = createClient({
-  url: `https://bendystraw.xyz/${process.env.BENDYSTRAW_KEY}/graphql`,
+  url: subgraphUrl,
   exchanges: [fetchExchange, cacheExchange],
   fetchOptions: {
     headers: {
@@ -36,6 +40,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const subgraphRes = await subgraphClient.query(query, variables).toPromise()
 
     if (subgraphRes.error) {
+      console.error('GraphQL Error:', subgraphRes.error)
       return res.status(500).json({ error: subgraphRes.error.message })
     }
 

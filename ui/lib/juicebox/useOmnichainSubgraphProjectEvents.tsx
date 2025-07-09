@@ -6,14 +6,8 @@ export type EventType =
   | 'payEvent'
   | 'addToBalanceEvent'
   | 'mintTokensEvent'
-  | 'cashOutEvent'
-  | 'deployedERC20Event'
+  | 'deployErc20Event'
   | 'projectCreateEvent'
-  | 'distributePayoutsEvent'
-  | 'distributeReservedTokensEvent'
-  | 'distributeToReservedTokenSplitEvent'
-  | 'distributeToPayoutSplitEvent'
-  | 'useAllowanceEvent'
   | 'burnEvent'
 
 type ProjectEventFilter = 'all' | EventType | ''
@@ -39,25 +33,48 @@ const useOmnichainSubgraphProjectEvents = ({
     initialPageParam: 0,
     queryFn: async ({ pageParam = 0 }) => {
       if (!sucker && !projectId)
-        return { data: { projectEvents: [] }, nextCursor: undefined }
+        return {
+          data: { activityEvents: { items: [] } },
+          nextCursor: undefined,
+        }
 
-      const query = projectEventsQuery(
-        sucker?.projectId.toString() ?? projectId ?? '',
-        filter,
-        'timestamp',
-        'desc',
-        PAGE_SIZE,
-        pageParam * PAGE_SIZE
-      )
+      try {
+        const query = projectEventsQuery(
+          sucker?.projectId
+            ? Number(sucker.projectId.toString())
+            : projectId
+            ? Number(projectId)
+            : 0,
+          filter,
+          'timestamp',
+          'desc',
+          PAGE_SIZE
+        )
 
-      const res = await fetch(`/api/juicebox/query?query=${query}`)
-      const data = await res.json()
+        const res = await fetch('/api/juicebox/query', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query }),
+        })
 
-      const projectEvents = data.projectEvents?.items || []
-      const mightHaveNextPage = projectEvents.length === PAGE_SIZE
-      return {
-        data: { ...data, projectEvents }, // Keep the same structure but use items
-        nextCursor: mightHaveNextPage ? pageParam + PAGE_SIZE : undefined,
+        const data = await res.json()
+
+        const activityEvents = data.activityEvents?.items || []
+        // Note: Pagination with skip is not supported in the new schema
+        // For now, we only load the first page
+        const mightHaveNextPage = false // activityEvents.length === PAGE_SIZE && pageParam === 0
+        return {
+          data: { activityEvents: { items: activityEvents } },
+          nextCursor: mightHaveNextPage ? pageParam + 1 : undefined,
+        }
+      } catch (error) {
+        console.error('Error fetching project events:', error)
+        return {
+          data: { activityEvents: { items: [] } },
+          nextCursor: undefined,
+        }
       }
     },
     getNextPageParam: (lastPage) => {

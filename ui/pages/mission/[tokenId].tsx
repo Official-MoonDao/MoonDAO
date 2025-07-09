@@ -226,8 +226,9 @@ export default function MissionProfile({
 
   const { points, isLoading: isLoadingPoints } = useJBProjectTimeline(
     selectedChain,
-    mission?.projectId,
-    subgraphData?.createdAt
+    subgraphData?.createdAt,
+    subgraphData?.suckerGroupId,
+    mission?.projectId
   )
 
   const missionTokenContract = useContract({

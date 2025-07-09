@@ -1,7 +1,7 @@
 export function projectQuery(projectId: number) {
   return `
      query {
-          projects(where: {projectId: ${projectId}}, limit: 1) {
+          projects(where: {projectId: ${+projectId}}, limit: 1) {
             items {
               id
               projectId
@@ -13,25 +13,26 @@ export function projectQuery(projectId: number) {
               trendingPaymentsCount
               trendingVolume
               createdWithinTrendingWindow
+              suckerGroupId
             }
           }
         }
   `
 }
 
-export function projectTimelineQuery() {
+export function projectTimelineQuery(
+  chainId: number,
+  projectId: number,
+  startTimestamp: number,
+  endTimestamp: number
+) {
   return `
-    query ProjectTL(
-      $chainId: Int
-      $projectId: Int
-      $startTimestamp: Int
-      $endTimestamp: Int
-    ) {
+    query {
       projectMoments(where: {
-        chainId: $chainId,
-        projectId: $projectId,
-        timestamp_gte: $startTimestamp,
-        timestamp_lte: $endTimestamp
+        chainId: ${chainId},
+        projectId: ${+projectId},
+        timestamp_gte: ${startTimestamp},
+        timestamp_lte: ${endTimestamp}
       }) {
         items {
           balance
@@ -44,230 +45,97 @@ export function projectTimelineQuery() {
   `
 }
 
+export function suckerGroupMomentsQuery(
+  chainId: number,
+  suckerGroupId: string,
+  startTimestamp: number,
+  endTimestamp: number
+) {
+  return `
+    query {
+      suckerGroupMoments(where: {
+        suckerGroupId: "${suckerGroupId}",
+        timestamp_gte: ${startTimestamp},
+        timestamp_lte: ${endTimestamp}
+      }) {
+        items {
+          balance
+          volume
+          trendingScore
+          timestamp
+          suckerGroupId
+        }
+      }
+    }
+  `
+}
+
 export function projectEventsQuery(
-  projectId: string,
+  projectId: number,
   filter?: string,
   orderBy: string = 'timestamp',
   orderDirection: string = 'desc',
-  limit: number = 100, // Changed from 'first' to 'limit'
-  skip: number = 0,
-  block: string = ''
+  limit: number = 100
 ) {
   return `
-    fragment ProjectFields on Project {
-      projectId
-      metadataUri
-      handle
-      contributorsCount
-      createdAt
-      volume
-      trendingVolume
-      paymentsCount
-    }
 
     query {
-      projectEvents(
-        where: {projectId: ${projectId}${filter ? `, ${filter}_not: null` : ''}}
-        orderBy: ${orderBy}
-        orderDirection: ${orderDirection}
-        limit: ${limit}  // Changed from 'first' to 'limit'
-        skip: ${skip}
-        ${block ? `block: ${block}` : ''}
+      activityEvents(
+        where: {projectId: ${+projectId}${
+    filter ? `, ${filter}_not: null` : ''
+  }}
+        orderBy: "${orderBy}"
+        orderDirection: "${orderDirection}"
+        limit: ${limit}
       ) {
-        items {  // Added items wrapper
+        items {
           id
-          project {
-            ...ProjectFields
-          }
           payEvent {
             id
-            project {
-              ...ProjectFields
-            }
             projectId
             timestamp
             txHash
             from
-            caller
             amount
-            amountUSD
-            note
-            distributionFromProjectId
-            beneficiary
-            feeFromProject
-            beneficiaryTokenCount
           }
           addToBalanceEvent {
             id
-            project {
-              ...ProjectFields
-            }
             projectId
             timestamp
             txHash
             from
-            caller
             amount
-            amountUSD
-            note
           }
           mintTokensEvent {
             id
-            project {
-              ...ProjectFields
-            }
             projectId
             timestamp
             txHash
             from
-            caller
-            amount
             beneficiary
-            memo
           }
-          cashOutEvent {
+          deployErc20Event {
             id
-            project {
-              ...ProjectFields
-            }
             projectId
             timestamp
             txHash
             from
-            caller
-            metadata
-            holder
-            beneficiary
-            cashOutCount
-            reclaimAmount
-            reclaimAmountUSD
-          }
-          deployedERC20Event {
-            id
-            project {
-              ...ProjectFields
-            }
-            projectId
-            timestamp
-            txHash
-            from
-            caller
             symbol
-            address
           }
           projectCreateEvent {
             id
-            project {
-              ...ProjectFields
-            }
             projectId
             timestamp
             txHash
             from
-            caller
-          }
-          distributePayoutsEvent {
-            id
-            project {
-              ...ProjectFields
-            }
-            projectId
-            timestamp
-            txHash
-            from
-            caller
-            amount
-            amountUSD
-            amountPaidOut
-            amountPaidOutUSD
-            rulesetCycleNumber
-            rulesetId
-            fee
-            feeUSD
-          }
-          distributeReservedTokensEvent {
-            id
-            project {
-              ...ProjectFields
-            }
-            projectId
-            timestamp
-            txHash
-            from
-            caller
-            rulesetCycleNumber
-            tokenCount
-          }
-          distributeToReservedTokenSplitEvent {
-            id
-            project {
-              ...ProjectFields
-            }
-            projectId
-            timestamp
-            txHash
-            from
-            caller
-            tokenCount
-            preferAddToBalance
-            percent
-            splitProjectId
-            beneficiary
-            lockedUntil
-          }
-          distributeToPayoutSplitEvent {
-            id
-            project {
-              ...ProjectFields
-            }
-            projectId
-            timestamp
-            txHash
-            from
-            caller
-            amount
-            amountUSD
-            preferAddToBalance
-            percent
-            splitProjectId
-            beneficiary
-            lockedUntil
-          }
-          useAllowanceEvent {
-            id
-            project {
-              ...ProjectFields
-            }
-            projectId
-            timestamp
-            txHash
-            from
-            caller
-            rulesetId
-            rulesetCycleNumber
-            beneficiary
-            amount
-            amountUSD
-            distributedAmount
-            distributedAmountUSD
-            netDistributedamount
-            netDistributedamountUSD
-            memo
           }
           burnEvent {
             id
-            project {
-              ...ProjectFields
-            }
             projectId
             timestamp
             txHash
             from
-            caller
-            holder
             amount
-            stakedAmount
-            erc20Amount
           }
         }
       }
@@ -284,12 +152,12 @@ export function trendingProjectsQuery(
   return `
     query {
       projects(
-        limit: ${count}  // Changed from 'first' to 'limit'
+        limit: ${count}
         skip: ${skip}
-        orderBy: ${orderBy}
-        orderDirection: desc
+        orderBy: "${orderBy}"
+        orderDirection: "desc"
       ) {
-        items {  // Added items wrapper
+        items {
           id
           projectId
           handle
