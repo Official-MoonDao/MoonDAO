@@ -10,6 +10,7 @@ import {
   prepareContractCall,
   sendAndConfirmTransaction,
   readContract,
+  simulateTransaction,
   getContract,
 } from 'thirdweb'
 import {
@@ -53,133 +54,196 @@ export default function Fees() {
   const WEEK = 7 * 24 * 60 * 60
 
   const [isCheckedIn, setIsCheckedIn] = useState(false)
-  const [checkedInCount, setCheckedInCount] = useState<number | null>(null)
-  const [feesAvailable, setFeesAvailable] = useState<string | null>(null)
-  const [feeData, setFeeData] = useState<any[]>([])
-  const [estimatedReward, setEstimatedReward] = useState<string | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const { selectedWallet } = useContext(PrivyWalletContext)
 
-  useEffect(() => {
-    const fetchStatus = async () => {
-      if (!address) return
+  type FeeData = {
+    chain: string
+    slug: string
+    balance: BigNumber
+    count: number
+    checkedInOnChain: boolean
+    contract: any
+  }
 
-      try {
-        const results: any[] = []
-        for (const chain of chains) {
-          const slug = getChainSlug(chain)
-          const hookAddress = FEE_HOOK_ADDRESSES[slug]
-          if (!hookAddress) continue
-          const contract = getContract({
-            client,
-            address: hookAddress,
-            abi: FeeHook.abi as any,
-            chain,
-          })
+  function useFeeData(address?: string) {
+    const [data, setData] = useState<FeeData[]>([])
 
-          const start = await readContract({
-            contract,
-            method: 'weekStart' as string,
-            params: [],
-          })
+    useEffect(() => {
+      if (!address) {
+        setData([])
+        return
+      }
 
-          const last = await readContract({
-            contract,
-            method: 'lastCheckIn' as string,
-            params: [address],
-          })
+      let cancelled = false
+      ;(async () => {
+        const results = await Promise.all(
+          chains.map(async (chain) => {
+            const slug = getChainSlug(chain)
+            const hookAddr = FEE_HOOK_ADDRESSES[slug]
+            if (!hookAddr) return null
 
-          const count = await readContract({
-            contract,
-            method: 'getCheckedInCount' as string,
-            params: [],
-          })
-
-          const balance = await readContract({
-            contract,
-            method: 'balanceOf' as string,
-            params: [],
-          })
-
-          const checkedInOnChain = BigNumber.from(last).eq(
-            BigNumber.from(start)
-          )
-
-          results.push({
-            chain,
-            slug,
-            contract,
-            start,
-            last,
-            count,
-            balance,
-            checkedInOnChain,
-          })
-        }
-
-        setFeeData(results)
-
-        let totalFees = BigNumber.from(0)
-        let allChecked = true
-        let totalCount = 0
-        let totalVmooney = BigNumber.from(0)
-        let userVmooney = BigNumber.from(0)
-
-        for (const r of results) {
-          totalFees = totalFees.add(BigNumber.from(r.balance || 0))
-          totalCount += r.count ? Number(r.count) : 0
-          if (BigNumber.from(r.balance || 0).gt(0)) {
-            if (!BigNumber.from(r.last).eq(BigNumber.from(r.start))) {
-              allChecked = false
-            }
-          }
-
-          const vMooneyAddr = await readContract({
-            contract: r.contract,
-            method: 'vMooneyAddress' as string,
-            params: [],
-          })
-
-          for (let i = 0; i < Number(r.count || 0); i++) {
-            const addr = await readContract({
-              contract: r.contract,
-              method: 'checkedIn' as string,
-              params: [i],
+            const contract = getContract({
+              client,
+              address: hookAddr,
+              abi: FeeHook.abi,
+              chain,
             })
+            const [start, last, count, balance] = await Promise.all([
+              readContract({ contract, method: 'weekStart', params: [] }),
+              readContract({
+                contract,
+                method: 'lastCheckIn',
+                params: [address],
+              }),
+              readContract({
+                contract,
+                method: 'getCheckedInCount',
+                params: [],
+              }),
+              readContract({ contract, method: 'balanceOf', params: [] }),
+            ])
+
+            //const count = countBn.toNumber()
+            const checkedInOnChain = BigNumber.from(last).eq(
+              BigNumber.from(start)
+            )
+
+            return {
+              chain,
+              slug,
+              balance: BigNumber.from(balance),
+              count,
+              checkedInOnChain,
+              contract,
+            }
+          })
+        )
+
+        if (!cancelled) {
+          setData(results.filter((r): r is FeeData => !!r))
+        }
+      })()
+
+      return () => {
+        cancelled = true
+      }
+    }, [address])
+
+    return data
+  }
+
+  function useFeeSummary(feeData: FeeData[]) {
+    const [totalFees, setTotalFees] = useState<BigNumber>(0)
+    const [checkedInCount, setCheckedInCount] = useState(0)
+    const [allChecked, setAllChecked] = useState(false)
+
+    useEffect(() => {
+      let fees = 0
+      let count = 0
+      let checked = true
+
+      for (const { balance, count: c, checkedInOnChain } of feeData) {
+        fees += balance
+        count += Number(c)
+        if (balance.gt(0) && !checkedInOnChain) checked = false
+      }
+
+      setTotalFees(fees)
+      setCheckedInCount(count)
+      setAllChecked(checked)
+    }, [feeData])
+
+    return { totalFees, checkedInCount, allChecked }
+  }
+
+  function useEstimatedReward(
+    feeData: FeeData[],
+    totalFees: BigNumber,
+    userAddr?: string
+  ) {
+    const [reward, setReward] = useState('0')
+
+    useEffect(() => {
+      if (!userAddr || !totalFees) {
+        setReward('0')
+        return
+      }
+
+      let cancelled = false
+      ;(async () => {
+        let totalVM = 0
+        let userVM = 0
+
+        await Promise.all(
+          feeData.map(async ({ slug, chain, count }) => {
+            const hookAddr = FEE_HOOK_ADDRESSES[slug]!
+            const hookContract = getContract({
+              client,
+              address: hookAddr,
+              abi: FeeHook.abi,
+              chain,
+            })
+            const vMooneyAddr = (await readContract({
+              contract: hookContract,
+              method: 'vMooneyAddress',
+              params: [],
+            })) as string
+
             const tokenContract = getContract({
               client,
-              address: vMooneyAddr as string,
-              abi: ERC20 as any,
-              chain: r.chain,
+              address: vMooneyAddr,
+              abi: ERC20,
+              chain,
             })
-            const bal = await readContract({
-              contract: tokenContract,
-              method: 'balanceOf' as string,
-              params: [addr],
-            })
-            totalVmooney = totalVmooney.add(BigNumber.from(bal))
-            if (address && addr.toLowerCase() === address.toLowerCase()) {
-              userVmooney = userVmooney.add(BigNumber.from(bal))
+            // fetch all checked-in addresses balances in parallel
+            const balances = await Promise.all(
+              Array.from({ length: Number(count) }, (_, i) =>
+                readContract({
+                  contract: hookContract,
+                  method: 'checkedIn',
+                  params: [i],
+                }).then(async (addr) => {
+                  return {
+                    address: addr,
+                    balance: await readContract({
+                      contract: tokenContract,
+                      method: 'balanceOf',
+                      params: [addr],
+                    }),
+                  }
+                })
+              )
+            )
+
+            for (const b of balances) {
+              totalVM += Number(b.balance)
+              // @ts-ignore
+              if (b.address?.toLowerCase() === userAddr.toLowerCase()) {
+                userVM += Number(b.balance)
+              }
             }
-          }
-        }
+          })
+        )
 
-        setFeesAvailable(ethers.utils.formatEther(totalFees))
-        setCheckedInCount(totalCount)
-        setIsCheckedIn(allChecked)
-
-        if (!totalVmooney.isZero()) {
-          const est = totalFees.mul(userVmooney).div(totalVmooney)
-          setEstimatedReward(ethers.utils.formatEther(est))
-        } else {
-          setEstimatedReward('0')
+        if (!cancelled && totalVM) {
+          const est = totalFees * (userVM / totalVM)
+          setReward(ethers.utils.formatEther(est.toString()))
         }
-      } catch (error) {
-        console.error('Error fetching fee status:', error)
+      })()
+
+      return () => {
+        cancelled = true
       }
-    }
-    fetchStatus()
-  }, [address, isCheckedIn, WEEK])
+    }, [feeData, totalFees, userAddr])
+
+    return reward
+  }
+  const feeData = useFeeData(address)
+
+  // In your component:
+  const { totalFees, checkedInCount, allChecked } = useFeeSummary(feeData)
+  const estimatedReward = useEstimatedReward(feeData, totalFees, address)
 
   useEffect(() => {
     if (estimatedReward && Number(estimatedReward) > 0) {
@@ -188,6 +252,36 @@ export default function Fees() {
       return () => clearTimeout(timer)
     }
   }, [estimatedReward])
+
+  const handleDistribute = async () => {
+    try {
+      if (!account) throw new Error('No account found')
+      const currentChain = selectedChain
+      for (const data of feeData) {
+        if (BigNumber.from(data.balance || 0).gt(0)) {
+          if (selectedChain.id !== data.chain.id) {
+            setSelectedChain(data.chain)
+          }
+          const tx = prepareContractCall({
+            contract: data.contract,
+            method: 'distributeFees' as string,
+            params: [],
+          })
+          const results = await simulateTransaction({
+            transaction: tx,
+            account,
+          })
+        }
+      }
+      setSelectedChain(currentChain)
+      toast.success('Fees distributed!', { style: toastStyle })
+    } catch (error) {
+      console.error('Error distributing fees:', error)
+      toast.error('Error distributing fees. Please try again.', {
+        style: toastStyle,
+      })
+    }
+  }
 
   const handleCheckIn = async () => {
     try {
@@ -236,7 +330,7 @@ export default function Fees() {
             headerSize="max(20px, 3vw)"
             description={'Get liquidity rewards by checking in weekly.'}
             preFooter={
-              <NoticeFooter 
+              <NoticeFooter
                 defaultImage="../assets/MoonDAO-Logo-White.svg"
                 defaultTitle="Need Help?"
                 defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
@@ -257,6 +351,14 @@ export default function Fees() {
               </div>
             )}
             <SectionCard>
+              <div>
+                <p>
+                  Total fees available: {ethers.utils.formatEther(totalFees)}
+                </p>
+                <p>Checked-in count: {checkedInCount}</p>
+                <p>All chains checked this week? {allChecked ? '✅' : '❌'}</p>
+                <p>Estimated reward for you: {estimatedReward}</p>
+              </div>
               <div className="mt-3 w-full max-w-md mx-auto flex flex-col gap-4">
                 <div className="mb-2">
                   <div className="text-xl font-GoodTimes opacity-80">
@@ -265,17 +367,20 @@ export default function Fees() {
                   <Asset
                     name="ETH"
                     amount={
-                      feesAvailable !== null
-                        ? Number(feesAvailable).toFixed(4)
+                      totalFees !== null
+                        ? Number(ethers.utils.formatEther(totalFees)).toFixed(4)
                         : 'Loading...'
                     }
                     usd={
-                      feesAvailable !== null && ethPrice
-                        ? (Number(feesAvailable) * ethPrice).toFixed(2)
+                      totalFees !== null && ethPrice
+                        ? (
+                            Number(ethers.utils.formatEther(totalFees)) *
+                            ethPrice
+                          ).toFixed(2)
                         : 'Loading...'
                     }
                   />
-                  {feesAvailable !== null && Number(feesAvailable) > 0 && (
+                  {totalFees !== null && Number(totalFees) > 0 && (
                     <div className="mt-4 opacity-75">
                       {checkedInCount !== null
                         ? checkedInCount > 0
@@ -289,11 +394,12 @@ export default function Fees() {
                 </div>
                 {estimatedReward !== null && (
                   <div className="text-center text-white/90 font-semibold mt-2">
-                    Your Estimated Reward: {Number(estimatedReward).toFixed(6)} ETH
+                    Your Estimated Reward: {Number(estimatedReward).toFixed(6)}{' '}
+                    ETH
                   </div>
                 )}
-                {feesAvailable !== null &&
-                  Number(feesAvailable) > 0 &&
+                {totalFees !== null &&
+                  Number(totalFees) > 0 &&
                   !isCheckedIn && (
                     <PrivyWeb3Button
                       action={handleCheckIn}
@@ -302,6 +408,12 @@ export default function Fees() {
                       isDisabled={!address || isCheckedIn}
                     />
                   )}
+                <PrivyWeb3Button
+                  action={handleDistribute}
+                  label="Distribute Fees"
+                  className="w-full max-w-[250px] rounded-[5vmax] rounded-tl-[20px]"
+                  //isDisabled={!address || isCheckedIn || totalFees === null}
+                />
               </div>
             </SectionCard>
           </ContentLayout>

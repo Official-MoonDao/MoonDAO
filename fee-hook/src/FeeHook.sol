@@ -135,6 +135,7 @@ contract FeeHook is BaseHook, Ownable {
 
     /// @notice Mark the caller as participating in the current week
     function checkIn() external {
+        require(IERC20(vMooneyAddress).balanceOf(msg.sender) > 0, "Must hold vMooney to check in");
         if (lastCheckIn[msg.sender] < weekStart) {
             lastCheckIn[msg.sender] = weekStart;
             checkedIn.push(msg.sender);

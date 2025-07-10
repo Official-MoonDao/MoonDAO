@@ -33,7 +33,7 @@ contract SwapScript is Script, Constants, Config {
         address routerAddress;
         UniversalRouter router = UniversalRouter(payable(V4_ROUTERS[block.chainid]));
 
-        uint128 amountSpecified = 1e16;
+        uint128 amountSpecified = 1e13;
         bytes memory commands = abi.encodePacked(uint8(V4_SWAP));
         bytes memory actions = abi.encodePacked(
            uint8(Actions.SWAP_EXACT_IN_SINGLE),
