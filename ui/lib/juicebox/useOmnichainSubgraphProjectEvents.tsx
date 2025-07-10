@@ -30,8 +30,8 @@ const useOmnichainSubgraphProjectEvents = ({
       sucker?.projectId.toString(),
       projectId,
     ],
-    initialPageParam: 0,
-    queryFn: async ({ pageParam = 0 }) => {
+    initialPageParam: null as number | null,
+    queryFn: async ({ pageParam }: { pageParam: number | null }) => {
       if (!sucker && !projectId)
         return {
           data: { activityEvents: { items: [] } },
@@ -48,7 +48,8 @@ const useOmnichainSubgraphProjectEvents = ({
           filter,
           'timestamp',
           'desc',
-          PAGE_SIZE
+          PAGE_SIZE,
+          pageParam // Pass the timestamp cursor for filtering
         )
 
         const res = await fetch('/api/juicebox/query', {
@@ -62,12 +63,18 @@ const useOmnichainSubgraphProjectEvents = ({
         const data = await res.json()
 
         const activityEvents = data.activityEvents?.items || []
-        // Note: Pagination with skip is not supported in the new schema
-        // For now, we only load the first page
-        const mightHaveNextPage = false // activityEvents.length === PAGE_SIZE && pageParam === 0
+
+        // Use the timestamp of the last item as the next cursor
+        const nextCursor =
+          activityEvents.length === PAGE_SIZE
+            ? getTimestampFromLastEvent(
+                activityEvents[activityEvents.length - 1]
+              )
+            : undefined
+
         return {
           data: { activityEvents: { items: activityEvents } },
-          nextCursor: mightHaveNextPage ? pageParam + 1 : undefined,
+          nextCursor,
         }
       } catch (error) {
         console.error('Error fetching project events:', error)
@@ -83,6 +90,22 @@ const useOmnichainSubgraphProjectEvents = ({
   })
 
   return result
+}
+
+// Helper function to extract timestamp from the last event
+function getTimestampFromLastEvent(event: any): number | null {
+  if (!event) return null
+
+  // Extract timestamp from the nested event objects
+  const eventData =
+    event.payEvent ||
+    event.addToBalanceEvent ||
+    event.mintTokensEvent ||
+    event.deployErc20Event ||
+    event.projectCreateEvent ||
+    event.burnEvent
+
+  return eventData?.timestamp ? Number(eventData.timestamp) : null
 }
 
 export default useOmnichainSubgraphProjectEvents

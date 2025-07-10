@@ -75,15 +75,24 @@ export function projectEventsQuery(
   filter?: string,
   orderBy: string = 'timestamp',
   orderDirection: string = 'desc',
-  limit: number = 100
+  limit: number = 100,
+  timestampCursor?: number | null
 ) {
-  return `
+  // Build the where clause with timestamp filtering for pagination
+  let whereClause = `projectId: ${+projectId}`
 
+  if (filter) {
+    whereClause += `, ${filter}_not: null`
+  }
+
+  if (timestampCursor) {
+    whereClause += `, timestamp_lt: ${timestampCursor}`
+  }
+
+  return `
     query {
       activityEvents(
-        where: {projectId: ${+projectId}${
-    filter ? `, ${filter}_not: null` : ''
-  }}
+        where: {${whereClause}}
         orderBy: "${orderBy}"
         orderDirection: "${orderDirection}"
         limit: ${limit}
