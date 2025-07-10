@@ -1,5 +1,6 @@
 import { useWallets } from '@privy-io/react-auth'
 import FeeHook from 'const/abis/FeeHook.json'
+import ERC20 from '../const/abis/ERC20.json'
 import { FEE_HOOK_ADDRESSES } from 'const/config'
 import { BigNumber } from 'ethers'
 import { ethers } from 'ethers'
@@ -33,6 +34,7 @@ import Asset from '@/components/dashboard/treasury/balance/Asset'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
+import { SolarConfetti } from '@/components/assets'
 
 export default function Fees() {
   const account = useActiveAccount()
@@ -54,6 +56,8 @@ export default function Fees() {
   const [checkedInCount, setCheckedInCount] = useState<number | null>(null)
   const [feesAvailable, setFeesAvailable] = useState<string | null>(null)
   const [feeData, setFeeData] = useState<any[]>([])
+  const [estimatedReward, setEstimatedReward] = useState<string | null>(null)
+  const [showConfetti, setShowConfetti] = useState(false)
   const { selectedWallet } = useContext(PrivyWalletContext)
 
   useEffect(() => {
@@ -118,7 +122,8 @@ export default function Fees() {
         let totalFees = BigNumber.from(0)
         let allChecked = true
         let totalCount = 0
-        const now = Math.floor(Date.now() / 1000)
+        let totalVmooney = BigNumber.from(0)
+        let userVmooney = BigNumber.from(0)
 
         for (const r of results) {
           totalFees = totalFees.add(BigNumber.from(r.balance || 0))
@@ -128,17 +133,61 @@ export default function Fees() {
               allChecked = false
             }
           }
+
+          const vMooneyAddr = await readContract({
+            contract: r.contract,
+            method: 'vMooneyAddress' as string,
+            params: [],
+          })
+
+          for (let i = 0; i < Number(r.count || 0); i++) {
+            const addr = await readContract({
+              contract: r.contract,
+              method: 'checkedIn' as string,
+              params: [i],
+            })
+            const tokenContract = getContract({
+              client,
+              address: vMooneyAddr as string,
+              abi: ERC20 as any,
+              chain: r.chain,
+            })
+            const bal = await readContract({
+              contract: tokenContract,
+              method: 'balanceOf' as string,
+              params: [addr],
+            })
+            totalVmooney = totalVmooney.add(BigNumber.from(bal))
+            if (address && addr.toLowerCase() === address.toLowerCase()) {
+              userVmooney = userVmooney.add(BigNumber.from(bal))
+            }
+          }
         }
 
         setFeesAvailable(ethers.utils.formatEther(totalFees))
         setCheckedInCount(totalCount)
         setIsCheckedIn(allChecked)
+
+        if (!totalVmooney.isZero()) {
+          const est = totalFees.mul(userVmooney).div(totalVmooney)
+          setEstimatedReward(ethers.utils.formatEther(est))
+        } else {
+          setEstimatedReward('0')
+        }
       } catch (error) {
         console.error('Error fetching fee status:', error)
       }
     }
     fetchStatus()
   }, [address, isCheckedIn, WEEK])
+
+  useEffect(() => {
+    if (estimatedReward && Number(estimatedReward) > 0) {
+      setShowConfetti(true)
+      const timer = setTimeout(() => setShowConfetti(false), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [estimatedReward])
 
   const handleCheckIn = async () => {
     try {
@@ -164,6 +213,8 @@ export default function Fees() {
       setSelectedChain(currentChain)
       toast.success('Checked in!', { style: toastStyle })
       setIsCheckedIn(true)
+      setShowConfetti(true)
+      setTimeout(() => setShowConfetti(false), 5000)
     } catch (error) {
       console.error('Error checking in:', error)
       toast.error('Error checking in. Please try again.', { style: toastStyle })
@@ -200,8 +251,13 @@ export default function Fees() {
             mode="compact"
             popOverEffect={false}
           >
+            {showConfetti && (
+              <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
+                <SolarConfetti />
+              </div>
+            )}
             <SectionCard>
-              <div className="mt-3 w-[25vw] flex flex-col gap-4">
+              <div className="mt-3 w-full max-w-md mx-auto flex flex-col gap-4">
                 <div className="mb-2">
                   <div className="text-xl font-GoodTimes opacity-80">
                     Rewards This Week:
@@ -231,6 +287,11 @@ export default function Fees() {
                     </div>
                   )}
                 </div>
+                {estimatedReward !== null && (
+                  <div className="text-center text-white/90 font-semibold mt-2">
+                    Your Estimated Reward: {Number(estimatedReward).toFixed(6)} ETH
+                  </div>
+                )}
                 {feesAvailable !== null &&
                   Number(feesAvailable) > 0 &&
                   !isCheckedIn && (
