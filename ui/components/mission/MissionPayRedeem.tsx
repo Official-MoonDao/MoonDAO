@@ -441,7 +441,7 @@ export default function MissionPayRedeem({
           message,
           '0x00',
         ],
-        value: BigInt(inputValue * 1e18),
+        value: BigInt(Math.trunc(inputValue * 1e18)),
       })
 
       const q = await simulateTransaction({
