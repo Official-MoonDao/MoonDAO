@@ -50,6 +50,7 @@ jobs:
       NEXTAUTH_SECRET: ${{secrets.NEXTAUTH_SECRET}}
       JB_SEPOLIA_SUBGRAPH_ENDPOINT: ${{secrets.JB_SEPOLIA_SUBGRAPH_ENDPOINT}}
       JB_SEPOLIA_SUBGRAPH_API_KEY: ${{secrets.JB_SEPOLIA_SUBGRAPH_API_KEY}}
+      BENDYSTRAW_API_KEY: ${{secrets.BENDYSTRAW_API_KEY}}
 
     steps:
       - name: Checkout

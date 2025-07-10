@@ -5,7 +5,7 @@ import { cacheExchange, createClient, fetchExchange } from 'urql'
 
 const subgraphUrl = `https://${
   process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' && 'testnet.'
-}bendystraw.xyz/${process.env.BENDYSTRAW_KEY}/graphql`
+}bendystraw.xyz/${process.env.BENDYSTRAW_API_KEY}/graphql`
 
 const subgraphClient = createClient({
   url: subgraphUrl,
