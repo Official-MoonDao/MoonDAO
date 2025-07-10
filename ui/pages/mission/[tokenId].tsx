@@ -689,15 +689,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
         if (nameResult.status === 'fulfilled' && nameResult.value) {
           tokenData.tokenName = nameResult.value
-          console.log(nameResult.value)
         }
         if (symbolResult.status === 'fulfilled' && symbolResult.value) {
           tokenData.tokenSymbol = symbolResult.value
-          console.log(symbolResult.value)
         }
         if (supplyResult.status === 'fulfilled' && supplyResult.value) {
           tokenData.tokenSupply = supplyResult.value.toString()
-          console.log(supplyResult.value)
         }
       } catch (error) {
         console.warn('Failed to fetch token data:', error)
