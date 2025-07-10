@@ -35,7 +35,7 @@ const MobileSidebar = ({
     <Transition.Root show={sidebarOpen} as={Fragment}>
       <Dialog
         as="div"
-        className={`relative z-40 ${isFullscreen ? '' : 'md:hidden'}`}
+        className="relative z-40"
         onClose={setSidebarOpen}
       >
         <Transition.Child

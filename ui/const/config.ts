@@ -16,6 +16,7 @@ interface DeploymentConfig {
   VotingEscrowDepositor: string
   MoonDAOTeam: string
   FeeHook: string
+  MissionCreator: string
 }
 
 type Index = { [key: string]: string }
@@ -244,13 +245,13 @@ export const MISSION_TABLE_NAMES: Index = {
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
-  arbitrum: '0xeC737C2527f9b1ADBf68a38241d56e34e239F821',
-  sepolia: '0x61377F01c904E32A4d3755EB230605673460c7F6',
+  arbitrum: arbitrumConfig.MissionCreator,
+  sepolia: sepoliaConfig.MissionCreator,
 }
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {
-  arbitrum: '0xb291844f213047eb9e1621ae555b1eae6700d553',
-  sepolia: '0xb291844F213047Eb9e1621AE555B1Eae6700d553',
+  arbitrum: '0xD1c436Eb62e1d23e66842701B09E3d65aA8522E8',
+  sepolia: '0xD1c436Eb62e1d23e66842701B09E3d65aA8522E8',
 }
 export const JBV4_TOKENS_ADDRESSES: Index = {
   arbitrum: '0xa59e9f424901fb9dbd8913a9a32a081f9425bf36',

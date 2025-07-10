@@ -1,7 +1,7 @@
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import React from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
@@ -52,23 +52,27 @@ const MissionProfileHeader = React.memo(
     const { data: ethPrice } = useETHPrice(1, 'ETH_TO_USD')
     const totalFunding = useTotalFunding(mission?.projectId)
 
-    const duration = useMemo(() => {
-      return deadline !== undefined
-        ? formatTimeUntilDeadline(new Date(deadline))
-        : '...loading'
-    }, [deadline])
+    const [duration, setDuration] = useState<any>()
 
     const deadlinePassed = deadline ? Date.now() > deadline : false
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        if (deadline !== undefined) {
+          setDuration(formatTimeUntilDeadline(new Date(deadline)))
+        }
+      }, 1000)
+      return () => clearInterval(interval)
+    }, [deadline])
 
     return (
       <div className="w-full bg-gradient-to-br from-dark-cool via-darkest-cool to-dark-cool relative overflow-hidden">
         {/* Background decorative elements */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.1),transparent_50%)] pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(99,102,241,0.05),transparent_50%)] pointer-events-none" />
-        
+
         <div className="relative z-10 w-full px-8 sm:px-12 lg:px-16 py-6 lg:py-8">
           <div className="flex flex-col lg:flex-row gap-x-8 items-center max-w-7xl mx-auto ml-8 lg:ml-16">
-            
             {/* Left Column - Mission Image */}
             <div className="flex justify-center lg:justify-start">
               <div className="relative group">
@@ -84,7 +88,7 @@ const MissionProfileHeader = React.memo(
                         width={320}
                         alt="Mission Image"
                       />
-                      
+
                       {/* Floating team NFT badge */}
                       {teamNFT?.metadata?.image && (
                         <div className="absolute -bottom-3 -right-3 lg:-bottom-4 lg:-right-4">
@@ -106,7 +110,12 @@ const MissionProfileHeader = React.memo(
                   <div className="w-64 h-64 sm:w-80 sm:h-80 lg:w-[320px] lg:h-[320px] bg-gradient-to-br from-slate-700 to-slate-600 rounded-2xl border border-white/10 flex items-center justify-center">
                     <div className="text-center p-6">
                       <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                        <Image src="/assets/icon-star-blue.svg" alt="Mission" width={24} height={24} />
+                        <Image
+                          src="/assets/icon-star-blue.svg"
+                          alt="Mission"
+                          width={24}
+                          height={24}
+                        />
                       </div>
                       <p className="text-gray-400">Mission Image</p>
                     </div>
@@ -117,7 +126,6 @@ const MissionProfileHeader = React.memo(
 
             {/* Right Column - Mission Info */}
             <div className="flex flex-col justify-center space-y-3 lg:space-y-4 flex-grow">
-              
               {/* Mission Title & Tagline */}
               <div className="space-y-2">
                 {mission?.metadata?.name && (
@@ -125,7 +133,7 @@ const MissionProfileHeader = React.memo(
                     {mission.metadata.name}
                   </h1>
                 )}
-                
+
                 {mission?.metadata?.tagline && (
                   <p className="text-lg sm:text-xl text-gray-300 leading-relaxed">
                     {mission.metadata.tagline}
@@ -136,13 +144,22 @@ const MissionProfileHeader = React.memo(
               {/* Team Attribution */}
               {ruleset && teamNFT?.metadata?.name && (
                 <div className="flex flex-wrap items-center gap-2 text-gray-400 text-sm">
-                  <span>Created on {new Date(ruleset?.[0]?.start * 1000).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })} by</span>
+                  <span>
+                    Created on{' '}
+                    {new Date(ruleset?.[0]?.start * 1000).toLocaleDateString(
+                      'en-US',
+                      {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      }
+                    )}{' '}
+                    by
+                  </span>
                   <Link
-                    href={`/team/${generatePrettyLink(teamNFT?.metadata?.name)}`}
+                    href={`/team/${generatePrettyLink(
+                      teamNFT?.metadata?.name
+                    )}`}
                     className="font-GoodTimes text-white hover:text-purple-300 underline transition-colors duration-200"
                   >
                     {teamNFT?.metadata?.name}
@@ -152,7 +169,6 @@ const MissionProfileHeader = React.memo(
 
               {/* Enhanced Funding Stats Card */}
               <div className="bg-gradient-to-br from-dark-cool to-darkest-cool backdrop-blur-lg rounded-xl p-4 lg:p-5 border border-white/10 shadow-xl w-full max-w-2xl">
-                
                 {/* Raised Amount Badge */}
                 <div className="mb-3">
                   <div className="inline-flex items-center bg-gradient-to-r from-blue-500 to-purple-600 text-white font-GoodTimes py-2 px-4 rounded-full shadow-lg">
@@ -164,12 +180,19 @@ const MissionProfileHeader = React.memo(
                       className="mr-2"
                     />
                     <span className="text-base lg:text-lg mr-2">
-                      {truncateTokenValue(Number(totalFunding || 0) / 1e18, 'ETH')}
+                      {truncateTokenValue(
+                        Number(totalFunding || 0) / 1e18,
+                        'ETH'
+                      )}
                     </span>
                     <span className="text-xs opacity-90">ETH RAISED</span>
                   </div>
                   <p className="text-gray-400 text-xs mt-1 ml-4">
-                    ≈ ${Math.round((Number(totalFunding || 0) / 1e18 || 0) * ethPrice).toLocaleString()} USD
+                    ≈ $
+                    {Math.round(
+                      (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
+                    ).toLocaleString()}{' '}
+                    USD
                   </p>
                 </div>
 
@@ -195,9 +218,13 @@ const MissionProfileHeader = React.memo(
                         className="mr-1"
                       />
                       <div className="flex items-center gap-1">
-                        <span className="text-gray-400 text-xs uppercase tracking-wide">Goal</span>
+                        <span className="text-gray-400 text-xs uppercase tracking-wide">
+                          Goal
+                        </span>
                         <Tooltip
-                          text={`≈ $${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()} USD`}
+                          text={`≈ $${Math.round(
+                            (fundingGoal / 1e18) * ethPrice
+                          ).toLocaleString()} USD`}
                           buttonClassName="scale-75"
                         >
                           ?
@@ -219,7 +246,9 @@ const MissionProfileHeader = React.memo(
                         height={14}
                         className="mr-1"
                       />
-                      <span className="text-gray-400 text-xs uppercase tracking-wide">Deadline</span>
+                      <span className="text-gray-400 text-xs uppercase tracking-wide">
+                        Deadline
+                      </span>
                     </div>
                     <p className="text-white font-GoodTimes text-xs lg:text-sm">
                       {duration}
@@ -236,7 +265,9 @@ const MissionProfileHeader = React.memo(
                         height={14}
                         className="mr-1"
                       />
-                      <span className="text-gray-400 text-xs uppercase tracking-wide">Backers</span>
+                      <span className="text-gray-400 text-xs uppercase tracking-wide">
+                        Backers
+                      </span>
                     </div>
                     <p className="text-white font-GoodTimes text-xs lg:text-sm">
                       {backers?.length || 0}

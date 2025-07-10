@@ -27,7 +27,7 @@ export type MissionTimelineChartProps = {
   createdAt: number
 }
 
-const now = Date.now().valueOf()
+const now = Date.now().valueOf() // Using real current time
 
 export default function MissionTimelineChart({
   points,

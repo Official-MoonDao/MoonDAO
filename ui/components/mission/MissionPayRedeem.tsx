@@ -437,11 +437,11 @@ export default function MissionPayRedeem({
           JB_NATIVE_TOKEN_ADDRESS,
           BigInt(Math.trunc(inputValue * 1e18)),
           address || ZERO_ADDRESS,
-          output * 1e18,
+          0,
           message,
           '0x00',
         ],
-        value: BigInt(inputValue * 1e18),
+        value: BigInt(Math.trunc(inputValue * 1e18)),
       })
 
       const q = await simulateTransaction({
@@ -556,6 +556,7 @@ export default function MissionPayRedeem({
 
       refreshBackers?.()
       setMissionPayModalEnabled(false)
+      router.reload()
     } catch (error) {
       console.error('Error purchasing tokens:', error)
       toast.error('Failed to purchase tokens', {
@@ -685,6 +686,8 @@ export default function MissionPayRedeem({
   useEffect(() => {
     if (parseFloat(input) > 0) {
       getQuote()
+    } else if (input === '0' || input === '') {
+      setOutput(0)
     }
   }, [input])
 
@@ -703,18 +706,21 @@ export default function MissionPayRedeem({
               lastSafeTxExecuted={lastSafeTxExecuted}
             />
           )}
-          {!token?.tokenSymbol && isTeamSigner && stage !== 3 && (
-            <div className="p-8 md:p-0 flex md:block justify-center">
-              <StandardButton
-                id="deploy-token-button"
-                className="gradient-2 rounded-full w-full max-w-[300px]"
-                hoverEffect={false}
-                onClick={() => setDeployTokenModalEnabled(true)}
-              >
-                Deploy Token
-              </StandardButton>
-            </div>
-          )}
+          {token &&
+            (!token?.tokenAddress || token.tokenAddress === '') &&
+            isTeamSigner &&
+            stage !== 3 && (
+              <div className="p-8 md:p-0 flex md:block justify-center">
+                <StandardButton
+                  id="deploy-token-button"
+                  className="gradient-2 rounded-full w-full max-w-[300px]"
+                  hoverEffect={false}
+                  onClick={() => setDeployTokenModalEnabled(true)}
+                >
+                  Deploy Token
+                </StandardButton>
+              </div>
+            )}
           <div className="mt-2">
             <MissionPayRedeemContent
               token={token}
@@ -856,11 +862,7 @@ export default function MissionPayRedeem({
             </div>
 
             <div className="w-full flex justify-between gap-4">
-              <NetworkSelector
-                chains={chains}
-                compact={true}
-                iconsOnly={true}
-              />
+              <NetworkSelector chains={chains} compact={true} align="left" />
             </div>
             <div className="w-full flex justify-between gap-4">
               <StandardButton
