@@ -248,23 +248,24 @@ export default function Launch({ missions }: any) {
                   className="w-32 sm:w-40 md:w-48 lg:w-64 xl:w-72"
                 />
               </div>
-              
+
               {/* Main heading */}
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-GoodTimes text-white mb-4 md:mb-6 leading-tight">
                 Launchpad
               </h1>
-              
+
               {/* Description */}
               <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-white/90 mb-6 md:mb-8 leading-relaxed max-w-xl">
-                Fund the future of space exploration with decentralized crowdfunding.
+                Fund the future of space exploration with decentralized
+                crowdfunding.
               </p>
-              
+
               {/* CTA Button - enhanced with flair */}
               <div className="flex justify-start mb-16 sm:mb-12 md:mb-8 lg:mb-0">
                 <div className="relative group">
                   {/* Glow effect */}
                   <div className="absolute -inset-1 bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  
+
                   {/* Main button */}
                   <StandardButton
                     className="relative bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] text-white font-semibold text-sm sm:text-base px-6 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border-0 backdrop-blur-sm text-center"
@@ -277,15 +278,20 @@ export default function Launch({ missions }: any) {
                         {/* Text glow effect */}
                         <span className="absolute inset-0 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent blur-sm opacity-50"></span>
                       </span>
-                      
+
                       {/* Arrow icon */}
-                      <svg 
-                        className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform duration-300 ml-1 sm:ml-2" 
-                        fill="none" 
-                        stroke="currentColor" 
+                      <svg
+                        className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform duration-300 ml-1 sm:ml-2"
+                        fill="none"
+                        stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 7l5 5m0 0l-5 5m5-5H6"
+                        />
                       </svg>
                     </div>
                   </StandardButton>
@@ -306,39 +312,42 @@ export default function Launch({ missions }: any) {
 
         {/* Scroll indicator */}
         <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 z-20">
-          <div 
+          <div
             className="flex flex-col items-center text-white/70 hover:text-white/90 transition-colors duration-300 cursor-pointer group"
             onClick={() => {
-              const featuredMissionSection = document.getElementById('featured-mission');
+              const featuredMissionSection =
+                document.getElementById('featured-mission')
               if (featuredMissionSection) {
-                featuredMissionSection.scrollIntoView({ 
+                featuredMissionSection.scrollIntoView({
                   behavior: 'smooth',
-                  block: 'start'
-                });
+                  block: 'start',
+                })
               }
             }}
           >
-            <span className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 tracking-wider uppercase">Scroll to explore</span>
+            <span className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 tracking-wider uppercase">
+              Scroll to explore
+            </span>
             <div className="relative">
               {/* Animated scroll arrow */}
-              <svg 
-                className="w-4 h-4 sm:w-6 sm:h-6 animate-bounce group-hover:animate-pulse" 
-                fill="none" 
-                stroke="currentColor" 
+              <svg
+                className="w-4 h-4 sm:w-6 sm:h-6 animate-bounce group-hover:animate-pulse"
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
                   d="M19 14l-7 7m0 0l-7-7m7 7V3"
                 />
               </svg>
-              
+
               {/* Glow effect */}
               <div className="absolute inset-0 bg-white/20 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
-            
+
             {/* Scroll line indicator */}
             <div className="mt-2 sm:mt-3 w-px h-6 sm:h-8 bg-gradient-to-b from-white/50 to-transparent"></div>
           </div>
@@ -346,7 +355,10 @@ export default function Launch({ missions }: any) {
       </section>
       {/* Featured Mission Section - Fullscreen */}
       {missions?.[FEATURED_MISSION_INDEX]?.projectId !== undefined && (
-        <section id="featured-mission" className="relative min-h-screen overflow-hidden">
+        <section
+          id="featured-mission"
+          className="relative min-h-screen overflow-hidden"
+        >
           {/* Background image */}
           <div className="absolute inset-0">
             <Image
@@ -358,13 +370,13 @@ export default function Launch({ missions }: any) {
               quality={100}
             />
           </div>
-          
+
           {/* Background gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#010618]/80 via-[#1B1C4B]/60 to-[#010618]/80"></div>
-          
+
           {/* Text readability overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/30"></div>
-          
+
           {/* Mission Content - Direct Display */}
           <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-16 md:py-24 lg:py-32">
             {/* Featured Mission Header */}
@@ -384,23 +396,35 @@ export default function Launch({ missions }: any) {
                     <div className="relative rounded-3xl overflow-hidden shadow-2xl">
                       <Image
                         src={
-                          getIPFSGateway(missions?.[FEATURED_MISSION_INDEX]?.metadata?.logoUri) ||
-                          '/assets/project-default.png'
+                          getIPFSGateway(
+                            missions?.[FEATURED_MISSION_INDEX]?.metadata
+                              ?.logoUri
+                          ) || '/assets/project-default.png'
                         }
-                        alt={missions?.[FEATURED_MISSION_INDEX]?.metadata?.name || 'Mission'}
+                        alt={
+                          missions?.[FEATURED_MISSION_INDEX]?.metadata?.name ||
+                          'Mission'
+                        }
                         width={500}
                         height={500}
                         className="w-full h-auto object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                     </div>
-                    
+
                     {/* Team Image */}
-                    {missions?.[FEATURED_MISSION_INDEX]?.team?.metadata?.logoUri && (
+                    {missions?.[FEATURED_MISSION_INDEX]?.team?.metadata
+                      ?.logoUri && (
                       <div className="absolute -bottom-4 -right-4 bg-white/10 backdrop-blur-sm rounded-full p-2 shadow-lg border border-white/20">
                         <Image
-                          src={getIPFSGateway(missions?.[FEATURED_MISSION_INDEX]?.team?.metadata?.logoUri)}
-                          alt={missions?.[FEATURED_MISSION_INDEX]?.team?.metadata?.name || 'Team'}
+                          src={getIPFSGateway(
+                            missions?.[FEATURED_MISSION_INDEX]?.team?.metadata
+                              ?.logoUri
+                          )}
+                          alt={
+                            missions?.[FEATURED_MISSION_INDEX]?.team?.metadata
+                              ?.name || 'Team'
+                          }
                           width={48}
                           height={48}
                           className="w-12 h-12 rounded-full object-cover"
@@ -415,11 +439,17 @@ export default function Launch({ missions }: any) {
                   {/* Mission Title & Tagline */}
                   <div className="space-y-2 md:space-y-3 lg:space-y-4">
                     <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-GoodTimes text-white leading-tight">
-                      {missions?.[FEATURED_MISSION_INDEX]?.metadata?.name || 'Welcome to the MoonDAO Launchpad'}
+                      {missions?.[FEATURED_MISSION_INDEX]?.metadata?.name ||
+                        'Welcome to the MoonDAO Launchpad'}
                     </h1>
-                    {(missions?.[FEATURED_MISSION_INDEX]?.metadata?.tagline || missions?.[FEATURED_MISSION_INDEX]?.metadata?.description) && (
+                    {(missions?.[FEATURED_MISSION_INDEX]?.metadata?.tagline ||
+                      missions?.[FEATURED_MISSION_INDEX]?.metadata
+                        ?.description) && (
                       <p className="text-sm md:text-lg lg:text-xl xl:text-2xl text-white/80 font-light">
-                        {missions?.[FEATURED_MISSION_INDEX]?.metadata?.tagline || missions?.[FEATURED_MISSION_INDEX]?.metadata?.description}
+                        {missions?.[FEATURED_MISSION_INDEX]?.metadata
+                          ?.tagline ||
+                          missions?.[FEATURED_MISSION_INDEX]?.metadata
+                            ?.description}
                       </p>
                     )}
                   </div>
@@ -430,25 +460,31 @@ export default function Launch({ missions }: any) {
                       <div className="relative">
                         <Image
                           src={
-                            getIPFSGateway(missions?.[FEATURED_MISSION_INDEX]?.team?.metadata?.logoUri) ||
-                            '/assets/project-default.png'
+                            getIPFSGateway(
+                              missions?.[FEATURED_MISSION_INDEX]?.team?.metadata
+                                ?.logoUri
+                            ) || '/assets/project-default.png'
                           }
-                          alt={missions?.[FEATURED_MISSION_INDEX]?.team?.metadata?.name || 'Team'}
+                          alt={
+                            missions?.[FEATURED_MISSION_INDEX]?.team?.metadata
+                              ?.name || 'Team'
+                          }
                           width={64}
                           height={64}
                           className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover border-2 border-white/20"
                         />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-white/60 text-xs md:text-sm font-medium">Launched by</span>
+                        <span className="text-white/60 text-xs md:text-sm font-medium">
+                          Launched by
+                        </span>
                         <span className="text-white font-semibold text-sm md:text-lg">
-                          {missions?.[FEATURED_MISSION_INDEX]?.team?.metadata?.name || 'Unknown Team'}
+                          {missions?.[FEATURED_MISSION_INDEX]?.team?.metadata
+                            ?.name || 'Unknown Team'}
                         </span>
                       </div>
                     </div>
                   )}
-
-
 
                   {/* Mission Stats Grid */}
                   <div className="grid grid-cols-3 gap-1 md:gap-2 lg:gap-4 xl:gap-6">
@@ -462,10 +498,17 @@ export default function Launch({ missions }: any) {
                           height={24}
                           className="w-4 h-4 md:w-6 md:h-6"
                         />
-                        <span className="text-white/70 text-xs md:text-sm font-medium">Raised</span>
+                        <span className="text-white/70 text-xs md:text-sm font-medium">
+                          Raised
+                        </span>
                       </div>
                       <p className="text-sm md:text-lg lg:text-2xl font-bold text-white">
-                        {truncateTokenValue(Number(featuredMissionSubgraphData?.volume || 0) / 1e18, 'ETH')} ETH
+                        {truncateTokenValue(
+                          Number(featuredMissionSubgraphData?.volume || 0) /
+                            1e18,
+                          'ETH'
+                        )}{' '}
+                        ETH
                       </p>
                     </div>
 
@@ -479,12 +522,18 @@ export default function Launch({ missions }: any) {
                           height={24}
                           className="w-4 h-4 md:w-6 md:h-6"
                         />
-                        <span className="text-white/70 text-xs md:text-sm font-medium">Goal</span>
+                        <span className="text-white/70 text-xs md:text-sm font-medium">
+                          Goal
+                        </span>
                       </div>
                       <p className="text-sm md:text-lg lg:text-2xl font-bold text-white">
                         {featuredMissionFundingGoal
-                          ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
-                          : '0'} ETH
+                          ? truncateTokenValue(
+                              featuredMissionFundingGoal / 1e18,
+                              'ETH'
+                            )
+                          : '0'}{' '}
+                        ETH
                       </p>
                     </div>
 
@@ -498,7 +547,9 @@ export default function Launch({ missions }: any) {
                           height={24}
                           className="w-4 h-4 md:w-6 md:h-6"
                         />
-                        <span className="text-white/70 text-xs md:text-sm font-medium">Backers</span>
+                        <span className="text-white/70 text-xs md:text-sm font-medium">
+                          Backers
+                        </span>
                       </div>
                       <p className="text-sm md:text-lg lg:text-2xl font-bold text-white">
                         {featuredMissionBackers?.length || 0}
@@ -509,20 +560,40 @@ export default function Launch({ missions }: any) {
                   {/* Progress Bar */}
                   <div className="space-y-3 md:space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-white/80 text-sm md:text-base font-medium">Funding Progress</span>
+                      <span className="text-white/80 text-sm md:text-base font-medium">
+                        Funding Progress
+                      </span>
                       <span className="text-white font-bold text-sm md:text-base">
-                        {featuredMissionFundingGoal && featuredMissionFundingGoal > 0
-                          ? Math.round((Number(featuredMissionSubgraphData?.volume || 0) / featuredMissionFundingGoal) * 100)
-                          : 0}%
+                        {featuredMissionFundingGoal &&
+                        featuredMissionFundingGoal > 0
+                          ? Math.round(
+                              (Number(
+                                featuredMissionSubgraphData?.volume || 0
+                              ) /
+                                featuredMissionFundingGoal) *
+                                100
+                            )
+                          : 0}
+                        %
                       </span>
                     </div>
                     <div className="w-full bg-white/20 rounded-full h-2 md:h-3 overflow-hidden">
-                      <div 
+                      <div
                         className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] h-full rounded-full transition-all duration-1000"
                         style={{
-                          width: `${featuredMissionFundingGoal && featuredMissionFundingGoal > 0
-                            ? Math.min((Number(featuredMissionSubgraphData?.volume || 0) / featuredMissionFundingGoal) * 100, 100)
-                            : 0}%`
+                          width: `${
+                            featuredMissionFundingGoal &&
+                            featuredMissionFundingGoal > 0
+                              ? Math.min(
+                                  (Number(
+                                    featuredMissionSubgraphData?.volume || 0
+                                  ) /
+                                    featuredMissionFundingGoal) *
+                                    100,
+                                  100
+                                )
+                              : 0
+                          }%`,
                         }}
                       />
                     </div>
@@ -532,7 +603,11 @@ export default function Launch({ missions }: any) {
                   <div className="flex flex-row gap-2 md:gap-4 pt-4">
                     <StandardButton
                       className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white font-semibold text-xs md:text-sm px-3 md:px-4 lg:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border border-white/20 text-center flex-1 flex items-center justify-center"
-                      onClick={() => router.push(`/mission/${missions?.[FEATURED_MISSION_INDEX]?.id}`)}
+                      onClick={() =>
+                        router.push(
+                          `/mission/${missions?.[FEATURED_MISSION_INDEX]?.id}`
+                        )
+                      }
                       hoverEffect={false}
                     >
                       <span className="ml-1 md:ml-2">Learn More</span>
@@ -545,7 +620,9 @@ export default function Launch({ missions }: any) {
                       hoverEffect={false}
                     >
                       <span className="ml-1 md:ml-2">
-                        {featuredMissionToken?.symbol ? `Buy ${featuredMissionToken.symbol}` : 'Contribute'}
+                        {featuredMissionToken?.symbol
+                          ? `Buy ${featuredMissionToken.symbol}`
+                          : 'Contribute'}
                       </span>
                     </StandardButton>
                   </div>
@@ -553,8 +630,6 @@ export default function Launch({ missions }: any) {
               </div>
             </JuiceProviders>
           </div>
-
-
         </section>
       )}
 
@@ -571,7 +646,7 @@ export default function Launch({ missions }: any) {
             quality={100}
           />
         </div>
-        
+
         {/* Main Content Container */}
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           {/* Section Header */}
@@ -583,95 +658,102 @@ export default function Launch({ missions }: any) {
 
           {/* Cards Grid */}
           <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-12 items-center">
-            
-                         {/* Finance Card */}
-             <div className="bg-gradient-to-br from-[#6C407D]/40 to-[#5F4BA2]/40 backdrop-blur-sm rounded-3xl p-4 md:p-6 lg:p-8 border border-white/20 hover:border-white/40 transition-all duration-300 group h-full">
-               <div className="flex flex-col items-center text-center space-y-4 md:space-y-6 h-full">
-                 <div className="bg-gradient-to-br from-[#6C407D] to-[#5F4BA2] rounded-full p-3 md:p-4 group-hover:scale-110 transition-transform duration-300">
-                   <Image
-                     src="/assets/icon-crowdfunding.svg"
-                     alt="Finance"
-                     width={48}
-                     height={48}
-                     className="w-10 h-10 md:w-12 md:h-12 lg:w-16 lg:h-16"
-                   />
-                 </div>
-                 <div className="flex-1">
-                   <h3 className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-GoodTimes text-white mb-2 md:mb-4">
-                     Finance
-                   </h3>
-                   <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                     Fund with your debit card, even if you've never used crypto. Get refunded if a mission fails to reach its funding goal.
-                   </p>
-                 </div>
-               </div>
-             </div>
-
-            {/* Coordinate Card */}
-            <div className="bg-gradient-to-br from-[#5F4BA2]/60 to-[#5159CC]/60 backdrop-blur-sm rounded-3xl p-4 md:p-6 lg:p-8 border border-white/20 hover:border-white/40 transition-all duration-300 group h-full">
-              <div className="flex flex-col items-center text-center space-y-4 md:space-y-6 h-full">
-                <div className="bg-gradient-to-br from-[#5F4BA2] to-[#5159CC] rounded-full p-3 md:p-4 group-hover:scale-110 transition-transform duration-300">
-                  <Image
-                    src="/assets/icon-fasttrack.svg"
-                    alt="Coordinate"
-                    width={48}
-                    height={48}
-                    className="w-10 h-10 md:w-12 md:h-12 lg:w-16 lg:h-16"
-                  />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-12 items-center">
+              {/* Finance Card */}
+              <div className="bg-gradient-to-br from-[#6C407D]/40 to-[#5F4BA2]/40 backdrop-blur-sm rounded-3xl p-4 md:p-6 lg:p-8 border border-white/20 hover:border-white/40 transition-all duration-300 group h-full">
+                <div className="flex flex-col items-center text-center space-y-4 md:space-y-6 h-full">
+                  <div className="bg-gradient-to-br from-[#6C407D] to-[#5F4BA2] rounded-full p-3 md:p-4 group-hover:scale-110 transition-transform duration-300">
+                    <Image
+                      src="/assets/icon-crowdfunding.svg"
+                      alt="Finance"
+                      width={48}
+                      height={48}
+                      className="w-10 h-10 md:w-12 md:h-12 lg:w-16 lg:h-16"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-GoodTimes text-white mb-2 md:mb-4">
+                      Finance
+                    </h3>
+                    <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
+                      Fund with your debit card, even if you've never used
+                      crypto. Get refunded if a mission fails to reach its
+                      funding goal.
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-GoodTimes text-white mb-2 md:mb-4">
-                    Coordinate
-                  </h3>
-                  <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                    Contributions earn mission tokens that give you a stake in the journey, allowing you to help shape and govern the outcome.
-                  </p>
+              </div>
+
+              {/* Coordinate Card */}
+              <div className="bg-gradient-to-br from-[#5F4BA2]/60 to-[#5159CC]/60 backdrop-blur-sm rounded-3xl p-4 md:p-6 lg:p-8 border border-white/20 hover:border-white/40 transition-all duration-300 group h-full">
+                <div className="flex flex-col items-center text-center space-y-4 md:space-y-6 h-full">
+                  <div className="bg-gradient-to-br from-[#5F4BA2] to-[#5159CC] rounded-full p-3 md:p-4 group-hover:scale-110 transition-transform duration-300">
+                    <Image
+                      src="/assets/icon-fasttrack.svg"
+                      alt="Coordinate"
+                      width={48}
+                      height={48}
+                      className="w-10 h-10 md:w-12 md:h-12 lg:w-16 lg:h-16"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-GoodTimes text-white mb-2 md:mb-4">
+                      Coordinate
+                    </h3>
+                    <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
+                      Contributions earn mission tokens that give you a stake in
+                      the journey, allowing you to help shape and govern the
+                      outcome.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Verify Card */}
+              <div className="bg-gradient-to-br from-[#5159CC]/60 to-[#4660E7]/60 backdrop-blur-sm rounded-3xl p-4 md:p-6 lg:p-8 border border-white/20 hover:border-white/40 transition-all duration-300 group h-full">
+                <div className="flex flex-col items-center text-center space-y-4 md:space-y-6 h-full">
+                  <div className="bg-gradient-to-br from-[#5159CC] to-[#4660E7] rounded-full p-3 md:p-4 group-hover:scale-110 transition-transform duration-300">
+                    <Image
+                      src="/assets/icon-lightbulb.svg"
+                      alt="Verify"
+                      width={48}
+                      height={48}
+                      className="w-10 h-10 md:w-12 md:h-12 lg:w-16 lg:h-16"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-GoodTimes text-white mb-2 md:mb-4">
+                      Verify
+                    </h3>
+                    <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
+                      Secured by code, not promises. 100% transparent use of
+                      funds onchain, allowing contributors to trace how funds
+                      were spent.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-
-                         {/* Verify Card */}
-             <div className="bg-gradient-to-br from-[#5159CC]/60 to-[#4660E7]/60 backdrop-blur-sm rounded-3xl p-4 md:p-6 lg:p-8 border border-white/20 hover:border-white/40 transition-all duration-300 group h-full">
-               <div className="flex flex-col items-center text-center space-y-4 md:space-y-6 h-full">
-                 <div className="bg-gradient-to-br from-[#5159CC] to-[#4660E7] rounded-full p-3 md:p-4 group-hover:scale-110 transition-transform duration-300">
-                   <Image
-                     src="/assets/icon-lightbulb.svg"
-                     alt="Verify"
-                     width={48}
-                     height={48}
-                     className="w-10 h-10 md:w-12 md:h-12 lg:w-16 lg:h-16"
-                   />
-                 </div>
-                 <div className="flex-1">
-                   <h3 className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-GoodTimes text-white mb-2 md:mb-4">
-                     Verify
-                   </h3>
-                   <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                     Secured by code, not promises. 100% transparent use of funds onchain, allowing contributors to trace how funds were spent.
-                   </p>
-                 </div>
-               </div>
-             </div>
-          </div>
-
           </div>
 
           {/* Bottom Text */}
           <div className="flex flex-col items-center mt-12 md:mt-16 lg:mt-20 px-4">
             <p className="text-center max-w-2xl md:max-w-3xl lg:max-w-4xl text-white/90 text-sm md:text-lg lg:text-xl xl:text-2xl font-semibold leading-relaxed">
               <span className="hidden md:inline">
-                Join a revolution in space funding. Unlike traditional fundraising, your community can<br />
-                immediately coordinate governance, access liquidity, and grow into a viral movement.
+                Join a revolution in space funding. Unlike traditional
+                fundraising, your community can
+                <br />
+                immediately coordinate governance, access liquidity, and grow
+                into a viral movement.
               </span>
               <span className="inline md:hidden">
-                Join a revolution in space funding. Unlike traditional fundraising, your community can immediately coordinate governance, access liquidity, and grow into a viral movement.
+                Join a revolution in space funding. Unlike traditional
+                fundraising, your community can immediately coordinate
+                governance, access liquidity, and grow into a viral movement.
               </span>
             </p>
           </div>
         </div>
-
-
       </section>
 
       {/* Proven Financing Model Section - Fullscreen Space Theme */}
@@ -714,7 +796,8 @@ export default function Launch({ missions }: any) {
                   </div>
                   <div>
                     <h3 className="text-base md:text-xl lg:text-2xl font-GoodTimes text-white mb-1 md:mb-2">
-                      $8<br />
+                      $8
+                      <br />
                       Million
                     </h3>
                     <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
@@ -738,7 +821,8 @@ export default function Launch({ missions }: any) {
                   </div>
                   <div>
                     <h3 className="text-base md:text-xl lg:text-2xl font-GoodTimes text-white mb-1 md:mb-2">
-                      12,000<br />
+                      12,000
+                      <br />
                       holders
                     </h3>
                     <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
@@ -762,7 +846,8 @@ export default function Launch({ missions }: any) {
                   </div>
                   <div>
                     <h3 className="text-base md:text-xl lg:text-2xl font-GoodTimes text-white mb-1 md:mb-2">
-                      80<br />
+                      80
+                      <br />
                       Projects
                     </h3>
                     <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
@@ -802,11 +887,16 @@ export default function Launch({ missions }: any) {
           <div className="text-center mt-12 md:mt-16 lg:mt-20 px-4">
             <p className="max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl text-white/90 text-sm md:text-lg lg:text-xl xl:text-2xl font-semibold leading-relaxed mx-auto">
               <span className="hidden md:inline">
-                MoonDAO's journey from concept to space, powered by decentralized funding.<br />
-                We raised millions, engaged thousands, funded over 80 projects, and sent two people to space.
+                MoonDAO's journey from concept to space, powered by
+                decentralized funding.
+                <br />
+                We raised millions, engaged thousands, funded over 80 projects,
+                and sent two people to space.
               </span>
               <span className="inline md:hidden">
-                MoonDAO's journey from concept to space, powered by decentralized funding. We raised millions, engaged thousands, funded over 80 projects, and sent two people to space.
+                MoonDAO's journey from concept to space, powered by
+                decentralized funding. We raised millions, engaged thousands,
+                funded over 80 projects, and sent two people to space.
               </span>
             </p>
           </div>
@@ -838,7 +928,8 @@ export default function Launch({ missions }: any) {
               The Power of Decentralization
             </h2>
             <p className="text-white/80 text-sm md:text-base lg:text-lg xl:text-xl text-center max-w-3xl mx-auto">
-              Experience the advantages of transparent, community-driven space funding.
+              Experience the advantages of transparent, community-driven space
+              funding.
             </p>
           </div>
 
@@ -864,7 +955,8 @@ export default function Launch({ missions }: any) {
                         Global Access
                       </h3>
                       <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                        Tap into a global crypto network with trillions of dollars at your fingertips.
+                        Tap into a global crypto network with trillions of
+                        dollars at your fingertips.
                       </p>
                     </div>
                   </div>
@@ -890,7 +982,8 @@ export default function Launch({ missions }: any) {
                         Trustless
                       </h3>
                       <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                        All transactions are onchain, ensuring that everyone can see how funds are spent.
+                        All transactions are onchain, ensuring that everyone can
+                        see how funds are spent.
                       </p>
                     </div>
                   </div>
@@ -916,7 +1009,8 @@ export default function Launch({ missions }: any) {
                         Battle Tested
                       </h3>
                       <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                        Powered by Juicebox, a proven and audited platform with over 1,000+ projects and over $200,000,000+ raised.
+                        Powered by Juicebox, a proven and audited platform with
+                        over 1,000+ projects and over $200,000,000+ raised.
                       </p>
                     </div>
                   </div>
@@ -942,7 +1036,8 @@ export default function Launch({ missions }: any) {
                         Scalable
                       </h3>
                       <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                        Adapt your fundraising strategy as your mission evolves with our quick launch guidelines and templates.
+                        Adapt your fundraising strategy as your mission evolves
+                        with our quick launch guidelines and templates.
                       </p>
                     </div>
                   </div>
@@ -968,7 +1063,9 @@ export default function Launch({ missions }: any) {
                         Power of the Network
                       </h3>
                       <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                        The Space Acceleration Network brings leading space companies, enthusiasts, and professionals onchain from around the globe.
+                        The Space Acceleration Network brings leading space
+                        companies, enthusiasts, and professionals onchain from
+                        around the globe.
                       </p>
                     </div>
                   </div>
@@ -994,7 +1091,8 @@ export default function Launch({ missions }: any) {
                         Internet Speed
                       </h3>
                       <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                        Launch and fund your mission in minutes, not months, with instant global access to capital.
+                        Launch and fund your mission in minutes, not months,
+                        with instant global access to capital.
                       </p>
                     </div>
                   </div>
@@ -1008,8 +1106,6 @@ export default function Launch({ missions }: any) {
         <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black/50 to-transparent"></div>
         <div className="absolute top-0 right-0 w-full h-32 bg-gradient-to-b from-black/50 to-transparent"></div>
       </section>
-
-
 
       {/* Get Started Today Section - Fullscreen Space Theme */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -1044,9 +1140,10 @@ export default function Launch({ missions }: any) {
                 Get Started Today
               </h2>
               <p className="text-white/90 text-sm md:text-lg lg:text-xl xl:text-2xl max-w-3xl mx-auto leading-relaxed px-4">
-                The next great space mission starts here. Join the decentralized space race and fund your mission with the Launchpad.
+                The next great space mission starts here. Join the decentralized
+                space race and fund your mission with the Launchpad.
               </p>
-              
+
               {/* CTA Button */}
               <div className="pt-6 md:pt-8">
                 <div className="relative group">
@@ -1063,15 +1160,20 @@ export default function Launch({ missions }: any) {
                         {/* Text glow effect */}
                         <span className="absolute inset-0 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent blur-sm opacity-50"></span>
                       </span>
-                      
+
                       {/* Arrow icon */}
-                      <svg 
-                        className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform duration-300 ml-1 sm:ml-2" 
-                        fill="none" 
-                        stroke="currentColor" 
+                      <svg
+                        className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform duration-300 ml-1 sm:ml-2"
+                        fill="none"
+                        stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 7l5 5m0 0l-5 5m5-5H6"
+                        />
                       </svg>
                     </div>
                   </StandardButton>
@@ -1095,12 +1197,12 @@ export default function Launch({ missions }: any) {
           <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-gradient-to-r from-[#5159CC] to-[#4660E7] rounded-full opacity-30 blur-lg animate-pulse delay-1000"></div>
           <div className="absolute top-1/2 right-1/3 w-20 h-20 bg-gradient-to-r from-[#4660E7] to-[#6C407D] rounded-full opacity-25 blur-lg animate-pulse delay-2000"></div>
           <div className="absolute top-3/4 left-1/3 w-16 h-16 bg-gradient-to-r from-[#5F4BA2] to-[#5159CC] rounded-full opacity-15 blur-lg animate-pulse delay-1500"></div>
-          
+
           {/* Nebula swirls */}
           <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-[#6C407D]/10 to-[#5F4BA2]/10 rounded-full blur-3xl"></div>
           <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-gradient-to-r from-[#5159CC]/10 to-[#4660E7]/10 rounded-full blur-3xl"></div>
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-[#4660E7]/5 to-[#6C407D]/5 rounded-full blur-3xl"></div>
-          
+
           {/* Constellation dots */}
           <div className="absolute top-1/5 right-1/3 w-1 h-1 bg-white/30 rounded-full"></div>
           <div className="absolute top-2/5 left-1/5 w-1 h-1 bg-cyan-400/40 rounded-full"></div>
@@ -1128,7 +1230,7 @@ export default function Launch({ missions }: any) {
                 {/* Decorative background elements */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#6C407D]/5 to-[#5F4BA2]/5 rounded-3xl"></div>
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] rounded-t-3xl"></div>
-                
+
                 {/* Content */}
                 <div className="relative z-10">
                   <LaunchpadFAQs />
@@ -1155,6 +1257,16 @@ export default function Launch({ missions }: any) {
 }
 
 export const getStaticProps: GetStaticProps = async () => {
+  // Redirect to coming-soon page in production
+  if (process.env.NEXT_PUBLIC_ENV === 'prod') {
+    return {
+      redirect: {
+        destination: '/coming-soon?from=launch',
+        permanent: false,
+      },
+    }
+  }
+
   try {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
