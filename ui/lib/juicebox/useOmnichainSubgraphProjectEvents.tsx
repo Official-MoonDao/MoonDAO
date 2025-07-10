@@ -6,14 +6,8 @@ export type EventType =
   | 'payEvent'
   | 'addToBalanceEvent'
   | 'mintTokensEvent'
-  | 'cashOutEvent'
-  | 'deployedERC20Event'
+  | 'deployErc20Event'
   | 'projectCreateEvent'
-  | 'distributePayoutsEvent'
-  | 'distributeReservedTokensEvent'
-  | 'distributeToReservedTokenSplitEvent'
-  | 'distributeToPayoutSplitEvent'
-  | 'useAllowanceEvent'
   | 'burnEvent'
 
 type ProjectEventFilter = 'all' | EventType | ''
@@ -36,27 +30,58 @@ const useOmnichainSubgraphProjectEvents = ({
       sucker?.projectId.toString(),
       projectId,
     ],
-    initialPageParam: 0,
-    queryFn: async ({ pageParam = 0 }) => {
+    initialPageParam: null as number | null,
+    queryFn: async ({ pageParam }: { pageParam: number | null }) => {
       if (!sucker && !projectId)
-        return { data: { projectEvents: [] }, nextCursor: undefined }
+        return {
+          data: { activityEvents: { items: [] } },
+          nextCursor: undefined,
+        }
 
-      const query = projectEventsQuery(
-        sucker?.projectId.toString() ?? projectId ?? '',
-        filter,
-        'timestamp',
-        'desc',
-        PAGE_SIZE,
-        pageParam * PAGE_SIZE
-      )
+      try {
+        const query = projectEventsQuery(
+          sucker?.projectId
+            ? Number(sucker.projectId.toString())
+            : projectId
+            ? Number(projectId)
+            : 0,
+          filter,
+          'timestamp',
+          'desc',
+          PAGE_SIZE,
+          pageParam // Pass the timestamp cursor for filtering
+        )
 
-      const res = await fetch(`/api/juicebox/query?query=${query}`)
-      const data = await res.json()
+        const res = await fetch('/api/juicebox/query', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query }),
+        })
 
-      const mightHaveNextPage = data.projectEvents.length === PAGE_SIZE
-      return {
-        data,
-        nextCursor: mightHaveNextPage ? pageParam + PAGE_SIZE : undefined,
+        const data = await res.json()
+
+        const activityEvents = data.activityEvents?.items || []
+
+        // Use the timestamp of the last item as the next cursor
+        const nextCursor =
+          activityEvents.length === PAGE_SIZE
+            ? getTimestampFromLastEvent(
+                activityEvents[activityEvents.length - 1]
+              )
+            : undefined
+
+        return {
+          data: { activityEvents: { items: activityEvents } },
+          nextCursor,
+        }
+      } catch (error) {
+        console.error('Error fetching project events:', error)
+        return {
+          data: { activityEvents: { items: [] } },
+          nextCursor: undefined,
+        }
       }
     },
     getNextPageParam: (lastPage) => {
@@ -65,6 +90,22 @@ const useOmnichainSubgraphProjectEvents = ({
   })
 
   return result
+}
+
+// Helper function to extract timestamp from the last event
+function getTimestampFromLastEvent(event: any): number | null {
+  if (!event) return null
+
+  // Extract timestamp from the nested event objects
+  const eventData =
+    event.payEvent ||
+    event.addToBalanceEvent ||
+    event.mintTokensEvent ||
+    event.deployErc20Event ||
+    event.projectCreateEvent ||
+    event.burnEvent
+
+  return eventData?.timestamp ? Number(eventData.timestamp) : null
 }
 
 export default useOmnichainSubgraphProjectEvents

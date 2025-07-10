@@ -142,23 +142,26 @@ export default function useJBProjectData({
   //Project and Payment terminal Subgraph Data
   useEffect(() => {
     async function getSubgraphData() {
-      if (!projectId) return
+      if (projectId === undefined) return
       try {
-        const res = await fetch(
-          '/api/juicebox/query?query=' + projectQuery(projectId),
-          {
-            method: 'POST',
-          }
-        )
+        const res = await fetch('/api/juicebox/query', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: projectQuery(projectId),
+          }),
+        })
         const data = await res.json()
-        const projectSubgraphData = data.projects?.[0]
+        const projectSubgraphData = data.projects?.items?.[0]
         setSubgraphData(projectSubgraphData)
       } catch (error) {
         console.error(error)
       }
     }
 
-    if (projectId) getSubgraphData()
+    if (projectId !== undefined) getSubgraphData()
   }, [projectId])
 
   //Project Directory Data
