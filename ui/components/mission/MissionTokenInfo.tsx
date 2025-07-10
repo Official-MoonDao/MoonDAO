@@ -24,8 +24,8 @@ export default function MissionTokenInfo({
       />
       <p>{`If funding is completed successfully, the locked tokens are treated as follows:`}</p>
       {[
-        '10% of the token is locked indefinitely on an Automated Market Maker (AMM).',
-        "10% of the token is locked for one year, and vested for three years, to be held by MoonDAO's Treasury.",
+        '2.5% of the token is locked indefinitely on an Automated Market Maker (AMM).',
+        "17.5% of the token is locked for one year, and vested for three years, to be held by MoonDAO's Treasury.",
         '30% of the token is locked for one year, and vested for three years, to be held by the Mission Team to distribute how they see fit.',
       ].map((item: string, index: number) => (
         <p key={index} className="ml-1">{`● ${item}`}</p>
