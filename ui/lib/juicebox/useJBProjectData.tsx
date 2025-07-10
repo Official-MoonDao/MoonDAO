@@ -26,6 +26,7 @@ export default function useJBProjectData({
   jbTokensContract,
   projectMetadata,
   projectSubgraphData,
+  _token,
 }: {
   projectId: number | undefined
   jbControllerContract: any
@@ -33,19 +34,22 @@ export default function useJBProjectData({
   jbTokensContract: any
   projectMetadata?: any
   projectSubgraphData?: any
+  _token?: any
 }) {
   const { selectedChain } = useContext(ChainContextV5)
 
   const [metadata, setMetadata] = useState<any>(projectMetadata)
   const [ruleset, setRuleset] = useState<any>()
-  const [token, setToken] = useState<any>({
-    tokenAddress: '',
-    tokenName: '',
-    tokenSymbol: '',
-    tokenSupply: '',
-    reservedTokens: '',
-    reservedRate: '',
-  })
+  const [token, setToken] = useState<any>(
+    _token || {
+      tokenAddress: '',
+      tokenName: '',
+      tokenSymbol: '',
+      tokenSupply: '',
+      reservedTokens: '',
+      reservedRate: '',
+    }
+  )
   const [subgraphData, setSubgraphData] = useState<any>(projectSubgraphData)
 
   const last7DaysPercent = useJBProjectTrendingPercentageIncrease(
@@ -138,23 +142,26 @@ export default function useJBProjectData({
   //Project and Payment terminal Subgraph Data
   useEffect(() => {
     async function getSubgraphData() {
-      if (!projectId) return
+      if (projectId === undefined) return
       try {
-        const res = await fetch(
-          '/api/juicebox/query?query=' + projectQuery(projectId),
-          {
-            method: 'POST',
-          }
-        )
+        const res = await fetch('/api/juicebox/query', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: projectQuery(projectId),
+          }),
+        })
         const data = await res.json()
-        const projectSubgraphData = data.projects?.[0]
+        const projectSubgraphData = data.projects?.items?.[0]
         setSubgraphData(projectSubgraphData)
       } catch (error) {
         console.error(error)
       }
     }
 
-    if (projectId) getSubgraphData()
+    if (projectId !== undefined) getSubgraphData()
   }, [projectId])
 
   //Project Directory Data

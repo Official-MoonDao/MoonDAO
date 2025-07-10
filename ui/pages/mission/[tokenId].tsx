@@ -129,14 +129,16 @@ const fetchFromIPFSWithFallback = async (ipfsHash: string, timeout = 3000) => {
 type ProjectProfileProps = {
   tokenId: string
   mission: Mission
-  stage: number
-  deadline: number | undefined
+  _stage: number
+  _deadline: number | undefined
+  _token?: any
 }
 
 export default function MissionProfile({
   mission,
-  stage,
-  deadline,
+  _stage,
+  _deadline,
+  _token,
 }: ProjectProfileProps) {
   const [isLoading, setIsLoading] = useState(false)
   const account = useActiveAccount()
@@ -198,6 +200,8 @@ export default function MissionProfile({
     fundingGoal,
     primaryTerminalAddress,
     backers,
+    stage,
+    deadline,
     refreshBackers,
     poolDeployerAddress,
   } = useMissionData({
@@ -207,6 +211,9 @@ export default function MissionProfile({
     jbControllerContract,
     jbDirectoryContract,
     jbTokensContract,
+    _stage,
+    _deadline,
+    _token,
   })
 
   const { adminHatId, isManager } = useTeamData(
@@ -219,8 +226,9 @@ export default function MissionProfile({
 
   const { points, isLoading: isLoadingPoints } = useJBProjectTimeline(
     selectedChain,
-    mission?.projectId,
-    subgraphData?.createdAt
+    subgraphData?.createdAt,
+    subgraphData?.suckerGroupId,
+    mission?.projectId
   )
 
   const missionTokenContract = useContract({
@@ -559,31 +567,45 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
-    const [metadataURI, stage, payHookAddress] = await Promise.all([
-      readContract({
-        contract: jbControllerContract,
-        method: 'uriOf' as string,
-        params: [missionRow.projectId],
-      }).then((result) => {
-        return result
-      }),
-      readContract({
-        contract: missionCreatorContract,
-        method: 'stage' as string,
-        params: [tokenId],
-      }).then((result) => {
-        return result
-      }),
-      readContract({
-        contract: missionCreatorContract,
-        method: 'missionIdToPayHook' as string,
-        params: [tokenId],
-      })
-        .then((result) => {
+    // Create jbTokensContract for token data fetching
+    const jbTokensContract = getContract({
+      client: serverClient,
+      address: JBV4_TOKENS_ADDRESSES[chainSlug],
+      abi: JBV4TokensABI as any,
+      chain: chain,
+    })
+
+    const [metadataURI, stage, payHookAddress, tokenAddress] =
+      await Promise.all([
+        readContract({
+          contract: jbControllerContract,
+          method: 'uriOf' as string,
+          params: [missionRow.projectId],
+        }).then((result) => {
           return result
+        }),
+        readContract({
+          contract: missionCreatorContract,
+          method: 'stage' as string,
+          params: [tokenId],
+        }).then((result) => {
+          return result
+        }),
+        readContract({
+          contract: missionCreatorContract,
+          method: 'missionIdToPayHook' as string,
+          params: [tokenId],
         })
-        .catch(() => null), // Don't fail if this fails
-    ])
+          .then((result) => {
+            return result
+          })
+          .catch(() => null), // Don't fail if this fails
+        readContract({
+          contract: jbTokensContract,
+          method: 'tokenOf' as string,
+          params: [missionRow.projectId],
+        }),
+      ])
 
     const ipfsHash = metadataURI.startsWith('ipfs://')
       ? metadataURI.replace('ipfs://', '')
@@ -625,6 +647,61 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
     const [metadata, deadline] = await Promise.all(promises)
 
+    // Fetch token data if token address exists
+    let tokenData = {
+      tokenAddress: tokenAddress || '',
+      tokenName: '',
+      tokenSymbol: '',
+      tokenSupply: '',
+      reservedTokens: '',
+      reservedRate: '',
+    }
+
+    if (
+      tokenAddress &&
+      tokenAddress !== '0x0000000000000000000000000000000000000000'
+    ) {
+      try {
+        const tokenContract = getContract({
+          client: serverClient,
+          address: tokenAddress,
+          abi: JBV4TokenABI as any,
+          chain: chain,
+        })
+
+        const [nameResult, symbolResult, supplyResult] =
+          await Promise.allSettled([
+            readContract({
+              contract: tokenContract,
+              method: 'name' as string,
+              params: [],
+            }),
+            readContract({
+              contract: tokenContract,
+              method: 'symbol' as string,
+              params: [],
+            }),
+            readContract({
+              contract: tokenContract,
+              method: 'totalSupply' as string,
+              params: [],
+            }),
+          ])
+
+        if (nameResult.status === 'fulfilled' && nameResult.value) {
+          tokenData.tokenName = nameResult.value
+        }
+        if (symbolResult.status === 'fulfilled' && symbolResult.value) {
+          tokenData.tokenSymbol = symbolResult.value
+        }
+        if (supplyResult.status === 'fulfilled' && supplyResult.value) {
+          tokenData.tokenSupply = supplyResult.value.toString()
+        }
+      } catch (error) {
+        console.warn('Failed to fetch token data:', error)
+      }
+    }
+
     const mission = {
       id: missionRow.id,
       teamId: missionRow.teamId,
@@ -635,8 +712,9 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     return {
       props: {
         mission,
-        stage: +stage.toString(),
-        deadline,
+        _stage: +stage.toString(),
+        _deadline: deadline,
+        _token: tokenData,
       },
     }
   } catch (error) {

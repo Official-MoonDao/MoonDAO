@@ -13,11 +13,20 @@ export default function MissionTokenomicsExplainer() {
 "
       />
 
-      <Point point="Fund Allocation: Teams can withdraw up to 80% of their total raised funds. The remaining 20% is allocated as follows:" />
+      <Point point="ETH Allocation" />
       <div className="ml-8 flex flex-col">
-        <SubPoint point="10% to liquidity to ensure tradability and market stability." />
-        <SubPoint point="7.5% to MoonDAO to support the broader space acceleration ecosystem." />
-        <SubPoint point="2.5% to Juicebox, the underlying protocol powering the fundraising infrastructure." />
+        <SubPoint point="90% to Mission Team" />
+        <SubPoint point="5% to LP Pool" />
+        <SubPoint point="2.5% to MoonDAO" />
+        <SubPoint point="2.5% to Juicebox" />
+      </div>
+
+      <Point point="Token Allocation: Teams can withdraw up to 50% of their total raised funds. The remaining 50% is allocated as follows:" />
+      <div className="ml-8 flex flex-col">
+        <SubPoint point="50% to Contributors" />
+        <SubPoint point="30% to Mission Team" />
+        <SubPoint point="17.5% to MoonDAO" />
+        <SubPoint point="2.5% to LP Pool" />
       </div>
 
       <Point point="Mission Ownership & Security: The mission and all associated funds are fully controlled by your team wallet. If teammates fail to maintain access to the wallets connected to the team multisig, funds may become permanently inaccessible, with no recourse for recovery." />

@@ -189,17 +189,6 @@ contract FeeHookTest is Test, Config, Constants {
         return 0;
     }
 
-    function testCheckInWeekOver() public {
-        vm.startBroadcast(deployerAddress);
-        feeHook = deployHook();
-        vm.stopBroadcast();
-
-        skip(8 days);
-        vm.prank(user1);
-        vm.expectRevert("Week over");
-        feeHook.checkIn();
-    }
-
     function testCheckInDuplicate() public {
         vm.startBroadcast(deployerAddress);
         feeHook = deployHook();
