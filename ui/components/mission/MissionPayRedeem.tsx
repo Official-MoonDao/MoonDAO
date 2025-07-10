@@ -411,6 +411,13 @@ export default function MissionPayRedeem({
     params: [address, mission?.projectId],
   })
 
+  // Get the proper JB token balance instead of ERC20 balance
+  const { data: jbTokenBalance } = useRead({
+    contract: jbTokensContract,
+    method: 'totalBalanceOf' as string,
+    params: [address, mission?.projectId],
+  })
+
   //check if the connected wallet is a signer of the team's multisig
   useEffect(() => {
     const isSigner = async () => {
@@ -596,15 +603,21 @@ export default function MissionPayRedeem({
     }
 
     try {
+      // Use the proper JB token balance, not the ERC20 balance
+      const tokenAmountWei = jbTokenBalance
+        ? BigInt(jbTokenBalance.toString())
+        : BigInt(tokenCredit.toString())
+
+      // Set minimum to 0 like in the tests to avoid minimum errors
       const transaction = prepareContractCall({
         contract: primaryTerminalContract,
         method: 'cashOutTokensOf' as string,
         params: [
           address,
           mission?.projectId,
-          tokenBalance * 1e18 || tokenCredit.toString(),
+          tokenAmountWei,
           JB_NATIVE_TOKEN_ADDRESS,
-          tokenBalance * 1e18 || tokenCredit.toString(),
+          0, // Set minimum to 0 like in tests
           address,
           '',
         ],
@@ -642,6 +655,8 @@ export default function MissionPayRedeem({
     mission?.projectId,
     router,
     tokenBalance,
+    jbTokenBalance,
+    tokenCredit,
   ])
 
   //Claim all token credit for the connected wallet
