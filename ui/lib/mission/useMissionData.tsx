@@ -23,13 +23,16 @@ export default function useMissionData({
   jbTokensContract,
   projectMetadata,
   projectSubgraphData,
+  _stage,
+  _deadline,
+  _token,
 }: any) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const [fundingGoal, setFundingGoal] = useState(0)
-  const [stage, setStage] = useState<MissionStage>()
+  const [stage, setStage] = useState<MissionStage>(_stage)
   const [backers, setBackers] = useState<any[]>([])
-  const [deadline, setDeadline] = useState<number | undefined>(undefined)
+  const [deadline, setDeadline] = useState<number | undefined>(_deadline)
   const [poolDeployerAddress, setPoolDeployerAddress] = useState<string>()
 
   const jbProjectData = useJBProjectData({
@@ -39,6 +42,7 @@ export default function useMissionData({
     jbTokensContract,
     projectMetadata,
     projectSubgraphData,
+    _token,
   })
 
   useEffect(() => {
