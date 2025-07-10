@@ -4,10 +4,13 @@ import Link from 'next/link'
 export default function SweepstakesHighlights() {
   return (
     <div>
-      <p className="mt-5 bg-[#CBE4F7] text-[#1F212B] dark:bg-[#D7594F36] dark:text-white px-2 py-2 xl:py-3 xl:px-4 w-full xl:w-[95%] xl:text-left text-sm xl:text-base">
-        MoonDAO is sending regular people to space as one small step in our
-        mission to accelerate a multiplanetary future for all.
-      </p>
+      <div className="mt-5 bg-gradient-to-br from-gray-900/40 via-blue-900/20 to-purple-900/10 backdrop-blur-xl rounded-2xl shadow-2xl w-full xl:w-[95%] p-6">
+        <p className="text-white xl:text-left text-sm xl:text-base">
+          We sent the first crowdraised astronaut to space, selected via onchain
+          voting, and a second everyday person chosen randomly via onchain
+          sweepstakes.
+        </p>
+      </div>
 
       {/* Highlighting Astronauts */}
       <div className="mt-10 flex flex-col lg:flex-row items-center">
@@ -21,30 +24,31 @@ export default function SweepstakesHighlights() {
           />
         </div>
         <div className="mt-4 lg:mt-0 lg:w-2/3 px-4">
-          <h2 className="text-xl font-bold">
+          <h2 className="text-xl font-bold text-white">
             Coby Cotton: MoonDAO's First Astronaut
           </h2>
-          <p className="mt-3 text-[#1F212B] dark:text-white px-2 py-2 xl:py-3 xl:px-4 text-sm xl:text-base">
+          <div className="mt-3 bg-slate-800/30 border border-slate-600/30 backdrop-blur-lg text-white px-4 py-4 xl:py-6 xl:px-6 text-sm xl:text-base rounded-lg shadow-lg">
             Coby is one of the five cofounders of the YouTube channel Dude
             Perfect, the most-subscribed sports channel on YouTube and one of
             the most popular in the world with more than 57 million followers.
             He co-founded the sports entertainment channel known for
             specializing in trick shots and comedy videos in 2009 with his
             college roommates.
-          </p>
-          <p className="mt-3 text-[#1F212B] dark:text-white px-2 py-2 xl:py-3 xl:px-4 text-sm xl:text-base">
+          </div>
+          <div className="mt-3 bg-slate-800/30 border border-slate-600/30 backdrop-blur-lg text-white px-4 py-4 xl:py-6 xl:px-6 text-sm xl:text-base rounded-lg shadow-lg">
             MoonDAO members voted to have Coby represent them on this flight and
             he flew as part of Blue Origin's NS-22 mission.{' '}
             <u>
               <Link
                 href="https://www.youtube.com/watch?v=YXXlSG-du7c"
                 target="_blank"
+                className="text-blue-300 hover:text-blue-200 transition-colors"
               >
                 Watch the launch video
               </Link>
             </u>
             .
-          </p>
+          </div>
         </div>
       </div>
 
@@ -59,10 +63,10 @@ export default function SweepstakesHighlights() {
           />
         </div>
         <div className="mt-4 lg:mt-0 lg:w-2/3 order-1 px-4">
-          <h2 className="text-xl font-bold">
+          <h2 className="text-xl font-bold text-white">
             Dr. Eiman Jahangir: MoonDAO's Second Astronaut
           </h2>
-          <p className="mt-3 text-[#1F212B] dark:text-white px-2 py-2 xl:py-3 xl:px-4 text-sm xl:text-base">
+          <div className="mt-3 bg-slate-800/30 border border-slate-600/30 backdrop-blur-lg text-white px-4 py-4 xl:py-6 xl:px-6 text-sm xl:text-base rounded-lg shadow-lg">
             Dr. Eiman Jahangir is a Cardiologist and Associate Professor of
             Medicine and Radiology at Vanderbilt University Medical Center,
             where he treats patients with heart disease and educates future
@@ -71,19 +75,22 @@ export default function SweepstakesHighlights() {
             decades, Eiman has been a NASA astronaut candidate finalist twice,
             participated in analog astronaut missions, and trained in various
             aspects of human spaceflight.
-          </p>
-          <p className="mt-3 text-[#1F212B] dark:text-white px-2 py-2 xl:py-3 xl:px-4 text-sm xl:text-base">
-            Eiman is a long-time member of MoonDAO was selected via the Ticket to Space sweepstakes, flying to space as part of Blue Origin's NS-26 mission.{' '}
+          </div>
+          <div className="mt-3 bg-slate-800/30 border border-slate-600/30 backdrop-blur-lg text-white px-4 py-4 xl:py-6 xl:px-6 text-sm xl:text-base rounded-lg shadow-lg">
+            Eiman is a long-time member of MoonDAO was selected via the Ticket
+            to Space sweepstakes, flying to space as part of Blue Origin's NS-26
+            mission.{' '}
             <u>
               <Link
                 href="https://www.youtube.com/watch?v=O8Z5HVXOwsk"
                 target="_blank"
+                className="text-blue-300 hover:text-blue-200 transition-colors"
               >
                 Watch the launch video
               </Link>
             </u>
             .
-          </p>
+          </div>
         </div>
       </div>
     </div>
