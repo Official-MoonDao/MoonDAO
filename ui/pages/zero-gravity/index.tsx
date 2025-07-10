@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import Head from '../../components/layout/Head'
 import Container from '@/components/layout/Container'
+import Head from '@/components/layout/Head'
 
 export default function ZeroGravity() {
   return (
@@ -43,9 +43,9 @@ export default function ZeroGravity() {
 
             <section className="mt-4 w-full flex flex-col items-start">
               {/* <PurchasePortal validVP={validVP} /> */}
-              <h1 className="mt-4 font-bold text-2xl text-white">
+              <h3 className="mt-4 font-bold text-2xl text-white">
                 {'Contact:'}
-              </h1>
+              </h3>
               <p className="mt-6 font-Lato text-base xl:text-lg text-white text-opacity-70">
                 {`Fill out the form below to get notified about ticket sales for future VIP training opportunities in zero gravity.`}
               </p>
