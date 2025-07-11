@@ -4,6 +4,8 @@ import { FEE_HOOK_ADDRESSES } from 'const/config'
 import { BigNumber } from 'ethers'
 import { ethers } from 'ethers'
 import React, { useState, useEffect, useContext } from 'react'
+import { Line } from 'rc-progress'
+import confetti from 'canvas-confetti'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
@@ -56,6 +58,7 @@ export default function Fees() {
   const [feesAvailable, setFeesAvailable] = useState<string | null>(null)
   const [estimatedFees, setEstimatedFees] = useState<string | null>(null)
   const [feeData, setFeeData] = useState<any[]>([])
+  const [weekPercent, setWeekPercent] = useState<number>(0)
   const { selectedWallet } = useContext(PrivyWalletContext)
 
   useEffect(() => {
@@ -97,6 +100,20 @@ export default function Fees() {
 
     fetchBalances()
   }, [address, chains, client, WEEK])
+
+  useEffect(() => {
+    if (!feeData.length) return
+    const starts = feeData.map((d) => BigNumber.from(d.start).toNumber())
+    const earliest = Math.min(...starts)
+    const update = () => {
+      const now = Math.floor(Date.now() / 1000)
+      const percent = ((now - earliest) / WEEK) * 100
+      setWeekPercent(Math.max(0, Math.min(100, percent)))
+    }
+    update()
+    const id = setInterval(update, 60000)
+    return () => clearInterval(id)
+  }, [feeData, WEEK])
 
   useEffect(() => {
     if (!address) return
@@ -238,6 +255,13 @@ export default function Fees() {
       }
       setSelectedChain(currentChain)
       toast.success('Checked in!', { style: toastStyle })
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        shapes: ['circle', 'star'],
+        colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
+      })
       setIsCheckedIn(true)
     } catch (error) {
       console.error('Error checking in:', error)
@@ -319,6 +343,19 @@ export default function Fees() {
                             : `${checkedInCount} check ins this week!`
                           : 'No one has checked in yet!'
                         : 'Loading...'}
+                    </div>
+                  )}
+                  {weekPercent >= 0 && (
+                    <div className="mt-4">
+                      <Line
+                        percent={weekPercent}
+                        strokeWidth={4}
+                        strokeColor="#D7594F"
+                        trailColor="#D7594F2B"
+                      />
+                      <div className="text-sm text-center mt-1 opacity-75">
+                        {weekPercent.toFixed(1)}% of week passed
+                      </div>
                     </div>
                   )}
                 </div>
