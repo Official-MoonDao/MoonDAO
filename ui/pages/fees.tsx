@@ -53,6 +53,7 @@ export default function Fees() {
   const [isCheckedIn, setIsCheckedIn] = useState(false)
   const [checkedInCount, setCheckedInCount] = useState<number | null>(null)
   const [feesAvailable, setFeesAvailable] = useState<string | null>(null)
+  const [estimatedFees, setEstimatedFees] = useState<string | null>(null)
   const [feeData, setFeeData] = useState<any[]>([])
   const { selectedWallet } = useContext(PrivyWalletContext)
 
@@ -116,6 +117,7 @@ export default function Fees() {
         setFeeData(results)
 
         let totalFees = BigNumber.from(0)
+        let totalEstimated = BigNumber.from(0)
         let allChecked = true
         let totalCount = 0
         const now = Math.floor(Date.now() / 1000)
@@ -128,9 +130,20 @@ export default function Fees() {
               allChecked = false
             }
           }
+          try {
+            const estimate = await readContract({
+              contract: r.contract,
+              method: 'estimateFees' as string,
+              params: [],
+            })
+            totalEstimated = totalEstimated.add(BigNumber.from(estimate || 0))
+          } catch (err) {
+            console.error('estimateFees failed', err)
+          }
         }
 
         setFeesAvailable(ethers.utils.formatEther(totalFees))
+        setEstimatedFees(ethers.utils.formatEther(totalEstimated))
         setCheckedInCount(totalCount)
         setIsCheckedIn(allChecked)
       } catch (error) {
@@ -219,6 +232,22 @@ export default function Fees() {
                         : 'Loading...'
                     }
                   />
+                  {estimatedFees !== null && (
+                    <div className="mt-4">
+                      <div className="text-xl font-GoodTimes opacity-80">
+                        Your Estimated Fees:
+                      </div>
+                      <Asset
+                        name="ETH"
+                        amount={Number(estimatedFees).toFixed(4)}
+                        usd={
+                          ethPrice
+                            ? (Number(estimatedFees) * ethPrice).toFixed(2)
+                            : '0'
+                        }
+                      />
+                    </div>
+                  )}
                   {feesAvailable !== null && Number(feesAvailable) > 0 && (
                     <div className="mt-4 opacity-75">
                       {checkedInCount !== null
