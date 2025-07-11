@@ -160,7 +160,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
       <div className="mt-6 bg-black/20 rounded-xl p-4 border border-white/10">
         <div
           id="pagination-container"
-          className="w-full flex font-GoodTimes text-lg flex-row justify-center items-center gap-8"
+          className="w-full flex font-GoodTimes text-lg flex-row justify-center items-center gap-2 sm:gap-8"
         >
           <button
             onClick={() => {
@@ -168,7 +168,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
                 handlePageChange(pageIdx - 1)
               }
             }}
-            className={`pagination-button p-2 rounded-lg transition-all duration-200 ${
+            className={`pagination-button p-2 rounded-lg transition-all duration-200 flex-shrink-0 ${
               pageIdx === 1
                 ? 'opacity-30 cursor-not-allowed'
                 : 'cursor-pointer opacity-100 hover:bg-white/10 hover:scale-110'
@@ -182,7 +182,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
               height={35}
             />
           </button>
-          <p id="page-number" className="px-5 font-bold text-white/80">
+          <p id="page-number" className="px-2 sm:px-5 font-bold text-white/80 whitespace-nowrap text-sm sm:text-lg">
             Page {pageIdx} of {maxPage}
           </p>
           <button
@@ -191,7 +191,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
                 handlePageChange(pageIdx + 1)
               }
             }}
-            className={`pagination-button p-2 rounded-lg transition-all duration-200 ${
+            className={`pagination-button p-2 rounded-lg transition-all duration-200 flex-shrink-0 ${
               pageIdx === maxPage
                 ? 'opacity-30 cursor-not-allowed'
                 : 'cursor-pointer opacity-100 hover:bg-white/10 hover:scale-110'
