@@ -62,15 +62,16 @@ export default function Callout2() {
                     )
                     toast.success('Address copied to clipboard.')
                   }}
-                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0 flex-1"
                 >
                   <Image
                     src="/assets/icon-copy.svg"
                     alt="Copy address"
                     width={20}
                     height={20}
+                    className="flex-shrink-0"
                   />
-                  <span className="font-mono text-left text-sm 2xl:text-base">
+                  <span className="font-mono text-left text-sm 2xl:text-base break-all overflow-hidden">
                     0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395
                   </span>
                 </button>
