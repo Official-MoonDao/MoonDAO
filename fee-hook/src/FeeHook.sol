@@ -182,9 +182,8 @@ contract FeeHook is BaseHook, Ownable {
         emit FeesDistributed(fees);
     }
 
-    function estimateFees() external view returns (uint256) {
+    function estimateFees(address user) external view returns (uint256) {
         uint256 length = checkedIn.length;
-        require(length > 0, "No checkins");
 
         uint256 total;
         for (uint256 i = 0; i < length; i++) {
@@ -192,7 +191,7 @@ contract FeeHook is BaseHook, Ownable {
         }
 
         uint256 fees = address(this).balance;
-        uint256 bal = IERC20(vMooneyAddress).balanceOf(msg.sender);
+        uint256 bal = IERC20(vMooneyAddress).balanceOf(user);
         if (total == 0 || bal == 0) return 0;
         return (fees * bal) / total;
     }

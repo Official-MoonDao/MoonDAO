@@ -41,7 +41,8 @@ export default function Fees() {
   const { wallets } = useWallets()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains: Chain[] = isTestnet
-    ? [sepolia, arbitrumSepolia]
+    ? //? [sepolia, arbitrumSepolia]
+      [sepolia]
     : [arbitrum, base]
 
   const { isMobile } = useWindowSize()
@@ -58,121 +59,182 @@ export default function Fees() {
   const { selectedWallet } = useContext(PrivyWalletContext)
 
   useEffect(() => {
-    const fetchStatus = async () => {
-      if (!address) return
+    if (!address) return
 
+    const fetchBalances = async () => {
       try {
-        const results: any[] = []
-        for (const chain of chains) {
-          const slug = getChainSlug(chain)
-          const hookAddress = FEE_HOOK_ADDRESSES[slug]
-          if (!hookAddress) continue
-          const contract = getContract({
-            client,
-            address: hookAddress,
-            abi: FeeHook.abi as any,
-            chain,
-          })
+        const totalFees = (
+          await Promise.all(
+            chains.map(async (chain) => {
+              const slug = getChainSlug(chain)
+              const hookAddress = FEE_HOOK_ADDRESSES[slug]
+              if (!hookAddress) return BigNumber.from(0)
 
-          const start = await readContract({
-            contract,
-            method: 'weekStart' as string,
-            params: [],
-          })
-
-          const last = await readContract({
-            contract,
-            method: 'lastCheckIn' as string,
-            params: [address],
-          })
-
-          const count = await readContract({
-            contract,
-            method: 'getCheckedInCount' as string,
-            params: [],
-          })
-
-          const balance = await readContract({
-            contract,
-            method: 'balanceOf' as string,
-            params: [],
-          })
-
-          const checkedInOnChain = BigNumber.from(last).eq(
-            BigNumber.from(start)
+              const contract = getContract({
+                client,
+                address: hookAddress,
+                abi: FeeHook.abi as any,
+                chain,
+              })
+              return readContract({
+                contract,
+                method: 'balanceOf',
+                params: [],
+              })
+              //return bal
+            })
           )
+        ).reduce(
+          (acc, bal) => acc.add(bal || BigNumber.from(0)),
+          BigNumber.from(0)
+        )
 
-          results.push({
-            chain,
-            slug,
-            contract,
-            start,
-            last,
-            count,
-            balance,
-            checkedInOnChain,
+        setFeesAvailable(ethers.utils.formatEther(totalFees))
+      } catch (e) {
+        console.error('Error fetching balances:', e)
+      }
+    }
+
+    fetchBalances()
+  }, [address, chains, client, WEEK])
+
+  useEffect(() => {
+    if (!address) return
+
+    const fetchEstimates = async () => {
+      try {
+        const totalEstimated = (
+          await Promise.all(
+            chains.map(async (chain) => {
+              const slug = getChainSlug(chain)
+              const hookAddress = FEE_HOOK_ADDRESSES[slug]
+              if (!hookAddress) return BigNumber.from(0)
+
+              const contract = getContract({
+                client,
+                address: hookAddress,
+                abi: FeeHook.abi as any,
+                chain,
+              })
+              return readContract({
+                contract,
+                method: 'estimateFees',
+                params: [address],
+              }).catch(() => BigNumber.from(0))
+            })
+          )
+        ).reduce(
+          (acc, est) => acc.add(est || BigNumber.from(0)),
+          BigNumber.from(0)
+        )
+
+        setEstimatedFees(ethers.utils.formatEther(totalEstimated))
+      } catch (e) {
+        console.error('Error fetching estimates:', e)
+      }
+    }
+
+    fetchEstimates()
+  }, [address, chains, client, WEEK])
+
+  useEffect(() => {
+    if (!address) return
+
+    const fetchStatus = async () => {
+      try {
+        const raw = await Promise.all(
+          chains.map(async (chain) => {
+            const slug = getChainSlug(chain)
+            const hookAddress = FEE_HOOK_ADDRESSES[slug]
+            if (!hookAddress) return null
+
+            const contract = getContract({
+              client,
+              address: hookAddress,
+              abi: FeeHook.abi as any,
+              chain,
+            })
+
+            const [start, last, count] = await Promise.all([
+              readContract({ contract, method: 'weekStart', params: [] }),
+              readContract({
+                contract,
+                method: 'lastCheckIn',
+                params: [address],
+              }),
+              readContract({
+                contract,
+                method: 'getCheckedInCount',
+                params: [],
+              }),
+            ])
+
+            return {
+              chain,
+              slug,
+              contract,
+              start,
+              last,
+              count,
+              checkedInOnChain: BigNumber.from(last).eq(BigNumber.from(start)),
+            }
           })
-        }
+        )
+
+        const results = raw.filter((r) => r) as Array<{
+          chain: any
+          slug: string
+          contract: any
+          start: BigNumber
+          last: BigNumber
+          count: BigNumber
+          checkedInOnChain: boolean
+        }>
 
         setFeeData(results)
 
-        let totalFees = BigNumber.from(0)
-        let totalEstimated = BigNumber.from(0)
-        let allChecked = true
-        let totalCount = 0
-        const now = Math.floor(Date.now() / 1000)
-
-        for (const r of results) {
-          totalFees = totalFees.add(BigNumber.from(r.balance || 0))
-          totalCount += r.count ? Number(r.count) : 0
-          if (BigNumber.from(r.balance || 0).gt(0)) {
-            if (!BigNumber.from(r.last).eq(BigNumber.from(r.start))) {
-              allChecked = false
+        // aggregate counts & allChecked
+        const { totalCount, allChecked } = results.reduce(
+          (acc, { last, start, count }) => {
+            acc.totalCount += Number(count || 0)
+            if (!BigNumber.from(last).eq(BigNumber.from(start))) {
+              acc.allChecked = false
             }
-          }
-          try {
-            const estimate = await readContract({
-              contract: r.contract,
-              method: 'estimateFees' as string,
-              params: [],
-            })
-            totalEstimated = totalEstimated.add(BigNumber.from(estimate || 0))
-          } catch (err) {
-            console.error('estimateFees failed', err)
-          }
-        }
+            return acc
+          },
+          { totalCount: 0, allChecked: true }
+        )
 
-        setFeesAvailable(ethers.utils.formatEther(totalFees))
-        setEstimatedFees(ethers.utils.formatEther(totalEstimated))
         setCheckedInCount(totalCount)
         setIsCheckedIn(allChecked)
-      } catch (error) {
-        console.error('Error fetching fee status:', error)
+      } catch (err) {
+        console.error('Error fetching check‑in status:', err)
       }
     }
+
     fetchStatus()
-  }, [address, isCheckedIn, WEEK])
+  }, [address, chains, client, WEEK])
 
   const handleCheckIn = async () => {
     try {
       if (!account) throw new Error('No account found')
       const currentChain = selectedChain
       for (const data of feeData) {
+        console.log('data.checkedInOnChain:', data.checkedInOnChain)
         if (data.checkedInOnChain) continue
-        if (BigNumber.from(data.balance || 0).gt(0)) {
-          if (selectedChain.id !== data.chain.id) {
-            setSelectedChain(data.chain)
-          }
-          const tx = prepareContractCall({
-            contract: data.contract,
-            method: 'checkIn' as string,
-            params: [],
-          })
-          await sendAndConfirmTransaction({
-            transaction: tx,
-            account,
-          })
+        console.log('data', data)
+        if (selectedChain.id !== data.chain.id) {
+          setSelectedChain(data.chain)
         }
+        const tx = prepareContractCall({
+          contract: data.contract,
+          method: 'checkIn' as string,
+          params: [],
+        })
+        await sendAndConfirmTransaction({
+          transaction: tx,
+          account,
+        })
       }
       setSelectedChain(currentChain)
       toast.success('Checked in!', { style: toastStyle })
@@ -198,7 +260,7 @@ export default function Fees() {
             headerSize="max(20px, 3vw)"
             description={'Get liquidity rewards by checking in weekly.'}
             preFooter={
-              <NoticeFooter 
+              <NoticeFooter
                 defaultImage="../assets/MoonDAO-Logo-White.svg"
                 defaultTitle="Need Help?"
                 defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
@@ -217,7 +279,7 @@ export default function Fees() {
               <div className="mt-3 w-[25vw] flex flex-col gap-4">
                 <div className="mb-2">
                   <div className="text-xl font-GoodTimes opacity-80">
-                    Rewards This Week:
+                    Total Weekly Rewards:
                   </div>
                   <Asset
                     name="ETH"
@@ -235,7 +297,7 @@ export default function Fees() {
                   {estimatedFees !== null && (
                     <div className="mt-4">
                       <div className="text-xl font-GoodTimes opacity-80">
-                        Your Estimated Fees:
+                        Your Estimated Rewards:
                       </div>
                       <Asset
                         name="ETH"
