@@ -69,19 +69,11 @@ export default function Fees() {
               const slug = getChainSlug(chain)
               const hookAddress = FEE_HOOK_ADDRESSES[slug]
               if (!hookAddress) return BigNumber.from(0)
-
-              const contract = getContract({
-                client,
-                address: hookAddress,
-                abi: FeeHook.abi as any,
-                chain,
-              })
-              return readContract({
-                contract,
-                method: 'balanceOf',
-                params: [],
-              })
-              //return bal
+              const wallet = wallets[selectedWallet]
+              if (!wallet) return
+              const provider = await wallet.getEthersProvider()
+              const balance = await provider.getBalance(hookAddress)
+              return balance
             })
           )
         ).reduce(
