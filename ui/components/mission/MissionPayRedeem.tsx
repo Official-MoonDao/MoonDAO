@@ -67,6 +67,7 @@ function MissionPayRedeemContent({
   calculateEthAmount,
   formattedUsdInput,
   formatTokenAmount,
+  redeemAmount,
 }: any) {
   const isRefundable = stage === 3
 
@@ -188,17 +189,19 @@ function MissionPayRedeemContent({
             </div>
           </>
         )}
-        {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
-          <StandardButton
-            id="claim-button"
-            className="rounded-full gradient-2 rounded-full w-full py-1"
-            onClick={claimTokenCredit}
-            hoverEffect={false}
-          >
-            Claim {formatTokenAmount(tokenCredit.toString() / 1e18, 0)} $
-            {token?.tokenSymbol}
-          </StandardButton>
-        )}
+        {token?.tokenSymbol &&
+          +tokenCredit?.toString() > 0 &&
+          !isRefundable && (
+            <StandardButton
+              id="claim-button"
+              className="rounded-full gradient-2 rounded-full w-full py-1"
+              onClick={claimTokenCredit}
+              hoverEffect={false}
+            >
+              Claim {formatTokenAmount(tokenCredit.toString() / 1e18, 0)} $
+              {token?.tokenSymbol}
+            </StandardButton>
+          )}
       </div>
       {/* Token stats and redeem container */}
       <div className="xl:pt-4 flex flex-row justify-between gap-4 w-full">
@@ -244,7 +247,7 @@ function MissionPayRedeemContent({
                 <PrivyWeb3Button
                   id="redeem-button"
                   className="w-full rounded-full py-2"
-                  label="Redeem"
+                  label={`Redeem ${formatTokenAmount(redeemAmount, 4)} ETH`}
                   action={redeem}
                   noPadding
                 />
@@ -310,6 +313,7 @@ export default function MissionPayRedeem({
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
   const [message, setMessage] = useState('')
+  const [redeemAmount, setRedeemAmount] = useState(0)
 
   // USD input state and handlers
   const [usdInput, setUsdInput] = useState('')
@@ -461,6 +465,52 @@ export default function MissionPayRedeem({
     }
   }, [primaryTerminalContract, input, address, mission?.projectId, message])
 
+  const getRedeemQuote = useCallback(async () => {
+    if (!address) return
+    if (!primaryTerminalContract) {
+      console.error('Primary terminal contract not initialized')
+      return
+    }
+    if (!jbTokenBalance && !tokenCredit) return
+
+    try {
+      const tokenAmountWei = jbTokenBalance
+        ? BigInt(jbTokenBalance.toString())
+        : BigInt(tokenCredit.toString())
+
+      const transaction = prepareContractCall({
+        contract: primaryTerminalContract,
+        method: 'cashOutTokensOf' as string,
+        params: [
+          address,
+          mission?.projectId,
+          tokenAmountWei,
+          JB_NATIVE_TOKEN_ADDRESS,
+          0,
+          address,
+          '',
+        ],
+      })
+
+      const result = await simulateTransaction({
+        transaction,
+        account,
+      })
+
+      console.log('RESULT', result)
+      setRedeemAmount(Number(result.toString()) / 1e18)
+    } catch (error) {
+      console.error('Error getting redeem quote:', error)
+      setRedeemAmount(0)
+    }
+  }, [
+    primaryTerminalContract,
+    address,
+    mission?.projectId,
+    jbTokenBalance,
+    tokenCredit,
+  ])
+
   const buyMissionToken = useCallback(async () => {
     if (!account || !address) {
       console.error('No account or address available')
@@ -603,12 +653,10 @@ export default function MissionPayRedeem({
     }
 
     try {
-      // Use the proper JB token balance, not the ERC20 balance
       const tokenAmountWei = jbTokenBalance
         ? BigInt(jbTokenBalance.toString())
         : BigInt(tokenCredit.toString())
 
-      // Set minimum to 0 like in the tests to avoid minimum errors
       const transaction = prepareContractCall({
         contract: primaryTerminalContract,
         method: 'cashOutTokensOf' as string,
@@ -617,7 +665,7 @@ export default function MissionPayRedeem({
           mission?.projectId,
           tokenAmountWei,
           JB_NATIVE_TOKEN_ADDRESS,
-          0, // Set minimum to 0 like in tests
+          0,
           address,
           '',
         ],
@@ -706,6 +754,19 @@ export default function MissionPayRedeem({
     }
   }, [input])
 
+  useEffect(() => {
+    if (
+      (jbTokenBalance && jbTokenBalance > 0) ||
+      (tokenCredit && tokenCredit > 0)
+    ) {
+      getRedeemQuote()
+    } else {
+      setRedeemAmount(0)
+    }
+  }, [jbTokenBalance, tokenCredit, getRedeemQuote])
+
+  if (stage === 4) return null
+
   return (
     <>
       {!onlyModal && (
@@ -721,10 +782,11 @@ export default function MissionPayRedeem({
               lastSafeTxExecuted={lastSafeTxExecuted}
             />
           )}
+          {console.log('STAGE', stage, token?.tokenAddress, isTeamSigner)}
           {token &&
-            (!token?.tokenAddress || token.tokenAddress === '') &&
+            (!token?.tokenAddress || token.tokenAddress === ZERO_ADDRESS) &&
             isTeamSigner &&
-            stage !== 3 && (
+            stage < 3 && (
               <div className="p-8 md:p-0 flex md:block justify-center">
                 <StandardButton
                   id="deploy-token-button"
@@ -751,6 +813,7 @@ export default function MissionPayRedeem({
               calculateEthAmount={calculateEthAmount}
               formattedUsdInput={formattedUsdInput}
               formatTokenAmount={formatTokenAmount}
+              redeemAmount={redeemAmount}
             />
           </div>
         </>
@@ -826,16 +889,18 @@ export default function MissionPayRedeem({
               </button>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Image
-                src={mission?.metadata.logoUri}
-                width={100}
-                height={100}
-                className="rounded-full"
-                alt={`${token?.tokenSymbol} logo`}
-              />
-              <p>{`${token?.tokenSymbol} (${token?.tokenName})`}</p>
-            </div>
+            {token?.tokenSymbol && token?.tokenName && (
+              <div className="flex items-center gap-2">
+                <Image
+                  src={mission?.metadata.logoUri}
+                  width={100}
+                  height={100}
+                  className="rounded-full"
+                  alt={`${token?.tokenSymbol} logo`}
+                />
+                <p>{`${token?.tokenSymbol} (${token?.tokenName})`}</p>
+              </div>
+            )}
 
             <hr className="w-full" />
 
