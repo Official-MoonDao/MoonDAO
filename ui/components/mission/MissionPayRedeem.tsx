@@ -256,6 +256,7 @@ function MissionPayRedeemContent({
                       `Redeem ${formatTokenAmount(redeemAmount, 4)} ETH`
                     )
                   }
+                  isDisabled={isLoadingRedeemAmount}
                   action={redeem}
                   noPadding
                 />
