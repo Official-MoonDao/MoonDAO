@@ -45,6 +45,7 @@ import viemChains from '@/lib/viem/viemChains'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import { CopyIcon } from '../assets'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 import AcceptedPaymentMethods from '../privy/AcceptedPaymentMethods'
@@ -68,6 +69,7 @@ function MissionPayRedeemContent({
   formattedUsdInput,
   formatTokenAmount,
   redeemAmount,
+  isLoadingRedeemAmount,
 }: any) {
   const isRefundable = stage === 3
 
@@ -247,7 +249,13 @@ function MissionPayRedeemContent({
                 <PrivyWeb3Button
                   id="redeem-button"
                   className="w-full rounded-full py-2"
-                  label={`Redeem ${formatTokenAmount(redeemAmount, 4)} ETH`}
+                  label={
+                    isLoadingRedeemAmount ? (
+                      <LoadingSpinner />
+                    ) : (
+                      `Redeem ${formatTokenAmount(redeemAmount, 4)} ETH`
+                    )
+                  }
                   action={redeem}
                   noPadding
                 />
@@ -314,6 +322,7 @@ export default function MissionPayRedeem({
   const [output, setOutput] = useState(0)
   const [message, setMessage] = useState('')
   const [redeemAmount, setRedeemAmount] = useState(0)
+  const [isLoadingRedeemAmount, setIsLoadingRedeemAmount] = useState(true)
 
   // USD input state and handlers
   const [usdInput, setUsdInput] = useState('')
@@ -473,6 +482,7 @@ export default function MissionPayRedeem({
     }
     if (!jbTokenBalance && !tokenCredit) return
 
+    setIsLoadingRedeemAmount(true)
     try {
       const tokenAmountWei = jbTokenBalance
         ? BigInt(jbTokenBalance.toString())
@@ -502,6 +512,8 @@ export default function MissionPayRedeem({
     } catch (error) {
       console.error('Error getting redeem quote:', error)
       setRedeemAmount(0)
+    } finally {
+      setIsLoadingRedeemAmount(false)
     }
   }, [
     primaryTerminalContract,
@@ -762,6 +774,7 @@ export default function MissionPayRedeem({
       getRedeemQuote()
     } else {
       setRedeemAmount(0)
+      setIsLoadingRedeemAmount(false)
     }
   }, [jbTokenBalance, tokenCredit, getRedeemQuote])
 
@@ -814,6 +827,7 @@ export default function MissionPayRedeem({
               formattedUsdInput={formattedUsdInput}
               formatTokenAmount={formatTokenAmount}
               redeemAmount={redeemAmount}
+              isLoadingRedeemAmount={isLoadingRedeemAmount}
             />
           </div>
         </>
