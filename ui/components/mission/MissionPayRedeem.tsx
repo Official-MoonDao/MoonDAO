@@ -670,6 +670,10 @@ export default function MissionPayRedeem({
         ? BigInt(jbTokenBalance.toString())
         : BigInt(tokenCredit.toString())
 
+      // Calculate minimum with 5% slippage tolerance (95% of expected)
+      const expectedAmountWei = BigInt(Math.trunc(redeemAmount * 1e18))
+      const minAmountWei = (expectedAmountWei * BigInt(95)) / BigInt(100)
+
       const transaction = prepareContractCall({
         contract: primaryTerminalContract,
         method: 'cashOutTokensOf' as string,
@@ -678,7 +682,7 @@ export default function MissionPayRedeem({
           mission?.projectId,
           tokenAmountWei,
           JB_NATIVE_TOKEN_ADDRESS,
-          0,
+          minAmountWei, // Use 95% of expected amount as minimum
           address,
           '',
         ],
@@ -718,6 +722,7 @@ export default function MissionPayRedeem({
     tokenBalance,
     jbTokenBalance,
     tokenCredit,
+    redeemAmount,
   ])
 
   //Claim all token credit for the connected wallet
