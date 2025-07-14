@@ -28,7 +28,7 @@ export default function StandardDetailCard({
 }: StandardDetailCardProps) {
   const router = useRouter()
   const CardContent = (
-    <div className="w-full h-full min-h-[200px] p-4 bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 hover:border-slate-500/50 transition-all duration-200 hover:scale-[1.02] group">
+    <div className="w-full h-full p-4 bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 hover:border-slate-500/50 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40 transition-all duration-200 group">
       <div className="flex flex-row items-start gap-4 w-full h-full">
         {image && (
           <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] md:w-[120px] md:h-[120px] flex-shrink-0">
@@ -42,7 +42,7 @@ export default function StandardDetailCard({
           </div>
         )}
         <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
-          <div className="flex-1">
+          <div>
             <h1 className="font-bold font-GoodTimes text-xl text-white mb-3 break-words group-hover:text-slate-200 transition-colors text-left">
               {title}
             </h1>
@@ -104,7 +104,9 @@ export default function StandardDetailCard({
           {CardContent}
         </Link>
       ) : (
-        CardContent
+        <div className="w-full h-full">
+          {CardContent}
+        </div>
       )}
     </div>
   )
