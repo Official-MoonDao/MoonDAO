@@ -242,7 +242,13 @@ const MissionProfileHeader = React.memo(
                           <div className="ml-2">
                             <p className="text-gray-400 text-sm">DEADLINE</p>
                             <p className="text-white font-GoodTimes min-w-[250px]">
-                              {refundPeriodPassed
+                              {console.log(
+                                'STAGE',
+                                stage,
+                                refundPeriodPassed,
+                                duration
+                              )}
+                              {refundPeriodPassed || stage === 4
                                 ? 'PASSED'
                                 : stage === 3
                                 ? 'REFUND'

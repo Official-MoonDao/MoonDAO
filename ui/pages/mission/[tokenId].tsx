@@ -32,7 +32,7 @@ import { ethers } from 'ethers'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import {
   getContract,
@@ -155,12 +155,8 @@ export default function MissionProfile({
   const [duration, setDuration] = useState<any>()
   const [deadlinePassed, setDeadlinePassed] = useState(false)
   const [refundPeriodPassed, setRefundPeriodPassed] = useState(false)
-  const [hasRefreshedStageAfterDeadline, setHasRefreshedStageAfterDeadline] =
-    useState(false)
-  const [
-    hasRefreshedStageAfterRefundPeriod,
-    setHasRefreshedStageAfterRefundPeriod,
-  ] = useState(false)
+  const hasRefreshedStageAfterDeadlineRef = useRef(false)
+  const hasRefreshedStageAfterRefundPeriodRef = useRef(false)
 
   const hatsContract = useContract({
     address: HATS_ADDRESS,
@@ -240,15 +236,18 @@ export default function MissionProfile({
         setDeadlinePassed(isDeadlinePassed)
 
         // If deadline just passed and we haven't refreshed stage yet, do it now
-        if (isDeadlinePassed && !hasRefreshedStageAfterDeadline) {
-          refreshStage()
-          setHasRefreshedStageAfterDeadline(true)
+        if (isDeadlinePassed && !hasRefreshedStageAfterDeadlineRef.current) {
+          setTimeout(() => {
+            refreshStage()
+            hasRefreshedStageAfterDeadlineRef.current = true
+          }, 3000)
         }
 
         // Reset the flag if deadline is not passed (in case deadline changes)
-        if (!isDeadlinePassed && hasRefreshedStageAfterDeadline) {
-          setHasRefreshedStageAfterDeadline(false)
+        if (!isDeadlinePassed && hasRefreshedStageAfterDeadlineRef.current) {
+          hasRefreshedStageAfterDeadlineRef.current = false
         }
+
         if (
           refundPeriod !== undefined &&
           refundPeriod !== null &&
@@ -256,19 +255,25 @@ export default function MissionProfile({
         ) {
           const isRefundPeriodPassed = deadline + refundPeriod < Date.now()
           setRefundPeriodPassed(isRefundPeriodPassed)
-          if (isRefundPeriodPassed && !hasRefreshedStageAfterRefundPeriod) {
+          if (
+            isRefundPeriodPassed &&
+            !hasRefreshedStageAfterRefundPeriodRef.current
+          ) {
             refreshStage()
-            setHasRefreshedStageAfterRefundPeriod(true)
+            hasRefreshedStageAfterRefundPeriodRef.current = true
           }
-          if (!isRefundPeriodPassed && hasRefreshedStageAfterRefundPeriod) {
-            setHasRefreshedStageAfterRefundPeriod(false)
+          if (
+            !isRefundPeriodPassed &&
+            hasRefreshedStageAfterRefundPeriodRef.current
+          ) {
+            hasRefreshedStageAfterRefundPeriodRef.current = false
           }
         }
       }
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [deadline, refundPeriod])
+  }, [deadline, refundPeriod, refreshStage])
 
   const { adminHatId, isManager } = useTeamData(
     teamContract,
@@ -596,7 +601,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       return {
         props: {
           mission: {
-            id: 0,
+            id: 5,
             metadata: {
               name: 'Dummy Mission',
               description: 'This is a dummy mission',
@@ -605,7 +610,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
             projectId: 224,
             teamId: 1,
           },
-          _stage: 2,
+          _stage: 3,
           _deadline: Date.now() + 5 * 1000,
           _refundPeriod: Date.now() + 60 * 1000, // 1 minute after deadline
           _token: {

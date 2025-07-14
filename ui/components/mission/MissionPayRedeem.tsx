@@ -86,12 +86,12 @@ function MissionPayRedeemContent({
       id="mission-pay-redeem-container"
       className="z-50 bg-[#020617] rounded-[5vw] md:rounded-[2vw] w-full flex flex-col gap-4 lg:min-w-[430px] xl:items-stretch"
     >
-      <div
-        id="mission-pay-container"
-        className="lg:rounded-lg w-full flex-1 p-5 xl:p-5 flex flex-col gap-4 rounded-2xl justify-between"
-      >
-        {/* You pay */}
-        {!isRefundable && (
+      {!isRefundable && (
+        <div
+          id="mission-pay-container"
+          className="lg:rounded-lg w-full flex-1 p-5 xl:p-5 flex flex-col gap-4 rounded-2xl justify-between"
+        >
+          {/* You pay */}
           <div className="relative flex flex-col gap-4">
             {/* You pay - USD input with ETH display */}
             <div className="relative">
@@ -170,30 +170,24 @@ function MissionPayRedeemContent({
               </div>
             )}
           </div>
-        )}
-        {!isRefundable && (
-          <>
-            <StandardButton
-              id="open-contribute-modal"
-              className="rounded-full gradient-2 rounded-full w-full py-1"
-              onClick={() => setMissionPayModalEnabled(true)}
-              hoverEffect={false}
-            >
-              Contribute
-            </StandardButton>
-            <div className="w-full">
-              <AcceptedPaymentMethods />
-              <p className="xl:text-sm text-center">
-                {'Want to contribute by wire transfer?'}
-                <br />
-                {'Email us at info@moondao.com'}
-              </p>
-            </div>
-          </>
-        )}
-        {token?.tokenSymbol &&
-          +tokenCredit?.toString() > 0 &&
-          !isRefundable && (
+
+          <StandardButton
+            id="open-contribute-modal"
+            className="rounded-full gradient-2 rounded-full w-full py-1"
+            onClick={() => setMissionPayModalEnabled(true)}
+            hoverEffect={false}
+          >
+            Contribute
+          </StandardButton>
+          <div className="w-full">
+            <AcceptedPaymentMethods />
+            <p className="xl:text-sm text-center">
+              {'Want to contribute by wire transfer?'}
+              <br />
+              {'Email us at info@moondao.com'}
+            </p>
+          </div>
+          {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
             <StandardButton
               id="claim-button"
               className="rounded-full gradient-2 rounded-full w-full py-1"
@@ -204,7 +198,8 @@ function MissionPayRedeemContent({
               {token?.tokenSymbol}
             </StandardButton>
           )}
-      </div>
+        </div>
+      )}
       {/* Token stats and redeem container */}
       <div className="xl:pt-4 flex flex-row justify-between gap-4 w-full">
         {token?.tokenSupply > 0 && !isRefundable && (
@@ -507,8 +502,6 @@ export default function MissionPayRedeem({
         transaction,
         account,
       })
-
-      console.log('RESULT', result)
       setRedeemAmount(Number(result.toString()) / 1e18)
     } catch (error) {
       console.error('Error getting redeem quote:', error)
@@ -782,7 +775,7 @@ export default function MissionPayRedeem({
       setRedeemAmount(0)
       setIsLoadingRedeemAmount(false)
     }
-  }, [jbTokenBalance, tokenCredit, getRedeemQuote])
+  }, [jbTokenBalance, tokenCredit, getRedeemQuote, stage])
 
   if (stage === 4) return null
 
@@ -801,7 +794,6 @@ export default function MissionPayRedeem({
               lastSafeTxExecuted={lastSafeTxExecuted}
             />
           )}
-          {console.log('STAGE', stage, token?.tokenAddress, isTeamSigner)}
           {token &&
             (!token?.tokenAddress || token.tokenAddress === ZERO_ADDRESS) &&
             isTeamSigner &&
