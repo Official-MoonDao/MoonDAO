@@ -88,6 +88,13 @@ const jbControllerContract = getContract({
   chain: CHAIN,
 })
 
+const jbDirectoryContract = getContract({
+  client: serverClient,
+  address: JBV4_DIRECTORY_ADDRESSES[CHAIN_SLUG],
+  abi: JBV4DirectoryABI as any,
+  chain: CHAIN,
+})
+
 const missionCreatorContract = getContract({
   client: serverClient,
   address: MISSION_CREATOR_ADDRESSES[CHAIN_SLUG],
@@ -132,6 +139,7 @@ type ProjectProfileProps = {
   _stage: number
   _deadline: number | undefined
   _refundPeriod: number | undefined
+  _primaryTerminalAddress: string
   _token?: any
 }
 
@@ -140,6 +148,7 @@ export default function MissionProfile({
   _stage,
   _deadline,
   _refundPeriod,
+  _primaryTerminalAddress,
   _token,
 }: ProjectProfileProps) {
   const [isLoading, setIsLoading] = useState(false)
@@ -223,6 +232,7 @@ export default function MissionProfile({
     _stage,
     _deadline,
     _refundPeriod,
+    _primaryTerminalAddress,
     _token,
   })
 
@@ -613,6 +623,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
           _stage: 3,
           _deadline: Date.now() + 5 * 1000,
           _refundPeriod: Date.now() + 60 * 1000, // 1 minute after deadline
+          _primaryTerminalAddress: '0x0000000000000000000000000000000000000000',
           _token: {
             tokenAddress: '0x0000000000000000000000000000000000000000',
             tokenName: 'Dummy Token',
@@ -653,37 +664,47 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       chain: chain,
     })
 
-    const [metadataURI, stage, payHookAddress, tokenAddress] =
-      await Promise.all([
-        readContract({
-          contract: jbControllerContract,
-          method: 'uriOf' as string,
-          params: [missionRow.projectId],
-        }).then((result) => {
+    const [
+      metadataURI,
+      stage,
+      payHookAddress,
+      tokenAddress,
+      primaryTerminalAddress,
+    ] = await Promise.all([
+      readContract({
+        contract: jbControllerContract,
+        method: 'uriOf' as string,
+        params: [missionRow.projectId],
+      }).then((result) => {
+        return result
+      }),
+      readContract({
+        contract: missionCreatorContract,
+        method: 'stage' as string,
+        params: [tokenId],
+      }).then((result) => {
+        return result
+      }),
+      readContract({
+        contract: missionCreatorContract,
+        method: 'missionIdToPayHook' as string,
+        params: [tokenId],
+      })
+        .then((result) => {
           return result
-        }),
-        readContract({
-          contract: missionCreatorContract,
-          method: 'stage' as string,
-          params: [tokenId],
-        }).then((result) => {
-          return result
-        }),
-        readContract({
-          contract: missionCreatorContract,
-          method: 'missionIdToPayHook' as string,
-          params: [tokenId],
         })
-          .then((result) => {
-            return result
-          })
-          .catch(() => null), // Don't fail if this fails
-        readContract({
-          contract: jbTokensContract,
-          method: 'tokenOf' as string,
-          params: [missionRow.projectId],
-        }),
-      ])
+        .catch(() => null), // Don't fail if this fails
+      readContract({
+        contract: jbTokensContract,
+        method: 'tokenOf' as string,
+        params: [missionRow.projectId],
+      }),
+      readContract({
+        contract: jbDirectoryContract,
+        method: 'primaryTerminalOf' as string,
+        params: [missionRow.projectId, JB_NATIVE_TOKEN_ADDRESS],
+      }).catch(() => '0x0000000000000000000000000000000000000000'), // Default to zero address if fetch fails
+    ])
 
     const ipfsHash = metadataURI.startsWith('ipfs://')
       ? metadataURI.replace('ipfs://', '')
@@ -803,6 +824,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         _stage: +stage.toString(),
         _deadline: deadline,
         _refundPeriod: refundPeriod,
+        _primaryTerminalAddress: primaryTerminalAddress,
         _token: tokenData,
       },
     }

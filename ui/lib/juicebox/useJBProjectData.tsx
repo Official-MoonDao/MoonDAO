@@ -26,6 +26,7 @@ export default function useJBProjectData({
   jbTokensContract,
   projectMetadata,
   projectSubgraphData,
+  _primaryTerminalAddress,
   _token,
 }: {
   projectId: number | undefined
@@ -34,6 +35,7 @@ export default function useJBProjectData({
   jbTokensContract: any
   projectMetadata?: any
   projectSubgraphData?: any
+  _primaryTerminalAddress?: string
   _token?: any
 }) {
   const { selectedChain } = useContext(ChainContextV5)
@@ -56,8 +58,9 @@ export default function useJBProjectData({
     BigNumber.from(subgraphData?.volume ?? 0),
     BigNumber.from(subgraphData?.trendingVolume ?? 0)
   )
-  const [primaryTerminalAddress, setPrimaryTerminalAddress] =
-    useState<string>(ZERO_ADDRESS)
+  const [primaryTerminalAddress, setPrimaryTerminalAddress] = useState<string>(
+    _primaryTerminalAddress || ZERO_ADDRESS
+  )
 
   const tokenContract = useContract({
     chain: selectedChain,
@@ -203,8 +206,16 @@ export default function useJBProjectData({
       setPrimaryTerminalAddress(primaryTerminal)
     }
 
-    if (jbDirectoryContract && projectId) getProjectDirectoryData()
-  }, [jbDirectoryContract, projectId, token?.tokenAddress])
+    // Only fetch if _primaryTerminalAddress was not provided
+    if (jbDirectoryContract && projectId && !_primaryTerminalAddress) {
+      getProjectDirectoryData()
+    }
+  }, [
+    jbDirectoryContract,
+    projectId,
+    token?.tokenAddress,
+    _primaryTerminalAddress,
+  ])
 
   return {
     metadata,
