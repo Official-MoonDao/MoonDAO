@@ -4,6 +4,7 @@ import React, { useContext, memo, useState, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
+import { usePrivy } from '@privy-io/react-auth'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -34,7 +35,9 @@ const ProjectCardContent = memo(
     isMembershipDataLoading,
   }: any) => {
     const [isExpanded, setIsExpanded] = useState(false)
-    const description = proposalJSON?.abstract || ''
+    const description = project && project.MDP < 13
+      ? project.description
+      : proposalJSON?.abstract || project?.description || ''
     const isLongText = description.length > 200
     const shouldTruncate = isLongText && !isExpanded
 
@@ -164,6 +167,7 @@ export default function ProjectCard({
     hatsContract,
     project
   )
+  const { authenticated } = usePrivy()
 
   const { selectedChain } = useContext(ChainContextV5)
   const hats = useSubHats(selectedChain, adminHatId, !!project?.eligible)
@@ -171,7 +175,7 @@ export default function ProjectCard({
 
   // Improved contributor detection with both hat-based and rewardDistribution-based checks
   const userContributed = useMemo(() => {
-    if (!address || !project) return false
+    if (!address || !project || !authenticated) return false
 
     let isContributor = false
     if (wearers && address) {

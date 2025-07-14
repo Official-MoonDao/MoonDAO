@@ -600,6 +600,16 @@ export default function MissionProfile({
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+  // Redirect to coming-soon page in production
+  if (process.env.NEXT_PUBLIC_ENV === 'prod') {
+    return {
+      redirect: {
+        destination: '/coming-soon?from=mission',
+        permanent: false,
+      },
+    }
+  }
+
   try {
     const tokenId: any = params?.tokenId
 
