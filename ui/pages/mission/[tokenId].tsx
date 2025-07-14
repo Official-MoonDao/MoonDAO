@@ -242,7 +242,6 @@ export default function MissionProfile({
         // If deadline just passed and we haven't refreshed stage yet, do it now
         if (isDeadlinePassed && !hasRefreshedStageAfterDeadline) {
           refreshStage()
-          console.log('Refreshing Stage')
           setHasRefreshedStageAfterDeadline(true)
         }
 
@@ -269,7 +268,7 @@ export default function MissionProfile({
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [deadline, refreshStage, hasRefreshedStageAfterDeadline])
+  }, [deadline, refundPeriod])
 
   const { adminHatId, isManager } = useTeamData(
     teamContract,
@@ -510,7 +509,6 @@ export default function MissionProfile({
             id="page-container"
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
-            {/* Pay & Redeem Section */}
             <div className="flex z-20 xl:hidden w-full px-[5vw]">
               {primaryTerminalAddress &&
               primaryTerminalAddress !==
@@ -535,15 +533,6 @@ export default function MissionProfile({
                   <p>Loading payment terminal...</p>
                 </div>
               )}
-              <div className="hidden lg:block xl:hidden ml-[-5vw] w-[50%] h-full">
-                <Image
-                  src="/assets/logo-san-full.svg"
-                  className="w-full h-full"
-                  alt="Space acceleration network logo"
-                  width={200}
-                  height={200}
-                />
-              </div>
             </div>
             {/* Project Overview */}
             <div className="px-[5vw] w-full flex items-center justify-center">
@@ -600,16 +589,6 @@ export default function MissionProfile({
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-  // Redirect to coming-soon page in production
-  if (process.env.NEXT_PUBLIC_ENV === 'prod') {
-    return {
-      redirect: {
-        destination: '/coming-soon?from=mission',
-        permanent: false,
-      },
-    }
-  }
-
   try {
     const tokenId: any = params?.tokenId
 
