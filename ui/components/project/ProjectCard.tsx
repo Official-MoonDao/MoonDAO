@@ -35,7 +35,9 @@ const ProjectCardContent = memo(
     isMembershipDataLoading,
   }: any) => {
     const [isExpanded, setIsExpanded] = useState(false)
-    const description = proposalJSON?.abstract || ''
+    const description = project && project.MDP < 13
+      ? project.description
+      : proposalJSON?.abstract || project?.description || ''
     const isLongText = description.length > 200
     const shouldTruncate = isLongText && !isExpanded
 
