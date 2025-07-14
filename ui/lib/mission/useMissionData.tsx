@@ -78,7 +78,6 @@ export default function useMissionData({
       })
 
       setStage(+s.toString() as MissionStage)
-      console.log(stage)
     } catch (error) {
       console.error('Error fetching stage for mission:', mission.id, error)
     }
@@ -122,7 +121,7 @@ export default function useMissionData({
 
   useEffect(() => {
     async function getDeadline() {
-      if (mission.id === 'dummy') {
+      if (_deadline && _refundPeriod) {
         setDeadline(_deadline)
         setRefundPeriod(_refundPeriod)
         return
