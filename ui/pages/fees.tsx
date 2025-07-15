@@ -1,11 +1,11 @@
 import { useWallets } from '@privy-io/react-auth'
+import confetti from 'canvas-confetti'
 import FeeHook from 'const/abis/FeeHook.json'
 import { FEE_HOOK_ADDRESSES } from 'const/config'
 import { BigNumber } from 'ethers'
 import { ethers } from 'ethers'
-import React, { useState, useEffect, useContext } from 'react'
 import { Line } from 'rc-progress'
-import confetti from 'canvas-confetti'
+import React, { useState, useEffect, useContext } from 'react'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
@@ -78,12 +78,16 @@ export default function Fees() {
               return balance
             })
           )
-        ).reduce(
-          (acc, bal) => acc.add(bal || BigNumber.from(0)),
-          BigNumber.from(0)
         )
+          .filter((bal) => bal !== undefined && bal !== null)
+          .reduce(
+            (acc, bal) => acc.add(bal || BigNumber.from(0)),
+            BigNumber.from(0)
+          )
 
-        setFeesAvailable(ethers.utils.formatEther(totalFees))
+        setFeesAvailable(
+          ethers.utils.formatEther(totalFees || BigNumber.from(0))
+        )
       } catch (e) {
         console.error('Error fetching balances:', e)
       }
