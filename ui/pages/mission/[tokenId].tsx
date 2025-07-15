@@ -228,10 +228,7 @@ export default function MissionProfile({
     missionCreatorContract,
     jbControllerContract,
     jbDirectoryContract,
-    jbTokensContract,
     _stage,
-    _deadline,
-    _refundPeriod,
     _primaryTerminalAddress,
     _token,
   })

@@ -62,15 +62,16 @@ export default function Callout2() {
                     )
                     toast.success('Address copied to clipboard.')
                   }}
-                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0 flex-1"
                 >
                   <Image
                     src="/assets/icon-copy.svg"
                     alt="Copy address"
                     width={20}
                     height={20}
+                    className="flex-shrink-0"
                   />
-                  <span className="font-mono text-left text-sm 2xl:text-base">
+                  <span className="font-mono text-left text-sm 2xl:text-base break-all overflow-hidden">
                     0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395
                   </span>
                 </button>
@@ -91,7 +92,7 @@ export default function Callout2() {
         </div>
         <div
           id="astronauts-container"
-          className="w-full lg:w-[50%] 2xl:w-[55%] 3xl:w-[60%] flex flex-row justify-center lg:justify-end items-center gap-5 2xl:gap-8 3xl:gap-12 mt-10 lg:mt-0"
+          className="w-full lg:w-[50%] 2xl:w-[55%] 3xl:w-[60%] flex flex-row justify-center lg:justify-end items-start gap-5 2xl:gap-8 3xl:gap-12 mt-10 lg:mt-0"
         >
           <Speaker
             alt="Coby Cotton"
