@@ -11,6 +11,7 @@ import ChainContextV5 from '../thirdweb/chain-context-v5'
 1: Stage 1
 2: Stage 2
 3: Refund
+4: Goal is not met and refund stage has expired
 */
 type MissionStage = 1 | 2 | 3
 
@@ -25,6 +26,7 @@ export default function useMissionData({
   projectSubgraphData,
   _stage,
   _deadline,
+  _refundPeriod,
   _token,
 }: any) {
   const { selectedChain } = useContext(ChainContextV5)
@@ -33,6 +35,9 @@ export default function useMissionData({
   const [stage, setStage] = useState<MissionStage>(_stage)
   const [backers, setBackers] = useState<any[]>([])
   const [deadline, setDeadline] = useState<number | undefined>(_deadline)
+  const [refundPeriod, setRefundPeriod] = useState<number | undefined>(
+    _refundPeriod
+  )
   const [poolDeployerAddress, setPoolDeployerAddress] = useState<string>()
 
   const jbProjectData = useJBProjectData({
@@ -57,31 +62,39 @@ export default function useMissionData({
     }
   }, [mission?.id])
 
-  useEffect(() => {
-    async function getStage() {
-      try {
-        const stage: any = await readContract({
-          contract: missionCreatorContract,
-          method: 'stage' as string,
-          params: [mission.id],
-        })
-        setStage(+stage.toString() as MissionStage)
-      } catch (error) {
-        console.error('Error fetching stage for mission:', mission.id, error)
-        setStage(1) // Default to stage 1
-      }
+  const refreshStage = useCallback(async () => {
+    if (!missionCreatorContract || mission?.id === undefined) return
+
+    if (mission.id === 'dummy') {
+      setStage(_stage)
+      return
     }
+
+    try {
+      const s: any = await readContract({
+        contract: missionCreatorContract,
+        method: 'stage' as string,
+        params: [mission.id],
+      })
+
+      setStage(+s.toString() as MissionStage)
+    } catch (error) {
+      console.error('Error fetching stage for mission:', mission.id, error)
+    }
+  }, [missionCreatorContract, mission?.id])
+
+  useEffect(() => {
     if (missionCreatorContract && mission?.id !== undefined) {
-      getStage()
+      refreshStage()
     }
 
     // Update the stage every minute
     const interval = setInterval(() => {
-      getStage()
+      refreshStage()
     }, 60000)
 
     return () => clearInterval(interval)
-  }, [missionCreatorContract, mission?.id])
+  }, [refreshStage])
 
   useEffect(() => {
     async function getPoolDeployer() {
@@ -108,6 +121,12 @@ export default function useMissionData({
 
   useEffect(() => {
     async function getDeadline() {
+      if (_deadline && _refundPeriod) {
+        setDeadline(_deadline)
+        setRefundPeriod(_refundPeriod)
+        return
+      }
+
       const payHookAddress: any = await readContract({
         contract: missionCreatorContract,
         method: 'missionIdToPayHook' as string,
@@ -125,13 +144,19 @@ export default function useMissionData({
           method: 'deadline' as string,
           params: [],
         })
+        const refundPeriod: any = await readContract({
+          contract: payHookContract,
+          method: 'refundPeriod' as string,
+          params: [],
+        })
         setDeadline(+deadline.toString() * 1000) // Convert to milliseconds
+        setRefundPeriod(+refundPeriod.toString() * 1000) // Convert to milliseconds
       }
     }
     if (missionCreatorContract && mission?.id !== undefined) {
       getDeadline()
     }
-  }, [missionCreatorContract, mission?.id])
+  }, [missionCreatorContract, mission?.id, _deadline, _refundPeriod]) // Add dependencies
 
   // Backers
   const refreshBackers = useCallback(async () => {
@@ -161,7 +186,9 @@ export default function useMissionData({
     stage,
     backers,
     deadline,
+    refundPeriod, // Make sure this is included
     poolDeployerAddress,
     refreshBackers,
+    refreshStage,
   }
 }

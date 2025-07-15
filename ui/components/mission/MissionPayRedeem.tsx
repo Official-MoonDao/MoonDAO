@@ -45,6 +45,7 @@ import viemChains from '@/lib/viem/viemChains'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import { CopyIcon } from '../assets'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 import AcceptedPaymentMethods from '../privy/AcceptedPaymentMethods'
@@ -67,6 +68,8 @@ function MissionPayRedeemContent({
   calculateEthAmount,
   formattedUsdInput,
   formatTokenAmount,
+  redeemAmount,
+  isLoadingRedeemAmount,
 }: any) {
   const isRefundable = stage === 3
 
@@ -83,12 +86,12 @@ function MissionPayRedeemContent({
       id="mission-pay-redeem-container"
       className="z-50 bg-[#020617] rounded-[5vw] md:rounded-[2vw] w-full flex flex-col gap-4 lg:min-w-[430px] xl:items-stretch"
     >
-      <div
-        id="mission-pay-container"
-        className="lg:rounded-lg w-full flex-1 p-5 xl:p-5 flex flex-col gap-4 rounded-2xl justify-between"
-      >
-        {/* You pay */}
-        {!isRefundable && (
+      {!isRefundable && (
+        <div
+          id="mission-pay-container"
+          className="lg:rounded-lg w-full flex-1 p-5 xl:p-5 flex flex-col gap-4 rounded-2xl justify-between"
+        >
+          {/* You pay */}
           <div className="relative flex flex-col gap-4">
             {/* You pay - USD input with ETH display */}
             <div className="relative">
@@ -167,39 +170,36 @@ function MissionPayRedeemContent({
               </div>
             )}
           </div>
-        )}
-        {!isRefundable && (
-          <>
-            <StandardButton
-              id="open-contribute-modal"
-              className="rounded-full gradient-2 rounded-full w-full py-1"
-              onClick={() => setMissionPayModalEnabled(true)}
-              hoverEffect={false}
-            >
-              Contribute
-            </StandardButton>
-            <div className="w-full">
-              <AcceptedPaymentMethods />
-              <p className="xl:text-sm text-center">
-                {'Want to contribute by wire transfer?'}
-                <br />
-                {'Email us at info@moondao.com'}
-              </p>
-            </div>
-          </>
-        )}
-        {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
+
           <StandardButton
-            id="claim-button"
+            id="open-contribute-modal"
             className="rounded-full gradient-2 rounded-full w-full py-1"
-            onClick={claimTokenCredit}
+            onClick={() => setMissionPayModalEnabled(true)}
             hoverEffect={false}
           >
-            Claim {formatTokenAmount(tokenCredit.toString() / 1e18, 0)} $
-            {token?.tokenSymbol}
+            Contribute
           </StandardButton>
-        )}
-      </div>
+          <div className="w-full">
+            <AcceptedPaymentMethods />
+            <p className="xl:text-sm text-center">
+              {'Want to contribute by wire transfer?'}
+              <br />
+              {'Email us at info@moondao.com'}
+            </p>
+          </div>
+          {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
+            <StandardButton
+              id="claim-button"
+              className="rounded-full gradient-2 rounded-full w-full py-1"
+              onClick={claimTokenCredit}
+              hoverEffect={false}
+            >
+              Claim {formatTokenAmount(tokenCredit.toString() / 1e18, 0)} $
+              {token?.tokenSymbol}
+            </StandardButton>
+          )}
+        </div>
+      )}
       {/* Token stats and redeem container */}
       <div className="xl:pt-4 flex flex-row justify-between gap-4 w-full">
         {token?.tokenSupply > 0 && !isRefundable && (
@@ -244,7 +244,14 @@ function MissionPayRedeemContent({
                 <PrivyWeb3Button
                   id="redeem-button"
                   className="w-full rounded-full py-2"
-                  label="Redeem"
+                  label={
+                    isLoadingRedeemAmount ? (
+                      <LoadingSpinner />
+                    ) : (
+                      `Redeem ${formatTokenAmount(redeemAmount, 4)} ETH`
+                    )
+                  }
+                  isDisabled={isLoadingRedeemAmount}
                   action={redeem}
                   noPadding
                 />
@@ -310,6 +317,8 @@ export default function MissionPayRedeem({
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
   const [message, setMessage] = useState('')
+  const [redeemAmount, setRedeemAmount] = useState(0)
+  const [isLoadingRedeemAmount, setIsLoadingRedeemAmount] = useState(true)
 
   // USD input state and handlers
   const [usdInput, setUsdInput] = useState('')
@@ -411,6 +420,13 @@ export default function MissionPayRedeem({
     params: [address, mission?.projectId],
   })
 
+  // Get the proper JB token balance instead of ERC20 balance
+  const { data: jbTokenBalance } = useRead({
+    contract: jbTokensContract,
+    method: 'totalBalanceOf' as string,
+    params: [address, mission?.projectId],
+  })
+
   //check if the connected wallet is a signer of the team's multisig
   useEffect(() => {
     const isSigner = async () => {
@@ -453,6 +469,53 @@ export default function MissionPayRedeem({
       setOutput(0)
     }
   }, [primaryTerminalContract, input, address, mission?.projectId, message])
+
+  const getRedeemQuote = useCallback(async () => {
+    if (!address) return
+    if (!primaryTerminalContract) {
+      console.error('Primary terminal contract not initialized')
+      return
+    }
+    if (!jbTokenBalance && !tokenCredit) return
+
+    setIsLoadingRedeemAmount(true)
+    try {
+      const tokenAmountWei = jbTokenBalance
+        ? BigInt(jbTokenBalance.toString())
+        : BigInt(tokenCredit.toString())
+
+      const transaction = prepareContractCall({
+        contract: primaryTerminalContract,
+        method: 'cashOutTokensOf' as string,
+        params: [
+          address,
+          mission?.projectId,
+          tokenAmountWei,
+          JB_NATIVE_TOKEN_ADDRESS,
+          0,
+          address,
+          '',
+        ],
+      })
+
+      const result = await simulateTransaction({
+        transaction,
+        account,
+      })
+      setRedeemAmount(Number(result.toString()) / 1e18)
+    } catch (error) {
+      console.error('Error getting redeem quote:', error)
+      setRedeemAmount(0)
+    } finally {
+      setIsLoadingRedeemAmount(false)
+    }
+  }, [
+    primaryTerminalContract,
+    address,
+    mission?.projectId,
+    jbTokenBalance,
+    tokenCredit,
+  ])
 
   const buyMissionToken = useCallback(async () => {
     if (!account || !address) {
@@ -596,15 +659,23 @@ export default function MissionPayRedeem({
     }
 
     try {
+      const tokenAmountWei = jbTokenBalance
+        ? BigInt(jbTokenBalance.toString())
+        : BigInt(tokenCredit.toString())
+
+      // Calculate minimum with 5% slippage tolerance (95% of expected)
+      const expectedAmountWei = BigInt(Math.trunc(redeemAmount * 1e18))
+      const minAmountWei = (expectedAmountWei * BigInt(95)) / BigInt(100)
+
       const transaction = prepareContractCall({
         contract: primaryTerminalContract,
         method: 'cashOutTokensOf' as string,
         params: [
           address,
           mission?.projectId,
-          tokenBalance * 1e18 || tokenCredit.toString(),
+          tokenAmountWei,
           JB_NATIVE_TOKEN_ADDRESS,
-          tokenBalance * 1e18 || tokenCredit.toString(),
+          minAmountWei, // Use 95% of expected amount as minimum
           address,
           '',
         ],
@@ -642,6 +713,9 @@ export default function MissionPayRedeem({
     mission?.projectId,
     router,
     tokenBalance,
+    jbTokenBalance,
+    tokenCredit,
+    redeemAmount,
   ])
 
   //Claim all token credit for the connected wallet
@@ -691,6 +765,20 @@ export default function MissionPayRedeem({
     }
   }, [input])
 
+  useEffect(() => {
+    if (
+      (jbTokenBalance && jbTokenBalance > 0) ||
+      (tokenCredit && tokenCredit > 0)
+    ) {
+      getRedeemQuote()
+    } else {
+      setRedeemAmount(0)
+      setIsLoadingRedeemAmount(false)
+    }
+  }, [jbTokenBalance, tokenCredit, getRedeemQuote, stage])
+
+  if (stage === 4) return null
+
   return (
     <>
       {!onlyModal && (
@@ -707,9 +795,9 @@ export default function MissionPayRedeem({
             />
           )}
           {token &&
-            (!token?.tokenAddress || token.tokenAddress === '') &&
+            (!token?.tokenAddress || token.tokenAddress === ZERO_ADDRESS) &&
             isTeamSigner &&
-            stage !== 3 && (
+            stage < 3 && (
               <div className="p-8 md:p-0 flex md:block justify-center">
                 <StandardButton
                   id="deploy-token-button"
@@ -736,6 +824,8 @@ export default function MissionPayRedeem({
               calculateEthAmount={calculateEthAmount}
               formattedUsdInput={formattedUsdInput}
               formatTokenAmount={formatTokenAmount}
+              redeemAmount={redeemAmount}
+              isLoadingRedeemAmount={isLoadingRedeemAmount}
             />
           </div>
         </>
@@ -811,16 +901,18 @@ export default function MissionPayRedeem({
               </button>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Image
-                src={mission?.metadata.logoUri}
-                width={100}
-                height={100}
-                className="rounded-full"
-                alt={`${token?.tokenSymbol} logo`}
-              />
-              <p>{`${token?.tokenSymbol} (${token?.tokenName})`}</p>
-            </div>
+            {token?.tokenSymbol && token?.tokenName && (
+              <div className="flex items-center gap-2">
+                <Image
+                  src={mission?.metadata.logoUri}
+                  width={100}
+                  height={100}
+                  className="rounded-full"
+                  alt={`${token?.tokenSymbol} logo`}
+                />
+                <p>{`${token?.tokenSymbol} (${token?.tokenName})`}</p>
+              </div>
+            )}
 
             <hr className="w-full" />
 
