@@ -968,7 +968,7 @@ export function PrivyConnectWallet({
                       </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-3 max-h-60 overflow-y-auto scrollbar-hide pr-1">
                       {/* Native Token Balance - Always show first */}
                       <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
                         <div className="flex items-center justify-between">
