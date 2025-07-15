@@ -17,7 +17,7 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
-import { GetStaticProps } from 'next'
+import { GetStaticProps, GetStaticPropsResult } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import React, { useContext, useEffect, useState } from 'react'
@@ -1256,17 +1256,9 @@ export default function Launch({ missions }: any) {
   )
 }
 
-export const getStaticProps: GetStaticProps = async () => {
-  // Redirect to coming-soon page in production
-  if (process.env.NEXT_PUBLIC_ENV === 'prod') {
-    return {
-      redirect: {
-        destination: '/coming-soon?from=launch',
-        permanent: false,
-      },
-    }
-  }
-
+export const getStaticProps: GetStaticProps = async (): Promise<
+  GetStaticPropsResult<any>
+> => {
   try {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
