@@ -48,8 +48,8 @@ contract FeeHookScript is Script, Constants, Config {
             feehook.setvMooneyAddress(address(token0));
         }
         require(address(feehook) == hookAddress, "Fee hook address mismatch");
-        //MissionCreator missionCreator = MissionCreator(MISSION_CREATOR_ADDRESSES[block.chainid]);
-        //missionCreator.setFeeHookAddress(address(feehook));
+        MissionCreator missionCreator = MissionCreator(MISSION_CREATOR_ADDRESSES[block.chainid]);
+        missionCreator.setFeeHookAddress(address(feehook));
         vm.stopBroadcast();
     }
 }

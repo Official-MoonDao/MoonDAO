@@ -43,8 +43,7 @@ export default function Fees() {
   const { wallets } = useWallets()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains: Chain[] = isTestnet
-    ? //? [sepolia, arbitrumSepolia]
-      [sepolia]
+    ? [sepolia, arbitrumSepolia]
     : [arbitrum, base]
 
   const { isMobile } = useWindowSize()
@@ -229,9 +228,7 @@ export default function Fees() {
       if (!account) throw new Error('No account found')
       const currentChain = selectedChain
       for (const data of feeData) {
-        console.log('data.checkedInOnChain:', data.checkedInOnChain)
         if (data.checkedInOnChain) continue
-        console.log('data', data)
         if (selectedChain.id !== data.chain.id) {
           setSelectedChain(data.chain)
         }
