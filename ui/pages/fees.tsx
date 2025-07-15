@@ -3,7 +3,7 @@ import { usePrivy } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import ERC20ABI from 'const/abis/ERC20.json'
 import FeeHook from 'const/abis/FeeHook.json'
-import { FEE_HOOK_ADDRESSES } from 'const/config'
+import { FEE_HOOK_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { BigNumber } from 'ethers'
 import { ethers } from 'ethers'
 import { Line } from 'rc-progress'
@@ -63,7 +63,7 @@ export default function Fees() {
   const [feeData, setFeeData] = useState<any[]>([])
   const [weekPercent, setWeekPercent] = useState<number>(0)
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const VMOONEYBalance = useTotalVP(address)
+  const VMOONEYBalance = useTotalVP(address || '')
 
   useEffect(() => {
     if (!address) return
@@ -330,6 +330,19 @@ export default function Fees() {
                 <div className="text-center">
                   <h1 className="text-2xl font-bold mb-4">
                     Please Connect Your Wallet to check in.
+                  </h1>
+                </div>
+              ) : !VMOONEYBalance > 0 ? (
+                <div className="text-center">
+                  <h1 className="text-2xl font-bold mb-4">
+                    Get vMOONEY to collect rewards!
+                    <PrivyWeb3Button
+                      v5
+                      requiredChain={DEFAULT_CHAIN_V5}
+                      label="Get vMOONEY`"
+                      action={() => router.push('/lock')}
+                      className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                    />
                   </h1>
                 </div>
               ) : (
