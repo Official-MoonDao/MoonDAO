@@ -6,6 +6,7 @@ import FeeHook from 'const/abis/FeeHook.json'
 import { FEE_HOOK_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { BigNumber } from 'ethers'
 import { ethers } from 'ethers'
+import { useRouter } from 'next/router'
 import { Line } from 'rc-progress'
 import React, { useState, useEffect, useContext } from 'react'
 import toast from 'react-hot-toast'
@@ -43,6 +44,7 @@ export default function Fees() {
   const account = useActiveAccount()
   const address = account?.address
   const { authenticated } = usePrivy()
+  const router = useRouter()
 
   const { wallets } = useWallets()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
@@ -332,7 +334,7 @@ export default function Fees() {
                     Please Connect Your Wallet to check in.
                   </h1>
                 </div>
-              ) : !VMOONEYBalance > 0 ? (
+              ) : !(VMOONEYBalance > 0) ? (
                 <div className="text-center">
                   <h1 className="text-2xl font-bold mb-4">
                     Get vMOONEY to collect rewards!
