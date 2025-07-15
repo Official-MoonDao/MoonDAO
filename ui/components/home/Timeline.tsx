@@ -132,6 +132,55 @@ export default function Timeline() {
   const [startX, setStartX] = useState(0)
   const [scrollLeft, setScrollLeft] = useState(0)
 
+  // Function to update selected event based on scroll position
+  const updateSelectedEventOnScroll = () => {
+    if (!scrollContainerRef.current) return
+
+    const container = scrollContainerRef.current
+    const containerRect = container.getBoundingClientRect()
+    const containerCenter = containerRect.left + containerRect.width / 2
+
+    let closestIndex = 0
+    let closestDistance = Infinity
+
+    // Find which card is closest to the center of the viewport
+    Array.from(container.children).forEach((child, index) => {
+      if (child instanceof HTMLElement) {
+        const childRect = child.getBoundingClientRect()
+        const childCenter = childRect.left + childRect.width / 2
+        const distance = Math.abs(childCenter - containerCenter)
+
+        if (distance < closestDistance) {
+          closestDistance = distance
+          closestIndex = index
+        }
+      }
+    })
+
+    if (closestIndex !== selectedEvent) {
+      setSelectedEvent(closestIndex)
+    }
+  }
+
+  // Add scroll event listener
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const handleScroll = () => {
+      // Debounce the scroll event to avoid too frequent updates
+      clearTimeout((handleScroll as any).timeout)
+      ;(handleScroll as any).timeout = setTimeout(updateSelectedEventOnScroll, 100)
+    }
+
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    
+    return () => {
+      container.removeEventListener('scroll', handleScroll)
+      clearTimeout((handleScroll as any).timeout)
+    }
+  }, [selectedEvent])
+
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true)
     setStartX(e.pageX - (scrollContainerRef.current?.offsetLeft || 0))
@@ -398,7 +447,7 @@ export default function Timeline() {
           <div className="xl:hidden w-full">
             <div
               ref={scrollContainerRef}
-              className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 cursor-grab active:cursor-grabbing"
+              className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 cursor-grab active:cursor-grabbing snap-x snap-mandatory"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
@@ -411,7 +460,7 @@ export default function Timeline() {
               {timelineEvents.map((event, index) => (
                 <div
                   key={index}
-                  className="flex-shrink-0 w-80 bg-black/30 backdrop-blur-xl rounded-2xl p-6 border border-white/10"
+                  className="flex-shrink-0 w-72 sm:w-80 md:w-96 bg-black/30 backdrop-blur-xl rounded-2xl p-6 border border-white/10 snap-center"
                   onClick={() => setSelectedEvent(index)}
                 >
                   <div className="flex items-center gap-3 mb-4">
@@ -442,16 +491,17 @@ export default function Timeline() {
             
             {/* Scroll indicator */}
             <div className="flex justify-center mt-6">
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 {timelineEvents.map((_, index) => (
                   <button
                     key={index}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    className={`h-3 rounded-full transition-all duration-300 ${
                       index === selectedEvent 
                         ? 'bg-purple-400 w-8' 
-                        : 'bg-gray-600 hover:bg-gray-500'
+                        : 'bg-gray-600 hover:bg-gray-500 w-3'
                     }`}
                     onClick={() => scrollToEvent(index)}
+                    aria-label={`Go to timeline event ${index + 1}`}
                   />
                 ))}
               </div>
