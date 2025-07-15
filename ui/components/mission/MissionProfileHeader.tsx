@@ -71,8 +71,8 @@ const MissionProfileHeader = React.memo(
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.1),transparent_50%)] pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(99,102,241,0.05),transparent_50%)] pointer-events-none" />
 
-        <div className="relative z-10 w-full px-8 sm:px-12 lg:px-16 py-6 lg:py-8">
-          <div className="flex flex-col lg:flex-row gap-x-8 items-center max-w-7xl mx-auto ml-8 lg:ml-16">
+        <div className="relative z-10 w-full px-[5vw] py-6 lg:py-8">
+          <div className="flex flex-col lg:flex-row gap-x-8 items-center max-w-[1200px] xl:min-w-[1200px] mx-auto">
             {/* Left Column - Mission Image */}
             <div className="flex justify-center lg:justify-start">
               <div className="relative group">
