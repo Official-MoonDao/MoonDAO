@@ -18,7 +18,7 @@ export default function Tab({
   return (
     <button
       className={`
-          flex justify-center items-center text-white px-4 py-1 rounded-lg transition-all duration-200 h-9
+          flex justify-center items-center text-white px-4 py-1 rounded-lg transition-all duration-200 h-9 flex-shrink-0
           ${currentTab === tab 
             ? 'bg-gradient-to-b from-slate-600/50 to-slate-700/50 border border-slate-500/50 shadow-lg' 
             : 'hover:bg-slate-700/30 border border-transparent'
