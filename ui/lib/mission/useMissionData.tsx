@@ -27,6 +27,7 @@ export default function useMissionData({
   _stage,
   _deadline,
   _refundPeriod,
+  _primaryTerminalAddress,
   _token,
 }: any) {
   const { selectedChain } = useContext(ChainContextV5)
@@ -47,6 +48,7 @@ export default function useMissionData({
     jbTokensContract,
     projectMetadata,
     projectSubgraphData,
+    _primaryTerminalAddress,
     _token,
   })
 
