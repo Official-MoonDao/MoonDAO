@@ -1,5 +1,7 @@
 import { useWallets } from '@privy-io/react-auth'
+import { usePrivy } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
+import ERC20ABI from 'const/abis/ERC20.json'
 import FeeHook from 'const/abis/FeeHook.json'
 import { FEE_HOOK_ADDRESSES } from 'const/config'
 import { BigNumber } from 'ethers'
@@ -28,6 +30,7 @@ import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
+import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -39,6 +42,7 @@ import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 export default function Fees() {
   const account = useActiveAccount()
   const address = account?.address
+  const { authenticated } = usePrivy()
 
   const { wallets } = useWallets()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
@@ -59,6 +63,7 @@ export default function Fees() {
   const [feeData, setFeeData] = useState<any[]>([])
   const [weekPercent, setWeekPercent] = useState<number>(0)
   const { selectedWallet } = useContext(PrivyWalletContext)
+  const VMOONEYBalance = useTotalVP(address)
 
   useEffect(() => {
     if (!address) return
@@ -71,10 +76,17 @@ export default function Fees() {
               const slug = getChainSlug(chain)
               const hookAddress = FEE_HOOK_ADDRESSES[slug]
               if (!hookAddress) return BigNumber.from(0)
-              const wallet = wallets[selectedWallet]
-              if (!wallet) return
-              const provider = await wallet.getEthersProvider()
-              const balance = await provider.getBalance(hookAddress)
+              const contract = getContract({
+                client,
+                address: hookAddress,
+                abi: FeeHook.abi as any,
+                chain,
+              })
+              const balance = await readContract({
+                contract,
+                method: 'balanceOf',
+                params: [address],
+              })
               return balance
             })
           )
@@ -167,7 +179,7 @@ export default function Fees() {
               chain,
             })
 
-            const [start, last, count] = await Promise.all([
+            const [start, last, count, vMooneyAddress] = await Promise.all([
               readContract({ contract, method: 'weekStart', params: [] }),
               readContract({
                 contract,
@@ -179,7 +191,24 @@ export default function Fees() {
                 method: 'getCheckedInCount',
                 params: [],
               }),
+              readContract({
+                contract,
+                method: 'vMooneyAddress',
+                params: [],
+              }),
             ])
+            const vMooneyContract = getContract({
+              client,
+              address: vMooneyAddress,
+              abi: ERC20ABI as any,
+              chain,
+            })
+
+            const vMooneyBalance = await readContract({
+              contract: vMooneyContract,
+              method: 'balanceOf',
+              params: [address],
+            })
 
             return {
               chain,
@@ -188,6 +217,7 @@ export default function Fees() {
               start,
               last,
               count,
+              vMooneyBalance,
               checkedInOnChain: BigNumber.from(last).eq(BigNumber.from(start)),
             }
           })
@@ -233,6 +263,9 @@ export default function Fees() {
       const currentChain = selectedChain
       for (const data of feeData) {
         if (data.checkedInOnChain) continue
+        if (!data.vMooneyBalance || BigNumber.from(data.vMooneyBalance).eq(0)) {
+          continue
+        }
         if (selectedChain.id !== data.chain.id) {
           setSelectedChain(data.chain)
         }
@@ -293,76 +326,84 @@ export default function Fees() {
             popOverEffect={false}
           >
             <SectionCard>
-              <div className="mt-3 w-[25vw] flex flex-col gap-4">
-                <div className="mb-2">
-                  <div className="text-xl font-GoodTimes opacity-80">
-                    Total Weekly Rewards:
-                  </div>
-                  <Asset
-                    name="ETH"
-                    amount={
-                      feesAvailable !== null
-                        ? Number(feesAvailable).toFixed(4)
-                        : 'Loading...'
-                    }
-                    usd={
-                      feesAvailable !== null && ethPrice
-                        ? (Number(feesAvailable) * ethPrice).toFixed(2)
-                        : 'Loading...'
-                    }
-                  />
-                  {estimatedFees !== null && (
-                    <div className="mt-4">
-                      <div className="text-xl font-GoodTimes opacity-80">
-                        Your Estimated Rewards:
-                      </div>
-                      <Asset
-                        name="ETH"
-                        amount={Number(estimatedFees).toFixed(4)}
-                        usd={
-                          ethPrice
-                            ? (Number(estimatedFees) * ethPrice).toFixed(2)
-                            : '0'
-                        }
-                      />
-                    </div>
-                  )}
-                  {feesAvailable !== null && Number(feesAvailable) > 0 && (
-                    <div className="mt-4 opacity-75">
-                      {checkedInCount !== null
-                        ? checkedInCount > 0
-                          ? checkedInCount === 1
-                            ? '1 check in this week!'
-                            : `${checkedInCount} check ins this week!`
-                          : 'No one has checked in yet!'
-                        : 'Loading...'}
-                    </div>
-                  )}
-                  {weekPercent >= 0 && (
-                    <div className="mt-4">
-                      <Line
-                        percent={weekPercent}
-                        strokeWidth={4}
-                        strokeColor="#D7594F"
-                        trailColor="#D7594F2B"
-                      />
-                      <div className="text-sm text-center mt-1 opacity-75">
-                        {weekPercent.toFixed(1)}% of week passed
-                      </div>
-                    </div>
-                  )}
+              {!authenticated ? (
+                <div className="text-center">
+                  <h1 className="text-2xl font-bold mb-4">
+                    Please Connect Your Wallet to check in.
+                  </h1>
                 </div>
-                {feesAvailable !== null &&
-                  Number(feesAvailable) > 0 &&
-                  !isCheckedIn && (
-                    <PrivyWeb3Button
-                      action={handleCheckIn}
-                      label={isCheckedIn ? 'Checked In' : 'Check In'}
-                      className="w-full max-w-[250px] rounded-[5vmax] rounded-tl-[20px]"
-                      isDisabled={!address || isCheckedIn}
+              ) : (
+                <div className="mt-3 w-[25vw] flex flex-col gap-4">
+                  <div className="mb-2">
+                    <div className="text-xl font-GoodTimes opacity-80">
+                      Total Weekly Rewards:
+                    </div>
+                    <Asset
+                      name="ETH"
+                      amount={
+                        feesAvailable !== null
+                          ? Number(feesAvailable).toFixed(4)
+                          : 'Loading...'
+                      }
+                      usd={
+                        feesAvailable !== null && ethPrice
+                          ? (Number(feesAvailable) * ethPrice).toFixed(2)
+                          : 'Loading...'
+                      }
                     />
-                  )}
-              </div>
+                    {estimatedFees !== null && (
+                      <div className="mt-4">
+                        <div className="text-xl font-GoodTimes opacity-80">
+                          Your Estimated Rewards:
+                        </div>
+                        <Asset
+                          name="ETH"
+                          amount={Number(estimatedFees).toFixed(4)}
+                          usd={
+                            ethPrice
+                              ? (Number(estimatedFees) * ethPrice).toFixed(2)
+                              : '0'
+                          }
+                        />
+                      </div>
+                    )}
+                    {feesAvailable !== null && Number(feesAvailable) > 0 && (
+                      <div className="mt-4 opacity-75">
+                        {checkedInCount !== null
+                          ? checkedInCount > 0
+                            ? checkedInCount === 1
+                              ? '1 check in this week!'
+                              : `${checkedInCount} check ins this week!`
+                            : 'No one has checked in yet!'
+                          : 'Loading...'}
+                      </div>
+                    )}
+                    {weekPercent >= 0 && (
+                      <div className="mt-4">
+                        <Line
+                          percent={weekPercent}
+                          strokeWidth={4}
+                          strokeColor="#D7594F"
+                          trailColor="#D7594F2B"
+                        />
+                        <div className="text-sm text-center mt-1 opacity-75">
+                          {weekPercent.toFixed(1)}% of week passed
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {feesAvailable !== null &&
+                    Number(feesAvailable) > 0 &&
+                    !isCheckedIn && (
+                      <PrivyWeb3Button
+                        action={handleCheckIn}
+                        label={isCheckedIn ? 'Checked In' : 'Check In'}
+                        className="w-full max-w-[250px] rounded-[5vmax] rounded-tl-[20px]"
+                        isDisabled={!address || isCheckedIn}
+                      />
+                    )}
+                </div>
+              )}
             </SectionCard>
           </ContentLayout>
         </Container>
