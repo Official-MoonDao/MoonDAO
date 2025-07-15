@@ -520,14 +520,14 @@ export default function CreateMission({
             Launch A Mission
           </h1>
 
-          <div className="w-full bg-darkest-cool p-8 rounded-[2vmax]">
+          <div className="px-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 lg:p-8 rounded-[2vmax] shadow-2xl md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1000px]">
             <div className="max-w-[800px] mx-auto">
               <div className="relative flex flex-col md:flex-row items-center p-2 pb-0 w-full">
                 <button
-                  className="absolute top-1 right-1"
+                  className="absolute top-1 right-1 hover:scale-110 transition-transform"
                   onClick={() => setStatus('idle')}
                 >
-                  <XMarkIcon width={50} height={50} />
+                  <XMarkIcon width={50} height={50} className="text-white" />
                 </button>
                 <Steps
                   className="mb-4 w-full"
@@ -624,7 +624,7 @@ export default function CreateMission({
                           userTeamsAsManager.map((team: any) => (
                             <button
                               key={`team-${team.id}`}
-                              className="bg-dark-cool p-2"
+                              className="bg-dark-cool p-2 rounded-2xl"
                               onClick={() => {
                                 setSelectedTeamId(team.teamId)
                               }}
