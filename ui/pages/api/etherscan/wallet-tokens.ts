@@ -62,7 +62,6 @@ async function fetchTokenBalance(
     }
     return '0'
   } catch (error) {
-    console.error('Error fetching balance for', contractAddress, error)
     return '0'
   }
 }
@@ -102,26 +101,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
-    console.log('API Request Details:', {
-      address,
-      chain,
-      chainId,
-      hasApiKey: !!apiKey,
-      apiKeyPrefix: apiKey ? apiKey.substring(0, 8) + '...' : 'NO_KEY',
-    })
-
     // Step 1: Get token transfer events to discover tokens using V2 API
     const tokentxUrl = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=account&action=tokentx&address=${address}&page=1&offset=10000&sort=desc&apikey=${apiKey}`
-
-    console.log(
-      'Making tokentx request to:',
-      tokentxUrl.replace(apiKey, 'HIDDEN_API_KEY')
-    )
 
     const response = await fetch(tokentxUrl)
 
     if (!response.ok) {
-      console.error('HTTP Error:', response.status, response.statusText)
       return res.status(500).json({
         error: `HTTP ${response.status}: ${response.statusText}`,
       })
@@ -129,18 +114,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     const data = await response.json()
 
-    console.log('Tokentx response:', {
-      status: data.status,
-      message: data.message,
-      resultType: typeof data.result,
-      resultLength: Array.isArray(data.result)
-        ? data.result.length
-        : 'not-array',
-    })
-
     // Check if the API returned an error
     if (data.status === '0' && data.message !== 'OK') {
-      console.error('Etherscan API Error:', data.message, data.result)
       return res.status(400).json({
         error: `Etherscan API Error: ${data.message}`,
       })
@@ -164,8 +139,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
-    console.log(`Found ${tokenMap.size} unique tokens, fetching balances...`)
-
     // Step 3: Fetch current balance for each token using V2 API
     const tokensWithBalances = []
 
@@ -182,9 +155,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const hasUrlInSymbol = containsUrlPattern(tokenInfo.tokenSymbol)
 
       if (hasUrlInName || hasUrlInSymbol) {
-        console.log(
-          `Filtered out potential scam token: ${tokenInfo.tokenSymbol} (${tokenInfo.tokenName})`
-        )
         continue
       }
 
@@ -200,10 +170,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       }
     }
 
-    console.log(
-      `Returning ${tokensWithBalances.length} legitimate tokens with non-zero balances (URL-containing scam tokens filtered out)`
-    )
-
     const responseData = {
       status: '1',
       message: 'OK',
@@ -218,7 +184,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     res.status(200).json(responseData)
   } catch (error) {
-    console.error('Etherscan API error:', error)
     res.status(500).json({
       error: 'Failed to fetch wallet tokens',
       details: error instanceof Error ? error.message : 'Unknown error',
