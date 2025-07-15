@@ -427,7 +427,7 @@ export default function Timeline() {
             </div>
 
             {/* Selected event details */}
-            <div className="mt-12 bg-black/30 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
+            <div className="mt-12 bg-black/30 backdrop-blur-xl rounded-2xl p-8 border border-white/10 h-64 flex flex-col">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
                   {timelineEvents[selectedEvent].icon && (
@@ -447,7 +447,7 @@ export default function Timeline() {
               <h3 className="text-white text-2xl font-GoodTimes mb-4">
                 {timelineEvents[selectedEvent].title}
               </h3>
-              <p className="text-gray-300 leading-relaxed text-lg">
+              <p className="text-gray-300 leading-relaxed text-lg flex-1 overflow-hidden">
                 {timelineEvents[selectedEvent].description}
               </p>
             </div>
