@@ -21,9 +21,9 @@ export default function Search({ input, setInput, className, placeholder = "Sear
         height={14}
         className="text-slate-400"
       />
-      <div id="input-field-container">
+      <div id="input-field-container" className="flex-1 min-w-0">
         <input
-          className="w-[190px] px-1 py-1 bg-transparent text-white placeholder:text-slate-400 outline-none border-0 focus:ring-0 text-sm leading-none h-7"
+          className="w-full px-1 py-1 bg-transparent text-white placeholder:text-slate-400 outline-none border-0 focus:ring-0 text-sm leading-none h-7"
           onChange={({ target }) => setInput(target.value)}
           value={input}
           type="text"
