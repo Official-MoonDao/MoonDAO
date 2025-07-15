@@ -1,8 +1,13 @@
 import { useWallets } from '@privy-io/react-auth'
+import { usePrivy } from '@privy-io/react-auth'
+import confetti from 'canvas-confetti'
+import ERC20ABI from 'const/abis/ERC20.json'
 import FeeHook from 'const/abis/FeeHook.json'
-import { FEE_HOOK_ADDRESSES } from 'const/config'
+import { FEE_HOOK_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { BigNumber } from 'ethers'
 import { ethers } from 'ethers'
+import { useRouter } from 'next/router'
+import { Line } from 'rc-progress'
 import React, { useState, useEffect, useContext } from 'react'
 import toast from 'react-hot-toast'
 import {
@@ -26,6 +31,7 @@ import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
+import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -37,6 +43,8 @@ import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 export default function Fees() {
   const account = useActiveAccount()
   const address = account?.address
+  const { authenticated } = usePrivy()
+  const router = useRouter()
 
   const { wallets } = useWallets()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
@@ -53,92 +61,203 @@ export default function Fees() {
   const [isCheckedIn, setIsCheckedIn] = useState(false)
   const [checkedInCount, setCheckedInCount] = useState<number | null>(null)
   const [feesAvailable, setFeesAvailable] = useState<string | null>(null)
+  const [estimatedFees, setEstimatedFees] = useState<string | null>(null)
   const [feeData, setFeeData] = useState<any[]>([])
+  const [weekPercent, setWeekPercent] = useState<number>(0)
   const { selectedWallet } = useContext(PrivyWalletContext)
+  const VMOONEYBalance = useTotalVP(address || '')
 
   useEffect(() => {
-    const fetchStatus = async () => {
-      if (!address) return
+    if (!address) return
 
+    const fetchBalances = async () => {
       try {
-        const results: any[] = []
-        for (const chain of chains) {
-          const slug = getChainSlug(chain)
-          const hookAddress = FEE_HOOK_ADDRESSES[slug]
-          if (!hookAddress) continue
-          const contract = getContract({
-            client,
-            address: hookAddress,
-            abi: FeeHook.abi as any,
-            chain,
-          })
-
-          const start = await readContract({
-            contract,
-            method: 'weekStart' as string,
-            params: [],
-          })
-
-          const last = await readContract({
-            contract,
-            method: 'lastCheckIn' as string,
-            params: [address],
-          })
-
-          const count = await readContract({
-            contract,
-            method: 'getCheckedInCount' as string,
-            params: [],
-          })
-
-          const balance = await readContract({
-            contract,
-            method: 'balanceOf' as string,
-            params: [],
-          })
-
-          const checkedInOnChain = BigNumber.from(last).eq(
-            BigNumber.from(start)
+        const totalFees = (
+          await Promise.all(
+            chains.map(async (chain) => {
+              const slug = getChainSlug(chain)
+              const hookAddress = FEE_HOOK_ADDRESSES[slug]
+              if (!hookAddress) return BigNumber.from(0)
+              const contract = getContract({
+                client,
+                address: hookAddress,
+                abi: FeeHook.abi as any,
+                chain,
+              })
+              const balance = await readContract({
+                contract,
+                method: 'balanceOf',
+                params: [address],
+              })
+              return balance
+            })
+          )
+        )
+          .filter((bal) => bal !== undefined && bal !== null)
+          .reduce(
+            (acc, bal) => acc.add(bal || BigNumber.from(0)),
+            BigNumber.from(0)
           )
 
-          results.push({
-            chain,
-            slug,
-            contract,
-            start,
-            last,
-            count,
-            balance,
-            checkedInOnChain,
+        setFeesAvailable(
+          ethers.utils.formatEther(totalFees || BigNumber.from(0))
+        )
+      } catch (e) {
+        console.error('Error fetching balances:', e)
+      }
+    }
+
+    fetchBalances()
+  }, [address, chains, client, WEEK])
+
+  useEffect(() => {
+    if (!feeData.length) return
+    const starts = feeData.map((d) => BigNumber.from(d.start).toNumber())
+    const earliest = Math.min(...starts)
+    const update = () => {
+      const now = Math.floor(Date.now() / 1000)
+      const percent = ((now - earliest) / WEEK) * 100
+      setWeekPercent(Math.max(0, Math.min(100, percent)))
+    }
+    update()
+    const id = setInterval(update, 60000)
+    return () => clearInterval(id)
+  }, [feeData, WEEK])
+
+  useEffect(() => {
+    if (!address) return
+
+    const fetchEstimates = async () => {
+      try {
+        const totalEstimated = (
+          await Promise.all(
+            chains.map(async (chain) => {
+              const slug = getChainSlug(chain)
+              const hookAddress = FEE_HOOK_ADDRESSES[slug]
+              if (!hookAddress) return BigNumber.from(0)
+
+              const contract = getContract({
+                client,
+                address: hookAddress,
+                abi: FeeHook.abi as any,
+                chain,
+              })
+              return readContract({
+                contract,
+                method: 'estimateFees',
+                params: [address],
+              }).catch(() => BigNumber.from(0))
+            })
+          )
+        ).reduce(
+          (acc, est) => acc.add(est || BigNumber.from(0)),
+          BigNumber.from(0)
+        )
+
+        setEstimatedFees(ethers.utils.formatEther(totalEstimated))
+      } catch (e) {
+        console.error('Error fetching estimates:', e)
+      }
+    }
+
+    fetchEstimates()
+  }, [address, chains, client, WEEK])
+
+  useEffect(() => {
+    if (!address) return
+
+    const fetchStatus = async () => {
+      try {
+        const raw = await Promise.all(
+          chains.map(async (chain) => {
+            const slug = getChainSlug(chain)
+            const hookAddress = FEE_HOOK_ADDRESSES[slug]
+            if (!hookAddress) return null
+
+            const contract = getContract({
+              client,
+              address: hookAddress,
+              abi: FeeHook.abi as any,
+              chain,
+            })
+
+            const [start, last, count, vMooneyAddress] = await Promise.all([
+              readContract({ contract, method: 'weekStart', params: [] }),
+              readContract({
+                contract,
+                method: 'lastCheckIn',
+                params: [address],
+              }),
+              readContract({
+                contract,
+                method: 'getCheckedInCount',
+                params: [],
+              }),
+              readContract({
+                contract,
+                method: 'vMooneyAddress',
+                params: [],
+              }),
+            ])
+            const vMooneyContract = getContract({
+              client,
+              address: vMooneyAddress,
+              abi: ERC20ABI as any,
+              chain,
+            })
+
+            const vMooneyBalance = await readContract({
+              contract: vMooneyContract,
+              method: 'balanceOf',
+              params: [address],
+            })
+
+            return {
+              chain,
+              slug,
+              contract,
+              start,
+              last,
+              count,
+              vMooneyBalance,
+              checkedInOnChain: BigNumber.from(last).eq(BigNumber.from(start)),
+            }
           })
-        }
+        )
+
+        const results = raw.filter((r) => r) as Array<{
+          chain: any
+          slug: string
+          contract: any
+          start: BigNumber
+          last: BigNumber
+          count: BigNumber
+          checkedInOnChain: boolean
+        }>
 
         setFeeData(results)
 
-        let totalFees = BigNumber.from(0)
-        let allChecked = true
-        let totalCount = 0
-        const now = Math.floor(Date.now() / 1000)
-
-        for (const r of results) {
-          totalFees = totalFees.add(BigNumber.from(r.balance || 0))
-          totalCount += r.count ? Number(r.count) : 0
-          if (BigNumber.from(r.balance || 0).gt(0)) {
-            if (!BigNumber.from(r.last).eq(BigNumber.from(r.start))) {
-              allChecked = false
+        // aggregate counts & allChecked
+        const { totalCount, allChecked } = results.reduce(
+          (acc, { last, start, count }) => {
+            acc.totalCount += Number(count || 0)
+            if (!BigNumber.from(last).eq(BigNumber.from(start))) {
+              acc.allChecked = false
             }
-          }
-        }
+            return acc
+          },
+          { totalCount: 0, allChecked: true }
+        )
 
-        setFeesAvailable(ethers.utils.formatEther(totalFees))
         setCheckedInCount(totalCount)
         setIsCheckedIn(allChecked)
-      } catch (error) {
-        console.error('Error fetching fee status:', error)
+      } catch (err) {
+        console.error('Error fetching check‑in status:', err)
       }
     }
+
     fetchStatus()
-  }, [address, isCheckedIn, WEEK])
+  }, [address, chains, client, WEEK])
 
   const handleCheckIn = async () => {
     try {
@@ -146,23 +265,31 @@ export default function Fees() {
       const currentChain = selectedChain
       for (const data of feeData) {
         if (data.checkedInOnChain) continue
-        if (BigNumber.from(data.balance || 0).gt(0)) {
-          if (selectedChain.id !== data.chain.id) {
-            setSelectedChain(data.chain)
-          }
-          const tx = prepareContractCall({
-            contract: data.contract,
-            method: 'checkIn' as string,
-            params: [],
-          })
-          await sendAndConfirmTransaction({
-            transaction: tx,
-            account,
-          })
+        if (!data.vMooneyBalance || BigNumber.from(data.vMooneyBalance).eq(0)) {
+          continue
         }
+        if (selectedChain.id !== data.chain.id) {
+          setSelectedChain(data.chain)
+        }
+        const tx = prepareContractCall({
+          contract: data.contract,
+          method: 'checkIn' as string,
+          params: [],
+        })
+        await sendAndConfirmTransaction({
+          transaction: tx,
+          account,
+        })
       }
       setSelectedChain(currentChain)
       toast.success('Checked in!', { style: toastStyle })
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        shapes: ['circle', 'star'],
+        colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
+      })
       setIsCheckedIn(true)
     } catch (error) {
       console.error('Error checking in:', error)
@@ -185,7 +312,7 @@ export default function Fees() {
             headerSize="max(20px, 3vw)"
             description={'Get liquidity rewards by checking in weekly.'}
             preFooter={
-              <NoticeFooter 
+              <NoticeFooter
                 defaultImage="../assets/MoonDAO-Logo-White.svg"
                 defaultTitle="Need Help?"
                 defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
@@ -201,47 +328,97 @@ export default function Fees() {
             popOverEffect={false}
           >
             <SectionCard>
-              <div className="mt-3 w-[25vw] flex flex-col gap-4">
-                <div className="mb-2">
-                  <div className="text-xl font-GoodTimes opacity-80">
-                    Rewards This Week:
-                  </div>
-                  <Asset
-                    name="ETH"
-                    amount={
-                      feesAvailable !== null
-                        ? Number(feesAvailable).toFixed(4)
-                        : 'Loading...'
-                    }
-                    usd={
-                      feesAvailable !== null && ethPrice
-                        ? (Number(feesAvailable) * ethPrice).toFixed(2)
-                        : 'Loading...'
-                    }
-                  />
-                  {feesAvailable !== null && Number(feesAvailable) > 0 && (
-                    <div className="mt-4 opacity-75">
-                      {checkedInCount !== null
-                        ? checkedInCount > 0
-                          ? checkedInCount === 1
-                            ? '1 check in this week!'
-                            : `${checkedInCount} check ins this week!`
-                          : 'No one has checked in yet!'
-                        : 'Loading...'}
-                    </div>
-                  )}
+              {!authenticated ? (
+                <div className="text-center">
+                  <h1 className="text-2xl font-bold mb-4">
+                    Please Connect Your Wallet to check in.
+                  </h1>
                 </div>
-                {feesAvailable !== null &&
-                  Number(feesAvailable) > 0 &&
-                  !isCheckedIn && (
+              ) : !(VMOONEYBalance > 0) ? (
+                <div className="text-center">
+                  <h1 className="text-2xl font-bold mb-4">
+                    Get vMOONEY to collect rewards!
                     <PrivyWeb3Button
-                      action={handleCheckIn}
-                      label={isCheckedIn ? 'Checked In' : 'Check In'}
-                      className="w-full max-w-[250px] rounded-[5vmax] rounded-tl-[20px]"
-                      isDisabled={!address || isCheckedIn}
+                      v5
+                      requiredChain={DEFAULT_CHAIN_V5}
+                      label="Get vMOONEY`"
+                      action={() => router.push('/lock')}
+                      className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
                     />
-                  )}
-              </div>
+                  </h1>
+                </div>
+              ) : (
+                <div className="mt-3 w-[25vw] flex flex-col gap-4">
+                  <div className="mb-2">
+                    <div className="text-xl font-GoodTimes opacity-80">
+                      Total Weekly Rewards:
+                    </div>
+                    <Asset
+                      name="ETH"
+                      amount={
+                        feesAvailable !== null
+                          ? Number(feesAvailable).toFixed(4)
+                          : 'Loading...'
+                      }
+                      usd={
+                        feesAvailable !== null && ethPrice
+                          ? (Number(feesAvailable) * ethPrice).toFixed(2)
+                          : 'Loading...'
+                      }
+                    />
+                    {estimatedFees !== null && (
+                      <div className="mt-4">
+                        <div className="text-xl font-GoodTimes opacity-80">
+                          Your Estimated Rewards:
+                        </div>
+                        <Asset
+                          name="ETH"
+                          amount={Number(estimatedFees).toFixed(4)}
+                          usd={
+                            ethPrice
+                              ? (Number(estimatedFees) * ethPrice).toFixed(2)
+                              : '0'
+                          }
+                        />
+                      </div>
+                    )}
+                    {feesAvailable !== null && Number(feesAvailable) > 0 && (
+                      <div className="mt-4 opacity-75">
+                        {checkedInCount !== null
+                          ? checkedInCount > 0
+                            ? checkedInCount === 1
+                              ? '1 check in this week!'
+                              : `${checkedInCount} check ins this week!`
+                            : 'No one has checked in yet!'
+                          : 'Loading...'}
+                      </div>
+                    )}
+                    {weekPercent >= 0 && (
+                      <div className="mt-4">
+                        <Line
+                          percent={weekPercent}
+                          strokeWidth={4}
+                          strokeColor="#D7594F"
+                          trailColor="#D7594F2B"
+                        />
+                        <div className="text-sm text-center mt-1 opacity-75">
+                          {weekPercent.toFixed(1)}% of week passed
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {feesAvailable !== null &&
+                    Number(feesAvailable) > 0 &&
+                    !isCheckedIn && (
+                      <PrivyWeb3Button
+                        action={handleCheckIn}
+                        label={isCheckedIn ? 'Checked In' : 'Check In'}
+                        className="w-full max-w-[250px] rounded-[5vmax] rounded-tl-[20px]"
+                        isDisabled={!address || isCheckedIn}
+                      />
+                    )}
+                </div>
+              )}
             </SectionCard>
           </ContentLayout>
         </Container>
