@@ -92,7 +92,7 @@ export default function Callout2() {
         </div>
         <div
           id="astronauts-container"
-          className="w-full lg:w-[50%] 2xl:w-[55%] 3xl:w-[60%] flex flex-row justify-center lg:justify-end items-center gap-5 2xl:gap-8 3xl:gap-12 mt-10 lg:mt-0"
+          className="w-full lg:w-[50%] 2xl:w-[55%] 3xl:w-[60%] flex flex-row justify-center lg:justify-end items-start gap-5 2xl:gap-8 3xl:gap-12 mt-10 lg:mt-0"
         >
           <Speaker
             alt="Coby Cotton"
