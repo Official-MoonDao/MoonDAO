@@ -168,18 +168,16 @@ export default function Timeline() {
     if (!container) return
 
     const handleScroll = () => {
-      // Debounce the scroll event to avoid too frequent updates
-      clearTimeout((handleScroll as any).timeout)
-      ;(handleScroll as any).timeout = setTimeout(updateSelectedEventOnScroll, 100)
+      // Update immediately for smoother feedback
+      updateSelectedEventOnScroll()
     }
 
     container.addEventListener('scroll', handleScroll, { passive: true })
     
     return () => {
       container.removeEventListener('scroll', handleScroll)
-      clearTimeout((handleScroll as any).timeout)
     }
-  }, [selectedEvent])
+  }, [])
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true)
@@ -220,11 +218,23 @@ export default function Timeline() {
     setSelectedEvent(index)
     if (scrollContainerRef.current) {
       const eventElement = scrollContainerRef.current.children[index] as HTMLElement
-      eventElement.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center'
-      })
+      if (eventElement) {
+        const container = scrollContainerRef.current
+        const containerRect = container.getBoundingClientRect()
+        const elementRect = eventElement.getBoundingClientRect()
+        
+        // Calculate the scroll position to center the element
+        const scrollPosition = 
+          container.scrollLeft + 
+          elementRect.left - 
+          containerRect.left - 
+          (containerRect.width - elementRect.width) / 2
+        
+        container.scrollTo({
+          left: scrollPosition,
+          behavior: 'smooth'
+        })
+      }
     }
   }
 
@@ -447,7 +457,7 @@ export default function Timeline() {
           <div className="xl:hidden w-full">
             <div
               ref={scrollContainerRef}
-              className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 cursor-grab active:cursor-grabbing snap-x snap-mandatory"
+              className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 cursor-grab active:cursor-grabbing"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
@@ -460,7 +470,7 @@ export default function Timeline() {
               {timelineEvents.map((event, index) => (
                 <div
                   key={index}
-                  className="flex-shrink-0 w-72 sm:w-80 md:w-96 bg-black/30 backdrop-blur-xl rounded-2xl p-6 border border-white/10 snap-center"
+                  className="flex-shrink-0 w-72 sm:w-80 md:w-96 bg-black/30 backdrop-blur-xl rounded-2xl p-6 border border-white/10"
                   onClick={() => setSelectedEvent(index)}
                 >
                   <div className="flex items-center gap-3 mb-4">
