@@ -14,6 +14,7 @@ import {
   useWallets,
 } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
+import { COIN_ICONS } from 'const/icons'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -31,7 +32,6 @@ import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
-import { useImportToken } from '../../lib/utils/import-token'
 import {
   ethereum,
   arbitrum,
@@ -45,18 +45,8 @@ import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
-import useContract from '@/lib/thirdweb/hooks/useContract'
 import viemChains from '@/lib/viem/viemChains'
-import ERC20 from '../../const/abis/ERC20.json'
-import {
-  CITIZEN_ADDRESSES,
-  DAI_ADDRESSES,
-  MOONEY_ADDRESSES,
-  USDC_ADDRESSES,
-  USDT_ADDRESSES,
-} from '../../const/config'
-import { CopyIcon } from '../assets'
-import FormInput from '../forms/FormInput'
+import { CITIZEN_ADDRESSES } from '../../const/config'
 import Modal from '../layout/Modal'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import NetworkSelector from '../thirdweb/NetworkSelector'
@@ -277,33 +267,26 @@ function SendModal({
 
   const getTokenIcon = useCallback(
     (symbol: string) => {
-      const knownTokens: { [key: string]: string } = {
-        MOONEY: '/coins/MOONEY.png',
-        DAI: '/coins/DAI.svg',
-        USDC: '/coins/USDC.svg',
-        USDT: '/coins/USDT.svg',
-      }
-
-      if (symbol === selectedNativeToken[sendModalChainSlug]) {
-        return networkIcon
-      }
-
-      if (knownTokens[symbol]) {
+      if (symbol in COIN_ICONS) {
         return (
           <Image
-            src={knownTokens[symbol]}
+            src={COIN_ICONS[symbol as keyof typeof COIN_ICONS]}
             width={24}
             height={24}
             alt={symbol}
-            className="rounded-full"
+            className={symbol === 'MOONEY' ? 'rounded-full' : ''}
           />
         )
       }
-
-      // Fallback: First letter with gradient background
       return (
-        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-          {symbol.charAt(0)}
+        <div className="relative flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full p-1 sm:px-2">
+          <Image
+            src="/assets/icon-star.svg"
+            alt="Token"
+            width={20}
+            height={20}
+            className="bg-orange-500 rounded-full p-1 w-5 h-5"
+          />
         </div>
       )
     },
@@ -692,30 +675,6 @@ export function PrivyConnectWallet({
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
   const [previousChain, setPreviousChain] = useState(selectedChain)
 
-  const mooneyContract = useContract({
-    address: MOONEY_ADDRESSES[chainSlug],
-    chain: selectedChain,
-    abi: ERC20 as any,
-  })
-
-  const daiContract = useContract({
-    address: DAI_ADDRESSES[chainSlug],
-    chain: selectedChain,
-    abi: ERC20 as any,
-  })
-
-  const usdcContract = useContract({
-    address: USDC_ADDRESSES[chainSlug],
-    chain: selectedChain,
-    abi: ERC20 as any,
-  })
-
-  const usdtContract = useContract({
-    address: USDT_ADDRESSES[chainSlug],
-    chain: selectedChain,
-    abi: ERC20 as any,
-  })
-
   const nativeBalance = useNativeBalance()
 
   // Fetch wallet tokens using our new API
@@ -758,28 +717,6 @@ export function PrivyConnectWallet({
       </div>
     )
   }
-
-  // Create formatted balances object for backward compatibility with SendModal
-  const formattedBalances = useMemo(() => {
-    const balances = {
-      mooney: 0,
-      dai: 0,
-      usdc: 0,
-      usdt: 0,
-    }
-
-    walletTokens.forEach((token) => {
-      const symbolLower = token.symbol.toLowerCase()
-      if (symbolLower === 'mooney') balances.mooney = token.formattedBalance
-      if (symbolLower === 'dai') balances.dai = token.formattedBalance
-      if (symbolLower === 'usdc') balances.usdc = token.formattedBalance
-      if (symbolLower === 'usdt') balances.usdt = token.formattedBalance
-    })
-
-    return balances
-  }, [walletTokens])
-
-  const importToken = useImportToken(selectedChain)
 
   function NetworkIcon() {
     return (
