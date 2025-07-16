@@ -24,7 +24,7 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
           return
         }
 
-        const provider = await wallet?.getEthersProvider('any')
+        const provider = await wallet?.getEthersProvider()
         const signer = provider?.getSigner()
 
         const walletClientType = wallet?.walletClientType
