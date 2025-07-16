@@ -341,7 +341,7 @@ export default function Fees() {
                     <PrivyWeb3Button
                       v5
                       requiredChain={DEFAULT_CHAIN_V5}
-                      label="Get vMOONEY`"
+                      label="Get vMOONEY"
                       action={() => router.push('/lock')}
                       className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
                     />
