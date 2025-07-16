@@ -354,7 +354,7 @@ export default function Fees() {
                 <div className="mt-3 w-[25vw] flex flex-col gap-4">
                   <div className="mb-2">
                     <div className="text-xl font-GoodTimes opacity-80">
-                      Total Weekly Rewards:
+                      Reward Pool This Week:
                     </div>
                     <Asset
                       name="ETH"
@@ -390,8 +390,8 @@ export default function Fees() {
                         {checkedInCount !== null
                           ? checkedInCount > 0
                             ? checkedInCount === 1
-                              ? '1 check in this week!'
-                              : `${checkedInCount} check ins this week!`
+                              ? '1 person checked this week!'
+                              : `${checkedInCount} people checked in this week!`
                             : 'No one has checked in yet!'
                           : 'Loading...'}
                       </div>
