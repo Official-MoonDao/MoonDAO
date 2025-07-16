@@ -31,7 +31,7 @@ function MissionInfoTab({
   return (
     <div className="relative">
       <button
-        className={`text-xl ${
+        className={`text-sm md:text-xl ${
           currentTab === tab ? 'text-white' : 'text-gray-400'
         }`}
         onClick={() => setTab(tab)}
