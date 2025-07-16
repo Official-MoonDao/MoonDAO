@@ -1,7 +1,6 @@
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useMemo, useState, useEffect } from 'react'
 import React from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
