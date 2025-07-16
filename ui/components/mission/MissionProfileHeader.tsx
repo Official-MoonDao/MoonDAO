@@ -79,7 +79,7 @@ const MissionProfileHeader = React.memo(
                 {mission?.metadata?.logoUri ? (
                   <div className="relative">
                     {/* Main mission image with enhanced styling */}
-                    <div className="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-[320px] lg:h-[320px]">
+                    <div className="relative w-full max-w-xs sm:w-80 sm:h-80 lg:w-[320px] lg:h-[320px] aspect-square">
                       <div className="absolute inset-0 bg-gradient-to-br from-purple-400/15 to-blue-400/15 rounded-2xl blur-xl group-hover:blur-lg transition-all duration-500" />
                       <IPFSRenderer
                         src={mission?.metadata?.logoUri}
@@ -107,7 +107,7 @@ const MissionProfileHeader = React.memo(
                     </div>
                   </div>
                 ) : (
-                  <div className="w-64 h-64 sm:w-80 sm:h-80 lg:w-[320px] lg:h-[320px] bg-gradient-to-br from-slate-700 to-slate-600 rounded-2xl border border-white/10 flex items-center justify-center">
+                  <div className="w-full max-w-xs sm:w-80 sm:h-80 lg:w-[320px] lg:h-[320px] aspect-square bg-gradient-to-br from-slate-700 to-slate-600 rounded-2xl border border-white/10 flex items-center justify-center">
                     <div className="text-center p-6">
                       <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                         <Image
@@ -125,7 +125,7 @@ const MissionProfileHeader = React.memo(
             </div>
 
             {/* Right Column - Mission Info */}
-            <div className="flex flex-col justify-center space-y-3 lg:space-y-4 flex-grow">
+            <div className="flex flex-col justify-center space-y-3 lg:space-y-4 flex-grow mt-6 lg:mt-0">
               {/* Mission Title & Tagline */}
               <div className="space-y-2">
                 {mission?.metadata?.name && (
