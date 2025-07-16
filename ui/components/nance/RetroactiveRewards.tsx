@@ -67,15 +67,19 @@ export type RetroactiveRewardsProps = {
 }
 
 // Helper function to format large numbers for mobile display
-function formatValueForDisplay(value: string | number): { full: string; abbreviated: string } {
-  const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
-  
+function formatValueForDisplay(value: string | number): {
+  full: string
+  abbreviated: string
+} {
+  const numValue =
+    typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
+
   if (isNaN(numValue)) {
     return { full: value.toString(), abbreviated: value.toString() }
   }
-  
+
   const full = numValue.toLocaleString()
-  
+
   // Create abbreviated version for very large numbers
   if (numValue >= 1000000) {
     const millions = numValue / 1000000
@@ -86,7 +90,7 @@ function formatValueForDisplay(value: string | number): { full: string; abbrevia
     const abbreviated = `${thousands.toFixed(1)} K`
     return { full, abbreviated }
   }
-  
+
   return { full, abbreviated: full }
 }
 
@@ -100,7 +104,7 @@ function RewardAsset({
     ? `/coins/${name}.${assetImageExtension[name]}`
     : '/coins/DEFAULT.png'
   const usd = Number(usdValue)
-  
+
   const formattedValue = formatValueForDisplay(value)
 
   return (
@@ -231,9 +235,16 @@ export function RetroactiveRewards({
   )
 
   let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
+  citizenDistributions.push({
+    year,
+    quarter,
+    address: '0x4CBf10c36b481d6afF063070E35b4F42E7Aad201',
+    distribution: { 9: 25, 16: 50, 77: 25 },
+  })
   const nonCitizenDistributions = distributions?.filter(
     (_, i) => !isCitizens[i]
   )
+  console.log('citizenDistributions', citizenDistributions)
   // All projects need at least one citizen distribution to do iterative normalization
   const allProjectsHaveCitizenDistribution = currentProjects?.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
