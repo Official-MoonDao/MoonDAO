@@ -117,6 +117,10 @@ export default function NetworkSelector({
               <NetworkOption chain={sepolia} selectChain={selectChain} />
               <NetworkOption chain={baseSepolia} selectChain={selectChain} />
               <NetworkOption
+                chain={arbitrumSepolia}
+                selectChain={selectChain}
+              />
+              <NetworkOption
                 chain={optimismSepolia}
                 selectChain={selectChain}
               />

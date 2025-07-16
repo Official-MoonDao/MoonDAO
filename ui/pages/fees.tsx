@@ -199,6 +199,7 @@ export default function Fees() {
                 params: [],
               }),
             ])
+
             const vMooneyContract = getContract({
               client,
               address: vMooneyAddress,
@@ -269,6 +270,7 @@ export default function Fees() {
           continue
         }
         if (selectedChain.id !== data.chain.id) {
+          await wallets[selectedWallet].switchChain(data.chain.id)
           setSelectedChain(data.chain)
         }
         const tx = prepareContractCall({
@@ -281,6 +283,7 @@ export default function Fees() {
           account,
         })
       }
+      await wallets[selectedWallet].switchChain(currentChain.id)
       setSelectedChain(currentChain)
       toast.success('Checked in!', { style: toastStyle })
       confetti({
@@ -411,6 +414,7 @@ export default function Fees() {
                     Number(feesAvailable) > 0 &&
                     !isCheckedIn && (
                       <PrivyWeb3Button
+                        skipNetworkCheck={true}
                         action={handleCheckIn}
                         label={isCheckedIn ? 'Checked In' : 'Check In'}
                         className="w-full max-w-[250px] rounded-[5vmax] rounded-tl-[20px]"

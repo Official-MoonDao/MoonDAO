@@ -21,19 +21,19 @@ forge script script/Anvil.s.sol --rpc-url localhost:8545 --private-key <PK> --br
 ```
 # Deploy the FeeHook contract, 1 per chain
 PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$SEP forge script script/FeeHook.s.sol --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify --via-ir --optimize --optimizer-runs 2000 --delay 10 --retries 10
-
 PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$ARB forge script script/FeeHook.s.sol --rpc-url https://421614.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify --via-ir --optimize --optimizer-runs 2000 --delay 10 --retries 10
+
 # Update FEE_HOOK_ADDRESSES and TEST_TOKEN_ADDRESSES for each chain in Config.sol
 
-# Deploy Pool, 1 per chain
+# Deploy Pool
 PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$SEP forge script script/Pool.s.sol --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify
 PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$ARB forge script script/Pool.s.sol --rpc-url https://421614.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify
 
-# Execute Swap, on source chain and destination chain
+# Execute Swap
 PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$SEP forge script script/Swap.s.sol --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify --via-ir
 PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$ARB forge script script/Swap.s.sol --rpc-url https://421614.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify --via-ir
 
-# Withdraw fees
+# Check in/distrbute fees
 PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$SEP forge script script/WithdrawFees.s.sol --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify --via-ir
 PRIVATE_KEY=$PK ETHERSCAN_API_KEY=$ARB forge script script/WithdrawFees.s.sol --rpc-url https://421614.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast -vv --verify --via-ir
 ```
