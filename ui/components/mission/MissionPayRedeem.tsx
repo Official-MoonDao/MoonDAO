@@ -1,3 +1,4 @@
+import { getOnrampBuyUrl } from '@coinbase/onchainkit/fund'
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
 import { useFundWallet } from '@privy-io/react-auth'
@@ -303,13 +304,16 @@ export default function MissionPayRedeem({
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
-  const isTestnet = process.env.NEXT_PUBLIC_CHAIN != 'mainnet'
+  const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains = isTestnet
     ? [sepolia, optimismSepolia]
     : [arbitrum, base, ethereum]
 
   const [missionPayModalEnabled, setMissionPayModalEnabled] = useState(false)
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<'crypto' | 'fiat'>(
+    'crypto'
+  )
 
   const account = useActiveAccount()
   const address = account?.address
@@ -326,6 +330,36 @@ export default function MissionPayRedeem({
     1,
     'ETH_TO_USD'
   )
+
+  // Coinbase onramp URL generation
+  const generateOnrampUrl = useCallback(() => {
+    if (!address) {
+      toast.error('Please connect your wallet first.', { style: toastStyle })
+      return
+    }
+
+    const projectId = process.env.NEXT_PUBLIC_CDP_PROJECT_ID
+    if (!projectId) {
+      console.error('CDP_PROJECT_ID not configured')
+      toast.error('Onramp not configured. Please contact support.', {
+        style: toastStyle,
+      })
+      return
+    }
+
+    const onrampUrl = getOnrampBuyUrl({
+      projectId,
+      addresses: {
+        [address]: [selectedChain?.name?.toLowerCase() || 'ethereum'],
+      },
+      assets: ['ETH'],
+      presetFiatAmount: parseFloat(usdInput) || 20,
+      fiatCurrency: 'USD',
+      redirectUrl: `${window.location.origin}${router.asPath}?onramp_success=true`,
+    })
+
+    window.open(onrampUrl, '_blank', 'noopener,noreferrer')
+  }, [address, selectedChain, usdInput, router.asPath])
 
   // Calculate ETH amount from USD for display
   const calculateEthAmount = useCallback(() => {
@@ -619,6 +653,7 @@ export default function MissionPayRedeem({
 
       refreshBackers?.()
       setMissionPayModalEnabled(false)
+      setJustCompletedFiatPurchase(false)
       router.reload()
     } catch (error) {
       console.error('Error purchasing tokens:', error)
@@ -839,6 +874,7 @@ export default function MissionPayRedeem({
                 type="button"
                 className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
                 onClick={(e: any) => {
+                  setJustCompletedFiatPurchase(false)
                   setModalEnabled
                     ? setModalEnabled(false)
                     : setMissionPayModalEnabled(false)
@@ -846,6 +882,41 @@ export default function MissionPayRedeem({
               >
                 <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
               </button>
+            </div>
+
+            {/* Payment Method Selection */}
+            <div className="w-full">
+              <p className="mb-3 text-sm font-medium">Choose Payment Method</p>
+              <div className="flex gap-2">
+                <button
+                  className={`flex-1 p-3 rounded-lg border transition-all ${
+                    paymentMethod === 'crypto'
+                      ? 'border-moon-blue bg-moon-blue/20 text-white'
+                      : 'border-gray-600 bg-transparent text-gray-300 hover:border-gray-500'
+                  }`}
+                  onClick={() => setPaymentMethod('crypto')}
+                >
+                  <div className="text-center">
+                    <div className="text-lg font-medium">Crypto</div>
+                    <div className="text-xs opacity-80">Pay with ETH</div>
+                  </div>
+                </button>
+                <button
+                  className={`flex-1 p-3 rounded-lg border transition-all ${
+                    paymentMethod === 'fiat'
+                      ? 'border-moon-blue bg-moon-blue/20 text-white'
+                      : 'border-gray-600 bg-transparent text-gray-300 hover:border-gray-500'
+                  }`}
+                  onClick={() => setPaymentMethod('fiat')}
+                >
+                  <div className="text-center">
+                    <div className="text-lg font-medium">Fiat</div>
+                    <div className="text-xs opacity-80">
+                      Buy ETH via Coinbase
+                    </div>
+                  </div>
+                </button>
+              </div>
             </div>
 
             <div className="w-full flex justify-between">
@@ -871,6 +942,7 @@ export default function MissionPayRedeem({
                   value={formattedUsdInput}
                   onChange={handleUsdInputChange}
                   maxLength={9}
+                  disabled={isFiatPaymentProcessing}
                 />
                 <span>{'USD'}</span>
               </div>
@@ -926,6 +998,7 @@ export default function MissionPayRedeem({
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 maxLength={100}
+                disabled={isFiatPaymentProcessing}
               />
             </div>
 
@@ -953,32 +1026,194 @@ export default function MissionPayRedeem({
               />
             </div>
 
-            <div className="w-full flex justify-between gap-4">
-              <NetworkSelector chains={chains} compact={true} align="left" />
-            </div>
+            {paymentMethod === 'crypto' && (
+              <div className="w-full flex justify-between gap-4">
+                <NetworkSelector chains={chains} compact={true} align="left" />
+              </div>
+            )}
+
+            {paymentMethod === 'fiat' && (
+              <div className="w-full">
+                <p className="text-sm opacity-80 mb-2">
+                  Click the button below to purchase ETH via Coinbase and have
+                  it sent directly to your wallet. Once received, you can
+                  contribute to the mission.
+                </p>
+                <div className="p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg mb-3">
+                  <p className="text-sm text-blue-200">
+                    ℹ️ This will open Coinbase's secure payment page in a new
+                    tab. After purchasing ETH, return here to complete your
+                    mission contribution.
+                  </p>
+                </div>
+                {parseFloat(usdInput) > 500 && (
+                  <div className="p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg mb-3">
+                    <p className="text-sm text-yellow-200">
+                      ⚠️ Purchases over $500 may require additional verification
+                      with Coinbase
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="w-full flex justify-between gap-4">
               <StandardButton
                 styleOnly
                 className="w-1/2 p-2 text-center border-moon-indigo border-[1px] rounded-xl"
                 onClick={() => {
+                  setJustCompletedFiatPurchase(false)
                   setModalEnabled
                     ? setModalEnabled(false)
                     : setMissionPayModalEnabled(false)
                 }}
                 hoverEffect={false}
+                disabled={isFiatPaymentProcessing}
               >
                 Cancel
               </StandardButton>
-              <PrivyWeb3Button
-                id="contribute-button"
-                className="w-1/2 bg-moon-indigo rounded-xl"
-                label={`Contribute $${formattedUsdInput || '0'} USD`}
-                action={buyMissionToken}
-                isDisabled={
-                  !agreedToCondition || !usdInput || parseFloat(usdInput) <= 0
-                }
-              />
+
+              {paymentMethod === 'crypto' ? (
+                <PrivyWeb3Button
+                  id="contribute-button"
+                  className="w-1/2 bg-moon-indigo rounded-xl"
+                  label={`Contribute $${formattedUsdInput || '0'} USD`}
+                  action={buyMissionToken}
+                  isDisabled={
+                    !agreedToCondition ||
+                    !usdInput ||
+                    parseFloat(usdInput) <= 0 ||
+                    isFiatPaymentProcessing
+                  }
+                />
+              ) : justCompletedFiatPurchase ? (
+                <PrivyWeb3Button
+                  id="continue-to-mission-button"
+                  className="w-1/2 bg-green-600 rounded-xl"
+                  label={`Contribute $${formattedUsdInput || '0'} USD`}
+                  action={async () => {
+                    // Ensure the ETH input is set from USD input before proceeding
+                    if (ethUsdPrice && usdInput) {
+                      const ethAmount = (
+                        Number(usdInput) / ethUsdPrice
+                      ).toFixed(6)
+                      setInput(ethAmount)
+                    }
+                    await buyMissionToken()
+                  }}
+                  isDisabled={
+                    !agreedToCondition || !usdInput || parseFloat(usdInput) <= 0
+                  }
+                />
+              ) : (
+                <div className="w-1/2 flex flex-col gap-2">
+                  {/* Apple Pay Component */}
+                  {availablePaymentMethods.applePay && (
+                    <ApplePayComponent
+                      merchantIdentifier={
+                        process.env.NEXT_PUBLIC_APPLE_MERCHANT_ID ||
+                        'merchant.com.moondao'
+                      }
+                      total={{
+                        label: `${mission?.metadata?.name} Contribution`,
+                        amount: usdInput || '0',
+                        type: 'final',
+                      }}
+                      currencyCode="USD"
+                      onPaymentSuccess={handleApplePaySuccess}
+                      onPaymentError={handleApplePayError}
+                      onPaymentCancel={handleApplePayCancel}
+                      buttonText={
+                        isFiatPaymentProcessing
+                          ? 'Processing...'
+                          : `Buy $${formattedUsdInput || '0'} in ETH`
+                      }
+                      disabled={
+                        !agreedToCondition ||
+                        !usdInput ||
+                        parseFloat(usdInput) <= 0 ||
+                        isFiatPaymentProcessing
+                      }
+                      className="w-full"
+                      debug={process.env.NEXT_PUBLIC_ENV !== 'prod'}
+                    />
+                  )}
+
+                  {/* Google Pay Component */}
+                  {availablePaymentMethods.googlePay && (
+                    <GooglePayComponent
+                      merchantId={
+                        process.env.NEXT_PUBLIC_GOOGLE_MERCHANT_ID ||
+                        'BCR2DN4TZTXBVR4S'
+                      }
+                      merchantName="MoonDAO"
+                      gateway="example" // Use example gateway for testing
+                      gatewayMerchantId="exampleGatewayMerchantId" // Required for example gateway
+                      environment={
+                        process.env.NEXT_PUBLIC_ENV === 'prod'
+                          ? 'PRODUCTION'
+                          : 'TEST'
+                      }
+                      totalPrice={usdInput || '0'}
+                      currencyCode="USD"
+                      onPaymentSuccess={handleGooglePaySuccess}
+                      onPaymentError={handleGooglePayError}
+                      onPaymentCancel={handleGooglePayCancel}
+                      buttonType="fund"
+                      buttonSizeMode="fill"
+                      disabled={
+                        !agreedToCondition ||
+                        !usdInput ||
+                        parseFloat(usdInput) <= 0 ||
+                        isFiatPaymentProcessing
+                      }
+                      className="w-full"
+                      debug={process.env.NEXT_PUBLIC_ENV !== 'prod'}
+                    />
+                  )}
+
+                  {/* Fallback button when no payment methods are available */}
+                  {!availablePaymentMethods.applePay &&
+                    !availablePaymentMethods.googlePay && (
+                      <StandardButton
+                        id="fiat-fallback-button"
+                        className="w-full bg-gray-600 rounded-xl py-2 text-sm opacity-75"
+                        onClick={() => {
+                          toast(
+                            'Digital wallet payments are not available on this browser. Please use Safari for Apple Pay, Chrome for Google Pay, or switch to crypto payment.',
+                            {
+                              style: toastStyle,
+                              duration: 5000,
+                            }
+                          )
+                        }}
+                        hoverEffect={false}
+                        disabled={
+                          !agreedToCondition ||
+                          !usdInput ||
+                          parseFloat(usdInput) <= 0 ||
+                          isFiatPaymentProcessing
+                        }
+                      >
+                        {isFiatPaymentProcessing
+                          ? 'Processing...'
+                          : `Pay $${
+                              formattedUsdInput || '0'
+                            } with Digital Wallet`}
+                      </StandardButton>
+                    )}
+                </div>
+              )}
             </div>
+
+            {isFiatPaymentProcessing && (
+              <div className="w-full p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner />
+                  <p className="text-sm">Processing your payment...</p>
+                </div>
+              </div>
+            )}
           </div>
         </Modal>
       )}
