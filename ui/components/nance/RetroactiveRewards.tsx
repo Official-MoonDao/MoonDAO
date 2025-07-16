@@ -235,16 +235,15 @@ export function RetroactiveRewards({
   )
 
   let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
-  citizenDistributions.push({
-    year,
-    quarter,
-    address: '0x4CBf10c36b481d6afF063070E35b4F42E7Aad201',
-    distribution: { 9: 25, 16: 50, 77: 25 },
-  })
+  //citizenDistributions.push({
+  //year,
+  //quarter,
+  //address: '0x4CBf10c36b481d6afF063070E35b4F42E7Aad201',
+  //distribution: { 9: 25, 16: 50, 77: 25 },
+  //})
   const nonCitizenDistributions = distributions?.filter(
     (_, i) => !isCitizens[i]
   )
-  console.log('citizenDistributions', citizenDistributions)
   // All projects need at least one citizen distribution to do iterative normalization
   const allProjectsHaveCitizenDistribution = currentProjects?.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
@@ -305,6 +304,24 @@ export function RetroactiveRewards({
     () => currentProjects.filter((p) => !p.eligible),
     [currentProjects]
   )
+  const {
+    addressToEthPayout,
+    addressToMooneyPayout,
+    ethPayoutCSV,
+    vMooneyPayoutCSV,
+    vMooneyAddresses,
+    vMooneyAmounts,
+  } = getPayouts(
+    projectIdToEstimatedPercentage,
+    eligibleProjects,
+    communityCircle,
+    ethBudget,
+    mooneyBudget
+  )
+  console.log('projectIdToEstimatedPercentage', projectIdToEstimatedPercentage)
+  console.log('ethPayoutCSV', ethPayoutCSV)
+  console.log('vMooneyAddresses', vMooneyAddresses)
+  console.log('vMooneyAmounts', vMooneyAmounts)
 
   useEffect(() => {
     let isCancelled = false
