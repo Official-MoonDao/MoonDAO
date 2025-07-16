@@ -1,5 +1,4 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import StandardButton from '../layout/StandardButton'
 
 export default function GovernanceSection() {
@@ -55,16 +54,17 @@ export default function GovernanceSection() {
                 <li>Super majority vote needed</li>
               </ul>
             </div>
-            <Link href="/governance" passHref className="inline-block mt-auto">
+            <div className="inline-block mt-auto">
               <StandardButton
                 backgroundColor="bg-blue-600"
                 textColor="text-white"
                 borderRadius="rounded-full"
                 hoverEffect={false}
+                link="/governance"
               >
                 Learn About Governance
               </StandardButton>
-            </Link>
+            </div>
           </div>
 
           {/* Member House Voting */}
@@ -90,16 +90,17 @@ export default function GovernanceSection() {
                 <li>Super majority required</li>
               </ul>
             </div>
-            <Link href="/vote" passHref className="inline-block mt-auto">
+            <div className="inline-block mt-auto">
               <StandardButton
                 backgroundColor="bg-purple-600"
                 textColor="text-white"
                 borderRadius="rounded-full"
                 hoverEffect={false}
+                link="/vote"
               >
                 See Current Proposals
               </StandardButton>
-            </Link>
+            </div>
           </div>
 
           {/* Citizenship */}
@@ -125,16 +126,17 @@ export default function GovernanceSection() {
                 <li>Shape MoonDAO's future direction</li>
               </ul>
             </div>
-            <Link href="/citizen" passHref className="inline-block mt-auto">
+            <div className="inline-block mt-auto">
               <StandardButton
                 backgroundColor="bg-green-600"
                 textColor="text-white"
                 borderRadius="rounded-full"
                 hoverEffect={false}
+                link="/citizen"
               >
                 Become a Citizen
               </StandardButton>
-            </Link>
+            </div>
           </div>
         </div>
 
@@ -190,16 +192,15 @@ export default function GovernanceSection() {
           </div>
 
           <div className="text-center mt-6">
-            <Link href="/constitution" passHref>
-              <StandardButton
-                backgroundColor="bg-gradient-to-r from-blue-600 to-purple-600"
-                textColor="text-white"
-                borderRadius="rounded-full"
-                hoverEffect={false}
-              >
-                Read the Constitution
-              </StandardButton>
-            </Link>
+            <StandardButton
+              backgroundColor="bg-gradient-to-r from-blue-600 to-purple-600"
+              textColor="text-white"
+              borderRadius="rounded-full"
+              hoverEffect={false}
+              link="/constitution"
+            >
+              Read the Constitution
+            </StandardButton>
           </div>
         </div>
       </div>
