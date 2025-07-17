@@ -52,28 +52,40 @@ export default function ProgressBar({
 
   return (
     <div
-      className="relative w-full rounded-full"
+      className="relative w-full rounded-full bg-slate-700/30 border border-white/10 overflow-hidden"
       style={{ height: `calc(${height} + ${padding} * 2)` }}
     >
       <div
-        className="absolute inset-0 m-[2px] rounded-full bg-[#020617] overflow-hidden"
+        className="absolute inset-0 rounded-full overflow-hidden"
         style={{ margin: padding }}
       >
-        <div
-          ref={progressBarRef}
-          className="h-full bg-gradient-to-l from-[#425eeb] to-[#6d3f79] relative"
-          style={{ width: '0%' }} // Start at 0 and let GSAP animate it
-        />
-        {label && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span
-              ref={labelRef}
-              className="text-[75%] text-white min-w-[10px] whitespace-nowrap opacity-0"
-            >
-              {label}
-            </span>
+        {/* Background with subtle pattern */}
+        <div className="h-full w-full bg-gradient-to-r from-slate-800/50 to-slate-700/50 relative">
+          {/* Progress fill with enhanced gradient */}
+          <div
+            ref={progressBarRef}
+            className="h-full bg-gradient-to-r from-blue-500 via-purple-600 to-blue-500 relative shadow-lg"
+            style={{ width: '0%' }} // Start at 0 and let GSAP animate it
+          >
+            {/* Shimmer effect overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
           </div>
-        )}
+          
+          {/* Progress label */}
+          {label && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span
+                ref={labelRef}
+                className="text-sm font-medium text-white drop-shadow-lg opacity-0 px-2 py-1 bg-black/20 rounded-full backdrop-blur-sm"
+              >
+                {label}
+              </span>
+            </div>
+          )}
+          
+          {/* Subtle highlight on top edge */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+        </div>
       </div>
     </div>
   )
