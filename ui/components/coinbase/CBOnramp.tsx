@@ -1,6 +1,7 @@
 import { generateOnRampURL } from '@coinbase/cbpay-js'
 import { useEffect, useState } from 'react'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 interface CBOnrampProps {
   address: string
@@ -229,71 +230,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     )
   }
 
-  // Error state
-  if (error) {
-    return (
-      <div className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white p-6">
-        <div className="space-y-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
-              <svg
-                className="w-5 h-5 text-red-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">
-                Payment System Error
-              </h3>
-              <p className="text-gray-300 text-xs">
-                {selectedChain?.name || 'Unknown Network'}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-black/20 rounded-lg p-4 border border-white/5">
-            <p className="text-gray-300 text-sm leading-relaxed">{error}</p>
-          </div>
-
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-            <h4 className="text-yellow-400 text-sm font-medium uppercase tracking-wide mb-2">
-              Troubleshooting Tips:
-            </h4>
-            <ul className="text-yellow-200/80 text-xs space-y-1">
-              <li>• Check that environment variables are set</li>
-              <li>• Verify CDP API credentials are valid</li>
-              <li>• Ensure wallet is connected</li>
-            </ul>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
-              onClick={() => window.location.reload()}
-            >
-              Try Again
-            </button>
-            <button
-              className="flex-1 bg-black/20 hover:bg-black/30 border border-white/10 hover:border-white/20 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200"
-              onClick={onExit}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   // Success state - ready to purchase
   return (
     <div className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden">
@@ -353,12 +289,12 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
         </div>
 
         {/* Purchase button */}
-        <button
+        <PrivyWeb3Button
+          label={`Buy $${usdInput || '20'} of ETH with Coinbase`}
+          action={handleOpenOnramp}
           className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
-          onClick={handleOpenOnramp}
-        >
-          Buy ${usdInput || '20'} of ETH with Coinbase
-        </button>
+          skipNetworkCheck={true}
+        />
 
         {/* Additional info */}
         <div className="bg-black/10 rounded-lg p-4 border border-white/5">
