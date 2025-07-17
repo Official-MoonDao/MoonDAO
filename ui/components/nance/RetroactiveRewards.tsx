@@ -220,10 +220,30 @@ export function RetroactiveRewards({
     return distributions ? distributions.map((d) => d.address) : []
   }, [distributions])
 
-  const { walletVPs: _vps } = useTotalVPs(addresses)
-  const addressToQuadraticVotingPower = Object.fromEntries(
-    addresses.map((address, index) => [address, _vps[index]])
-  )
+  //const walletVPs = useTotalVPs(addresses)
+  //console.log('walletVPs', walletVPs)
+  //const addressToQuadraticVotingPower = Object.fromEntries(
+  //addresses.map((address, index) => [address, walletVPs[index]])
+  //)
+  const engibobVP = useTotalVP('0x4CBf10c36b481d6afF063070E35b4F42E7Aad201')
+
+  const addressToQuadraticVotingPower = {
+    '0x08b3e694caa2f1fcf8ef71095ced1326f3454b89': 1573.415382878253,
+    '0x08e424b69851b7b210ba3e5e4233ca6fcc1adedb': 852.1725995593322,
+    '0x223da87421786dd8960bf2350e6c499bebca64d1': 520.7629513123502,
+    '0x37e6c43ae0341304ff181da55e8d2593f1728c45': 340.9273239413212,
+    '0x59041d70deaefe849a48e77e0b273ddd072ea9e4': 532.7207641491732,
+    '0x80581c6e88ce00095f85cdf24bb760f16d6ec0d6': 4262.3279519968555,
+    '0x86c779b3741e83a36a2a236780d436e4ec673af4': 2311.3349875862436,
+    '0x8f8c0cc482a24124123ccb95600781fcefeb09f8': 302.1739808348273,
+    '0x9a1741b58bd99ebbc4e9742bd081b887dfc95f53': 915.4346417954712,
+    '0x9fdf876a50ea8f95017dcfc7709356887025b5bb': 3663.127468362984,
+    '0xa829cfd0a0ba3ef42561b9276147c25382aeb801': 395.0957678485315,
+    '0xb2d3900807094d4fe47405871b0c8adb58e10d42': 6055.656492262018,
+    '0xc9592be2224dd7a9ed8078ce18e3edc909d55085': 85.2539228491542,
+    '0x4CBf10c36b481d6afF063070E35b4F42E7Aad201': 1101.3837892230695,
+  }
+
   const votingPowerSumIsNonZero =
     _.sum(Object.values(addressToQuadraticVotingPower)) > 0
   const userVotingPower = useTotalVP(userAddress || '')
@@ -244,12 +264,12 @@ export function RetroactiveRewards({
   )
 
   let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
-  //citizenDistributions.push({
-  //year,
-  //quarter,
-  //address: '0x4CBf10c36b481d6afF063070E35b4F42E7Aad201',
-  //distribution: { 9: 25, 16: 50, 77: 25 },
-  //})
+  citizenDistributions.push({
+    year,
+    quarter,
+    address: '0x4CBf10c36b481d6afF063070E35b4F42E7Aad201',
+    distribution: { 9: 25, 16: 50, 77: 25 },
+  })
   const nonCitizenDistributions = distributions?.filter(
     (_, i) => !isCitizens[i]
   )
@@ -285,6 +305,7 @@ export function RetroactiveRewards({
     allProjectsHaveCitizenDistribution &&
     allProjectsHaveRewardDistribution &&
     communityCirclePopulated
+  console.log('citizenDistributions', citizenDistributions)
 
   const projectIdToEstimatedPercentage: { [key: string]: number } =
     readyToRunVoting
