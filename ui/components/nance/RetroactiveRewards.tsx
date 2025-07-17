@@ -155,6 +155,15 @@ export function RetroactiveRewards({
   const [distribution, setDistribution] = useState<{ [key: string]: number }>(
     {}
   )
+  const eligibleProjects = useMemo(
+    () => currentProjects.filter((p) => p.eligible),
+    [currentProjects]
+  )
+
+  const ineligibleProjects = useMemo(
+    () => currentProjects.filter((p) => !p.eligible),
+    [currentProjects]
+  )
 
   //Check if its the rewards cycle
   useEffect(() => {
@@ -245,32 +254,32 @@ export function RetroactiveRewards({
     (_, i) => !isCitizens[i]
   )
   // All projects need at least one citizen distribution to do iterative normalization
-  const allProjectsHaveCitizenDistribution = currentProjects?.every(({ id }) =>
+  const allProjectsHaveCitizenDistribution = eligibleProjects?.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
   )
-  const allProjectsHaveRewardDistribution = currentProjects?.every(
+  const allProjectsHaveRewardDistribution = eligibleProjects?.every(
     (project) => project.rewardDistribution !== undefined
   )
   // Map from address to percentage of commnity rewards
   const communityCircle = {
-  "0xa829cfd0a0ba3ef42561b9276147c25382aeb801": 4.44,
-  "0x8f8c0cc482a24124123ccb95600781fcefeb09f8": 3.78,
-  "0x08E424b69851b7b210bA3E5E4233Ca6fcc1ADEdb": 8.22,
-  "0x9A1741b58Bd99EBbc4e9742Bd081b887DfC95f53": 2.89,
-  "0x977e3f778d1aFce209Fa0D2299374b1875F5238A": 5.56,
-  "0x8cd7f95b0c694dfc9abfee03139bd975a3e81768": 8.33,
-  "0xb87b8c495d3dae468d4351621b69d2ec10e656fe": 7.56,
-  "0x98d61675315d3ef156606bbeef7cabae96508cae": 8.78,
-  "0x8a7fd7f4b1a77a606dfdd229c194b1f22de868ff": 8.22,
-  "0xe2d3aC725E6FFE2b28a9ED83bedAaf6672f2C801": 9.89,
-  "0x6bFd9e435cF6194c967094959626ddFF4473a836": 5.56,
-  "0x4CBf10c36b481d6afF063070E35b4F42E7Aad201": 8.22,
-  "0xA64f2228cceC96076c82abb903021C33859082F8": 3.56,
-  "0x47cc4c7fef42187f9f7901838f316b033e92be05": 3.11,
-  "0xf17858889d5a7e9002ed2bf808c6cffafe8d6014": 4,
-  "0x79D0B453Dd5d694da4685Fbb94798335D5F77760": 4.56,
-  "0x86c779b3741e83A36A2a236780d436E4EC673Af4": 3.33
-}
+    '0xa829cfd0a0ba3ef42561b9276147c25382aeb801': 4.44,
+    '0x8f8c0cc482a24124123ccb95600781fcefeb09f8': 3.78,
+    '0x08E424b69851b7b210bA3E5E4233Ca6fcc1ADEdb': 8.22,
+    '0x9A1741b58Bd99EBbc4e9742Bd081b887DfC95f53': 2.89,
+    '0x977e3f778d1aFce209Fa0D2299374b1875F5238A': 5.56,
+    '0x8cd7f95b0c694dfc9abfee03139bd975a3e81768': 8.33,
+    '0xb87b8c495d3dae468d4351621b69d2ec10e656fe': 7.56,
+    '0x98d61675315d3ef156606bbeef7cabae96508cae': 8.78,
+    '0x8a7fd7f4b1a77a606dfdd229c194b1f22de868ff': 8.22,
+    '0xe2d3aC725E6FFE2b28a9ED83bedAaf6672f2C801': 9.89,
+    '0x6bFd9e435cF6194c967094959626ddFF4473a836': 5.56,
+    '0x4CBf10c36b481d6afF063070E35b4F42E7Aad201': 8.22,
+    '0xA64f2228cceC96076c82abb903021C33859082F8': 3.56,
+    '0x47cc4c7fef42187f9f7901838f316b033e92be05': 3.11,
+    '0xf17858889d5a7e9002ed2bf808c6cffafe8d6014': 4,
+    '0x79D0B453Dd5d694da4685Fbb94798335D5F77760': 4.56,
+    '0x86c779b3741e83A36A2a236780d436E4EC673Af4': 3.33,
+  }
   const communityCirclePopulated = Object.keys(communityCircle).length > 0
   const readyToRunVoting =
     allProjectsHaveCitizenDistribution &&
@@ -282,7 +291,7 @@ export function RetroactiveRewards({
       ? computeRewardPercentages(
           citizenDistributions,
           nonCitizenDistributions,
-          currentProjects,
+          eligibleProjects,
           addressToQuadraticVotingPower
         )
       : {}
@@ -313,15 +322,6 @@ export function RetroactiveRewards({
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
-  const eligibleProjects = useMemo(
-    () => currentProjects.filter((p) => p.eligible),
-    [currentProjects]
-  )
-
-  const ineligibleProjects = useMemo(
-    () => currentProjects.filter((p) => !p.eligible),
-    [currentProjects]
-  )
   const {
     addressToEthPayout,
     addressToMooneyPayout,
