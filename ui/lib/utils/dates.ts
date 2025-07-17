@@ -53,7 +53,7 @@ export function formatTimeUntilDeadline(deadline: Date): string {
 
   // If deadline has passed
   if (timeDifference <= 0) {
-    return 'PASSED'
+    return '0 SECONDS'
   }
 
   // Calculate time units

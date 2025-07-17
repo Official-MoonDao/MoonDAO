@@ -25,8 +25,6 @@ contract FeeHook is BaseHook, Ownable {
     using StateLibrary for IPoolManager;
     using Strings for uint256;
 
-    bytes32[] public poolIds; // Pools created with this hook
-    bytes32[] public transferredPoolIds; // Pools transferred to other addresses
     mapping(PoolId => uint256) public uncollectedFees; // Uncollected fees for each LP position
     mapping(PoolId => uint256) public poolIdToTokenId; // Token ID for the NFT representing each LP position
     IPositionManager posm;
@@ -42,6 +40,8 @@ contract FeeHook is BaseHook, Ownable {
 
     event CheckedIn(address indexed user, uint256 weekStart);
     event FeesDistributed(uint256 amount);
+    event TransferredPosition(address indexed to, bytes32 poolId, uint256 tokenId);
+    event CreatedPosition(bytes32 poolId, uint256 tokenId);
 
     constructor(address owner, IPoolManager _poolManager, IPositionManager _posm, address _vMooneyAddress) BaseHook(_poolManager) Ownable(owner) {
         posm = _posm;
@@ -115,7 +115,7 @@ contract FeeHook is BaseHook, Ownable {
         PoolId poolId = key.toId();
         if (poolIdToTokenId[poolId] == 0) {
             poolIdToTokenId[poolId] = posm.nextTokenId() - 1;
-            poolIds.push(PoolId.unwrap(poolId));
+            emit CreatedPosition(PoolId.unwrap(poolId), poolIdToTokenId[poolId]);
         }
         return BaseHook.beforeAddLiquidity.selector;
     }
@@ -129,12 +129,13 @@ contract FeeHook is BaseHook, Ownable {
         PoolId id = PoolId.wrap(poolId);
         uint256 tokenId = poolIdToTokenId[id];
         require(tokenId != 0, "Token ID not found");
-        transferredPoolIds.push(poolId);
+        emit TransferredPosition(to, poolId, tokenId);
         PositionManager(payable(address(posm))).safeTransferFrom(address(this), to, tokenId, "");
     }
 
     /// @notice Mark the caller as participating in the current week
     function checkIn() external {
+        require(IERC20(vMooneyAddress).balanceOf(msg.sender) > 0, "Must hold vMooney to check in");
         if (lastCheckIn[msg.sender] < weekStart) {
             lastCheckIn[msg.sender] = weekStart;
             checkedIn.push(msg.sender);
@@ -179,6 +180,20 @@ contract FeeHook is BaseHook, Ownable {
         delete checkedIn;
         weekStart = block.timestamp;
         emit FeesDistributed(fees);
+    }
+
+    function estimateFees(address user) external view returns (uint256) {
+        uint256 length = checkedIn.length;
+
+        uint256 total;
+        for (uint256 i = 0; i < length; i++) {
+            total += IERC20(vMooneyAddress).balanceOf(checkedIn[i]);
+        }
+
+        uint256 fees = address(this).balance;
+        uint256 bal = IERC20(vMooneyAddress).balanceOf(user);
+        if (total == 0 || bal == 0) return 0;
+        return (fees * bal) / total;
     }
 
     function transferETH(address to, uint256 amount) internal {

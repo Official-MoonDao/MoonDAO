@@ -14,10 +14,11 @@ import {
   useWallets,
 } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
+import { COIN_ICONS } from 'const/icons'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import toast from 'react-hot-toast'
 import {
@@ -31,30 +32,89 @@ import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
-import { useImportToken } from '../../lib/utils/import-token'
+import {
+  ethereum,
+  arbitrum,
+  base,
+  polygon,
+  sepolia,
+  arbitrumSepolia,
+  optimismSepolia,
+} from '@/lib/infura/infuraChains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
-import useContract from '@/lib/thirdweb/hooks/useContract'
-import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import viemChains from '@/lib/viem/viemChains'
-import ERC20 from '../../const/abis/ERC20.json'
-import {
-  CITIZEN_ADDRESSES,
-  DAI_ADDRESSES,
-  MOONEY_ADDRESSES,
-  USDC_ADDRESSES,
-  USDT_ADDRESSES,
-} from '../../const/config'
-import { CopyIcon } from '../assets'
-import FormInput from '../forms/FormInput'
+import { CITIZEN_ADDRESSES } from '../../const/config'
 import Modal from '../layout/Modal'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import NetworkSelector from '../thirdweb/NetworkSelector'
 import { LinkAccounts } from './LinkAccounts'
 import { PrivyWeb3Button } from './PrivyWeb3Button'
 import WalletAction from './WalletAction'
+
+// Custom hook to fetch wallet tokens from our API
+function useWalletTokens(address: string | undefined, chain: string) {
+  const [tokens, setTokens] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchTokens = useCallback(async () => {
+    if (!address) {
+      setTokens([])
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(
+        `/api/etherscan/wallet-tokens?address=${address}&chain=${chain}&offset=50`
+      )
+      const data = await response.json()
+
+      if (data.error) {
+        setError(data.error)
+        setTokens([])
+      } else if (data.result) {
+        // Filter out tokens with zero balance and format the data
+        const formattedTokens = data.result
+          .filter(
+            (token: any) =>
+              token.TokenBalance && parseFloat(token.TokenBalance) > 0
+          )
+          .map((token: any) => ({
+            symbol: token.TokenSymbol || 'Unknown',
+            name: token.TokenName || 'Unknown Token',
+            balance: token.TokenBalance,
+            decimals: parseInt(token.TokenDivisor) || 18,
+            contractAddress: token.TokenAddress,
+            // Format balance to human readable number
+            formattedBalance:
+              parseFloat(token.TokenBalance) /
+              Math.pow(10, parseInt(token.TokenDivisor) || 18),
+          }))
+        setTokens(formattedTokens)
+      } else {
+        setTokens([])
+      }
+    } catch (err) {
+      console.error('Error fetching wallet tokens:', err)
+      setError('Failed to fetch tokens')
+      setTokens([])
+    } finally {
+      setLoading(false)
+    }
+  }, [address, chain])
+
+  useEffect(() => {
+    fetchTokens()
+  }, [fetchTokens])
+
+  return { tokens, loading, error, refetch: fetchTokens }
+}
 
 type PrivyConnectWalletProps = {
   citizenContract?: any
@@ -88,18 +148,13 @@ const PATHS_WITH_NO_SIGNIN_REDIRECT = [
   '/mission',
   '/mission/[tokenId]',
 ]
-
 function SendModal({
   account,
   selectedChain,
   networkIcon,
-  mooneyContract,
-  daiContract,
-  usdcContract,
-  usdtContract,
   setEnabled,
   nativeBalance,
-  formattedBalances,
+  tokens,
 }: any) {
   const chainSlug = getChainSlug(selectedChain)
   const [to, setTo] = useState<string>('')
@@ -107,59 +162,136 @@ function SendModal({
   const [selectedToken, setSelectedToken] = useState<string>('native')
   const [isLoading, setIsLoading] = useState(false)
 
-  const balance = useMemo(() => {
-    if (selectedToken === 'native') {
-      return nativeBalance
-    } else {
-      return formattedBalances[selectedToken] || 0
-    }
-  }, [selectedToken, nativeBalance, formattedBalances])
+  // Local network state for SendModal
+  const [sendModalChain, setSendModalChain] = useState(selectedChain)
+  const [networkDropdown, setNetworkDropdown] = useState(false)
 
+  const sendModalChainSlug = getChainSlug(sendModalChain)
+
+  // Available chains for the network selector
+  const availableChains = [
+    ethereum,
+    arbitrum,
+    base,
+    polygon,
+    sepolia,
+    arbitrumSepolia,
+    optimismSepolia,
+  ]
+
+  // Fetch tokens for the selected network in SendModal
+  const {
+    tokens: modalTokens,
+    loading: modalTokensLoading,
+    error: modalTokensError,
+  } = useWalletTokens(account?.address, sendModalChainSlug)
+
+  // Get native balance for selected network
+  const modalNativeBalance =
+    sendModalChain.id === selectedChain.id ? nativeBalance : 0
+
+  // Create a combined list of native + ERC-20 tokens
+  const allTokens = useMemo(() => {
+    const nativeToken = {
+      TokenAddress: 'native',
+      TokenSymbol: selectedNativeToken[sendModalChainSlug],
+      TokenName: 'Native Token',
+      TokenBalance: modalNativeBalance?.toString() || '0',
+      TokenDivisor: '18',
+    }
+
+    // Convert walletTokens format to SendModal format
+    const formattedTokens = Array.isArray(modalTokens)
+      ? modalTokens.map((token) => ({
+          TokenAddress: token.contractAddress,
+          TokenSymbol: token.symbol,
+          TokenName: token.name,
+          TokenBalance: token.balance, // This is already the raw balance from API
+          TokenDivisor: token.decimals.toString(),
+        }))
+      : []
+
+    return [nativeToken, ...formattedTokens]
+  }, [modalTokens, modalNativeBalance, sendModalChainSlug])
+
+  // Reset selected token when network changes
+  useEffect(() => {
+    setSelectedToken('native')
+    setAmount('')
+  }, [sendModalChain.id])
+
+  // Close network dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Element
+      if (!target.closest('.network-dropdown-container')) {
+        setNetworkDropdown(false)
+      }
+    }
+
+    if (networkDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [networkDropdown])
+
+  // Get the currently selected token data
   const selectedTokenData = useMemo(() => {
-    const tokens = {
-      native: {
-        symbol: selectedNativeToken[chainSlug],
-        icon: networkIcon,
-        description: 'Native Token',
-      },
-      mooney: {
-        symbol: 'MOONEY',
-        icon: (
+    return allTokens.find(
+      (token) =>
+        token.TokenAddress === selectedToken ||
+        (selectedToken === 'native' && token.TokenAddress === 'native')
+    )
+  }, [selectedToken, allTokens])
+
+  // Calculate formatted balance for display
+  // Get the formatted balance for display
+  const formattedBalance = useMemo(() => {
+    if (!selectedTokenData) return 0
+    const balance = selectedTokenData.TokenBalance
+    const decimals = parseInt(selectedTokenData.TokenDivisor)
+
+    // Check if balance is already a decimal number (like "0.3157975")
+    if (balance.includes('.')) {
+      return Number(balance)
+    }
+
+    // Otherwise, it's a raw wei value that needs formatting
+    try {
+      return Number(ethers.utils.formatUnits(balance, decimals))
+    } catch (error) {
+      console.error('Error formatting balance:', error, balance)
+      return 0
+    }
+  }, [selectedTokenData])
+
+  const getTokenIcon = useCallback(
+    (symbol: string) => {
+      if (symbol in COIN_ICONS) {
+        return (
           <Image
-            src="/coins/MOONEY.png"
+            src={COIN_ICONS[symbol as keyof typeof COIN_ICONS]}
             width={24}
             height={24}
-            alt="MOONEY"
-            className="rounded-full"
+            alt={symbol}
+            className={symbol === 'MOONEY' ? 'rounded-full' : ''}
           />
-        ),
-        description: 'Governance Token',
-      },
-      dai: {
-        symbol: 'DAI',
-        icon: <Image src="/coins/DAI.svg" width={24} height={24} alt="DAI" />,
-        description: 'Stablecoin',
-      },
-      usdc: {
-        symbol: 'USDC',
-        icon: <Image src="/coins/USDC.svg" width={24} height={24} alt="USDC" />,
-        description: 'USD Coin',
-      },
-      usdt: {
-        symbol: 'USDT',
-        icon: <Image src="/coins/USDT.svg" width={24} height={24} alt="USDT" />,
-        description: 'Tether USD',
-      },
-    }
-    return tokens[selectedToken as keyof typeof tokens]
-  }, [selectedToken, networkIcon, chainSlug])
-
-  const tokenContracts: { [key: string]: any } = {
-    mooney: mooneyContract,
-    dai: daiContract,
-    usdc: usdcContract,
-    usdt: usdtContract,
-  }
+        )
+      }
+      return (
+        <div className="relative flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full p-1 sm:px-2">
+          <Image
+            src="/assets/icon-star.svg"
+            alt="Token"
+            width={20}
+            height={20}
+            className="bg-orange-500 rounded-full p-1 w-5 h-5"
+          />
+        </div>
+      )
+    },
+    [sendModalChainSlug, networkIcon]
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -174,28 +306,52 @@ function SendModal({
         return toast.error('Invalid amount.')
       }
 
+      if (!selectedTokenData) {
+        return toast.error('Invalid token selected.')
+      }
+
       const numAmount = Number(amount)
-      const formattedAmount = ethers.utils.parseEther(amount.toString())
+      if (numAmount > formattedBalance) {
+        return toast.error('Insufficient funds.')
+      }
+
+      const decimals = parseInt(selectedTokenData.TokenDivisor)
+      const formattedAmount = ethers.utils.parseUnits(
+        amount.toString(),
+        decimals
+      )
 
       let receipt
       if (selectedToken === 'native') {
-        if (numAmount > nativeBalance) {
-          return toast.error('Insufficient funds.')
-        }
-
+        // Send native token (ETH, MATIC, etc.)
         receipt = await account?.sendTransaction({
           to,
-          value: formattedAmount,
+          value: BigInt(formattedAmount.toString()),
         })
       } else {
-        if (numAmount > formattedBalances[selectedToken]) {
-          return toast.error('Insufficient funds.')
-        }
+        // Send ERC-20 token using generic contract interface
+        const contract = getContract({
+          client,
+          address: selectedTokenData.TokenAddress,
+          chain: sendModalChain,
+          abi: [
+            {
+              name: 'transfer',
+              type: 'function',
+              stateMutability: 'nonpayable',
+              inputs: [
+                { name: 'to', type: 'address' },
+                { name: 'amount', type: 'uint256' },
+              ],
+              outputs: [{ name: '', type: 'bool' }],
+            },
+          ],
+        })
 
         const transaction = prepareContractCall({
-          contract: tokenContracts[selectedToken],
-          method: 'transfer' as string,
-          params: [to, formattedAmount],
+          contract,
+          method: 'transfer',
+          params: [to, BigInt(formattedAmount.toString())],
         })
 
         receipt = await sendAndConfirmTransaction({
@@ -242,6 +398,67 @@ function SendModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Network Selection */}
+          <div className="space-y-3 network-dropdown-container">
+            <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+              Network
+            </label>
+            <div className="relative">
+              <div
+                className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white cursor-pointer hover:bg-black/30 hover:border-white/20 transition-all duration-200 flex items-center justify-between"
+                onClick={() => setNetworkDropdown(!networkDropdown)}
+              >
+                <div className="flex items-center space-x-3">
+                  <Image
+                    src={`/icons/networks/${sendModalChainSlug}.svg`}
+                    width={20}
+                    height={20}
+                    alt={sendModalChain.name || 'Network'}
+                    className="object-contain"
+                  />
+                  <span className="font-medium">
+                    {sendModalChain.name || 'Unknown Network'}
+                  </span>
+                </div>
+                <ChevronDownIcon
+                  className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                    networkDropdown ? 'rotate-180' : ''
+                  }`}
+                />
+              </div>
+
+              {networkDropdown && (
+                <div className="absolute top-full mt-2 w-full bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl z-[10000] max-h-48 overflow-y-auto">
+                  {availableChains.map((chain) => (
+                    <button
+                      key={chain.id}
+                      type="button"
+                      className="w-full flex items-center space-x-3 p-3 hover:bg-white/10 transition-colors duration-200 text-left first:rounded-t-lg last:rounded-b-lg"
+                      onClick={() => {
+                        setSendModalChain(chain)
+                        setNetworkDropdown(false)
+                      }}
+                    >
+                      <Image
+                        src={`/icons/networks/${getChainSlug(chain)}.svg`}
+                        width={20}
+                        height={20}
+                        alt={chain.name || 'Chain'}
+                        className="object-contain"
+                      />
+                      <span className="font-medium text-white">
+                        {chain.name || 'Unknown Network'}
+                      </span>
+                      {chain.id === sendModalChain.id && (
+                        <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Token Selection */}
           <div className="space-y-3">
             <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
@@ -253,39 +470,74 @@ function SendModal({
                 value={selectedToken}
                 onChange={({ target }) => setSelectedToken(target.value)}
               >
-                <option value="native">{selectedNativeToken[chainSlug]}</option>
-                <option value="mooney">MOONEY</option>
-                <option value="dai">DAI</option>
-                <option value="usdc">USDC</option>
-                <option value="usdt">USDT</option>
+                {allTokens.map((token) => (
+                  <option key={token.TokenAddress} value={token.TokenAddress}>
+                    {token.TokenSymbol}
+                    {token.TokenAddress !== 'native' &&
+                      ` (${token.TokenAddress.slice(
+                        0,
+                        6
+                      )}...${token.TokenAddress.slice(-4)})`}
+                  </option>
+                ))}
               </select>
               <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             </div>
 
-            {/* Selected Token Display */}
-            <div className="bg-black/20 rounded-lg p-4 border border-white/5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center">
-                    {selectedTokenData.icon}
-                  </div>
-                  <div>
-                    <p className="font-medium text-white">
-                      {selectedTokenData.symbol}
-                    </p>
-                    <p className="text-gray-400 text-xs">
-                      {selectedTokenData.description}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-white">
-                    {Number(balance).toLocaleString()}
-                  </p>
-                  <p className="text-gray-400 text-xs">Available</p>
+            {/* Loading state for tokens */}
+            {modalTokensLoading && (
+              <div className="bg-black/10 rounded-lg p-3 border border-white/5">
+                <div className="flex items-center justify-center space-x-2 text-gray-400">
+                  <div className="w-4 h-4 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></div>
+                  <span className="text-sm">
+                    Loading tokens for{' '}
+                    {sendModalChain.name || 'selected network'}...
+                  </span>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Error state for tokens */}
+            {modalTokensError && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                <p className="text-red-400 text-sm">{modalTokensError}</p>
+              </div>
+            )}
+
+            {/* Selected Token Display */}
+            {selectedTokenData && (
+              <div className="bg-black/20 rounded-lg p-4 border border-white/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center">
+                      {getTokenIcon(selectedTokenData.TokenSymbol)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-white">
+                        {selectedTokenData.TokenSymbol}
+                      </p>
+                      <p className="text-gray-400 text-xs">
+                        {selectedTokenData.TokenName}
+                        {selectedTokenData.TokenAddress !== 'native' && (
+                          <span className="block font-mono text-xs">
+                            {selectedTokenData.TokenAddress.slice(0, 6)}...
+                            {selectedTokenData.TokenAddress.slice(-4)}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-white">
+                      {formattedBalance.toLocaleString(undefined, {
+                        maximumFractionDigits: 6,
+                      })}
+                    </p>
+                    <p className="text-gray-400 text-xs">Available</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Recipient Address */}
@@ -311,9 +563,12 @@ function SendModal({
               <button
                 type="button"
                 className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
-                onClick={() => setAmount(balance.toString())}
+                onClick={() => setAmount(formattedBalance.toString())}
               >
-                Max: {Number(balance).toLocaleString()}
+                Max:{' '}
+                {formattedBalance.toLocaleString(undefined, {
+                  maximumFractionDigits: 6,
+                })}
               </button>
             </div>
             <input
@@ -347,7 +602,6 @@ function SendModal({
     </Modal>
   )
 }
-
 // Create a Portal component
 function Portal({ children }: { children: React.ReactNode }) {
   if (typeof document === 'undefined') return null // SSR check
@@ -421,74 +675,48 @@ export function PrivyConnectWallet({
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
   const [previousChain, setPreviousChain] = useState(selectedChain)
 
-  const mooneyContract = useContract({
-    address: MOONEY_ADDRESSES[chainSlug],
-    chain: selectedChain,
-    abi: ERC20 as any,
-  })
-
-  const daiContract = useContract({
-    address: DAI_ADDRESSES[chainSlug],
-    chain: selectedChain,
-    abi: ERC20 as any,
-  })
-
-  const usdcContract = useContract({
-    address: USDC_ADDRESSES[chainSlug],
-    chain: selectedChain,
-    abi: ERC20 as any,
-  })
-
-  const usdtContract = useContract({
-    address: USDT_ADDRESSES[chainSlug],
-    chain: selectedChain,
-    abi: ERC20 as any,
-  })
-
   const nativeBalance = useNativeBalance()
 
-  const [formattedBalances, setFormattedBalances] = useState({
-    mooney: 0,
-    dai: 0,
-    usdc: 0,
-    usdt: 0,
-  })
+  // Fetch wallet tokens using our new API
+  const {
+    tokens: walletTokens,
+    loading: tokensLoading,
+    error: tokensError,
+  } = useWalletTokens(address, chainSlug)
 
-  const mooneyBalance = useWatchTokenBalance(MOONEY_ADDRESSES[chainSlug], 18)
-  const daiBalance = useWatchTokenBalance(DAI_ADDRESSES[chainSlug], 18)
-  const usdcBalance = useWatchTokenBalance(USDC_ADDRESSES[chainSlug], 6)
-  const usdtBalance = useWatchTokenBalance(USDT_ADDRESSES[chainSlug], 6)
+  // Helper function to get token icon
+  const getTokenIcon = (symbol: string, contractAddress: string) => {
+    const symbolLower = symbol.toLowerCase()
 
-  useEffect(() => {
-    if (mooneyBalance >= 0)
-      setFormattedBalances((prev) => ({
-        ...prev,
-        mooney: Number(mooneyBalance?.toFixed(2)),
-      }))
-  }, [mooneyBalance])
-  useEffect(() => {
-    if (daiBalance)
-      setFormattedBalances((prev) => ({
-        ...prev,
-        dai: Number(daiBalance.toFixed(2)),
-      }))
-  }, [daiBalance])
-  useEffect(() => {
-    if (usdcBalance)
-      setFormattedBalances((prev) => ({
-        ...prev,
-        usdc: Number(usdcBalance.toFixed(2)),
-      }))
-  }, [usdcBalance])
-  useEffect(() => {
-    if (usdtBalance)
-      setFormattedBalances((prev) => ({
-        ...prev,
-        usdt: Number(usdtBalance.toFixed(2)),
-      }))
-  }, [usdtBalance])
+    // Check for known tokens first
+    if (symbolLower === 'mooney') {
+      return (
+        <Image
+          src="/coins/MOONEY.png"
+          width={24}
+          height={24}
+          alt={symbol}
+          className="rounded-full"
+        />
+      )
+    }
+    if (symbolLower === 'dai') {
+      return <Image src="/coins/DAI.svg" width={24} height={24} alt={symbol} />
+    }
+    if (symbolLower === 'usdc') {
+      return <Image src="/coins/USDC.svg" width={24} height={24} alt={symbol} />
+    }
+    if (symbolLower === 'usdt') {
+      return <Image src="/coins/USDT.svg" width={24} height={24} alt={symbol} />
+    }
 
-  const importToken = useImportToken(selectedChain)
+    // Fallback to a generic token icon or first letter
+    return (
+      <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+        {symbol.charAt(0).toUpperCase()}
+      </div>
+    )
+  }
 
   function NetworkIcon() {
     return (
@@ -599,28 +827,25 @@ export function PrivyConnectWallet({
               />
             </div>
           </div>
-          
+
           {/* Portal dropdown to avoid clipping */}
-          {enabled && createPortal(
-            <div
-              id="privy-connect-wallet-dropdown"
-              className="fixed top-20 right-4 w-[340px] text-sm font-RobotoMono rounded-2xl animate-fadeIn p-4 md:p-6 flex flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white z-[9999] max-h-[80vh] overflow-y-auto scrollbar-hide"
-              style={{ 
-                backgroundColor: 'rgba(17, 24, 39, 0.95)'
-              }}
-            >
+          {enabled &&
+            createPortal(
+              <div
+                id="privy-connect-wallet-dropdown"
+                className="fixed top-20 right-4 w-[340px] text-sm font-RobotoMono rounded-2xl animate-fadeIn p-4 md:p-6 flex flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white z-[9999] max-h-[80vh] overflow-y-auto scrollbar-hide"
+                style={{
+                  backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                }}
+              >
                 {sendModalEnabled && (
                   <SendModal
                     account={account}
                     selectedChain={selectedChain}
                     setEnabled={setSendModalEnabled}
                     networkIcon={<NetworkIcon />}
-                    mooneyContract={mooneyContract}
-                    daiContract={daiContract}
-                    usdcContract={usdcContract}
-                    usdtContract={usdtContract}
                     nativeBalance={nativeBalance}
-                    formattedBalances={formattedBalances}
+                    tokens={walletTokens}
                   />
                 )}
 
@@ -743,39 +968,8 @@ export function PrivyConnectWallet({
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                      {/* MOONEY Balance */}
-                      <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200">
-                              <Image
-                                src="/coins/MOONEY.png"
-                                width={24}
-                                height={24}
-                                alt="MOONEY"
-                                className="rounded-full"
-                              />
-                            </div>
-                            <div>
-                              <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
-                                MOONEY
-                              </p>
-                              <p className="text-gray-400 text-xs">
-                                Governance Token
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
-                              {formattedBalances.mooney.toLocaleString()}
-                            </p>
-                            <p className="text-gray-400 text-xs">MOONEY</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Native Token Balance */}
+                    <div className="space-y-3 max-h-60 overflow-y-auto scrollbar-hide pr-1">
+                      {/* Native Token Balance - Always show first */}
                       <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
@@ -802,101 +996,76 @@ export function PrivyConnectWallet({
                         </div>
                       </div>
 
-                      {/* DAI Balance */}
-                      {formattedBalances.dai > 0 && (
-                        <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200">
-                                <Image
-                                  src="/coins/DAI.svg"
-                                  width={24}
-                                  height={24}
-                                  alt="DAI"
-                                />
-                              </div>
-                              <div>
-                                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
-                                  DAI
-                                </p>
-                                <p className="text-gray-400 text-xs">
-                                  Stablecoin
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
-                                {formattedBalances.dai.toLocaleString()}
-                              </p>
-                              <p className="text-gray-400 text-xs">DAI</p>
-                            </div>
+                      {/* Loading State */}
+                      {tokensLoading && (
+                        <div className="bg-black/20 rounded-lg p-3 border border-white/5">
+                          <div className="flex items-center justify-center space-x-2 text-gray-400">
+                            <div className="w-4 h-4 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></div>
+                            <span className="text-sm">Loading tokens...</span>
                           </div>
                         </div>
                       )}
 
-                      {/* USDC Balance */}
-                      {formattedBalances.usdc > 0 && (
-                        <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200">
-                                <Image
-                                  src="/coins/USDC.svg"
-                                  width={24}
-                                  height={24}
-                                  alt="USDC"
-                                />
-                              </div>
-                              <div>
-                                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
-                                  USDC
-                                </p>
-                                <p className="text-gray-400 text-xs">
-                                  USD Coin
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
-                                {formattedBalances.usdc.toLocaleString()}
-                              </p>
-                              <p className="text-gray-400 text-xs">USDC</p>
-                            </div>
-                          </div>
+                      {/* Error State */}
+                      {tokensError && (
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                          <p className="text-red-400 text-sm">{tokensError}</p>
                         </div>
                       )}
 
-                      {/* USDT Balance */}
-                      {formattedBalances.usdt > 0 && (
-                        <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
+                      {/* Dynamic Token Balances */}
+                      {walletTokens.map((token, index) => (
+                        <div
+                          key={`${token.contractAddress}-${index}`}
+                          className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group"
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200">
-                                <Image
-                                  src="/coins/USDT.svg"
-                                  width={24}
-                                  height={24}
-                                  alt="USDT"
-                                />
+                              <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200 flex items-center justify-center">
+                                {getTokenIcon(
+                                  token.symbol,
+                                  token.contractAddress
+                                )}
                               </div>
                               <div>
                                 <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
-                                  USDT
+                                  {token.symbol}
                                 </p>
                                 <p className="text-gray-400 text-xs">
-                                  Tether USD
+                                  {token.name}
                                 </p>
                               </div>
                             </div>
                             <div className="text-right">
                               <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
-                                {formattedBalances.usdt.toLocaleString()}
+                                {token.formattedBalance < 0.01
+                                  ? token.formattedBalance.toExponential(2)
+                                  : token.formattedBalance.toLocaleString(
+                                      undefined,
+                                      {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 6,
+                                      }
+                                    )}
                               </p>
-                              <p className="text-gray-400 text-xs">USDT</p>
+                              <p className="text-gray-400 text-xs">
+                                {token.symbol}
+                              </p>
                             </div>
                           </div>
                         </div>
-                      )}
+                      ))}
+
+                      {/* No tokens message */}
+                      {!tokensLoading &&
+                        !tokensError &&
+                        walletTokens.length === 0 && (
+                          <div className="bg-black/10 rounded-lg p-4 text-center">
+                            <p className="text-gray-400 text-sm">
+                              No tokens found in this wallet
+                            </p>
+                          </div>
+                        )}
                     </div>
                   </div>
                 )}
@@ -1020,8 +1189,7 @@ export function PrivyConnectWallet({
                 </div>
               </div>,
               document.body
-            )
-          }
+            )}
         </div>
       ) : (
         <div className="w-full">

@@ -7,7 +7,6 @@ import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
-import { formatTimeUntilDeadline } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import Tooltip from '../layout/Tooltip'
@@ -21,6 +20,9 @@ interface MissionProfileHeaderProps {
   fundingGoal: number
   backers: any[]
   deadline: number | undefined
+  duration: any
+  deadlinePassed: boolean
+  refundPeriodPassed: boolean
   stage: number
   poolDeployerAddress: string | undefined
   isManager: boolean
@@ -39,6 +41,9 @@ const MissionProfileHeader = React.memo(
     fundingGoal,
     backers,
     deadline,
+    duration,
+    deadlinePassed,
+    refundPeriodPassed,
     stage,
     poolDeployerAddress,
     isManager,
@@ -51,19 +56,6 @@ const MissionProfileHeader = React.memo(
     const account = useActiveAccount()
     const { data: ethPrice } = useETHPrice(1, 'ETH_TO_USD')
     const totalFunding = useTotalFunding(mission?.projectId)
-
-    const [duration, setDuration] = useState<any>()
-
-    const deadlinePassed = deadline ? Date.now() > deadline : false
-
-    useEffect(() => {
-      const interval = setInterval(() => {
-        if (deadline !== undefined) {
-          setDuration(formatTimeUntilDeadline(new Date(deadline)))
-        }
-      }, 1000)
-      return () => clearInterval(interval)
-    }, [deadline])
 
     return (
       <div className="w-full bg-gradient-to-br from-dark-cool via-darkest-cool to-dark-cool relative overflow-hidden">
@@ -195,7 +187,24 @@ const MissionProfileHeader = React.memo(
                     USD
                   </p>
                 </div>
-
+                  <div className="flex items-center">
+                    <Image
+                      src="/assets/launchpad/clock.svg"
+                      alt="Deadline"
+                      width={24}
+                      height={24}
+                    />
+                    <div className="ml-2">
+                      <p className="text-gray-400 text-sm">DEADLINE</p>
+                      <p className="text-white font-GoodTimes min-w-[250px]">
+                        {refundPeriodPassed || stage === 4
+                          ? 'PASSED'
+                          : stage === 3
+                          ? 'REFUND'
+                          : duration}
+                      </p>
+                    </div>
+                  </div>
                 {/* Progress Bar */}
                 <div className="mb-3">
                   <MissionFundingProgressBar
@@ -204,7 +213,6 @@ const MissionProfileHeader = React.memo(
                     compact={true}
                   />
                 </div>
-
                 {/* Stats Grid */}
                 <div className="grid grid-cols-3 gap-2 lg:gap-3">
                   {/* Goal */}

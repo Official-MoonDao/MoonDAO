@@ -173,7 +173,7 @@ export default function StandardCard({
                 {header && header}
                 {title ? title : profile && 'Anon'}
               </h2>
-              <div>{actions && actions}</div>
+              <div className="pl-2">{actions && actions}</div>
             </div>
 
             {subheader && subheader}

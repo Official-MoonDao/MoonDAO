@@ -149,22 +149,24 @@ export default function Network({
       <div className="relative w-full flex flex-col gap-3">
         {/* Search Bar and Tabs - Same Row */}
         <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
-          <div className="w-full flex flex-row min-[800px]:flex-row gap-4 items-center">
+          <div className="w-full flex flex-row min-[800px]:flex-row gap-4 items-center overflow-hidden">
             {/* Search Bar */}
-            <div className="w-fit max-w-[500px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 px-3 py-1">
+            <div className="w-full min-w-0 max-w-[250px] sm:max-w-[280px] md:max-w-[320px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 px-3 py-1">
               <Search
                 className="w-full flex-grow"
                 input={input}
                 setInput={setInput}
-                placeholder="Search citizens and teams..."
+                placeholder="Search..."
               />
             </div>
 
             <div
               id="filter-container"
-              className="hidden min-[1150px]:flex flex-1"
+              className="hidden min-[1150px]:block flex-shrink-0"
             >
-              <div className="w-full h-fit bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 p-1.5">
+              <div 
+                className="bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 p-1.5"
+              >
                 <div className="flex text-sm gap-1">
                   <Tab
                     tab="citizens"
@@ -196,7 +198,7 @@ export default function Network({
               </div>
             </div>
 
-            <div className="w-full flex justify-end md:justify-start">
+            <div className="flex-shrink-0 flex justify-end md:justify-start">
               <StandardButton
                 className="gradient-2 rounded-2xl hover:scale-105 transition-transform"
                 hoverEffect={false}
@@ -213,8 +215,8 @@ export default function Network({
             id="filter-container"
             className="min-[1150px]:hidden mt-4 min-[900px]:mt-2"
           >
-            <div className="w-full h-fit bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 p-1.5">
-              <div className="flex text-sm gap-1">
+            <div className="w-fit max-w-[300px] sm:max-w-none h-fit bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 p-1.5 overflow-x-auto">
+              <div className="flex text-sm gap-1 min-w-fit">
                 <Tab
                   tab="teams"
                   currentTab={tab}

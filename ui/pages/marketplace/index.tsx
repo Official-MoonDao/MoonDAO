@@ -162,7 +162,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
         >
           <div className="flex flex-row w-full">
             <div className="p-4 md:px-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 lg:p-8 rounded-[2vmax] shadow-2xl md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1400px]">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-fr">
                 {filteredListings && filteredListings.length > 0 ? (
                   (() => {
                     const startIdx = (pageIdx - 1) * ITEMS_PER_PAGE
@@ -174,16 +174,17 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 
                     return paginatedListings.map(
                       (listing: MarketplaceListing, i: number) => (
-                        <StandardDetailCard
-                          key={`marketplace-listing-${startIdx + i}`}
-                          title={listing.title}
-                          paragraph={listing.description}
-                          image={listing.image}
-                          price={listing.price}
-                          currency={listing.currency}
-                          isCitizen={!!citizen}
-                          onClick={() => handleListingClick(listing)}
-                        />
+                        <div key={`marketplace-listing-${startIdx + i}`} className="h-full">
+                          <StandardDetailCard
+                            title={listing.title}
+                            paragraph={listing.description}
+                            image={listing.image}
+                            price={listing.price}
+                            currency={listing.currency}
+                            isCitizen={!!citizen}
+                            onClick={() => handleListingClick(listing)}
+                          />
+                        </div>
                       )
                     )
                   })()

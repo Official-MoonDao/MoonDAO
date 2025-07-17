@@ -120,7 +120,11 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         uint256 currentFunding = _totalFunding(terminal, projectId);
         if (currentFunding < fundingGoal) {
             if (block.timestamp >= deadline) {
-                return 3; // Refund stage
+                if (block.timestamp < deadline + refundPeriod) {
+                    return 3; // Refund stage
+                } else {
+                return 4; // Refund stage passed
+                }
             } else {
                 return 1; // Stage 1
             }

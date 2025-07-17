@@ -12,6 +12,10 @@ import {Config} from "./base/Config.sol";
 import {FeeHook} from "../src/FeeHook.sol";
 import {HookMiner} from "v4-periphery/src/utils/HookMiner.sol";
 
+interface MissionCreator {
+    function setFeeHookAddress(address hookAddress) external;
+}
+
 /// @notice Mines the address and deploys the FeeHook.sol Hook contract
 contract FeeHookScript is Script, Constants, Config {
     function setUp() public {}
@@ -44,6 +48,8 @@ contract FeeHookScript is Script, Constants, Config {
             feehook.setvMooneyAddress(address(token0));
         }
         require(address(feehook) == hookAddress, "Fee hook address mismatch");
+        MissionCreator missionCreator = MissionCreator(MISSION_CREATOR_ADDRESSES[block.chainid]);
+        missionCreator.setFeeHookAddress(address(feehook));
         vm.stopBroadcast();
     }
 }
