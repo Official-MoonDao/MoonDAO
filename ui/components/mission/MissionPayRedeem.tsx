@@ -1110,9 +1110,6 @@ export default function MissionPayRedeem({
                         }
                       )
                     }}
-                    onExit={() => {
-                      setMissionPayModalEnabled(false)
-                    }}
                   />
                 )}
 

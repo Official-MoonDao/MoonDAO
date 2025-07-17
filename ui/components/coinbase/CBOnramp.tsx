@@ -139,7 +139,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             }),
           defaultNetwork: getNetworkName(selectedChain),
           defaultAsset: 'ETH',
-          redirectUrl: window.location.origin + '/mission?onramp=success',
         })
 
         setOnrampUrl(url)
@@ -172,41 +171,81 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       return
     }
 
-    // Listen for completion
-    const checkClosed = setInterval(() => {
-      if (popup.closed) {
-        clearInterval(checkClosed)
-        // Check if success by looking for redirect parameter
-        const urlParams = new URLSearchParams(window.location.search)
-        if (urlParams.get('onramp') === 'success') {
-          onSuccess()
-        } else {
-          onExit()
-        }
-      }
-    }, 1000)
+    let isHandled = false
 
-    // Also listen for message events from the popup
+    // Listen for message events from Coinbase onramp
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== 'https://pay.coinbase.com') return
+      // Accept messages from Coinbase domains
+      if (
+        !event.origin.includes('coinbase.com') &&
+        !event.origin.includes('cb-pay.com')
+      ) {
+        return
+      }
 
-      if (event.data.type === 'onramp_success') {
-        popup.close()
-        clearInterval(checkClosed)
-        onSuccess()
-      } else if (event.data.type === 'onramp_exit') {
-        popup.close()
-        clearInterval(checkClosed)
-        onExit()
+      console.log('Received message from Coinbase:', event.data)
+
+      // Handle different event types from Coinbase onramp
+      if (event.data && typeof event.data === 'object') {
+        const { eventName, chargeId, success } = event.data
+
+        // Handle success events
+        if (
+          eventName === 'charge_confirmed' ||
+          eventName === 'payment_success' ||
+          success === true ||
+          event.data.type === 'onramp_success'
+        ) {
+          if (!isHandled) {
+            isHandled = true
+            popup.close()
+            cleanup()
+            onSuccess && onSuccess()
+          }
+        }
+        // Handle exit/cancel events
+        else if (
+          eventName === 'popup_closed' ||
+          eventName === 'user_closed' ||
+          event.data.type === 'onramp_exit'
+        ) {
+          if (!isHandled) {
+            isHandled = true
+            popup.close()
+            cleanup()
+            onExit && onExit()
+          }
+        }
       }
     }
 
-    window.addEventListener('message', handleMessage)
+    // Listen for popup being manually closed
+    const checkClosed = setInterval(() => {
+      if (popup.closed && !isHandled) {
+        isHandled = true
+        cleanup()
+        onExit()
+      }
+    }, 1000)
 
-    // Cleanup
-    setTimeout(() => {
+    // Cleanup function
+    const cleanup = () => {
+      clearInterval(checkClosed)
       window.removeEventListener('message', handleMessage)
-    }, 300000) // 5 minutes timeout
+    }
+
+    // Add event listener
+    window.addEventListener('message', handleMessage, false)
+
+    // Cleanup after 10 minutes
+    setTimeout(() => {
+      if (!isHandled) {
+        isHandled = true
+        popup.close()
+        cleanup()
+        onExit()
+      }
+    }, 600000) // 10 minutes timeout
   }
 
   // Loading state
