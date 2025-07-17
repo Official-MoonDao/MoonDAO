@@ -1306,6 +1306,11 @@
   resolved "https://registry.yarnpkg.com/@bygdle/javascript-lp-solver/-/javascript-lp-solver-0.4.26.tgz#fa107b685338a67490df7c490c1a459e598ddde3"
   integrity sha512-62dbbeeMcC/qkXyeTpjFSIkh/COTYGS4+VoHD6Pmns6HgzZt4ViAuNTkx46xJNVBC81ZVFtL42q9QjMZfMI+hA==
 
+"@coinbase/cbpay-js@^2.4.0":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@coinbase/cbpay-js/-/cbpay-js-2.4.0.tgz#73bca96450e9d75d7eba0be0320f377aea23c853"
+  integrity sha512-7Zy1P6v5CTaBuFYowFmvKJ4KyBngVjsPpLkjSi4DWJhVHMgLIkDUINSloRU0Idgt2rFA/PLIm2gXneR3OoQbrA==
+
 "@coinbase/onchainkit@^0.38.17":
   version "0.38.17"
   resolved "https://registry.yarnpkg.com/@coinbase/onchainkit/-/onchainkit-0.38.17.tgz#17308312aeca234c18b005598d690b4847314988"
@@ -11983,7 +11988,7 @@ jiti@^1.21.0:
   resolved "https://registry.yarnpkg.com/jiti/-/jiti-1.21.6.tgz#6c7f7398dd4b3142767f9a168af2f317a428d268"
   integrity sha512-2yTgeWTWzMWkHu6Jp9NKgePDaYHbntiwvYuuJLbbN9vl7DC9DvXKOB2BC3ZZ92D3cvV/aflH0osDfwpHepQ53w==
 
-jose@^4.10.4, jose@^4.15.5, jose@^4.15.9, jose@^4.9.1:
+jose@^4.10.4, jose@^4.15.4, jose@^4.15.5, jose@^4.15.9, jose@^4.9.1:
   version "4.15.9"
   resolved "https://registry.yarnpkg.com/jose/-/jose-4.15.9.tgz#9b68eda29e9a0614c042fa29387196c7dd800100"
   integrity sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA==

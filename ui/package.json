@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@arbitrum/sdk": "^3.3.3",
+    "@coinbase/cbpay-js": "^2.4.0",
     "@coinbase/onchainkit": "^0.38.17",
     "@google-cloud/storage": "^7.16.0",
     "@hatsprotocol/sdk-v1-core": "^0.9.0",
@@ -66,6 +67,7 @@
     "graphql-request": "^6.1.0",
     "gsap": "^3.12.7",
     "html2canvas-pro": "^1.5.8",
+    "jose": "^4.15.4",
     "juice-sdk-core": "^1.7.0-beta",
     "juice-sdk-react": "^1.7.0-beta",
     "marked": "^15.0.7",
