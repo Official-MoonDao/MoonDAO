@@ -1,5 +1,4 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import StandardButton from '../layout/StandardButton'
 
 export default function NetworkSection() {
@@ -178,16 +177,15 @@ export default function NetworkSection() {
                 </li>
               </ul>
               <div className="mt-auto">
-                <Link href="/network" className="inline-block">
                 <StandardButton
                   backgroundColor="bg-green-600 hover:bg-green-700"
                   textColor="text-white"
                   borderRadius="rounded-xl"
                   hoverEffect={false}
+                  link="/network"
                 >
                   Join as Company →
                 </StandardButton>
-              </Link>
               </div>
             </div>
           </div>
@@ -219,16 +217,15 @@ export default function NetworkSection() {
                 </li>
               </ul>
               <div className="mt-auto">
-                <Link href="/network" className="inline-block">
                 <StandardButton
                   backgroundColor="bg-blue-600 hover:bg-blue-700"
                   textColor="text-white"
                   borderRadius="rounded-xl"
                   hoverEffect={false}
+                  link="/network"
                 >
                   Find Opportunities →
                 </StandardButton>
-              </Link>
               </div>
             </div>
           </div>
@@ -260,16 +257,15 @@ export default function NetworkSection() {
                 </li>
               </ul>
               <div className="mt-auto">
-                <Link href="/network" className="inline-block">
                 <StandardButton
                   backgroundColor="bg-purple-600 hover:bg-purple-700"
                   textColor="text-white"
                   borderRadius="rounded-xl"
                   hoverEffect={false}
+                  link="/network"
                 >
                   Explore Network →
                 </StandardButton>
-              </Link>
               </div>
             </div>
           </div>
@@ -289,26 +285,24 @@ export default function NetworkSection() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Link href="/network" className="inline-block">
-                  <StandardButton
-                    backgroundColor="bg-white hover:bg-gray-100"
-                    textColor="text-gray-900"
-                    borderRadius="rounded-xl"
-                    hoverEffect={false}
-                  >
-                    Explore the Network
-                  </StandardButton>
-                </Link>
-                <Link href="/join" className="inline-block">
-                  <StandardButton
-                    backgroundColor="bg-transparent border-2 border-white hover:bg-white"
-                    textColor="text-white hover:text-gray-900"
-                    borderRadius="rounded-xl"
-                    hoverEffect={false}
-                  >
-                    Join MoonDAO
-                  </StandardButton>
-                </Link>
+                <StandardButton
+                  backgroundColor="bg-white hover:bg-gray-100"
+                  textColor="text-gray-900"
+                  borderRadius="rounded-xl"
+                  hoverEffect={false}
+                  link="/network"
+                >
+                  Explore the Network
+                </StandardButton>
+                <StandardButton
+                  backgroundColor="bg-transparent border-2 border-white hover:bg-white"
+                  textColor="text-white hover:text-gray-900"
+                  borderRadius="rounded-xl"
+                  hoverEffect={false}
+                  link="/join"
+                >
+                  Join MoonDAO
+                </StandardButton>
               </div>
             </div>
           </div>
