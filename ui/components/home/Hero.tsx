@@ -8,7 +8,7 @@ export default function Hero() {
     <section id="hero-section" className="overflow-x-hidden overflow-y-visible relative w-full min-h-screen">
       <div
         id="hero-container"
-        className="flex flex-col min-h-screen items-end justify-end lg:items-start lg:justify-end md:items-start px-[20px] md:px-[40px] 2xl:px-[80px] 3xl:px-[120px] mt-[-1px] p-5 pb-[100px] md:pb-[120px] lg:pb-[200px] xl:pb-[240px] 2xl:pb-[280px] 3xl:pb-[320px] relative z-10"
+        className="flex flex-col min-h-screen items-end justify-end lg:items-start lg:justify-end md:items-start px-[20px] md:px-[40px] 2xl:px-[80px] 3xl:px-[120px] mt-[-1px] p-5 pb-[100px] md:pb-[120px] lg:pb-[200px] xl:pb-[240px] 2xl:pb-[280px] 3xl:pb-[320px] relative z-10 max-w-[2400px] mx-auto"
       >
         <div
           id="background"
@@ -21,9 +21,9 @@ export default function Hero() {
         ></div>
         <div
           id="content"
-          className="relative w-full max-w-[1200px] 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto lg:pl-[80px] 2xl:pl-[100px] 3xl:pl-[120px] flex flex-col justify-center min-h-[400px]"
+          className="relative w-full lg:w-[50%] 2xl:w-[45%] 3xl:w-[50%] lg:pl-[80px] 2xl:pl-[100px] 3xl:pl-[120px] flex flex-col justify-center min-h-[400px]"
         >
-          <div className="relative w-[100%] pt-0 md:w-[95%] lg:w-[70%] 2xl:w-[60%] 3xl:w-[55%] mb-8 md:mb-12 lg:mb-16"
+          <div className="relative w-[100%] pt-0 mb-8 md:mb-12 lg:mb-16"
           >
           <h1
             id="header"
