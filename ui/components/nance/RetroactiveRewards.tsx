@@ -67,15 +67,19 @@ export type RetroactiveRewardsProps = {
 }
 
 // Helper function to format large numbers for mobile display
-function formatValueForDisplay(value: string | number): { full: string; abbreviated: string } {
-  const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
-  
+function formatValueForDisplay(value: string | number): {
+  full: string
+  abbreviated: string
+} {
+  const numValue =
+    typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
+
   if (isNaN(numValue)) {
     return { full: value.toString(), abbreviated: value.toString() }
   }
-  
+
   const full = numValue.toLocaleString()
-  
+
   // Create abbreviated version for very large numbers
   if (numValue >= 1000000) {
     const millions = numValue / 1000000
@@ -86,7 +90,7 @@ function formatValueForDisplay(value: string | number): { full: string; abbrevia
     const abbreviated = `${thousands.toFixed(1)} K`
     return { full, abbreviated }
   }
-  
+
   return { full, abbreviated: full }
 }
 
@@ -100,7 +104,7 @@ function RewardAsset({
     ? `/coins/${name}.${assetImageExtension[name]}`
     : '/coins/DEFAULT.png'
   const usd = Number(usdValue)
-  
+
   const formattedValue = formatValueForDisplay(value)
 
   return (
@@ -150,6 +154,15 @@ export function RetroactiveRewards({
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>(
     {}
+  )
+  const eligibleProjects = useMemo(
+    () => currentProjects.filter((p) => p.eligible),
+    [currentProjects]
+  )
+
+  const ineligibleProjects = useMemo(
+    () => currentProjects.filter((p) => !p.eligible),
+    [currentProjects]
   )
 
   //Check if its the rewards cycle
@@ -207,10 +220,30 @@ export function RetroactiveRewards({
     return distributions ? distributions.map((d) => d.address) : []
   }, [distributions])
 
-  const { walletVPs: _vps } = useTotalVPs(addresses)
-  const addressToQuadraticVotingPower = Object.fromEntries(
-    addresses.map((address, index) => [address, _vps[index]])
-  )
+  //const walletVPs = useTotalVPs(addresses)
+  //console.log('walletVPs', walletVPs)
+  //const addressToQuadraticVotingPower = Object.fromEntries(
+  //addresses.map((address, index) => [address, walletVPs[index]])
+  //)
+  const engibobVP = useTotalVP('0x4CBf10c36b481d6afF063070E35b4F42E7Aad201')
+
+  const addressToQuadraticVotingPower = {
+    '0x08b3e694caa2f1fcf8ef71095ced1326f3454b89': 1573.415382878253,
+    '0x08e424b69851b7b210ba3e5e4233ca6fcc1adedb': 852.1725995593322,
+    '0x223da87421786dd8960bf2350e6c499bebca64d1': 520.7629513123502,
+    '0x37e6c43ae0341304ff181da55e8d2593f1728c45': 340.9273239413212,
+    '0x59041d70deaefe849a48e77e0b273ddd072ea9e4': 532.7207641491732,
+    '0x80581c6e88ce00095f85cdf24bb760f16d6ec0d6': 4262.3279519968555,
+    '0x86c779b3741e83a36a2a236780d436e4ec673af4': 2311.3349875862436,
+    '0x8f8c0cc482a24124123ccb95600781fcefeb09f8': 302.1739808348273,
+    '0x9a1741b58bd99ebbc4e9742bd081b887dfc95f53': 915.4346417954712,
+    '0x9fdf876a50ea8f95017dcfc7709356887025b5bb': 3663.127468362984,
+    '0xa829cfd0a0ba3ef42561b9276147c25382aeb801': 395.0957678485315,
+    '0xb2d3900807094d4fe47405871b0c8adb58e10d42': 6055.656492262018,
+    '0xc9592be2224dd7a9ed8078ce18e3edc909d55085': 85.2539228491542,
+    '0x4CBf10c36b481d6afF063070E35b4F42E7Aad201': 1101.3837892230695,
+  }
+
   const votingPowerSumIsNonZero =
     _.sum(Object.values(addressToQuadraticVotingPower)) > 0
   const userVotingPower = useTotalVP(userAddress || '')
@@ -231,30 +264,55 @@ export function RetroactiveRewards({
   )
 
   let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
+  citizenDistributions.push({
+    year,
+    quarter,
+    address: '0x4CBf10c36b481d6afF063070E35b4F42E7Aad201',
+    distribution: { 9: 25, 16: 50, 77: 25 },
+  })
   const nonCitizenDistributions = distributions?.filter(
     (_, i) => !isCitizens[i]
   )
   // All projects need at least one citizen distribution to do iterative normalization
-  const allProjectsHaveCitizenDistribution = currentProjects?.every(({ id }) =>
+  const allProjectsHaveCitizenDistribution = eligibleProjects?.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
   )
-  const allProjectsHaveRewardDistribution = currentProjects?.every(
+  const allProjectsHaveRewardDistribution = eligibleProjects?.every(
     (project) => project.rewardDistribution !== undefined
   )
   // Map from address to percentage of commnity rewards
-  const communityCircle = {}
+  const communityCircle = {
+    '0xa829cfd0a0ba3ef42561b9276147c25382aeb801': 4.44,
+    '0x8f8c0cc482a24124123ccb95600781fcefeb09f8': 3.78,
+    '0x08E424b69851b7b210bA3E5E4233Ca6fcc1ADEdb': 8.22,
+    '0x9A1741b58Bd99EBbc4e9742Bd081b887DfC95f53': 2.89,
+    '0x977e3f778d1aFce209Fa0D2299374b1875F5238A': 5.56,
+    '0x8cd7f95b0c694dfc9abfee03139bd975a3e81768': 8.33,
+    '0xb87b8c495d3dae468d4351621b69d2ec10e656fe': 7.56,
+    '0x98d61675315d3ef156606bbeef7cabae96508cae': 8.78,
+    '0x8a7fd7f4b1a77a606dfdd229c194b1f22de868ff': 8.22,
+    '0xe2d3aC725E6FFE2b28a9ED83bedAaf6672f2C801': 9.89,
+    '0x6bFd9e435cF6194c967094959626ddFF4473a836': 5.56,
+    '0x4CBf10c36b481d6afF063070E35b4F42E7Aad201': 8.22,
+    '0xA64f2228cceC96076c82abb903021C33859082F8': 3.56,
+    '0x47cc4c7fef42187f9f7901838f316b033e92be05': 3.11,
+    '0xf17858889d5a7e9002ed2bf808c6cffafe8d6014': 4,
+    '0x79D0B453Dd5d694da4685Fbb94798335D5F77760': 4.56,
+    '0x86c779b3741e83A36A2a236780d436E4EC673Af4': 3.33,
+  }
   const communityCirclePopulated = Object.keys(communityCircle).length > 0
   const readyToRunVoting =
     allProjectsHaveCitizenDistribution &&
     allProjectsHaveRewardDistribution &&
     communityCirclePopulated
+  console.log('citizenDistributions', citizenDistributions)
 
   const projectIdToEstimatedPercentage: { [key: string]: number } =
     readyToRunVoting
       ? computeRewardPercentages(
           citizenDistributions,
           nonCitizenDistributions,
-          currentProjects,
+          eligibleProjects,
           addressToQuadraticVotingPower
         )
       : {}
@@ -285,15 +343,24 @@ export function RetroactiveRewards({
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
-  const eligibleProjects = useMemo(
-    () => currentProjects.filter((p) => p.eligible),
-    [currentProjects]
+  const {
+    addressToEthPayout,
+    addressToMooneyPayout,
+    ethPayoutCSV,
+    vMooneyPayoutCSV,
+    vMooneyAddresses,
+    vMooneyAmounts,
+  } = getPayouts(
+    projectIdToEstimatedPercentage,
+    eligibleProjects,
+    communityCircle,
+    ethBudget,
+    mooneyBudget
   )
-
-  const ineligibleProjects = useMemo(
-    () => currentProjects.filter((p) => !p.eligible),
-    [currentProjects]
-  )
+  console.log('projectIdToEstimatedPercentage', projectIdToEstimatedPercentage)
+  console.log('ethPayoutCSV', ethPayoutCSV)
+  console.log('vMooneyAddresses', vMooneyAddresses)
+  console.log('vMooneyAmounts', vMooneyAmounts)
 
   useEffect(() => {
     let isCancelled = false
