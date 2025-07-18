@@ -31,7 +31,7 @@ contract CreatePoolAndAddLiquidityScript is Script, Constants, Config {
     uint160 startingPrice = 79228162514264337593543950336; // floor(sqrt(1) * 2^96)
 
     // --- liquidity position configuration --- //
-    uint256 public token0Amount = 1e16;
+    uint256 public token0Amount = 1e15;
     uint256 public token1Amount = 1e18;
 
     // range of the position
