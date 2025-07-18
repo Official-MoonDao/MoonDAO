@@ -1,17 +1,11 @@
-import {
-  ChatBubbleLeftIcon,
-  GlobeAltIcon,
-  InformationCircleIcon,
-} from '@heroicons/react/24/outline'
+import { ChatBubbleLeftIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import { getAttribute } from '@/lib/utils/nft'
-import { DiscordIcon, TwitterIcon } from '../assets'
-import StandardWideCard from '../layout/StandardWideCard'
+import { TwitterIcon } from '../assets'
 import MissionActivityList from './MissionActivityList'
 import MissionPayRedeem from './MissionPayRedeem'
 import MissionTimelineChart from './MissionTimelineChart'
