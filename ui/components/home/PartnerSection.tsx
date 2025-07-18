@@ -7,21 +7,21 @@ export default function PartnerSection() {
     <>
       <section
         id="network-section-container"
-        className="mt-5 flex justify-start bg-white rounded-br-[5vmax] md:rounded-br-[0vmax] rounded-tl-[5vmax] rounded-bl-[5vmax] mb-5"
+        className="flex justify-center bg-white md:rounded-br-[0vmax]"
       >
         <div
           id="network-section"
-          className=" w-full py-10 px-5 flex items-center flex-col max-w-[1200px]"
+          className="w-full py-8 md:py-10 px-3 md:px-5 flex items-center flex-col max-w-[1200px]"
         >
           <h2
             id="section-header"
-            className="header font-GoodTimes text-center text-dark-cool"
+            className="header font-GoodTimes text-center text-dark-cool text-2xl md:text-3xl lg:text-4xl"
           >
             Our Network
           </h2>
           <div
             id="network-container"
-            className="w-full max-w-[1200px] m-5 mb-0"
+            className="w-full max-w-[1200px] m-2 md:m-5 mb-0"
           >
             <div
               id="teams"
@@ -69,25 +69,25 @@ export default function PartnerSection() {
 
       <section
         id="featured-section-container"
-        className="flex justify-start bg-white rounded-tl-[5vmax] rounded-tr-[5vmax] md:rounded-tr-[0vmax]"
+        className="flex justify-center bg-white md:rounded-tr-[0vmax]"
       >
         <div
           id="feature-section"
-          className=" w-full pt-10 px-5 pb-5 flex items-center flex-col max-w-[1200px]"
+          className="w-full px-3 md:px-5 pb-5 flex items-center flex-col max-w-[1200px]"
         >
           <h2
             id="section-header"
-            className="header font-GoodTimes text-center text-dark-cool"
+            className="header font-GoodTimes text-center text-dark-cool text-2xl md:text-3xl lg:text-4xl"
           >
             As Featured On
           </h2>
           <div
             id="Network-container"
-            className="w-full max-w-[1200px] m-5 mb-0"
+            className="w-full max-w-[1200px] m-2 md:m-5 mb-0"
           >
             <div
               id="teams"
-              className="p-5 pt-0 flex flex-row flex flex-row flex-wrap justify-center"
+              className="p-2 md:p-5 pt-0 flex flex-row flex flex-row flex-wrap justify-center"
             >
               <BrandLogo
                 alt="Read about MoonDAO on Space.com"

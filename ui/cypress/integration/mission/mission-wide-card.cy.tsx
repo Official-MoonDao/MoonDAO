@@ -1,4 +1,6 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
+import { CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionWideCard from '@/components/mission/MissionWideCard'
 
@@ -41,6 +43,7 @@ describe('MissionWideCard', () => {
       version: 1,
       payButton: 'Pay Now',
       payDisclosure: 'Test Disclosure',
+      youtubeLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     },
   }
 
@@ -73,7 +76,12 @@ describe('MissionWideCard', () => {
     })
     cy.mount(
       <TestnetProviders>
-        <MissionWideCard {...defaultProps} />
+        <JuiceProviders
+          projectId={mockMission.projectId}
+          selectedChain={CYPRESS_CHAIN_V5}
+        >
+          <MissionWideCard {...defaultProps} />
+        </JuiceProviders>
       </TestnetProviders>
     )
   })
@@ -87,7 +95,7 @@ describe('MissionWideCard', () => {
   })
 
   it('Displays mission tagline correctly', () => {
-    cy.get('#content p').should('contain', mockMission.metadata.tagline)
+    cy.get('#content div').should('contain', mockMission.metadata.tagline)
   })
 
   it('Shows funding goal correctly', () => {
@@ -101,7 +109,12 @@ describe('MissionWideCard', () => {
   it('Shows contribute button when contribute prop is true', () => {
     cy.mount(
       <TestnetProviders>
-        <MissionWideCard {...defaultProps} contribute={true} />
+        <JuiceProviders
+          projectId={mockMission.projectId}
+          selectedChain={CYPRESS_CHAIN_V5}
+        >
+          <MissionWideCard {...defaultProps} contribute={true} />
+        </JuiceProviders>
       </TestnetProviders>
     )
     cy.get('#content').should('contain', 'Contribute')
@@ -110,7 +123,12 @@ describe('MissionWideCard', () => {
   it('Handles missing token data gracefully', () => {
     cy.mount(
       <TestnetProviders>
-        <MissionWideCard {...defaultProps} token={undefined} />
+        <JuiceProviders
+          projectId={mockMission.projectId}
+          selectedChain={CYPRESS_CHAIN_V5}
+        >
+          <MissionWideCard {...defaultProps} token={undefined} />
+        </JuiceProviders>
       </TestnetProviders>
     )
     cy.get('#link-frame').should('exist')
@@ -119,7 +137,12 @@ describe('MissionWideCard', () => {
   it('Handles missing subgraph data gracefully', () => {
     cy.mount(
       <TestnetProviders>
-        <MissionWideCard {...defaultProps} subgraphData={undefined} />
+        <JuiceProviders
+          projectId={mockMission.projectId}
+          selectedChain={CYPRESS_CHAIN_V5}
+        >
+          <MissionWideCard {...defaultProps} subgraphData={undefined} />
+        </JuiceProviders>
       </TestnetProviders>
     )
     cy.get('#link-frame').should('exist')

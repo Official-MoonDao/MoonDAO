@@ -9,7 +9,7 @@ import { ConnectedWallet } from '@privy-io/react-auth'
 import { ethers } from 'ethers'
 import { useCallback } from 'react'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
-import { ethereum } from 'thirdweb/chains'
+import { ethereum } from '@/lib/infura/infuraChains'
 import client from '@/lib/thirdweb/client'
 import { SNAPSHOT_SPACE_NAME } from './constants'
 

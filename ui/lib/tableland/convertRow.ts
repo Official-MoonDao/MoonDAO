@@ -16,7 +16,7 @@ export type CitizenRow = {
   name: string
   description: string
   image: string
-  location: string
+  location: any
   website: string
   discord: string
   twitter: string
@@ -24,8 +24,6 @@ export type CitizenRow = {
   formId: string
   owner: string
 }
-
-async function x() {}
 
 export function teamRowToNFT(row: TeamRow | Record<string, unknown>) {
   const {
@@ -42,24 +40,24 @@ export function teamRowToNFT(row: TeamRow | Record<string, unknown>) {
   const nft = {
     id,
     metadata: {
-      id,
+      id: id || '',
       uri: '',
-      name,
-      description,
-      image,
+      name: name || '',
+      description: description || '',
+      image: image || '',
       animation_url: '',
       external_url: '',
       attributes: [
-        { trait_type: 'website', value: website },
-        { trait_type: 'communications', value: communications },
-        { trait_type: 'view', value: view },
-        { trait_type: 'formId', value: formId },
+        { trait_type: 'website', value: website || '' },
+        { trait_type: 'communications', value: communications || '' },
+        { trait_type: 'view', value: view || '' },
+        { trait_type: 'formId', value: formId || '' },
       ] as unknown as Record<string, unknown>,
     },
-    owner: null,
+    owner: '',
     tokenURI: '',
     type: 'ERC721',
-  } as NFT
+  } as any
 
   return nft
 }
@@ -79,29 +77,34 @@ export function citizenRowToNFT(row: CitizenRow | Record<string, unknown>) {
     owner,
   } = row
 
+  const locationValue = JSON.stringify(location)
+
   const nft = {
     id,
     metadata: {
-      id,
+      id: id || '',
       uri: '',
-      name,
-      description,
-      image,
+      name: name || '',
+      description: description || '',
+      image: image || '',
       animation_url: '',
       external_url: '',
       attributes: [
-        { trait_type: 'location', value: location },
-        { trait_type: 'website', value: website },
-        { trait_type: 'discord', value: discord },
-        { trait_type: 'twitter', value: twitter },
-        { trait_type: 'view', value: view },
-        { trait_type: 'formId', value: formId },
+        {
+          trait_type: 'location',
+          value: locationValue || '',
+        },
+        { trait_type: 'website', value: website || '' },
+        { trait_type: 'discord', value: discord || '' },
+        { trait_type: 'twitter', value: twitter || '' },
+        { trait_type: 'view', value: view || '' },
+        { trait_type: 'formId', value: formId || '' },
       ] as unknown as Record<string, unknown>,
     },
-    owner,
+    owner: owner || '',
     tokenURI: '',
     type: 'ERC721',
-  } as NFT
+  } as any
 
   return nft
 }

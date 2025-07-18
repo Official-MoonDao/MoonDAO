@@ -1,0 +1,75 @@
+{
+  "auth": {
+    "username": "${BROWSERSTACK_USERNAME}",
+    "access_key": "${BROWSERSTACK_ACCESS_KEY}"
+  },
+  "browsers": [
+    {
+      "browser": "chrome",
+      "os": "Windows 10",
+      "versions": ["latest", "latest - 1"]
+    },
+    {
+      "browser": "firefox",
+      "os": "Windows 10",
+      "versions": ["latest"]
+    },
+    {
+      "browser": "webkit",
+      "os": "OS X Monterey",
+      "versions": ["latest"]
+    },
+    {
+      "browser": "edge",
+      "os": "Windows 10",
+      "versions": ["latest"]
+    }
+  ],
+  "run_settings": {
+    "specs": "cypress/e2e/*.cy.ts",
+    "cypress_config_file": "cypress.config.js",
+    "cache_dependencies": false,
+    "npm_dependencies": {
+      "dotenv": "latest",
+      "browserstack-cypress-cli": "latest",
+      "typescript": "latest",
+      "@types/node": "latest"
+    },
+    "project_name": "MoonDAO",
+    "build_name": "MoonDAO-E2E-Tests",
+    "parallels": 5,
+    "exclude": [
+      ".next/**",
+      "node_modules/**",
+      "archive/**",
+      "public/**",
+      "lib/**",
+      "pages/**",
+      "const/**",
+      "components/**",
+      "locales/**",
+      "scripts/**",
+      "middleware/**",
+      "tailwind.config.js",
+      "next.config.js",
+      "i18n.js",
+      "next-sitemap.config.js",
+      "cypress/fixtures/**",
+      "cypress/support/**",
+      "cypress/mock/**",
+      "cypress/videos/**",
+      "cypress/screenshots/**",
+      "cypress/integration/**",
+      "env.d.ts",
+      "package.json",
+      "package-lock.json"
+    ],
+    "headless": true
+  },
+  "connection_settings": {
+    "local": true,
+    "local_mode": "always-on",
+    "local_identifier": "moon-dao-tests"
+  },
+  "disable_usage_reporting": false
+}

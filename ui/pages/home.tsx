@@ -12,10 +12,13 @@ import {
   POLYGON_ASSETS_URL,
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
 } from 'const/config'
+import { formatDistanceToNow, fromUnixTime } from 'date-fns'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useContext } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import { getCitizenSubgraphData } from '@/lib/citizen/citizen-subgraph'
 import { useAssets } from '@/lib/dashboard/hooks'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
@@ -30,77 +33,16 @@ import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget } from '@/lib/utils/rewards'
+import { ProposalCard } from '@/components/home/ProposalCard'
 import Container from '@/components/layout/Container'
 import Frame from '@/components/layout/Frame'
+import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
+import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import CitizensChart from '@/components/subscription/CitizensChart'
 
 function truncateText(text: string, maxLength: number) {
   if (text?.length <= maxLength) return text
   return text?.slice(0, maxLength) + '...'
-}
-
-function HomeCard({
-  title,
-  description,
-  image,
-  href,
-}: {
-  title: string
-  description: string
-  image: string
-  href: string
-}) {
-  return (
-    <Link
-      href={href}
-      className="relative animate-fadeIn flex flex-row bg-dark-cool w-full rounded-lg overflow-hidden border border-gray-800 hover:scale-105 transition-all duration-300"
-    >
-      {/* Image section */}
-      {image && (
-        <div className="relative w-16 h-16 flex-shrink-0">
-          {image.startsWith('ipfs://') ? (
-            <MediaRenderer
-              client={client}
-              src={image}
-              alt={title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <Image
-              src={image}
-              alt={title}
-              className="w-full h-full object-cover"
-              width={64}
-              height={64}
-            />
-          )}
-        </div>
-      )}
-
-      {/* Content container */}
-      <div className="relative z-10 p-2 flex flex-col justify-center flex-1">
-        <h2 className="text-sm font-GoodTimes text-white mb-0.5">{title}</h2>
-        <p className="text-xs text-gray-400 line-clamp-2">
-          {truncateText(description, 60)}
-        </p>
-      </div>
-    </Link>
-  )
-}
-
-function BalanceItem({
-  label,
-  value,
-}: {
-  label: string
-  value: string | number
-}) {
-  return (
-    <div className="flex flex-col p-2 bg-dark-cool rounded-lg border border-gray-800">
-      <p className="text-xs text-gray-400 mb-1">{label}</p>
-      <p className="text-sm font-medium text-white">{value}</p>
-    </div>
-  )
 }
 
 export default function Home({
@@ -112,6 +54,8 @@ export default function Home({
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
+
+  const { citizen } = useContext(CitizenContext)
 
   const { proposals, packet, votingInfoMap } = useNewestProposals(100)
   const account = useActiveAccount()
@@ -148,170 +92,460 @@ export default function Home({
 
   const withdrawable = useWithdrawAmount(votingEscrowDepositorContract, address)
 
+  console.log('CITIZEN', citizen)
+
   return (
     <Container>
-      <div className="flex flex-col gap-4 mt-24">
-        {/* Top Row: Balances, Budget, Proposals, and Listings */}
-        <CitizensChart
-          transfers={citizenSubgraphData.transfers}
-          isLoading={false}
-          height={300}
-          createdAt={citizenSubgraphData.createdAt}
-        />
-        <div className="grid grid-cols-4 gap-4">
-          {/* Balances Section */}
-          <Frame
-            noPadding
-            bottomLeft="0px"
-            bottomRight="0px"
-            topRight="0px"
-            topLeft="0px"
-          >
-            <div className="w-full p-4 bg-slide-section">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-sm font-GoodTimes text-white">Balances</h2>
-              </div>
-              <div className="flex flex-col gap-2">
-                <BalanceItem
-                  label="$MOONEY"
-                  value={
-                    MOONEYBalance
-                      ? Math.round(MOONEYBalance).toLocaleString()
-                      : 0
-                  }
-                />
-                <BalanceItem
-                  label="Voting Power"
-                  value={
-                    VMOONEYBalance
-                      ? Math.round(VMOONEYBalance).toLocaleString()
-                      : 0
-                  }
-                />
-                <BalanceItem
-                  label="Rewards"
-                  value={
-                    withdrawable
-                      ? Math.round(+withdrawable / 1e18).toLocaleString()
-                      : 0
-                  }
-                />
-              </div>
-            </div>
-          </Frame>
-
-          {/* Budget Section */}
-          <Frame
-            noPadding
-            bottomLeft="0px"
-            bottomRight="0px"
-            topRight="0px"
-            topLeft="0px"
-          >
-            <div className="w-full p-4 bg-slide-section">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-sm font-GoodTimes text-white">Budget</h2>
-                <div className="text-xs text-gray-400">
-                  Q{quarter} {year}
+      <div className="flex flex-col gap-5 mt-24 p-5">
+        {/* Welcome Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Welcome Card */}
+          <div className="lg:col-span-2">
+            <Frame
+              noPadding
+              bottomLeft="20px"
+              bottomRight="20px"
+              topRight="0px"
+              topLeft="10px"
+            >
+              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-6">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/30">
+                    {citizen?.metadata?.image ? (
+                      <MediaRenderer
+                        client={client}
+                        src={citizen.metadata.image}
+                        alt={citizen.metadata.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">
+                          {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-GoodTimes text-white mb-2">
+                      WELCOME,{' '}
+                      {citizen
+                        ? citizen.metadata.name.toUpperCase()
+                        : address
+                        ? address.slice(0, 6) + '...' + address.slice(-4)
+                        : ''}
+                    </h1>
+                    <div className="grid grid-cols-2 gap-4 text-sm text-white/90 mb-4">
+                      <div>
+                        <span className="text-blue-300">
+                          {MOONEYBalance
+                            ? Math.round(MOONEYBalance).toLocaleString()
+                            : '12.4m'}
+                        </span>{' '}
+                        MOONEY{' '}
+                        <span className="text-white/60">
+                          ($
+                          {MOONEYBalance
+                            ? (MOONEYBalance * 0.12).toFixed(0)
+                            : '12,342'}
+                          )
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-purple-300">
+                          {VMOONEYBalance
+                            ? Math.round(VMOONEYBalance).toLocaleString()
+                            : '1.2m'}
+                        </span>{' '}
+                        vMOONEY{' '}
+                        <span className="text-white/60">
+                          ($
+                          {VMOONEYBalance
+                            ? (VMOONEYBalance * 0.12).toFixed(0)
+                            : '1,442'}
+                          )
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 mb-3">
+                      <button className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm rounded-lg font-medium transition-all duration-200">
+                        Buy $MOONEY
+                      </button>
+                      <button className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-sm rounded-lg font-medium transition-all duration-200">
+                        Stake $MOONEY
+                      </button>
+                    </div>
+                    <div className="flex gap-6 text-xs text-white/70">
+                      <span>🗳️ 12 Votes</span>
+                      <span>📋 1 Proposal</span>
+                      <span>👥 2 Teams</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <BalanceItem
-                  label="ETH Budget"
-                  value={`${ethBudget.toFixed(2)} ETH`}
-                />
-                <BalanceItem
-                  label="USD Budget"
-                  value={`$${usdBudget.toFixed(0)}`}
-                />
-              </div>
-            </div>
-          </Frame>
+            </Frame>
+          </div>
 
-          {/* Active Proposals */}
-          <Frame
-            noPadding
-            bottomLeft="0px"
-            bottomRight="0px"
-            topRight="0px"
-            topLeft="0px"
-          >
-            <div className="w-full p-4 bg-slide-section">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-sm font-GoodTimes text-white">Proposals</h2>
-                <div className="text-xs text-gray-400">
-                  {proposals?.length || 0}
+          {/* Weekly Reward Pool */}
+          <div>
+            <Frame
+              noPadding
+              bottomLeft="20px"
+              bottomRight="20px"
+              topRight="0px"
+              topLeft="10px"
+            >
+              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-6 h-full">
+                <h3 className="text-sm font-GoodTimes text-white/80 mb-2">
+                  WEEKLY REWARD POOL
+                </h3>
+                <div className="mb-4">
+                  <p className="text-3xl font-bold text-white mb-1">
+                    💎{' '}
+                    {withdrawable ? (+withdrawable / 1e18).toFixed(2) : '0.32'}{' '}
+                    ETH
+                  </p>
+                  <p className="text-sm text-white/70">
+                    Your Reward:{' '}
+                    {withdrawable
+                      ? ((+withdrawable / 1e18) * 0.007).toFixed(4)
+                      : '0.0023'}{' '}
+                    ETH
+                  </p>
+                </div>
+                <button className="w-full py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm rounded-lg font-medium transition-all duration-200">
+                  Claim Now
+                </button>
+                <div className="mt-3 text-center">
+                  <Link
+                    href="/learn"
+                    className="text-xs text-blue-300 hover:text-blue-200"
+                  >
+                    Learn More
+                  </Link>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
-                {proposals?.slice(0, 2).map((proposal: any) => (
-                  <HomeCard
-                    key={proposal.proposalId}
-                    title={proposal.title}
-                    description={''}
-                    image={''}
-                    href={`/proposal/${proposal.proposalId}`}
-                  />
-                ))}
-              </div>
-            </div>
-          </Frame>
-
-          {/* Newest Listings */}
-          <Frame
-            noPadding
-            bottomLeft="0px"
-            bottomRight="0px"
-            topRight="0px"
-            topLeft="0px"
-          >
-            <div className="w-full p-4 bg-slide-section">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-sm font-GoodTimes text-white">Listings</h2>
-              </div>
-              <div className="flex flex-col gap-2">
-                {newestListings.slice(0, 2).map((listing: any) => (
-                  <HomeCard
-                    key={listing.id}
-                    title={listing.title}
-                    description={listing.description}
-                    image={listing.image}
-                    href={`/team/${listing.teamId}?listing=${listing.id}`}
-                  />
-                ))}
-              </div>
-            </div>
-          </Frame>
+            </Frame>
+          </div>
         </div>
 
-        {/* Bottom Row: Jobs and Citizens */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Latest Jobs */}
-          <Frame
-            noPadding
-            bottomLeft="0px"
-            bottomRight="0px"
-            topRight="0px"
-            topLeft="0px"
-          >
-            <div className="w-full p-4 bg-slide-section">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-sm font-GoodTimes text-white">Jobs</h2>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {newestJobs.slice(0, 4).map((job: any) => (
-                  <HomeCard
-                    key={job.id}
-                    title={job.title}
-                    description={job.description}
-                    image={job.image}
-                    href={`/team/${job.teamId}?job=${job.id}`}
-                  />
-                ))}
+        {/* What's New Section */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-GoodTimes text-white">WHAT'S NEW?</h2>
+            <div className="flex items-center gap-4 text-sm text-gray-400">
+              <span>Latest Newsletter: Datacenters on the moon?</span>
+              <span>Next Townhall: Thursday, June 19th, 2025 @ 3PM EST</span>
+              <div className="flex gap-2">
+                <button className="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs rounded">
+                  All News
+                </button>
+                <button className="px-3 py-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs rounded">
+                  Subscribe
+                </button>
               </div>
             </div>
-          </Frame>
+          </div>
 
+          <div className="grid grid-cols-3 gap-4">
+            <Frame
+              noPadding
+              bottomLeft="10px"
+              bottomRight="10px"
+              topRight="0px"
+              topLeft="0px"
+            >
+              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-4 text-center">
+                <h3 className="text-sm font-medium text-gray-400 mb-2">
+                  Citizens
+                </h3>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-2xl font-bold text-white">123</span>
+                  <div className="w-8 h-8 bg-blue-500/20 rounded flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 text-blue-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Frame>
+
+            <Frame
+              noPadding
+              bottomLeft="10px"
+              bottomRight="10px"
+              topRight="0px"
+              topLeft="0px"
+            >
+              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-4 text-center">
+                <h3 className="text-sm font-medium text-gray-400 mb-2">AUM</h3>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-2xl font-bold text-white">1.1m</span>
+                  <div className="w-8 h-8 bg-green-500/20 rounded flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 text-green-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Frame>
+
+            <Frame
+              noPadding
+              bottomLeft="10px"
+              bottomRight="10px"
+              topRight="0px"
+              topLeft="0px"
+            >
+              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-4 text-center">
+                <h3 className="text-sm font-medium text-gray-400 mb-2">ARR</h3>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-2xl font-bold text-white">34k</span>
+                  <div className="w-8 h-8 bg-purple-500/20 rounded flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 text-purple-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Frame>
+          </div>
+        </div>
+
+        {/* Launchpad Section */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-GoodTimes text-white">LAUNCHPAD</h2>
+            <div className="flex items-center gap-4 text-sm text-gray-400">
+              <span>
+                Fund your next mission with MoonDAO. Simple enough for a student
+                project, robust enough to handle billion dollar moonshots. Built
+                on a proven framework with built-in liquidity mining.
+              </span>
+              <div className="flex gap-2">
+                <button className="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs rounded">
+                  Learn More
+                </button>
+                <button className="px-3 py-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs rounded">
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Frank To Space */}
+            <Frame
+              noPadding
+              bottomLeft="20px"
+              bottomRight="20px"
+              topRight="0px"
+              topLeft="10px"
+            >
+              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-5">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/20">
+                    <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
+                      F
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-GoodTimes text-white mb-2">
+                      FRANK TO SPACE
+                    </h3>
+                    <button className="px-4 py-1 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm transition-all duration-200 mb-1">
+                      Buy $FRANK
+                    </button>
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <span className="text-white/60">Active</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-white/80 mb-1">1.2 / 31 ETH</p>
+                    <div className="w-20 bg-white/20 rounded-full h-1">
+                      <div
+                        className="bg-blue-400 h-1 rounded-full"
+                        style={{ width: `${(1.2 / 31) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Frame>
+
+            {/* Save The Mice */}
+            <Frame
+              noPadding
+              bottomLeft="20px"
+              bottomRight="20px"
+              topRight="0px"
+              topLeft="10px"
+            >
+              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-5">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/20">
+                    <div className="w-full h-full bg-gradient-to-br from-orange-400 to-red-600 flex items-center justify-center text-white font-bold text-xl">
+                      🐭
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-GoodTimes text-white mb-2">
+                      SAVE THE MICE
+                    </h3>
+                    <button className="px-4 py-1 rounded-lg bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white text-sm transition-all duration-200 mb-1">
+                      Get Refund
+                    </button>
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                      <span className="text-white/60">Refunds Available</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-white/80 mb-1">1.2 / 31 ETH</p>
+                    <div className="w-20 bg-white/20 rounded-full h-1">
+                      <div
+                        className="bg-red-400 h-1 rounded-full"
+                        style={{ width: `${(1.2 / 31) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Frame>
+          </div>
+        </div>
+
+        {/* Contribute Section */}
+        <Frame
+          noPadding
+          bottomLeft="20px"
+          bottomRight="20px"
+          topRight="0px"
+          topLeft="10px"
+        >
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-GoodTimes text-white mb-2">
+                  CONTRIBUTE
+                </h2>
+                <p className="text-sm text-white/90 max-w-2xl">
+                  Every week we vote on projects supported by the community.
+                  Approved projects are eligible to receive a share from this
+                  pool. Each contributor's project may also accommodate
+                  contributions to support their mission.
+                </p>
+              </div>
+              <button className="px-6 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-medium transition-all duration-200">
+                Learn More
+              </button>
+            </div>
+          </div>
+        </Frame>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Left Column - Proposals */}
+          <div className="lg:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-GoodTimes text-white">PROPOSALS</h2>
+              <div className="flex gap-2">
+                <button className="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs rounded">
+                  View all Proposals
+                </button>
+                <button className="px-3 py-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs rounded">
+                  View all Proposals
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {proposals &&
+                proposals
+                  .slice(0, 6)
+                  .map((proposal: any, i: number) => (
+                    <ProposalCard
+                      key={proposal.proposalId || i}
+                      proposal={proposal}
+                      index={i}
+                    />
+                  ))}
+            </div>
+          </div>
+
+          {/* Right Column - Quarterly Reward Pool */}
+          <div>
+            <Frame
+              noPadding
+              bottomLeft="10px"
+              bottomRight="10px"
+              topRight="0px"
+              topLeft="0px"
+            >
+              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-5">
+                <h3 className="text-lg font-GoodTimes text-white mb-4">
+                  QUARTERLY REWARD POOL
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-black/20 border border-white/10 rounded">
+                    <div className="flex items-center gap-2">
+                      <Image
+                        src="/coins/ETH.svg"
+                        alt="ETH"
+                        width={20}
+                        height={20}
+                      />
+                      <span className="text-white font-medium">32.3 ETH</span>
+                    </div>
+                    <span className="text-sm text-gray-400">~$123k</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-black/20 border border-white/10 rounded">
+                    <div className="flex items-center gap-2">
+                      <Image
+                        src="/coins/MOONEY.png"
+                        alt="MOONEY"
+                        width={20}
+                        height={20}
+                      />
+                      <span className="text-white font-medium">
+                        8.8m vMOONEY
+                      </span>
+                    </div>
+                    <span className="text-sm text-gray-400">~$1.1m</span>
+                  </div>
+                </div>
+              </div>
+            </Frame>
+          </div>
+        </div>
+
+        {/* Citizens and Teams Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Newest Citizens */}
           <Frame
             noPadding
@@ -320,34 +554,74 @@ export default function Home({
             topRight="0px"
             topLeft="0px"
           >
-            <div className="w-full p-4 bg-slide-section">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-sm font-GoodTimes text-white">
-                  Newest Citizens
+            <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-GoodTimes text-white">
+                  NEWEST CITIZENS
                 </h2>
+                <Link
+                  href="/citizen"
+                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  View All
+                </Link>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {newestCitizens.slice(0, 4).map((citizen: any) => (
-                  <HomeCard
-                    key={citizen.id}
-                    title={citizen.name}
-                    description={citizen.description}
-                    image={citizen.image}
-                    href={`/citizen/${generatePrettyLinkWithId(
+
+              {newestCitizens && newestCitizens.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
+                  {newestCitizens?.slice(0, 4).map((citizen: any) => {
+                    const link = `/citizen/${generatePrettyLinkWithId(
                       citizen.name,
                       citizen.id
-                    )}`}
-                  />
-                ))}
-              </div>
+                    )}`
+
+                    return (
+                      <div key={citizen.id} className="w-full">
+                        <StandardDetailCard
+                          title={citizen.name || 'Anonymous Citizen'}
+                          paragraph={citizen.description || 'MoonDAO Citizen'}
+                          image={citizen.image}
+                          link={link}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-400 text-sm">No citizens found</p>
+                </div>
+              )}
             </div>
           </Frame>
         </div>
+
+        {/* Network Growth Chart */}
+        <Frame
+          noPadding
+          bottomLeft="0px"
+          bottomRight="0px"
+          topRight="0px"
+          topLeft="0px"
+        >
+          <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-5">
+            <h2 className="text-xl font-GoodTimes text-white mb-4">
+              NETWORK GROWTH
+            </h2>
+            <CitizensChart
+              transfers={citizenSubgraphData.transfers}
+              isLoading={false}
+              height={300}
+              createdAt={citizenSubgraphData.createdAt}
+            />
+          </div>
+        </Frame>
       </div>
     </Container>
   )
 }
 
+// Keep the existing getStaticProps function unchanged
 export async function getStaticProps() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)

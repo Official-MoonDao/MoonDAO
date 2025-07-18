@@ -2,9 +2,8 @@ import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
 import { HATS_ADDRESS, PROJECT_ADDRESSES } from 'const/config'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState, useEffect, useCallback, useContext } from 'react'
+import { useState, useEffect, useCallback, useContext, useMemo } from 'react'
 import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -22,6 +21,10 @@ type PastProjectProps = {
 }
 
 export default function PastProjects({ projects }: PastProjectProps) {
+  const finalReportProjects = useMemo(
+    () => projects.filter((p) => p.finalReportIPFS || p.finalReportLink),
+    [projects]
+  )
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
@@ -62,10 +65,12 @@ export default function PastProjects({ projects }: PastProjectProps) {
 
   useEffect(() => {
     const totalProjects =
-      input != '' ? filterBySearch(projects).length : projects.length
+      input != ''
+        ? filterBySearch(finalReportProjects).length
+        : finalReportProjects.length
 
     setMaxPage(Math.ceil(totalProjects / 9))
-  }, [input, projects])
+  }, [input, finalReportProjects])
 
   const [cachedNFTs, setCachedNFTs] = useState<Project[]>([])
 
@@ -79,46 +84,83 @@ export default function PastProjects({ projects }: PastProjectProps) {
   }, [router.query])
 
   useEffect(() => {
-    setCachedNFTs(input != '' ? filterBySearch(projects) : projects)
-  }, [input, projects, router.query])
+    setCachedNFTs(
+      input != '' ? filterBySearch(finalReportProjects) : finalReportProjects
+    )
+  }, [input, finalReportProjects, router.query])
 
   useChainDefault()
 
   return (
-    <>
-      <div className="pt-2">
-        <h1 className="font-GoodTimes opacity-60 text-2xl">Past Projects</h1>
-        <br />
-        <Frame bottomLeft="20px" topLeft="5vmax" marginBottom="10px" noPadding>
-          <Search input={input} setInput={setInput} />
-        </Frame>
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="font-GoodTimes text-white/80 text-xl mb-4">
+          Past Projects
+        </h1>
+        <div className="bg-black/20 rounded-xl p-4 border border-white/10">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg
+                className="h-5 w-5 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            <input
+              className="w-full pl-10 pr-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
+              onChange={({ target }) => setInput(target.value)}
+              value={input}
+              type="text"
+              name="search"
+              placeholder="Search projects..."
+            />
+          </div>
+        </div>
       </div>
-      <CardGridContainer maxCols={2}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {cachedNFTs?.[0] ? (
           cachedNFTs
             ?.slice((pageIdx - 1) * 9, pageIdx * 9)
             .map((project: any, I: number) => {
               return (
-                <ProjectCard
+                <div
                   key={`project-card-${I}`}
-                  project={project}
-                  projectContract={projectContract}
-                  hatsContract={hatsContract}
-                />
+                  className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+                >
+                  <ProjectCard
+                    key={`project-card-${I}`}
+                    project={project}
+                    projectContract={projectContract}
+                    hatsContract={hatsContract}
+                  />
+                </div>
               )
             })
         ) : (
           <>
             {Array.from({ length: 9 }).map((_, i) => (
-              <CardSkeleton key={`card-skeleton-${i}`} />
+              <div
+                key={`card-skeleton-${i}`}
+                className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+              >
+                <CardSkeleton />
+              </div>
             ))}
           </>
         )}
-      </CardGridContainer>
-      <Frame noPadding marginBottom="0px">
+      </div>
+      <div className="mt-6 bg-black/20 rounded-xl p-4 border border-white/10">
         <div
           id="pagination-container"
-          className="w-full mb-5 flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8"
+          className="w-full flex font-GoodTimes text-lg flex-row justify-center items-center gap-2 sm:gap-8"
         >
           <button
             onClick={() => {
@@ -126,8 +168,10 @@ export default function PastProjects({ projects }: PastProjectProps) {
                 handlePageChange(pageIdx - 1)
               }
             }}
-            className={`pagination-button ${
-              pageIdx === 1 ? 'opacity-10' : 'cursor-pointer opacity-100'
+            className={`pagination-button p-2 rounded-lg transition-all duration-200 flex-shrink-0 ${
+              pageIdx === 1
+                ? 'opacity-30 cursor-not-allowed'
+                : 'cursor-pointer opacity-100 hover:bg-white/10 hover:scale-110'
             }`}
             disabled={pageIdx === 1}
           >
@@ -138,7 +182,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
               height={35}
             />
           </button>
-          <p id="page-number" className="px-5 font-bold">
+          <p id="page-number" className="px-2 sm:px-5 font-bold text-white/80 whitespace-nowrap text-sm sm:text-lg">
             Page {pageIdx} of {maxPage}
           </p>
           <button
@@ -147,8 +191,10 @@ export default function PastProjects({ projects }: PastProjectProps) {
                 handlePageChange(pageIdx + 1)
               }
             }}
-            className={`pagination-button ${
-              pageIdx === maxPage ? 'opacity-10' : 'cursor-pointer opacity-100'
+            className={`pagination-button p-2 rounded-lg transition-all duration-200 flex-shrink-0 ${
+              pageIdx === maxPage
+                ? 'opacity-30 cursor-not-allowed'
+                : 'cursor-pointer opacity-100 hover:bg-white/10 hover:scale-110'
             }`}
             disabled={pageIdx === maxPage}
           >
@@ -160,7 +206,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
             />
           </button>
         </div>
-      </Frame>
-    </>
+      </div>
+    </div>
   )
 }

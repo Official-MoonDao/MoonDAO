@@ -1,14 +1,17 @@
 import Image from 'next/image'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
+import Tooltip from '../layout/Tooltip'
 
 export default function MissionStat({
   label,
   value,
   icon,
+  tooltip,
 }: {
   label: string
   value: string | number | undefined
   icon?: string
+  tooltip?: string
 }) {
   return (
     <div id="mission-stat-container" className="flex gap-2 items-center">
@@ -17,9 +20,16 @@ export default function MissionStat({
         id="mission-stat-content"
         className="flex flex-col font-GoodTimes h-[50px]"
       >
-        <p id="mission-stat-label" className="text-sm opacity-50">
-          {label || ''}
-        </p>
+        <div className="flex items-center gap-2">
+          <p id="mission-stat-label" className="text-sm opacity-50">
+            {label || ''}
+          </p>
+          {tooltip && (
+            <Tooltip text={tooltip} buttonClassName="scale-75">
+              ?
+            </Tooltip>
+          )}
+        </div>
         {value !== undefined && value !== '' ? (
           <p id="mission-stat-value">{value}</p>
         ) : (

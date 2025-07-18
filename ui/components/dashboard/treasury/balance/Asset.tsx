@@ -17,45 +17,45 @@ const Asset = ({ name, amount, usd, address, loading }: AssetProps) => {
 
   return (
     <div
-      className={`inner-container-background font-RobotoMono mt-5 flex w-[336px] flex-col items-center py-1  sm:w-[400px] xl:mt-6 2xl:w-full 2xl:flex-row 2xl:justify-between 2xl:px-3 2xl:py-2  ${
-        loading && 'loading-component'
+      className={`bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl p-4 mt-4 flex items-center justify-between font-RobotoMono transition-all duration-300 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-lg ${
+        loading && 'animate-pulse'
       }`}
     >
-      <div className="relative mt-1 flex items-center">
+      <div className="flex items-center">
         {loading ? (
-          <div className="loading-line h-8 w-8 rounded-full"></div>
+          <div className="h-8 w-8 bg-white/20 rounded-full"></div>
         ) : (
           <Image
-            className="h-auto w-7 2xl:w-8"
+            className="h-8 w-8"
             src={image}
             alt="Asset Logo."
-            width={100}
-            height={100}
+            width={32}
+            height={32}
           />
         )}
         <a
           href={assetLink}
           target="_blank"
           rel="noreferrer"
-          className={`ml-3 tracking-wide text-moon-orange 2xl:ml-4 text-xl ${
-            loading && 'loading-line'
+          className={`ml-3 tracking-wide text-blue-300 hover:text-blue-200 text-lg font-medium transition-colors ${
+            loading && 'bg-white/20 text-transparent rounded'
           }`}
         >
           {name}
         </a>
       </div>
 
-      <div className="mt-3 text-center 2xl:mt-0 2xl:text-right">
+      <div className="text-right">
         <p
-          className={`font-semibold text-2xl ${
-            loading ? 'loading-line' : 'text-gray-900 dark:text-white'
+          className={`font-semibold text-lg ${
+            loading ? 'bg-white/20 text-transparent rounded' : 'text-white'
           }`}
         >
           {amount}
         </p>
         <p
-          className={`mt-2 text-gray-900 dark:text-white opacity-60 xl:mt-3 ${
-            loading && 'loading-line'
+          className={`mt-1 text-white/70 text-sm ${
+            loading && 'bg-white/20 text-transparent rounded'
           }`}
         >
           {name === 'MOONEY' || name === 'vMOONEY'

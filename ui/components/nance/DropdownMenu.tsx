@@ -1,5 +1,10 @@
-import { useRouter } from "next/router"
-import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react'
+import {
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
+  Transition,
+} from '@headlessui/react'
 import {
   ShareIcon,
   EllipsisVerticalIcon,
@@ -8,16 +13,17 @@ import {
   TrashIcon,
   ArchiveBoxArrowDownIcon,
 } from '@heroicons/react/24/outline'
+import { useProposalDelete, useProposalUpload } from '@nance/nance-hooks'
 import { ProposalPacket } from '@nance/nance-sdk'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { Fragment } from 'react'
 import toast from 'react-hot-toast'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { NANCE_SPACE_NAME } from '@/lib/nance/constants'
 import useAccount from '@/lib/nance/useAccountAddress'
-import { useSignDeleteProposal } from "@/lib/nance/useSignDeleteProposal"
-import { useProposalDelete, useProposalUpload } from "@nance/nance-hooks"
-import toastStyle from "@/lib/marketplace/marketplace-utils/toastConfig"
-import { useSignArchiveProposal } from "@/lib/nance/useSignArchiveProposal"
+import { useSignArchiveProposal } from '@/lib/nance/useSignArchiveProposal'
+import { useSignDeleteProposal } from '@/lib/nance/useSignDeleteProposal'
 
 export default function DropDownMenu({
   proposalPacket,
@@ -25,85 +31,122 @@ export default function DropDownMenu({
   proposalPacket: ProposalPacket
 }) {
   const space = NANCE_SPACE_NAME
-  const { wallet, isLinked } = useAccount();
-  const { signDeleteProposalAsync } = useSignDeleteProposal(wallet);
-  const { signArchiveProposalAsync } = useSignArchiveProposal(wallet);
-  const { trigger: triggerDelete, error: deleteError } = useProposalDelete(space, proposalPacket.uuid, !!wallet);
-  const { trigger: triggerArchive, error: archiveError } = useProposalUpload(space, proposalPacket.uuid, !!wallet);
-  const router = useRouter();
-
-  const { status } = proposalPacket;
-  const showVariableActions = isLinked && (
-    status === "Archived" || status === "Draft" || status === "Discussion" || status === "Temperature Check"
+  const { wallet, isLinked } = useAccount()
+  const { signDeleteProposalAsync } = useSignDeleteProposal(wallet)
+  const { signArchiveProposalAsync } = useSignArchiveProposal(wallet)
+  const { trigger: triggerDelete, error: deleteError } = useProposalDelete(
+    space,
+    proposalPacket.uuid,
+    !!wallet
   )
+  const { trigger: triggerArchive, error: archiveError } = useProposalUpload(
+    space,
+    proposalPacket.uuid,
+    !!wallet
+  )
+  const router = useRouter()
+
+  const { status } = proposalPacket
+  const showVariableActions =
+    isLinked &&
+    (status === 'Archived' ||
+      status === 'Draft' ||
+      status === 'Discussion' ||
+      status === 'Temperature Check')
 
   const handleDeleteProposal = async (uuid: string, snapshotId: string) => {
-    if (!uuid) return toast.error('Proposal UUID is missing', { style: toastStyle });
-    if (!snapshotId) return toast.error('Snapshot ID is missing', { style: toastStyle });
+    if (!uuid)
+      return toast.error('Proposal UUID is missing.', { style: toastStyle })
+    if (!snapshotId)
+      return toast.error('Snapshot ID is missing.', { style: toastStyle })
 
     // Show loading toast
-    const loadingToastId = toast.loading('Signing...', { style: toastStyle });
+    const loadingToastId = toast.loading('Signing...', { style: toastStyle })
 
     try {
-      const nanceSignature = await signDeleteProposalAsync(snapshotId);
-      const { address, signature, message } = nanceSignature;
+      const nanceSignature = await signDeleteProposalAsync(snapshotId)
+      const { address, signature, message } = nanceSignature
 
       const res = await triggerDelete({
         uuid,
         envelope: {
-          type: "SnapshotCancelProposal",
-          address,
-          signature,
-          message
-        }
-      });
-
-      if (res.success) {
-        // Show success toast
-        toast.success('Proposal deleted successfully!', { id: loadingToastId, style: toastStyle});
-        router.push('/vote');
-      } else {
-        // Show error toast
-        toast.error(`${deleteError}`, { id: loadingToastId, style: toastStyle, duration: 15000});
-      }
-    } catch (error) {
-      // Show error toast
-      toast.error(`${error}`, { id: loadingToastId, style: toastStyle, duration: 15000});
-    }
-  };
-
-  const handleArchiveProposal = async (uuid: string, snapshotId: string) => {
-    if (!uuid) return toast.error('Proposal UUID is missing', { style: toastStyle });
-    if (!snapshotId) return toast.error('Snapshot ID is missing', { style: toastStyle });
-
-    // Show loading toast
-    const loadingToastId = toast.loading('Signing...', { style: toastStyle });
-
-    try {
-      const nanceSignature = await signArchiveProposalAsync(snapshotId);
-      const { address, signature, message } = nanceSignature;
-
-      const res = await triggerArchive({
-        proposal: { ...proposalPacket, status: "Archived" },
-        envelope: {
-          type: "NanceArchiveProposal",
+          type: 'SnapshotCancelProposal',
           address,
           signature,
           message,
-        }
-      });
+        },
+      })
 
       if (res.success) {
         // Show success toast
-        toast.success('Proposal archived successfully!', { id: loadingToastId, style: toastStyle});
-        router.push('/vote');
+        toast.success('Proposal deleted successfully!', {
+          id: loadingToastId,
+          style: toastStyle,
+        })
+        router.push('/vote')
       } else {
         // Show error toast
-        toast.error(`${archiveError}`, { id: loadingToastId, style: toastStyle, duration: 15000});
+        toast.error(`${deleteError}`, {
+          id: loadingToastId,
+          style: toastStyle,
+          duration: 15000,
+        })
       }
     } catch (error) {
       // Show error toast
-      toast.error(`${error}`, { id: loadingToastId, style: toastStyle, duration: 15000});
+      toast.error(`${error}`, {
+        id: loadingToastId,
+        style: toastStyle,
+        duration: 15000,
+      })
+    }
+  }
+
+  const handleArchiveProposal = async (uuid: string, snapshotId: string) => {
+    if (!uuid)
+      return toast.error('Proposal UUID is missing.', { style: toastStyle })
+    if (!snapshotId)
+      return toast.error('Snapshot ID is missing.', { style: toastStyle })
+
+    // Show loading toast
+    const loadingToastId = toast.loading('Signing...', { style: toastStyle })
+
+    try {
+      const nanceSignature = await signArchiveProposalAsync(snapshotId)
+      const { address, signature, message } = nanceSignature
+
+      const res = await triggerArchive({
+        proposal: { ...proposalPacket, status: 'Archived' },
+        envelope: {
+          type: 'NanceArchiveProposal',
+          address,
+          signature,
+          message,
+        },
+      })
+
+      if (res.success) {
+        // Show success toast
+        toast.success('Proposal archived successfully!', {
+          id: loadingToastId,
+          style: toastStyle,
+        })
+        router.push('/vote')
+      } else {
+        // Show error toast
+        toast.error(`${archiveError}`, {
+          id: loadingToastId,
+          style: toastStyle,
+          duration: 15000,
+        })
+      }
+    } catch (error) {
+      // Show error toast
+      toast.error(`${error}`, {
+        id: loadingToastId,
+        style: toastStyle,
+        duration: 15000,
+      })
     }
   }
 
@@ -164,59 +207,59 @@ export default function DropDownMenu({
             {showVariableActions && (
               <div className="px-1 py-1">
                 <MenuItem>
-                {({ focus }) => (
-                  <Link
-                    className={`${
-                      focus ? 'bg-moon-blue text-white' : 'text-gray-900'
-                    } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                    href={`/propose?proposalId=${proposalPacket.uuid}`}
-                    passHref
-                  >
-                    <PencilIcon className="mr-2 h-5 w-5" aria-hidden="true" />
-                    Edit
-                  </Link>
-                )}
-              </MenuItem>
-              <MenuItem>
-                {({ focus }) => (
-                  <button
-                    className={`${
-                      focus ? "bg-moon-gold text-white" : "text-gray-900"
-                    } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                    onClick={() => {
-                      const snapshotId = proposalPacket?.voteURL as string;
-                      const uuid = proposalPacket?.uuid as string;
-                      handleArchiveProposal(uuid, snapshotId);
-                    }}
-                  >
-                    <ArchiveBoxArrowDownIcon
-                      className="mr-2 h-5 w-5"
-                      aria-hidden="true"
-                    />
-                    Archive
-                  </button>
-                )}
-              </MenuItem>
-              <MenuItem>
-                {({ focus }) => (
-                  <button
-                    className={`${
-                      focus ? 'bg-moon-orange text-white' : 'text-gray-900'
-                    } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                    onClick={() => {
-                      const snapshotId = proposalPacket?.voteURL as string;
-                      const uuid = proposalPacket?.uuid as string;
-                      handleDeleteProposal(uuid, snapshotId);
-                    }}
-                  >
-                    <TrashIcon className="mr-2 h-5 w-5" aria-hidden="true" />
-                    Delete
-                  </button>
-                )}
-              </MenuItem>
-            </div>
+                  {({ focus }) => (
+                    <Link
+                      className={`${
+                        focus ? 'bg-moon-blue text-white' : 'text-gray-900'
+                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                      href={`/propose?proposalId=${proposalPacket.uuid}`}
+                      passHref
+                    >
+                      <PencilIcon className="mr-2 h-5 w-5" aria-hidden="true" />
+                      Edit
+                    </Link>
+                  )}
+                </MenuItem>
+                <MenuItem>
+                  {({ focus }) => (
+                    <button
+                      className={`${
+                        focus ? 'bg-moon-gold text-white' : 'text-gray-900'
+                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                      onClick={() => {
+                        const snapshotId = proposalPacket?.voteURL as string
+                        const uuid = proposalPacket?.uuid as string
+                        handleArchiveProposal(uuid, snapshotId)
+                      }}
+                    >
+                      <ArchiveBoxArrowDownIcon
+                        className="mr-2 h-5 w-5"
+                        aria-hidden="true"
+                      />
+                      Archive
+                    </button>
+                  )}
+                </MenuItem>
+                <MenuItem>
+                  {({ focus }) => (
+                    <button
+                      className={`${
+                        focus ? 'bg-moon-orange text-white' : 'text-gray-900'
+                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                      onClick={() => {
+                        const snapshotId = proposalPacket?.voteURL as string
+                        const uuid = proposalPacket?.uuid as string
+                        handleDeleteProposal(uuid, snapshotId)
+                      }}
+                    >
+                      <TrashIcon className="mr-2 h-5 w-5" aria-hidden="true" />
+                      Delete
+                    </button>
+                  )}
+                </MenuItem>
+              </div>
             )}
-            </MenuItems>
+          </MenuItems>
         </Transition>
       </Menu>
     </>

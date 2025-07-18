@@ -95,7 +95,7 @@ export function Step({
                   +selectedChain.chainId
                 ) {
                   return toast.error(
-                    `Please switch wallet to ${selectedChain.name}`
+                    `Please switch wallet to ${selectedChain.name}.`
                   )
                 }
 
@@ -133,7 +133,7 @@ export function Step({
                 +selectedChain.chainId
               ) {
                 return toast.error(
-                  `Please switch wallet to ${selectedChain.name}`
+                  `Please switch wallet to ${selectedChain.name}.`
                 )
               }
 
@@ -244,7 +244,7 @@ export function Step({
                 +selectedChain.chainId
               ) {
                 return toast.error(
-                  `Please switch wallet to ${selectedChain.name}`
+                  `Please switch wallet to ${selectedChain.name}.`
                 )
               }
 

@@ -11,6 +11,7 @@ import {
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
 } from 'const/config'
+import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import {
@@ -19,7 +20,7 @@ import {
   sendAndConfirmTransaction,
 } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
@@ -27,7 +28,9 @@ import useTeamEmail from '@/lib/team/useTeamEmail'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { truncateTokenValue } from '@/lib/utils/numbers'
 import { TeamListing } from '@/components/subscription/TeamListing'
+import IPFSRenderer from '../layout/IPFSRenderer'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -221,7 +224,7 @@ export default function BuyTeamListingModal({
     } catch (err: any) {
       console.log(err)
       if (err && !err.message.startsWith('user rejected transaction')) {
-        toast.error('Insufficient funds')
+        toast.error('Insufficient funds.')
       }
     }
     setIsLoading(false)
@@ -267,11 +270,11 @@ export default function BuyTeamListingModal({
                 id="image-container"
                 className="rounded-[20px] overflow-hidden my flex flex-wrap w-full"
               >
-                <MediaRenderer
-                  client={client}
+                <IPFSRenderer
                   src={listing.image}
-                  width="100%"
-                  height="100%"
+                  width={500}
+                  height={500}
+                  alt="Listing Image"
                 />
               </div>
             )}
@@ -281,7 +284,9 @@ export default function BuyTeamListingModal({
               <p className="font-GoodTimes">{listing.title}</p>
               <p className="text-[75%]">{listing.description}</p>
               <p id="listing-price" className="font-bold">{`${
-                citizen ? listing.price : +listing.price * 1.1
+                citizen 
+                  ? truncateTokenValue(listing.price, listing.currency)
+                  : truncateTokenValue(+listing.price * 1.1, listing.currency)
               } ${listing.currency}`}</p>
             </div>
           </div>
@@ -355,7 +360,7 @@ export default function BuyTeamListingModal({
             label="Buy"
             action={async () => {
               if (!email || email.trim() === '' || !email.includes('@'))
-                return toast.error('Please enter a valid email')
+                return toast.error('Please enter a valid email.')
               if (listing.shipping === 'true') {
                 if (
                   shippingInfo.streetAddress.trim() === '' ||
@@ -364,7 +369,7 @@ export default function BuyTeamListingModal({
                   shippingInfo.postalCode.trim() === '' ||
                   shippingInfo.country.trim() === ''
                 )
-                  return toast.error('Please fill out all fields')
+                  return toast.error('Please fill out all fields.')
               }
               buyListing()
             }}

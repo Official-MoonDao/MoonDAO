@@ -1,4 +1,5 @@
 import { PrivyProvider } from '@privy-io/react-auth'
+import { SessionProvider } from 'next-auth/react'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { FlagProvider } from 'const/flags'
 import { NextQueryParamProvider } from 'next-query-params'
@@ -26,7 +27,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
   })
 
   return (
-    <>
+    <SessionProvider session={session}>
       <GTag GTAG={process.env.NEXT_PUBLIC_GTAG as string} />
       <ChainContextV5.Provider
         value={{
@@ -71,7 +72,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
           </PrivyProvider>
         </PrivyWalletContext.Provider>
       </ChainContextV5.Provider>
-    </>
+    </SessionProvider>
   )
 }
 

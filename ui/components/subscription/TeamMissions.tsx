@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import { readContract } from 'thirdweb'
 import useMissionData from '@/lib/mission/useMissionData'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
@@ -44,32 +45,44 @@ export function TeamMission({
   teamContract,
   isManager,
 }: TeamMissionProps) {
-  const { subgraphData, token, fundingGoal, ruleset, primaryTerminalAddress } =
-    useMissionData({
-      mission,
-      missionTableContract,
-      missionCreatorContract,
-      jbControllerContract,
-      jbDirectoryContract,
-      jbTokensContract,
-      teamContract,
-    })
+  const {
+    subgraphData,
+    token,
+    fundingGoal,
+    ruleset,
+    primaryTerminalAddress,
+    deadline,
+  } = useMissionData({
+    mission,
+    missionTableContract,
+    missionCreatorContract,
+    jbControllerContract,
+    jbDirectoryContract,
+    jbTokensContract,
+    teamContract,
+  })
 
   return (
-    <MissionWideCard
-      mission={mission}
-      token={token}
-      subgraphData={subgraphData}
-      fundingGoal={mission.fundingGoal}
-      ruleset={ruleset}
-      contribute
-      editable={isManager}
-      showMore={false}
-      linkToMission
+    <JuiceProviders
+      projectId={mission?.projectId}
       selectedChain={selectedChain}
-      primaryTerminalAddress={primaryTerminalAddress}
-      teamContract={teamContract}
-    />
+    >
+      <MissionWideCard
+        mission={mission}
+        token={token}
+        subgraphData={subgraphData}
+        fundingGoal={mission.fundingGoal}
+        ruleset={ruleset}
+        deadline={deadline}
+        contribute
+        editable={isManager}
+        showMore={false}
+        linkToMission
+        selectedChain={selectedChain}
+        primaryTerminalAddress={primaryTerminalAddress}
+        teamContract={teamContract}
+      />
+    </JuiceProviders>
   )
 }
 

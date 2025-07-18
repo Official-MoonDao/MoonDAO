@@ -41,15 +41,12 @@ contract FeeHookTest is Test, Config, Constants {
     // Mainnet
     uint256 CHAIN = MAINNET;
     address lzEndpoint = LZ_ENDPOINTS[block.chainid];
-    address chainlinkRouter = CHAINLINK_ROUTERS[block.chainid];
-    bytes32 donID = CHAINLINK_DONS[block.chainid];
-    uint256 DESTINATION_CHAIN_ID = block.chainid;
-    uint16 DESTINATION_EID = uint16(LZ_EIDS[ARBITRUM]);
     uint128 SWAP_AMOUNT = 1 ether;
     address fakeTokenAddress;
     FeeHook feeHook;
 
     address user1 = address(0x1);
+    address user2 = address(0x3);
     address dead = address(0x000000000000000000000000000000000000dEaD);
     address deployerAddress = address(0x2);
     uint256 DEPLOYER_FUNDS =100_000_000_000 ether;
@@ -68,7 +65,7 @@ contract FeeHookTest is Test, Config, Constants {
         vm.deal(deployerAddress, DEPLOYER_FUNDS);
 
         vm.startBroadcast(deployerAddress);
-        FakeERC20 fakeToken = new FakeERC20(DEPLOYER_TOKEN_BALANCE, "Fake Token", "FAKE");
+        FakeERC20 fakeToken = new FakeERC20(DEPLOYER_TOKEN_BALANCE * 1e18, "Fake Token", "FAKE", deployerAddress);
         fakeTokenAddress = address(fakeToken);
         vm.stopBroadcast();
     }
@@ -77,6 +74,7 @@ contract FeeHookTest is Test, Config, Constants {
         vm.startBroadcast(deployerAddress);
         feeHook = deployHook();
         vm.stopBroadcast();
+        skip(1 days);
         address hookAddress = address(feeHook);
 
         // test the lifecycle (create pool, add liquidity, swap)
@@ -93,9 +91,9 @@ contract FeeHookTest is Test, Config, Constants {
 
         // Mine a salt that will produce a hook address with the correct permissions
         (address hookAddress, bytes32 salt) =
-            HookMiner.find(CREATE2_DEPLOYER, permissions, type(FeeHook).creationCode, abi.encode(deployerAddress, poolManagerAddress, posmAddress, lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, CHAINLINK_ROUTERS[block.chainid], donID, CHAINLINK_SUBS[block.chainid]));
+            HookMiner.find(CREATE2_DEPLOYER, permissions, type(FeeHook).creationCode, abi.encode(deployerAddress, poolManagerAddress, posmAddress, fakeTokenAddress));
 
-        feeHook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), lzEndpoint, DESTINATION_CHAIN_ID, DESTINATION_EID, fakeTokenAddress, chainlinkRouter, donID, CHAINLINK_SUBS[block.chainid]);
+        feeHook = new FeeHook{salt: salt}(deployerAddress, IPoolManager(poolManagerAddress), IPositionManager(posmAddress), fakeTokenAddress);
         require(address(feeHook) == hookAddress, "FeeHookTest: hook address mismatch");
         return feeHook;
     }
@@ -139,14 +137,16 @@ contract FeeHookTest is Test, Config, Constants {
 
 
         // FIXME uncomment after local chainlink integration
-        //uint256 balanceBefore = address(deployerAddress).balance;
+        uint256 balanceBefore = address(deployerAddress).balance;
         uint256 withdrawableAmount = SWAP_AMOUNT * FEE / FEE_DENOMINATOR;
-        //feeHook.withdrawFees();
-        //uint256 balanceAfter = address(deployerAddress).balance;
-        //assertEq(balanceAfter - balanceBefore, withdrawableAmount);
+        feeHook.checkIn();
+        skip(6 days);
+        feeHook.distributeFees();
+        uint256 balanceAfter = address(deployerAddress).balance;
+        assertEq(balanceAfter - balanceBefore, withdrawableAmount);
 
-        //vm.expectRevert("Nothing to withdraw");
-        //feeHook.withdrawFees();
+        vm.expectRevert("Week not finished");
+        feeHook.distributeFees();
 
 
         // transfer the position back to the deployer to allow closing the position
@@ -160,7 +160,7 @@ contract FeeHookTest is Test, Config, Constants {
         burn(poolKey, tokenId);
         uint256 deployerTokenBalanceAfter = IERC20(Currency.unwrap(poolKey.currency1)).balanceOf(deployerAddress);
         uint256 balanceAfterBurn = address(deployerAddress).balance;
-        assertApproxEqAbs(balanceAfterBurn + withdrawableAmount, DEPLOYER_FUNDS, 8);
+        assertApproxEqAbs(balanceAfterBurn, DEPLOYER_FUNDS, 8);
         assertApproxEqAbs(deployerTokenBalanceAfter, DEPLOYER_TOKEN_BALANCE * 1e18 - burntAmount, 4);
     }
 
@@ -171,7 +171,7 @@ contract FeeHookTest is Test, Config, Constants {
         params[1] = abi.encode(poolKey.currency0, poolKey.currency1, ActionConstants.MSG_SENDER);
         posm.modifyLiquidities(
             abi.encode(actions, params),
-            block.timestamp + 20
+            block.timestamp + 30 days
         );
     }
 
@@ -187,6 +187,66 @@ contract FeeHookTest is Test, Config, Constants {
         );
 
         return 0;
+    }
+
+    function testCheckInDuplicate() public {
+        vm.startBroadcast(deployerAddress);
+        feeHook = deployHook();
+        vm.stopBroadcast();
+
+        vm.prank(user1);
+        feeHook.checkIn();
+        assertEq(feeHook.getCheckedInCount(), 1);
+
+        vm.prank(user1);
+        feeHook.checkIn();
+        assertEq(feeHook.getCheckedInCount(), 1);
+    }
+
+    function testDistributeFeesNoCheckins() public {
+        vm.startBroadcast(deployerAddress);
+        feeHook = deployHook();
+        vm.stopBroadcast();
+
+        skip(8 days);
+        vm.expectRevert("No checkins");
+        feeHook.distributeFees();
+    }
+
+    function testDistributeFeesNoBalance() public {
+        vm.startBroadcast(deployerAddress);
+        feeHook = deployHook();
+        vm.stopBroadcast();
+
+        vm.prank(user1);
+        feeHook.checkIn();
+        skip(8 days);
+        vm.expectRevert("No balance");
+        feeHook.distributeFees();
+    }
+
+    function testDistributeFeesMultipleUsers() public {
+        vm.startBroadcast(deployerAddress);
+        feeHook = deployHook();
+        FakeERC20 token = FakeERC20(fakeTokenAddress);
+        token.transfer(user1, 10 ether);
+        token.transfer(user2, 30 ether);
+        vm.stopBroadcast();
+
+        vm.prank(user1);
+        feeHook.checkIn();
+        vm.prank(user2);
+        feeHook.checkIn();
+
+        uint256 user1BalanceBefore = user1.balance;
+        uint256 user2BalanceBefore = user2.balance;
+        vm.deal(address(feeHook), 4 ether);
+        skip(8 days);
+        feeHook.distributeFees();
+
+        assertEq(user1.balance - user1BalanceBefore, 1 ether);
+        assertEq(user2.balance - user2BalanceBefore, 3 ether);
+        assertEq(address(feeHook).balance, 0);
     }
 
     // trade eth for tokens

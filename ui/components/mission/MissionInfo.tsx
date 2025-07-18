@@ -6,7 +6,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import { getAttribute } from '@/lib/utils/nft'
@@ -47,7 +47,7 @@ function MissionInfoTab({
 
 function MissionInfoHeader({ title, icon }: { title: string; icon: string }) {
   return (
-    <div className="flex gap-2 text-light-cool">
+    <div className="flex w-full gap-2 text-light-cool">
       <Image src={icon} alt="Star Icon" width={30} height={30} />
       <h1 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">
         {title}
@@ -74,10 +74,72 @@ export default function MissionInfo({
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
+  const stickyRef = useRef<HTMLDivElement>(null)
 
   const [tab, setTab] = useState<MissionInfoTabType>(
     (router.query.tab as MissionInfoTabType) || 'about'
   )
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const stickyElement = stickyRef.current
+      if (!stickyElement) return
+
+      const parentElement = document.getElementById('mission-info-content')
+      if (!parentElement) return
+
+      const parentRect = parentElement.getBoundingClientRect()
+      const stickyRect = stickyElement.getBoundingClientRect()
+
+      const stickyTop = stickyRect.top
+
+      const stickyPoint = 20
+
+      const parentBottom = parentRect.bottom
+
+      const parentTop = parentRect.top
+
+      const stickyHeight = stickyRect.height
+
+      if (parentTop > stickyPoint) {
+        stickyElement.style.position = 'relative'
+        stickyElement.style.top = '0'
+        stickyElement.style.width = '100%'
+      } else if (
+        stickyTop <= stickyPoint &&
+        parentBottom > window.innerHeight
+      ) {
+        stickyElement.style.position = 'fixed'
+        stickyElement.style.top = `${stickyPoint}px`
+        stickyElement.style.width = '350px'
+      } else if (parentBottom <= window.innerHeight) {
+        const bottomOffset = window.innerHeight - parentBottom
+        const newTop = window.innerHeight - stickyHeight - bottomOffset
+
+        if (newTop < stickyPoint) {
+          stickyElement.style.position = 'absolute'
+          stickyElement.style.top = `${parentRect.height - stickyHeight}px`
+          stickyElement.style.width = '350px'
+        } else {
+          stickyElement.style.position = 'fixed'
+          stickyElement.style.top = `${stickyPoint}px`
+          stickyElement.style.width = '350px'
+        }
+      } else {
+        stickyElement.style.position = 'relative'
+        stickyElement.style.top = '0'
+        stickyElement.style.width = '100%'
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll)
+
+    handleScroll()
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
 
   const teamSocials = useMemo(() => {
     return {
@@ -105,17 +167,20 @@ export default function MissionInfo({
   }, [tab])
 
   return (
-    <div>
-      <div className="flex flex-col md:flex-row gap-8 md:gap-2 justify-between max-w-[1000px]">
-        <div id="mission-info-tabs" className="mt-4 flex gap-[5vw] w-3/4">
+    <div className="w-full">
+      <div className="w-full pl-[2vw] flex flex-col md:flex-row gap-10 md:gap-2 justify-between max-w-[1200px]">
+        <div
+          id="mission-info-tabs"
+          className="flex px-10 sm:px-4 md:px-0 justify-between sm:justify-start mt-4 flex gap-10 md:gap-20 w-full"
+        >
           <MissionInfoTab tab="about" currentTab={tab} setTab={setTab} />
           <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
           <MissionInfoTab tab="tokenomics" currentTab={tab} setTab={setTab} />
         </div>
 
-        <div className="flex items-center gap-2">
-          <p className="text-sm text-gray-400">{'CONNECT WITH THE TEAM'}</p>
-          <div className="flex gap-2 justify-end">
+        <div className="flex items-center md:justify-end gap-2 w-full">
+          <div className="text-sm text-gray-400">{'CONNECT WITH THE TEAM'}</div>
+          <div className="flex gap-2 justify-start justify-end">
             {teamSocials.communications && (
               <Link
                 className="flex gap-2"
@@ -151,145 +216,79 @@ export default function MissionInfo({
       </div>
 
       <div id="mission-info-content" className="mt-8 w-full flex gap-4">
-        {tab === 'about' && (
-          <div className="flex gap-4 w-full">
-            <div>
-              <MissionInfoHeader
-                title="About the Mission"
-                icon="/assets/icon-star-blue.svg"
-              />
-              <div
-                className="mt-4 prose prose-invert w-full"
-                dangerouslySetInnerHTML={{
-                  __html: mission?.metadata?.description || '',
-                }}
-              />
-              <div className="mt-8 flex gap-2 text-light-cool max-w-none">
-                <Image
-                  src="/assets/icon-star-blue.svg"
-                  alt="Star Icon"
-                  width={30}
-                  height={30}
+        <div className="flex-1 overflow-auto">
+          {tab === 'about' && (
+            <div className="flex gap-4 mb-[5vw] md:mb-[2vw] w-full">
+              <div className="w-full">
+                <MissionInfoHeader
+                  title="About the Mission"
+                  icon="/assets/icon-star-blue.svg"
                 />
-                <h1 className="header font-GoodTimes text-moon-indigo">
-                  About the Team
-                </h1>
-              </div>
-              <div className="mt-4">
-                {teamNFT && (
-                  <StandardWideCard
-                    title={teamNFT?.metadata.name}
-                    link={`/team/${generatePrettyLink(
-                      teamNFT?.metadata?.name || ''
-                    )}`}
-                    subheader={
-                      <div className="flex flex-col gap-2">
-                        <div
-                          id="socials-container"
-                          className="p-1.5 mb-2 mr-2 md:mb-0 px-5 w-fit gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
-                        >
-                          {mission?.metadata?.discord && (
-                            <Link
-                              className="flex gap-2"
-                              href={mission?.metadata?.discord}
-                              target="_blank"
-                              passHref
-                            >
-                              <DiscordIcon />
-                            </Link>
-                          )}
-                          {mission?.metadata?.twitter && (
-                            <Link
-                              className="flex gap-2"
-                              href={mission?.metadata?.twitter}
-                              target="_blank"
-                              passHref
-                            >
-                              <TwitterIcon />
-                            </Link>
-                          )}
-                          {mission?.metadata?.infoUri && (
-                            <Link
-                              className="flex gap-2"
-                              href={mission?.metadata?.infoUri}
-                              target="_blank"
-                              passHref
-                            >
-                              <GlobeAltIcon height={25} width={25} />
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-                    }
-                    paragraph={
-                      <div className="flex flex-col gap-2">
-                        <p>{teamNFT?.metadata.description}</p>
-                      </div>
-                    }
-                    fullParagraph={true}
-                    showMore={false}
-                    showMoreButton={false}
-                    image={teamNFT?.metadata.image}
-                    footer={
-                      <Link
-                        href={`/team/${generatePrettyLink(
-                          teamNFT?.metadata?.name || ''
-                        )}`}
-                        passHref
-                        className="flex gap-2 items-center hover:underline"
-                      >
-                        <InformationCircleIcon width={20} height={20} />
-                        {'Learn more about the team'}
-                      </Link>
-                    }
-                  />
-                )}
+                {mission?.metadata?.youtubeLink &&
+                  mission?.metadata?.youtubeLink !== '' && (
+                    <div className="w-full p-4 2xl:p-0 max-w-[1200px]">
+                      <iframe
+                        src={mission?.metadata?.youtubeLink?.replace(
+                          'watch?v=',
+                          'embed/'
+                        )}
+                        width="100%"
+                        height="500"
+                        allowFullScreen
+                        className="rounded-2xl"
+                      />
+                    </div>
+                  )}
+                <div
+                  className="mt-4 prose prose-invert w-full max-w-none"
+                  dangerouslySetInnerHTML={{
+                    __html: mission?.metadata?.description || '',
+                  }}
+                />
               </div>
             </div>
+          )}
+          {tab === 'activity' && (
+            <div className="w-full">
+              <MissionInfoHeader
+                title="Mission Activity"
+                icon="/assets/icon-star-blue.svg"
+              />
+              <MissionTimelineChart
+                points={points}
+                isLoadingPoints={isLoadingPoints}
+                height={500}
+                createdAt={subgraphData?.createdAt}
+              />
+              <MissionActivityList
+                selectedChain={selectedChain}
+                tokenSymbol={token?.tokenSymbol}
+                projectId={mission?.projectId}
+              />
+            </div>
+          )}
+          {tab === 'tokenomics' && (
+            <div className="w-full">
+              <MissionInfoHeader
+                title="Mission Tokenomics"
+                icon="/assets/icon-star-blue.svg"
+              />
+              <MissionTokenInfo mission={mission} token={token} />
+            </div>
+          )}
+        </div>
+        <div className="hidden xl:block  min-w-[350px] lg:w-[400px]">
+          <div ref={stickyRef}>
+            <MissionPayRedeem
+              stage={stage}
+              mission={mission}
+              teamNFT={teamNFT}
+              token={token}
+              primaryTerminalAddress={primaryTerminalAddress}
+              jbTokensContract={jbTokensContract}
+              jbControllerContract={jbControllerContract}
+            />
           </div>
-        )}
-        {tab === 'activity' && (
-          <div className="w-full">
-            <MissionInfoHeader
-              title="Mission Activity"
-              icon="/assets/icon-star-blue.svg"
-            />
-            <MissionTimelineChart
-              points={points}
-              isLoadingPoints={isLoadingPoints}
-              height={500}
-              createdAt={subgraphData?.createdAt}
-            />
-            <MissionActivityList
-              selectedChain={selectedChain}
-              tokenSymbol={token?.tokenSymbol}
-              projectId={mission?.projectId}
-            />
-          </div>
-        )}
-        {tab === 'tokenomics' && (
-          <div className="w-full">
-            <MissionInfoHeader
-              title="Mission Tokenomics"
-              icon="/assets/icon-star-blue.svg"
-            />
-            <MissionTokenInfo mission={mission} token={token} />
-          </div>
-        )}
-        <div className="w-full hidden xl:block">
-          <MissionPayRedeem
-            stage={stage}
-            selectedChain={selectedChain}
-            mission={mission}
-            teamNFT={teamNFT}
-            token={token}
-            fundingGoal={fundingGoal}
-            subgraphData={subgraphData}
-            ruleset={ruleset}
-            primaryTerminalAddress={primaryTerminalAddress}
-            jbTokensContract={jbTokensContract}
-            jbControllerContract={jbControllerContract}
-          />
         </div>
       </div>
     </div>

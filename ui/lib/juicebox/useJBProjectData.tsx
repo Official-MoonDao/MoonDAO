@@ -1,13 +1,23 @@
 //Juicebox V4
 import JBV4TokenABI from 'const/abis/JBV4Token.json'
-import { JB_NATIVE_TOKEN_ADDRESS, ZERO_ADDRESS } from 'const/config'
+import {
+  JB_NATIVE_TOKEN_ADDRESS,
+  MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL,
+  ZERO_ADDRESS,
+} from 'const/config'
 import { BigNumber } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { cacheExchange, createClient, fetchExchange } from 'urql'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
 import useContract from '../thirdweb/hooks/useContract'
 import { projectQuery } from './subgraph'
 import useJBProjectTrendingPercentageIncrease from './useJBProjectTrendingPercentageIncrease'
+
+const primaryTerminalSubgraphClient = createClient({
+  url: MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL,
+  exchanges: [fetchExchange, cacheExchange],
+})
 
 export default function useJBProjectData({
   projectId,
@@ -16,6 +26,8 @@ export default function useJBProjectData({
   jbTokensContract,
   projectMetadata,
   projectSubgraphData,
+  _primaryTerminalAddress,
+  _token,
 }: {
   projectId: number | undefined
   jbControllerContract: any
@@ -23,27 +35,32 @@ export default function useJBProjectData({
   jbTokensContract: any
   projectMetadata?: any
   projectSubgraphData?: any
+  _primaryTerminalAddress?: string
+  _token?: any
 }) {
   const { selectedChain } = useContext(ChainContextV5)
 
   const [metadata, setMetadata] = useState<any>(projectMetadata)
   const [ruleset, setRuleset] = useState<any>()
-  const [token, setToken] = useState<any>({
-    tokenAddress: '',
-    tokenName: '',
-    tokenSymbol: '',
-    tokenSupply: '',
-    reservedTokens: '',
-    reservedRate: '',
-  })
+  const [token, setToken] = useState<any>(
+    _token || {
+      tokenAddress: '',
+      tokenName: '',
+      tokenSymbol: '',
+      tokenSupply: '',
+      reservedTokens: '',
+      reservedRate: '',
+    }
+  )
   const [subgraphData, setSubgraphData] = useState<any>(projectSubgraphData)
 
   const last7DaysPercent = useJBProjectTrendingPercentageIncrease(
     BigNumber.from(subgraphData?.volume ?? 0),
     BigNumber.from(subgraphData?.trendingVolume ?? 0)
   )
-  const [primaryTerminalAddress, setPrimaryTerminalAddress] =
-    useState<string>(ZERO_ADDRESS)
+  const [primaryTerminalAddress, setPrimaryTerminalAddress] = useState<string>(
+    _primaryTerminalAddress || ZERO_ADDRESS
+  )
 
   const tokenContract = useContract({
     chain: selectedChain,
@@ -125,26 +142,29 @@ export default function useJBProjectData({
     if (tokenContract) getTokenData()
   }, [tokenContract])
 
-  //Project Subgraph Data
+  //Project and Payment terminal Subgraph Data
   useEffect(() => {
     async function getSubgraphData() {
-      if (!projectId) return
+      if (projectId === undefined) return
       try {
-        const res = await fetch(
-          '/api/juicebox/query?query=' + projectQuery(projectId),
-          {
-            method: 'POST',
-          }
-        )
+        const res = await fetch('/api/juicebox/query', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: projectQuery(projectId),
+          }),
+        })
         const data = await res.json()
-        const projectSubgraphData = data.projects?.[0]
+        const projectSubgraphData = data.projects?.items?.[0]
         setSubgraphData(projectSubgraphData)
       } catch (error) {
         console.error(error)
       }
     }
 
-    if (projectId) getSubgraphData()
+    if (projectId !== undefined) getSubgraphData()
   }, [projectId])
 
   //Project Directory Data
@@ -186,8 +206,16 @@ export default function useJBProjectData({
       setPrimaryTerminalAddress(primaryTerminal)
     }
 
-    if (jbDirectoryContract && projectId) getProjectDirectoryData()
-  }, [jbDirectoryContract, projectId, token?.tokenAddress])
+    // Only fetch if _primaryTerminalAddress was not provided
+    if (jbDirectoryContract && projectId && !_primaryTerminalAddress) {
+      getProjectDirectoryData()
+    }
+  }, [
+    jbDirectoryContract,
+    projectId,
+    token?.tokenAddress,
+    _primaryTerminalAddress,
+  ])
 
   return {
     metadata,

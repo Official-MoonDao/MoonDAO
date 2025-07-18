@@ -28,15 +28,7 @@ export default function FormDate({
   return (
     <div className="w-full h-full py-1 flex flex-col justify-between gap-2 max-w-[200px]">
       <div className="flex flex-row items-center gap-2">
-        {label && (
-          <p
-            className={`text-sm font-GoodTimes ${
-              mode === 'dark' && 'opacity-50'
-            }`}
-          >
-            {label}
-          </p>
-        )}
+        {label && <p className={`text-sm font-GoodTimes`}>{label}</p>}
         {tooltip && (
           <Tooltip text={tooltip} disabled={disabled}>
             ?

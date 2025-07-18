@@ -36,13 +36,17 @@ function basicFetcher(): Fetcher<any, string> {
   }
 }
 
-export function useSafeBalances(address: string, shouldFetch: boolean = true) {
-  const api = `https://safe-transaction-mainnet.safe.global`
+export function useSafeBalances(
+  address: string,
+  shouldFetch: boolean = true,
+  chainSlug: string = 'mainnet',
+  refreshInterval?: number // in milliseconds
+) {
+  const api = `https://safe-transaction-${chainSlug}.safe.global`
+
   return useSWR<SafeBalanceUsdResponse[], Error>(
-    shouldFetch
-      ? `${api}/api/v1/safes/${address}/balances?trusted=true&exclude_spam=true`
-      : null,
+    shouldFetch ? `${api}/api/v1/safes/${address}/balances` : null,
     basicFetcher(),
-    { shouldRetryOnError: false }
+    { shouldRetryOnError: false, refreshInterval, revalidateOnFocus: false }
   )
 }

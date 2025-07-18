@@ -1,6 +1,6 @@
 import CookieBanner from '@/components/layout/CookieBanner'
 
-describe('CookieBanner', () => {
+describe('<CookieBanner />', () => {
   beforeEach(() => {
     cy.clearLocalStorage()
     cy.window().then((win) => {
@@ -10,12 +10,14 @@ describe('CookieBanner', () => {
 
   it('Renders when cookie consent is null', () => {
     cy.mount(<CookieBanner />)
-    cy.contains('We use cookies on our site').should('be.visible')
+    cy.contains('We use cookies to enhance your experience').should(
+      'be.visible'
+    )
   })
 
   it('Updates localStorage and calls gtag when Allow Cookies is clicked', () => {
     cy.mount(<CookieBanner />)
-    cy.contains('Allow Cookies').click()
+    cy.contains('button', 'Allow Cookies').click()
     cy.get('@gtagStub').should('have.been.calledWith', 'consent', 'update', {
       analytics_storage: 'granted',
     })
@@ -26,7 +28,7 @@ describe('CookieBanner', () => {
 
   it('Updates localStorage and calls gtag when Decline is clicked', () => {
     cy.mount(<CookieBanner />)
-    cy.contains('Decline').click()
+    cy.contains('button', 'Decline').click()
     cy.get('@gtagStub').should('have.been.calledWith', 'consent', 'update', {
       analytics_storage: 'denied',
     })
@@ -37,7 +39,7 @@ describe('CookieBanner', () => {
 
   it('Links to the privacy policy', () => {
     cy.mount(<CookieBanner />)
-    cy.contains('We use cookies on our site').should(
+    cy.contains('a', 'Privacy Policy').should(
       'have.attr',
       'href',
       'https://docs.moondao.com/Legal/Website-Privacy-Policy'

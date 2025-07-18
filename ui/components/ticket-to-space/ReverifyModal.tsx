@@ -40,7 +40,7 @@ export function ReverifyModal({
 
   const handleSubmit = async () => {
     if (!email || !fullName || !email.includes('@'))
-      return toast.error('Please fill in all fields')
+      return toast.error('Please fill in all fields.')
 
     const signature = await signMessage()
     setStatus('Submitting...')

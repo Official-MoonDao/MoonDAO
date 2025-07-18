@@ -13,6 +13,8 @@ jobs:
       NEXT_PUBLIC_ENV: "dev"
       NEXT_PUBLIC_TEST_ENV: "true"
       NEXT_PUBLIC_CHAIN: "testnet"
+      NEXT_PUBLIC_INFURA_KEY: ${{ secrets.NEXT_PUBLIC_INFURA_KEY }}
+      NEXT_PUBLIC_ETHERSCAN_API_KEY: ${{ secrets.NEXT_PUBLIC_ETHERSCAN_API_KEY }}
       DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
       DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
       DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
@@ -28,6 +30,8 @@ jobs:
       NEXT_PUBLIC_THIRDWEB_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_THIRDWEB_CLIENT_ID }}
       NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET: ${{ secrets.NEXT_PUBLIC_THIRDWEB_SECRET_KEY }}
       NEXT_PUBLIC_PRIVY_APP_ID: ${{secrets.NEXT_PUBLIC_PRIVY_APP_ID}}
+      NEXT_PUBLIC_PRIVY_TEST_PHONE: ${{secrets.NEXT_PUBLIC_PRIVY_TEST_PHONE}}
+      NEXT_PUBLIC_PRIVY_TEST_OTP: ${{secrets.NEXT_PUBLIC_PRIVY_TEST_OTP}}
       NEXT_PUBLIC_MONGO_MOONDAO_API_KEY: ${{secrets.NEXT_PUBLIC_MONGO_MOONDAO_API_KEY}}
       ALLOWED_ORIGIN: "http://localhost:3000"
       TYPEFORM_PERSONAL_ACCESS_TOKEN: ${{secrets.TYPEFORM_PERSONAL_ACCESS_TOKEN}}
@@ -37,27 +41,62 @@ jobs:
       NEXT_PUBLIC_TYPEFORM_CITIZEN_APP_FORM_ID: ${{secrets.NEXT_PUBLIC_TYPEFORM_CITIZEN_APP_FORM_ID}}
       NEXT_PUBLIC_TYPEFORM_TEAM_APP_FORM_ID: ${{secrets.NEXT_PUBLIC_TYPEFORM_TEAM_APP_FORM_ID}}
       COMFYICU_API_KEY: ${{secrets.COMFYICU_API_KEY}}
-      S3_UPLOAD_KEY: ${{secrets.S3_UPLOAD_KEY}}
-      S3_UPLOAD_SECRET: ${{secrets.S3_UPLOAD_SECRET}}
-      S3_UPLOAD_BUCKET: ${{secrets.S3_UPLOAD_BUCKET}}
-      S3_UPLOAD_REGION: ${{secrets.S3_UPLOAD_REGION}}
+      GCS_CREDENTIALS: ${{secrets.GCS_CREDENTIALS}}
+      GCS_BUCKET_NAME: ${{secrets.GCS_BUCKET_NAME}}
       IRON_SESSION: ${{secrets.IRON_SESSION}}
       TABLELAND_PRIVATE_KEY: ${{secrets.TABLELAND_PRIVATE_KEY}}
+      UPSTASH_REDIS_URL: ${{secrets.UPSTASH_REDIS_URL}}
+      UPSTASH_REDIS_TOKEN: ${{secrets.UPSTASH_REDIS_TOKEN}}
+      NEXTAUTH_SECRET: ${{secrets.NEXTAUTH_SECRET}}
+      JB_SEPOLIA_SUBGRAPH_ENDPOINT: ${{secrets.JB_SEPOLIA_SUBGRAPH_ENDPOINT}}
+      JB_SEPOLIA_SUBGRAPH_API_KEY: ${{secrets.JB_SEPOLIA_SUBGRAPH_API_KEY}}
+      BENDYSTRAW_API_KEY: ${{secrets.BENDYSTRAW_API_KEY}}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      # Run cypress E2E tests
-      - name: Run Cypress E2E Testing
-        uses: cypress-io/github-action@v4.1.0
+      # BrowserStack Environment Setup - Required before any other BrowserStack actions
+      - name: "BrowserStack Env Setup"
+        uses: "browserstack/github-actions/setup-env@master"
         with:
-          working-directory: ui
-          install-command: yarn install
-          build: yarn build
-          start: yarn start
-          wait-on: "http://localhost:3000"
+          username: ${{ secrets.BROWSERSTACK_USERNAME }}
+          access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          build-name: "BUILD_INFO"
+          project-name: "REPO_NAME"
 
-      #Run cypress component tests
+      - name: Install dependencies
+        working-directory: ui
+        run: yarn install
+
+      # Build the web application
+      - name: Build next app
+        working-directory: ui
+        run: yarn build
+
+      # Start the web server for testing
+      - name: Start server
+        working-directory: ui
+        run: yarn next start -p 3000 &
+        env:
+          BROWSERSTACK_LOCAL: true
+
+      # Wait for the server to be ready
+      - name: Wait for server
+        run: sleep 10
+
+      # Install browserstack-cypress-cli globally
+      - name: Install browserstack-cypress-cli
+        run: npm install -g browserstack-cypress-cli
+
+      # Run Cypress E2E tests on BrowserStack with local testing enabled
+      - name: Run Cypress E2E Testing on BrowserStack
+        working-directory: ui
+        run: BROWSERSTACK_LOCAL=true browserstack-cypress run --force-upload
+        env:
+          BROWSERSTACK_LOCAL: true
+
+      # Run cypress component tests
       - name: Run Cypress Component Testing
         uses: cypress-io/github-action@v4.1.0
         with:
@@ -66,6 +105,8 @@ jobs:
           start: yarn next start -p 3001
           wait-on: "http://localhost:3001"
           component: true
+          browser: chrome
+          install-browser: true
 
       # Save screenshots on fail
       - name: Upload Cypress Screenshots

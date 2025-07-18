@@ -9,9 +9,9 @@ import {
   prepareContractCall,
   sendAndConfirmTransaction,
 } from 'thirdweb'
-import { sepolia } from 'thirdweb/chains'
 import { useActiveAccount, useActiveWallet } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { sepolia } from '@/lib/infura/infuraChains'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'

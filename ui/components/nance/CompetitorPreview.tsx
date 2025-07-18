@@ -1,6 +1,6 @@
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { MediaRenderer, useReadContract } from 'thirdweb/react'
-import client from '@/lib/thirdweb/client'
+import { useReadContract } from 'thirdweb/react'
+import IPFSRenderer from '../layout/IPFSRenderer'
 
 type CompetitorPreviewProps = {
   teamId: any
@@ -20,12 +20,12 @@ export function CompetitorPreview({
     <div className="flex items-center gap-5">
       {teamNFT && teamNFT?.metadata && (
         <div className="flex items-center">
-          <MediaRenderer
-            client={client}
-            src={teamNFT?.metadata?.image}
-            width="66px"
-            height="66px"
-            style={{ borderRadius: '50%' }}
+          <IPFSRenderer
+            className="rounded-[50%]"
+            src={teamNFT?.metadata?.image || ''}
+            width={66}
+            height={66}
+            alt="Competitor Image"
           />
           <div>{teamNFT?.metadata?.name}</div>
         </div>

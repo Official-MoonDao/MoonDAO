@@ -3,7 +3,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { ChevronRightIcon } from '@heroicons/react/24/solid'
-import { useProposalsInfinite } from '@nance/nance-hooks'
+import { useProposals } from '@nance/nance-hooks'
 import { ProposalsPacket, getActionsFromBody } from '@nance/nance-sdk'
 import { formatDistanceStrict } from 'date-fns'
 import {
@@ -15,12 +15,13 @@ import {
 } from 'next-query-params'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import InfiniteScroll from 'react-infinite-scroll-component'
+import { useCallback, useEffect, useState } from 'react'
 import { NANCE_SPACE_NAME } from '@/lib/nance/constants'
 import {
   SnapshotGraphqlProposalVotingInfo,
   useVotingInfoOfProposals,
 } from '@/lib/snapshot'
+import PaginationButtons from '@/components/layout/PaginationButtons'
 import Proposal from './Proposal'
 import ProposalInfo, { ProposalInfoSkeleton } from './ProposalInfo'
 
@@ -53,77 +54,110 @@ function NoResults() {
 function ProposalListSkeleton() {
   return (
     <div className="font-[roboto] mt-4 lg:mt-8">
-      <ul className="divide-y divide-gray-100 overflow-y-auto h-[900px] text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
-        {[...Array(10).keys()].map((n) => (
-          <li
-            key={n}
-            className="relative flex inner-container-background justify-between gap-x-6 px-4 py-5 border-transparent border-[1px] hover:border-white transition-all duration-150 sm:px-6"
-          >
-            <ProposalInfoSkeleton />
-            <div className="hidden shrink-0 items-center gap-x-4 sm:flex">
-              <div className="flex sm:flex-col sm:items-end">
-                <div className="dark:bg-gray-7 rounded-md animate-pulse h-4 w-12"></div>
-                <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
-                  <span className="sr-only">Last edited</span>
-                  <span className="animate-pulse h-4 w-8 bg-white"></span>
-                </p>
+      <div className="w-full">
+        <div className="p-4 md:p-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl items-stretch">
+            {[...Array(8).keys()].map((n) => (
+              <div
+                key={n}
+                className="h-full bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-4 sm:p-6"
+              >
+                <div className="flex flex-col h-full justify-between gap-y-4">
+                  <div className="flex-1">
+                    <ProposalInfoSkeleton />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex flex-col items-start">
+                      <div className="dark:bg-gray-7 rounded-md animate-pulse h-4 w-16"></div>
+                      <div className="mt-1 animate-pulse h-3 w-20 bg-gray-500"></div>
+                    </div>
+                    <ChevronRightIcon
+                      className="h-5 w-5 flex-none text-gray-400"
+                      aria-hidden="true"
+                    />
+                  </div>
+                </div>
               </div>
-              <ChevronRightIcon
-                className="h-5 w-5 flex-none text-gray-400"
-                aria-hidden="true"
-              />
-            </div>
-          </li>
-        ))}
-      </ul>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
 
 export default function ProposalList() {
   const router = useRouter()
-  const [query] = useQueryParams({
+  const [query, setQuery] = useQueryParams({
     keyword: StringParam,
     limit: withDefault(NumberParam, 10),
     cycle: withDefault(StringParam, 'All'),
     sortBy: withDefault(StringParam, ''),
     sortDesc: withDefault(BooleanParam, true),
+    page: withDefault(NumberParam, 1),
   })
-  const { keyword, cycle, limit } = query
+  const { keyword, cycle, limit, page } = query
+
+  // Calculate items per page (proposals that fit on screen)
+  const itemsPerPage = 8 // Adjust this number based on screen height
+  const [maxPage, setMaxPage] = useState(1)
+  const [pageIdx, setPageIdx] = useState(page)
+
+  // Update page index when URL changes
+  useEffect(() => {
+    if (page !== pageIdx) {
+      setPageIdx(page)
+    }
+  }, [page])
+
+  // Handle page changes
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setPageIdx(newPage)
+      setQuery({ page: newPage })
+    },
+    [setQuery]
+  )
 
   const {
-    data: proposalDataArray,
+    data: proposalData,
     isLoading: proposalsLoading,
-    size,
-    setSize,
-  } = useProposalsInfinite(
-    { space: NANCE_SPACE_NAME, cycle, keyword, limit },
+  } = useProposals(
+    { space: NANCE_SPACE_NAME, cycle, keyword, limit: 1000 }, // Get all proposals for pagination
     router.isReady
   )
 
-  // concat proposal responses
-  const firstRes = proposalDataArray?.[0].data
   let proposalsPacket: ProposalsPacket | undefined
-  if (firstRes) {
+  if (proposalData?.data) {
+    const allProposals = proposalData.data.proposals.map((p: any) => {
+      return {
+        ...p,
+        actions:
+          p.actions && p.actions.length > 0
+            ? p.actions
+            : getActionsFromBody(p.body) || [],
+      }
+    })
+
+    // Calculate total pages
+    const totalProposals = allProposals.length
+    const calculatedMaxPage = Math.ceil(totalProposals / itemsPerPage)
+    if (calculatedMaxPage !== maxPage) {
+      setMaxPage(calculatedMaxPage)
+    }
+
+    // Get proposals for current page
+    const startIndex = (pageIdx - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    const currentPageProposals = allProposals.slice(startIndex, endIndex)
+
     proposalsPacket = {
-      proposalInfo: firstRes.proposalInfo,
-      proposals:
-        proposalDataArray
-          .map((data) =>
-            data?.data.proposals.map((p) => {
-              return {
-                ...p,
-                actions:
-                  p.actions && p.actions.length > 0
-                    ? p.actions
-                    : getActionsFromBody(p.body) || [],
-              }
-            })
-          )
-          .flat() || [],
-      hasMore: proposalDataArray[proposalDataArray.length - 1].data.hasMore,
+      proposalInfo: proposalData.data.proposalInfo,
+      proposals: currentPageProposals,
+      hasMore: pageIdx < calculatedMaxPage,
     }
   }
+
   const proposals = proposalsPacket?.proposals || []
 
   const snapshotIds = proposals
@@ -142,40 +176,40 @@ export default function ProposalList() {
   } else {
     const packet = proposalsPacket
     return (
-      <div className="rounded-bl-20px overflow-hidden md:mt-[-40px] md:pt-5">
-        <div className="font-[roboto] lg:max-w-[800px] ">
-          <ul
-            className="divide-y divide-gray-100 overflow-y-auto h-[900px] text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl"
-            id="scrollableUl"
-          >
-            <InfiniteScroll
-              dataLength={proposals.length} //This is important field to render the next data
-              next={() => {
-                setSize(size + 1)
-              }}
-              hasMore={packet.hasMore}
-              loader={
-                <p className="text-center mt-5  animate-pulse">Loading...</p>
-              }
-              endMessage={
-                <p className="text-center my-5 font-GoodTimes">
-                  <b>Yay! You have seen it all</b>
-                </p>
-              }
-              scrollableTarget="scrollableUl"
-            >
-              {proposals.map((proposal) => (
-                <Proposal
-                  key={proposal.uuid}
-                  proposal={proposal}
-                  packet={packet}
-                  votingInfo={votingInfoMap[proposal.voteURL || '']}
-                />
-              ))}
-            </InfiniteScroll>
-          </ul>
+      <>
+        <div className="rounded-bl-20px overflow-hidden md:pt-5">
+          <div className="font-[roboto] w-full">
+            <div className="p-4 md:p-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-stretch">
+                {proposals.map((proposal) => (
+                  <div
+                    key={proposal.uuid}
+                    className="h-full bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 hover:border-slate-500/50 transition-all duration-200 hover:scale-[1.02]"
+                  >
+                    <Proposal
+                      proposal={proposal}
+                      packet={packet}
+                      votingInfo={votingInfoMap[proposal.voteURL || '']}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+        
+        {/* Pagination Controls */}
+        {maxPage > 1 && (
+          <div className="mt-8">
+            <PaginationButtons
+              handlePageChange={handlePageChange}
+              maxPage={maxPage}
+              pageIdx={pageIdx}
+              label="Page"
+            />
+          </div>
+        )}
+      </>
     )
   }
 }

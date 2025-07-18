@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@layerzerolabs/lz-evm-messagelib-v2": "^3.0.61",
+    "@layerzerolabs/lz-evm-oapp-v2": "^3.0.99",
     "@layerzerolabs/lz-evm-protocol-v2": "^3.0.60",
     "@layerzerolabs/lz-sdk": "^0.0.87",
     "@layerzerolabs/lz-v2-utilities": "^3.0.61",
@@ -8,8 +9,8 @@
     "@openzeppelin/contracts": "^5.0.2",
     "@openzeppelin/contracts-upgradeable": "^5.0.2",
     "@tableland/evm": "^6.1.0",
-    "solidity-bytes-utils": "^0.8.2",
     "dotenv": "^16.4.7",
+    "solidity-bytes-utils": "^0.8.2",
     "thirdweb": "^5.86.2"
   },
   "devDependencies": {

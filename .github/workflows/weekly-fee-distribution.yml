@@ -1,0 +1,51 @@
+name: Weekly Fee Distribution
+
+on:
+  schedule:
+    # Run at 1pm Pacific Time every Thursday (21:00 UTC)
+    - cron: '0 21 * * 4'
+  workflow_dispatch:
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  distribute:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore Git cache
+        uses: actions/cache@v3
+        with:
+          path: .git
+          key: key-${{ runner.os }}-git-${{ hashFiles('.gitmodules') }}
+          restore-keys: |
+            key-${{ runner.os }}-git-
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Run apply_patch.sh
+        run: |
+          chmod +x ./fee-hook/apply_patch.sh
+          ./fee-hook/apply_patch.sh
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      - name: Install npm dependencies
+        run: |
+          cd fee-hook && npm install --legacy-peer-deps
+      - name: Build contracts
+        run: |
+          cd fee-hook && forge build --sizes --via-ir --optimize --optimizer-runs 200
+      - name: Distribute fees
+        env:
+          PRIVATE_KEY: ${{ secrets.OPERATOR_PRIVATE_KEY }}
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+        run: |
+          cd fee-hook
+          # sepolia, mainnet, arbitrum, and polygon
+          CHAINS=(11155111 1 42161 137)
+          for CHAIN in "${CHAINS[@]}"; do
+            forge script script/DistributeFees.s.sol --rpc-url "https://${CHAIN}.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }}" --broadcast --via-ir -vvvv || true
+          done

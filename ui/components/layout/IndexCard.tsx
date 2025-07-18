@@ -41,21 +41,15 @@ export default function IndexCard({
   const cardContent = (
     <span
       id="index-card-container"
-      className="animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full"
+      className="group animate-fadeIn flex flex-col relative bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-full h-full"
     >
-      <div
-        id="index-card-styling"
-        className="bg-darkest-cool rounded-[20px] w-[30%] h-[30%] absolute top-0 left-0 pb-5"
-      ></div>
       <span
         id="index-content-container"
-        className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-x-[3px] border-darkest-cool"
+        className="h-full p-[20px] md:pb-10 2xl:p-[24px] 3xl:p-[28px] rounded-2xl overflow-hidden flex flex-col justify-between min-h-[200px] md:min-h-[240px] 2xl:min-h-[280px] 3xl:min-h-[320px]"
       >
         <span
           id="index-content"
-          className={`animate-fadeIn relative z-50 flex flex-col items-center ${
-            isLoadingRoute && 'animate-pulse'
-          }`}
+          className="animate-fadeIn relative z-50 flex flex-col items-center"
         >
           {icon || iconAlt ? (
             <Image
@@ -64,27 +58,28 @@ export default function IndexCard({
               alt={iconAlt || ''}
               width="250"
               height="250"
-              className="z-20 w-[100px] h-[100px] pb-5"
+              className="z-20 w-[60px] h-[60px] md:w-[100px] md:h-[100px] 2xl:w-[120px] 2xl:h-[120px] 3xl:w-[140px] 3xl:h-[140px] pb-3 md:pb-5 2xl:pb-6 3xl:pb-7"
             />
           ) : (
             <></>
           )}
           <h2
             id="index-main-header"
-            className="z-20 pt-[20px] mb-5 static-sub-header font-GoodTimes text-center justify-center md:justify-start"
+            className="z-20 pt-[20px] 2xl:pt-[24px] 3xl:pt-[28px] mb-3 md:mb-5 2xl:mb-6 3xl:mb-7 static-sub-header font-GoodTimes text-center text-lg md:text-xl 2xl:text-2xl 3xl:text-3xl"
           >
             {header && header}
             {metadata?.name}
           </h2>
           <div
             id="index-description-and-id-container"
-            className="relative z-50 flex justify-center w-full"
+            className="relative z-50 flex justify-start w-full"
           >
             <div
               id="index-description-and-id"
-              className="description text-left "
+              className="description text-left relative z-50 w-full opacity-100 !opacity-100"
+              style={{ opacity: '1 !important' }}
             >
-              <div className="flex opacity-[70%]">{paragraph}</div>
+              <div className="flex justify-center text-center text-sm md:text-base 2xl:text-lg 3xl:text-xl">{paragraph}</div>
               {metadata?.id && (
                 <div id="index-details-container" className="mt-4">
                   <p id="index-org-description">
@@ -100,9 +95,9 @@ export default function IndexCard({
                 </div>
               )}
               {hovertext && metadata?.name && (
-                <span
-                  id="index-mobile-button-container"
-                  className="md:hidden flex pt-5 pb-5 justify-start w-full"
+                <div
+                  id="index-hovertext-always-container"
+                  className="mt-5 flex justify-start w-full relative z-50"
                 >
                   <StandardButton
                     textColor="text-white"
@@ -114,19 +109,9 @@ export default function IndexCard({
                   >
                     {hovertext}
                   </StandardButton>
-                </span>
+                </div>
               )}
             </div>
-            {hovertext && (
-              <span
-                id="index-hovertext-container"
-                className="hovertext absolute left-0 bottom-[-320px] ml-[-20px] w-[calc(100%+80px)] h-[calc(100%+300px)] p-[20px] text-lg text-white md:text-darkest-cool hovertext-bg flex justify-center z-50"
-              >
-                <span id="hovertext" className="hidden md:block">
-                  {hovertext}
-                </span>
-              </span>
-            )}
           </div>
         </span>
       </span>
@@ -136,12 +121,8 @@ export default function IndexCard({
   return (
     <span
       id="index-link-frame"
-      className="card-container h-full mb-5 z-30 w-full flex lg:flex-col rounded-[20px] relative overflow-hidden"
+      className="card-container at-a-glance-card h-full mb-5 z-30 w-full flex lg:flex-col rounded-2xl relative overflow-hidden transition-all hover:ring-2 hover:ring-white/50 hover:scale-[1.02]"
     >
-      <span
-        id="index-Interactive-Element"
-        className="clip absolute h-full w-full z-10 transition-transform transform hover:scale-110"
-      ></span>
       {link || onClick ? (
         <button
           id="index-card-link"

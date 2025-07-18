@@ -1,11 +1,11 @@
-import { arbitrum, sepolia, arbitrumSepolia } from 'thirdweb/chains'
+import { arbitrum, sepolia, arbitrumSepolia } from '../lib/infura/infuraChains'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 export const DEPLOYED_ORIGIN =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? 'https://moondao.com'
-    : 'https://moondao-ce-demo.netlify.app'
+    : 'https://moondao-git-ng-safe-send-moondao.vercel.app'
 
 interface DeploymentConfig {
   MOONEYToken: string
@@ -14,6 +14,9 @@ interface DeploymentConfig {
   Marketplace?: string
   MarketplaceFeeSplit?: string
   VotingEscrowDepositor: string
+  MoonDAOTeam: string
+  FeeHook: string
+  MissionCreator: string
 }
 
 type Index = { [key: string]: string }
@@ -143,6 +146,12 @@ export const PROJECT_TABLE_ADDRESSES: Index = {
   'arbitrum-sepolia': '0x51a5cA8966cA71ac0A0D58DbeF2ec6a932e1490E',
 }
 
+export const PROJECT_TABLE_NAMES: Index = {
+  arbitrum: 'PROJECT_42161_122',
+  sepolia: 'PROJECT_11155111_1888',
+  'arbitrum-sepolia': 'PROJECT_421614_1060',
+}
+
 export const COMPETITOR_TABLE_ADDRESSES: Index = {
   sepolia: '0x9057Fff69e8b016a214C4f894430F71dad50b42c',
   'arbitrum-sepolia': '0x18200Aec1FE277bbA7cA3cBfecF822F099807fFd',
@@ -152,12 +161,24 @@ export const DISTRIBUTION_TABLE_ADDRESSES: Index = {
   sepolia: '0x5217A95F335cd026c877Eb5C1B0Ae6C82945178D',
   'arbitrum-sepolia': '0x9f0496702Df4889C17b7c6Ef88c74ee0dF14998e',
 }
+export const DISTRIBUTION_TABLE_NAMES: Index = {
+  arbitrum: 'DISTRIBUTION_42161_104',
+  sepolia: 'DISTRIBUTION_11155111_1875',
+  'arbitrum-sepolia': 'DISTRIBUTION_421614_1062',
+}
 export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.VotingEscrowDepositor,
   sepolia: sepoliaConfig.VotingEscrowDepositor,
 }
 export const VMOONEY_FAUCET_ADDRESSES: Index = {
   arbitrum: '0xE632A675C305F0aF36b1514e924BE99DC1AB9884',
+}
+
+export const FEE_HOOK_ADDRESSES: Index = {
+  sepolia: sepoliaConfig.FeeHook,
+  'arbitrum-sepolia': arbitrumSepoliaConfig.FeeHook,
+  arbitrum: arbitrumConfig.FeeHook,
+  base: baseConfig.FeeHook,
 }
 
 export const REVNET_ADDRESSES: Index = {
@@ -185,8 +206,8 @@ export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
 }
 
 export const TEAM_ADDRESSES: Index = {
-  arbitrum: '0xAB2C354eC32880C143e87418f80ACc06334Ff55F',
-  sepolia: '0x21d2C4bEBd1AEb830277F8548Ae30F505551f961',
+  arbitrum: arbitrumConfig.MoonDAOTeam,
+  sepolia: sepoliaConfig.MoonDAOTeam,
 }
 
 export const TEAM_CREATOR_ADDRESSES: Index = {
@@ -214,30 +235,41 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 }
 
 export const MISSION_TABLE_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0x71401c03ca50B08871A14e4eFD5FC4E6c0a46b31',
+  arbitrum: '0x25c895c552Ca2db6f3675ac734fB9B0f21dffE8d',
+  sepolia: '0x22ef6f5a06F86C56DB9990e861A34cc35ecF8E1B',
+}
+
+export const MISSION_TABLE_NAMES: Index = {
+  arbitrum: 'MISSIONTABLE_42161_144',
+  sepolia: 'MISSIONTABLE_11155111_1960',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0x0823Bb6c35EdA0a55A9F3e8358A64cc554963AD5',
+  arbitrum: arbitrumConfig.MissionCreator,
+  sepolia: sepoliaConfig.MissionCreator,
 }
 
 export const JBV4_CONTROLLER_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0xb291844F213047Eb9e1621AE555B1Eae6700d553',
+  arbitrum: '0xD1c436Eb62e1d23e66842701B09E3d65aA8522E8',
+  sepolia: '0xD1c436Eb62e1d23e66842701B09E3d65aA8522E8',
 }
 export const JBV4_TOKENS_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0xa59e9f424901fb9dbd8913a9a32a081f9425bf36',
   sepolia: '0xA59e9F424901fB9DBD8913a9A32A081F9425bf36',
 }
 export const JBV4_DIRECTORY_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0x0bc9f153dee4d3d474ce0903775b9b2aaae9aa41',
   sepolia: '0x0bC9F153DEe4d3D474ce0903775b9b2AAae9AA41',
 }
 export const JB_NATIVE_TOKEN_ADDRESS =
   '0x000000000000000000000000000000000000EEEe'
 
+export const JB_NATIVE_TOKEN_ID = 61166
+
+export const JBV4_TERMINAL_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xdb9644369c79c3633cde70d2df50d827d7dc7dbc',
+}
 //Citzens & Teams Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
 //Citizens & Teams Arbitrum Hat Tree : https://app.hatsprotocol.xyz/trees/42161/42
 export const MOONDAO_HAT_TREE_IDS: Index = {
@@ -294,7 +326,8 @@ export const ORACLE_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
 
 export const OPERATOR_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
 
-export const MOONDAO_TREASURY: string = '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
+export const MOONDAO_TREASURY: string =
+  '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
 export const MOONDAO_L2_TREASURY: string =
   '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
 export const DEAD_ADDRESS: string =
@@ -333,10 +366,16 @@ export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
   ethereum: '0xDc07FbCcF7Dd55014C8A2a605C671d01137B4937',
   base: '0xe5709Bc44427DCEF81fF2F718DFc6A032fD23bbF',
 }
+
+// Shared across chains
+export const MISSION_CROSS_CHAIN_PAY_ADDRESS =
+  '0xb55014C350C214aEc6d97D6ab112f1814c30e553'
+
 export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   [key: string]: number
 } = {
   'arbitrum-sepolia': 40161, //sepolia eid
+  'op-sepolia': 40161, //sepolia eid
   base: 30110, //arbitrum eid
   ethereum: 30110, //arbitrum eid
 }
@@ -373,4 +412,9 @@ export const POLYGON_ASSETS_URL =
   'https://safe-client.safe.global/v1/chains/137/safes/0x8C0252c3232A2c7379DDC2E44214697ae8fF097a/balances/usd?trusted=true'
 export const BASE_ASSETS_URL =
   'https://safe-client.safe.global/v1/chains/8453/safes/0x871e232Eb935E54Eb90B812cf6fe0934D45e7354/balances/usd?trusted=true'
-export const STAKED_ETH_ADDRESS = "0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8";
+export const STAKED_ETH_ADDRESS = '0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8'
+
+export const MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    ? 'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-arb/version/latest'
+    : 'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-sepolia/version/latest'

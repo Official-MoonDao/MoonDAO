@@ -1,9 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
-import { MediaRenderer } from 'thirdweb/react'
-import client from '@/lib/thirdweb/client'
 import StandardButton from '../layout/StandardButton'
+import IPFSRenderer from './IPFSRenderer'
 
 type StandardWideCardProps = {
   header?: string
@@ -15,6 +14,7 @@ type StandardWideCardProps = {
   orgimage?: string
   subheader?: any
   image?: string
+  secondaryImage?: string
   stats?: any
   profile?: boolean
   footer?: any
@@ -34,6 +34,7 @@ export default function StandardWideCard({
   orgimage,
   subheader,
   image,
+  secondaryImage,
   stats,
   profile = false,
   footer,
@@ -57,57 +58,68 @@ export default function StandardWideCard({
           ></div>
           <span
             id="content-container"
-            className={`h-full p-[32px] rounded-[20px] overflow-hidden flex flex-col justify-between bg-[#14162c]`}
+            className={`h-full md:p-[32px] rounded-[20px] overflow-hidden flex flex-col justify-between bg-[#14162c]`}
           >
             <span
               id="content"
               className={`animate-fadeIn relative z-50 flex flex-col gap-6`}
             >
-              <div className="flex flex-col lg:flex-row gap-4 items-center">
+              <div className="relative flex flex-col lg:flex-row gap-4 items-center">
                 {/* Image section */}
                 {(image || orgimage) && (
-                  <div className="relative w-[200px] h-[200px] rounded-full overflow-hidden bg-gray-300 flex-shrink-0">
-                    {image ? (
-                      typeof image !== 'string' ||
-                      image?.startsWith('blob:') ? (
-                        <Image
-                          className="w-full h-full object-cover"
-                          src={image}
-                          alt="Card image"
-                          width={200}
-                          height={200}
-                        />
+                  <div className="relative w-full h-full md:w-[275px] md:h-[275px] md:mx-8">
+                    <div className="relative w-full h-full md:w-[275px] md:h-[275px] md:rounded-full overflow-hidden bg-gray-300 flex-shrink-0">
+                      {image ? (
+                        typeof image !== 'string' ||
+                        image?.startsWith('blob:') ? (
+                          <Image
+                            className="w-full h-full object-cover"
+                            src={image}
+                            alt={title || ''}
+                            width={200}
+                            height={200}
+                          />
+                        ) : (
+                          <IPFSRenderer
+                            className="w-full h-full object-cover"
+                            src={image}
+                            width={200}
+                            height={200}
+                            alt={title || ''}
+                          />
+                        )
                       ) : (
-                        <MediaRenderer
-                          className="w-full h-full object-cover"
-                          client={client}
-                          src={image}
-                          width="200px"
-                          height="200px"
-                        />
-                      )
-                    ) : (
-                      orgimage && (
-                        <Image
-                          src={orgimage}
-                          alt="Team Image"
-                          width={200}
-                          height={200}
-                          className="w-full h-full object-cover"
-                        />
-                      )
+                        orgimage && (
+                          <Image
+                            src={orgimage}
+                            alt={title || ''}
+                            width={200}
+                            height={200}
+                            className="w-full h-full object-cover"
+                          />
+                        )
+                      )}
+                    </div>
+                    {secondaryImage && (
+                      <Image
+                        src={secondaryImage}
+                        alt={title || ''}
+                        width={250}
+                        height={250}
+                        className="absolute -bottom-12 left-0 md:-bottom-20 md:left-24 rounded-full scale-75 md:scale-50 z-[100]"
+                      />
                     )}
                   </div>
                 )}
 
-                <div className="w-full flex flex-col text-left">
+                <div className="p-[32px] md:p-0 w-full flex flex-col text-left">
                   {/* Title and tagline section */}
                   <div className="flex flex-col gap-2">
                     <h2 className="font-GoodTimes text-2xl text-white">
                       {header || title || (profile && 'Anon')}
                     </h2>
                     {subheader && (
-                      <p className="text-gray-400 text-lg">{subheader}</p>
+                      <div className="text-gray-400 text-lg">{subheader}</div>
                     )}
                   </div>
                   {stats && (

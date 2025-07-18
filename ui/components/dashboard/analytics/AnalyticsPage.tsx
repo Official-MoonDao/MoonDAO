@@ -9,12 +9,11 @@ import BarChart from './BarChart'
 
 function Data({ text, value }: any) {
   return (
-    <div className="justify-left flex w-full flex-col p-2 text-center border border-slate-950 dark:border-white border-opacity-20">
-      <p className=" w-full tracking-wider leading-10  text-lg lg:text-2xl pt-2 uppercase font-RobotoMono opacity-60 title-text-colors block ">
+    <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-center min-h-[120px] transition-all duration-300 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40">
+      <p className="text-white/70 text-sm lg:text-base font-medium uppercase tracking-wider mb-3">
         {text}
       </p>
-
-      <div className="mt-3 mb-2 tracking-widest text-slate flex flex-col justify-center px-4 font-RobotoMono  text-center font-bold leading-10 title-text-colors md:items-center lg:flex-row text-xl lg:text-3xl xl:text-4xl 2xl:text-5xl">
+      <div className="text-white font-bold text-2xl lg:text-3xl xl:text-4xl font-RobotoMono">
         {value.toLocaleString()}
       </div>
     </div>
@@ -61,8 +60,7 @@ export default function AnalyticsPage({ vMooneyData }: any) {
             />
           </div>
         </div>
-        <div
-          className="mt-6 flex flex-col  tems-center gap-5 2xl:grid 2xl:grid-cols-2 2xl:mt-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           <Data
             text={'Total Voting Power'}
             value={Math.round(
@@ -76,11 +74,11 @@ export default function AnalyticsPage({ vMooneyData }: any) {
             ).toLocaleString('en-US')}
           />
           {/*Pie chart*/}
-          <div className="justify-left flex w-full flex-col p-2 pb-4 text-center border border-slate-950 dark:border-white border-opacity-20">
-            <p className=" w-full tracking-wider leading-10  text-lg lg:text-2xl pt-2 uppercase font-RobotoMono opacity-60 title-text-colors block ">
+          <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-center min-h-[120px] transition-all duration-300 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40">
+            <p className="text-white/70 text-sm lg:text-base font-medium uppercase tracking-wider mb-4">
               Percent $MOONEY Locked
             </p>
-            <div className="mt-3">
+            <div className="w-full">
               <AnalyticsProgress value={circulatingMooneyStaked} />
             </div>
           </div>

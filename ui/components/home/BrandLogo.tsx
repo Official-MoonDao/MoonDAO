@@ -11,7 +11,7 @@ export default function BrandLogo({ logo, alt, link }: LogoProps) {
     return (
         <div 
             id="logo-container" 
-            className="w-1/3 md:w-1/4 lg:w-1/5 flex flex-col justify-center mx-5 my-2"
+            className="w-[30%] md:w-1/4 lg:w-1/5 flex flex-col justify-center mx-1 md:mx-5 my-1 md:my-2"
         >
             {link ? (
                 <Link 

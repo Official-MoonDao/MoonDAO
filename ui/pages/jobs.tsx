@@ -11,6 +11,7 @@ import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Head from '../components/layout/Head'
@@ -42,6 +43,8 @@ export default function Jobs({ jobs }: JobsProps) {
     abi: TeamABI as any,
   })
 
+  useChainDefault()
+
   useEffect(() => {
     if (jobs && input != '') {
       setFilteredJobs(
@@ -55,16 +58,15 @@ export default function Jobs({ jobs }: JobsProps) {
   }, [jobs, input])
 
   const descriptionSection = (
-    <div>
-      <Frame
-        bottomLeft="20px"
-        topLeft="5vmax"
-        marginBottom="30px"
-        marginTop="30px"
-        noPadding
-      >
-        <Search input={input} setInput={setInput} />
-      </Frame>
+    <div className="pt-2">
+      <div className="w-fit max-w-[500px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 px-3 py-1">
+        <Search
+          input={input}
+          setInput={setInput}
+          className="w-full flex-grow"
+          placeholder="Search jobs..."
+        />
+      </div>
     </div>
   )
 
@@ -89,9 +91,9 @@ export default function Jobs({ jobs }: JobsProps) {
           isProfile
         >
           {citizen ? (
-            <CardGridContainer>
-              {filteredJobs &&
-                filteredJobs.map((job: JobType, i: number) => (
+            filteredJobs?.[0] ? (
+              <CardGridContainer>
+                {filteredJobs.map((job: JobType, i: number) => (
                   <Job
                     key={`job-${i}`}
                     job={job}
@@ -99,10 +101,15 @@ export default function Jobs({ jobs }: JobsProps) {
                     teamContract={teamContract}
                   />
                 ))}
-            </CardGridContainer>
+              </CardGridContainer>
+            ) : (
+              <div className="mt-4 w-full h-[400px] flex justify-center items-center">
+                <p className="">No jobs found.</p>
+              </div>
+            )
           ) : (
-            <>
-              <p className="">
+            <div className="md:mb-[5vw] 2xl:mb-[2vw]">
+              <p className="p-5 md:p-0">
                 {
                   '⚠️ You must be a Citizen of the Space Acceleration Network to view the job board. If you are already a Citizen, please sign in.'
                 }
@@ -110,7 +117,7 @@ export default function Jobs({ jobs }: JobsProps) {
               <Link href="/citizen" passHref>
                 <CitizenTier setSelectedTier={() => {}} compact />
               </Link>
-            </>
+            </div>
           )}
         </ContentLayout>
       </Container>
@@ -119,46 +126,54 @@ export default function Jobs({ jobs }: JobsProps) {
 }
 
 export async function getStaticProps() {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
+  try {
+    const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
 
-  const now = Math.floor(Date.now() / 1000)
+    const now = Math.floor(Date.now() / 1000)
 
-  const jobTableContract = getContract({
-    client: serverClient,
-    address: JOBS_TABLE_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: JobsABI as any,
-  })
-  const teamContract = getContract({
-    client: serverClient,
-    address: TEAM_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: TeamABI as any,
-  })
-
-  const jobBoardTableName = await readContract({
-    contract: jobTableContract,
-    method: 'getTableName',
-  })
-
-  const statement = `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
-
-  const allJobs = await queryTable(chain, statement)
-
-  const validJobs = allJobs?.filter(async (job: any) => {
-    const teamExpiration = await readContract({
-      contract: teamContract,
-      method: 'expiresAt',
-      params: [job.teamId],
+    const jobTableContract = getContract({
+      client: serverClient,
+      address: JOBS_TABLE_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: JobsABI as any,
     })
-    return +teamExpiration.toString() > now
-  })
+    const teamContract = getContract({
+      client: serverClient,
+      address: TEAM_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: TeamABI as any,
+    })
 
-  return {
-    props: {
-      jobs: validJobs,
-    },
-    revalidate: 60,
+    const jobBoardTableName = await readContract({
+      contract: jobTableContract,
+      method: 'getTableName',
+    })
+
+    const statement = `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
+
+    const allJobs = await queryTable(chain, statement)
+
+    const validJobs = allJobs?.filter(async (job: any) => {
+      const teamExpiration = await readContract({
+        contract: teamContract,
+        method: 'expiresAt',
+        params: [job.teamId],
+      })
+      return +teamExpiration.toString() > now
+    })
+
+    return {
+      props: {
+        jobs: validJobs,
+      },
+      revalidate: 60,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      props: { jobs: [] },
+      revalidate: 60,
+    }
   }
 }

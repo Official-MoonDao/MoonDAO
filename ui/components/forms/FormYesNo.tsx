@@ -25,15 +25,7 @@ export default function FormYesNo({
   return (
     <div id={id} className="w-auto h-full py-1 flex flex-col gap-4">
       <div className="flex flex-row gap-2 items-center">
-        {label && (
-          <p
-            className={`text-sm font-GoodTimes ${
-              mode === 'dark' && 'opacity-50'
-            }`}
-          >
-            {label}
-          </p>
-        )}
+        {label && <p className={`text-sm font-GoodTimes`}>{label}</p>}
         {tooltip && (
           <Tooltip text={tooltip} disabled={disabled}>
             ?

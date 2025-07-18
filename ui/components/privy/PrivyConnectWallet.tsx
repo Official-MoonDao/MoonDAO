@@ -2,6 +2,7 @@ import {
   ArrowDownOnSquareIcon,
   ArrowUpRightIcon,
   ChevronDownIcon,
+  ClipboardDocumentIcon,
   PlusIcon,
   WalletIcon,
   XMarkIcon,
@@ -13,10 +14,11 @@ import {
   useWallets,
 } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
+import { COIN_ICONS } from 'const/icons'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import toast from 'react-hot-toast'
 import {
@@ -30,30 +32,89 @@ import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
-import { useImportToken } from '../../lib/utils/import-token'
+import {
+  ethereum,
+  arbitrum,
+  base,
+  polygon,
+  sepolia,
+  arbitrumSepolia,
+  optimismSepolia,
+} from '@/lib/infura/infuraChains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
-import useContract from '@/lib/thirdweb/hooks/useContract'
-import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import viemChains from '@/lib/viem/viemChains'
-import ERC20 from '../../const/abis/ERC20.json'
-import {
-  CITIZEN_ADDRESSES,
-  DAI_ADDRESSES,
-  MOONEY_ADDRESSES,
-  USDC_ADDRESSES,
-  USDT_ADDRESSES,
-} from '../../const/config'
-import { CopyIcon } from '../assets'
-import FormInput from '../forms/FormInput'
+import { CITIZEN_ADDRESSES } from '../../const/config'
 import Modal from '../layout/Modal'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import NetworkSelector from '../thirdweb/NetworkSelector'
 import { LinkAccounts } from './LinkAccounts'
 import { PrivyWeb3Button } from './PrivyWeb3Button'
 import WalletAction from './WalletAction'
+
+// Custom hook to fetch wallet tokens from our API
+function useWalletTokens(address: string | undefined, chain: string) {
+  const [tokens, setTokens] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchTokens = useCallback(async () => {
+    if (!address) {
+      setTokens([])
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(
+        `/api/etherscan/wallet-tokens?address=${address}&chain=${chain}&offset=50`
+      )
+      const data = await response.json()
+
+      if (data.error) {
+        setError(data.error)
+        setTokens([])
+      } else if (data.result) {
+        // Filter out tokens with zero balance and format the data
+        const formattedTokens = data.result
+          .filter(
+            (token: any) =>
+              token.TokenBalance && parseFloat(token.TokenBalance) > 0
+          )
+          .map((token: any) => ({
+            symbol: token.TokenSymbol || 'Unknown',
+            name: token.TokenName || 'Unknown Token',
+            balance: token.TokenBalance,
+            decimals: parseInt(token.TokenDivisor) || 18,
+            contractAddress: token.TokenAddress,
+            // Format balance to human readable number
+            formattedBalance:
+              parseFloat(token.TokenBalance) /
+              Math.pow(10, parseInt(token.TokenDivisor) || 18),
+          }))
+        setTokens(formattedTokens)
+      } else {
+        setTokens([])
+      }
+    } catch (err) {
+      console.error('Error fetching wallet tokens:', err)
+      setError('Failed to fetch tokens')
+      setTokens([])
+    } finally {
+      setLoading(false)
+    }
+  }, [address, chain])
+
+  useEffect(() => {
+    fetchTokens()
+  }, [fetchTokens])
+
+  return { tokens, loading, error, refetch: fetchTokens }
+}
 
 type PrivyConnectWalletProps = {
   citizenContract?: any
@@ -70,6 +131,7 @@ const selectedNativeToken: any = {
 }
 
 const PATHS_WITH_NO_SIGNIN_REDIRECT = [
+  '/',
   '/submit',
   '/withdraw',
   '/projects',
@@ -86,164 +148,460 @@ const PATHS_WITH_NO_SIGNIN_REDIRECT = [
   '/mission',
   '/mission/[tokenId]',
 ]
-
 function SendModal({
   account,
   selectedChain,
   networkIcon,
-  mooneyContract,
-  daiContract,
-  usdcContract,
-  usdtContract,
   setEnabled,
   nativeBalance,
-  formattedBalances,
+  tokens,
 }: any) {
   const chainSlug = getChainSlug(selectedChain)
-  const [to, setTo] = useState<string>()
-  const [amount, setAmount] = useState<number>()
+  const [to, setTo] = useState<string>('')
+  const [amount, setAmount] = useState<string>('')
   const [selectedToken, setSelectedToken] = useState<string>('native')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const [balance, setBalance] = useState()
+  // Local network state for SendModal
+  const [sendModalChain, setSendModalChain] = useState(selectedChain)
+  const [networkDropdown, setNetworkDropdown] = useState(false)
 
-  const selectedTokenIcon = useMemo(() => {
-    let icon
-    if (selectedToken === 'native') {
-      icon = networkIcon
-    } else {
-      icon = (
-        <Image
-          src={`/coins/${selectedToken.toUpperCase()}.${
-            selectedToken === 'mooney' ? 'png' : 'svg'
-          }`}
-          width={30}
-          height={30}
-          alt=""
-        />
-      )
+  const sendModalChainSlug = getChainSlug(sendModalChain)
+
+  // Available chains for the network selector
+  const availableChains = [
+    ethereum,
+    arbitrum,
+    base,
+    polygon,
+    sepolia,
+    arbitrumSepolia,
+    optimismSepolia,
+  ]
+
+  // Fetch tokens for the selected network in SendModal
+  const {
+    tokens: modalTokens,
+    loading: modalTokensLoading,
+    error: modalTokensError,
+  } = useWalletTokens(account?.address, sendModalChainSlug)
+
+  // Get native balance for selected network
+  const modalNativeBalance =
+    sendModalChain.id === selectedChain.id ? nativeBalance : 0
+
+  // Create a combined list of native + ERC-20 tokens
+  const allTokens = useMemo(() => {
+    const nativeToken = {
+      TokenAddress: 'native',
+      TokenSymbol: selectedNativeToken[sendModalChainSlug],
+      TokenName: 'Native Token',
+      TokenBalance: modalNativeBalance?.toString() || '0',
+      TokenDivisor: '18',
     }
 
-    return icon
-  }, [selectedToken, networkIcon])
+    // Convert walletTokens format to SendModal format
+    const formattedTokens = Array.isArray(modalTokens)
+      ? modalTokens.map((token) => ({
+          TokenAddress: token.contractAddress,
+          TokenSymbol: token.symbol,
+          TokenName: token.name,
+          TokenBalance: token.balance, // This is already the raw balance from API
+          TokenDivisor: token.decimals.toString(),
+        }))
+      : []
 
-  const tokenContracts: { [key: string]: any } = {
-    mooney: mooneyContract,
-    dai: daiContract,
-    usdc: usdcContract,
-    usdt: usdtContract,
-  }
+    return [nativeToken, ...formattedTokens]
+  }, [modalTokens, modalNativeBalance, sendModalChainSlug])
 
+  // Reset selected token when network changes
   useEffect(() => {
-    if (selectedToken === 'native') {
-      setBalance(nativeBalance)
-    } else {
-      setBalance(formattedBalances[selectedToken])
+    setSelectedToken('native')
+    setAmount('')
+  }, [sendModalChain.id])
+
+  // Close network dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Element
+      if (!target.closest('.network-dropdown-container')) {
+        setNetworkDropdown(false)
+      }
     }
-  }, [selectedToken, nativeBalance, formattedBalances])
+
+    if (networkDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [networkDropdown])
+
+  // Get the currently selected token data
+  const selectedTokenData = useMemo(() => {
+    return allTokens.find(
+      (token) =>
+        token.TokenAddress === selectedToken ||
+        (selectedToken === 'native' && token.TokenAddress === 'native')
+    )
+  }, [selectedToken, allTokens])
+
+  // Calculate formatted balance for display
+  // Get the formatted balance for display
+  const formattedBalance = useMemo(() => {
+    if (!selectedTokenData) return 0
+    const balance = selectedTokenData.TokenBalance
+    const decimals = parseInt(selectedTokenData.TokenDivisor)
+
+    // Check if balance is already a decimal number (like "0.3157975")
+    if (balance.includes('.')) {
+      return Number(balance)
+    }
+
+    // Otherwise, it's a raw wei value that needs formatting
+    try {
+      return Number(ethers.utils.formatUnits(balance, decimals))
+    } catch (error) {
+      console.error('Error formatting balance:', error, balance)
+      return 0
+    }
+  }, [selectedTokenData])
+
+  const getTokenIcon = useCallback(
+    (symbol: string) => {
+      if (symbol in COIN_ICONS) {
+        return (
+          <Image
+            src={COIN_ICONS[symbol as keyof typeof COIN_ICONS]}
+            width={24}
+            height={24}
+            alt={symbol}
+            className={symbol === 'MOONEY' ? 'rounded-full' : ''}
+          />
+        )
+      }
+      return (
+        <div className="relative flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full p-1 sm:px-2">
+          <Image
+            src="/assets/icon-star.svg"
+            alt="Token"
+            width={20}
+            height={20}
+            className="bg-orange-500 rounded-full p-1 w-5 h-5"
+          />
+        </div>
+      )
+    },
+    [sendModalChainSlug, networkIcon]
+  )
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      if (!to || !amount) {
+        return toast.error('Please fill in all fields.')
+      } else if (to.length !== 42 || !to.startsWith('0x')) {
+        return toast.error('Invalid address.')
+      } else if (Number(amount) <= 0) {
+        return toast.error('Invalid amount.')
+      }
+
+      if (!selectedTokenData) {
+        return toast.error('Invalid token selected.')
+      }
+
+      const numAmount = Number(amount)
+      if (numAmount > formattedBalance) {
+        return toast.error('Insufficient funds.')
+      }
+
+      const decimals = parseInt(selectedTokenData.TokenDivisor)
+      const formattedAmount = ethers.utils.parseUnits(
+        amount.toString(),
+        decimals
+      )
+
+      let receipt
+      if (selectedToken === 'native') {
+        // Send native token (ETH, MATIC, etc.)
+        receipt = await account?.sendTransaction({
+          to,
+          value: BigInt(formattedAmount.toString()),
+        })
+      } else {
+        // Send ERC-20 token using generic contract interface
+        const contract = getContract({
+          client,
+          address: selectedTokenData.TokenAddress,
+          chain: sendModalChain,
+          abi: [
+            {
+              name: 'transfer',
+              type: 'function',
+              stateMutability: 'nonpayable',
+              inputs: [
+                { name: 'to', type: 'address' },
+                { name: 'amount', type: 'uint256' },
+              ],
+              outputs: [{ name: '', type: 'bool' }],
+            },
+          ],
+        })
+
+        const transaction = prepareContractCall({
+          contract,
+          method: 'transfer',
+          params: [to, BigInt(formattedAmount.toString())],
+        })
+
+        receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+      }
+
+      if (receipt) {
+        toast.success('Transaction sent successfully!')
+        setTo('')
+        setAmount('')
+        setEnabled(false)
+      }
+    } catch (err: any) {
+      console.error('Transaction error:', err)
+      toast.error(err?.message || 'Transaction failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <Modal id="send-modal-backdrop" setEnabled={setEnabled}>
-      <form
-        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-4 md:p-8 bg-[#080C20] rounded-md"
-        onSubmit={async (e) => {
-          e.preventDefault()
-
-          if (!to || !amount) {
-            return toast.error('Please fill in all fields')
-          } else if (to.length !== 42 || !to.startsWith('0x')) {
-            return toast.error('Invalid address')
-          } else if (amount <= 0) {
-            return toast.error('Invalid amount')
-          }
-
-          const formattedAmount = ethers.utils.parseEther(amount.toString())
-
-          try {
-            let receipt
-            if (selectedToken === 'native') {
-              if (+amount > nativeBalance)
-                return toast.error('Insufficient funds')
-
-              receipt = await account?.sendTransaction({
-                to,
-                value: formattedAmount,
-              })
-            } else {
-              if (+amount > formattedBalances[selectedToken])
-                return toast.error('Insufficient funds')
-
-              const transaction = prepareContractCall({
-                contract: tokenContracts[selectedToken],
-                method: 'transfer' as string,
-                params: [to, formattedAmount],
-              })
-
-              receipt = await sendAndConfirmTransaction({
-                transaction,
-                account,
-              })
-            }
-            if (receipt) {
-              toast.success('Your funds have been transferred')
-            }
-          } catch (err) {
-            console.log(err)
-          }
-        }}
-      >
-        <div className="w-full flex items-center justify-between">
-          <div>
-            <h2 className="font-GoodTimes">{'Send Funds'}</h2>
+      <div className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+              <ArrowUpRightIcon className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-white">Send Funds</h2>
+              <p className="text-gray-300 text-sm">{selectedChain.name}</p>
+            </div>
           </div>
           <button
             type="button"
-            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200"
             onClick={() => setEnabled(false)}
           >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+            <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
           </button>
         </div>
 
-        <NetworkSelector iconsOnly />
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Network Selection */}
+          <div className="space-y-3 network-dropdown-container">
+            <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+              Network
+            </label>
+            <div className="relative">
+              <div
+                className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white cursor-pointer hover:bg-black/30 hover:border-white/20 transition-all duration-200 flex items-center justify-between"
+                onClick={() => setNetworkDropdown(!networkDropdown)}
+              >
+                <div className="flex items-center space-x-3">
+                  <Image
+                    src={`/icons/networks/${sendModalChainSlug}.svg`}
+                    width={20}
+                    height={20}
+                    alt={sendModalChain.name || 'Network'}
+                    className="object-contain"
+                  />
+                  <span className="font-medium">
+                    {sendModalChain.name || 'Unknown Network'}
+                  </span>
+                </div>
+                <ChevronDownIcon
+                  className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                    networkDropdown ? 'rotate-180' : ''
+                  }`}
+                />
+              </div>
 
-        <div className="flex gap-4 items-center">
-          <select
-            className="`w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-            onChange={({ target }) => setSelectedToken(target.value)}
+              {networkDropdown && (
+                <div className="absolute top-full mt-2 w-full bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl z-[10000] max-h-48 overflow-y-auto">
+                  {availableChains.map((chain) => (
+                    <button
+                      key={chain.id}
+                      type="button"
+                      className="w-full flex items-center space-x-3 p-3 hover:bg-white/10 transition-colors duration-200 text-left first:rounded-t-lg last:rounded-b-lg"
+                      onClick={() => {
+                        setSendModalChain(chain)
+                        setNetworkDropdown(false)
+                      }}
+                    >
+                      <Image
+                        src={`/icons/networks/${getChainSlug(chain)}.svg`}
+                        width={20}
+                        height={20}
+                        alt={chain.name || 'Chain'}
+                        className="object-contain"
+                      />
+                      <span className="font-medium text-white">
+                        {chain.name || 'Unknown Network'}
+                      </span>
+                      {chain.id === sendModalChain.id && (
+                        <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Token Selection */}
+          <div className="space-y-3">
+            <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+              Select Token
+            </label>
+            <div className="relative">
+              <select
+                className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white appearance-none cursor-pointer hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                value={selectedToken}
+                onChange={({ target }) => setSelectedToken(target.value)}
+              >
+                {allTokens.map((token) => (
+                  <option key={token.TokenAddress} value={token.TokenAddress}>
+                    {token.TokenSymbol}
+                    {token.TokenAddress !== 'native' &&
+                      ` (${token.TokenAddress.slice(
+                        0,
+                        6
+                      )}...${token.TokenAddress.slice(-4)})`}
+                  </option>
+                ))}
+              </select>
+              <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+            </div>
+
+            {/* Loading state for tokens */}
+            {modalTokensLoading && (
+              <div className="bg-black/10 rounded-lg p-3 border border-white/5">
+                <div className="flex items-center justify-center space-x-2 text-gray-400">
+                  <div className="w-4 h-4 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></div>
+                  <span className="text-sm">
+                    Loading tokens for{' '}
+                    {sendModalChain.name || 'selected network'}...
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Error state for tokens */}
+            {modalTokensError && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                <p className="text-red-400 text-sm">{modalTokensError}</p>
+              </div>
+            )}
+
+            {/* Selected Token Display */}
+            {selectedTokenData && (
+              <div className="bg-black/20 rounded-lg p-4 border border-white/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center">
+                      {getTokenIcon(selectedTokenData.TokenSymbol)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-white">
+                        {selectedTokenData.TokenSymbol}
+                      </p>
+                      <p className="text-gray-400 text-xs">
+                        {selectedTokenData.TokenName}
+                        {selectedTokenData.TokenAddress !== 'native' && (
+                          <span className="block font-mono text-xs">
+                            {selectedTokenData.TokenAddress.slice(0, 6)}...
+                            {selectedTokenData.TokenAddress.slice(-4)}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-white">
+                      {formattedBalance.toLocaleString(undefined, {
+                        maximumFractionDigits: 6,
+                      })}
+                    </p>
+                    <p className="text-gray-400 text-xs">Available</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Recipient Address */}
+          <div className="space-y-3">
+            <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+              Recipient Address
+            </label>
+            <input
+              type="text"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              placeholder="0x..."
+              className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+            />
+          </div>
+
+          {/* Amount */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+                Amount
+              </label>
+              <button
+                type="button"
+                className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
+                onClick={() => setAmount(formattedBalance.toString())}
+              >
+                Max:{' '}
+                {formattedBalance.toLocaleString(undefined, {
+                  maximumFractionDigits: 6,
+                })}
+              </button>
+            </div>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.0"
+              step="any"
+              min="0"
+              className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+            />
+          </div>
+
+          {/* Send Button */}
+          <button
+            type="submit"
+            disabled={isLoading || !to || !amount || Number(amount) <= 0}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50"
           >
-            <option value={'native'}>{selectedNativeToken[chainSlug]}</option>
-            <option value={'mooney'}>{'MOONEY'}</option>
-            <option value={'dai'}>{'DAI'}</option>
-            <option value={'usdc'}>{'USDC'}</option>
-            <option value={'usdt'}>{'USDT'}</option>
-          </select>
-
-          {selectedTokenIcon}
-
-          <p>{balance && balance}</p>
-        </div>
-
-        <FormInput
-          value={to}
-          onChange={({ target }: any) => setTo(target.value)}
-          placeholder="To"
-        />
-        <FormInput
-          value={amount}
-          onChange={({ target }: any) => setAmount(target.value)}
-          placeholder="Amount"
-        />
-        <PrivyWeb3Button
-          className="w-full"
-          label="Send"
-          type="submit"
-          action={() => {}}
-        />
-      </form>
+            {isLoading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Sending...</span>
+              </div>
+            ) : (
+              'Send Transaction'
+            )}
+          </button>
+        </form>
+      </div>
     </Modal>
   )
 }
-
 // Create a Portal component
 function Portal({ children }: { children: React.ReactNode }) {
   if (typeof document === 'undefined') return null // SSR check
@@ -315,109 +673,78 @@ export function PrivyConnectWallet({
 
   const [enabled, setEnabled] = useState(false)
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
-
-  const mooneyContract = useContract({
-    address: MOONEY_ADDRESSES[chainSlug],
-    chain: selectedChain,
-    abi: ERC20 as any,
-  })
-
-  const daiContract = useContract({
-    address: DAI_ADDRESSES[chainSlug],
-    chain: selectedChain,
-    abi: ERC20 as any,
-  })
-
-  const usdcContract = useContract({
-    address: USDC_ADDRESSES[chainSlug],
-    chain: selectedChain,
-    abi: ERC20 as any,
-  })
-
-  const usdtContract = useContract({
-    address: USDT_ADDRESSES[chainSlug],
-    chain: selectedChain,
-    abi: ERC20 as any,
-  })
+  const [previousChain, setPreviousChain] = useState(selectedChain)
 
   const nativeBalance = useNativeBalance()
 
-  const [formattedBalances, setFormattedBalances] = useState({
-    mooney: 0,
-    dai: 0,
-    usdc: 0,
-    usdt: 0,
-  })
+  // Fetch wallet tokens using our new API
+  const {
+    tokens: walletTokens,
+    loading: tokensLoading,
+    error: tokensError,
+  } = useWalletTokens(address, chainSlug)
 
-  const mooneyBalance = useWatchTokenBalance(MOONEY_ADDRESSES[chainSlug], 18)
-  const daiBalance = useWatchTokenBalance(DAI_ADDRESSES[chainSlug], 18)
-  const usdcBalance = useWatchTokenBalance(USDC_ADDRESSES[chainSlug], 6)
-  const usdtBalance = useWatchTokenBalance(USDT_ADDRESSES[chainSlug], 6)
+  // Helper function to get token icon
+  const getTokenIcon = (symbol: string, contractAddress: string) => {
+    const symbolLower = symbol.toLowerCase()
 
-  useEffect(() => {
-    if (mooneyBalance >= 0)
-      setFormattedBalances((prev) => ({
-        ...prev,
-        mooney: Number(mooneyBalance?.toFixed(2)),
-      }))
-  }, [mooneyBalance])
-  useEffect(() => {
-    if (daiBalance)
-      setFormattedBalances((prev) => ({
-        ...prev,
-        dai: Number(daiBalance.toFixed(2)),
-      }))
-  }, [daiBalance])
-  useEffect(() => {
-    if (usdcBalance)
-      setFormattedBalances((prev) => ({
-        ...prev,
-        usdc: Number(usdcBalance.toFixed(2)),
-      }))
-  }, [usdcBalance])
-  useEffect(() => {
-    if (usdtBalance)
-      setFormattedBalances((prev) => ({
-        ...prev,
-        usdt: Number(usdtBalance.toFixed(2)),
-      }))
-  }, [usdtBalance])
+    // Check for known tokens first
+    if (symbolLower === 'mooney') {
+      return (
+        <Image
+          src="/coins/MOONEY.png"
+          width={24}
+          height={24}
+          alt={symbol}
+          className="rounded-full"
+        />
+      )
+    }
+    if (symbolLower === 'dai') {
+      return <Image src="/coins/DAI.svg" width={24} height={24} alt={symbol} />
+    }
+    if (symbolLower === 'usdc') {
+      return <Image src="/coins/USDC.svg" width={24} height={24} alt={symbol} />
+    }
+    if (symbolLower === 'usdt') {
+      return <Image src="/coins/USDT.svg" width={24} height={24} alt={symbol} />
+    }
 
-  const importToken = useImportToken(selectedChain)
+    // Fallback to a generic token icon or first letter
+    return (
+      <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+        {symbol.charAt(0).toUpperCase()}
+      </div>
+    )
+  }
 
   function NetworkIcon() {
     return (
-      <Image
-        src={`/icons/networks/${chainSlug}.svg`}
-        width={chainSlug === 'ethereum' || chainSlug === 'sepolia' ? 25 : 30}
-        height={chainSlug === 'ethereum' || chainSlug === 'sepolia' ? 25 : 30}
-        alt="Network Icon"
-      />
+      <div className="w-6 h-6 flex items-center justify-center">
+        <Image
+          src={`/icons/networks/${chainSlug}.svg`}
+          width={20}
+          height={20}
+          alt="Network Icon"
+          className="object-contain"
+        />
+      </div>
     )
   }
 
   function NativeTokenIcon() {
     return (
-      <Image
-        src={`/icons/networks/${
-          chainSlug === 'polygon' ? 'polygon' : 'ethereum'
-        }.svg`}
-        width={
-          chainSlug === 'ethereum' ||
-          chainSlug === 'arbitrum' ||
-          chainSlug === 'sepolia'
-            ? 25
-            : 30
-        }
-        height={
-          chainSlug === 'ethereum' ||
-          chainSlug === 'arbitrum' ||
-          chainSlug === 'sepolia'
-            ? 25
-            : 30
-        }
-        alt="Native Token Icon"
-      />
+      <div className="w-6 h-6 flex items-center justify-center">
+        <Image
+          src={`/icons/networks/${
+            chainSlug === 'polygon' ? 'polygon' : 'ethereum'
+          }.svg`}
+          width={20}
+          height={20}
+          alt="Native Token Icon"
+          className="object-contain"
+        />
+      </div>
     )
   }
 
@@ -428,9 +755,30 @@ export function PrivyConnectWallet({
   }, [wallets, selectedWallet])
 
   useEffect(() => {
-    if (walletChainId !== selectedChain.id) setNetworkMismatch(true)
-    else setNetworkMismatch(false)
-  }, [walletChainId, selectedChain, selectedWallet])
+    const wallet = wallets[selectedWallet]
+    const isAutoSwitchWallet =
+      wallet?.walletClientType === 'coinbase_wallet' ||
+      wallet?.walletClientType === 'privy'
+
+    if (walletChainId !== selectedChain.id) {
+      if (isAutoSwitchWallet) {
+        // Add delay for auto-switching wallets to prevent flashing
+        const timeout = setTimeout(() => {
+          const currentWalletChainId =
+            +wallets?.[selectedWallet]?.chainId?.split(':')[1]
+          if (currentWalletChainId !== selectedChain.id) {
+            setNetworkMismatch(true)
+          }
+        }, 1000)
+        return () => clearTimeout(timeout)
+      } else {
+        setNetworkMismatch(true)
+      }
+    } else {
+      setNetworkMismatch(false)
+      setPreviousChain(selectedChain)
+    }
+  }, [walletChainId, selectedChain, selectedWallet, wallets])
 
   //detect outside click
   function handleClickOutside({ target }: any) {
@@ -439,7 +787,8 @@ export function PrivyConnectWallet({
       target.closest('#privy-connect-wallet') ||
       target.closest('#privy-modal-content') ||
       target.closest('#headlessui-dialog-panel') ||
-      target.closest('#send-modal-backdrop')
+      target.closest('#send-modal-backdrop') ||
+      target.closest('#network-selector')
     )
       return
     setEnabled(false)
@@ -451,50 +800,13 @@ export function PrivyConnectWallet({
     }
   }, [enabled])
 
-  function getDropdownPosition() {
-    const walletButton = document.getElementById('privy-connect-wallet')
-    if (!walletButton) return { left: '0px', top: '0px' }
-
-    const rect = walletButton.getBoundingClientRect()
-    return {
-      left: rect.left + 'px',
-      top: rect.bottom + 8 + 'px',
-    }
-  }
-
-  const [dropdownPosition, setDropdownPosition] = useState({
-    left: '0px',
-    top: '0px',
-  })
-
-  // Update position when enabled changes or on window resize
-  useEffect(() => {
-    if (!enabled) return
-
-    // Set initial position
-    setDropdownPosition(getDropdownPosition())
-
-    // Update position on window resize
-    const handleResize = () => {
-      setDropdownPosition(getDropdownPosition())
-    }
-
-    window.addEventListener('resize', handleResize)
-    window.addEventListener('scroll', handleResize)
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      window.removeEventListener('scroll', handleResize)
-    }
-  }, [enabled])
-
   return (
     <>
       {user && wallets?.[0] ? (
         <div className="w-full">
           <div
             id="privy-connect-wallet"
-            className={`cursor-pointer flex-wrap md:w-[175px] md:full relative flex flex-col items-right justify-center pl-5 pr-5 py-2 md:hover:pl-[25px] gradient-2 font-RobotoMono z-[10] rounded-[2vmax] rounded-tl-[10px] duration-300`}
+            className="cursor-pointer flex-wrap md:w-[175px] md:full relative flex flex-col items-right justify-center pl-5 pr-5 py-2 md:hover:pl-[25px] bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-lato z-[10] rounded-[2vmax] rounded-tl-[10px] duration-300 shadow-lg hover:shadow-xl transition-all"
             onClick={(e: any) => {
               setEnabled(!enabled)
             }}
@@ -514,14 +826,17 @@ export function PrivyConnectWallet({
                 }`}
               />
             </div>
-            {/*Menu that opens up*/}
           </div>
-          {enabled && (
-            <Portal>
+
+          {/* Portal dropdown to avoid clipping */}
+          {enabled &&
+            createPortal(
               <div
                 id="privy-connect-wallet-dropdown"
-                className="w-[260px] lg:w-[270px] fixed text-sm font-RobotoMono rounded-tr-[20px] rounded-br-[2vmax] animate-fadeIn p-2 flex flex-col gradient-14 text-white divide-y-2 divide-[#FFFFFF14] gap-2 z-[3000] lg:max-h-[70%] overflow-y-scroll"
-                style={dropdownPosition}
+                className="fixed top-20 right-4 w-[340px] text-sm font-RobotoMono rounded-2xl animate-fadeIn p-4 md:p-6 flex flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white z-[9999] max-h-[80vh] overflow-y-auto scrollbar-hide"
+                style={{
+                  backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                }}
               >
                 {sendModalEnabled && (
                   <SendModal
@@ -529,232 +844,357 @@ export function PrivyConnectWallet({
                     selectedChain={selectedChain}
                     setEnabled={setSendModalEnabled}
                     networkIcon={<NetworkIcon />}
-                    mooneyContract={mooneyContract}
-                    daiContract={daiContract}
-                    usdcContract={usdcContract}
-                    usdtContract={usdtContract}
                     nativeBalance={nativeBalance}
-                    formattedBalances={formattedBalances}
+                    tokens={walletTokens}
                   />
                 )}
-                <div className={`w-full flex items-center justify-between`}>
-                  <div className="flex items-center justify-center gap-4">
-                    <div className="w-[50px]">
-                      <NetworkSelector iconsOnly />
-                    </div>
-                    {type === 'mobile' && (
-                      <div className="pt-2">
-                        <CitizenProfileLink />
+
+                {/* Header Section */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                        <WalletIcon className="w-5 h-5 text-white" />
                       </div>
-                    )}
+                      <div>
+                        <h3 className="font-semibold text-lg text-white">
+                          Wallet
+                        </h3>
+                        <p className="text-gray-300 text-xs">
+                          {selectedChain.name}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <XMarkIcon
-                    className="w-6 h-6 text-black dark:text-white cursor-pointer"
+                  <button
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200"
                     onClick={() => setEnabled(false)}
-                  />
+                  >
+                    <XMarkIcon className="w-5 h-5 text-gray-300 hover:text-white" />
+                  </button>
                 </div>
-                <div className="relative mt-2">
-                  <div className="w-full mt-2 flex items-center">
-                    <div className="ml-2 bg-dark-cool">
-                      <p className="text-sm">{`${address?.slice(
-                        0,
-                        6
-                      )}...${address?.slice(-4)}`}</p>
+
+                {/* Address Section */}
+                <div className="bg-black/20 rounded-xl p-4 mb-6 border border-white/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
+                        <div className="w-3 h-3 bg-white rounded-full"></div>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">
+                          Address
+                        </p>
+                        <p className="text-white font-mono text-sm">
+                          {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                        </p>
+                      </div>
                     </div>
                     <button
-                      className="ml-4"
+                      className="p-2 hover:bg-white/10 rounded-lg transition-colors duration-200 group"
                       onClick={() => {
                         navigator.clipboard.writeText(address || '')
-                        toast.success('Address copied to clipboard')
+                        toast.success('Address copied to clipboard.')
                       }}
                     >
-                      <CopyIcon />
+                      <ClipboardDocumentIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
                     </button>
                   </div>
                 </div>
                 {networkMistmatch ? (
-                  <div>
-                    <button
-                      className="w-full mt-4 p-2 border hover:scale-105 transition-all duration-150 hover:border-light-warm hover:text-light-warm rounded-lg"
-                      onClick={() => {
-                        wallets[selectedWallet].switchChain(selectedChain.id)
-                      }}
-                    >
-                      {`Switch to ${selectedChain.name}`}
-                    </button>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <p className="text-red-400 font-medium">
+                          Network Mismatch
+                        </p>
+                      </div>
+                      <button
+                        className="p-1 hover:bg-red-500/20 rounded-full transition-colors duration-200 group"
+                        onClick={() => {
+                          // Revert to previous chain
+                          setSelectedChain(previousChain)
+                          setNetworkMismatch(false)
+                        }}
+                      >
+                        <XMarkIcon className="w-4 h-4 text-red-400 group-hover:text-red-300 transition-colors" />
+                      </button>
+                    </div>
+                    <p className="text-gray-300 text-sm mb-4">
+                      Your wallet is not connected to {selectedChain.name}.
+                      Switch networks in your wallet or revert to{' '}
+                      {previousChain.name}.
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:from-red-600 hover:to-pink-600 transition-all duration-200 transform hover:scale-105"
+                        onClick={() => {
+                          wallets[selectedWallet].switchChain(selectedChain.id)
+                        }}
+                      >
+                        Switch to {selectedChain.name}
+                      </button>
+                      <button
+                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
+                        onClick={() => {
+                          // Revert to previous chain
+                          setSelectedChain(previousChain)
+                          setNetworkMismatch(false)
+                        }}
+                      >
+                        Revert to {previousChain.name}
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <div className="w-full flex flex-col gap-2 py-2">
-                    <div className=" w-full flex justify-left items-center gap-4">
-                      <Image
-                        src="/coins/MOONEY.png"
-                        width={30}
-                        height={30}
-                        alt=""
-                      />
-                      <p>{formattedBalances.mooney + ' MOONEY'}</p>
+                  <div className="space-y-4 mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+                        Balances
+                      </h4>
+                      <div className="flex items-center space-x-3">
+                        <div className="relative w-10 h-10">
+                          <NetworkSelector iconsOnly compact />
+                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center pointer-events-none">
+                            <ChevronDownIcon className="w-2 h-2 text-white" />
+                          </div>
+                        </div>
+                        {type === 'mobile' && (
+                          <div>
+                            <CitizenProfileLink />
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className=" w-full flex justify-left items-center gap-4">
-                      <NativeTokenIcon />
-                      <p>
-                        {nativeBalance + ' ' + selectedNativeToken[chainSlug]}
-                      </p>
+                    <div className="space-y-3 max-h-60 overflow-y-auto scrollbar-hide pr-1">
+                      {/* Native Token Balance - Always show first */}
+                      <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200 flex items-center justify-center">
+                              <NativeTokenIcon />
+                            </div>
+                            <div>
+                              <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
+                                {selectedNativeToken[chainSlug]}
+                              </p>
+                              <p className="text-gray-400 text-xs">
+                                Native Token
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
+                              {Number(nativeBalance).toFixed(4)}
+                            </p>
+                            <p className="text-gray-400 text-xs">
+                              {selectedNativeToken[chainSlug]}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Loading State */}
+                      {tokensLoading && (
+                        <div className="bg-black/20 rounded-lg p-3 border border-white/5">
+                          <div className="flex items-center justify-center space-x-2 text-gray-400">
+                            <div className="w-4 h-4 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></div>
+                            <span className="text-sm">Loading tokens...</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Error State */}
+                      {tokensError && (
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                          <p className="text-red-400 text-sm">{tokensError}</p>
+                        </div>
+                      )}
+
+                      {/* Dynamic Token Balances */}
+                      {walletTokens.map((token, index) => (
+                        <div
+                          key={`${token.contractAddress}-${index}`}
+                          className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200 flex items-center justify-center">
+                                {getTokenIcon(
+                                  token.symbol,
+                                  token.contractAddress
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
+                                  {token.symbol}
+                                </p>
+                                <p className="text-gray-400 text-xs">
+                                  {token.name}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
+                                {token.formattedBalance < 0.01
+                                  ? token.formattedBalance.toExponential(2)
+                                  : token.formattedBalance.toLocaleString(
+                                      undefined,
+                                      {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 6,
+                                      }
+                                    )}
+                              </p>
+                              <p className="text-gray-400 text-xs">
+                                {token.symbol}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* No tokens message */}
+                      {!tokensLoading &&
+                        !tokensError &&
+                        walletTokens.length === 0 && (
+                          <div className="bg-black/10 rounded-lg p-4 text-center">
+                            <p className="text-gray-400 text-sm">
+                              No tokens found in this wallet
+                            </p>
+                          </div>
+                        )}
                     </div>
-
-                    {formattedBalances.dai > 0 && (
-                      <div className=" w-full flex justify-left items-center gap-4">
-                        <Image
-                          src="/coins/DAI.svg"
-                          width={30}
-                          height={30}
-                          alt=""
-                        />
-                        <p>{formattedBalances.dai + ' DAI'}</p>
-                      </div>
-                    )}
-
-                    {formattedBalances.usdc > 0 && (
-                      <div className=" w-full flex justify-left items-center gap-4">
-                        <Image
-                          src="/coins/USDC.svg"
-                          width={30}
-                          height={30}
-                          alt=""
-                        />
-                        <p>{usdcBalance + ' USDC'}</p>
-                      </div>
-                    )}
-                    {formattedBalances.usdt > 0 && (
-                      <div className=" w-full flex justify-left items-center gap-4">
-                        <Image
-                          src="/coins/USDT.svg"
-                          width={30}
-                          height={30}
-                          alt=""
-                        />
-                        <p>{usdtBalance + ' USDT'}</p>
-                      </div>
-                    )}
                   </div>
                 )}
 
-                <div
-                  id="wallet-actions-container"
-                  className="pt-4 pb-8 flex gap-5"
-                >
-                  <WalletAction
-                    id="wallet-fund-action"
-                    label="Fund"
-                    icon={<PlusIcon width={25} height={25} />}
-                    onClick={async () => {
-                      if (!address)
-                        return toast.error('Please connect your wallet')
-                      fundWallet(address, {
-                        chain: viemChains[chainSlug],
-                        asset: 'native-currency',
-                      })
-                    }}
-                  />
-                  <WalletAction
-                    id="wallet-send-action"
-                    label="Send"
-                    icon={<ArrowUpRightIcon width={25} height={25} />}
-                    onClick={() => {
-                      setSendModalEnabled(true)
-                    }}
-                  />
-                  <WalletAction
-                    id="wallet-add-wallet-action"
-                    label="Add Wallet"
-                    icon={<WalletIcon width={25} height={25} />}
-                    onClick={() => {
-                      connectWallet()
-                    }}
-                  />
-                  {wallets[selectedWallet]?.walletClientType === 'privy' && (
+                {/* Wallet Actions */}
+                <div className="mb-6">
+                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">
+                    Quick Actions
+                  </h4>
+                  <div className="grid grid-cols-4 gap-2 md:gap-3">
                     <WalletAction
-                      id="wallet-export-action"
-                      label="Export"
-                      icon={<ArrowDownOnSquareIcon width={25} height={25} />}
-                      onClick={() => {
-                        exportWallet().catch(() => {
-                          toast.error('Please select a privy wallet to export.')
+                      id="wallet-fund-action"
+                      label="Fund"
+                      icon={<PlusIcon width={20} height={20} />}
+                      onClick={async () => {
+                        if (!address)
+                          return toast.error('Please connect your wallet.')
+                        fundWallet(address, {
+                          chain: viemChains[chainSlug],
+                          asset: 'native-currency',
                         })
                       }}
                     />
-                  )}
+                    <WalletAction
+                      id="wallet-send-action"
+                      label="Send"
+                      icon={<ArrowUpRightIcon width={20} height={20} />}
+                      onClick={() => {
+                        setSendModalEnabled(true)
+                      }}
+                    />
+                    <WalletAction
+                      id="wallet-add-wallet-action"
+                      label="Add"
+                      icon={<WalletIcon width={20} height={20} />}
+                      onClick={() => {
+                        connectWallet()
+                      }}
+                    />
+                    {wallets[selectedWallet]?.walletClientType === 'privy' && (
+                      <WalletAction
+                        id="wallet-export-action"
+                        label="Export"
+                        icon={<ArrowDownOnSquareIcon width={20} height={20} />}
+                        onClick={() => {
+                          exportWallet().catch(() => {
+                            toast.error(
+                              'Please select a privy wallet to export.'
+                            )
+                          })
+                        }}
+                      />
+                    )}
+                  </div>
                 </div>
 
-                <div className="pt-1">
-                  <p className="font-semibold">Wallets:</p>
-                  <div className="mt-1 flex flex-col justify-start gap-2">
+                {/* Connected Wallets */}
+                <div className="mb-6">
+                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">
+                    Connected Wallets
+                  </h4>
+                  <div className="space-y-2">
                     {wallets?.map((wallet, i) => (
                       <div
                         key={`wallet-${i}`}
-                        className="w-full flex gap-2 items-center text-[13px]"
+                        className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                          selectedWallet === i
+                            ? 'bg-blue-500/10 border-blue-500/30 shadow-lg'
+                            : 'bg-black/10 border-white/10 hover:bg-black/20'
+                        }`}
+                        onClick={() => setSelectedWallet(i)}
                       >
-                        {/*Button with tick */}
-                        <button
-                          onClick={() => setSelectedWallet(i)}
-                          className="w-4 h-6 "
-                        >
-                          {selectedWallet === i ? '■' : '□'}
-                        </button>
-                        <p>
-                          <span className="uppercase font-bold">
-                            {wallet?.walletClientType
-                              .slice(0, 1)
-                              .toUpperCase() +
-                              wallet?.walletClientType.slice(1)}
-                          </span>
-
-                          <br></br>
-                          {wallet?.address.slice(0, 6) +
-                            '...' +
-                            wallet?.address.slice(-4)}
-                        </p>
-                        {/*Wallet address and copy button*/}
-                        {wallet.walletClientType != 'metamask' &&
-                          wallet.walletClientType != 'privy' && (
-                            <button
-                              className="ml-12"
-                              onClick={() => wallet.disconnect()}
-                            >
-                              X
-                            </button>
-                          )}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div
+                              className={`w-3 h-3 rounded-full ${
+                                selectedWallet === i
+                                  ? 'bg-blue-500'
+                                  : 'bg-gray-500'
+                              }`}
+                            ></div>
+                            <div>
+                              <p className="font-medium text-white capitalize">
+                                {wallet?.walletClientType}
+                              </p>
+                              <p className="text-gray-400 text-xs font-mono">
+                                {wallet?.address.slice(0, 6)}...
+                                {wallet?.address.slice(-4)}
+                              </p>
+                            </div>
+                          </div>
+                          {wallet.walletClientType !== 'metamask' &&
+                            wallet.walletClientType !== 'privy' && (
+                              <button
+                                className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  wallet.disconnect()
+                                }}
+                              >
+                                <XMarkIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="pt-1">
+                {/* Account Management */}
+                <div className="border-t border-white/10 pt-4">
                   <LinkAccounts user={user} />
-                  <div className="flex justify-between">
-                    {/* <button
-                      className="w-2/5 mt-4 p-1 border text-white hover:scale-105 transition-all duration-150 border-white hover:bg-white hover:text-moon-orange"
-                      onClick={importToken}
-                    >
-                      <strong>Import Token</strong>
-                    </button> */}
-                    <button
-                      className="w-full mt-4 p-1 rounded-[2vmax] text-white transition-all duration-150 p-5 py-2 md:hover:pl-[25px] gradient-2"
-                      onClick={async () => {
-                        wallets.forEach((wallet) => wallet.disconnect())
-                        logout()
-                      }}
-                    >
-                      <strong>Log Out</strong>
-                    </button>
-                  </div>
+                  <button
+                    className="w-full mt-4 bg-gradient-to-r from-red-500/80 to-pink-500/80 hover:from-red-500 hover:to-pink-500 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg"
+                    onClick={async () => {
+                      wallets.forEach((wallet) => wallet.disconnect())
+                      logout()
+                    }}
+                  >
+                    <strong>Log Out</strong>
+                  </button>
                 </div>
-              </div>
-            </Portal>
-          )}
+              </div>,
+              document.body
+            )}
         </div>
       ) : (
         <div className="w-full">
           <button
+            id="sign-in-button"
             onClick={async () => {
               if (user) {
                 await logout()

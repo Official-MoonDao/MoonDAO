@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { getContract, NFT, readContract } from 'thirdweb'
+import { arbitrum } from '@/lib/infura/infuraChains'
 import { CitizenRow, citizenRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -39,11 +40,12 @@ export default function NetworkMap({
   const descriptionSection = (
     <div className="pt-2">
       <div className="mb-4">
-        Explore an interactive map of Citizens in the Space Acceleration Network to make connections locally and globally.
+        Explore an interactive map of Citizens in the Space Acceleration Network
+        to make connections locally and globally.
       </div>
       <div className="flex gap-4">
-        <Frame className="w-full max-w-[350px]" noPadding>
-          <div className="flex flex-wrap text-sm bg-filter">
+        <div className="w-fit h-fit bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 p-1.5">
+          <div className="flex text-sm gap-1">
             <Tab
               tab="earth"
               setTab={setTab}
@@ -61,7 +63,6 @@ export default function NetworkMap({
               Moon
             </Tab>
             <Tab
-              className="pr-6"
               tab="network"
               setTab={() => router.push('/network')}
               currentTab={tab}
@@ -70,7 +71,7 @@ export default function NetworkMap({
               Network
             </Tab>
           </div>
-        </Frame>
+        </div>
       </div>
     </div>
   )
@@ -114,147 +115,155 @@ export default function NetworkMap({
 }
 
 export async function getStaticProps() {
-  let citizensLocationData = []
-  if (process.env.NEXT_PUBLIC_ENV === 'prod') {
-    const chain = DEFAULT_CHAIN_V5
-    const chainSlug = getChainSlug(chain)
+  try {
+    let citizensLocationData = []
+    if (
+      process.env.NEXT_PUBLIC_ENV === 'prod' ||
+      process.env.NEXT_PUBLIC_TEST_ENV === 'true'
+    ) {
+      const chain = arbitrum
+      const chainSlug = getChainSlug(chain)
 
-    const citizenContract = getContract({
-      client: serverClient,
-      address: CITIZEN_ADDRESSES[chainSlug],
-      abi: CitizenABI as any,
-      chain,
-    })
-
-    const citizens: NFT[] = []
-    const citizenStatement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
-    const citizenRows = await queryTable(chain, citizenStatement)
-
-    for (const citizen of citizenRows) {
-      citizens.push(citizenRowToNFT(citizen as CitizenRow))
-    }
-
-    const filteredValidCitizens = citizens.filter(async (c: any) => {
-      const now = Math.floor(Date.now() / 1000)
-      const expiresAt = await readContract({
-        contract: citizenContract,
-        method: 'expiresAt',
-        params: [c.metadata.id],
+      const citizenContract = getContract({
+        client: serverClient,
+        address: CITIZEN_ADDRESSES[chainSlug],
+        abi: CitizenABI as any,
+        chain,
       })
-      const view = getAttribute(c?.metadata?.attributes, 'view')?.value
-      return (
-        +expiresAt.toString() > now &&
-        view === 'public' &&
-        !blockedCitizens.includes(c.metadata.id)
-      )
-    })
 
-    //Get location data for each citizen
-    for (const citizen of filteredValidCitizens) {
-      const citizenLocation = JSON.stringify(
-        getAttribute(
+      const citizens: NFT[] = []
+      const citizenStatement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
+      const citizenRows = await queryTable(chain, citizenStatement)
+
+      for (const citizen of citizenRows) {
+        citizens.push(citizenRowToNFT(citizen as CitizenRow))
+      }
+
+      const filteredValidCitizens = citizens.filter(async (c: any) => {
+        const now = Math.floor(Date.now() / 1000)
+        const expiresAt = await readContract({
+          contract: citizenContract,
+          method: 'expiresAt',
+          params: [c.metadata.id],
+        })
+        const view = getAttribute(c?.metadata?.attributes, 'view')?.value
+        return (
+          +expiresAt.toString() > now &&
+          view === 'public' &&
+          !blockedCitizens.includes(c.metadata.id)
+        )
+      })
+
+      //Get location data for each citizen
+      for (const citizen of filteredValidCitizens) {
+        const citizenLocation = getAttribute(
           citizen?.metadata?.attributes as unknown as any[],
           'location'
         )?.value
-      )
 
-      let locationData
+        let locationData
 
-      if (
-        citizenLocation &&
-        citizenLocation !== '' &&
-        !citizenLocation?.startsWith('{')
-      ) {
-        locationData = {
-          results: [
-            {
-              formatted_address: citizenLocation,
-            },
-          ],
-        }
-      } else if (citizenLocation?.startsWith('{')) {
-        const parsedLocationData = JSON.parse(citizenLocation)
-        locationData = {
-          results: [
-            {
-              formatted_address: parsedLocationData.name,
-              geometry: {
-                location: {
-                  lat: parsedLocationData.lat,
-                  lng: parsedLocationData.lng,
+        if (
+          citizenLocation &&
+          citizenLocation !== '' &&
+          !citizenLocation?.startsWith('{')
+        ) {
+          locationData = {
+            results: [
+              {
+                formatted_address: citizenLocation,
+              },
+            ],
+          }
+        } else if (citizenLocation?.startsWith('{')) {
+          const parsedLocationData = JSON.parse(citizenLocation)
+          locationData = {
+            results: [
+              {
+                formatted_address: parsedLocationData.name,
+                geometry: {
+                  location: {
+                    lat: parsedLocationData.lat,
+                    lng: parsedLocationData.lng,
+                  },
                 },
               },
-            },
-          ],
+            ],
+          }
+        } else {
+          locationData = {
+            results: [
+              {
+                formatted_address: 'Antarctica',
+                geometry: { location: { lat: -90, lng: 0 } },
+              },
+            ],
+          }
         }
-      } else {
-        locationData = {
-          results: [
-            {
-              formatted_address: 'Antarctica',
-              geometry: { location: { lat: -90, lng: 0 } },
-            },
-          ],
-        }
-      }
 
-      citizensLocationData.push({
-        id: citizen.metadata.id,
-        name: citizen.metadata.name,
-        location: citizenLocation,
-        formattedAddress:
-          locationData.results?.[0]?.formatted_address || 'Antarctica',
-        image: citizen.metadata.image,
-        lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
-        lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
-      })
-    }
-
-    // Group citizens by lat and lng
-    const locationMap = new Map()
-
-    for (const citizen of citizensLocationData) {
-      const key = `${citizen.lat},${citizen.lng}`
-      if (!locationMap.has(key)) {
-        locationMap.set(key, {
-          citizens: [citizen],
-          names: [citizen.name],
-          formattedAddress: citizen.formattedAddress,
-          lat: citizen.lat,
-          lng: citizen.lng, // Add formattedAddress as the first element
+        citizensLocationData.push({
+          id: citizen.metadata.id,
+          name: citizen.metadata.name,
+          location: citizenLocation,
+          formattedAddress:
+            locationData.results?.[0]?.formatted_address || 'Antarctica',
+          image: citizen.metadata.image,
+          lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
+          lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
         })
-      } else {
-        const existing = locationMap.get(key)
-        existing.names.push(citizen.name)
-        existing.citizens.push(citizen)
       }
+
+      // Group citizens by lat and lng
+      const locationMap = new Map()
+
+      for (const citizen of citizensLocationData) {
+        const key = `${citizen.lat},${citizen.lng}`
+        if (!locationMap.has(key)) {
+          locationMap.set(key, {
+            citizens: [citizen],
+            names: [citizen.name],
+            formattedAddress: citizen.formattedAddress,
+            lat: citizen.lat,
+            lng: citizen.lng, // Add formattedAddress as the first element
+          })
+        } else {
+          const existing = locationMap.get(key)
+          existing.names.push(citizen.name)
+          existing.citizens.push(citizen)
+        }
+      }
+
+      // Convert the map back to an array
+      citizensLocationData = Array.from(locationMap.values()).map(
+        (entry: any) => ({
+          ...entry,
+          color:
+            entry.citizens.length > 3
+              ? '#6a3d79'
+              : entry.citizens.length > 1
+              ? '#5e4dbf'
+              : '#5556eb',
+          size:
+            entry.citizens.length > 1
+              ? Math.min(entry.citizens.length * 0.01, 0.4)
+              : 0.01,
+        })
+      )
+    } else {
+      citizensLocationData = dummyData
     }
 
-    // Convert the map back to an array
-    citizensLocationData = Array.from(locationMap.values()).map(
-      (entry: any) => ({
-        ...entry,
-        color:
-          entry.citizens.length > 3
-            ? '#6a3d79'
-            : entry.citizens.length > 1
-            ? '#5e4dbf'
-            : '#5556eb',
-        size:
-          entry.citizens.length > 1
-            ? Math.min(entry.citizens.length * 0.01, 0.4)
-            : 0.01,
-      })
-    )
-  } else {
-    citizensLocationData = dummyData
-  }
-
-  return {
-    props: {
-      citizensLocationData,
-    },
-    revalidate: 600,
+    return {
+      props: {
+        citizensLocationData,
+      },
+      revalidate: 600,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      props: { citizensLocationData: [] },
+    }
   }
 }
 

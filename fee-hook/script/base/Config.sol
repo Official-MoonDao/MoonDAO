@@ -9,13 +9,14 @@ import "std/StdJson.sol";
 contract Config is Script {
     using stdJson for string;
 
-
     uint256 MAINNET = 1;
     uint256 ARBITRUM = 42161;
     uint256 BASE = 8453;
+    uint256 BASE_SEP = 84532;
     uint256 ARB_SEP = 421614;
     uint256 SEP = 11155111;
     uint256 POLYGON = 137;
+    uint256 OPT_SEP = 11155420;
 
     mapping(uint256 => address) public LZ_ENDPOINTS;
     mapping(uint256 => address) public POOL_MANAGERS;
@@ -31,6 +32,14 @@ contract Config is Script {
     mapping(uint256 => bytes32) public CHAINLINK_DONS;
     mapping(uint256 => uint64) public CHAINLINK_SUBS;
     mapping(uint256 => uint24) public LP_FEE;
+    mapping(uint256 => address) public MOONDAO_TEAM_ADDRESSES;
+    mapping(uint256 => address) public MOONDAO_TREASURY_ADDRESSES;
+    mapping(uint256 => address) public STARGATE_POOLS;
+    mapping(uint256 => address) public MISSION_CREATOR_ADDRESSES;
+    // Juicebox contract addresses are shared across chains
+    address constant JB_MULTI_TERMINAL = address(0xDB9644369c79C3633cDE70D2Df50d827D7dC7Dbc);
+    address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
+    address payable constant CROSS_CHAIN_PAY_ADDRESS = payable(address(0xb9Ce576bec5D36F89275eb9bE6C1057B3bD3572C));
 
     constructor() {
         string memory ethJson = vm.readFile("../contracts/deployments/ethereum.json");
@@ -40,12 +49,23 @@ contract Config is Script {
         string memory polygonJson = vm.readFile("../contracts/deployments/polygon.json");
         string memory arbSepJson = vm.readFile("../contracts/deployments/arbitrum-sepolia.json");
 
+        MOONDAO_TREASURY_ADDRESSES[ARBITRUM] = 0xAF26a002d716508b7e375f1f620338442F5470c0;
+        MOONDAO_TREASURY_ADDRESSES[SEP] = 0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b;
+
+        MOONDAO_TEAM_ADDRESSES[ARBITRUM] = arbJson.readAddress(".MoonDAOTeam");
+        MOONDAO_TEAM_ADDRESSES[SEP] = sepJson.readAddress(".MoonDAOTeam");
+
         // vMOONEY doesn't exist on arbitrum-sepolia
         VMOONEY_ADDRESSES[ARBITRUM] = arbJson.readAddress(".vMOONEYToken");
         VMOONEY_ADDRESSES[BASE] = baseJson.readAddress(".vMOONEYToken");
         VMOONEY_ADDRESSES[MAINNET] = ethJson.readAddress(".vMOONEYToken");
         VMOONEY_ADDRESSES[POLYGON] = polygonJson.readAddress(".vMOONEYToken");
         VMOONEY_ADDRESSES[SEP] = sepJson.readAddress(".vMOONEYToken");
+
+        STARGATE_POOLS[SEP] = 0x9Cc7e185162Aa5D1425ee924D97a87A0a34A0706;
+        STARGATE_POOLS[ARB_SEP] = 0x6fddB6270F6c71f31B62AE0260cfa8E2e2d186E0;
+        STARGATE_POOLS[OPT_SEP] = 0xa31dCc5C71E25146b598bADA33E303627D7fC97e;
+
 
         LP_FEE[MAINNET] = 10000;
         LP_FEE[ARBITRUM] = 10000;
@@ -98,7 +118,9 @@ contract Config is Script {
         LZ_EIDS[BASE] = 30184;
         LZ_EIDS[POLYGON] = 30109;
         LZ_EIDS[ARB_SEP] = 40231;
+        LZ_EIDS[BASE_SEP] = 40245;
         LZ_EIDS[SEP] = 40161;
+        LZ_EIDS[OPT_SEP] = 40232;
 
         POOL_MANAGERS[MAINNET] = 0x000000000004444c5dc75cB358380D2e3dE08A90;
         POOL_MANAGERS[ARBITRUM] = 0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32;
@@ -121,11 +143,22 @@ contract Config is Script {
         V4_ROUTERS[ARB_SEP] = 0xeFd1D4bD4cf1e86Da286BB4CB1B8BcED9C10BA47;
         V4_ROUTERS[SEP] = 0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b;
 
-        FEE_HOOK_ADDRESSES[ARB_SEP] = 0x07Aa57d11f104C9Cf0706aE6E5232f98a517C844;
-        FEE_HOOK_ADDRESSES[SEP] = 0x730051F4cffB74a4AD00ba74C18c148942528844;
+        FEE_HOOK_ADDRESSES[ARBITRUM] = arbJson.readAddress(".FeeHook");
+        FEE_HOOK_ADDRESSES[BASE] = baseJson.readAddress(".FeeHook");
+        FEE_HOOK_ADDRESSES[ARB_SEP] = arbSepJson.readAddress(".FeeHook");
+        FEE_HOOK_ADDRESSES[SEP] = sepJson.readAddress(".FeeHook");
+        FEE_HOOK_ADDRESSES[ARBITRUM] = arbJson.readAddress(".FeeHook");
 
-        TEST_TOKEN_ADDRESSES[ARB_SEP] = 0xcA9b92A7F9FDabC52CBAED5e81F096490D20deDe;
-        TEST_TOKEN_ADDRESSES[SEP] = 0xB473156De5ADfCeC81F270D747233dB100c1D63C;
+        TEST_TOKEN_ADDRESSES[ARB_SEP] = 0x53acb7A819A579436527B22eFbf4be81f24EfC33;
+        TEST_TOKEN_ADDRESSES[SEP] = 0x5016B1fed78cCDad9bD426C9426B0f557B75fAA1;
 
+        MISSION_CREATOR_ADDRESSES[ARBITRUM] = arbJson.readAddress(".MissionCreator");
+        MISSION_CREATOR_ADDRESSES[SEP] = sepJson.readAddress(".MissionCreator");
+    }
+
+    function currentSalt() public view returns (bytes32) {
+        uint256 interval = 300; // 5 minutes in seconds
+        uint256 saltBase = block.timestamp / interval;
+        return keccak256(abi.encodePacked(saltBase));
     }
 }

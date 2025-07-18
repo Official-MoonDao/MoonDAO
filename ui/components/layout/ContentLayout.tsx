@@ -4,8 +4,9 @@ import PreFooter from './PreFooter'
 
 interface ContentProps {
   titleSection?: ReactNode
-  header?: string
-  subHeader?: string
+  logo?: ReactNode
+  header?: string | ReactNode
+  subHeader?: string | ReactNode
   description?: any
   headerSize?: string
   children?: ReactNode
@@ -21,6 +22,7 @@ interface ContentProps {
 
 const ContentLayout: React.FC<ContentProps> = ({
   titleSection,
+  logo,
   header,
   subHeader,
   description,
@@ -59,11 +61,29 @@ const ContentLayout: React.FC<ContentProps> = ({
             >
               <div
                 id="image-container"
-                className="w-full h-full relative left-[-1px]"
+                className="w-full h-full relative left-[-1px] mb-10"
               >
-                <div
-                  id="image"
-                  className={`mb-10
+                {logo ? (
+                  <div
+                    id="logo"
+                    className={`
+                    ${
+                      branded
+                        ? 'min-h-[200px]'
+                        : 'absolute min-h-[350px] min-w-[350px]'
+                    } 
+                    ${
+                      isCompact
+                        ? ''
+                        : 'md:min-h-[200px] lg:min-h-[600px] md:min-w-[450px]'
+                    }`}
+                  >
+                    {logo}
+                  </div>
+                ) : (
+                  <div
+                    id="image"
+                    className={`
                                     ${
                                       branded
                                         ? 'branded min-h-[200px]'
@@ -74,7 +94,8 @@ const ContentLayout: React.FC<ContentProps> = ({
                                         ? ''
                                         : 'md:min-h-[200px] lg:min-h-[600px] md:min-w-[450px]'
                                     }`}
-                ></div>
+                  ></div>
+                )}
               </div>
               <div
                 id="title-wrapper"
@@ -87,7 +108,11 @@ const ContentLayout: React.FC<ContentProps> = ({
                                     } 
                                     ${
                                       children
-                                        ? 'pb-0 md:pb-[30px] lg:pb-[120px]'
+                                        ? `pb-0 md:pb-[30px] ${
+                                            popOverEffect
+                                              ? 'lg:pb-[170px]'
+                                              : 'lg:pb-[120px]'
+                                          }`
                                         : 'flex md:items-start lg:items-center min-h-[60vh] lg:min-h-[90vh]'
                                     }
                                     ${isProfile ? 'lg:mb-[-100px]' : ''}
@@ -104,21 +129,21 @@ const ContentLayout: React.FC<ContentProps> = ({
                                         }
                                     `}
                 >
-                  <h1
+                  <div
                     id="header-element"
                     className={`
-                                            w-full leading-[1] font-GoodTimes 
+                                            w-full max-w-[1200px] leading-[1] font-GoodTimes 
                                             ${isCompact ? 'pt-0' : 'lg:pt-20'} 
                                         `}
                     style={{ fontSize: headerSize || 'max(25px, 4vw)' }}
                   >
                     {header}
-                  </h1>
+                  </div>
 
                   {subHeader && (
-                    <h2 id="sub-header" className="sub-header">
+                    <div id="sub-header" className="sub-header">
                       {subHeader}
-                    </h2>
+                    </div>
                   )}
                   <div
                     className={`
@@ -141,7 +166,7 @@ const ContentLayout: React.FC<ContentProps> = ({
       </section>
 
       {children && (
-        <section id="main-section-container" className="popout-base-bg">
+        <section id="main-section-container" className="">
           <div
             id="main-section"
             className={`
@@ -156,19 +181,6 @@ const ContentLayout: React.FC<ContentProps> = ({
                         }
                     `}
           >
-            {popOverEffect ? null : (
-              <div
-                id="popout-bg-element"
-                className={`
-                                z-0 popout-bg absolute w-full md:w-[calc(100%-40px)] lg:w-[calc(100%-100px)] 2xl:w-full left-0 md:left-[50px] lg:left-[100px] 2xl:left-[150px] rounded-bl-[20px] 
-                                ${
-                                  !isProfile
-                                    ? `h-[calc(100%-200px)] top-[200px]`
-                                    : 'h-full top-0'
-                                }
-                                `}
-              ></div>
-            )}
             <div
               id="main-section-content-container"
               className={`relative z-10 

@@ -2,11 +2,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ReactNode } from 'react'
-import { MediaRenderer } from 'thirdweb/react'
-import client from '@/lib/thirdweb/client'
 import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
 import CollapsibleContainer from './CollapsibleContainer'
+import IPFSRenderer from './IPFSRenderer'
 
 type StandardCardProps = {
   id?: string
@@ -84,7 +83,7 @@ export default function StandardCard({
                   <Image
                     id="featured-image"
                     src={orgimage}
-                    alt="Team Image"
+                    alt={title || ''}
                     width="675"
                     height="675"
                     className="w-full h-full"
@@ -100,18 +99,18 @@ export default function StandardCard({
                     <Image
                       className="w-full h-full object-cover"
                       src={image}
-                      alt="Card image"
+                      alt={title || ''}
                       width={500}
                       height={500}
                     />
                   ) : (
                     // For IPFS/remote URLs
-                    <MediaRenderer
+                    <IPFSRenderer
                       className="w-full h-full object-cover"
-                      client={client}
                       src={image}
-                      width="100%"
-                      height="100%"
+                      width={500}
+                      height={500}
+                      alt={title || ''}
                     />
                   )}
                 </Frame>
@@ -174,7 +173,7 @@ export default function StandardCard({
                 {header && header}
                 {title ? title : profile && 'Anon'}
               </h2>
-              <div>{actions && actions}</div>
+              <div className="pl-2">{actions && actions}</div>
             </div>
 
             {subheader && subheader}

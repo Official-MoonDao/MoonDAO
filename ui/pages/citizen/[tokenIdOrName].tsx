@@ -24,16 +24,18 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
+import { useVotesOfAddress } from '@/lib/snapshot'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
+import { citizenRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import client, { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
@@ -46,6 +48,7 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
+import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import StandardButton from '@/components/layout/StandardButton'
 import Action from '@/components/subscription/Action'
@@ -113,6 +116,10 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
     isLoading: isLoadingCitizenData,
   } = useCitizenData(nft, citizenContract)
 
+  const isOwner = address?.toLowerCase() === nft?.owner?.toLowerCase()
+
+  const { data: votes } = useVotesOfAddress(nft?.owner)
+
   // Balances
   const nativeBalance = useNativeBalance()
 
@@ -168,12 +175,12 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                   id="citizen-image-container"
                   className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
                 >
-                  <MediaRenderer
-                    client={client}
+                  <IPFSRenderer
                     src={nft?.metadata?.image}
                     className="rounded-full"
-                    height={'300'}
-                    width={'300'}
+                    height={300}
+                    width={300}
+                    alt="Citizen Image"
                   />
                   <div
                     id="star-asset-container"
@@ -199,12 +206,11 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                     id="team-name-container"
                     className="mt-5 lg:mt-0 flex flex-col flex-col-reverse w-full items-start justify-start"
                   >
-                    {subIsValid && address === nft?.owner && (
+                    {subIsValid && isOwner && (
                       <button
                         className={'absolute top-6 right-6'}
                         onClick={() => {
-                          if (address === nft?.owner)
-                            setCitizenMetadataModalEnabled(true)
+                          if (isOwner) setCitizenMetadataModalEnabled(true)
                           else
                             return toast.error(
                               'Connect the entity admin wallet or multisig to edit metadata.'
@@ -278,7 +284,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                         )}
                       </div>
                     ) : null}
-                    {/* {address === nft.owner ? (
+                    {/* {isOwner ? (
                       <div id="manager-container">
                         {expiresAt && (
                           <div
@@ -292,7 +298,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                               >
                                 <Button
                                   onClick={() => {
-                                    if (address === nft?.owner)
+                                    if (isOwner)
                                       setSubModalEnabled(true)
                                     else
                                       return toast.error(
@@ -312,7 +318,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                     )} */}
                   </div>
                 </div>
-                {/* {address === nft.owner ? (
+                {/* {isOwner ? (
                   <p className="opacity-50 mt-2 lg:ml-5 text-sm">
                     {'Exp: '}
                     {new Date(expiresAt?.toString() * 1000).toLocaleString()}
@@ -369,10 +375,10 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
             nft?.metadata?.image.split('ipfs://')[1]
           }`}
         />
-        {!isDeleted && subIsValid && nft.owner === address && (
+        {!isDeleted && subIsValid && isOwner && (
           <CitizenActions
-            address={address}
             nft={nft}
+            address={address || ''}
             incompleteProfile={incompleteProfile}
             isTeamMember={hats?.length > 0}
             mooneyBalance={MOONEYBalance}
@@ -411,7 +417,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
         {subIsValid && !isDeleted && !isGuest ? (
           <div className="z-50 mb-10">
             {/* Mooney and Voting Power */}
-            {citizen || address === nft.owner ? (
+            {citizen || isOwner ? (
               <Frame
                 noPadding
                 bottomLeft="0px"
@@ -442,8 +448,12 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                           : 0}
                       </p>
                     </div>
+                    <div>
+                      <p className="text-xl">{`Votes`}</p>
+                      <p className="text-2xl">{votes?.length}</p>
+                    </div>
                   </div>
-                  {address === nft.owner && (
+                  {isOwner && (
                     <div className="flex flex-col md:flex-row mt-4 md:px-4 flex items-start xl:items-end gap-2">
                       <StandardButton
                         className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:rounded-tr-[10px] md:rounded-br-[10px] md:rounded-bl-[20px] md:hover:pl-5"
@@ -464,7 +474,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
             ) : (
               <></>
             )}
-            {address === nft.owner && (
+            {isOwner && (
               <div className="mt-4">
                 <Frame
                   noPadding
@@ -513,7 +523,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
                 </div>
               </Frame>
             )}
-            {address === nft.owner && (
+            {isOwner && (
               <>
                 <Frame
                   noPadding
@@ -578,7 +588,7 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const tokenIdOrName: any = params?.tokenIdOrName
 
-  let nft, tokenId
+  let nft, tokenId: any
   if (tokenIdOrName === 'guest') {
     nft = {
       metadata: {
@@ -607,7 +617,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
-    const statement = `SELECT name, id FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
+    const statement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
     const allCitizens = (await queryTable(chain, statement)) as any
 
     const { prettyLinks } = generatePrettyLinks(allCitizens, {
@@ -626,36 +636,27 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
-    const citizenContract = getContract({
-      client: serverClient,
-      chain: chain,
-      address: CITIZEN_ADDRESSES[chainSlug],
-      abi: CitizenABI as any,
-    })
+    const citizen = allCitizens.find((citizen: any) => +citizen.id === +tokenId)
 
-    nft = await getNFT({
-      contract: citizenContract,
-      tokenId: BigInt(tokenId),
-      includeOwner: true,
-    })
+    const nft = citizenRowToNFT(citizen)
 
     if (!nft || blockedCitizens.includes(Number(nft?.metadata?.id))) {
       return {
         notFound: true,
       }
     }
+
+    return {
+      props: {
+        nft,
+        tokenId,
+      },
+    }
   }
 
   return {
     props: {
-      nft: {
-        ...nft,
-        id: tokenId,
-        metadata: {
-          ...nft?.metadata,
-          id: tokenId,
-        },
-      },
+      nft,
       tokenId,
     },
   }

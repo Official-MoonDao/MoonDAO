@@ -1,6 +1,7 @@
 import useTranslation from 'next-translate/useTranslation'
 import { useContext, useState } from 'react'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -15,6 +16,8 @@ export default function Join() {
 
   // State to manage selected tier for onboarding flow
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
+
+  useChainDefault()
 
   // If "citizen" is selected, render CreateCitizen component
   if (selectedTier === 'citizen') {
@@ -65,6 +68,7 @@ export default function Join() {
                 defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
                 defaultButtonText="Submit a Ticket"
                 defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+                disclaimerOnly={true}
               />
             </>
           }

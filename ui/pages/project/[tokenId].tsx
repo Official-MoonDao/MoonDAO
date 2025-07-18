@@ -1,16 +1,15 @@
+import Safe from '@safe-global/protocol-kit'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
   CITIZEN_ADDRESSES,
-  DAI_ADDRESSES,
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
-  MOONEY_ADDRESSES,
   PROJECT_ADDRESSES,
+  PROJECT_CREATOR_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
-  USDC_ADDRESSES,
 } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -18,9 +17,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
+import { getRpcUrlForChain } from 'thirdweb/chains'
+import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
+import useSafe from '@/lib/safe/useSafe'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -43,13 +44,16 @@ import TeamTreasury from '@/components/subscription/TeamTreasury'
 type ProjectProfileProps = {
   tokenId: string
   project: Project
+  safeOwners: string[]
 }
 
 export default function ProjectProfile({
   tokenId,
   project,
+  safeOwners,
 }: ProjectProfileProps) {
   const account = useActiveAccount()
+  const address = account?.address
 
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
@@ -86,27 +90,6 @@ export default function ProjectProfile({
     if (projectContract) getOwner()
   }, [tokenId, projectContract])
 
-  const { data: MOONEYBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    tokenAddress: MOONEY_ADDRESSES[chainSlug],
-    address: owner,
-  })
-
-  const { data: DAIBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    tokenAddress: DAI_ADDRESSES[chainSlug],
-    address: owner,
-  })
-
-  const { data: USDCBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    tokenAddress: USDC_ADDRESSES[chainSlug],
-    address: owner,
-  })
-
   const {
     adminHatId,
     managerHatId,
@@ -119,15 +102,11 @@ export default function ProjectProfile({
     MDP,
     isLoading: isLoadingProjectData,
   } = useProjectData(projectContract, hatsContract, project)
-  //Hats
-  const hats = useSubHats(selectedChain, adminHatId)
 
-  // get native balance for multisigj
-  const { data: nativeBalance } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: owner,
-  })
+  const safeData = useSafe(owner)
+  const isSigner = safeOwners.includes(address || '')
+  //Hats
+  const hats = useSubHats(selectedChain, adminHatId, true)
 
   useChainDefault()
 
@@ -171,13 +150,6 @@ export default function ProjectProfile({
                 </div>
               </div>
             </div>
-            <div
-              id="project-stats-container"
-              className="flex items-center gap-2 "
-            >
-              <p>{`Awarded: ${totalBudget} ETH`}</p>
-              <Image src={'/coins/ETH.svg'} width={15} height={15} alt="ETH" />
-            </div>
           </div>
         </div>
       </Frame>
@@ -195,7 +167,17 @@ export default function ProjectProfile({
         mode="compact"
         popOverEffect={false}
         isProfile
-        preFooter={<NoticeFooter darkBackground={true} />}
+        preFooter={
+          <NoticeFooter
+            defaultImage="../assets/MoonDAO-Logo-White.svg"
+            defaultTitle="Need Help?"
+            defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+            defaultButtonText="Submit a Ticket"
+            defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+            imageWidth={200}
+            imageHeight={200}
+          />
+        }
       >
         <div
           id="page-container"
@@ -241,9 +223,9 @@ export default function ProjectProfile({
                 </div>
               </div>
 
-              <p className="py-4 px-4 md:px-0">
+              <div className="py-4 px-4 md:px-0">
                 <MarkdownWithTOC body={nanceProposal?.body || ''} />
-              </p>
+              </div>
             </div>
           </Frame>
           {finalReportMarkdown && (
@@ -270,9 +252,7 @@ export default function ProjectProfile({
                   </div>
                 </div>
                 <div className="mt-4">
-                  <CollapsibleContainer minHeight="400px">
-                    <MarkdownWithTOC body={finalReportMarkdown} />
-                  </CollapsibleContainer>
+                  <MarkdownWithTOC body={finalReportMarkdown} />
                 </div>
               </div>
             </Frame>
@@ -337,15 +317,12 @@ export default function ProjectProfile({
               </div>
             </Frame>
             {/* Mooney and Voting Power */}
-            {isManager && (
-              <TeamTreasury
-                multisigAddress={owner}
-                multisigMooneyBalance={MOONEYBalance?.displayValue}
-                multisigNativeBalance={nativeBalance?.displayValue}
-                multisigDAIBalance={DAIBalance?.displayValue}
-                multisigUSDCBalance={USDCBalance?.displayValue}
-              />
-            )}
+            <TeamTreasury
+              isSigner={isSigner}
+              safeData={safeData}
+              multisigAddress={owner}
+              safeOwners={safeOwners}
+            />
           </div>
         </div>
       </ContentLayout>
@@ -389,10 +366,36 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     }
   }
 
+  const projectContract = getContract({
+    client: serverClient,
+    address: PROJECT_ADDRESSES[chainSlug],
+    abi: ProjectABI as any,
+    chain: chain,
+  })
+
+  const safeAddress = await readContract({
+    contract: projectContract,
+    method: 'ownerOf' as string,
+    params: [tokenId],
+  })
+
+  const rpcUrl = getRpcUrlForChain({
+    client: serverClient,
+    chain: chain,
+  })
+
+  const safe = await Safe.init({
+    provider: rpcUrl,
+    safeAddress: safeAddress,
+  })
+
+  const safeOwners = await safe.getOwners()
+
   return {
     props: {
       project,
       tokenId,
+      safeOwners,
     },
   }
 }

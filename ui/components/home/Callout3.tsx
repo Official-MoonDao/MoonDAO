@@ -56,7 +56,7 @@ const indexCardData = [
     icon: '/assets/icon-lander.svg',
     iconAlt: 'Lander',
     header: 'Moon Mission Landing',
-    link: 'https://docs.moondao.com/Governance/Constitution',
+    link: '/constitution',
     hovertext: 'Read the Constitution',
     paragraph: (
       <>
@@ -84,17 +84,17 @@ export default function Callout3() {
   return (
     <section
       id="callout3-container"
-      className="relative items-start max-w-[1200px] justify-end md:items-start lg:items-start md:justify-end lg:justify-center mt-[5vmax]"
+      className="relative items-center justify-center max-w-[1200px] 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto mt-[5vmax] px-4 2xl:px-8 3xl:px-12"
     >
       <div id="background-elements" className="overflow-visible"></div>
-      <h2 className="header text-center font-GoodTimes pb-5">
+      <h2 className="header text-center font-GoodTimes pb-5 2xl:pb-8 3xl:pb-12 text-4xl 2xl:text-6xl 3xl:text-7xl">
         At A Glance
       </h2>
       <div
         id="cards-container"
-        className="rounded-[5vmax] rounded-tr-[0px] p-5 md:p-10 overflow-hidden max-w-[1200px]"
+        className="rounded-[5vmax] rounded-tr-[0px] p-5 md:p-10 2xl:p-16 3xl:p-20 overflow-hidden max-w-[1200px] 2xl:max-w-[1400px] 3xl:max-w-[1600px]"
       >
-        <IndexCardGrid cards={indexCardData} />
+        <IndexCardGrid cards={indexCardData} threeCol={true} />
       </div>
     </section>
   )

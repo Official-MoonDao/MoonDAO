@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import Footer from './Footer'
+import { ExpandedFooter } from './ExpandedFooter'
 
 type NoticeFooterProps = {
   managerTitle?: string
@@ -21,13 +21,18 @@ type NoticeFooterProps = {
   defaultDescription?: string
   defaultButtonText?: string
   defaultButtonLink?: string
+  imageWidth?: number
+  imageHeight?: number
+  iconWidth?: number
+  iconHeight?: number
   darkBackground?: boolean
   citizenNotice?: boolean
+  disclaimerOnly?: boolean
 }
 
 export function NoticeFooter({
   defaultTitle = 'Join the Network',
-  defaultImage = '../assets/moondao-logo-white.svg',
+  defaultImage = '../assets/logo-san-full-white.svg',
   defaultDescription = 'Be part of the Space Acceleration Network and play a role in establishing a permanent human presence on the Moon and beyond.',
   defaultButtonText = 'Learn More',
   defaultButtonLink = '/join',
@@ -41,8 +46,13 @@ export function NoticeFooter({
   citizenDescription = "Submit a ticket in the support channel on MoonDAO's Discord!",
   citizenButtonText = 'Submit a Ticket',
   citizenButtonLink = 'https://discord.com/channels/914720248140279868/1212113005836247050',
+  imageWidth = 120,
+  imageHeight = 120,
+  iconWidth = 40,
+  iconHeight = 40,
   darkBackground = true,
   citizenNotice = false,
+  disclaimerOnly = false,
 }: NoticeFooterProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const isCitizen = useCitizen(selectedChain)
@@ -95,52 +105,66 @@ export function NoticeFooter({
 
   return (
     <div
+      id="notice-footer"
       className={`pb-10 md:pb-0 ${
-        darkBackground ? 'md:pl-5 pb-10 w-full pt-5' : 'p-5'
+        darkBackground ? 'md:pl-5 pb-10 w-full pt-5' : 'p-5 mr-5'
       }`}
     >
-      <div className="md:pl-10 flex items-center gap-5 lg:ml-[80px] max-w-[970px] gradient-15 mx-5 md:ml-7 p-5 md:mr-5 pb-10 rounded-[5vmax] rounded-tl-[20px]">
-        <div id="Image container" className="hidden opacity-[90%] lg:block">
-          <Image
-            src={notice.image}
-            alt="MoonDAO Logo"
-            width={150}
-            height={150}
-          />
-        </div>
-        <div id="callout-container" className="flex flex-col">
-          <div className="flex wrap items-center">
-            <div className="flex justify-center">
+      <div className="mx-[3vw] mb-5 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl lg:ml-[80px] 2xl:ml-[125px] 2xl:max-w-[1040px]">
+        <div className="bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-[2vmax] border border-slate-600/30 p-8 flex flex-col lg:flex-row items-center gap-6">
+          <div id="Image container" className="hidden lg:block flex-shrink-0">
+            <Image
+              src={notice.image}
+              alt="Logo"
+              width={imageWidth}
+              height={imageHeight}
+              className="opacity-90 w-32 h-32 lg:w-40 lg:h-40 object-contain"
+            />
+          </div>
+          <div id="callout-container" className="flex flex-col flex-1 text-center lg:text-left">
+            <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
               <div id="Image container" className="lg:hidden">
                 <Image
                   src="../assets/icon-star.svg"
                   alt="MoonDAO Logo"
-                  width={40}
-                  height={40}
+                  width={iconWidth}
+                  height={iconHeight}
                 />
               </div>
-              <h3 className="header opacity-80 font-GoodTimes">
+              <h3 className="font-GoodTimes text-white text-2xl md:text-3xl lg:text-4xl">
                 {notice.title}
               </h3>
             </div>
-          </div>
-          <p className="opacity-60 pt-2">{notice.description}</p>
-          <Link
-            href={notice.buttonLink}
-            className="inline-block"
-            target="_blank"
-            passHref
-          >
-            <div
-              id="button-container"
-              className="gradient-2 hover:pl-7 transform transition-all ease-in-out duration-300 rounded-[2vmax] rounded-tl-[10px] mt-5 px-5 py-3 inline-block"
+            <p className="text-slate-300 text-base md:text-lg mb-6 leading-relaxed">
+              {notice.description}
+            </p>
+            <Link
+              href={notice.buttonLink}
+              className="inline-block w-fit mx-auto lg:mx-0"
+              {...(notice.buttonLink?.startsWith('http') && {
+                target: "_blank",
+                rel: "noopener noreferrer"
+              })}
+              passHref
             >
-              {notice.buttonText}
-            </div>
-          </Link>
+              <div className="gradient-2 hover:scale-105 transform transition-all ease-in-out duration-300 rounded-full px-8 py-4 inline-block text-white font-medium text-lg hover:shadow-lg">
+                {notice.buttonText}
+              </div>
+            </Link>
+          </div>
         </div>
       </div>
-      <Footer darkBackground={darkBackground} />
+      <ExpandedFooter 
+        callToActionImage={notice.image}
+        callToActionTitle={notice.title}
+        callToActionBody={notice.description}
+        callToActionButtonText={notice.buttonText}
+        callToActionButtonLink={notice.buttonLink}
+        hasCallToAction={true}
+        darkBackground={darkBackground}
+        isFullwidth={false}
+        disclaimerOnly={disclaimerOnly}
+      />
     </div>
   )
 }

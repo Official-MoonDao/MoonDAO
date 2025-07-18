@@ -1,4 +1,5 @@
 {
     "MOONEYToken": "0x0187951aeecDbB6d11D75E7aCe6aC290c6e70391",
-    "vMOONEYToken": ""
-  }
+    "vMOONEYToken": "",
+    "FeeHook": "0xD15F31404150bC3CD04b1ba6D453607995eDc844"
+}

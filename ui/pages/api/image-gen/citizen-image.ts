@@ -81,7 +81,7 @@ export default async function handler(
             '39': {
               inputs: {
                 clip: ['4', 1],
-                text: "Create a portrait of an Astronaut wearing a futuristic space suit in the style of Jorodowsky's Dune with the face prominently displayed up to the beginning of the shoulders with a watercolor Rainbow background displaying the moon, stars, and other space elements\n\n",
+                text: "Create a portrait of an Astronaut wearing a futuristic space suit in the style of Jorodowsky's Dune with the face prominently displayed up to the beginning of the shoulders with a watercolor psychedelic background displaying the moon, stars, and other space elements. Overall make the person look like a badass and make them look as good as possible, something they would be proud to share on social media. Don't put any space element on their face or forehead. High-quality. Portrait mode.\n\n",
               },
               class_type: 'CLIPTextEncode',
             },

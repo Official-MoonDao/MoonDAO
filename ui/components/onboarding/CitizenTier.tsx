@@ -4,6 +4,7 @@ import { useContext } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -14,11 +15,14 @@ type CitizenTierProps = {
   compact?: boolean
 }
 
+const PRICE = 0.0111
+
 const CitizenTier = ({
   setSelectedTier,
   compact = false,
 }: CitizenTierProps) => {
   const { selectedChain } = useContext(ChainContextV5)
+  const { data: usdPrice } = useETHPrice(PRICE, 'ETH_TO_USD')
   const chainSlug = getChainSlug(selectedChain)
   const account = useActiveAccount()
   const address = account?.address
@@ -36,7 +40,7 @@ const CitizenTier = ({
       params: [address],
     })
     if (citizenBalance > 0) {
-      return toast.error('You have already registered as a citizen')
+      return toast.error('You have already registered as a citizen.')
     }
     setSelectedTier('citizen')
   }
@@ -44,7 +48,8 @@ const CitizenTier = ({
   return (
     <div id="citizen-tier-container">
       <Tier
-        price={0.0111}
+        price={PRICE}
+        usdPrice={usdPrice}
         label="Become a Citizen"
         description="Citizens are the trailblazers supporting the creation of off-world settlements. Whether you're already part of a team or seeking to join one, everyone has a crucial role to play in this mission."
         points={[

@@ -1,0 +1,94 @@
+From e2eb7c28a5c55bad7c1989b4432c46023f3d0429 Mon Sep 17 00:00:00 2001
+From: jaderiverstokes <jaderiverstokes@gmail.com>
+Date: Fri, 16 May 2025 11:38:32 -0700
+Subject: [PATCH] patch hats
+
+---
+ src/Hats.sol             | 50 ----------------------------------------
+ src/Interfaces/IHats.sol |  7 ------
+ 2 files changed, 57 deletions(-)
+
+diff --git a/src/Hats.sol b/src/Hats.sol
+index 37b156c..f6428ea 100644
+--- a/src/Hats.sol
++++ b/src/Hats.sol
+@@ -174,58 +174,8 @@ contract Hats is IHats, ERC1155, Multicallable, HatsIdUtilities {
+         ++_hats[_admin].lastHatId;
+     }
+ 
+-    /// @notice Creates new hats in batch. The msg.sender must be an admin of each hat.
+-    /// @dev This is a convenience function that loops through the arrays and calls `createHat`.
+-    /// @param _admins Array of ids of admins for each hat to create
+-    /// @param _details Array of details for each hat to create
+-    /// @param _maxSupplies Array of supply caps for each hat to create
+-    /// @param _eligibilityModules Array of eligibility module addresses for each hat to
+-    /// create
+-    /// @param _toggleModules Array of toggle module addresses for each hat to create
+-    /// @param _mutables Array of mutable flags for each hat to create
+-    /// @param _imageURIs Array of imageURIs for each hat to create
+-    /// @return success True if all createHat calls succeeded
+     function batchCreateHats(
+-        uint256[] calldata _admins,
+-        string[] calldata _details,
+-        uint32[] calldata _maxSupplies,
+-        address[] memory _eligibilityModules,
+-        address[] memory _toggleModules,
+-        bool[] calldata _mutables,
+-        string[] calldata _imageURIs
+     ) public returns (bool success) {
+-        // check if array lengths are the same
+-        uint256 length = _admins.length; // save an MLOAD
+-
+-        {
+-            bool sameLengths = (
+-                length == _details.length // details
+-                    && length == _maxSupplies.length // supplies
+-                    && length == _eligibilityModules.length // eligibility
+-                    && length == _toggleModules.length // toggle
+-                    && length == _mutables.length // mutable
+-                    && length == _imageURIs.length
+-            ); // imageURI
+-            if (!sameLengths) revert BatchArrayLengthMismatch();
+-        }
+-
+-        // loop through and create each hat
+-        for (uint256 i = 0; i < length;) {
+-            createHat(
+-                _admins[i],
+-                _details[i],
+-                _maxSupplies[i],
+-                _eligibilityModules[i],
+-                _toggleModules[i],
+-                _mutables[i],
+-                _imageURIs[i]
+-            );
+-
+-            unchecked {
+-                ++i;
+-            }
+-        }
+-
+         success = true;
+     }
+ 
+diff --git a/src/Interfaces/IHats.sol b/src/Interfaces/IHats.sol
+index bcd1f15..a5d948f 100644
+--- a/src/Interfaces/IHats.sol
++++ b/src/Interfaces/IHats.sol
+@@ -36,13 +36,6 @@ interface IHats is IHatsIdUtilities, HatsErrors, HatsEvents {
+     ) external returns (uint256 newHatId);
+ 
+     function batchCreateHats(
+-        uint256[] calldata _admins,
+-        string[] calldata _details,
+-        uint32[] calldata _maxSupplies,
+-        address[] memory _eligibilityModules,
+-        address[] memory _toggleModules,
+-        bool[] calldata _mutables,
+-        string[] calldata _imageURIs
+     ) external returns (bool success);
+ 
+     function getNextId(uint256 _admin) external view returns (uint256 nextId);
+-- 
+2.39.5 (Apple Git-154)
+

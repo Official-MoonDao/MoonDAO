@@ -2,9 +2,9 @@ import { useWallets } from '@privy-io/react-auth'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import { readContract } from 'thirdweb'
-import { ethereum, polygon } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { ethereum, polygon } from '@/lib/infura/infuraChains'
 
 type SubmitInfoModalPropsETH = {
   quantity: any
@@ -222,7 +222,7 @@ export function SubmitTTSInfoModalETH({
 
               try {
                 if (!email || !fullName || !email.includes('@'))
-                  return toast.error('Please fill in all fields')
+                  return toast.error('Please fill in all fields.')
 
                 setStatus('Reserving ticket')
 
@@ -260,7 +260,7 @@ export function SubmitTTSInfoModalETH({
                   }
                 } catch (err: any) {
                   toast.error(
-                    'Error verifying identity. Please contact MoonDAO support'
+                    'Error verifying identity. Please contact MoonDAO support.'
                   )
                   setChain(polygon)
                   return setEnabled(false)

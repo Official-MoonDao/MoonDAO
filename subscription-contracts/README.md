@@ -1,15 +1,33 @@
 ## Installation
 
-`git clone --recurse-submodules <repo-URL>`
-`git submodule update --init --recursive`
 
-```sh
+```bash
+git clone --recurse-submodules <repo-URL>
+git submodule update --init --recursive
+# install foundry
+curl -L https://foundry.paradigm.xyz/ | bash
+# source shell profile to add then foundryup to path then run
+foundryup
+
+# install dependencies
+yarn install
 forge install
+```
+
+## Build Contracts
+
+```bash
+forge build
 ```
 
 ## Deploy a contract
 
-`PRIVATE_KEY=<PRIVATE_KEY> forge script script/Project.s.sol:MyScript --via-ir --rpc-url https://arb1.arbitrum.io/rpc --broadcast --verify -vv`
+```bash
+// arbitrum
+ETHERSCAN_API_KEY=$ARBITRUM_ETHERSCAN_API_KEY PRIVATE_KEY=$PRIVATE_KEY forge script script/Project.s.sol:MyScript --via-ir --rpc-url https://42161.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast --verify -vv
+// sepolia
+ETHERSCAN_API_KEY=$SEPOLIA_ETHERSCAN_API_KEY PRIVATE_KEY=$PRIVATE_KEY forge script script/CrossChainPay.s.sol:MyScript --via-ir --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast --verify -vv
+```
 
 ### Running tests on test chain
 

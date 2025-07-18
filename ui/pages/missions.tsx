@@ -13,7 +13,8 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback, useContext } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import { sepolia } from 'thirdweb/chains'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -36,8 +37,7 @@ type MissionsProps = {
 }
 
 export default function Missions({ missions }: MissionsProps) {
-  // const { selectedChain } = useContext(ChainContextV5)
-  const selectedChain = sepolia
+  const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -119,7 +119,11 @@ export default function Missions({ missions }: MissionsProps) {
               marginBottom="10px"
               noPadding
             >
-              <Search input={input} setInput={setInput} />
+              <Search
+                input={input}
+                setInput={setInput}
+                placeholder="Search missions..."
+              />
             </Frame>
             <div className="flex justify-start mt-4 mb-8">
               <StandardButtonPlus
@@ -145,11 +149,17 @@ export default function Missions({ missions }: MissionsProps) {
                 ?.slice((pageIdx - 1) * 9, pageIdx * 9)
                 .map((mission: any, I: number) => {
                   return (
-                    <MissionCard
+                    <JuiceProviders
                       key={`mission-card-${I}`}
-                      mission={mission}
-                      teamContract={teamContract}
-                    />
+                      projectId={mission.projectId}
+                      selectedChain={selectedChain}
+                    >
+                      <MissionCard
+                        key={`mission-card-${I}`}
+                        mission={mission}
+                        teamContract={teamContract}
+                      />
+                    </JuiceProviders>
                   )
                 })
             ) : (
@@ -221,7 +231,7 @@ export default function Missions({ missions }: MissionsProps) {
 
 export const getStaticProps: GetStaticProps = async () => {
   try {
-    const chain = sepolia
+    const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
     const missionTableContract = getContract({
@@ -260,9 +270,22 @@ export const getStaticProps: GetStaticProps = async () => {
           params: [missionRow.projectId],
         })
 
-        const metadataRes = await fetch(
-          `https://ipfs.io/ipfs/${metadataURI.replace('ipfs://', '')}`
-        )
+        if (!metadataURI) {
+          console.warn(
+            `No metadata URI found for project ${missionRow.projectId}`
+          )
+          return {
+            id: missionRow.id,
+            teamId: missionRow.teamId,
+            projectId: missionRow.projectId,
+            metadata: {
+              name: 'Unknown Mission',
+              description: 'No metadata available',
+            },
+          }
+        }
+
+        const metadataRes = await fetch(getIPFSGateway(metadataURI))
         const metadata = await metadataRes.json()
 
         return {
@@ -284,6 +307,7 @@ export const getStaticProps: GetStaticProps = async () => {
     console.error(err)
     return {
       props: { missions: [] },
+      revalidate: 60,
     }
   }
 }

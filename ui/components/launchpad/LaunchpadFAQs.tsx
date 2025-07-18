@@ -47,7 +47,7 @@ const FAQS = [
   {
     question: 'Do I need to manage liquidity for my token?',
     answer:
-      "If you launch an ERC-20 token through the MoonDAO Launchpad, an initial liquidity pool will automatically be created. This pool sets aside an additional 10% of both the token and ETH reserves, ensuring some market liquidity. This means that up to 80% of the total raised funds can be utilized by the Mission, after the 10% allocated to MoonDAO's treasury as a fee and the 10% liquidity.",
+      'If a mission launches successfully using an ERC-20 token, a liquidity pool (LP) will be created on Uniswap after the funding period ends. 2.5% of the raised ETH and 2.5% of the token supply will be added to the pool. Trading fees from the DEX will accrue to vMOONEY holders.',
   },
   {
     question: 'Can I fundraise in multiple cryptocurrencies?',

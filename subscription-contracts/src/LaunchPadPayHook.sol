@@ -23,6 +23,7 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
 
     uint256 public immutable fundingGoal;
     uint256 public immutable deadline;
+    uint256 public immutable refundPeriod;
     uint256 cashedOutCount;
 
     // fundingTurnedOff can be toggled by the owner.
@@ -34,12 +35,14 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
     constructor(
         uint256 _fundingGoal,
         uint256 _deadline,
+        uint256 _refundPeriod,
         address _jbTerminalStoreAddress,
         address _jbRulesetAddress,
         address owner
     ) Ownable(owner) {
         fundingGoal = _fundingGoal;
         deadline = _deadline;
+        refundPeriod = _refundPeriod;
         jbTerminalStore = IJBTerminalStore(_jbTerminalStoreAddress);
         jbRulesets = IJBRulesets(_jbRulesetAddress);
     }
@@ -49,7 +52,19 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
     }
 
     function _totalFunding(address terminal, uint256 projectId) internal view returns (uint256) {
-        return jbTerminalStore.balanceOf(terminal, projectId, JBConstants.NATIVE_TOKEN);
+        uint256 balance = jbTerminalStore.balanceOf(
+            terminal,
+            projectId,
+            JBConstants.NATIVE_TOKEN
+        );
+        uint256 withdrawn = jbTerminalStore.usedPayoutLimitOf(
+          address(terminal),
+          projectId,
+          JBConstants.NATIVE_TOKEN,
+          2, // payout cycle
+          uint32(uint160(JBConstants.NATIVE_TOKEN))
+        );
+        return balance + withdrawn;
     }
 
     function beforePayRecordedWith(JBBeforePayRecordedContext calldata context) external view override returns (uint256 weight, JBPayHookSpecification[] memory hookSpecifications) {
@@ -78,6 +93,9 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         if (block.timestamp < deadline) {
             revert("Project funding deadline has not passed. Refunds are disabled.");
         }
+        if (block.timestamp >= deadline + refundPeriod) {
+            revert("Refund period has passed. Refunds are disabled.");
+        }
         // Refund amount = currentFunds * (userTokenCount / currentTokenSupply)
         // Since reserved tokens are not eligible for refunds, and the reserve rate
         // is 50%, we need to divide the currentTokenSupply by 2.
@@ -102,12 +120,16 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         uint256 currentFunding = _totalFunding(terminal, projectId);
         if (currentFunding < fundingGoal) {
             if (block.timestamp >= deadline) {
-                return 3; // Refund stage
+                if (block.timestamp < deadline + refundPeriod) {
+                    return 3; // Refund stage
+                } else {
+                return 4; // Refund stage passed
+                }
             } else {
                 return 1; // Stage 1
             }
         } else {
-            return 2; // Stage 3
+            return 2; // Stage 2
         }
     }
 }

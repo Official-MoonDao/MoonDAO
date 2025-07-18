@@ -1,5 +1,5 @@
 import MailingList from '../layout/MailingList'; 
-import Footer from './Footer';
+import { ExpandedFooter } from './ExpandedFooter';
 
 
 function MailingListCallout() {
@@ -7,7 +7,7 @@ function MailingListCallout() {
         <section>  
             <div id="container" className="relative flex md:min-h-[500px] lg:min-h-[0px]">
                 <div id="background">  
-                    <div id="background-gradient" className="gradient-1 w-full h-full absolute bottom-0 left-0 md:rounded-bl-[5vmax] overflow-hidden"></div>
+                    <div id="background-gradient" className="gradient-1 w-full h-full absolute bottom-0 left-0 overflow-hidden"></div>
                     <div id="bottom-right-divider" className="divider-7 bg-bottom absolute bottom-[-2px] right-[-20%] md:right-0 w-[60%] md:w-[60%] lg:w-[40%] h-full"></div>
                 </div>
                 <div id="content-section" className="flex flex-col max-w-[1200px] w-full">
@@ -40,7 +40,15 @@ function MailingListCallout() {
                         </span>
                     </p>
                     <div className="min-h-[150px] md:min-h-[0px]">
-                        <Footer />
+                        <ExpandedFooter 
+                          callToActionImage="/assets/MoonDAO-Logo-White.svg"
+                          callToActionTitle="Join the Network"
+                          callToActionButtonText="Learn More"
+                          callToActionButtonLink="/join"
+                          hasCallToAction={true}
+                          darkBackground={true}
+                          isFullwidth={false}
+                        />
                     </div>
                 </div>
             </div>    

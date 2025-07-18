@@ -65,7 +65,7 @@ export function PurhcaseNativeTokenModal({
               className="m-2 inline-flex justify-center w-3/4 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-moon-orange text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
               onClick={() => {
                 navigator.clipboard.writeText(nativeAmount + extraFundsForGas)
-                toast.success(nativeTokenName + ' value copied to clipboard')
+                toast.success(nativeTokenName + ' value copied to clipboard.')
               }}
             >
               {'Copy ' + nativeTokenName + ' Amount'}
@@ -81,7 +81,7 @@ export function PurhcaseNativeTokenModal({
               className="m-2 inline-flex justify-center w-3/4 rounded-sm border border-transparent shadow-sm px-4 py-2 bg-moon-orange text-base font-medium text-white hover:bg-white hover:text-moon-orange focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moon-orange"
               onClick={() => {
                 navigator.clipboard.writeText(wallets[selectedWallet].address)
-                toast.success('Address copied to clipboard')
+                toast.success('Address copied to clipboard.')
               }}
             >
               Copy Wallet Address

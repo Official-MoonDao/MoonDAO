@@ -1,6 +1,7 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
@@ -13,6 +14,7 @@ Button States:
 
 type PrivyWeb3BtnProps = {
   id?: string
+  dataTestId?: string
   label: any
   type?: string
   action: Function
@@ -28,6 +30,7 @@ type PrivyWeb3BtnProps = {
 
 function Button({
   id,
+  dataTestId,
   type = 'button',
   className,
   onClick,
@@ -38,6 +41,7 @@ function Button({
   return (
     <button
       id={id}
+      data-testid={dataTestId}
       type={type}
       className={`${
         noPadding ? '' : 'px-5 py-3'
@@ -52,6 +56,7 @@ function Button({
 
 export function PrivyWeb3Button({
   id,
+  dataTestId,
   label,
   type = 'button',
   action,
@@ -112,6 +117,7 @@ export function PrivyWeb3Button({
       {btnState === 0 && (
         <Button
           id={id}
+          dataTestId={dataTestId}
           className={className}
           onClick={login}
           noPadding={noPadding}
@@ -122,6 +128,7 @@ export function PrivyWeb3Button({
       {btnState === 1 && (
         <Button
           id={id}
+          dataTestId={dataTestId}
           type="button"
           className={className}
           onClick={async () => {
@@ -130,9 +137,12 @@ export function PrivyWeb3Button({
             }
 
             try {
-              await wallets[selectedWallet]?.switchChain(selectedChain?.id)
+              const success = await addNetworkToWallet(selectedChain)
+              if (success) {
+                await wallets[selectedWallet]?.switchChain(selectedChain?.id)
+              }
             } catch (err: any) {
-              console.log(err.message)
+              console.error('Error switching network:', err.message)
             }
           }}
           isDisabled={isDisabled}
@@ -144,6 +154,7 @@ export function PrivyWeb3Button({
       {btnState === 2 && (
         <Button
           id={id}
+          dataTestId={dataTestId}
           type={type}
           className={className}
           onClick={async () => {

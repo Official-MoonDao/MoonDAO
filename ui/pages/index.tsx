@@ -8,34 +8,41 @@ import Callout1 from '../components/home/Callout1'
 import Callout2 from '../components/home/Callout2'
 import Callout3 from '../components/home/Callout3'
 import Feature from '../components/home/Feature'
+import GovernanceSection from '../components/home/GovernanceSection'
 import Hero from '../components/home/Hero'
+import NetworkSection from '../components/home/NetworkSection'
 import PartnerSection from '../components/home/PartnerSection'
 import SpeakerSection from '../components/home/SpeakerSection'
-import Video from '../components/home/Video'
+import Timeline from '../components/home/Timeline'
 import Container from '../components/layout/Container'
-import Footer from '../components/layout/Footer'
 import WebsiteHead from '../components/layout/Head'
 import PageEnder from '../components/layout/PreFooter'
+<<<<<<< HEAD
 import StandardButton from '@/components/layout/StandardButton'
+=======
+import { ExpandedFooter } from '../components/layout/ExpandedFooter'
+
+>>>>>>> 3982731a0bc116e27b7cd189722e96f5088b61c0
 
 export default function Home({ linkSource }: any) {
   const router = useRouter()
   const { citizen } = useContext(CitizenContext)
 
   //If the user is loading the page directly and has a citizen nft, redirect to their citizen page
-  useEffect(() => {
-    if (
-      linkSource === 'direct' &&
-      citizen?.metadata?.name &&
-      citizen?.metadata?.id
-    )
-      router.push(
-        `/citizen/${generatePrettyLinkWithId(
-          citizen?.metadata?.name as string,
-          citizen?.metadata?.id
-        )}`
-      )
-  }, [linkSource, citizen, router])
+  // Commented out to allow users to stay on homepage even if they have a citizen NFT
+  // useEffect(() => {
+  //   if (
+  //     linkSource === 'direct' &&
+  //     citizen?.metadata?.name &&
+  //     citizen?.metadata?.id
+  //   )
+  //     router.push(
+  //       `/citizen/${generatePrettyLinkWithId(
+  //         citizen?.metadata?.name as string,
+  //         citizen?.metadata?.id
+  //       )}`
+  //     )
+  // }, [linkSource, citizen, router])
 
   return (
     <Container>
@@ -45,14 +52,17 @@ export default function Home({ linkSource }: any) {
       />
       <div>
         <Hero />
-        <Video />
         <Callout1 />
         <Callout2 />
         <Feature />
+        <GovernanceSection />
+        <NetworkSection />
+        <Timeline />
         <SpeakerSection />
         <Callout3 />
         <PartnerSection />
         <PageEnder />
+<<<<<<< HEAD
         <StandardButton
           onClick={() => {
             sendDiscordMessage('networkNotifications', 'TEST NOTIFICATION')
@@ -62,6 +72,13 @@ export default function Home({ linkSource }: any) {
           {'TEST NOTIFICATION'}
         </StandardButton>
         <Footer darkBackground={true} />
+=======
+        <ExpandedFooter 
+          hasCallToAction={false}
+          darkBackground={true}
+          isFullwidth={true}
+        />
+>>>>>>> 3982731a0bc116e27b7cd189722e96f5088b61c0
       </div>
     </Container>
   )

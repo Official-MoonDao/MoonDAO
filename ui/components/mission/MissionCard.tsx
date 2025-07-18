@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { useState } from 'react'
 import { useEffect } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
@@ -25,6 +26,7 @@ export type Mission = {
     version: number
     payButton: string
     payDisclosure: string
+    youtubeLink: string
   }
 }
 
@@ -67,11 +69,12 @@ export default function MissionCard({
   }, [mission?.teamId, teamContract])
 
   function MissionFooter() {
+    const totalFunding = useTotalFunding(mission?.projectId)
     return (
       <div id="missions-stats" className="flex gap-4">
         <MissionStat
           label="Total Raised"
-          value={'Ξ' + projectData?.subgraphData?.volume / 1e18}
+          value={'Ξ' + Number(totalFunding || 0) / 1e18}
         />
         <MissionStat
           label="PAYMENTS"

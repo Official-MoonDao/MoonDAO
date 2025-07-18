@@ -36,15 +36,27 @@ export default function Analytics({ vMooneyData, dateUpdated }: any) {
           header="Analytics"
           headerSize="max(20px, 3vw)"
           description={descriptionSection}
-          preFooter={<NoticeFooter />}
+          preFooter={
+            <NoticeFooter 
+              defaultImage="../assets/MoonDAO-Logo-White.svg"
+              defaultTitle="Need Help?"
+              defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+              defaultButtonText="Submit a Ticket"
+              defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+              imageWidth={200}
+              imageHeight={200}
+            />
+          }
           mainPadding
           mode="compact"
           popOverEffect={false}
           isProfile
         >
-          <div className="grid gap-4 lg:gap-0 xl:grid-cols-1 mt-6 lg:mt-10 lg:w-full lg:max-w-[1380px] items-center justify-center">
-            <AnalyticsPage vMooneyData={vMooneyData} />
-            <TreasuryPage />
+          <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
+            <div className="grid gap-6 xl:grid-cols-1 lg:w-full lg:max-w-[1380px] items-center justify-center">
+              <AnalyticsPage vMooneyData={vMooneyData} />
+              <TreasuryPage />
+            </div>
           </div>
         </ContentLayout>
       </Container>
@@ -53,18 +65,25 @@ export default function Analytics({ vMooneyData, dateUpdated }: any) {
 }
 
 export async function getStaticProps() {
-  const vMooneyData = await getVMOONEYData()
+  try {
+    const vMooneyData = await getVMOONEYData()
 
-  const today = new Date()
-  const formattedDate = `${today.getFullYear()}-${(today.getMonth() + 1)
-    .toString()
-    .padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`
+    const today = new Date()
+    const formattedDate = `${today.getFullYear()}-${(today.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`
 
-  return {
-    props: {
-      vMooneyData,
-      dateUpdated: formattedDate,
-    },
-    revalidate: 60,
+    return {
+      props: {
+        vMooneyData,
+        dateUpdated: formattedDate,
+      },
+      revalidate: 60,
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      props: { vMooneyData: [], dateUpdated: '' },
+    }
   }
 }

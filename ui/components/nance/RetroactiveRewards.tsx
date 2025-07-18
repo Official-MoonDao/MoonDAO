@@ -17,11 +17,11 @@ import { useRouter } from 'next/router'
 import { useState, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
-import { ethereum } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
 import { useAssets } from '@/lib/dashboard/hooks'
+import { ethereum } from '@/lib/infura/infuraChains'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -66,6 +66,30 @@ export type RetroactiveRewardsProps = {
   refreshRewards: () => void
 }
 
+// Helper function to format large numbers for mobile display
+function formatValueForDisplay(value: string | number): { full: string; abbreviated: string } {
+  const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
+  
+  if (isNaN(numValue)) {
+    return { full: value.toString(), abbreviated: value.toString() }
+  }
+  
+  const full = numValue.toLocaleString()
+  
+  // Create abbreviated version for very large numbers
+  if (numValue >= 1000000) {
+    const millions = numValue / 1000000
+    const abbreviated = `${millions.toFixed(2)}M`
+    return { full, abbreviated }
+  } else if (numValue >= 1000) {
+    const thousands = numValue / 1000
+    const abbreviated = `${thousands.toFixed(1)} K`
+    return { full, abbreviated }
+  }
+  
+  return { full, abbreviated: full }
+}
+
 function RewardAsset({
   name,
   value,
@@ -76,23 +100,29 @@ function RewardAsset({
     ? `/coins/${name}.${assetImageExtension[name]}`
     : '/coins/DEFAULT.png'
   const usd = Number(usdValue)
+  
+  const formattedValue = formatValueForDisplay(value)
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex gap-3 items-center">
       <Image
-        className="scale-[0.65]"
+        className="scale-[0.55] filter drop-shadow-lg"
         src={image}
         alt={name}
         width={name === 'ETH' ? 42 : 50}
         height={name === 'ETH' ? 42 : 50}
       />
-      <div className="flex flex-col min-h-[60px]">
-        <div className="flex gap-2 font-GoodTimes text-xl">
-          <p>{name}</p>
-          <p>{value}</p>
+      <div className="flex flex-col min-w-0 flex-1">
+        <div className="flex gap-2 font-GoodTimes text-lg text-white">
+          <p className="text-white/80">{name}</p>
+          {/* Show abbreviated on small screens, full on larger screens */}
+          <p className="text-white font-bold whitespace-nowrap">
+            <span className="sm:hidden">{formattedValue.abbreviated}</span>
+            <span className="hidden sm:inline">{formattedValue.full}</span>
+          </p>
         </div>
         {usd > 0 && (
-          <p className="opacity-60">{`(${
+          <p className="text-gray-400 text-xs">{`(${
             approximateUSD ? '~' : ''
           }$${usd.toLocaleString()})`}</p>
         )}
@@ -149,7 +179,7 @@ export function RetroactiveRewards({
   }, [userAddress, distributions, quarter, year])
 
   const handleDistributionChange = (projectId: string, value: number) => {
-    const newValue = Math.min(100, Math.max(1, +value))
+    const newValue = Math.min(100, Math.max(0, +value))
     setDistribution((prev) => ({
       ...prev,
       [projectId]: newValue,
@@ -235,47 +265,70 @@ export function RetroactiveRewards({
   const { tokens: baseTokens } = useAssets(BASE_ASSETS_URL)
   const { stakedEth, error } = useStakedEth()
 
-  const tokens = mainnetTokens
-    .concat(arbitrumTokens)
-    .concat(polygonTokens)
-    .concat(baseTokens)
-    .concat([{ symbol: 'stETH', balance: stakedEth }])
+  // Memoize the tokens array to prevent unnecessary re-renders
+  const tokens = useMemo(() => {
+    return mainnetTokens
+      .concat(arbitrumTokens)
+      .concat(polygonTokens)
+      .concat(baseTokens)
+      .concat([{ symbol: 'stETH', balance: stakedEth }])
+  }, [mainnetTokens, arbitrumTokens, polygonTokens, baseTokens, stakedEth])
 
-  const { ethBudget, usdBudget, mooneyBudget, ethPrice } = getBudget(
-    tokens,
-    year,
-    quarter
-  )
+  const {
+    ethBudget: ethBudgetCurrent,
+    mooneyBudget,
+    ethPrice,
+  } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
+
+  const ethBudget = 15.4072
+  const usdBudget = ethBudget * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
-  useEffect(() => {
-    async function getMooneyBudgetUSD() {
-      const route = await pregenSwapRoute(ethereum, mooneyBudget, MOONEY, DAI)
+  const eligibleProjects = useMemo(
+    () => currentProjects.filter((p) => p.eligible),
+    [currentProjects]
+  )
 
-      const usd = route?.route[0].rawQuote.toString() / 1e18
-      setMooneyBudgetUSD(usd)
+  const ineligibleProjects = useMemo(
+    () => currentProjects.filter((p) => !p.eligible),
+    [currentProjects]
+  )
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function getMooneyBudgetUSD() {
+      try {
+        // Skip if mooneyBudget is 0 or very small to avoid unnecessary calls
+        if (!mooneyBudget || mooneyBudget < 0.01) {
+          setMooneyBudgetUSD(0)
+          return
+        }
+
+        const route = await pregenSwapRoute(ethereum, mooneyBudget, MOONEY, DAI)
+
+        if (!isCancelled && route?.route[0]?.rawQuote) {
+          const usd = route.route[0].rawQuote.toString() / 1e18
+          setMooneyBudgetUSD(usd)
+        }
+      } catch (error) {
+        console.error('Error fetching Mooney budget USD:', error)
+        if (!isCancelled) {
+          // Set a fallback value or keep the previous value
+          setMooneyBudgetUSD(0)
+        }
+      }
     }
 
-    if (mooneyBudget) {
+    if (mooneyBudget && MOONEY && DAI) {
       getMooneyBudgetUSD()
     }
-  }, [mooneyBudget, DAI, MOONEY])
 
-  const {
-    addressToEthPayout,
-    addressToMooneyPayout,
-    ethPayoutCSV,
-    vMooneyPayoutCSV,
-    vMooneyAddresses,
-    vMooneyAmounts,
-  } = getPayouts(
-    projectIdToEstimatedPercentage,
-    currentProjects,
-    communityCircle,
-    ethBudget,
-    mooneyBudget
-  )
+    return () => {
+      isCancelled = true
+    }
+  }, [mooneyBudget, DAI, MOONEY])
 
   const handleSubmit = async () => {
     const totalPercentage = Object.values(distribution).reduce(
@@ -283,7 +336,7 @@ export function RetroactiveRewards({
       0
     )
     if (totalPercentage !== 100) {
-      toast.error('Total distribution must equal 100%', {
+      toast.error('Total distribution must equal 100%.', {
         style: toastStyle,
       })
       return
@@ -339,58 +392,65 @@ export function RetroactiveRewards({
           popOverEffect={false}
           isProfile
         >
-          <SectionCard>
-            <h1 className="font-GoodTimes opacity-60">{`Q${quarter}: ${year} Rewards`}</h1>
-            <div
-              id="rewards-asset-container"
-              className="mt-4 flex flex-col justify-center gap-2"
-            >
-              <RewardAsset
-                name="ETH"
-                value={ethBudget.toFixed(4)}
-                usdValue={usdBudget.toFixed(2)}
-              />
-              <div className="flex flex-col md:flex-row md:items-center justify-between">
-                <RewardAsset
-                  name="MOONEY"
-                  value={Number(mooneyBudget.toPrecision(3)).toLocaleString()}
-                  usdValue={mooneyBudgetUSD.toFixed(2)}
-                  approximateUSD
-                />
-
-                <StandardButtonRight
-                  className="mt-4 md:mt-0 gradient-2 rounded-full"
+          <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px]">
+            {/* Condensed Top Section - Rewards + Create Button */}
+            <div className="bg-black/20 rounded-xl p-4 border border-white/10">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                <h1 className="font-GoodTimes text-white/80 text-lg">{`Q${quarter}: ${year} Rewards`}</h1>
+                <button
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
                   onClick={() => router.push('/submit')}
-                  styleOnly
                 >
-                  <div className="flex items-center gap-2">
-                    <Image
-                      src={'/assets/plus-icon.png'}
-                      width={20}
-                      height={20}
-                      alt="Create Project"
-                    />
-                    {'Create Project'}
-                  </div>
-                </StandardButtonRight>
+                  <Image
+                    src={'/assets/plus-icon.png'}
+                    width={16}
+                    height={16}
+                    alt="Create Project"
+                  />
+                  <span className="leading-none">Create Project</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-black/20 rounded-lg p-3 border border-white/10">
+                  <RewardAsset
+                    name="ETH"
+                    value={ethBudget.toFixed(4)}
+                    usdValue={usdBudget.toFixed(2)}
+                  />
+                </div>
+                <div className="bg-black/20 rounded-lg p-3 border border-white/10">
+                  <RewardAsset
+                    name="MOONEY"
+                    value={Number(mooneyBudget.toPrecision(3)).toLocaleString()}
+                    usdValue={mooneyBudgetUSD.toFixed(2)}
+                    approximateUSD
+                  />
+                </div>
               </div>
             </div>
 
-            <div id="projects-container" className="mt-8">
-              <h1 className="font-GoodTimes opacity-60 text-2xl">
-                Active Projects
+            <div
+              id="projects-container"
+              className="bg-black/20 rounded-xl p-6 border border-white/10"
+            >
+              <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
+                Eligible Projects
               </h1>
 
-              <div className="mt-12 flex flex-col gap-4">
-                {currentProjects && currentProjects?.length > 0 ? (
-                  currentProjects.map((project: any, i) => (
-                    <div key={`project-card-${i}`}>
+              <div className="flex flex-col gap-6">
+                {eligibleProjects && eligibleProjects.length > 0 ? (
+                  eligibleProjects.map((project: any, i) => (
+                    <div
+                      key={`project-card-${i}`}
+                      className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+                    >
                       <ProjectCard
                         key={`project-card-${i}`}
                         project={project}
                         projectContract={projectContract}
                         hatsContract={hatsContract}
-                        distribute={active}
+                        distribute={active && project.eligible}
                         distribution={
                           userHasVotingPower ? distribution : undefined
                         }
@@ -404,17 +464,19 @@ export function RetroactiveRewards({
                     </div>
                   ))
                 ) : (
-                  <div>There are no active projects.</div>
+                  <div className="text-center py-8 text-gray-400">
+                    <p>There are no active projects.</p>
+                  </div>
                 )}
 
                 {active && (
-                  <div className="mt-4 w-full flex justify-end">
-                    {currentProjects && userHasVotingPower ? (
+                  <div className="mt-6 w-full flex justify-end">
+                    {eligibleProjects && userHasVotingPower ? (
                       <span className="flex flex-col md:flex-row md:items-center gap-2">
                         <PrivyWeb3Button
                           action={handleSubmit}
                           requiredChain={chain}
-                          className="gradient-2 rounded-full"
+                          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
                           label={
                             edit ? 'Edit Distribution' : 'Submit Distribution'
                           }
@@ -427,16 +489,42 @@ export function RetroactiveRewards({
                           requiredChain={DEFAULT_CHAIN_V5}
                           label="Get Voting Power"
                           action={() => router.push('/lock')}
-                          className="gradient-2 rounded-full"
+                          className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
                         />
                       </span>
                     )}
                   </div>
                 )}
               </div>
+
+              {ineligibleProjects && ineligibleProjects.length > 0 && (
+                <>
+                  <h1 className="font-GoodTimes text-white/80 text-xl mt-10 mb-6">
+                    Active Projects (Not Eligible)
+                  </h1>
+                  <div className="flex flex-col gap-6">
+                    {ineligibleProjects.map((project: any, i) => (
+                      <div
+                        key={`ineligible-project-card-${i}`}
+                        className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+                      >
+                        <ProjectCard
+                          key={`ineligible-project-card-${i}`}
+                          project={project}
+                          projectContract={projectContract}
+                          hatsContract={hatsContract}
+                          userHasVotingPower={userHasVotingPower}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-            <PastProjects projects={pastProjects} />
-          </SectionCard>
+            <div className="bg-black/20 rounded-xl border border-white/10 overflow-hidden">
+              <PastProjects projects={pastProjects} />
+            </div>
+          </div>
         </ContentLayout>
       </Container>
     </section>

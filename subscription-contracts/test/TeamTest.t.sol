@@ -70,14 +70,19 @@ contract ERC5643Test is Test {
       vm.stopPrank();
     }
 
+    function _createMoonDAOTeam() internal returns (uint256 topHatId, uint256 hatId) {
+      vm.startPrank(user1);
+      (uint256 topHatId, uint256 hatId) = creator.createMoonDAOTeam{value: 0.555 ether}("", "", "", "name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
+      vm.stopPrank();
+    }
+
     function testMint() public {
-      vm.prank(user1);
-      creator.createMoonDAOTeam{value: 0.555 ether}("", "", "", "name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
+      _createMoonDAOTeam();
     }
 
     function testUpdateTable() public {
+      (uint256 topHatId, uint256 hatId) = _createMoonDAOTeam();
       vm.startPrank(user1);
-      (uint256 topHatId, uint256 hatId) = creator.createMoonDAOTeam{value: 0.555 ether}("", "", "", "name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
       bool isAdmin = team.isManager(0, user1);
       assertTrue(isAdmin);
 

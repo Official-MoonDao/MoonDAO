@@ -14,7 +14,7 @@ export default function MailingList() {
       onSubmit={(e: any) => {
         e.preventDefault()
         if (!userEmail || userEmail.trim() === '' || !userEmail.includes('@')) {
-          toast.error('Please enter a valid email address')
+          toast.error('Please enter a valid email address.')
         } else {
           subscribe(userEmail)
           toast.success('Subscribed! Check your email to confirm.', {

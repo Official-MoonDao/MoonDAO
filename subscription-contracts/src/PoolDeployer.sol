@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/console.sol";
 import {PositionManager} from "v4-periphery/src/PositionManager.sol";
 import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
@@ -10,6 +9,7 @@ import {Actions} from "v4-periphery/src/libraries/Actions.sol";
 import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IAllowanceTransfer {
     function approve(
@@ -20,15 +20,9 @@ interface IAllowanceTransfer {
     ) external;
 }
 
-contract PoolDeployer {
+contract PoolDeployer is Ownable {
     using CurrencyLibrary for Currency;
     IAllowanceTransfer constant PERMIT2 = IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
-    mapping(uint256 => address) public POSITION_MANAGERS;
-    uint256 MAINNET = 1;
-    uint256 ARBITRUM = 42161;
-    uint256 BASE = 8453;
-    uint256 ARB_SEP = 421614;
-    uint256 SEP = 11155111;
 
     PositionManager public posm;
     IERC20 public token;
@@ -40,7 +34,7 @@ contract PoolDeployer {
 
     // set tickLower and tickUpper to give liquidity at all prices
 
-    constructor(address _hookAddress, address _positionManager) {
+    constructor(address _hookAddress, address _positionManager, address owner) Ownable(owner) {
         hookAddress = _hookAddress;
         posm = PositionManager(payable(_positionManager));
     }
@@ -53,7 +47,7 @@ contract PoolDeployer {
         token = IERC20(_token);
     }
 
-    function setHookAddress(address _hookAddress) external {
+    function setHookAddress(address _hookAddress) external onlyOwner {
         hookAddress = _hookAddress;
     }
 

@@ -1,19 +1,20 @@
-import React, { ReactNode } from 'react';
-import Container from '../components/layout/Container';
-import ContentLayout from '../components/layout/ContentLayout';
+import Head from '../components/layout/Head'
 
-const Constitution: React.FC = () => {
-    return (
-        <section className="overflow-auto">
-            <Container>
-                <ContentLayout
-                    header="Thank You"
-                    headerSize="max(25px, 4vw)"
-                    subHeader="We've received your response. We've received your response. We've received your response. We've received your response. We've received your response. We've received your response. We've received your response. We've received your response. We've received your response. "
-                />
-            </Container>
-        </section>    
-    );
+export default function Constitution() {
+  return (
+    <div className="flex flex-col justify-center items-center animate-fadeIn h-screen overflow-hidden fixed inset-0">
+      <Head title="Constitution" />
+      <iframe
+        className="absolute top-0 left-0 h-full w-full border-0"
+        src="https://docs.moondao.com/Governance/Constitution"
+        allowFullScreen
+        style={{ height: '100vh', overflow: 'hidden' }}
+        onLoad={() => {
+          // Prevent any scroll restoration
+          window.scrollTo(0, 0);
+          document.body.style.overflow = 'hidden';
+        }}
+      />
+    </div>
+  )
 }
-
-export default Constitution;

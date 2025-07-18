@@ -109,10 +109,10 @@ export default function TeamJobModal({
             jobData.description.trim() === '' ||
             jobData.contactInfo.trim() === ''
           )
-            return toast.error('Please fill out all fields')
+            return toast.error('Please fill out all fields.')
 
           if (endTime === 0 || endTime < daysFromNowTimestamp(1)) {
-            return toast.error('Please set an expiration date')
+            return toast.error('Please set an expiration date.')
           }
 
           setIsLoading(true)
@@ -182,7 +182,7 @@ export default function TeamJobModal({
             const teamName = team?.metadata.name as string
             sendDiscordMessage(
               'networkNotifications',
-              `[**${teamName}** has ${
+              `## [**${teamName}** has ${
                 edit ? 'updated a' : 'posted a new'
               } job](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
                 teamName

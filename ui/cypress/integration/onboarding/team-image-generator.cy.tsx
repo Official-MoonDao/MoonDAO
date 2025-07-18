@@ -25,7 +25,11 @@ describe('<TeamImageGenerator />', () => {
 
   it('Displays the current image if provided', () => {
     cy.get('#teamPic').should('exist')
-    cy.get('img').should('have.attr', 'src', props.currImage)
+    cy.get('img').should(
+      'have.attr',
+      'src',
+      '/_next/image?url=https%3A%2F%2Fgray-main-toad-36.mypinata.cloud%2Fipfs%2F%2FOriginal.png&w=1200&q=75'
+    )
   })
 
   it('Displays the uploaded image if provided', () => {

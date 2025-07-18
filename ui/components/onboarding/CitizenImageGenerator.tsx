@@ -1,11 +1,9 @@
 import html2canvas from 'html2canvas-pro'
 import Image from 'next/image'
-import toast from 'react-hot-toast'
-import { MediaRenderer } from 'thirdweb/react'
+import { useEffect, useState } from 'react'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
-import client from '@/lib/thirdweb/client'
 import FileInput from '../layout/FileInput'
-import { StageButton } from './StageButton'
+import IPFSRenderer from '../layout/IPFSRenderer'
 
 export function ImageGenerator({
   currImage,
@@ -21,6 +19,30 @@ export function ImageGenerator({
     isLoading: generating,
     error: generateError,
   } = useImageGenerator('/api/image-gen/citizen-image', inputImage, setImage)
+  
+  const [hasGeneratedImage, setHasGeneratedImage] = useState(false)
+  const [showError, setShowError] = useState(false)
+
+  // Clear error when new input image is uploaded
+  useEffect(() => {
+    if (inputImage) {
+      setShowError(false)
+    }
+  }, [inputImage])
+
+  // Show error when generateError occurs
+  useEffect(() => {
+    if (generateError) {
+      setShowError(true)
+    }
+  }, [generateError])
+
+  // Track when image has been generated
+  useEffect(() => {
+    if (image && !generating) {
+      setHasGeneratedImage(true)
+    }
+  }, [image, generating])
 
   async function submitImage() {
     if (!document.getElementById('citizenPic'))
@@ -52,20 +74,25 @@ export function ImageGenerator({
   return (
     <div className="animate-fadeIn flex flex-col">
       <div className="flex items-start flex-col mt-5">
-        <FileInput file={inputImage} setFile={setInputImage} noBlankImages />
+        <FileInput
+          file={inputImage}
+          setFile={setInputImage}
+          noBlankImages
+          accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
+          acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
+        />
       </div>
       <div
         id="citizenPic"
         className="mt-4 w-[90vw] rounded-[5vmax] rounded-tl-[20px] h-[90vw] md:w-[430px] md:h-[430px] lg:w-[600px] lg:h-[600px] bg-cover justify-left relative flex"
       >
         {currImage && !inputImage && (
-          <MediaRenderer
-            client={client}
+          <IPFSRenderer
             src={currImage}
             className=""
-            width="100%"
-            height="100%"
-            alt={''}
+            width={600}
+            height={600}
+            alt="Citizen Image"
           />
         )}
         {inputImage && (
@@ -98,25 +125,29 @@ export function ImageGenerator({
           </>
         )}
       </div>
-      {generateError && (
+      {showError && generateError && (
         <p className="mt-2 ml-2 opacity-[50%]">{generateError}</p>
       )}
       {inputImage && (
-        <StageButton
-          className=""
+        <button
+          className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base"
           onClick={() => {
             setImage(null)
+            setHasGeneratedImage(false)
+            setShowError(false)
             generateImage()
-            if (generateInBG) {
-              nextStage()
-            }
           }}
         >
-          {generating ? 'loading...' : 'Generate'}
-        </StageButton>
+          {generating ? 'loading...' : hasGeneratedImage ? 'Regenerate Image' : 'Generate Image'}
+        </button>
       )}
       {(currImage && !inputImage) || image ? (
-        <StageButton onClick={submitImage}>Next</StageButton>
+        <button
+          className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base"
+          onClick={submitImage}
+        >
+          Next
+        </button>
       ) : (
         <></>
       )}

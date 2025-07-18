@@ -10,19 +10,20 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { renameFile } from '@/lib/utils/files'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { bytesOfString } from '@/lib/utils/strings'
 import TeamABI from '../../const/abis/Team.json'
+import FileInput from '../layout/FileInput'
+import IPFSRenderer from '../layout/IPFSRenderer'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { TeamListing } from './TeamListing'
@@ -141,19 +142,19 @@ export default function TeamMarketplaceListingModal({
             listingData.description.trim() === '' ||
             listingData.price.trim() === ''
           )
-            return toast.error('Please fill out all fields')
+            return toast.error('Please fill out all fields.')
 
           if (!listingData.image) {
-            return toast.error('Please upload an image')
+            return toast.error('Please upload an image.')
           }
 
           if (isTimed) {
             if (startTime >= endTime) {
-              return toast.error('Start time must be before end time')
+              return toast.error('Start time must be before end time.')
             } else if (endTime <= startTime) {
-              return toast.error('End time must be after start time')
+              return toast.error('End time must be after start time.')
             } else if (startTime === 0 || endTime === 0) {
-              return toast.error('Please set start and end times')
+              return toast.error('Please set start and end times.')
             }
           }
 
@@ -242,7 +243,7 @@ export default function TeamMarketplaceListingModal({
             const teamName = team?.metadata.name as string
             sendDiscordMessage(
               'networkNotifications',
-              `[**${teamName}** has ${
+              `## [**${teamName}** has ${
                 edit ? 'updated a' : 'posted a new'
               } listing ](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
                 teamName
@@ -280,11 +281,10 @@ export default function TeamMarketplaceListingModal({
         {listingData.image && (
           <>
             {typeof listingData.image === 'string' ? (
-              <MediaRenderer
-                client={client}
+              <IPFSRenderer
                 src={listingData.image}
-                height="200px"
-                width="200px"
+                height={200}
+                width={200}
                 alt=""
               />
             ) : (
@@ -299,13 +299,13 @@ export default function TeamMarketplaceListingModal({
           </>
         )}
         <div className="w-full flex flex-col gap-2 p-2 mt-2 rounded-t-[20px] rounded-bl-[10px] items-start justify-start bg-darkest-cool">
-          <input
-            id="listing-image-input"
-            type="file"
-            className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-t-[20px]"
-            onChange={(e: any) =>
-              setListingData({ ...listingData, image: e.target.files[0] })
+          <FileInput
+            file={listingData.image}
+            setFile={(file: any) =>
+              setListingData({ ...listingData, image: file })
             }
+            accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
+            acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
           />
 
           <input

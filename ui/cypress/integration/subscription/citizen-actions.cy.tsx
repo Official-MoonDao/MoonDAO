@@ -1,4 +1,3 @@
-import { ZERO_ADDRESS } from 'const/config'
 import CitizenActions from '@/components/subscription/CitizenActions'
 
 describe('<CitizenActions />', () => {
@@ -13,7 +12,7 @@ describe('<CitizenActions />', () => {
 
   beforeEach(() => {
     props = {
-      address: ZERO_ADDRESS,
+      address: '0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b',
       nft,
     }
 

@@ -30,7 +30,7 @@ export default function MissionActivityList({
   const projectEvents = useMemo(
     () =>
       projectEventsQueryResult?.pages
-        .flatMap((page) => page.data.projectEvents)
+        .flatMap((page) => page.data.activityEvents.items)
         .map(transformEventData)
         .filter((event) => !!event)
         .map((e) => translateEventDataToPresenter(e, tokenSymbol)) ?? [],
@@ -88,7 +88,7 @@ function translateEventDataToPresenter(
             <NativeTokenValue decimals={8} wei={event.amount.value} />
           </span>
         ),
-        extra: <RichNote note={event.note} />,
+        extra: null,
       }
     case 'addToBalanceEvent':
       return {
@@ -99,41 +99,24 @@ function translateEventDataToPresenter(
             <NativeTokenValue decimals={8} wei={event.amount.value} />
           </span>
         ),
-        extra: event.note ? <RichNote note={event.note} /> : null,
+        extra: null,
       }
     case 'mintTokensEvent':
       return {
         event,
         header: 'Minted tokens',
         subject: (
-          <span className="font-heading text-lg">
-            {event.amount.format()}{' '}
-            {tokenSymbolText({
-              capitalize: true,
-              tokenSymbol,
-              plural: event.amount.toFloat() > 1,
-            })}
-          </span>
+          <span className="font-heading text-lg">To: {event.beneficiary}</span>
         ),
-        extra: <RichNote note={event.note} />,
+        extra: null,
       }
-    case 'cashOutEvent':
-      return {
-        event,
-        header: 'Cashed out',
-        subject: (
-          <span className="font-heading text-lg">
-            <NativeTokenValue decimals={8} wei={event.reclaimAmount.value} />
-          </span>
-        ),
-        extra: <RichNote note={event.metadata} />,
-      }
-    case 'deployedERC20Event':
+
+    case 'deployErc20Event':
       return {
         event,
         header: 'Deployed ERC20',
         subject: <span className="font-heading text-lg">{event.symbol}</span>,
-        extra: <RichNote note={event.address} />,
+        extra: null,
       }
     case 'projectCreateEvent':
       return {
@@ -142,75 +125,7 @@ function translateEventDataToPresenter(
         subject: 'Project created 🎉',
         extra: null,
       }
-    case 'distributePayoutsEvent':
-      return {
-        event,
-        header: 'Distributed payouts',
-        subject: (
-          <span className="font-heading text-lg">
-            <NativeTokenValue decimals={8} wei={event.amount.value} />
-          </span>
-        ),
-        extra: (
-          <RichNote
-            note={`Fee: ${event.fee.value}, Paid out: ${event.amountPaidOut.value}`}
-          />
-        ),
-      }
-    case 'distributeReservedTokensEvent':
-      return {
-        event,
-        header: 'Distributed reserved tokens',
-        subject: (
-          <span className="font-heading text-lg">
-            {Number(event.tokenCount)}{' '}
-            {tokenSymbolText({ tokenSymbol, plural: event.tokenCount > 1 })}
-          </span>
-        ),
-        extra: null,
-      }
-    case 'distributeToReservedTokenSplitEvent':
-      return {
-        event,
-        header: 'Distributed to reserved token split',
-        subject: (
-          <span className="font-heading text-lg">
-            {Number(event.tokenCount)}{' '}
-            {tokenSymbolText({ tokenSymbol, plural: event.tokenCount > 1 })}
-          </span>
-        ),
-        extra: (
-          <RichNote
-            note={`Percent: ${event.percent}, Split project: ${event.splitProjectId}`}
-          />
-        ),
-      }
-    case 'distributeToPayoutSplitEvent':
-      return {
-        event,
-        header: 'Distributed to payout split',
-        subject: (
-          <span className="font-heading text-lg">
-            <NativeTokenValue decimals={8} wei={event.amount.value} />
-          </span>
-        ),
-        extra: (
-          <RichNote
-            note={`Percent: ${event.percent}, Split project: ${event.splitProjectId}`}
-          />
-        ),
-      }
-    case 'useAllowanceEvent':
-      return {
-        event,
-        header: 'Used allowance',
-        subject: (
-          <span className="font-heading text-lg">
-            <NativeTokenValue decimals={8} wei={event.amount.value} />
-          </span>
-        ),
-        extra: <RichNote note={event.note} />,
-      }
+
     case 'burnEvent':
       return {
         event,
@@ -224,11 +139,7 @@ function translateEventDataToPresenter(
             })}
           </span>
         ),
-        extra: (
-          <RichNote
-            note={`Staked: ${event.stakedAmount.value}, ERC20: ${event.erc20Amount.value}`}
-          />
-        ),
+        extra: null,
       }
   }
 }

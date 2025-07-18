@@ -65,17 +65,22 @@ export default function CitizensChart({
       (a, b) => parseInt(a.blockTimestamp) - parseInt(b.blockTimestamp)
     )
 
+    // Count transfers that happened before the range starts
+    const transfersBeforeRange = sortedTransfers.filter(
+      (transfer) => parseInt(transfer.blockTimestamp) < xDomain[0]
+    )
+    let cumulativeCount = transfersBeforeRange.length
+
     // Create points array with cumulative count
     const points: any[] = []
-    let cumulativeCount = 0
 
-    // Add initial point at the start of the range
+    // Add initial point at the start of the range with the count up to that point
     points.push({
       timestamp: xDomain[0],
-      citizens: 0,
+      citizens: cumulativeCount,
     })
 
-    // Add points for each transfer
+    // Add points for each transfer within the range
     sortedTransfers.forEach((transfer) => {
       const timestamp = parseInt(transfer.blockTimestamp)
       if (timestamp >= xDomain[0] && timestamp <= xDomain[1]) {
@@ -102,15 +107,37 @@ export default function CitizensChart({
     const maxCitizens = Math.max(
       ...processedPoints.map((point) => point.citizens)
     )
-    const roundedMax = Math.ceil(maxCitizens / 10) * 10
-    const step = roundedMax / 5
 
-    return Array.from({ length: 6 }, (_, i) => Math.round(step * i))
+    // Handle different scales more intelligently
+    let roundedMax: number
+    let tickCount = 5
+
+    if (maxCitizens <= 10) {
+      roundedMax = Math.ceil(maxCitizens)
+      tickCount = roundedMax
+    } else if (maxCitizens <= 100) {
+      roundedMax = Math.ceil(maxCitizens / 10) * 10
+    } else if (maxCitizens <= 1000) {
+      roundedMax = Math.ceil(maxCitizens / 50) * 50
+    } else {
+      roundedMax = Math.ceil(maxCitizens / 100) * 100
+    }
+
+    const step = roundedMax / tickCount
+
+    return Array.from({ length: tickCount + 1 }, (_, i) => Math.round(step * i))
   }, [processedPoints])
 
   const yDomain = useMemo(() => {
     if (!processedPoints?.length) return [0, 5]
-    return [0, yTicks[yTicks.length - 1]]
+
+    const maxCitizens = Math.max(
+      ...processedPoints.map((point) => point.citizens)
+    )
+
+    // Ensure we have some padding at the top
+    const maxTick = yTicks[yTicks.length - 1]
+    return [0, Math.max(maxTick, maxCitizens * 1.1)]
   }, [yTicks, processedPoints])
 
   const allZeroValues = useMemo(() => {

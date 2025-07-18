@@ -9,18 +9,21 @@ import "@nana-core/libraries/JBConstants.sol";
 // Hook to enable payouts after a funding goal is reached and a deadline is passed.
 contract LaunchPadApprovalHook is IJBRulesetApprovalHook {
     uint256 public immutable fundingGoal;
-    uint256 public immutable deadline; // how long after start we wait
+    uint256 public immutable deadline;
+    uint256 public immutable refundPeriod;
     IJBTerminalStore public immutable jbTerminalStore;
     address public immutable terminal;
 
     constructor(
         uint256 _fundingGoal,
         uint256 _deadline,
+        uint256 _refundPeriod,
         address _jbTerminalStoreAddress,
         address _terminal
     ) {
         fundingGoal = _fundingGoal;
         deadline = _deadline;
+        refundPeriod = _refundPeriod;
         jbTerminalStore = IJBTerminalStore(_jbTerminalStoreAddress);
         terminal = _terminal;
     }
@@ -36,6 +39,8 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook {
     ) external view override returns (JBApprovalStatus) {
         uint256 currentFunding = _totalFunding(terminal, projectId);
         if (currentFunding >= fundingGoal && block.timestamp >= deadline) {
+            return JBApprovalStatus.Approved;
+        } else if (currentFunding < fundingGoal && block.timestamp >= deadline + refundPeriod) {
             return JBApprovalStatus.Approved;
         } else {
             return JBApprovalStatus.Failed;
@@ -58,10 +63,18 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook {
         view
         returns (uint256)
     {
-        return jbTerminalStore.balanceOf(
+        uint256 balance = jbTerminalStore.balanceOf(
             _terminal,
             projectId,
             JBConstants.NATIVE_TOKEN
         );
+        uint256 withdrawn = jbTerminalStore.usedPayoutLimitOf(
+          address(terminal),
+          projectId,
+          JBConstants.NATIVE_TOKEN,
+          2, // payout cycle
+          uint32(uint160(JBConstants.NATIVE_TOKEN))
+        );
+        return balance + withdrawn;
     }
 }
