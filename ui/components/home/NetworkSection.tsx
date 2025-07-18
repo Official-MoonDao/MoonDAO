@@ -46,7 +46,7 @@ export default function NetworkSection() {
         </div>
 
         {/* Interactive Network Visualization */}
-        <div className="relative mb-24 max-w-6xl mx-auto">
+        <div className="relative mb-24 max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
             
             {/* Left Column - Companies & Jobs */}
@@ -149,7 +149,7 @@ export default function NetworkSection() {
         </div>
 
         {/* Action Cards - Horizontal Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-20">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mb-20">
           {/* Companies Card */}
           <div className="group relative">
             <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 h-[520px] flex flex-col">
@@ -160,7 +160,7 @@ export default function NetworkSection() {
               </div>
               <h3 className="text-2xl font-GoodTimes text-gray-900 mb-4">For Companies</h3>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                Showcase capabilities, find talent, and connect with the global space community through our platform.
+                Showcase capabilities, find talent, and connect with the space community through MoonDAO.
               </p>
               <ul className="space-y-3 mb-8 text-sm text-gray-600 flex-grow">
                 <li className="flex items-center">
@@ -272,7 +272,7 @@ export default function NetworkSection() {
         </div>
 
         {/* Bottom CTA Banner */}
-        <div className="relative">
+        <div className="relative max-w-7xl mx-auto">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 rounded-3xl blur opacity-20"></div>
           <div className="relative bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-3xl p-8 md:p-12 text-center overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-teal-600/10"></div>
