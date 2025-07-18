@@ -146,7 +146,7 @@ export default function TeamDetailPage({
 
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
-    abi: MissionCreatorABI.abi,
+    abi: MissionCreatorABI,
     chain: selectedChain,
   })
 
