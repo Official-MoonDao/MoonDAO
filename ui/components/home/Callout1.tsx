@@ -15,7 +15,7 @@ export default function Callout1() {
     >
       <div
         id="callout1-container"
-        className="z-20 relative w-full h-full flex items-end pb-[40px] md:pb-[80px] lg:pb-[120px] xl:pb-[160px] 2xl:pb-[200px] 3xl:pb-[240px] max-w-[2400px] mx-auto"
+        className="z-20 relative w-full h-full flex items-end pb-[20px] md:pb-[40px] lg:pb-[60px] xl:pb-[80px] 2xl:pb-[120px] 3xl:pb-[160px] max-w-[2400px] mx-auto"
       >
         <div
           id="content-container"

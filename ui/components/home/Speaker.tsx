@@ -29,11 +29,11 @@ export default function Card({ logo, alt, link, name, subtitle, isWhiteText = fa
                             className="rounded-full transition-transform duration-300 ease-in-out group-hover:scale-110 w-[100px] h-[100px] md:w-[120px] md:h-[120px] lg:w-[160px] lg:h-[160px] xl:w-[200px] xl:h-[200px] object-cover"
                         />
                     </div>
-                    <div className="text-center min-h-[50px] mt-3 lg:mt-4 xl:mt-6 2xl:mt-8 3xl:mt-10 w-full max-w-[160px] md:max-w-[240px] 2xl:max-w-[290px] 3xl:max-w-[340px]">
+                    <div className="relative min-h-[50px] mt-3 lg:mt-4 xl:mt-6 2xl:mt-8 3xl:mt-10 w-full">
                         <h3 className={`text-xs md:text-base lg:text-lg xl:text-xl 2xl:text-2xl 3xl:text-3xl font-semibold font-GoodTimes ${isWhiteText ? 'text-white' : 'text-black'} leading-tight text-center whitespace-nowrap`}>
                             {name}
                         </h3>
-                        <p className={`text-sm md:text-base lg:text-lg 2xl:text-xl 3xl:text-2xl ${isWhiteText ? 'text-white' : 'text-black'} mt-2 lg:mt-3 2xl:mt-4 3xl:mt-5 leading-tight text-center`}>
+                        <p className={`absolute left-1/2 transform -translate-x-1/2 text-sm md:text-base lg:text-lg 2xl:text-xl 3xl:text-2xl ${isWhiteText ? 'text-white' : 'text-black'} mt-2 lg:mt-3 2xl:mt-4 3xl:mt-5 leading-tight whitespace-nowrap`}>
                             {subtitle}
                         </p>
                     </div>
@@ -53,12 +53,12 @@ export default function Card({ logo, alt, link, name, subtitle, isWhiteText = fa
                         />
                     </div>
                     <div 
-                        className="text-center mt-3 lg:mt-4 xl:mt-6 2xl:mt-8 3xl:mt-10 max-w-[160px] md:max-w-[240px] 2xl:max-w-[290px] 3xl:max-w-[340px]"
+                        className="text-center mt-3 lg:mt-4 xl:mt-6 2xl:mt-8 3xl:mt-10 w-full -mx-4 px-4"
                     >
                         <h3 className={`text-xs md:text-base lg:text-lg xl:text-xl 2xl:text-2xl 3xl:text-3xl font-semibold font-GoodTimes ${isWhiteText ? 'text-white' : 'text-black'} leading-tight text-center whitespace-nowrap`}>
                             {name}
                         </h3>
-                        <p className={`text-sm md:text-base lg:text-lg 2xl:text-xl 3xl:text-2xl ${isWhiteText ? 'text-white' : 'text-black'} mt-2 lg:mt-3 2xl:mt-4 3xl:mt-5 leading-tight text-center`}>
+                        <p className={`text-sm md:text-base lg:text-lg 2xl:text-xl 3xl:text-2xl ${isWhiteText ? 'text-white' : 'text-black'} mt-2 lg:mt-3 2xl:mt-4 3xl:mt-5 leading-tight text-center whitespace-nowrap`}>
                             {subtitle}
                         </p>
                     </div>
