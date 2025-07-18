@@ -8,7 +8,7 @@ export default function Hero() {
     <section id="hero-section" className="overflow-x-hidden overflow-y-visible relative w-full min-h-screen">
       <div
         id="hero-container"
-        className="flex flex-col min-h-screen items-end justify-end lg:items-start lg:justify-end md:items-start px-[20px] md:px-[40px] 2xl:px-[80px] 3xl:px-[120px] mt-[-1px] p-5 pb-[100px] md:pb-[120px] lg:pb-[200px] xl:pb-[240px] 2xl:pb-[280px] 3xl:pb-[320px] relative z-10 max-w-[2400px] mx-auto"
+        className="flex flex-col min-h-screen items-end justify-end lg:items-start lg:justify-end md:items-start px-[20px] md:px-[40px] 2xl:px-[80px] 3xl:px-[120px] mt-[-1px] p-5 pb-[100px] md:pb-[120px] lg:pb-[200px] xl:pb-[240px] 2xl:pb-[280px] 3xl:pb-[320px] relative z-10 mx-auto"
       >
         <div
           id="background"
