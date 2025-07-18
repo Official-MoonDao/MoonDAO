@@ -35,13 +35,13 @@ export default function LaunchpadSection() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-center mb-16 md:mb-20">
             {/* Left Column - Hero Image */}
             <div className="relative">
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl">
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl h-96 md:h-[500px]">
                 <Image
                   src="/assets/launchpad/moondao-launchpad-hero.png"
                   alt="MoonDAO Launchpad"
                   width={600}
-                  height={400}
-                  className="w-full h-auto object-cover"
+                  height={900}
+                  className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                 <div className="absolute bottom-4 left-4 right-4">
@@ -82,7 +82,7 @@ export default function LaunchpadSection() {
                   <div>
                     <h4 className="text-white font-semibold text-lg mb-1">Global Access</h4>
                     <p className="text-white/70 text-sm md:text-base">
-                      Tap into a global crypto network with trillions of dollars at your fingertips
+                      Tap into a global crypto network with trillions of dollars at your fingertips.
                     </p>
                   </div>
                 </div>
@@ -94,13 +94,13 @@ export default function LaunchpadSection() {
                       alt="Trustless"
                       width={24}
                       height={24}
-                      className="w-6 h-6"
+                      className="w-6 h-6 transform translate-x-0.5"
                     />
                   </div>
                   <div>
                     <h4 className="text-white font-semibold text-lg mb-1">100% Transparent</h4>
                     <p className="text-white/70 text-sm md:text-base">
-                      All transactions are onchain, ensuring everyone can see how funds are spent
+                      All transactions are onchain, ensuring everyone can see how funds are spent.
                     </p>
                   </div>
                 </div>
@@ -118,27 +118,20 @@ export default function LaunchpadSection() {
                   <div>
                     <h4 className="text-white font-semibold text-lg mb-1">Launch in Minutes</h4>
                     <p className="text-white/70 text-sm md:text-base">
-                      Fund your mission in minutes, not months, with instant global access to capital
+                      Fund your mission in minutes, not months, with instant global access to capital.
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              {/* CTA Button */}
+              <div className="pt-4">
                 <StandardButton
-                  className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white font-semibold text-sm md:text-base px-6 py-3 rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border-0 flex-1 text-center"
+                  className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white font-semibold text-sm md:text-base px-6 py-3 rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border-0"
                   link="/launch"
                   hoverEffect={false}
                 >
                   Launch Your Mission
-                </StandardButton>
-                <StandardButton
-                  className="bg-white/10 backdrop-blur-sm text-white font-semibold text-sm md:text-base px-6 py-3 rounded-xl hover:bg-white/20 transition-all duration-300 border border-white/20 flex-1 text-center"
-                  link="/launch"
-                  hoverEffect={false}
-                >
-                  Explore Missions
                 </StandardButton>
               </div>
             </div>
@@ -151,7 +144,7 @@ export default function LaunchpadSection() {
                 Proven Track Record
               </h3>
               <p className="text-white/80 text-base md:text-lg">
-                MoonDAO's journey from concept to space, powered by decentralized funding
+                MoonDAO's journey from concept to space, powered by decentralized funding.
               </p>
             </div>
 
@@ -170,7 +163,7 @@ export default function LaunchpadSection() {
                     $8M
                   </h4>
                   <p className="text-white/70 text-xs md:text-sm">
-                    Raised through decentralized funding
+                    Raised through decentralized funding.
                   </p>
                 </div>
               </div>
@@ -189,7 +182,7 @@ export default function LaunchpadSection() {
                     12K
                   </h4>
                   <p className="text-white/70 text-xs md:text-sm">
-                    $MOONEY token holders
+                    $MOONEY token holders.
                   </p>
                 </div>
               </div>
@@ -208,7 +201,7 @@ export default function LaunchpadSection() {
                     80+
                   </h4>
                   <p className="text-white/70 text-xs md:text-sm">
-                    Projects successfully funded
+                    Projects successfully funded.
                   </p>
                 </div>
               </div>
@@ -227,7 +220,7 @@ export default function LaunchpadSection() {
                     2
                   </h4>
                   <p className="text-white/70 text-xs md:text-sm">
-                    People sent to space
+                    People sent to space.
                   </p>
                 </div>
               </div>
