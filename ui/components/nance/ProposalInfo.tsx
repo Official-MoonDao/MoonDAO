@@ -186,16 +186,20 @@ export default function ProposalInfo({
                   proposalPacket.proposalId?.toString() || proposalPacket.uuid
                 }`}
                 passHref
+                className="text-lg font-semibold text-white hover:text-gray-300 transition-colors"
+                style={{ fontFamily: 'Lato' }}
               >
                 <span className="absolute inset-x-0 -top-px bottom-0" />
                 {`${preTitleDisplay}${proposalPacket.title}`}
               </Link>
             ) : (
-              <span>{`${preTitleDisplay}${proposalPacket.title}`}</span>
+              <span className="text-lg font-semibold text-white" style={{ fontFamily: 'Lato' }}>
+                {`${preTitleDisplay}${proposalPacket.title}`}
+              </span>
             ))}
         </div>
         {/* Metadata */}
-        <div className="mt-2 flex flex-col md:flex-row items-start md:items-center gap-x-6 text-xs">
+        <div className="mt-2 flex flex-col md:flex-row items-start md:items-center gap-x-6 text-xs font-RobotoMono">
           {/* Author */}
           <div className="flex items-center gap-x-1">
             <Image
@@ -208,8 +212,8 @@ export default function ProposalInfo({
               height={75}
             />
             <div>
-              <p className="text-gray-500 dark:text-gray-400">Author</p>
-              <div className="text-center text-black dark:text-white">
+              <p className="text-gray-400 font-RobotoMono">Author</p>
+              <div className="text-center text-white font-RobotoMono">
                 <AddressLink address={proposalPacket.authorAddress} />
               </div>
             </div>
@@ -219,8 +223,8 @@ export default function ProposalInfo({
             <div className="flex items-center gap-x-1">
               <CalendarDaysIcon className="h-6 w-6 flex-none rounded-full text-gray-900 dark:text-white" />
               <div>
-                <p className="text-gray-500 dark:text-gray-400">Due</p>
-                <div className="text-center">
+                <p className="text-gray-400 font-RobotoMono">Due</p>
+                <div className="text-center text-white font-RobotoMono">
                   {formatDistanceToNow(fromUnixTime(votingInfo.end), {
                     addSuffix: true,
                   })}
@@ -252,11 +256,11 @@ export default function ProposalInfo({
         </div>
         {/* Coauthor */}
         {!coauthorsDisabled && proposal.coauthors && (
-          <div className="text-xs ml-7">
-            <p className="text-gray-500 dark:text-gray-400">Sponsor</p>
+          <div className="text-xs ml-7 font-RobotoMono">
+            <p className="text-gray-400">Sponsor</p>
             {proposal.coauthors.map((coauthor, index) => {
               return (
-                <p key={index}>
+                <p key={index} className="text-white">
                   <AddressLink address={coauthor} />
                 </p>
               )

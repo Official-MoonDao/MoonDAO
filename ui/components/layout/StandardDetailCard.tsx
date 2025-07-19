@@ -28,7 +28,7 @@ export default function StandardDetailCard({
 }: StandardDetailCardProps) {
   const router = useRouter()
   const CardContent = (
-    <div className="w-full h-full p-4 bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 hover:border-slate-500/50 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40 transition-all duration-200 group">
+    <div className="w-full h-full p-4 bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 group">
       <div className="flex flex-row items-start gap-4 w-full h-full">
         {image && (
           <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] md:w-[120px] md:h-[120px] flex-shrink-0">

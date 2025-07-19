@@ -179,12 +179,12 @@ export default function ProposalList() {
       <>
         <div className="rounded-bl-20px overflow-hidden md:pt-5">
           <div className="font-[roboto] w-full">
-            <div className="p-4 md:p-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl">
+            <div className="p-4 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-stretch">
                 {proposals.map((proposal) => (
                   <div
                     key={proposal.uuid}
-                    className="h-full bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 hover:border-slate-500/50 transition-all duration-200 hover:scale-[1.02]"
+                    className="h-full bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02]"
                   >
                     <Proposal
                       proposal={proposal}

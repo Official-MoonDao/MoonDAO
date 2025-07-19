@@ -110,8 +110,8 @@ export function NoticeFooter({
         darkBackground ? 'md:pl-5 pb-10 w-full pt-5' : 'p-5 mr-5'
       }`}
     >
-      <div className="mx-[3vw] mb-5 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl lg:ml-[80px] 2xl:ml-[125px] 2xl:max-w-[1040px]">
-        <div className="bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-[2vmax] border border-slate-600/30 p-8 flex flex-col lg:flex-row items-center gap-6">
+      <div className="mx-[3vw] mb-5 bg-black/20 backdrop-blur-sm border border-white/10 rounded-[2vmax] lg:ml-[80px] 2xl:ml-[125px] 2xl:max-w-[1040px]">
+        <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-[2vmax] p-8 flex flex-col lg:flex-row items-center gap-6">
           <div id="Image container" className="hidden lg:block flex-shrink-0">
             <Image
               src={notice.image}
