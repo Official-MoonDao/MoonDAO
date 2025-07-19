@@ -11,7 +11,7 @@ import { NoticeFooter } from '../components/layout/NoticeFooter'
 import ProposalEditor from '../components/nance/ProposalEditor'
 
 export default function ProposalsPage() {
-  const title = 'Submit a Proposal'
+  const title = 'Submit a Project Proposal'
 
   useChainDefault()
 
@@ -24,7 +24,7 @@ export default function ProposalsPage() {
       <section className="flex flex-col justify-start px-5 mt-5 items-start animate-fadeIn w-[90vw] md:w-full">
         <Container>
           <ContentLayout
-            header="Submit a Proposal"
+            header="Submit a Project Proposal"
             headerSize="40px"
             description={
               <div className="text-gray-300 text-lg leading-relaxed">
