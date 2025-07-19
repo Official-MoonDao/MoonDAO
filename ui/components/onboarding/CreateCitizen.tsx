@@ -353,7 +353,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         description=""
       >
         <div className="flex flex-row w-full">
-          <div className="px-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 lg:p-8 rounded-[2vmax] shadow-2xl md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1000px]">
+          <div className="px-8 bg-black/20 backdrop-blur-sm border border-white/10 lg:p-8 rounded-[2vmax] md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1000px]">
             <div className="flex p-2 pb-0 flex-row w-full justify-between max-w-[600px] items-start">
               <Steps
                 className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
@@ -430,7 +430,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 title="Citizen Profile"
                 description="Please complete your citizen profile."
               >
-                <div className="w-full max-w-[900px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 overflow-hidden relative">
+                <div className="w-full max-w-[900px] bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden relative">
                   <Widget
                     className="w-full"
                     id={
@@ -507,7 +507,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 </div>
 
                 <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
-                  <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+                  <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
                     <h3 className="font-GoodTimes text-xl mb-4 text-white">Citizen Overview</h3>
                     <div className="grid gap-4">
                       {isMobile ? (
@@ -550,7 +550,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                   </div>
                 </div>
                 <div className="flex flex-col w-full md:p-5 mt-8 max-w-[600px]">
-                  <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+                  <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
                     <h2 className="font-GoodTimes text-xl mb-6 text-white">
                       Important Information
                     </h2>
@@ -568,7 +568,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-row items-center mt-6 p-4 bg-gradient-to-r from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+                <div className="flex flex-row items-center mt-6 p-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl">
                   <label
                     className="relative flex items-center p-3 rounded-full cursor-pointer"
                     htmlFor="link"
@@ -637,7 +637,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                   action={callMint}
                 />
                 {isLoadingMint && (
-                  <div className="mt-4 p-4 bg-gradient-to-r from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+                  <div className="mt-4 p-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl">
                     <p className="text-slate-300 text-center">
                       Creating your citizen profile on the blockchain...
                     </p>
