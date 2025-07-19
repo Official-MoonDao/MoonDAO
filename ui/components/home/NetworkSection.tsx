@@ -15,11 +15,11 @@ export default function NetworkSection() {
       <div className="relative z-10 container mx-auto px-5 py-20 md:py-28">
         {/* Header with different styling */}
         <div className="text-center mb-20">
-          <h2 className="font-GoodTimes text-5xl md:text-6xl lg:text-7xl text-gray-900 mb-6 tracking-tight">
+          <h2 className="font-GoodTimes text-5xl md:text-6xl lg:text-7xl text-white mb-6 tracking-tight">
             Network
           </h2>
-          <p className="text-lg md:text-xl lg:text-2xl text-gray-600 max-w-6xl mx-auto leading-tight">
-            Connect, collaborate, and build the future of space exploration through our <span className="text-blue-600 font-semibold whitespace-nowrap">decentralized ecosystem</span>
+          <p className="text-lg md:text-xl lg:text-2xl text-gray-200 max-w-6xl mx-auto leading-tight">
+            Connect, collaborate, and build the future of space exploration through our <span className="text-blue-300 font-semibold whitespace-nowrap">decentralized ecosystem</span>
           </p>
         </div>
 
@@ -29,17 +29,17 @@ export default function NetworkSection() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mb-20">
           {/* Companies Card */}
           <div className="group relative">
-            <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 h-[520px] flex flex-col">
+            <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:-translate-y-2 h-[520px] flex flex-col hover:bg-black/30">
               <div className="flex items-start mb-6">
                 <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center">
                   <Image src="/assets/icon-power.svg" alt="Companies" width={32} height={32} className="filter invert" />
                 </div>
               </div>
-              <h3 className="text-2xl font-GoodTimes text-gray-900 mb-4">For Companies</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">
+              <h3 className="text-2xl font-GoodTimes text-white mb-4">For Companies</h3>
+              <p className="text-gray-300 mb-6 leading-relaxed">
                 Showcase capabilities, find talent, and connect with the space community through MoonDAO.
               </p>
-              <ul className="space-y-3 mb-8 text-sm text-gray-600 flex-grow">
+              <ul className="space-y-3 mb-8 text-sm text-gray-300 flex-grow">
                 <li className="flex items-center">
                   <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
                   List services and capabilities
@@ -69,17 +69,17 @@ export default function NetworkSection() {
 
           {/* Professionals Card */}
           <div className="group relative">
-            <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 h-[520px] flex flex-col">
+            <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:-translate-y-2 h-[520px] flex flex-col hover:bg-black/30">
               <div className="flex items-start mb-6">
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center">
                   <Image src="/assets/icon-role.svg" alt="Professionals" width={32} height={32} className="filter invert" />
                 </div>
               </div>
-              <h3 className="text-2xl font-GoodTimes text-gray-900 mb-4">For Professionals</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">
+              <h3 className="text-2xl font-GoodTimes text-white mb-4">For Professionals</h3>
+              <p className="text-gray-300 mb-6 leading-relaxed">
                 Find your next space industry opportunity and connect with leading companies and projects.
               </p>
-              <ul className="space-y-3 mb-8 text-sm text-gray-600 flex-grow">
+              <ul className="space-y-3 mb-8 text-sm text-gray-300 flex-grow">
                 <li className="flex items-center">
                   <div className="w-2 h-2 bg-blue-400 rounded-full mr-3"></div>
                   Browse space industry jobs
@@ -109,17 +109,17 @@ export default function NetworkSection() {
 
           {/* Community Card */}
           <div className="group relative">
-            <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 h-[520px] flex flex-col">
+            <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:-translate-y-2 h-[520px] flex flex-col hover:bg-black/30">
               <div className="flex items-start mb-6">
                 <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center">
                   <Image src="/assets/icon-vote.svg" alt="Community" width={32} height={32} className="filter invert" />
                 </div>
               </div>
-              <h3 className="text-2xl font-GoodTimes text-gray-900 mb-4">For Community</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">
+              <h3 className="text-2xl font-GoodTimes text-white mb-4">For Community</h3>
+              <p className="text-gray-300 mb-6 leading-relaxed">
                 Discover space companies, support innovative projects, and be part of the growing ecosystem.
               </p>
-              <ul className="space-y-3 mb-8 text-sm text-gray-600 flex-grow">
+              <ul className="space-y-3 mb-8 text-sm text-gray-300 flex-grow">
                 <li className="flex items-center">
                   <div className="w-2 h-2 bg-purple-400 rounded-full mr-3"></div>
                   Explore companies and services
@@ -150,9 +150,7 @@ export default function NetworkSection() {
 
         {/* Bottom CTA Banner */}
         <div className="relative max-w-7xl mx-auto">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 rounded-3xl blur opacity-20"></div>
-          <div className="relative bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-3xl p-8 md:p-12 text-center overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-teal-600/10"></div>
+          <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-12 text-center shadow-2xl hover:bg-black/30 transition-all duration-300">
             <div className="relative z-10">
               <h3 className="text-3xl md:text-4xl font-GoodTimes text-white mb-4">
                 Ready to Join the Space Economy?
