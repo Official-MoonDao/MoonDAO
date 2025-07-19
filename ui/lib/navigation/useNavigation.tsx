@@ -29,6 +29,14 @@ export default function useNavigation(citizen: any) {
           { name: 'Teams', href: '/network?tab=teams' },
           { name: 'Map', href: '/map' },
           { name: 'Create a Team', href: '/team' },
+          {
+            name: 'Submit Contribution',
+            href: '/contributions',
+          },
+          {
+            name: 'Jobs',
+            href: '/jobs',
+          },
         ],
       },
       {
@@ -60,29 +68,21 @@ export default function useNavigation(citizen: any) {
         ],
       },
       {
-        name: 'Contribute',
+        name: 'Projects',
         icon: WrenchScrewdriverIcon,
-        href: '/submit',
+        href: '/projects',
         children: [
           {
-            name: 'Projects',
+            name: 'Project Rewards',
             href: '/projects',
           },
           {
-            name: 'Submit Project Proposal',
+            name: 'Propose Project',
             href: '/proposals',
-          },
-          {
-            name: 'Submit Contribution',
-            href: '/contributions',
           },
           {
             name: 'Submit Project Report',
             href: '/final-reports',
-          },
-          {
-            name: 'Jobs',
-            href: '/jobs',
           },
         ],
       },

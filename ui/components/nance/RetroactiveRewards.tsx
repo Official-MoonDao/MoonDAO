@@ -381,7 +381,7 @@ export function RetroactiveRewards({
       />
       <Container>
         <ContentLayout
-          header={'Projects'}
+          header={'Project Rewards'}
           description={
             'View active projects and allocate retroactive rewards to completed projects and their contributors based on impact and results.'
           }
