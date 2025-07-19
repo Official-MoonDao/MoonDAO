@@ -104,67 +104,16 @@ export function NoticeFooter({
   ])
 
   return (
-    <div
-      id="notice-footer"
-      className={`pb-10 md:pb-0 ${
-        darkBackground ? 'md:pl-5 pb-10 w-full pt-5' : 'p-5 mr-5'
-      }`}
-    >
-      <div className="mx-[3vw] mb-5 bg-black/20 backdrop-blur-sm border border-white/10 rounded-[2vmax] lg:ml-[80px] 2xl:ml-[125px] 2xl:max-w-[1040px]">
-        <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-[2vmax] p-8 flex flex-col lg:flex-row items-center gap-6">
-          <div id="Image container" className="hidden lg:block flex-shrink-0">
-            <Image
-              src={notice.image}
-              alt="Logo"
-              width={imageWidth}
-              height={imageHeight}
-              className="opacity-90 w-32 h-32 lg:w-40 lg:h-40 object-contain"
-            />
-          </div>
-          <div id="callout-container" className="flex flex-col flex-1 text-center lg:text-left">
-            <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
-              <div id="Image container" className="lg:hidden">
-                <Image
-                  src="../assets/icon-star.svg"
-                  alt="MoonDAO Logo"
-                  width={iconWidth}
-                  height={iconHeight}
-                />
-              </div>
-              <h3 className="font-GoodTimes text-white text-2xl md:text-3xl lg:text-4xl">
-                {notice.title}
-              </h3>
-            </div>
-            <p className="text-slate-300 text-base md:text-lg mb-6 leading-relaxed">
-              {notice.description}
-            </p>
-            <Link
-              href={notice.buttonLink}
-              className="inline-block w-fit mx-auto lg:mx-0"
-              {...(notice.buttonLink?.startsWith('http') && {
-                target: "_blank",
-                rel: "noopener noreferrer"
-              })}
-              passHref
-            >
-              <div className="gradient-2 hover:scale-105 transform transition-all ease-in-out duration-300 rounded-full px-8 py-4 inline-block text-white font-medium text-lg hover:shadow-lg">
-                {notice.buttonText}
-              </div>
-            </Link>
-          </div>
-        </div>
-      </div>
-      <ExpandedFooter 
-        callToActionImage={notice.image}
-        callToActionTitle={notice.title}
-        callToActionBody={notice.description}
-        callToActionButtonText={notice.buttonText}
-        callToActionButtonLink={notice.buttonLink}
-        hasCallToAction={true}
-        darkBackground={darkBackground}
-        isFullwidth={false}
-        disclaimerOnly={disclaimerOnly}
-      />
-    </div>
+    <ExpandedFooter 
+      callToActionImage={notice.image}
+      callToActionTitle={notice.title}
+      callToActionBody={notice.description}
+      callToActionButtonText={notice.buttonText}
+      callToActionButtonLink={notice.buttonLink}
+      hasCallToAction={true}
+      darkBackground={darkBackground}
+      isFullwidth={false}
+      disclaimerOnly={disclaimerOnly}
+    />
   )
 }
