@@ -63,7 +63,7 @@ export default function Network({
     })
   }
 
-  const [tab, setTab] = useState<string>('teams')
+  const [tab, setTab] = useState<string>('citizens')
   function loadByTab(tab: string) {
     if (tab === 'teams') {
       setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
