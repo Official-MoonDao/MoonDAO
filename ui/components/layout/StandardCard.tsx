@@ -58,17 +58,13 @@ export default function StandardCard({
   const cardContent = (
     <span
       id={id}
-      className={`animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full max-w-[300px] md:max-w-[500px]`}
+      className={`animate-fadeIn flex flex-col relative bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-full h-full max-w-[300px] md:max-w-[500px]`}
     >
       {/* Ensure the card content takes full height */}
       <div className="flex-grow">
-        <div
-          id="card-styling"
-          className="bg-darkest-cool rounded-[20px] w-[30%] h-[30%] absolute top-0 left-0 pb-5"
-        ></div>
         <span
           id="content-container"
-          className={`h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-x-[3px] border-darkest-cool`}
+          className={`h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between`}
         >
           <span
             id="content"
