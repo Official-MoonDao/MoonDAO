@@ -151,7 +151,7 @@ export default function Projects({
         Discover active and archived projects advancing our multiplanetary
         mission. Have an idea?{' '}
         <u>
-          <Link href="/submit">Submit your proposal</Link>
+          <Link href="/proposals">Submit your proposal</Link>
         </u>{' '}
         and help shape the future of space exploration!
       </p>

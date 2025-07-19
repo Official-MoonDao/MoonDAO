@@ -69,8 +69,16 @@ export default function useNavigation(citizen: any) {
             href: '/projects',
           },
           {
-            name: 'Get Rewards',
-            href: '/submit?tag=contribution',
+            name: 'Submit Project Proposal',
+            href: '/proposals',
+          },
+          {
+            name: 'Submit Contribution',
+            href: '/contributions',
+          },
+          {
+            name: 'Submit Project Report',
+            href: '/final-reports',
           },
           {
             name: 'Jobs',

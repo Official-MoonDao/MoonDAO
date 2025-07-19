@@ -110,7 +110,9 @@ export function ExpandedFooter({
 
   const contributeLinks = [
     { text: 'Projects', href: '/projects' },
-    { text: 'Get Rewards', href: '/submit?tag=contribution' },
+    { text: 'Submit Proposal', href: '/proposals' },
+    { text: 'Submit Contribution', href: '/contributions' },
+    { text: 'Submit Project Report', href: '/final-reports' },
     { text: 'Jobs', href: '/jobs' },
   ]
 

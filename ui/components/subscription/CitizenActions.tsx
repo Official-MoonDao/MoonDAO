@@ -118,20 +118,20 @@ export default function CitizenActions({
                         width={30}
                       />
                     }
-                    onClick={() => router.push('/submit')}
+                    onClick={() => router.push('/proposals')}
                   />
                   <Action
-                    title="Get Rewards"
+                    title="Submit Contribution"
                     description="Get rewarded for mission-aligned work towards a lunar settlement."
                     icon={
                       <Image
                         src="/assets/icon-submit.svg"
-                        alt="Get rewards"
+                        alt="Submit contribution"
                         height={30}
                         width={30}
                       />
                     }
-                    onClick={() => router.push('/submit?tag=contribution')}
+                    onClick={() => router.push('/contributions')}
                   />
                   <Action
                     title="Explore Map"
