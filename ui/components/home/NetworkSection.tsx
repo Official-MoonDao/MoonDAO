@@ -6,9 +6,15 @@ export default function NetworkSection() {
     <section className="relative bg-white overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0">
+        {/* Mobile background */}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: 'url(/assets/networksectionimg.png)' }}
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat md:hidden"
+          style={{ backgroundImage: 'url(/assets/NetworkLineless.png)' }}
+        ></div>
+        {/* Desktop background */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden md:block"
+          style={{ backgroundImage: 'url(/assets/Network-Section.png)' }}
         ></div>
       </div>
 
