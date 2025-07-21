@@ -1,6 +1,7 @@
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
+import TeamABI from 'const/abis/Team.json'
 import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
 import {
   ARBITRUM_ASSETS_URL,
@@ -10,6 +11,7 @@ import {
   JOBS_TABLE_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
   POLYGON_ASSETS_URL,
+  TEAM_ADDRESSES,
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
 } from 'const/config'
 import { formatDistanceToNow, fromUnixTime } from 'date-fns'
@@ -21,7 +23,10 @@ import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { getCitizenSubgraphData } from '@/lib/citizen/citizen-subgraph'
 import { useAssets } from '@/lib/dashboard/hooks'
+import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { getAUMHistory } from '@/lib/moralis'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
+import { useVoteCountOfAddress } from '@/lib/snapshot'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -33,6 +38,7 @@ import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget } from '@/lib/utils/rewards'
+import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { ProposalCard } from '@/components/home/ProposalCard'
 import Container from '@/components/layout/Container'
 import Frame from '@/components/layout/Frame'
@@ -51,6 +57,7 @@ export default function Home({
   newestListings,
   newestJobs,
   citizenSubgraphData,
+  aumHistory,
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
@@ -60,6 +67,8 @@ export default function Home({
   const { proposals, packet, votingInfoMap } = useNewestProposals(100)
   const account = useActiveAccount()
   const address = account?.address
+
+  const { data: voteCount } = useVoteCountOfAddress(address)
 
   const MOONEYBalance = useTotalMooneyBalance(address)
   const VMOONEYBalance = useTotalVP(address || '')
@@ -90,9 +99,15 @@ export default function Home({
     chain: selectedChain,
   })
 
-  const withdrawable = useWithdrawAmount(votingEscrowDepositorContract, address)
+  const teamContract = useContract({
+    address: TEAM_ADDRESSES[chainSlug],
+    abi: TeamABI,
+    chain: selectedChain,
+  })
 
-  console.log('CITIZEN', citizen)
+  const teamHats = useTeamWearer(teamContract, selectedChain, address)
+
+  const withdrawable = useWithdrawAmount(votingEscrowDepositorContract, address)
 
   return (
     <Container>
@@ -176,9 +191,17 @@ export default function Home({
                       </button>
                     </div>
                     <div className="flex gap-6 text-xs text-white/70">
-                      <span>🗳️ 12 Votes</span>
-                      <span>📋 1 Proposal</span>
-                      <span>👥 2 Teams</span>
+                      <span>🗳️ {voteCount} Votes</span>
+                      {/* <span>📋 {proposals.length} Proposal</span> */}
+                      <span className="flex items-center gap-2">
+                        👥{' '}
+                        {teamHats?.length !== undefined ? (
+                          teamHats.length
+                        ) : (
+                          <LoadingSpinner width="w-4" height="h-4" />
+                        )}{' '}
+                        Teams
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -260,19 +283,17 @@ export default function Home({
                   Citizens
                 </h3>
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-2xl font-bold text-white">123</span>
-                  <div className="w-8 h-8 bg-blue-500/20 rounded flex items-center justify-center">
-                    <svg
-                      className="w-4 h-4 text-blue-400"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                  <span className="text-2xl font-bold text-white">
+                    {citizenSubgraphData?.transfers?.length}
+                  </span>
+                  <div className="w-24 h-12">
+                    <CitizensChart
+                      transfers={citizenSubgraphData.transfers}
+                      isLoading={false}
+                      height={48}
+                      compact={true}
+                      createdAt={citizenSubgraphData.createdAt}
+                    />
                   </div>
                 </div>
               </div>
@@ -289,18 +310,13 @@ export default function Home({
                 <h3 className="text-sm font-medium text-gray-400 mb-2">AUM</h3>
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="text-2xl font-bold text-white">1.1m</span>
-                  <div className="w-8 h-8 bg-green-500/20 rounded flex items-center justify-center">
-                    <svg
-                      className="w-4 h-4 text-green-400"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                  <div className="w-24 h-12">
+                    <AUMChart
+                      compact={true}
+                      height={48}
+                      days={365}
+                      data={aumHistory}
+                    />
                   </div>
                 </div>
               </div>
@@ -626,6 +642,11 @@ export async function getStaticProps() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
 
+  // Fetch AUM history data
+  const aumHistory = await getAUMHistory(365) // Get 1 year of data
+
+  console.log('AUM History:', aumHistory)
+
   const newestNewsletters: any = []
 
   const citizenTableContract = getContract({
@@ -682,7 +703,8 @@ export async function getStaticProps() {
       newestListings,
       newestJobs,
       citizenSubgraphData,
+      aumHistory, // Add AUM history to props
     },
-    revalidate: 60,
+    revalidate: 3600, // Revalidate every hour
   }
 }
