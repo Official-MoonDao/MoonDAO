@@ -242,23 +242,7 @@ export default function StandardCard({
                 ${link ? 'cursor-pointer' : ''}
             `}
     >
-      {link || onClick || headerLink ? (
-        <span
-          id="Interactive-Element"
-          className="clip absolute h-full w-full z-10"
-        ></span>
-      ) : (
-        <span
-          id="Static-Element"
-          className="divider-8 absolute w-[80%] h-full z-10"
-        ></span>
-      )}
-      {!link && (
-        <span
-          id="Static-Element"
-          className="divider-8 absolute w-[80%] h-full z-10"
-        ></span>
-      )}
+
       {onClick ? (
         <button onClick={onClick} className="w-full h-full block">
           {cardContent}
