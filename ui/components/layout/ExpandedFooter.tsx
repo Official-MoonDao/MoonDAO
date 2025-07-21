@@ -90,10 +90,11 @@ export function ExpandedFooter({
 
   // Navigation link groups
   const networkLinks = [
-    { text: 'Citizens', href: '/network?tab=citizens' },
-    { text: 'Teams', href: '/network?tab=teams' },
-    { text: 'Map', href: '/map' },
+    { text: 'Explore Network', href: '/network' },
+    { text: 'Become a Citizen', href: '/join' },
     { text: 'Create a Team', href: '/team' },
+    { text: 'Submit Contribution', href: '/contributions' },
+    { text: 'Jobs', href: '/jobs' },
   ]
 
   const governLinks = [
@@ -108,12 +109,10 @@ export function ExpandedFooter({
     { text: 'Bridge', href: '/bridge' },
   ]
 
-  const contributeLinks = [
-    { text: 'Projects', href: '/projects' },
-    { text: 'Submit Proposal', href: '/proposals' },
-    { text: 'Submit Contribution', href: '/contributions' },
+  const projectLinks = [
+    { text: 'Project Rewards', href: '/projects' },
+    { text: 'Propose Project', href: '/proposals' },
     { text: 'Submit Project Report', href: '/final-reports' },
-    { text: 'Jobs', href: '/jobs' },
   ]
 
   const learnLinks = [
@@ -121,7 +120,7 @@ export function ExpandedFooter({
     { text: 'About', href: '/about' },
     { text: 'Events', href: '/events' },
     { text: 'Analytics', href: '/analytics' },
-    { text: 'FAQ', href: 'https://docs.moondao.com/About/FAQ?_gl=1*1g5c5e6*_ga*NDEyMzExNTE4LjE3MTcxMjYxODU.*_ga_QPFCD9VH46*czE3NDc4NjI2NTUkbzI1MCRnMSR0MTc0Nzg2Mjk1MSRqMCRsMCRoMA' },
+    { text: 'FAQ', href: '/faq' },
   ]
 
   const marketplaceLinks = [
@@ -182,15 +181,24 @@ export function ExpandedFooter({
               <div className="hidden md:block">
                 <LinkList title="LEARN" links={learnLinks} />
               </div>
-              
-              {/* CONTRIBUTE section */}
-              <LinkList title="CONTRIBUTE" links={contributeLinks} />
-              
-              {/* MARKETPLACE section */}
-              <LinkList title="MARKETPLACE" links={marketplaceLinks} />
-              
+             
               {/* SUPPORT section */}
               <LinkList title="SUPPORT" links={supportLinks} />
+              {/* Desktop only: Combined projects/marketplace column */}
+              <div className="hidden lg:block">
+                <LinkList title="PROJECTS" links={projectLinks} />
+                <div className="mt-8">
+                  <LinkList title="MARKETPLACE" links={marketplaceLinks} />
+                </div>
+              </div>
+              
+              {/* Mobile and tablet: Separate projects and marketplace columns */}
+              <div className="lg:hidden">
+                <LinkList title="PROJECTS" links={projectLinks} />
+              </div>
+              <div className="lg:hidden">
+                <LinkList title="MARKETPLACE" links={marketplaceLinks} />
+              </div>
             </div>
           </div>
           
