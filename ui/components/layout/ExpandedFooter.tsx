@@ -88,7 +88,7 @@ export function ExpandedFooter({
     hasCallToAction,
   ])
 
-  // Navigation link groups
+  // Navigation link groups - matching topnav organization exactly
   const networkLinks = [
     { text: 'Explore Network', href: '/network' },
     { text: 'Become a Citizen', href: '/join' },
@@ -128,7 +128,7 @@ export function ExpandedFooter({
   ]
 
   const supportLinks = [
-    { text: 'Submit a Ticket', href: 'https://discord.gg/moondao' },
+    { text: 'Submit Ticket', href: 'https://discord.gg/moondao' },
   ]
 
   return (
@@ -162,42 +162,35 @@ export function ExpandedFooter({
             )}
             
             <div className={`z-50 px-[2vw] pt-[2vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 order-1 lg:order-2 ${hasCallToAction && isFullwidth ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
-              {/* Always visible sections */}
-              <LinkList title="NETWORK" links={networkLinks} />
-              <LinkList title="GOVERN" links={governLinks} />
-              
-              {/* Mobile only - swapped order */}
-              <div className="md:hidden">
-                <LinkList title="LEARN" links={learnLinks} />
+              {/* Column 1: NETWORK */}
+              <div>
+                <LinkList title="NETWORK" links={networkLinks} />
               </div>
-              <div className="md:hidden">
+
+              {/* Column 2: GOVERN */}
+              <div>
+                <LinkList title="GOVERN" links={governLinks} />
+              </div>
+              
+              {/* Column 3: $MOONEY TOKEN */}
+              <div>
                 <LinkList title="$MOONEY TOKEN" links={tokenLinks} />
               </div>
               
-              {/* Tablet and up - original order */}
-              <div className="hidden md:block">
-                <LinkList title="$MOONEY TOKEN" links={tokenLinks} />
-              </div>
-              <div className="hidden md:block">
-                <LinkList title="LEARN" links={learnLinks} />
-              </div>
-             
-              {/* SUPPORT section */}
-              <LinkList title="SUPPORT" links={supportLinks} />
-              {/* Desktop only: Combined projects/marketplace column */}
-              <div className="hidden lg:block">
+              {/* Column 4: PROJECTS */}
+              <div>
                 <LinkList title="PROJECTS" links={projectLinks} />
-                <div className="mt-8">
-                  <LinkList title="MARKETPLACE" links={marketplaceLinks} />
-                </div>
               </div>
               
-              {/* Mobile and tablet: Separate projects and marketplace columns */}
-              <div className="lg:hidden">
-                <LinkList title="PROJECTS" links={projectLinks} />
+              {/* Column 5: LEARN */}
+              <div>
+                <LinkList title="LEARN" links={learnLinks} />
               </div>
-              <div className="lg:hidden">
+              
+              {/* Column 6: MARKETPLACE & SUPPORT */}
+              <div className="grid grid-rows-2 gap-8">
                 <LinkList title="MARKETPLACE" links={marketplaceLinks} />
+                <LinkList title="SUPPORT" links={supportLinks} />
               </div>
             </div>
           </div>
