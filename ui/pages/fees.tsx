@@ -87,7 +87,7 @@ export default function Fees() {
               const balance = await readContract({
                 contract,
                 method: 'balanceOf',
-                params: [address],
+                params: [],
               })
               return balance
             })
