@@ -186,13 +186,20 @@ contract FeeHook is BaseHook, Ownable {
         uint256 length = checkedIn.length;
 
         uint256 total;
+        bool isUserCheckedIn;
         for (uint256 i = 0; i < length; i++) {
-            total += IERC20(vMooneyAddress).balanceOf(checkedIn[i]);
+            address addr = checkedIn[i];
+            if (addr == user) isUserCheckedIn = true;
+            total += IERC20(vMooneyAddress).balanceOf(addr);
         }
 
-        uint256 fees = address(this).balance;
         uint256 bal = IERC20(vMooneyAddress).balanceOf(user);
+        if (!isUserCheckedIn) {
+            total += bal;
+        }
         if (total == 0 || bal == 0) return 0;
+
+        uint256 fees = address(this).balance;
         return (fees * bal) / total;
     }
 
