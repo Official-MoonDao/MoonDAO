@@ -6,15 +6,14 @@ export default function GovernanceSection() {
     <section className="relative bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27] overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-full h-full opacity-20">
+        <div className="absolute top-0 left-0 w-full h-full opacity-100">
           <Image
-            src="/assets/Lunar-Colony.png"
-            alt="Background"
+            src="/assets/Governance-section-image.png"
+            alt="Capitol building on lunar surface with Earth in background"
             fill
             className="object-cover"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20" />
       </div>
 
       <div className="relative z-10 container mx-auto px-5 py-16 md:py-24">
