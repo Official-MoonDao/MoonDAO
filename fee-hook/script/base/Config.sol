@@ -61,6 +61,7 @@ contract Config is Script {
         VMOONEY_ADDRESSES[MAINNET] = ethJson.readAddress(".vMOONEYToken");
         VMOONEY_ADDRESSES[POLYGON] = polygonJson.readAddress(".vMOONEYToken");
         VMOONEY_ADDRESSES[SEP] = sepJson.readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[ARB_SEP] = arbSepJson.readAddress(".vMOONEYToken");
 
         STARGATE_POOLS[SEP] = 0x9Cc7e185162Aa5D1425ee924D97a87A0a34A0706;
         STARGATE_POOLS[ARB_SEP] = 0x6fddB6270F6c71f31B62AE0260cfa8E2e2d186E0;

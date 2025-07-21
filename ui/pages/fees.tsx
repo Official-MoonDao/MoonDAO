@@ -173,6 +173,12 @@ export default function Fees() {
             const slug = getChainSlug(chain)
             const hookAddress = FEE_HOOK_ADDRESSES[slug]
             if (!hookAddress) return null
+            console.log(
+              'Fetching fee data for chain:',
+              slug,
+              'at address:',
+              hookAddress
+            )
 
             const contract = getContract({
               client,
@@ -199,6 +205,8 @@ export default function Fees() {
                 params: [],
               }),
             ])
+            console.log('start', start)
+            console.log('count', count)
 
             const vMooneyContract = getContract({
               client,
@@ -207,11 +215,13 @@ export default function Fees() {
               chain,
             })
 
+            console.log('vMooneyAddress', vMooneyAddress)
             const vMooneyBalance = await readContract({
               contract: vMooneyContract,
               method: 'balanceOf',
               params: [address],
             })
+            console.log('vMooneyBalance', vMooneyBalance)
 
             return {
               chain,
@@ -235,6 +245,7 @@ export default function Fees() {
           count: BigNumber
           checkedInOnChain: boolean
         }>
+        console.log('Raw Fee Data:', raw)
 
         setFeeData(results)
 
@@ -249,6 +260,8 @@ export default function Fees() {
           },
           { totalCount: 0, allChecked: true }
         )
+        console.log('Fee Data:', results)
+        console.log('totalCount:', totalCount)
 
         setCheckedInCount(totalCount)
         setIsCheckedIn(allChecked)
