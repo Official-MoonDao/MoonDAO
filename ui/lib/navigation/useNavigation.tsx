@@ -25,10 +25,17 @@ export default function useNavigation(citizen: any) {
         href: '/network',
         icon: IconOrg,
         children: [
-          { name: 'Citizens', href: '/network?tab=citizens' },
-          { name: 'Teams', href: '/network?tab=teams' },
-          { name: 'Map', href: '/map' },
+          { name: 'Explore Network', href: '/network' },
+          { name: 'Become a Citizen', href: '/join' },
           { name: 'Create a Team', href: '/team' },
+          {
+            name: 'Submit Contribution',
+            href: '/contributions',
+          },
+          {
+            name: 'Jobs',
+            href: '/jobs',
+          },
         ],
       },
       {
@@ -60,21 +67,21 @@ export default function useNavigation(citizen: any) {
         ],
       },
       {
-        name: 'Contribute',
+        name: 'Projects',
         icon: WrenchScrewdriverIcon,
-        href: '/submit',
+        href: '/projects',
         children: [
           {
-            name: 'Projects',
+            name: 'Project Rewards',
             href: '/projects',
           },
           {
-            name: 'Get Rewards',
-            href: '/submit?tag=contribution',
+            name: 'Propose Project',
+            href: '/proposals',
           },
           {
-            name: 'Jobs',
-            href: '/jobs',
+            name: 'Submit Project Report',
+            href: '/final-reports',
           },
         ],
       },

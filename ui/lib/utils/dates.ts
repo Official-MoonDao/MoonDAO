@@ -53,7 +53,7 @@ export function formatTimeUntilDeadline(deadline: Date): string {
 
   // If deadline has passed
   if (timeDifference <= 0) {
-    return 'PASSED'
+    return '0 SECONDS'
   }
 
   // Calculate time units
@@ -99,6 +99,7 @@ export function daysUntilDay(date: Date, day: string) {
 }
 
 export function isRewardsCycle(date: Date) {
+  if (true) return false
   const lastQuarter = getRelativeQuarter(-1)
   const endOfQuarter = new Date(lastQuarter.year, lastQuarter.quarter * 3, 0)
   const nextQuarterStart = new Date(

@@ -1,5 +1,4 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
@@ -89,7 +88,12 @@ export default function MissionWideCard({
       }
     }
 
-    if (teamContract && mission?.teamId !== undefined && mission?.teamId !== null) getTeamNFT()
+    if (
+      teamContract &&
+      mission?.teamId !== undefined &&
+      mission?.teamId !== null
+    )
+      getTeamNFT()
   }, [teamContract, mission?.teamId])
 
   return (

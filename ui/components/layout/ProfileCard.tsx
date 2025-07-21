@@ -69,15 +69,11 @@ export default function Card({
   const cardContent = (
     <span
       id="card-container"
-      className="animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full min-h-[200px]"
+      className="animate-fadeIn flex flex-col relative bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-full h-full min-h-[200px]"
     >
-      <div
-        id="card-styling"
-        className="bg-darkest-cool rounded-[20px] w-[30%] h-[30%] absolute top-0 left-0 pb-5"
-      ></div>
       <span
         id="content-container"
-        className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between border-b-[3px] border-r-[3px] border-darkest-cool"
+        className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between"
       >
         <span
           id="content"
@@ -174,7 +170,7 @@ export default function Card({
                 {paragraph}
               </div>
               {metadata?.id ? (
-                <div id="details-container" className="mt-4">
+                <div id="details-container" className="mt-4 font-RobotoMono">
                   <p id="org-description">
                     {metadata.description && metadata.description.length > 100
                       ? `${metadata.description.slice(0, 100)}...`
@@ -186,7 +182,7 @@ export default function Card({
                 </div>
               ) : (
                 profile && (
-                  <div id="details-container" className="mt-4">
+                  <div id="details-container" className="mt-4 font-RobotoMono">
                     <p id="org-description">
                       This citizen has yet to add a profile
                     </p>

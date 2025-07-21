@@ -222,17 +222,17 @@ module.exports = withTM(
         },
         {
           source: '/submit-contribution',
-          destination: '/submit?tag=contribution',
+          destination: '/contributions',
           permanent: true,
         },
         {
           source: '/contribute',
-          destination: '/submit?tag=contribution',
+          destination: '/contributions',
           permanent: true,
         },
         {
           source: '/contribution',
-          destination: '/submit?tag=contribution',
+          destination: '/contributions',
           permanent: true,
         },
         {
@@ -242,7 +242,7 @@ module.exports = withTM(
         },
         {
           source: '/propose',
-          destination: '/submit?tag=proposal',
+          destination: '/proposals',
           permanent: true,
         },
         {
@@ -256,8 +256,44 @@ module.exports = withTM(
           permanent: true,
         },
         {
+          source: '/submit',
+          has: [
+            {
+              type: 'query',
+              key: 'tag',
+              value: 'contribution',
+            },
+          ],
+          destination: '/contributions',
+          permanent: true,
+        },
+        {
+          source: '/submit',
+          has: [
+            {
+              type: 'query',
+              key: 'tag',
+              value: 'report',
+            },
+          ],
+          destination: '/final-reports',
+          permanent: true,
+        },
+        {
+          source: '/submit',
+          has: [
+            {
+              type: 'query',
+              key: 'tag',
+              value: 'proposal',
+            },
+          ],
+          destination: '/proposals',
+          permanent: true,
+        },
+        {
           source: '/report',
-          destination: '/submit?tag=report',
+          destination: '/final-reports',
           permanent: true,
         },
         {

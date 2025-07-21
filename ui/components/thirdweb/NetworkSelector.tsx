@@ -112,6 +112,20 @@ export default function NetworkSelector({
           <NetworkOption chain={arbitrum} selectChain={selectChain} />
           <NetworkOption chain={base} selectChain={selectChain} />
           <NetworkOption chain={polygon} selectChain={selectChain} />
+          {process.env.NEXT_PUBLIC_CHAIN === 'testnet' && (
+            <>
+              <NetworkOption chain={sepolia} selectChain={selectChain} />
+              <NetworkOption chain={baseSepolia} selectChain={selectChain} />
+              <NetworkOption
+                chain={arbitrumSepolia}
+                selectChain={selectChain}
+              />
+              <NetworkOption
+                chain={optimismSepolia}
+                selectChain={selectChain}
+              />
+            </>
+          )}
         </>
       )}
     </div>

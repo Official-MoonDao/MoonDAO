@@ -151,7 +151,7 @@ export default function Projects({
         Discover active and archived projects advancing our multiplanetary
         mission. Have an idea?{' '}
         <u>
-          <Link href="/submit">Submit your proposal</Link>
+          <Link href="/proposals">Submit your proposal</Link>
         </u>{' '}
         and help shape the future of space exploration!
       </p>
@@ -197,13 +197,13 @@ export default function Projects({
   return (
     <section id="network-container" className="overflow-hidden">
       <Head
-        title={'Projects'}
+        title={'Project Rewards'}
         description={description}
         image="https://ipfs.io/ipfs/QmbExwDgVoDYpThFaVRRxUkusHnXxMj3Go8DdWrXg1phxi"
       />
       <Container>
         <ContentLayout
-          header="Projects"
+          header="Project Rewards"
           headerSize="max(20px, 3vw)"
           description={descriptionSection}
           preFooter={<NoticeFooter />}

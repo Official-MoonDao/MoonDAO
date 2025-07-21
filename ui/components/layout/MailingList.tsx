@@ -5,7 +5,6 @@ import useSubscribe from '@/lib/convert-kit/useSubscribe'
 
 export default function MailingList() {
   const [userEmail, setUserEmail] = useState<any>('')
-  const [isEmailFocused, setIsEmailFocused] = useState(false)
   const subscribe = useSubscribe(CK_NEWSLETTER_FORM_ID)
 
   return (
@@ -24,43 +23,21 @@ export default function MailingList() {
         }
       }}
     >
-      <div
-        id="mailing-list-form-container"
-        className="mb-[60px] lg:mb-0 overflow-hidden"
-      >
-        <div
-          id="mailing-list-form"
-          className="flex flex-col md:flex-row md:inline-flex rounded-[3vmax] md:rounded-[5vmax] rounded-tl-[10px] md:rounded-tl-[20px] overflow-hidden"
-        >
-          <div
-            id="email-field-container"
-            className="mailinglist-bg flex min-w-[200px] md:min-w-[260px] overflow-hidden"
+      <div className="mb-[60px] lg:mb-0">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 max-w-md">
+          <input
+            type="email"
+            placeholder="Enter your email"
+            className="flex-1 px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg sm:rounded-r-none text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 transition-all duration-200"
+            onChange={({ target }) => setUserEmail(target.value)}
+            value={userEmail}
+          />
+          <button
+            type="submit"
+            className="px-6 py-3 bg-white text-black font-medium rounded-lg sm:rounded-l-none hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-200 whitespace-nowrap"
           >
-            <input
-              id="email-field"
-              className={`
-                flex-grow overflow-hidden text-clip single-input pt-4 pb-4 px-5 bg-dark-cool focus:outline-none 
-              `}
-              type="email"
-              placeholder="Enter your email"
-              onFocus={() => setIsEmailFocused(true)}
-              onBlur={() => setIsEmailFocused(false)}
-              onChange={({ target }) => setUserEmail(target.value)}
-              value={userEmail}
-            />
-          </div>
-          <div id="button-container" className="bg-dark-cool">
-            <button
-              id="button"
-              type="submit"
-              className={`single-submit pt-4 pb-4 px-5 w-full md:w-[auto] bg-white focus:outline-none text-white text-center md:text-left gradient-12 min-w-[150px] 
-              ${
-                isEmailFocused ? 'rounded-tr-[20px] md:rounded-tl-[20px]' : ''
-              }`}
-            >
-              Learn More
-            </button>
-          </div>
+            Learn More
+          </button>
         </div>
       </div>
     </form>

@@ -32,7 +32,7 @@ import { ethers } from 'ethers'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import {
   getContract,
@@ -88,6 +88,13 @@ const jbControllerContract = getContract({
   chain: CHAIN,
 })
 
+const jbDirectoryContract = getContract({
+  client: serverClient,
+  address: JBV4_DIRECTORY_ADDRESSES[CHAIN_SLUG],
+  abi: JBV4DirectoryABI as any,
+  chain: CHAIN,
+})
+
 const missionCreatorContract = getContract({
   client: serverClient,
   address: MISSION_CREATOR_ADDRESSES[CHAIN_SLUG],
@@ -131,6 +138,8 @@ type ProjectProfileProps = {
   mission: Mission
   _stage: number
   _deadline: number | undefined
+  _refundPeriod: number | undefined
+  _primaryTerminalAddress: string
   _token?: any
 }
 
@@ -138,6 +147,8 @@ export default function MissionProfile({
   mission,
   _stage,
   _deadline,
+  _refundPeriod,
+  _primaryTerminalAddress,
   _token,
 }: ProjectProfileProps) {
   const [isLoading, setIsLoading] = useState(false)
@@ -147,9 +158,14 @@ export default function MissionProfile({
   const chainSlug = getChainSlug(selectedChain)
 
   const [teamNFT, setTeamNFT] = useState<any>()
-
   const [availableTokens, setAvailableTokens] = useState<number>(0)
   const [availablePayouts, setAvailablePayouts] = useState<number>(0)
+
+  const [duration, setDuration] = useState<any>()
+  const [deadlinePassed, setDeadlinePassed] = useState(false)
+  const [refundPeriodPassed, setRefundPeriodPassed] = useState(false)
+  const hasRefreshedStageAfterDeadlineRef = useRef(false)
+  const hasRefreshedStageAfterRefundPeriodRef = useRef(false)
 
   const hatsContract = useContract({
     address: HATS_ADDRESS,
@@ -202,7 +218,9 @@ export default function MissionProfile({
     backers,
     stage,
     deadline,
+    refundPeriod,
     refreshBackers,
+    refreshStage,
     poolDeployerAddress,
   } = useMissionData({
     mission,
@@ -210,11 +228,61 @@ export default function MissionProfile({
     missionCreatorContract,
     jbControllerContract,
     jbDirectoryContract,
-    jbTokensContract,
     _stage,
     _deadline,
+    _refundPeriod,
+    _primaryTerminalAddress,
     _token,
   })
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (deadline !== undefined && deadline !== null && deadline !== 0) {
+        const newDuration = formatTimeUntilDeadline(new Date(deadline))
+        setDuration(newDuration)
+
+        const isDeadlinePassed = deadline < Date.now()
+        setDeadlinePassed(isDeadlinePassed)
+
+        // If deadline just passed and we haven't refreshed stage yet, do it now
+        if (isDeadlinePassed && !hasRefreshedStageAfterDeadlineRef.current) {
+          setTimeout(() => {
+            refreshStage()
+            hasRefreshedStageAfterDeadlineRef.current = true
+          }, 3000)
+        }
+
+        // Reset the flag if deadline is not passed (in case deadline changes)
+        if (!isDeadlinePassed && hasRefreshedStageAfterDeadlineRef.current) {
+          hasRefreshedStageAfterDeadlineRef.current = false
+        }
+
+        if (
+          refundPeriod !== undefined &&
+          refundPeriod !== null &&
+          refundPeriod !== 0
+        ) {
+          const isRefundPeriodPassed = deadline + refundPeriod < Date.now()
+          setRefundPeriodPassed(isRefundPeriodPassed)
+          if (
+            isRefundPeriodPassed &&
+            !hasRefreshedStageAfterRefundPeriodRef.current
+          ) {
+            refreshStage()
+            hasRefreshedStageAfterRefundPeriodRef.current = true
+          }
+          if (
+            !isRefundPeriodPassed &&
+            hasRefreshedStageAfterRefundPeriodRef.current
+          ) {
+            hasRefreshedStageAfterRefundPeriodRef.current = false
+          }
+        }
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [deadline, refundPeriod, refreshStage])
 
   const { adminHatId, isManager } = useTeamData(
     teamContract,
@@ -406,6 +474,27 @@ export default function MissionProfile({
       projectId={mission?.projectId}
       selectedChain={selectedChain}
     >
+      {/* Full-width Mission Header outside Container */}
+      <MissionProfileHeader
+        mission={mission}
+        teamNFT={teamNFT}
+        ruleset={ruleset}
+        fundingGoal={fundingGoal}
+        backers={backers}
+        deadline={deadline}
+        duration={duration}
+        deadlinePassed={deadlinePassed}
+        refundPeriodPassed={refundPeriodPassed}
+        stage={stage}
+        poolDeployerAddress={poolDeployerAddress}
+        isManager={isManager}
+        availableTokens={availableTokens}
+        availablePayouts={availablePayouts}
+        sendReservedTokens={sendReservedTokens}
+        sendPayouts={sendPayouts}
+        deployLiquidityPool={deployLiquidityPool}
+      />
+      
       <Container containerwidth={true}>
         <Head
           title={mission?.metadata?.name}
@@ -415,24 +504,7 @@ export default function MissionProfile({
         <ContentLayout
           header={''}
           headerSize="max(20px, 3vw)"
-          description={
-            <MissionProfileHeader
-              mission={mission}
-              teamNFT={teamNFT}
-              ruleset={ruleset}
-              fundingGoal={fundingGoal}
-              backers={backers}
-              deadline={deadline}
-              stage={stage}
-              poolDeployerAddress={poolDeployerAddress}
-              isManager={isManager}
-              availableTokens={availableTokens}
-              availablePayouts={availablePayouts}
-              sendReservedTokens={sendReservedTokens}
-              sendPayouts={sendPayouts}
-              deployLiquidityPool={deployLiquidityPool}
-            />
-          }
+          description={''}
           mainPadding
           mode="compact"
           popOverEffect={false}
@@ -452,15 +524,14 @@ export default function MissionProfile({
             id="page-container"
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
-            {/* Pay & Redeem Section */}
             <div className="flex z-20 xl:hidden w-full px-[5vw]">
-              <div
-                id="mission-pay-redeem-container"
-                className="xl:bg-darkest-cool lg:max-w-[650px] mt-[5vw] md:mt-0 xl:mt-[2vw] w-full xl:rounded-tl-[2vmax] rounded-[2vmax] xl:pr-0 overflow-hidden xl:rounded-bl-[5vmax]"
-              >
-                {primaryTerminalAddress &&
-                primaryTerminalAddress !==
-                  '0x0000000000000000000000000000000000000000' ? (
+              {primaryTerminalAddress &&
+              primaryTerminalAddress !==
+                '0x0000000000000000000000000000000000000000' ? (
+                <div
+                  id="mission-pay-redeem-container"
+                  className="xl:bg-darkest-cool lg:max-w-[650px] mt-[5vw] md:mt-0 xl:mt-[2vw] w-full xl:rounded-tl-[2vmax] rounded-[2vmax] xl:pr-0 overflow-hidden xl:rounded-bl-[5vmax]"
+                >
                   <MissionPayRedeem
                     mission={mission}
                     teamNFT={teamNFT}
@@ -471,21 +542,12 @@ export default function MissionProfile({
                     jbTokensContract={jbTokensContract}
                     refreshBackers={refreshBackers}
                   />
-                ) : (
-                  <div className="p-4 text-center">
-                    <p>Loading payment terminal...</p>
-                  </div>
-                )}
-              </div>
-              <div className="hidden lg:block xl:hidden ml-[-5vw] w-[50%] h-full">
-                <Image
-                  src="/assets/logo-san-full.svg"
-                  className="w-full h-full"
-                  alt="Space acceleration network logo"
-                  width={200}
-                  height={200}
-                />
-              </div>
+                </div>
+              ) : (
+                <div className="p-4 text-center">
+                  <p>Loading payment terminal...</p>
+                </div>
+              )}
             </div>
             {/* Project Overview */}
             <div className="px-[5vw] w-full flex items-center justify-center">
@@ -545,6 +607,33 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   try {
     const tokenId: any = params?.tokenId
 
+    if (tokenId === 'dummy') {
+      return {
+        props: {
+          mission: {
+            id: 5,
+            metadata: {
+              name: 'Dummy Mission',
+              description: 'This is a dummy mission',
+              logoUri: '/Original.png',
+            },
+            projectId: 224,
+            teamId: 1,
+          },
+          _stage: 3,
+          _deadline: Date.now() + 5 * 1000,
+          _refundPeriod: Date.now() + 60 * 1000, // 1 minute after deadline
+          _primaryTerminalAddress: '0x0000000000000000000000000000000000000000',
+          _token: {
+            tokenAddress: '0x0000000000000000000000000000000000000000',
+            tokenName: 'Dummy Token',
+            tokenSymbol: 'DUMMY',
+            tokenSupply: '1000000000000000000000000000',
+          },
+        },
+      }
+    }
+
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
@@ -575,37 +664,47 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       chain: chain,
     })
 
-    const [metadataURI, stage, payHookAddress, tokenAddress] =
-      await Promise.all([
-        readContract({
-          contract: jbControllerContract,
-          method: 'uriOf' as string,
-          params: [missionRow.projectId],
-        }).then((result) => {
+    const [
+      metadataURI,
+      stage,
+      payHookAddress,
+      tokenAddress,
+      primaryTerminalAddress,
+    ] = await Promise.all([
+      readContract({
+        contract: jbControllerContract,
+        method: 'uriOf' as string,
+        params: [missionRow.projectId],
+      }).then((result) => {
+        return result
+      }),
+      readContract({
+        contract: missionCreatorContract,
+        method: 'stage' as string,
+        params: [tokenId],
+      }).then((result) => {
+        return result
+      }),
+      readContract({
+        contract: missionCreatorContract,
+        method: 'missionIdToPayHook' as string,
+        params: [tokenId],
+      })
+        .then((result) => {
           return result
-        }),
-        readContract({
-          contract: missionCreatorContract,
-          method: 'stage' as string,
-          params: [tokenId],
-        }).then((result) => {
-          return result
-        }),
-        readContract({
-          contract: missionCreatorContract,
-          method: 'missionIdToPayHook' as string,
-          params: [tokenId],
         })
-          .then((result) => {
-            return result
-          })
-          .catch(() => null), // Don't fail if this fails
-        readContract({
-          contract: jbTokensContract,
-          method: 'tokenOf' as string,
-          params: [missionRow.projectId],
-        }),
-      ])
+        .catch(() => null), // Don't fail if this fails
+      readContract({
+        contract: jbTokensContract,
+        method: 'tokenOf' as string,
+        params: [missionRow.projectId],
+      }),
+      readContract({
+        contract: jbDirectoryContract,
+        method: 'primaryTerminalOf' as string,
+        params: [missionRow.projectId, JB_NATIVE_TOKEN_ADDRESS],
+      }).catch(() => '0x0000000000000000000000000000000000000000'), // Default to zero address if fetch fails
+    ])
 
     const ipfsHash = metadataURI.startsWith('ipfs://')
       ? metadataURI.replace('ipfs://', '')
@@ -634,18 +733,28 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         abi: LaunchPadPayHookABI.abi as any,
       })
 
+      // Fetch both deadline and refundPeriod
       promises.push(
-        readContract({
-          contract: payHookContract,
-          method: 'deadline' as string,
-          params: [],
-        })
-          .then((dl: any) => +dl.toString() * 1000)
-          .catch(() => undefined)
+        Promise.all([
+          readContract({
+            contract: payHookContract,
+            method: 'deadline' as string,
+            params: [],
+          }).then((dl: any) => +dl.toString() * 1000),
+          readContract({
+            contract: payHookContract,
+            method: 'refundPeriod' as string,
+            params: [],
+          }).then((rp: any) => +rp.toString() * 1000),
+        ]).catch(() => [undefined, undefined])
       )
     }
 
-    const [metadata, deadline] = await Promise.all(promises)
+    const [metadata, timeData] = await Promise.all(promises)
+
+    // Extract deadline and refundPeriod
+    const deadline = Array.isArray(timeData) ? timeData[0] : timeData
+    const refundPeriod = Array.isArray(timeData) ? timeData[1] : undefined
 
     // Fetch token data if token address exists
     let tokenData = {
@@ -714,6 +823,8 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         mission,
         _stage: +stage.toString(),
         _deadline: deadline,
+        _refundPeriod: refundPeriod,
+        _primaryTerminalAddress: primaryTerminalAddress,
         _token: tokenData,
       },
     }

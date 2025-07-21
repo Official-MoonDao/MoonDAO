@@ -45,11 +45,12 @@ contract FeeHookScript is Script, Constants, Config {
             feehook.setMinWithdraw(0.00001 ether);
             uint256 initialSupply = 1000000 * 10**18;  // Adjust the amount you want to mint
             FakeERC20 token0 = new FakeERC20{salt: currentSalt()}(initialSupply, "FakeToken 4", "FAKE4", deployerAddress);
-            feehook.setvMooneyAddress(address(token0));
         }
         require(address(feehook) == hookAddress, "Fee hook address mismatch");
-        MissionCreator missionCreator = MissionCreator(MISSION_CREATOR_ADDRESSES[block.chainid]);
-        missionCreator.setFeeHookAddress(address(feehook));
+        if (block.chainid == ARBITRUM || block.chainid == SEP){
+            MissionCreator missionCreator = MissionCreator(MISSION_CREATOR_ADDRESSES[block.chainid]);
+            missionCreator.setFeeHookAddress(address(feehook));
+        }
         vm.stopBroadcast();
     }
 }
