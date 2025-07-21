@@ -112,7 +112,6 @@ export function ExpandedFooter({
   const projectLinks = [
     { text: 'Project Rewards', href: '/projects' },
     { text: 'Propose Project', href: '/proposals' },
-    { text: 'Submit Project Report', href: '/final-reports' },
   ]
 
   const learnLinks = [

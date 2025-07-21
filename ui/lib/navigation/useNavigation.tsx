@@ -79,10 +79,6 @@ export default function useNavigation(citizen: any) {
             name: 'Propose Project',
             href: '/proposals',
           },
-          {
-            name: 'Submit Project Report',
-            href: '/final-reports',
-          },
         ],
       },
       {
