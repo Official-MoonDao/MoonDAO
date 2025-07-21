@@ -392,9 +392,11 @@ export function getPayouts(
 
       if (
         upfrontPayments &&
-        contributerAddress in upfrontPayments &&
+        ((contributerAddress in upfrontPayments &&
         upfrontPayments[contributerAddress] >
-          marginalPayoutProportion * ethBudget
+          marginalPayoutProportion * ethBudget) ||
+        (utils.getAddress(contributerAddress) in upfrontPayments &&
+          upfrontPayments[utils.getAddress(contributerAddress)] > marginalPayoutProportion * ethBudget))
       ) {
         continue
       }
