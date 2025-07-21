@@ -315,14 +315,31 @@ export default function MissionPayRedeem({
 
   const [missionPayModalEnabled, setMissionPayModalEnabled] = useState(false)
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
+  // Initialize payment method correctly
   const [paymentMethod, setPaymentMethod] = useState<'crypto' | 'fiat'>(
-    'crypto'
+    onrampSuccess ? 'fiat' : 'crypto'
   )
+
+  // Add useEffect to set fiat mode when onrampSuccess becomes true
+  useEffect(() => {
+    console.log('🚀 onrampSuccess changed:', onrampSuccess)
+    if (onrampSuccess) {
+      console.log('🎯 Setting payment method to fiat')
+      setPaymentMethod('fiat')
+    }
+  }, [onrampSuccess])
   const [justCompletedFiatPurchase, setJustCompletedFiatPurchase] =
     useState(false)
   const [isFiatPaymentProcessing, setIsFiatPaymentProcessing] = useState(false)
   const [isWaitingForBalance, setIsWaitingForBalance] = useState(false)
   const [initialBalance, setInitialBalance] = useState<number | null>(null)
+
+  // Add state to track if we've processed the onramp success
+  const [hasProcessedOnrampSuccess, setHasProcessedOnrampSuccess] =
+    useState(false)
+
+  // Add state to track if user can contribute in fiat mode
+  const [canContributeInFiatMode, setCanContributeInFiatMode] = useState(false)
 
   const account = useActiveAccount()
   const address = account?.address
@@ -872,74 +889,74 @@ export default function MissionPayRedeem({
     }
   }, [jbTokenBalance, tokenCredit, getRedeemQuote, stage])
 
-  // Handle onramp success flow
+  // Main onrampSuccess effect - simplified and focused
   useEffect(() => {
-    if (onrampSuccess && account?.address && nativeBalance !== undefined) {
-      // Store initial balance when starting to wait
-      if (!isWaitingForBalance && initialBalance === null) {
-        setInitialBalance(Number(nativeBalance))
-        setIsWaitingForBalance(true)
-        toast.success(
-          'ETH purchase detected! Waiting for balance to update...',
-          {
-            style: toastStyle,
-          }
-        )
+    console.log('🔍 Main onrampSuccess effect:', {
+      onrampSuccess,
+      accountAddress: account?.address,
+      hasProcessedOnrampSuccess,
+      paymentMethod,
+    })
 
-        // Set a timeout fallback (5 minutes)
+    if (onrampSuccess && account?.address && !hasProcessedOnrampSuccess) {
+      console.log('✅ Processing onramp success')
+      setHasProcessedOnrampSuccess(true)
+
+      // Set to fiat mode and enable contribution form
+      setPaymentMethod('fiat')
+      setJustCompletedFiatPurchase(true) // This is KEY - enables crypto form in fiat mode
+
+      console.log(
+        '💰 Payment method set to fiat with justCompletedFiatPurchase = true'
+      )
+
+      // Open modal immediately
+      setTimeout(() => {
+        setMissionPayModalEnabled(true)
+
+        // Clear URL parameter after modal is opened
         setTimeout(() => {
-          if (isWaitingForBalance) {
-            setIsWaitingForBalance(false)
-            setPaymentMethod('crypto')
-            setMissionPayModalEnabled(true)
-            toast(
-              'Balance update taking longer than expected. You can still try to contribute.',
-              {
-                icon: '⚠️',
-                style: toastStyle,
-              }
-            )
+          router.replace(
+            {
+              pathname: router.pathname,
+              query: { ...router.query, onrampSuccess: undefined },
+            },
+            undefined,
+            { shallow: true }
+          )
+        }, 1000)
+      }, 500)
+    }
+  }, [onrampSuccess, account?.address, hasProcessedOnrampSuccess, router])
 
-            // Clear the URL parameter
-            router.replace(
-              {
-                pathname: router.pathname,
-                query: { ...router.query, onrampSuccess: undefined },
-              },
-              undefined,
-              { shallow: true }
-            )
-          }
-        }, 300000) // 5 minutes
+  // Also watch for input changes to enable form when they have enough for their input
+  useEffect(() => {
+    if (
+      onrampSuccess &&
+      paymentMethod === 'fiat' &&
+      !justCompletedFiatPurchase
+    ) {
+      const requiredEth =
+        usdInput && ethUsdPrice ? Number(usdInput) / ethUsdPrice : 0
+      const hasEnoughForInput =
+        nativeBalance && Number(nativeBalance) >= requiredEth && requiredEth > 0
+
+      if (hasEnoughForInput) {
+        setJustCompletedFiatPurchase(true)
+        setIsWaitingForBalance(false)
+        toast.success('You have enough ETH to contribute!', {
+          style: toastStyle,
+        })
       }
     }
   }, [
-    onrampSuccess,
-    account?.address,
+    usdInput,
+    ethUsdPrice,
     nativeBalance,
-    isWaitingForBalance,
-    initialBalance,
-    router,
+    onrampSuccess,
+    paymentMethod,
+    justCompletedFiatPurchase,
   ])
-
-  // Add this to immediately open modal on redirect
-  useEffect(() => {
-    if (onrampSuccess && account?.address) {
-      setPaymentMethod('crypto')
-      setJustCompletedFiatPurchase(true)
-      setMissionPayModalEnabled(true)
-
-      // Clear URL parameter immediately
-      router.replace(
-        {
-          pathname: router.pathname,
-          query: { ...router.query, onrampSuccess: undefined },
-        },
-        undefined,
-        { shallow: true }
-      )
-    }
-  }, [onrampSuccess, account?.address, router])
 
   // Watch for balance updates after onramp
   useEffect(() => {
@@ -983,6 +1000,45 @@ export default function MissionPayRedeem({
       setInitialBalance(null)
     }
   }, [onrampSuccess])
+
+  // Cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      setHasProcessedOnrampSuccess(false)
+    }
+  }, [])
+
+  // Check if user has enough balance for their input amount
+  useEffect(() => {
+    if (paymentMethod === 'fiat' && usdInput && ethUsdPrice && nativeBalance) {
+      const requiredEth = Number(usdInput) / ethUsdPrice
+      const hasEnoughBalance =
+        Number(nativeBalance) >= requiredEth && requiredEth > 0
+
+      console.log('💰 Fiat mode balance check:', {
+        usdInput,
+        requiredEth,
+        nativeBalance: Number(nativeBalance),
+        hasEnoughBalance,
+      })
+
+      setCanContributeInFiatMode(hasEnoughBalance)
+
+      // Also set justCompletedFiatPurchase to show the form
+      if (hasEnoughBalance && (onrampSuccess || justCompletedFiatPurchase)) {
+        setJustCompletedFiatPurchase(true)
+      }
+    } else {
+      setCanContributeInFiatMode(false)
+    }
+  }, [
+    paymentMethod,
+    usdInput,
+    ethUsdPrice,
+    nativeBalance,
+    onrampSuccess,
+    justCompletedFiatPurchase,
+  ])
 
   if (stage === 4) return null
 
@@ -1226,8 +1282,9 @@ export default function MissionPayRedeem({
 
             <hr className="w-full" />
 
+            {/* Show form elements in crypto mode OR when user can contribute in fiat mode */}
             {(paymentMethod === 'crypto' ||
-              (paymentMethod === 'fiat' && justCompletedFiatPurchase)) && (
+              (paymentMethod === 'fiat' && canContributeInFiatMode)) && (
               <>
                 <div className="w-full flex flex-col gap-4 justify-between">
                   <p>{`Message (optional)`}</p>
@@ -1269,7 +1326,9 @@ export default function MissionPayRedeem({
               </>
             )}
 
-            {paymentMethod === 'crypto' && (
+            {/* Show network selector in crypto mode OR when user can contribute in fiat mode */}
+            {(paymentMethod === 'crypto' || 
+              (paymentMethod === 'fiat' && canContributeInFiatMode)) && (
               <div className="w-full flex justify-between gap-4">
                 <NetworkSelector chains={chains} compact={true} align="left" />
               </div>
@@ -1277,8 +1336,8 @@ export default function MissionPayRedeem({
 
             {paymentMethod === 'fiat' ? (
               <div className="w-full flex flex-col gap-4">
-                {/* Show the embedded onramp only if fiat purchase hasn't been completed */}
-                {!justCompletedFiatPurchase && (
+                {/* Show the embedded onramp only if fiat purchase hasn't been completed AND user can't contribute */}
+                {!justCompletedFiatPurchase && !canContributeInFiatMode && (
                   <CBOnramp
                     address={address || ''}
                     selectedChain={selectedChain}
@@ -1297,29 +1356,73 @@ export default function MissionPayRedeem({
                   />
                 )}
 
-                {/* Cancel button */}
-                <StandardButton
-                  styleOnly
-                  className="w-full p-2 text-center border-moon-indigo border-[1px] rounded-xl"
-                  onClick={() => {
-                    setJustCompletedFiatPurchase(false)
-                    setModalEnabled
-                      ? setModalEnabled(false)
-                      : setMissionPayModalEnabled(false)
-                  }}
-                  hoverEffect={false}
-                >
-                  Close
-                </StandardButton>
+                {/* Show contribution buttons when user can contribute or just completed purchase */}
+                {(canContributeInFiatMode || justCompletedFiatPurchase) && (
+                  <div className="w-full flex justify-between gap-4">
+                    <StandardButton
+                      styleOnly
+                      className="w-1/2 p-2 text-center border-moon-indigo border-[1px] rounded-xl"
+                      onClick={() => {
+                        setJustCompletedFiatPurchase(false)
+                        setModalEnabled
+                          ? setModalEnabled(false)
+                          : setMissionPayModalEnabled(false)
+                      }}
+                      hoverEffect={false}
+                    >
+                      Cancel
+                    </StandardButton>
 
-                {/* Success message for fiat purchases */}
-                {justCompletedFiatPurchase && (
+                    <PrivyWeb3Button
+                      id="contribute-button-fiat"
+                      className="w-1/2 bg-moon-indigo rounded-xl"
+                      label={`Contribute $${formattedUsdInput || '0'} USD`}
+                      action={buyMissionToken}
+                      isDisabled={
+                        !agreedToCondition ||
+                        !usdInput ||
+                        parseFloat(usdInput) <= 0 ||
+                        !canContributeInFiatMode
+                      }
+                    />
+                  </div>
+                )}
+
+                {/* Show message based on balance status */}
+                {!canContributeInFiatMode &&
+                  !justCompletedFiatPurchase &&
+                  usdInput && (
+                    <div className="w-full p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                      <p className="text-sm text-yellow-400">
+                        You need more ETH to contribute ${usdInput} USD. Use
+                        Coinbase above to purchase ETH.
+                      </p>
+                    </div>
+                  )}
+
+                {canContributeInFiatMode && !justCompletedFiatPurchase && (
                   <div className="w-full p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
                     <p className="text-sm text-green-400">
-                      ETH purchase completed! You can now switch to crypto
-                      payment to contribute.
+                      You have enough ETH to contribute ${usdInput} USD!
                     </p>
                   </div>
+                )}
+
+                {/* General cancel button when no contribution options */}
+                {!canContributeInFiatMode && !justCompletedFiatPurchase && (
+                  <StandardButton
+                    styleOnly
+                    className="w-full p-2 text-center border-moon-indigo border-[1px] rounded-xl"
+                    onClick={() => {
+                      setJustCompletedFiatPurchase(false)
+                      setModalEnabled
+                        ? setModalEnabled(false)
+                        : setMissionPayModalEnabled(false)
+                    }}
+                    hoverEffect={false}
+                  >
+                    Close
+                  </StandardButton>
                 )}
               </div>
             ) : (

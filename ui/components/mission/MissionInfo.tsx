@@ -160,11 +160,20 @@ export default function MissionInfo({
   }, [router])
 
   useEffect(() => {
-    shallowQueryRoute({
+    // Preserve existing query parameters when updating tab
+    const queryParams: any = {
       tokenId: mission?.id,
       tab: tab,
-    })
-  }, [tab])
+    }
+
+    // Preserve onrampSuccess if it exists
+    if (router.query.onrampSuccess) {
+      queryParams.onrampSuccess = router.query.onrampSuccess
+      console.log('🔄 Preserving onrampSuccess in tab navigation')
+    }
+
+    shallowQueryRoute(queryParams)
+  }, [tab, router.query.onrampSuccess, mission?.id])
 
   return (
     <div className="w-full">
