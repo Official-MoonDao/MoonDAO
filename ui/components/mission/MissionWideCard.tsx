@@ -17,7 +17,7 @@ import MissionStat from './MissionStat'
 export type MissionWideCardProps = {
   mission: Mission
   token: any
-  subgraphData: any
+  subgraphData?: any
   fundingGoal: number
   backers?: any[]
   contribute?: boolean
@@ -72,7 +72,7 @@ export default function MissionWideCard({
 
   const duration = useMemo(() => {
     return deadline ? formatTimeUntilDeadline(new Date(deadline)) : undefined
-  }, [ruleset])
+  }, [deadline])
 
   useEffect(() => {
     async function getTeamNFT() {
@@ -119,46 +119,45 @@ export default function MissionWideCard({
           <div className="w-full flex flex-col">
             {}
             <div className="w-full grid grid-cols-1 md:grid-cols-3  items-center">
-              {!onlyGoalStat && (
-                <div className="w-full flex flex-col gap-4 col-span-3">
-                  {ethPrice && (
-                    <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-start w-fit flex-col">
-                      <div className="flex items-center md:min-w-[200px]">
-                        <Image
-                          src="/assets/icon-raised-tokens.svg"
-                          alt="Raised"
-                          width={24}
-                          height={24}
-                          className="mr-2"
-                        />
-                        <span className="mr-2">
-                          {truncateTokenValue(
-                            Number(totalFunding || 0) / 1e18,
-                            'ETH'
-                          )}
-                        </span>
-                        <span className="text-sm md:text-base">ETH RAISED</span>
-                      </div>
-                      <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
-                        (Number(totalFunding || 0) / 1e18) * ethPrice
-                      ).toLocaleString()} USD)`}</p>
-                    </div>
-                  )}
-                  {!onlyGoalStat && stage !== 3 && (
-                    <div className="w-full">
-                      <MissionFundingProgressBar
-                        fundingGoal={fundingGoal || 0}
-                        volume={subgraphData?.volume / 1e18 || 0}
-                        compact={compact}
+              <div className="w-full flex flex-col gap-4 col-span-3">
+                {ethPrice && subgraphData?.volume > 0 && (
+                  <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-start w-fit flex-col">
+                    <div className="flex items-center md:min-w-[200px]">
+                      <Image
+                        src="/assets/icon-raised-tokens.svg"
+                        alt="Raised"
+                        width={24}
+                        height={24}
+                        className="mr-2"
                       />
+                      <span className="mr-2">
+                        {truncateTokenValue(
+                          Number(totalFunding || 0) / 1e18,
+                          'ETH'
+                        )}
+                      </span>
+                      <span className="text-sm md:text-base">ETH RAISED</span>
                     </div>
-                  )}
-                </div>
-              )}
+                    <p className="font-[Lato] text-sm opacity-60">{`($${Math.round(
+                      (Number(totalFunding || 0) / 1e18) * ethPrice
+                    ).toLocaleString()} USD)`}</p>
+                  </div>
+                )}
+                {!onlyGoalStat && stage !== 3 && (
+                  <div className="w-full">
+                    <MissionFundingProgressBar
+                      fundingGoal={fundingGoal || 0}
+                      volume={subgraphData?.volume / 1e18 || 0}
+                      compact={compact}
+                    />
+                  </div>
+                )}
+              </div>
+
               <div />
             </div>
             <div className="mt-4 w-full grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-              <div className={`${onlyGoalStat ? 'col-span-3' : 'col-span-1'}`}>
+              <div className={`col-span-2`}>
                 <MissionStat
                   icon="/assets/target.png"
                   label="Goal"
@@ -172,7 +171,7 @@ export default function MissionWideCard({
                   ).toLocaleString()} USD`}
                 />
               </div>
-              <div>
+              <div className="col-span-2">
                 {duration && (
                   <MissionStat
                     label={duration === 'PASSED' ? 'Status' : 'Deadline'}

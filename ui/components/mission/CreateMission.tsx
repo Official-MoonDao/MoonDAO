@@ -42,6 +42,7 @@ import { isValidYouTubeUrl } from '@/lib/utils/links'
 import { getAttribute } from '@/lib/utils/nft'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
+import FormDate from '../forms/FormDate'
 import FormInput from '../forms/FormInput'
 import FormYesNo from '../forms/FormYesNo'
 import { Hat } from '../hats/Hat'
@@ -80,6 +81,8 @@ export type MissionData = {
   tagline: string
   fundingGoal: number | undefined
   youtubeLink: string
+  deadline: string | undefined
+  refundsEnabled: boolean
   token: {
     name: string
     symbol: string
@@ -234,6 +237,8 @@ export default function CreateMission({
     tagline: missionCache?.tagline || '',
     fundingGoal: missionCache?.fundingGoal || undefined,
     youtubeLink: missionCache?.youtubeLink || '',
+    deadline: missionCache?.deadline || undefined,
+    refundsEnabled: missionCache?.refundsEnabled ?? true,
     token: missionCache?.token || {
       name: '',
       symbol: '',
@@ -293,6 +298,38 @@ export default function CreateMission({
       if (!missionLogoUri) throw new Error('Please upload a mission image')
       if (!fundingGoalInETH || +fundingGoalInETH <= 0)
         throw new Error('Funding goal is not set')
+
+      // Calculate deadline timestamp
+      let deadlineTimestamp: number
+      if (missionData.deadline) {
+        // User defined deadline - use end of selected day
+        deadlineTimestamp = Math.floor(
+          new Date(missionData.deadline + 'T23:59:59').getTime() / 1000
+        )
+      } else {
+        // No deadline defined - use defaults based on environment
+        if (process.env.NEXT_PUBLIC_CHAIN === 'mainnet') {
+          deadlineTimestamp =
+            Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60 // 28 days
+        } else {
+          deadlineTimestamp = Math.floor(new Date().getTime() / 1000) + 10 * 60 // 10 minutes
+        }
+      }
+
+      // Calculate refund period
+      let refundPeriod: number
+      if (!missionData.refundsEnabled) {
+        refundPeriod = 0 // No refunds
+      } else if (missionData.deadline) {
+        refundPeriod = 28 * 24 * 60 * 60 // 28 days when user sets deadline
+      } else {
+        // Use defaults based on environment when no deadline set
+        refundPeriod =
+          process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+            ? 28 * 24 * 60 * 60 // 28 days
+            : 10 * 60 // 10 minutes
+      }
+
       const teamMultisig = await readContract({
         contract: teamContract,
         method: 'ownerOf' as string,
@@ -324,42 +361,23 @@ export default function CreateMission({
         missionMetadataBlob
       )
 
-      let transaction
-      if (process.env.NEXT_PUBLIC_CHAIN === 'mainnet') {
-        transaction = prepareContractCall({
-          contract: missionCreatorContract,
-          method: 'createMission' as string,
-          params: [
-            selectedTeamId,
-            teamMultisig,
-            missionMetadataIpfsHash,
-            Math.trunc(fundingGoalInETH * 1e18),
-            Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60, // Deadline: 28 days
-            28 * 24 * 60 * 60, // Refund period: 28 days
-            missionData.token.tradeable,
-            missionData?.token?.name,
-            missionData?.token?.symbol,
-            'MoonDAO Mission',
-          ],
-        })
-      } else {
-        transaction = prepareContractCall({
-          contract: missionCreatorContract,
-          method: 'createMission' as string,
-          params: [
-            selectedTeamId,
-            teamMultisig,
-            missionMetadataIpfsHash,
-            Math.trunc(fundingGoalInETH * 1e18),
-            Math.floor(new Date().getTime() / 1000) + 10 * 60, // Deadline: 10 minutes
-            10 * 60, // Refund period: 10 minutes
-            missionData.token.tradeable,
-            missionData?.token?.name,
-            missionData?.token?.symbol,
-            'MoonDAO Mission',
-          ],
-        })
-      }
+      // Single contract call using calculated values
+      const transaction = prepareContractCall({
+        contract: missionCreatorContract,
+        method: 'createMission' as string,
+        params: [
+          selectedTeamId,
+          teamMultisig,
+          missionMetadataIpfsHash,
+          Math.trunc(fundingGoalInETH * 1e18),
+          deadlineTimestamp,
+          refundPeriod,
+          missionData.token.tradeable,
+          missionData?.token?.name,
+          missionData?.token?.symbol,
+          'MoonDAO Mission',
+        ],
+      })
 
       setSigningTx(true)
       const receipt = await sendAndConfirmTransaction({
@@ -421,6 +439,8 @@ export default function CreateMission({
               socialLink: '',
               tagline: '',
               fundingGoal: undefined,
+              deadline: undefined,
+              refundsEnabled: true,
               youtubeLink: '',
               token: {
                 name: '',
@@ -466,6 +486,8 @@ export default function CreateMission({
         tagline: missionData.tagline,
         fundingGoal: missionData.fundingGoal,
         youtubeLink: missionData.youtubeLink,
+        deadline: missionData.deadline,
+        refundsEnabled: missionData.refundsEnabled,
         token: missionData.token,
         timestamp: getUnixTime(new Date()),
       })
@@ -774,6 +796,31 @@ export default function CreateMission({
                         style: toastStyle,
                       })
                     }
+
+                    // Make deadline required and validate it's at least 1 day in the future
+                    if (!missionData.deadline) {
+                      return toast.error('Please set a mission deadline.', {
+                        style: toastStyle,
+                      })
+                    }
+
+                    const selectedDate = new Date(
+                      missionData.deadline + 'T23:59:59'
+                    )
+                    const now = new Date()
+                    const oneDayFromNow = new Date(
+                      now.getTime() + 24 * 60 * 60 * 1000
+                    )
+
+                    if (selectedDate <= oneDayFromNow) {
+                      return toast.error(
+                        'Deadline must be at least 1 day in the future.',
+                        {
+                          style: toastStyle,
+                        }
+                      )
+                    }
+
                     if (missionData.token.tradeable) {
                       if (missionData.token.name.trim().length === 0) {
                         return toast.error('Please enter a token name.', {
@@ -846,19 +893,52 @@ export default function CreateMission({
                   </div>
 
                   <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <FormYesNo
-                      id="mission-token-toggle"
-                      label="Create a Token"
-                      value={missionData.token.tradeable}
-                      onChange={(value: boolean) =>
+                    <FormDate
+                      id="mission-deadline"
+                      label="Mission Deadline *"
+                      value={missionData.deadline}
+                      onChange={(value: string) =>
                         setMissionData({
                           ...missionData,
-                          token: { ...missionData.token, tradeable: value },
+                          deadline: value,
                         })
                       }
                       mode="dark"
-                      tooltip="ERC-20 tokens are not created by default, but teams can choose to deploy one, if they would like a market tradeable token."
+                      tooltip="Set when your mission funding period will end. Must be at least 1 day in the future."
+                      min={new Date(Date.now() + 24 * 60 * 60 * 1000)} // Tomorrow
                     />
+
+                    <div className="col-span-2">
+                      <FormYesNo
+                        id="mission-refunds-toggle"
+                        label="Enable Refunds"
+                        value={missionData.refundsEnabled}
+                        onChange={(value: boolean) =>
+                          setMissionData({
+                            ...missionData,
+                            refundsEnabled: value,
+                          })
+                        }
+                        mode="dark"
+                        tooltip="Allow contributors to get refunds if the mission doesn't reach its funding goal, refunds are available for 28 days. Disabling refunds means funds are locked once contributed."
+                      />
+                    </div>
+                    <div className="">
+                      <FormYesNo
+                        className=""
+                        id="mission-token-toggle"
+                        label="Create a Token"
+                        value={missionData.token.tradeable}
+                        onChange={(value: boolean) =>
+                          setMissionData({
+                            ...missionData,
+                            token: { ...missionData.token, tradeable: value },
+                          })
+                        }
+                        mode="dark"
+                        tooltip="ERC-20 tokens are not created by default, but teams can choose to deploy one, if they would like a market tradeable token."
+                      />
+                    </div>
 
                     <div
                       className={`${
@@ -1031,9 +1111,15 @@ export default function CreateMission({
                           },
                         } as any
                       }
+                      deadline={
+                        missionData.deadline
+                          ? new Date(
+                              missionData.deadline + 'T23:59:59'
+                            ).getTime()
+                          : 0
+                      }
                       token={missionData.token}
                       fundingGoal={fundingGoalInETH * 1e18 || 0}
-                      subgraphData={{}}
                       missionImage={missionLogoUri}
                       showMore={true}
                       showMoreButton={false}
