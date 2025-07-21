@@ -32,6 +32,7 @@ import { ethers } from 'ethers'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import {
@@ -153,9 +154,13 @@ export default function MissionProfile({
 }: ProjectProfileProps) {
   const [isLoading, setIsLoading] = useState(false)
   const account = useActiveAccount()
+  const router = useRouter()
 
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
+
+  // Check for onramp success parameter
+  const onrampSuccess = router.query.onrampSuccess === 'true'
 
   const [teamNFT, setTeamNFT] = useState<any>()
   const [availableTokens, setAvailableTokens] = useState<number>(0)
@@ -540,6 +545,7 @@ export default function MissionProfile({
                     jbControllerContract={jbControllerContract}
                     jbTokensContract={jbTokensContract}
                     refreshBackers={refreshBackers}
+                    onrampSuccess={onrampSuccess}
                   />
                 </div>
               ) : (

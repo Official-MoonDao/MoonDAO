@@ -9,6 +9,7 @@ import {
   MISSION_CROSS_CHAIN_PAY_ADDRESS,
   LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID,
   JB_NATIVE_TOKEN_ADDRESS,
+  DEPLOYED_ORIGIN,
 } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -285,6 +286,7 @@ export type MissionPayRedeemProps = {
   jbTokensContract?: any
   forwardClient?: any
   refreshBackers?: () => void
+  onrampSuccess?: boolean
 }
 
 export default function MissionPayRedeem({
@@ -300,6 +302,7 @@ export default function MissionPayRedeem({
   jbTokensContract,
   forwardClient,
   refreshBackers,
+  onrampSuccess = false,
 }: MissionPayRedeemProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -318,6 +321,8 @@ export default function MissionPayRedeem({
   const [justCompletedFiatPurchase, setJustCompletedFiatPurchase] =
     useState(false)
   const [isFiatPaymentProcessing, setIsFiatPaymentProcessing] = useState(false)
+  const [isWaitingForBalance, setIsWaitingForBalance] = useState(false)
+  const [initialBalance, setInitialBalance] = useState<number | null>(null)
 
   const account = useActiveAccount()
   const address = account?.address
@@ -867,6 +872,118 @@ export default function MissionPayRedeem({
     }
   }, [jbTokenBalance, tokenCredit, getRedeemQuote, stage])
 
+  // Handle onramp success flow
+  useEffect(() => {
+    if (onrampSuccess && account?.address && nativeBalance !== undefined) {
+      // Store initial balance when starting to wait
+      if (!isWaitingForBalance && initialBalance === null) {
+        setInitialBalance(Number(nativeBalance))
+        setIsWaitingForBalance(true)
+        toast.success(
+          'ETH purchase detected! Waiting for balance to update...',
+          {
+            style: toastStyle,
+          }
+        )
+
+        // Set a timeout fallback (5 minutes)
+        setTimeout(() => {
+          if (isWaitingForBalance) {
+            setIsWaitingForBalance(false)
+            setPaymentMethod('crypto')
+            setMissionPayModalEnabled(true)
+            toast(
+              'Balance update taking longer than expected. You can still try to contribute.',
+              {
+                icon: '⚠️',
+                style: toastStyle,
+              }
+            )
+
+            // Clear the URL parameter
+            router.replace(
+              {
+                pathname: router.pathname,
+                query: { ...router.query, onrampSuccess: undefined },
+              },
+              undefined,
+              { shallow: true }
+            )
+          }
+        }, 300000) // 5 minutes
+      }
+    }
+  }, [
+    onrampSuccess,
+    account?.address,
+    nativeBalance,
+    isWaitingForBalance,
+    initialBalance,
+    router,
+  ])
+
+  // Add this to immediately open modal on redirect
+  useEffect(() => {
+    if (onrampSuccess && account?.address) {
+      setPaymentMethod('crypto')
+      setJustCompletedFiatPurchase(true)
+      setMissionPayModalEnabled(true)
+
+      // Clear URL parameter immediately
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: { ...router.query, onrampSuccess: undefined },
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+  }, [onrampSuccess, account?.address, router])
+
+  // Watch for balance updates after onramp
+  useEffect(() => {
+    if (
+      isWaitingForBalance &&
+      initialBalance !== null &&
+      nativeBalance !== undefined &&
+      Number(nativeBalance) > initialBalance &&
+      Number(nativeBalance) > 0.001 // Ensure we have a meaningful amount
+    ) {
+      // Balance has increased, onramp successful
+      setIsWaitingForBalance(false)
+      setJustCompletedFiatPurchase(true)
+      setPaymentMethod('crypto')
+
+      // Set a small delay to ensure state is updated before opening modal
+      setTimeout(() => {
+        setMissionPayModalEnabled(true)
+      }, 500)
+
+      toast.success('Balance updated! You can now contribute to the mission.', {
+        style: toastStyle,
+      })
+
+      // Clear the URL parameter
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: { ...router.query, onrampSuccess: undefined },
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+  }, [isWaitingForBalance, initialBalance, nativeBalance, router])
+
+  // Cleanup effect when component unmounts or onrampSuccess changes
+  useEffect(() => {
+    if (!onrampSuccess) {
+      setIsWaitingForBalance(false)
+      setInitialBalance(null)
+    }
+  }, [onrampSuccess])
+
   if (stage === 4) return null
 
   return (
@@ -899,6 +1016,72 @@ export default function MissionPayRedeem({
                 </StandardButton>
               </div>
             )}
+
+          {/* Waiting for balance update after onramp */}
+          {isWaitingForBalance && (
+            <div className="bg-[#020617] rounded-[5vw] md:rounded-[2vw] p-6 mb-4 border border-blue-500/30">
+              <div className="flex items-center gap-3 mb-3">
+                <LoadingSpinner />
+                <h3 className="text-lg font-semibold text-blue-400">
+                  Waiting for ETH Balance Update
+                </h3>
+              </div>
+              <p className="text-sm opacity-80 mb-3">
+                Your ETH purchase was successful! We're waiting for your wallet
+                balance to update. This usually takes 1-2 minutes.
+              </p>
+              <p className="text-xs opacity-60 mb-4">
+                Once your balance updates, you'll automatically be able to
+                contribute to the mission.
+              </p>
+              <div className="flex gap-3">
+                <StandardButton
+                  styleOnly
+                  className="flex-1 px-4 py-2 text-sm border border-blue-500/50 rounded-lg hover:bg-blue-500/10"
+                  onClick={() => {
+                    setIsWaitingForBalance(false)
+                    setPaymentMethod('crypto')
+                    setMissionPayModalEnabled(true)
+
+                    // Clear the URL parameter
+                    router.replace(
+                      {
+                        pathname: router.pathname,
+                        query: { ...router.query, onrampSuccess: undefined },
+                      },
+                      undefined,
+                      { shallow: true }
+                    )
+                  }}
+                  hoverEffect={false}
+                >
+                  Continue Anyway
+                </StandardButton>
+                <StandardButton
+                  styleOnly
+                  className="px-4 py-2 text-sm border border-gray-500/50 rounded-lg hover:bg-gray-500/10"
+                  onClick={() => {
+                    setIsWaitingForBalance(false)
+                    setInitialBalance(null)
+
+                    // Clear the URL parameter
+                    router.replace(
+                      {
+                        pathname: router.pathname,
+                        query: { ...router.query, onrampSuccess: undefined },
+                      },
+                      undefined,
+                      { shallow: true }
+                    )
+                  }}
+                  hoverEffect={false}
+                >
+                  Cancel
+                </StandardButton>
+              </div>
+            </div>
+          )}
+
           <div className="mt-2">
             <MissionPayRedeemContent
               token={token}
@@ -1110,6 +1293,7 @@ export default function MissionPayRedeem({
                         }
                       )
                     }}
+                    redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
                   />
                 )}
 

@@ -1,4 +1,5 @@
 import { generateOnRampURL } from '@coinbase/cbpay-js'
+import { DEPLOYED_ORIGIN } from 'const/config'
 import { useEffect, useState } from 'react'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -7,14 +8,16 @@ interface CBOnrampProps {
   address: string
   selectedChain: any
   usdInput: string
-  onSuccess: () => void
-  onExit: () => void
+  redirectUrl?: string
+  onSuccess?: () => void
+  onExit?: () => void
 }
 
 export const CBOnramp: React.FC<CBOnrampProps> = ({
   address,
   selectedChain,
   usdInput,
+  redirectUrl,
   onSuccess,
   onExit,
 }) => {
@@ -139,6 +142,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             }),
           defaultNetwork: getNetworkName(selectedChain),
           defaultAsset: 'ETH',
+          redirectUrl: redirectUrl || `${DEPLOYED_ORIGIN}/`,
         })
 
         setOnrampUrl(url)
@@ -159,93 +163,8 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       return
     }
 
-    // Open URL in popup
-    const popup = window.open(
-      onrampUrl,
-      'coinbase-onramp',
-      'width=500,height=700,scrollbars=yes,resizable=yes'
-    )
-
-    if (!popup) {
-      setError('Popup blocked. Please allow popups for this site.')
-      return
-    }
-
-    let isHandled = false
-
-    // Listen for message events from Coinbase onramp
-    const handleMessage = (event: MessageEvent) => {
-      // Accept messages from Coinbase domains
-      if (
-        !event.origin.includes('coinbase.com') &&
-        !event.origin.includes('cb-pay.com')
-      ) {
-        return
-      }
-
-      console.log('Received message from Coinbase:', event.data)
-
-      // Handle different event types from Coinbase onramp
-      if (event.data && typeof event.data === 'object') {
-        const { eventName, chargeId, success } = event.data
-
-        // Handle success events
-        if (
-          eventName === 'charge_confirmed' ||
-          eventName === 'payment_success' ||
-          success === true ||
-          event.data.type === 'onramp_success'
-        ) {
-          if (!isHandled) {
-            isHandled = true
-            popup.close()
-            cleanup()
-            onSuccess && onSuccess()
-          }
-        }
-        // Handle exit/cancel events
-        else if (
-          eventName === 'popup_closed' ||
-          eventName === 'user_closed' ||
-          event.data.type === 'onramp_exit'
-        ) {
-          if (!isHandled) {
-            isHandled = true
-            popup.close()
-            cleanup()
-            onExit && onExit()
-          }
-        }
-      }
-    }
-
-    // Listen for popup being manually closed
-    const checkClosed = setInterval(() => {
-      if (popup.closed && !isHandled) {
-        isHandled = true
-        cleanup()
-        onExit()
-      }
-    }, 1000)
-
-    // Cleanup function
-    const cleanup = () => {
-      clearInterval(checkClosed)
-      window.removeEventListener('message', handleMessage)
-    }
-
-    // Add event listener
-    window.addEventListener('message', handleMessage, false)
-
-    // Cleanup after 10 minutes
-    setTimeout(() => {
-      if (!isHandled) {
-        isHandled = true
-        popup.close()
-        cleanup()
-        onExit()
-      }
-    }, 600000) // 10 minutes timeout
+    // Redirect to Coinbase onramp (full page redirect)
+    window.location.href = onrampUrl
   }
 
   // Loading state
