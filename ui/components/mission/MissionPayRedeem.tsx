@@ -341,6 +341,10 @@ export default function MissionPayRedeem({
   // Add state to track if user can contribute in fiat mode
   const [canContributeInFiatMode, setCanContributeInFiatMode] = useState(false)
 
+  // Add state to track if we're waiting for balance after onramp
+  const [isWaitingForBalanceUpdate, setIsWaitingForBalanceUpdate] =
+    useState(false)
+
   const account = useActiveAccount()
   const address = account?.address
 
@@ -889,7 +893,29 @@ export default function MissionPayRedeem({
     }
   }, [jbTokenBalance, tokenCredit, getRedeemQuote, stage])
 
-  // Main onrampSuccess effect - simplified and focused
+  // Add a function to clear the parameter only when needed
+  const clearOnrampSuccessParam = useCallback(() => {
+    if (router.query.onrampSuccess) {
+      console.log('🧹 Clearing onrampSuccess parameter')
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: { ...router.query, onrampSuccess: undefined },
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+  }, [router])
+
+  // Clear parameter when modal is closed
+  const handleModalClose = useCallback(() => {
+    setJustCompletedFiatPurchase(false)
+    setMissionPayModalEnabled(false)
+    clearOnrampSuccessParam() // Only clear when modal closes
+  }, [clearOnrampSuccessParam])
+
+  // Main onrampSuccess effect - REMOVE the automatic URL clearing
   useEffect(() => {
     console.log('🔍 Main onrampSuccess effect:', {
       onrampSuccess,
@@ -904,30 +930,23 @@ export default function MissionPayRedeem({
 
       // Set to fiat mode and enable contribution form
       setPaymentMethod('fiat')
-      setJustCompletedFiatPurchase(true) // This is KEY - enables crypto form in fiat mode
+      setJustCompletedFiatPurchase(true)
 
       console.log(
         '💰 Payment method set to fiat with justCompletedFiatPurchase = true'
       )
 
-      // Open modal immediately
+      // Open modal immediately - NO URL CLEARING HERE
       setTimeout(() => {
         setMissionPayModalEnabled(true)
-
-        // Clear URL parameter after modal is opened
-        setTimeout(() => {
-          router.replace(
-            {
-              pathname: router.pathname,
-              query: { ...router.query, onrampSuccess: undefined },
-            },
-            undefined,
-            { shallow: true }
-          )
-        }, 1000)
       }, 500)
     }
-  }, [onrampSuccess, account?.address, hasProcessedOnrampSuccess, router])
+  }, [
+    onrampSuccess,
+    account?.address,
+    hasProcessedOnrampSuccess,
+    paymentMethod,
+  ])
 
   // Also watch for input changes to enable form when they have enough for their input
   useEffect(() => {
@@ -1008,9 +1027,14 @@ export default function MissionPayRedeem({
     }
   }, [])
 
-  // Check if user has enough balance for their input amount
+  // Enhanced balance checking for onramp success
   useEffect(() => {
-    if (paymentMethod === 'fiat' && usdInput && ethUsdPrice && nativeBalance) {
+    if (
+      paymentMethod === 'fiat' &&
+      usdInput &&
+      ethUsdPrice &&
+      nativeBalance !== undefined
+    ) {
       const requiredEth = Number(usdInput) / ethUsdPrice
       const hasEnoughBalance =
         Number(nativeBalance) >= requiredEth && requiredEth > 0
@@ -1020,25 +1044,27 @@ export default function MissionPayRedeem({
         requiredEth,
         nativeBalance: Number(nativeBalance),
         hasEnoughBalance,
+        ethUsdPrice,
+        onrampSuccess,
       })
 
       setCanContributeInFiatMode(hasEnoughBalance)
 
-      // Also set justCompletedFiatPurchase to show the form
-      if (hasEnoughBalance && (onrampSuccess || justCompletedFiatPurchase)) {
-        setJustCompletedFiatPurchase(true)
+      // If onrampSuccess is true but they don't have enough balance, show waiting message
+      if (onrampSuccess && !hasEnoughBalance && usdInput) {
+        setIsWaitingForBalanceUpdate(true)
+      } else {
+        setIsWaitingForBalanceUpdate(false)
       }
     } else {
       setCanContributeInFiatMode(false)
+      if (onrampSuccess && usdInput) {
+        setIsWaitingForBalanceUpdate(true)
+      } else {
+        setIsWaitingForBalanceUpdate(false)
+      }
     }
-  }, [
-    paymentMethod,
-    usdInput,
-    ethUsdPrice,
-    nativeBalance,
-    onrampSuccess,
-    justCompletedFiatPurchase,
-  ])
+  }, [paymentMethod, usdInput, ethUsdPrice, nativeBalance, onrampSuccess])
 
   if (stage === 4) return null
 
@@ -1074,7 +1100,7 @@ export default function MissionPayRedeem({
             )}
 
           {/* Waiting for balance update after onramp */}
-          {isWaitingForBalance && (
+          {isWaitingForBalanceUpdate && (
             <div className="bg-[#020617] rounded-[5vw] md:rounded-[2vw] p-6 mb-4 border border-blue-500/30">
               <div className="flex items-center gap-3 mb-3">
                 <LoadingSpinner />
@@ -1095,7 +1121,7 @@ export default function MissionPayRedeem({
                   styleOnly
                   className="flex-1 px-4 py-2 text-sm border border-blue-500/50 rounded-lg hover:bg-blue-500/10"
                   onClick={() => {
-                    setIsWaitingForBalance(false)
+                    setIsWaitingForBalanceUpdate(false)
                     setPaymentMethod('crypto')
                     setMissionPayModalEnabled(true)
 
@@ -1117,7 +1143,7 @@ export default function MissionPayRedeem({
                   styleOnly
                   className="px-4 py-2 text-sm border border-gray-500/50 rounded-lg hover:bg-gray-500/10"
                   onClick={() => {
-                    setIsWaitingForBalance(false)
+                    setIsWaitingForBalanceUpdate(false)
                     setInitialBalance(null)
 
                     // Clear the URL parameter
@@ -1167,12 +1193,7 @@ export default function MissionPayRedeem({
               <button
                 type="button"
                 className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                onClick={(e: any) => {
-                  setJustCompletedFiatPurchase(false)
-                  setModalEnabled
-                    ? setModalEnabled(false)
-                    : setMissionPayModalEnabled(false)
-                }}
+                onClick={handleModalClose} // Use the new handler
               >
                 <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
               </button>
@@ -1327,7 +1348,7 @@ export default function MissionPayRedeem({
             )}
 
             {/* Show network selector in crypto mode OR when user can contribute in fiat mode */}
-            {(paymentMethod === 'crypto' || 
+            {(paymentMethod === 'crypto' ||
               (paymentMethod === 'fiat' && canContributeInFiatMode)) && (
               <div className="w-full flex justify-between gap-4">
                 <NetworkSelector chains={chains} compact={true} align="left" />
@@ -1336,89 +1357,123 @@ export default function MissionPayRedeem({
 
             {paymentMethod === 'fiat' ? (
               <div className="w-full flex flex-col gap-4">
-                {/* Show the embedded onramp only if fiat purchase hasn't been completed AND user can't contribute */}
-                {!justCompletedFiatPurchase && !canContributeInFiatMode && (
-                  <CBOnramp
-                    address={address || ''}
-                    selectedChain={selectedChain}
-                    usdInput={usdInput}
-                    onSuccess={() => {
-                      setJustCompletedFiatPurchase(true)
-                      setIsFiatPaymentProcessing(false)
-                      toast.success(
-                        'ETH purchase completed! You can now contribute to the mission.',
-                        {
-                          style: toastStyle,
-                        }
-                      )
-                    }}
-                    redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
-                  />
-                )}
-
-                {/* Show contribution buttons when user can contribute or just completed purchase */}
-                {(canContributeInFiatMode || justCompletedFiatPurchase) && (
-                  <div className="w-full flex justify-between gap-4">
-                    <StandardButton
-                      styleOnly
-                      className="w-1/2 p-2 text-center border-moon-indigo border-[1px] rounded-xl"
-                      onClick={() => {
-                        setJustCompletedFiatPurchase(false)
-                        setModalEnabled
-                          ? setModalEnabled(false)
-                          : setMissionPayModalEnabled(false)
-                      }}
-                      hoverEffect={false}
-                    >
-                      Cancel
-                    </StandardButton>
-
-                    <PrivyWeb3Button
-                      id="contribute-button-fiat"
-                      className="w-1/2 bg-moon-indigo rounded-xl"
-                      label={`Contribute $${formattedUsdInput || '0'} USD`}
-                      action={buyMissionToken}
-                      isDisabled={
-                        !agreedToCondition ||
-                        !usdInput ||
-                        parseFloat(usdInput) <= 0 ||
-                        !canContributeInFiatMode
-                      }
-                    />
-                  </div>
-                )}
-
-                {/* Show message based on balance status */}
-                {!canContributeInFiatMode &&
-                  !justCompletedFiatPurchase &&
-                  usdInput && (
-                    <div className="w-full p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-                      <p className="text-sm text-yellow-400">
-                        You need more ETH to contribute ${usdInput} USD. Use
-                        Coinbase above to purchase ETH.
-                      </p>
+                {/* Show waiting message if onrampSuccess but balance not updated */}
+                {isWaitingForBalanceUpdate && (
+                  <div className="w-full p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                    <div className="flex items-center gap-3 mb-2">
+                      <LoadingSpinner />
+                      <h4 className="text-lg font-semibold text-blue-400">
+                        Waiting for Balance Update
+                      </h4>
                     </div>
-                  )}
-
-                {canContributeInFiatMode && !justCompletedFiatPurchase && (
-                  <div className="w-full p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
-                    <p className="text-sm text-green-400">
-                      You have enough ETH to contribute ${usdInput} USD!
+                    <p className="text-sm text-blue-300 mb-2">
+                      Your ETH purchase was successful! We're waiting for your
+                      wallet balance to update.
+                    </p>
+                    <p className="text-xs text-blue-200 opacity-80">
+                      This usually takes 1-2 minutes. Once updated, you'll be
+                      able to contribute immediately.
                     </p>
                   </div>
                 )}
 
-                {/* General cancel button when no contribution options */}
-                {!canContributeInFiatMode && !justCompletedFiatPurchase && (
+                {/* Show CBOnramp only if user CAN'T contribute AND not waiting for balance */}
+                {!canContributeInFiatMode && !isWaitingForBalanceUpdate && (
+                  <>
+                    <CBOnramp
+                      address={address || ''}
+                      selectedChain={selectedChain}
+                      usdInput={usdInput}
+                      onSuccess={() => {
+                        setJustCompletedFiatPurchase(true)
+                        setIsFiatPaymentProcessing(false)
+                        toast.success(
+                          'ETH purchase completed! You can now contribute to the mission.',
+                          {
+                            style: toastStyle,
+                          }
+                        )
+                      }}
+                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
+                    />
+
+                    {/* Show message if they need more ETH */}
+                    {usdInput && (
+                      <div className="w-full p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                        <p className="text-sm text-yellow-400">
+                          You need more ETH to contribute ${usdInput} USD. Use
+                          Coinbase above to purchase ETH.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Show contribute buttons when user CAN contribute */}
+                {canContributeInFiatMode && (
+                  <>
+                    <div className="w-full p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
+                      <p className="text-sm text-green-400">
+                        ✅ You have enough ETH to contribute ${usdInput} USD!
+                      </p>
+                    </div>
+
+                    <div className="w-full flex justify-between gap-4">
+                      <StandardButton
+                        styleOnly
+                        className="w-1/2 p-2 text-center border-moon-indigo border-[1px] rounded-xl"
+                        onClick={handleModalClose}
+                        hoverEffect={false}
+                      >
+                        Cancel
+                      </StandardButton>
+
+                      <PrivyWeb3Button
+                        id="contribute-button-fiat"
+                        className="w-1/2 bg-moon-indigo rounded-xl"
+                        label={`Contribute $${formattedUsdInput || '0'} USD`}
+                        action={buyMissionToken}
+                        isDisabled={
+                          !agreedToCondition ||
+                          !usdInput ||
+                          parseFloat(usdInput) <= 0
+                        }
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Show manual options when waiting for balance */}
+                {isWaitingForBalanceUpdate && (
+                  <div className="w-full flex gap-3">
+                    <StandardButton
+                      styleOnly
+                      className="flex-1 px-4 py-2 text-sm border border-blue-500/50 rounded-lg hover:bg-blue-500/10"
+                      onClick={() => {
+                        setIsWaitingForBalanceUpdate(false)
+                        // This will show the CBOnramp again if they want to buy more
+                      }}
+                      hoverEffect={false}
+                    >
+                      Buy More ETH
+                    </StandardButton>
+                    <StandardButton
+                      styleOnly
+                      className="px-4 py-2 text-sm border border-gray-500/50 rounded-lg hover:bg-gray-500/10"
+                      onClick={handleModalClose}
+                      hoverEffect={false}
+                    >
+                      Close
+                    </StandardButton>
+                  </div>
+                )}
+
+                {/* Always show close button for non-waiting states */}
+                {!canContributeInFiatMode && !isWaitingForBalanceUpdate && (
                   <StandardButton
                     styleOnly
                     className="w-full p-2 text-center border-moon-indigo border-[1px] rounded-xl"
-                    onClick={() => {
-                      setJustCompletedFiatPurchase(false)
-                      setModalEnabled
-                        ? setModalEnabled(false)
-                        : setMissionPayModalEnabled(false)
-                    }}
+                    onClick={handleModalClose}
                     hoverEffect={false}
                   >
                     Close
@@ -1430,12 +1485,7 @@ export default function MissionPayRedeem({
                 <StandardButton
                   styleOnly
                   className="w-1/2 p-2 text-center border-moon-indigo border-[1px] rounded-xl"
-                  onClick={() => {
-                    setJustCompletedFiatPurchase(false)
-                    setModalEnabled
-                      ? setModalEnabled(false)
-                      : setMissionPayModalEnabled(false)
-                  }}
+                  onClick={handleModalClose} // Use the new handler
                   hoverEffect={false}
                 >
                   Cancel

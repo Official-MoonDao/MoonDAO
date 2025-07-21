@@ -160,20 +160,27 @@ export default function MissionInfo({
   }, [router])
 
   useEffect(() => {
-    // Preserve existing query parameters when updating tab
+    if (!router.isReady || !mission?.id) return
+
     const queryParams: any = {
       tokenId: mission?.id,
       tab: tab,
     }
 
-    // Preserve onrampSuccess if it exists
-    if (router.query.onrampSuccess) {
-      queryParams.onrampSuccess = router.query.onrampSuccess
-      console.log('🔄 Preserving onrampSuccess in tab navigation')
-    }
+    // Only preserve query parameters that have meaningful values
+    Object.keys(router.query).forEach((key) => {
+      if (key !== 'tokenId' && key !== 'tab') {
+        const value = router.query[key]
+        // Only preserve if value exists and is not empty
+        if (value && value !== '' && value !== 'undefined') {
+          queryParams[key] = value
+        }
+      }
+    })
 
+    console.log('🔄 MissionInfo - Preserving valid query params:', queryParams)
     shallowQueryRoute(queryParams)
-  }, [tab, router.query.onrampSuccess, mission?.id])
+  }, [tab, router.isReady, router.query, mission?.id])
 
   return (
     <div className="w-full">
