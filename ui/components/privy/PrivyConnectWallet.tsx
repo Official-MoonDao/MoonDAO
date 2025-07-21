@@ -1,3 +1,4 @@
+import { generateOnRampURL } from '@coinbase/cbpay-js'
 import {
   ArrowDownOnSquareIcon,
   ArrowUpRightIcon,
@@ -7,12 +8,7 @@ import {
   WalletIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import {
-  useFundWallet,
-  useLogin,
-  usePrivy,
-  useWallets,
-} from '@privy-io/react-auth'
+import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import { COIN_ICONS } from 'const/icons'
 import { ethers } from 'ethers'
@@ -669,8 +665,6 @@ export function PrivyConnectWallet({
   })
   const { wallets } = useWallets()
 
-  const { fundWallet } = useFundWallet()
-
   const [enabled, setEnabled] = useState(false)
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
   const [previousChain, setPreviousChain] = useState(selectedChain)
@@ -683,6 +677,197 @@ export function PrivyConnectWallet({
     loading: tokensLoading,
     error: tokensError,
   } = useWalletTokens(address, chainSlug)
+
+  // Helper function to map chain to Coinbase supported network
+  const getNetworkName = (chain: any) => {
+    const chainName = chain?.name?.toLowerCase() || 'ethereum'
+    const chainId = chain?.id
+
+    switch (chainName) {
+      case 'arbitrum':
+      case 'arbitrum one':
+        return 'arbitrum'
+      case 'arbitrum sepolia':
+        return 'arbitrum'
+      case 'base':
+        return 'base'
+      case 'base sepolia':
+        return 'base'
+      case 'sepolia':
+      case 'ethereum':
+      case 'mainnet':
+        return 'ethereum'
+      case 'optimism':
+        return 'optimism'
+      case 'optimism sepolia':
+        return 'optimism'
+      case 'polygon':
+        return 'polygon'
+      default:
+        switch (chainId) {
+          case 11155111: // Sepolia
+            return 'ethereum'
+          case 421614: // Arbitrum Sepolia
+            return 'arbitrum'
+          case 84532: // Base Sepolia
+            return 'base'
+          case 11155420: // Optimism Sepolia
+            return 'optimism'
+          default:
+            return 'ethereum'
+        }
+    }
+  }
+
+  // Generate session token for Coinbase onramp
+  const generateSessionToken = async () => {
+    try {
+      const networkName = getNetworkName(selectedChain)
+      const response = await fetch('/api/coinbase/session-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address,
+          blockchains: [networkName],
+          assets: ['ETH', 'USDC'],
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: 'Unknown error' }))
+        throw new Error(
+          errorData.error ||
+            `HTTP ${response.status}: Failed to generate session token`
+        )
+      }
+
+      const data = await response.json()
+      if (!data.sessionToken) {
+        throw new Error('No session token received from API')
+      }
+      return data.sessionToken
+    } catch (error: any) {
+      console.error('Session token generation error:', error)
+      throw error
+    }
+  }
+
+  // Open Coinbase onramp directly
+  const openCoinbaseOnramp = async () => {
+    if (!address) {
+      return toast.error('Please connect your wallet.')
+    }
+
+    const projectId = process.env.NEXT_PUBLIC_CB_PROJECT_ID
+    if (!projectId) {
+      return toast.error('Configuration error: Missing project ID')
+    }
+
+    try {
+      // Generate session token
+      const token = await generateSessionToken()
+
+      // Generate URL with session token
+      const url = generateOnRampURL({
+        appId: projectId,
+        sessionToken: token,
+        addresses: {
+          [address]: [getNetworkName(selectedChain)],
+        },
+        presetFiatAmount: 20,
+        fiatCurrency: 'USD',
+        defaultNetwork: getNetworkName(selectedChain),
+        defaultAsset: 'ETH',
+      })
+
+      // Open in popup
+      const popup = window.open(
+        url,
+        'coinbase-onramp',
+        'width=500,height=700,scrollbars=yes,resizable=yes'
+      )
+
+      if (!popup) {
+        return toast.error('Popup blocked. Please allow popups for this site.')
+      }
+
+      let isHandled = false
+
+      // Listen for message events from Coinbase onramp
+      const handleMessage = (event: MessageEvent) => {
+        if (
+          !event.origin.includes('coinbase.com') &&
+          !event.origin.includes('cb-pay.com')
+        ) {
+          return
+        }
+
+        if (event.data && typeof event.data === 'object') {
+          const { eventName, success } = event.data
+
+          // Handle success events
+          if (
+            eventName === 'charge_confirmed' ||
+            eventName === 'payment_success' ||
+            success === true ||
+            event.data.type === 'onramp_success'
+          ) {
+            if (!isHandled) {
+              isHandled = true
+              popup.close()
+              cleanup()
+              toast.success('Purchase completed successfully!')
+            }
+          }
+          // Handle exit/cancel events
+          else if (
+            eventName === 'popup_closed' ||
+            eventName === 'user_closed' ||
+            event.data.type === 'onramp_exit'
+          ) {
+            if (!isHandled) {
+              isHandled = true
+              popup.close()
+              cleanup()
+            }
+          }
+        }
+      }
+
+      // Listen for popup being manually closed
+      const checkClosed = setInterval(() => {
+        if (popup.closed && !isHandled) {
+          isHandled = true
+          cleanup()
+        }
+      }, 1000)
+
+      // Cleanup function
+      const cleanup = () => {
+        clearInterval(checkClosed)
+        window.removeEventListener('message', handleMessage)
+      }
+
+      // Add event listener
+      window.addEventListener('message', handleMessage, false)
+
+      // Cleanup after 10 minutes
+      setTimeout(() => {
+        if (!isHandled) {
+          isHandled = true
+          popup.close()
+          cleanup()
+        }
+      }, 600000)
+    } catch (error: any) {
+      console.error('Onramp initialization error:', error)
+      toast.error('Failed to initialize payment system: ' + error.message)
+    }
+  }
 
   // Helper function to get token icon
   const getTokenIcon = (symbol: string, contractAddress: string) => {
@@ -1080,14 +1265,7 @@ export function PrivyConnectWallet({
                       id="wallet-fund-action"
                       label="Fund"
                       icon={<PlusIcon width={20} height={20} />}
-                      onClick={async () => {
-                        if (!address)
-                          return toast.error('Please connect your wallet.')
-                        fundWallet(address, {
-                          chain: viemChains[chainSlug],
-                          asset: 'native-currency',
-                        })
-                      }}
+                      onClick={openCoinbaseOnramp}
                     />
                     <WalletAction
                       id="wallet-send-action"
