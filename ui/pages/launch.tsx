@@ -79,7 +79,7 @@ export default function Launch({ missions }: any) {
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
     chain: selectedChain,
-    abi: MissionCreatorABI.abi as any,
+    abi: MissionCreatorABI as any,
   })
 
   const missionTableContract = useContract({

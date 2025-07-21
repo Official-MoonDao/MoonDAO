@@ -381,7 +381,7 @@ export function RetroactiveRewards({
       />
       <Container>
         <ContentLayout
-          header={'Projects'}
+          header={'Project Rewards'}
           description={
             'View active projects and allocate retroactive rewards to completed projects and their contributors based on impact and results.'
           }
@@ -399,7 +399,7 @@ export function RetroactiveRewards({
                 <h1 className="font-GoodTimes text-white/80 text-lg">{`Q${quarter}: ${year} Rewards`}</h1>
                 <button
                   className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
-                  onClick={() => router.push('/submit')}
+                  onClick={() => router.push('/proposals')}
                 >
                   <Image
                     src={'/assets/plus-icon.png'}

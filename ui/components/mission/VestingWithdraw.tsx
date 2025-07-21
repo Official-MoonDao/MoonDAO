@@ -1,18 +1,12 @@
-import { useContext, useEffect, useState } from 'react'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
-import VestingABI from 'const/abis/Vesting.json'
-import {
-  MISSION_CREATOR_ADDRESSES,
-  ZERO_ADDRESS,
-} from 'const/config'
+import { MISSION_CREATOR_ADDRESSES, ZERO_ADDRESS } from 'const/config'
+import { useContext, useEffect, useState } from 'react'
+import { readContract } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import { useActiveAccount } from 'thirdweb/react'
-import { readContract, getContract } from 'thirdweb'
-import client from '@/lib/thirdweb/client'
 import VestingCard from './VestingCard'
-
 
 export default function VestingWithdraw({
   missionId,
@@ -39,8 +33,7 @@ export default function VestingWithdraw({
     chain: selectedChain,
   })
 
-  const [vestingAddress, setVestingAddress] = useState<string>()
-  // Determine which vesting contract belongs to the connected account
+  // Determine which vesting contracts belong to the mission
   useEffect(() => {
     async function fetchVestingAddress() {
       if (!missionCreatorContract || !address) return
@@ -60,22 +53,6 @@ export default function VestingWithdraw({
       if (!teamAddr || !daoAddr) return
       setTeamAddress(String(teamAddr))
       setDaoAddress(String(daoAddr))
-
-      const teamVesting = await getContract({
-        client,
-        chain: selectedChain,
-        address: String(teamAddr),
-        abi: VestingABI as any,
-      })
-      const daoVesting = await getContract({
-        client,
-        chain: selectedChain,
-        address: String(daoAddr),
-        abi: VestingABI as any,
-      })
-
-
-
     }
     fetchVestingAddress()
   }, [missionCreatorContract, address, missionId, selectedChain])
@@ -84,8 +61,21 @@ export default function VestingWithdraw({
 
   return (
     <>
-    {teamAddress && <VestingCard address={teamAddress} chain={selectedChain} isTeam={true} tokenSymbol={token?.tokenSymbol || ''} />}
-    {daoAddress && <VestingCard address={daoAddress} chain={selectedChain} tokenSymbol={token?.tokenSymbol || ''} />}
+      {teamAddress && (
+        <VestingCard
+          address={teamAddress}
+          chain={selectedChain}
+          isTeam={true}
+          tokenSymbol={token?.tokenSymbol || ''}
+        />
+      )}
+      {daoAddress && (
+        <VestingCard
+          address={daoAddress}
+          chain={selectedChain}
+          tokenSymbol={token?.tokenSymbol || ''}
+        />
+      )}
     </>
   )
 }

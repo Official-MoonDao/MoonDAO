@@ -63,7 +63,7 @@ export default function Network({
     })
   }
 
-  const [tab, setTab] = useState<string>('teams')
+  const [tab, setTab] = useState<string>('citizens')
   function loadByTab(tab: string) {
     if (tab === 'teams') {
       setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
@@ -151,7 +151,7 @@ export default function Network({
         <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
           <div className="w-full flex flex-row min-[800px]:flex-row gap-4 items-center overflow-hidden">
             {/* Search Bar */}
-            <div className="w-full min-w-0 max-w-[250px] sm:max-w-[280px] md:max-w-[320px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 px-3 py-1">
+            <div className="w-full min-w-0 max-w-[250px] sm:max-w-[280px] md:max-w-[320px] bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 px-3 py-1">
               <Search
                 className="w-full flex-grow"
                 input={input}
@@ -165,7 +165,7 @@ export default function Network({
               className="hidden min-[1150px]:block flex-shrink-0"
             >
               <div 
-                className="bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 p-1.5"
+                className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-1.5"
               >
                 <div className="flex text-sm gap-1">
                   <Tab
@@ -215,7 +215,7 @@ export default function Network({
             id="filter-container"
             className="min-[1150px]:hidden mt-4 min-[900px]:mt-2"
           >
-            <div className="w-fit max-w-[300px] sm:max-w-none h-fit bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 p-1.5 overflow-x-auto">
+            <div className="w-fit max-w-[300px] sm:max-w-none h-fit bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-1.5 overflow-x-auto">
               <div className="flex text-sm gap-1 min-w-fit">
                 <Tab
                   tab="teams"
@@ -352,7 +352,7 @@ export default function Network({
           isProfile
         >
           <div className="flex flex-row w-full">
-            <div className="px-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 lg:p-8 rounded-[2vmax] shadow-2xl md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1400px]">
+            <div className="px-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 lg:p-8 rounded-[2vmax] shadow-2xl md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1400px]">
               <CardGridContainer
                 xsCols={1}
                 smCols={1}
@@ -364,7 +364,7 @@ export default function Network({
                 {renderNFTs()}
               </CardGridContainer>
 
-              <div className="w-full rounded-[2vmax] bg-gradient-to-b from-slate-700/20 to-slate-800/30 border border-slate-600/30 p-6 mt-8">
+              <div className="w-full rounded-[2vmax] bg-black/20 backdrop-blur-sm border border-white/10 p-6 mt-8">
                 <div
                   id="pagination-container"
                   className="w-full flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8"
