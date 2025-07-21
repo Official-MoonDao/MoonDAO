@@ -8,7 +8,7 @@ export default function NetworkSection() {
       <div className="absolute inset-0">
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: 'url(/assets/Network-Section.png)' }}
+          style={{ backgroundImage: 'url(/assets/networksectionimg.png)' }}
         ></div>
       </div>
 
