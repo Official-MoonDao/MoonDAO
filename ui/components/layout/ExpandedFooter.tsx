@@ -88,7 +88,7 @@ export function ExpandedFooter({
     hasCallToAction,
   ])
 
-  // Navigation link groups
+  // Navigation link groups - matching topnav organization exactly
   const networkLinks = [
     { text: 'Explore Network', href: '/network' },
     { text: 'Become a Citizen', href: '/join' },
@@ -127,10 +127,15 @@ export function ExpandedFooter({
     { text: 'Shop', href: '/marketplace' },
   ]
 
+  const supportLinks = [
+    { text: 'Submit Ticket', href: 'https://discord.gg/moondao' },
+  ]
+
   return (
     <>
       {!disclaimerOnly && (
-        <div id="expanded-menu" className={`overflow-hidden relative ${isFullwidth ? 'bg-dark-cool' : ''} px-6 text-white`}> 
+        <div id="expanded-menu" className={`overflow-hidden relative ${isFullwidth ? 'bg-dark-cool' : ''} px-6 text-white`}>
+          
           <div id="expanded-menu-container" className={`${isFullwidth ? 'container mx-auto md:pl-[5vw] lg:pl-[2vw] md:pb-[2vw] md:pt-[5vh]' : 'pb-[5vw] md:pt-[5vw]'} max-w-[1200px] pb-0 flex flex-col lg:grid lg:grid-cols-6 gap-8 relative z-10`}>
             {hasCallToAction && isFullwidth && (
               <div className="flex flex-col pb-[5vh] p-[2vw]  md:p-0 py-0 lg:col-span-2 order-2 lg:order-1 relative min-h-[250px] lg:min-h-[300px]">
@@ -156,41 +161,36 @@ export function ExpandedFooter({
               </div>
             )}
             
-            <div className={`z-50 px-[2vw] pt-[2vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 order-1 lg:order-2 ${hasCallToAction && isFullwidth ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
-              {/* Always visible sections */}
-              <LinkList title="NETWORK" links={networkLinks} />
-              <LinkList title="GOVERN" links={governLinks} />
-              
-              {/* Mobile only - swapped order */}
-              <div className="md:hidden">
-                <LinkList title="LEARN" links={learnLinks} />
+            <div className={`z-50 px-[2vw] pt-[2vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 order-1 lg:order-2 ${hasCallToAction && isFullwidth ? 'lg:col-span-4' : 'lg:col-span-6'}`}>
+              {/* Column 1: NETWORK */}
+              <div>
+                <LinkList title="NETWORK" links={networkLinks} />
               </div>
-              <div className="md:hidden">
+
+              {/* Column 2: GOVERN */}
+              <div>
+                <LinkList title="GOVERN" links={governLinks} />
+              </div>
+              
+              {/* Column 3: $MOONEY TOKEN */}
+              <div>
                 <LinkList title="$MOONEY TOKEN" links={tokenLinks} />
               </div>
               
-              {/* Tablet and up - original order */}
-              <div className="hidden md:block">
-                <LinkList title="$MOONEY TOKEN" links={tokenLinks} />
+              {/* Column 4: PROJECTS */}
+              <div>
+                <LinkList title="PROJECTS" links={projectLinks} />
               </div>
-              <div className="hidden md:block">
+              
+              {/* Column 5: LEARN */}
+              <div>
                 <LinkList title="LEARN" links={learnLinks} />
               </div>
               
-              {/* Desktop only: Combined projects/marketplace column */}
-              <div className="hidden lg:block">
-                <LinkList title="PROJECTS" links={projectLinks} />
-                <div className="mt-8">
-                  <LinkList title="MARKETPLACE" links={marketplaceLinks} />
-                </div>
-              </div>
-              
-              {/* Mobile and tablet: Separate projects and marketplace columns */}
-              <div className="lg:hidden">
-                <LinkList title="PROJECTS" links={projectLinks} />
-              </div>
-              <div className="lg:hidden">
+              {/* Column 6: MARKETPLACE & SUPPORT */}
+              <div className="grid grid-rows-2 gap-8">
                 <LinkList title="MARKETPLACE" links={marketplaceLinks} />
+                <LinkList title="SUPPORT" links={supportLinks} />
               </div>
             </div>
           </div>
