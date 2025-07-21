@@ -98,6 +98,11 @@ export default function NetworkSelector({
         align === 'right' ? 'right-0' : 'left-0'
       }`}
     >
+      <div className="px-1 pb-2 border-b border-white/10 mb-1">
+        <span className="text-white/80 text-xs font-medium uppercase tracking-wide">
+          Choose Your Network
+        </span>
+      </div>
       {chains && chains.length > 0 ? (
         chains.map((chain) => (
           <NetworkOption
