@@ -1,6 +1,7 @@
 import { generateOnRampURL } from '@coinbase/cbpay-js'
 import { DEPLOYED_ORIGIN } from 'const/config'
 import { useEffect, useState } from 'react'
+import useETHPrice from '../../lib/etherscan/useETHPrice'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -21,9 +22,69 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   onSuccess,
   onExit,
 }) => {
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [onrampUrl, setOnrampUrl] = useState<string | null>(null)
+  const [quoteData, setQuoteData] = useState<{
+    ethAmount: number
+    actualUsdValue: number
+    fees: number
+    onrampUrl?: string
+  } | null>(null)
+
+  // Convert ETH purchase amount to USD value
+  const { data: ethToUsdValue } = useETHPrice(
+    quoteData?.ethAmount || 0,
+    'ETH_TO_USD'
+  )
+
+  // Fetch quote on component load
+  useEffect(() => {
+    const fetchQuote = async () => {
+      if (!address || !usdInput || parseFloat(usdInput) <= 0) return
+
+      try {
+        const paymentAmount = parseFloat(usdInput)
+        const quoteResponse = await fetch('/api/coinbase/buy-quote', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            paymentAmount,
+            destinationAddress: address,
+            purchaseNetwork: getNetworkName(selectedChain),
+            purchaseCurrency: 'ETH',
+          }),
+        })
+
+        if (quoteResponse.ok) {
+          const data = await quoteResponse.json()
+          const quote = data.quote
+
+          // Extract values from Coinbase quote response (nested under 'quote')
+          const ethAmount = parseFloat(quote?.purchase_amount?.value || '0')
+          const paymentSubtotal = parseFloat(
+            quote?.payment_subtotal?.value || '0'
+          )
+          const coinbaseFee = parseFloat(quote?.coinbase_fee?.value || '0')
+          const networkFee = parseFloat(quote?.network_fee?.value || '0')
+          const totalFees = coinbaseFee + networkFee
+
+          if (ethAmount > 0) {
+            setQuoteData({
+              ethAmount,
+              actualUsdValue: paymentSubtotal,
+              fees: totalFees,
+            })
+          }
+        }
+      } catch (error) {
+        // Silently handle initial quote fetch errors
+      }
+    }
+
+    fetchQuote()
+  }, [address, usdInput, selectedChain])
 
   // Map chain name to supported network format
   const getNetworkName = (chain: any) => {
@@ -101,94 +162,166 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       }
       return data.sessionToken
     } catch (error: any) {
-      console.error('Session token generation error:', error)
       throw error
     }
   }
 
-  // Initialize onramp with session token (required by CDP)
-  useEffect(() => {
+  const handleOpenOnramp = async () => {
     if (!address) {
       setError('Wallet address required')
-      setIsLoading(false)
       return
     }
 
     const projectId = process.env.NEXT_PUBLIC_CB_PROJECT_ID
     if (!projectId) {
       setError('Configuration error: Missing project ID')
-      setIsLoading(false)
       return
     }
 
-    const initializeOnramp = async () => {
-      try {
-        setIsLoading(true)
+    try {
+      setIsLoading(true)
+      setError(null)
 
-        // Generate session token as required by CDP documentation
-        const token = await generateSessionToken()
+      // Get quote from Coinbase to calculate actual ETH amount user will receive
+      const paymentAmount = parseFloat(usdInput || '20')
 
-        // Generate URL with session token and correct addresses format
-        const url = generateOnRampURL({
-          appId: projectId,
-          sessionToken: token,
-          addresses: {
-            [address]: [getNetworkName(selectedChain)],
-          },
-          ...(usdInput &&
-            parseFloat(usdInput) > 0 && {
-              presetFiatAmount: parseFloat(usdInput),
-              fiatCurrency: 'USD',
+      if (paymentAmount > 0) {
+        try {
+          const quoteResponse = await fetch('/api/coinbase/buy-quote', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              paymentAmount,
+              destinationAddress: address,
+              purchaseNetwork: getNetworkName(selectedChain),
+              purchaseCurrency: 'ETH',
             }),
-          defaultNetwork: getNetworkName(selectedChain),
-          defaultAsset: 'ETH',
-          redirectUrl: redirectUrl || `${DEPLOYED_ORIGIN}/`,
-        })
+          })
 
-        setOnrampUrl(url)
-        setIsLoading(false)
-      } catch (error: any) {
-        console.error('Onramp initialization error:', error)
-        setError('Failed to initialize payment system: ' + error.message)
-        setIsLoading(false)
+          if (quoteResponse.ok) {
+            const data = await quoteResponse.json()
+
+            // Extract values from Coinbase quote response (nested under 'quote')
+            const quote = data.quote
+
+            const ethAmount = parseFloat(quote?.purchase_amount?.value || '0')
+            const paymentTotal = parseFloat(quote?.payment_total?.value || '0')
+            const paymentSubtotal = parseFloat(
+              quote?.payment_subtotal?.value || '0'
+            )
+            const coinbaseFee = parseFloat(quote?.coinbase_fee?.value || '0')
+            const networkFee = parseFloat(quote?.network_fee?.value || '0')
+            const totalFees = coinbaseFee + networkFee
+
+            // Store the onramp URL from Coinbase for direct use
+            const coinbaseOnrampUrl = quote?.onramp_url
+
+            if (ethAmount > 0) {
+              // Store quote data for display
+              const newQuoteData = {
+                ethAmount,
+                actualUsdValue: paymentSubtotal,
+                fees: totalFees,
+                onrampUrl: coinbaseOnrampUrl,
+              }
+
+              setQuoteData(newQuoteData)
+
+              // If we have a pre-built onramp URL from the quote, use it directly
+              if (coinbaseOnrampUrl) {
+                let finalUrl = coinbaseOnrampUrl
+
+                // Add redirect URL with the actual USD value of ETH they're buying
+                if (redirectUrl) {
+                  // Use the USD value of the ETH they're purchasing for the redirect
+                  const ethUsdValue = ethToUsdValue || paymentSubtotal
+                  const correctedRedirectUrl = redirectUrl.includes(
+                    'usdAmount='
+                  )
+                    ? redirectUrl.replace(
+                        /usdAmount=[^&]*/,
+                        `usdAmount=${ethUsdValue.toFixed(2)}`
+                      )
+                    : redirectUrl +
+                      (redirectUrl.includes('?') ? '&' : '?') +
+                      `usdAmount=${ethUsdValue.toFixed(2)}`
+
+                  const separator = finalUrl.includes('?') ? '&' : '?'
+                  finalUrl += `${separator}redirectUrl=${encodeURIComponent(
+                    correctedRedirectUrl
+                  )}`
+                }
+
+                window.location.href = finalUrl
+                return
+              }
+            }
+          } else {
+            // Failed to get buy quote, using original amount
+          }
+        } catch (quoteError) {
+          // Quote calculation failed, using original amount
+        }
       }
+
+      // Fallback: Generate session token and create URL manually
+      const token = await generateSessionToken()
+
+      const url = generateOnRampURL({
+        appId: projectId,
+        sessionToken: token,
+        addresses: {
+          [address]: [getNetworkName(selectedChain)],
+        },
+        ...(usdInput &&
+          parseFloat(usdInput) > 0 && {
+            presetFiatAmount: parseFloat(usdInput),
+            fiatCurrency: 'USD',
+          }),
+        defaultNetwork: getNetworkName(selectedChain),
+        defaultAsset: 'ETH',
+        redirectUrl: redirectUrl || `${DEPLOYED_ORIGIN}/`,
+      })
+
+      window.location.href = url
+    } catch (error: any) {
+      setError('Failed to initialize payment system: ' + error.message)
+      setIsLoading(false)
     }
-
-    initializeOnramp()
-  }, [address, selectedChain, usdInput])
-
-  const handleOpenOnramp = () => {
-    if (!onrampUrl) {
-      setError('Onramp URL not available')
-      return
-    }
-
-    // Redirect to Coinbase onramp (full page redirect)
-    window.location.href = onrampUrl
   }
 
-  // Loading state
-  if (isLoading) {
+  // Error state
+  if (error) {
     return (
-      <div className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white p-6">
-        <div className="flex flex-col items-center justify-center space-y-6 min-h-[200px]">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-            <LoadingSpinner />
+      <div className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-red-900/30 to-purple-900/20 backdrop-blur-xl border border-red-500/20 rounded-2xl shadow-2xl text-white p-6">
+        <div className="flex flex-col items-center justify-center space-y-4 min-h-[200px]">
+          <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+            <svg
+              className="w-6 h-6 text-red-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
           </div>
           <div className="text-center space-y-2">
-            <h3 className="text-lg font-semibold text-white">
-              Initializing Payment
-            </h3>
-            <p className="text-gray-300 text-sm">
-              Generating secure session...
-            </p>
+            <h3 className="text-lg font-semibold text-red-400">Error</h3>
+            <p className="text-gray-300 text-sm">{error}</p>
           </div>
         </div>
       </div>
     )
   }
 
-  // Success state - ready to purchase
+  // Ready state - no loading spinner on component mount
   return (
     <div className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden">
       {/* Header */}
@@ -226,9 +359,13 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           </h4>
           <div className="bg-black/20 rounded-lg p-4 border border-white/5 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-gray-400 text-sm">Amount:</span>
+              <span className="text-gray-400 text-sm">Payment Amount:</span>
               <span className="text-white font-medium">
-                ${usdInput || '20'} USD
+                $
+                {usdInput && !isNaN(parseFloat(usdInput))
+                  ? parseFloat(usdInput).toLocaleString()
+                  : '20'}{' '}
+                USD
               </span>
             </div>
 
@@ -248,11 +385,26 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
 
         {/* Purchase button */}
         <PrivyWeb3Button
-          label={`Buy $${usdInput || '20'} of ETH with Coinbase`}
+          label={
+            isLoading
+              ? 'Launching Coinbase...'
+              : `Buy $${usdInput || '20'} of ETH with Coinbase`
+          }
           action={handleOpenOnramp}
-          className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
+          className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           skipNetworkCheck={true}
+          isDisabled={isLoading}
         />
+
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="flex items-center justify-center space-x-2 text-gray-400">
+            <LoadingSpinner />
+            <span className="text-sm">
+              Getting quote and launching Coinbase...
+            </span>
+          </div>
+        )}
 
         {/* Additional info */}
         <div className="bg-black/10 rounded-lg p-4 border border-white/5">
@@ -260,7 +412,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
-                d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z"
                 clipRule="evenodd"
               />
             </svg>
