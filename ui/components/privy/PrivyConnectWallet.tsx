@@ -621,6 +621,7 @@ export function PrivyConnectWallet({
   const { selectedChain, setSelectedChain }: any = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const [networkMistmatch, setNetworkMismatch] = useState(false)
+  const [networkDropdownOpen, setNetworkDropdownOpen] = useState(false)
 
   const account = useActiveAccount()
   const address = account?.address
@@ -629,6 +630,17 @@ export function PrivyConnectWallet({
   const [walletChainId, setWalletChainId] = useState(1)
   const { logout, user, authenticated, connectWallet, exportWallet }: any =
     usePrivy()
+
+  // Available chains for the network selector
+  const availableChains = [
+    ethereum,
+    arbitrum,
+    base,
+    polygon,
+    sepolia,
+    arbitrumSepolia,
+    optimismSepolia,
+  ]
 
   const { login } = useLogin({
     onComplete: async (user, isNewUser, wasAlreadyAuthenticated) => {
@@ -791,10 +803,11 @@ export function PrivyConnectWallet({
       target.closest('#privy-modal-content') ||
       target.closest('#headlessui-dialog-panel') ||
       target.closest('#send-modal-backdrop') ||
-      target.closest('#network-selector')
+      target.closest('.network-dropdown-container')
     )
       return
     setEnabled(false)
+    setNetworkDropdownOpen(false)
   }
   useEffect(() => {
     if (enabled) {
@@ -853,21 +866,12 @@ export function PrivyConnectWallet({
                 )}
 
                 {/* Header Section */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                        <WalletIcon className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg text-white">
-                          Wallet
-                        </h3>
-                        <p className="text-gray-300 text-xs">
-                          {selectedChain.name}
-                        </p>
-                      </div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                      <WalletIcon className="w-4 h-4 text-white" />
                     </div>
+                    <h3 className="font-semibold text-lg text-white">Wallet</h3>
                   </div>
                   <button
                     className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200"
@@ -877,24 +881,19 @@ export function PrivyConnectWallet({
                   </button>
                 </div>
 
-                {/* Address Section */}
-                <div className="bg-black/20 rounded-xl p-4 mb-6 border border-white/5">
+                {/* Address Section - Compact */}
+                <div className="bg-black/20 rounded-lg p-3 mb-4 border border-white/5">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
-                        <div className="w-3 h-3 bg-white rounded-full"></div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
                       </div>
-                      <div>
-                        <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">
-                          Address
-                        </p>
-                        <p className="text-white font-mono text-sm">
-                          {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
-                        </p>
-                      </div>
+                      <p className="text-white font-mono text-sm">
+                        {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                      </p>
                     </div>
                     <button
-                      className="p-2 hover:bg-white/10 rounded-lg transition-colors duration-200 group"
+                      className="p-1 hover:bg-white/10 rounded transition-colors duration-200 group"
                       onClick={() => {
                         navigator.clipboard.writeText(address || '')
                         toast.success('Address copied to clipboard.')
@@ -903,6 +902,72 @@ export function PrivyConnectWallet({
                       <ClipboardDocumentIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
                     </button>
                   </div>
+                </div>
+
+                {/* Network Selection */}
+                <div className="network-dropdown-container relative">
+                  <div 
+                    className="bg-black/20 rounded-xl p-4 mb-6 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group"
+                    onClick={() => setNetworkDropdownOpen(!networkDropdownOpen)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                          <Image
+                            src={`/icons/networks/${chainSlug}.svg`}
+                            width={20}
+                            height={20}
+                            alt="Network Icon"
+                            className="object-contain"
+                          />
+                        </div>
+                        <div>
+                          <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">
+                            Network
+                          </p>
+                          <span className="text-white font-medium group-hover:text-blue-300 transition-colors">
+                            {selectedChain.name}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <ChevronDownIcon className={`w-5 h-5 text-gray-400 group-hover:text-white transition-all duration-200 ${networkDropdownOpen ? 'rotate-180' : ''}`} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Custom Network Dropdown */}
+                  {networkDropdownOpen && (
+                    <div className="absolute top-full -mt-6 w-full bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl z-[10000] max-h-48 overflow-y-auto">
+                      {availableChains.map((chain) => (
+                        <button
+                          key={chain.id}
+                          type="button"
+                          className="w-full flex items-center space-x-3 p-3 hover:bg-white/10 transition-colors duration-200 text-left first:rounded-t-lg last:rounded-b-lg min-h-[48px]"
+                          onClick={() => {
+                            setSelectedChain(chain)
+                            setNetworkDropdownOpen(false)
+                          }}
+                        >
+                          <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                            <Image
+                              src={`/icons/networks/${getChainSlug(chain)}.svg`}
+                              width={20}
+                              height={20}
+                              alt={chain.name || 'Chain'}
+                              className="object-contain w-full h-full"
+                            />
+                          </div>
+                          <span className="font-medium text-white flex-1">
+                            {chain.name || 'Unknown Network'}
+                          </span>
+                          {chain.id === selectedChain.id && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {networkMistmatch ? (
                   <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
@@ -956,19 +1021,11 @@ export function PrivyConnectWallet({
                       <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide">
                         Balances
                       </h4>
-                      <div className="flex items-center space-x-3">
-                        <div className="relative w-10 h-10">
-                          <NetworkSelector iconsOnly compact />
-                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center pointer-events-none">
-                            <ChevronDownIcon className="w-2 h-2 text-white" />
-                          </div>
+                      {type === 'mobile' && (
+                        <div>
+                          <CitizenProfileLink />
                         </div>
-                        {type === 'mobile' && (
-                          <div>
-                            <CitizenProfileLink />
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
 
                     <div className="space-y-3 max-h-60 overflow-y-auto scrollbar-hide pr-1">
