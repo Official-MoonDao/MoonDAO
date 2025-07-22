@@ -938,7 +938,7 @@ export function PrivyConnectWallet({
 
                   {/* Custom Network Dropdown */}
                   {networkDropdownOpen && (
-                    <div className="absolute top-full mt-2 w-full bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl z-[10000] max-h-48 overflow-y-auto">
+                    <div className="absolute top-full -mt-6 w-full bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl z-[10000] max-h-48 overflow-y-auto">
                       {availableChains.map((chain) => (
                         <button
                           key={chain.id}
