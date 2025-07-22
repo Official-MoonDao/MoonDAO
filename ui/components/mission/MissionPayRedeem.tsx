@@ -895,12 +895,15 @@ export default function MissionPayRedeem({
 
   // Add a function to clear the parameter only when needed
   const clearOnrampSuccessParam = useCallback(() => {
-    if (router.query.onrampSuccess) {
-      console.log('🧹 Clearing onrampSuccess parameter')
+    if (router.query.onrampSuccess || router.query.usdAmount) {
       router.replace(
         {
           pathname: router.pathname,
-          query: { ...router.query, onrampSuccess: undefined },
+          query: {
+            ...router.query,
+            onrampSuccess: undefined,
+            usdAmount: undefined,
+          },
         },
         undefined,
         { shallow: true }
@@ -917,13 +920,6 @@ export default function MissionPayRedeem({
 
   // Main onrampSuccess effect - REMOVE the automatic URL clearing
   useEffect(() => {
-    console.log('🔍 Main onrampSuccess effect:', {
-      onrampSuccess,
-      accountAddress: account?.address,
-      hasProcessedOnrampSuccess,
-      paymentMethod,
-    })
-
     if (onrampSuccess && account?.address && !hasProcessedOnrampSuccess) {
       console.log('✅ Processing onramp success')
       setHasProcessedOnrampSuccess(true)
@@ -1039,15 +1035,6 @@ export default function MissionPayRedeem({
       const hasEnoughBalance =
         Number(nativeBalance) >= requiredEth && requiredEth > 0
 
-      console.log('💰 Fiat mode balance check:', {
-        usdInput,
-        requiredEth,
-        nativeBalance: Number(nativeBalance),
-        hasEnoughBalance,
-        ethUsdPrice,
-        onrampSuccess,
-      })
-
       setCanContributeInFiatMode(hasEnoughBalance)
 
       // If onrampSuccess is true but they don't have enough balance, show waiting message
@@ -1065,6 +1052,20 @@ export default function MissionPayRedeem({
       }
     }
   }, [paymentMethod, usdInput, ethUsdPrice, nativeBalance, onrampSuccess])
+
+  // Add this new useEffect to restore USD input from URL
+  useEffect(() => {
+    if (router.query.usdAmount && typeof router.query.usdAmount === 'string') {
+      const amount = router.query.usdAmount.replace(/[^0-9]/g, '') // Clean the input
+      if (amount && !isNaN(Number(amount))) {
+        setUsdInput(amount)
+        // Also update the ETH input based on the USD amount
+        if (ethUsdPrice) {
+          setInput((Number(amount) / ethUsdPrice).toFixed(6))
+        }
+      }
+    }
+  }, [router.query.usdAmount, ethUsdPrice])
 
   if (stage === 4) return null
 
@@ -1394,7 +1395,7 @@ export default function MissionPayRedeem({
                           }
                         )
                       }}
-                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
+                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true&usdAmount=${usdInput}`}
                     />
 
                     {/* Show message if they need more ETH */}
