@@ -180,7 +180,7 @@ export default function MissionInfo({
 
     console.log('🔄 MissionInfo - Preserving valid query params:', queryParams)
     shallowQueryRoute(queryParams)
-  }, [tab, router.isReady, router.query, mission?.id])
+  }, [tab, router.isReady, mission?.id])
 
   return (
     <div className="w-full">
