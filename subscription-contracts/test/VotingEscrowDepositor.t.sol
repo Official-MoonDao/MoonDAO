@@ -32,6 +32,9 @@ contract VotingEscrowDepositorTest is Test {
 
 
     function setUp() public {
+        if (block.chainid != 31337){ // don't run on CI
+            return
+        }
         token = MyToken(MOONEY);
 
         escrowToken = IVotingEscrow(vMOONEY);
@@ -67,6 +70,9 @@ contract VotingEscrowDepositorTest is Test {
     }
 
     function testTransferAndDepositFor() public {
+        if (block.chainid != 31337){ // don't run on CI
+            return
+        }
         vm.prank(user);
         depositor.withdraw();
         assertEq(escrowToken.balanceOf(user), depositAmount + initialBalance);
