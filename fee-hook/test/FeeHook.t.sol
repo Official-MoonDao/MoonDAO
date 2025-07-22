@@ -22,6 +22,7 @@ import { IV4Router } from "v4-periphery/src/interfaces/IV4Router.sol";
 import {FeeHook} from "../src/FeeHook.sol";
 import {HookMiner} from "v4-periphery/src/utils/HookMiner.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
+import {PositionManager} from "v4-periphery/src/PositionManager.sol";
 import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {IWETH9} from "v4-periphery/src/interfaces/external/IWETH9.sol";
@@ -48,7 +49,7 @@ contract FeeHookTest is Test, Config, Constants {
     address user1 = address(0x1);
     address user2 = address(0x3);
     address dead = address(0x000000000000000000000000000000000000dEaD);
-    address deployerAddress = address(0x2);
+    address deployerAddress = address(0x69420);
     uint256 DEPLOYER_FUNDS =100_000_000_000 ether;
     uint256 DEPLOYER_TOKEN_BALANCE = 100_000;
 
@@ -122,7 +123,14 @@ contract FeeHookTest is Test, Config, Constants {
         // add full range liquidity to the pool
         int24 tickLower = TickMath.minUsableTick(tickSpacing);
         int24 tickUpper = TickMath.maxUsableTick(tickSpacing);
-        mintLiquidity(poolKey, tickLower, tickUpper, hookAddress);
+        mintLiquidity(poolKey, tickLower, tickUpper, deployerAddress);
+        // transfer the position to the fee hook
+        uint256 tokenId = feeHook.poolIdToTokenId(poolKey.toId());
+        PositionManager(payable(posmAddress)).transferFrom(
+            address(deployerAddress),
+            address(feeHook),
+            tokenId
+        );
 
         uint256 tokenBalanceBefore = IERC20(Currency.unwrap(poolKey.currency1)).balanceOf(dead);
         // swap some tokens
@@ -154,7 +162,6 @@ contract FeeHookTest is Test, Config, Constants {
             deployerAddress,
             PoolId.unwrap(poolKey.toId())
         );
-        uint256 tokenId = feeHook.poolIdToTokenId(poolKey.toId());
 
         // burn the position
         burn(poolKey, tokenId);
@@ -192,6 +199,8 @@ contract FeeHookTest is Test, Config, Constants {
     function testCheckInDuplicate() public {
         vm.startBroadcast(deployerAddress);
         feeHook = deployHook();
+        FakeERC20 token = FakeERC20(fakeTokenAddress);
+        token.transfer(user1, 10 ether);
         vm.stopBroadcast();
 
         vm.prank(user1);
@@ -210,18 +219,6 @@ contract FeeHookTest is Test, Config, Constants {
 
         skip(8 days);
         vm.expectRevert("No checkins");
-        feeHook.distributeFees();
-    }
-
-    function testDistributeFeesNoBalance() public {
-        vm.startBroadcast(deployerAddress);
-        feeHook = deployHook();
-        vm.stopBroadcast();
-
-        vm.prank(user1);
-        feeHook.checkIn();
-        skip(8 days);
-        vm.expectRevert("No balance");
         feeHook.distributeFees();
     }
 

@@ -7,7 +7,6 @@ import { FEE_HOOK_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { BigNumber } from 'ethers'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
-import { Line } from 'rc-progress'
 import React, { useState, useEffect, useContext } from 'react'
 import toast from 'react-hot-toast'
 import {
@@ -63,7 +62,7 @@ export default function Fees() {
   const [feesAvailable, setFeesAvailable] = useState<string | null>(null)
   const [estimatedFees, setEstimatedFees] = useState<string | null>(null)
   const [feeData, setFeeData] = useState<any[]>([])
-  const [weekPercent, setWeekPercent] = useState<number>(0)
+  const [weekEnd, setWeekEnd] = useState<number | null>(null)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const VMOONEYBalance = useTotalVP(address || '')
 
@@ -87,7 +86,7 @@ export default function Fees() {
               const balance = await readContract({
                 contract,
                 method: 'balanceOf',
-                params: [address],
+                params: [],
               })
               return balance
             })
@@ -114,14 +113,7 @@ export default function Fees() {
     if (!feeData.length) return
     const starts = feeData.map((d) => BigNumber.from(d.start).toNumber())
     const earliest = Math.min(...starts)
-    const update = () => {
-      const now = Math.floor(Date.now() / 1000)
-      const percent = ((now - earliest) / WEEK) * 100
-      setWeekPercent(Math.max(0, Math.min(100, percent)))
-    }
-    update()
-    const id = setInterval(update, 60000)
-    return () => clearInterval(id)
+    setWeekEnd((earliest + WEEK) * 1000)
   }, [feeData, WEEK])
 
   useEffect(() => {
@@ -354,7 +346,7 @@ export default function Fees() {
                 <div className="mt-3 w-[25vw] flex flex-col gap-4">
                   <div className="mb-2">
                     <div className="text-xl font-GoodTimes opacity-80">
-                      Total Weekly Rewards:
+                      Reward Pool This Week:
                     </div>
                     <Asset
                       name="ETH"
@@ -390,23 +382,15 @@ export default function Fees() {
                         {checkedInCount !== null
                           ? checkedInCount > 0
                             ? checkedInCount === 1
-                              ? '1 check in this week!'
-                              : `${checkedInCount} check ins this week!`
+                              ? '1 person checked this week!'
+                              : `${checkedInCount} people checked in this week!`
                             : 'No one has checked in yet!'
                           : 'Loading...'}
                       </div>
                     )}
-                    {weekPercent >= 0 && (
-                      <div className="mt-4">
-                        <Line
-                          percent={weekPercent}
-                          strokeWidth={4}
-                          strokeColor="#D7594F"
-                          trailColor="#D7594F2B"
-                        />
-                        <div className="text-sm text-center mt-1 opacity-75">
-                          {weekPercent.toFixed(1)}% of week passed
-                        </div>
+                    {weekEnd && (
+                      <div className="mt-4 text-sm text-center opacity-75">
+                        Week ends on {new Date(weekEnd).toLocaleString()}
                       </div>
                     )}
                   </div>
