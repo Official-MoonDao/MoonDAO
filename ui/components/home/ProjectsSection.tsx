@@ -126,7 +126,7 @@ export default function ProjectsSection() {
               </p>
               <div className="flex justify-between items-center">
                 <span className="text-green-400 font-semibold">Completed</span>
-                <span className="text-gray-400 text-xs">MDP-123</span>
+                <span className="text-gray-400 text-xs">Engineering</span>
               </div>
             </div>
 
@@ -156,7 +156,7 @@ export default function ProjectsSection() {
               </p>
               <div className="flex justify-between items-center">
                 <span className="text-purple-400 font-semibold">Completed</span>
-                <span className="text-gray-400 text-xs">DARPA LunA-10</span>
+                <span className="text-gray-400 text-xs">Research</span>
               </div>
             </div>
           </div>
