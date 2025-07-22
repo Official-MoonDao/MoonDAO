@@ -109,7 +109,7 @@ export default function ProjectsSection() {
         </div>
 
         {/* Featured Projects Showcase */}
-        <div className="bg-gradient-to-r from-slate-800/50 to-blue-800/50 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:p-12">
+        <div className="max-w-7xl mx-auto bg-gradient-to-r from-slate-800/50 to-blue-800/50 backdrop-blur-sm border border-white/10 rounded-3xl p-8 md:p-12">
           <h3 className="text-3xl md:text-4xl font-GoodTimes text-white mb-8 text-center">
             Featured Projects
           </h3>
@@ -120,13 +120,13 @@ export default function ProjectsSection() {
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center mb-4">
                 <RocketLaunchIcon className="w-6 h-6 text-white" />
               </div>
-              <h4 className="text-xl font-bold text-white mb-3">LifeShip</h4>
+              <h4 className="text-xl font-bold text-white mb-3">Makerspace at Vitalia</h4>
               <p className="text-gray-300 text-sm mb-4">
-                Send DNA samples and ashes to the moon as a time capsule of life on Earth, preserving your legacy in the universe.
+                Established a working makerspace in Prospera during Vitalia, hosting 25 events with 300+ participants including tech leaders.
               </p>
               <div className="flex justify-between items-center">
-                <span className="text-green-400 font-semibold">Active</span>
-                <span className="text-gray-400 text-xs">Partnership</span>
+                <span className="text-green-400 font-semibold">Completed</span>
+                <span className="text-gray-400 text-xs">MDP-123</span>
               </div>
             </div>
 
@@ -150,13 +150,13 @@ export default function ProjectsSection() {
               <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
                 <DocumentCheckIcon className="w-6 h-6 text-white" />
               </div>
-              <h4 className="text-xl font-bold text-white mb-3">Ticket to Space</h4>
+              <h4 className="text-xl font-bold text-white mb-3">Lunar Comms Network</h4>
               <p className="text-gray-300 text-sm mb-4">
-                Community-driven astronaut selection program that sent Coby Cotton and Eiman Jahangir to space via Blue Origin.
+                Advanced research project analyzing lunar communication topologies and positioning systems, submitted to DARPA's LunA-10 program.
               </p>
               <div className="flex justify-between items-center">
                 <span className="text-purple-400 font-semibold">Completed</span>
-                <span className="text-gray-400 text-xs">2 Astronauts</span>
+                <span className="text-gray-400 text-xs">DARPA LunA-10</span>
               </div>
             </div>
           </div>
@@ -175,7 +175,7 @@ export default function ProjectsSection() {
         </div>
 
         {/* Call to Action */}
-        <div className="text-center mt-16">
+        <div className="max-w-7xl mx-auto text-center mt-16">
           <h3 className="text-2xl md:text-3xl font-GoodTimes text-white mb-6">
             Ready to Build the Future?
           </h3>
