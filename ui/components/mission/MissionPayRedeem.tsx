@@ -2,6 +2,7 @@ import { getOnrampBuyUrl } from '@coinbase/onchainkit/fund'
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
 import { useFundWallet } from '@privy-io/react-auth'
+import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBMultiTerminalABI from 'const/abis/JBV4MultiTerminal.json'
 import {
@@ -331,6 +332,11 @@ export default function MissionPayRedeem({
   const [isWaitingForBalanceUpdate, setIsWaitingForBalanceUpdate] =
     useState(false)
 
+  // Add state to track USD amount adjustments
+  const [hasAdjustedAmount, setHasAdjustedAmount] = useState(false)
+  const [originalRequestedAmount, setOriginalRequestedAmount] =
+    useState<string>('')
+
   const account = useActiveAccount()
   const address = account?.address
 
@@ -538,6 +544,115 @@ export default function MissionPayRedeem({
     params: [address, mission?.projectId],
   })
 
+  // Gas estimation function for mission token purchase
+  const estimateGasCost = useCallback(
+    async (ethAmount: number): Promise<number> => {
+      if (!primaryTerminalContract || !address) return 0.003 // Default fallback
+
+      try {
+        const transaction = prepareContractCall({
+          contract: primaryTerminalContract,
+          method: 'pay' as string,
+          params: [
+            mission?.projectId,
+            JB_NATIVE_TOKEN_ADDRESS,
+            BigInt(Math.trunc(ethAmount * 1e18)),
+            address || ZERO_ADDRESS,
+            0,
+            message,
+            '0x00',
+          ],
+          value: BigInt(Math.trunc(ethAmount * 1e18)),
+        })
+
+        // Estimate gas for the transaction
+        const gasEstimate = await simulateTransaction({
+          transaction,
+          account,
+        })
+
+        // Convert gas estimate to ETH cost (rough estimation)
+        // For mainnet, gas price is typically 20-50 gwei, we'll use 30 gwei as conservative estimate
+        // For other chains, use lower estimates
+        const gasPrice = chainSlug === 'ethereum' ? 30e9 : 5e9 // in wei
+        const gasCostInWei = BigInt(500000) * BigInt(gasPrice) // 500k gas limit * gas price
+        const gasCostInEth = Number(gasCostInWei) / 1e18
+
+        return gasCostInEth
+      } catch (error) {
+        console.error('Error estimating gas:', error)
+        // Fallback gas estimates by chain
+        switch (chainSlug) {
+          case 'ethereum':
+            return 0.003 // ~$10-15 at typical gas prices
+          case 'arbitrum':
+            return 0.0005 // Much cheaper on L2
+          case 'base':
+            return 0.0005
+          default:
+            return 0.002
+        }
+      }
+    },
+    [
+      primaryTerminalContract,
+      address,
+      mission?.projectId,
+      message,
+      chainSlug,
+      account,
+    ]
+  )
+
+  // Auto-adjust USD amount based on actual ETH balance after onramp
+  const autoAdjustContributionAmount = useCallback(async () => {
+    if (!ethUsdPrice || !nativeBalance || !usdInput) return
+
+    const currentEthBalance = Number(nativeBalance)
+    const requestedUsdAmount = Number(usdInput)
+
+    // Only adjust if we have a meaningful balance and this looks like a post-onramp scenario
+    if (currentEthBalance < 0.0001 || requestedUsdAmount <= 0) return
+
+    // Estimate gas cost
+    const estimatedGasCost = await estimateGasCost(currentEthBalance * 0.5) // Estimate with half balance
+
+    // Calculate maximum contribution (leave 10% buffer)
+    const safeEthForContribution = Math.max(
+      0,
+      currentEthBalance - estimatedGasCost - currentEthBalance * 0.1
+    )
+    const maxUsdContribution = safeEthForContribution * ethUsdPrice
+
+    // Only adjust if the requested amount is significantly more than what they can afford
+    if (requestedUsdAmount > maxUsdContribution && maxUsdContribution > 0) {
+      const adjustedAmount = Math.floor(maxUsdContribution).toString()
+
+      if (adjustedAmount !== usdInput && !hasAdjustedAmount) {
+        setOriginalRequestedAmount(usdInput)
+        setUsdInput(adjustedAmount)
+        setInput((maxUsdContribution / ethUsdPrice).toFixed(6))
+        setHasAdjustedAmount(true)
+
+        // Show informative toast
+        toast.success(
+          `Adjusted contribution from $${requestedUsdAmount} to $${adjustedAmount} to account for fees and gas costs.`,
+          {
+            style: toastStyle,
+            duration: 6000,
+          }
+        )
+      }
+    }
+  }, [
+    ethUsdPrice,
+    nativeBalance,
+    usdInput,
+    estimateGasCost,
+    hasAdjustedAmount,
+    setInput,
+  ])
+
   //check if the connected wallet is a signer of the team's multisig
   useEffect(() => {
     const isSigner = async () => {
@@ -724,14 +839,22 @@ export default function MissionPayRedeem({
         })
       }
 
-      toast.success('Mission token purchased.', {
+      toast.success('Mission token purchased!', {
         style: toastStyle,
+      })
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        shapes: ['circle', 'star'],
+        colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
       })
 
       refreshBackers?.()
       setMissionPayModalEnabled(false)
       setJustCompletedFiatPurchase(false)
-      router.reload()
+      // Clear query parameters and reload the page
+      router.push(`/mission/${mission?.id}`)
     } catch (error) {
       console.error('Error purchasing tokens:', error)
       toast.error('Failed to purchase tokens', {
@@ -914,32 +1037,25 @@ export default function MissionPayRedeem({
     clearOnrampSuccessParam() // Only clear when modal closes
   }, [clearOnrampSuccessParam])
 
-  // Main onrampSuccess effect - REMOVE the automatic URL clearing
+  // Main onrampSuccess effect
   useEffect(() => {
     if (onrampSuccess && account?.address && !hasProcessedOnrampSuccess) {
-      console.log('✅ Processing onramp success')
       setHasProcessedOnrampSuccess(true)
 
       setJustCompletedFiatPurchase(true)
 
-      console.log(
-        '💰 Onramp success processed with justCompletedFiatPurchase = true'
-      )
-
-      // Open modal immediately - NO URL CLEARING HERE
+      // For testnets, skip balance waiting and open modal immediately
+      // For mainnet, open modal immediately and balance checks will handle the rest
       setTimeout(() => {
         setMissionPayModalEnabled(true)
       }, 500)
     }
-  }, [onrampSuccess, account?.address, hasProcessedOnrampSuccess])
+  }, [onrampSuccess, account?.address, hasProcessedOnrampSuccess, isTestnet])
 
   // Watch for input changes to enable form when they have enough for their input
   useEffect(() => {
     if (onrampSuccess && justCompletedFiatPurchase && hasEnoughBalance) {
       setIsWaitingForBalance(false)
-      toast.success('You have enough ETH to contribute!', {
-        style: toastStyle,
-      })
     }
   }, [onrampSuccess, justCompletedFiatPurchase, hasEnoughBalance])
 
@@ -992,8 +1108,14 @@ export default function MissionPayRedeem({
     }
   }, [])
 
-  // Enhanced balance checking for onramp success
+  // Enhanced balance checking for onramp success - only for mainnet
   useEffect(() => {
+    // Don't show waiting for balance update on testnets since onramp is disabled
+    if (isTestnet) {
+      setIsWaitingForBalanceUpdate(false)
+      return
+    }
+
     if (usdInput && ethUsdPrice && nativeBalance !== undefined) {
       // If onrampSuccess is true but they don't have enough balance, show waiting message
       if (onrampSuccess && !hasEnoughBalance && usdInput) {
@@ -1008,7 +1130,14 @@ export default function MissionPayRedeem({
         setIsWaitingForBalanceUpdate(false)
       }
     }
-  }, [usdInput, ethUsdPrice, nativeBalance, onrampSuccess, hasEnoughBalance])
+  }, [
+    usdInput,
+    ethUsdPrice,
+    nativeBalance,
+    onrampSuccess,
+    hasEnoughBalance,
+    isTestnet,
+  ])
 
   // Add this new useEffect to restore USD input from URL
   useEffect(() => {
@@ -1028,6 +1157,13 @@ export default function MissionPayRedeem({
       }
     }
   }, [router.isReady, router.query.usdAmount, ethUsdPrice])
+
+  // Auto-adjust USD amount after onramp success
+  useEffect(() => {
+    if (onrampSuccess && account?.address) {
+      autoAdjustContributionAmount()
+    }
+  }, [onrampSuccess, account?.address, autoAdjustContributionAmount])
 
   if (stage === 4) return null
 
@@ -1062,8 +1198,38 @@ export default function MissionPayRedeem({
               </div>
             )}
 
-          {/* Waiting for balance update after onramp */}
-          {isWaitingForBalanceUpdate && (
+          {/* Amount adjustment notice */}
+          {hasAdjustedAmount && originalRequestedAmount && (
+            <div className="bg-[#020617] rounded-[5vw] md:rounded-[2vw] p-6 mb-4 border border-orange-500/30">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">!</span>
+                </div>
+                <h3 className="text-lg font-semibold text-orange-400">
+                  Contribution Amount Adjusted
+                </h3>
+              </div>
+              <p className="text-sm opacity-80 mb-2">
+                Your contribution was adjusted from ${originalRequestedAmount}{' '}
+                to ${usdInput} to account for:
+              </p>
+              <ul className="text-xs opacity-70 mb-3 ml-4 list-disc">
+                <li>
+                  Coinbase purchase fees (you received less ETH than the USD
+                  amount paid)
+                </li>
+                <li>Network gas fees for the contribution transaction</li>
+                <li>Safety buffer to ensure transaction success</li>
+              </ul>
+              <p className="text-xs opacity-60">
+                This ensures you have enough ETH to complete your contribution
+                successfully.
+              </p>
+            </div>
+          )}
+
+          {/* Waiting for balance update after onramp - only show for mainnet */}
+          {isWaitingForBalanceUpdate && !isTestnet && (
             <div className="bg-[#020617] rounded-[5vw] md:rounded-[2vw] p-6 mb-4 border border-blue-500/30">
               <div className="flex items-center gap-3 mb-3">
                 <LoadingSpinner />
@@ -1179,6 +1345,28 @@ export default function MissionPayRedeem({
                     <CopyIcon />
                   </button>
                 </div>
+
+                {/* Show adjustment notice in modal */}
+                {hasAdjustedAmount && originalRequestedAmount && (
+                  <div className="w-full p-4 bg-orange-500/20 border border-orange-500/50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">!</span>
+                      </div>
+                      <h4 className="text-sm font-semibold text-orange-400">
+                        Amount Adjusted
+                      </h4>
+                    </div>
+                    <p className="text-xs text-orange-300 mb-1">
+                      Contribution adjusted from ${originalRequestedAmount} to $
+                      {usdInput}
+                    </p>
+                    <p className="text-xs text-orange-200 opacity-80">
+                      This accounts for Coinbase fees and gas costs to ensure
+                      your transaction succeeds.
+                    </p>
+                  </div>
+                )}
 
                 <div className="w-full flex flex-col gap-4 justify-between">
                   <p>{`Message (optional)`}</p>
@@ -1378,7 +1566,7 @@ export default function MissionPayRedeem({
                     </div>
                   </>
                 ) : (
-                  // User needs more ETH - show CBOnramp
+                  // User needs more ETH - show CBOnramp for mainnet or faucets for testnet
                   <div className="w-full flex flex-col gap-4">
                     {isWaitingForBalanceUpdate && (
                       <div className="w-full p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
@@ -1401,6 +1589,7 @@ export default function MissionPayRedeem({
 
                     {!isWaitingForBalanceUpdate && (
                       <>
+                        {/* Always show CBOnramp */}
                         <CBOnramp
                           address={address || ''}
                           selectedChain={selectedChain}
