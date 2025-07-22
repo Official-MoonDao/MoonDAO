@@ -2,10 +2,19 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import "../governance/VotingEscrowDepositor.sol";
-import "../governance/SmartWalletChecker.sol";
-import "../governance/IVotingEscrow.sol";
-import "../tokens/MyToken.sol";
+import "../src/VotingEscrowDepositor.sol";
+import "governance/SmartWalletChecker.sol";
+import "tokens/MyToken.sol";
+
+interface IVotingEscrow {
+    function create_lock(uint256 _value, uint256 _unlock_time) external;
+    function increase_amount(uint256 _value) external;
+    function increase_unlock_time(uint256 _unlock_time) external;
+    function withdraw() external;
+    function balanceOf(address account) external view returns (uint256);
+    function commit_smart_wallet_checker(address _checker) external;
+    function apply_smart_wallet_checker() external;
+}
 
 contract VotingEscrowDepositorTest is Test {
     VotingEscrowDepositor public depositor;
