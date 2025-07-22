@@ -177,8 +177,6 @@ export default function MissionInfo({
         }
       }
     })
-
-    console.log('🔄 MissionInfo - Preserving valid query params:', queryParams)
     shallowQueryRoute(queryParams)
   }, [tab, router.isReady, mission?.id])
 
