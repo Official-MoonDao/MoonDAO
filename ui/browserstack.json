@@ -3,6 +3,7 @@
     "username": "${BROWSERSTACK_USERNAME}",
     "access_key": "${BROWSERSTACK_ACCESS_KEY}"
   },
+  "browserstack.console": "info",
   "debug": true,
   "browsers": [
     {
