@@ -4996,7 +4996,6 @@
     toformat "^2.0.0"
 
 "@uniswap/smart-order-router@github:namedotget/smart-order-router#main":
-  version "3.35.12"
   resolved "https://codeload.github.com/namedotget/smart-order-router/tar.gz/45c826af798ce1384d985c54f9881bbc42f591d2"
   dependencies:
     "@eth-optimism/sdk" "^3.2.2"
