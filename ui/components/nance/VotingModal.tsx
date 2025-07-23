@@ -100,7 +100,7 @@ export default function VotingModal({
         type="button"
         disabled={!canVote}
         onClick={canVote ? submitVote : closeModal}
-        className="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50 disabled:bg-gray-400"
+        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50"
       >
         {label}
       </button>
@@ -111,7 +111,7 @@ export default function VotingModal({
     <Transition.Root show={modalIsOpen} as={Fragment}>
       <Dialog
         as="div"
-        className="relative z-10"
+        className="relative z-50"
         open={modalIsOpen}
         onClose={closeModal}
       >
@@ -124,7 +124,7 @@ export default function VotingModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 hidden bg-gray-500 bg-opacity-75 transition-opacity md:block" />
+          <div className="fixed inset-0 bg-gray-500/75 backdrop-blur-sm transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-y-auto">
@@ -138,11 +138,11 @@ export default function VotingModal({
               leaveFrom="opacity-100 translate-y-0 md:scale-100"
               leaveTo="opacity-0 translate-y-4 md:translate-y-0 md:scale-95"
             >
-              <Dialog.Panel className="flex w-full transform text-left text-base transition md:my-8 md:max-w-xl md:px-4">
-                <div className="relative flex w-full items-center overflow-hidden rounded-lg inner-container-background px-4 pb-8 pt-14 shadow-2xl sm:px-6 sm:pt-8 md:p-6 lg:p-8">
+              <Dialog.Panel className="flex w-full transform text-left text-base transition md:my-8 md:max-w-2xl md:px-4">
+                <div className="relative flex w-full items-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white px-6 pb-8 pt-14 sm:px-8 sm:pt-8 md:p-8 lg:p-10">
                   <button
                     type="button"
-                    className="absolute right-4 top-4 text-gray-400 hover:text-gray-500 sm:right-6 sm:top-8 md:right-6 md:top-6 lg:right-8 lg:top-8"
+                    className="absolute right-4 top-4 p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-full transition-colors duration-200 sm:right-6 sm:top-6 md:right-6 md:top-6 lg:right-8 lg:top-8"
                     onClick={closeModal}
                   >
                     <span className="sr-only">Close</span>
@@ -151,55 +151,86 @@ export default function VotingModal({
 
                   <div className="grid w-full grid-cols-1 items-start gap-x-6 gap-y-8 sm:grid-cols-12 lg:gap-x-8">
                     <div className="sm:col-span-12 lg:col-span-12">
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white sm:pr-12">
-                        {proposal.title}
-                      </h2>
+                      {/* Header Section */}
+                      <div className="flex items-center space-x-3 mb-6">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                          <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
+                            <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                          </div>
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-bold text-white">
+                            Vote on Proposal
+                          </h2>
+                          <p className="text-gray-300 text-sm">
+                            Cast your vote and make your voice heard
+                          </p>
+                        </div>
+                      </div>
 
+                      {/* Proposal Title */}
+                      <div className="bg-black/20 rounded-xl p-4 mb-6 border border-white/5">
+                        <h3 className="text-xl font-semibold text-white mb-2">
+                          {proposal.title}
+                        </h3>
+                      </div>
+
+                      {/* Proposal Stats */}
                       <section
                         aria-labelledby="information-heading"
-                        className="mt-4"
+                        className="mb-6"
                       >
                         <h3 id="information-heading" className="sr-only">
                           Proposal information
                         </h3>
 
-                        <div className="flex items-center">
-                          <p className="text-lg text-gray-900 dark:text-white sm:text-xl">
-                            Votes: {proposal.votes}
-                          </p>
+                        <div className="bg-black/20 rounded-xl p-4 border border-white/5 space-y-3">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="text-center md:text-left">
+                              <p className="text-gray-300 text-sm font-medium uppercase tracking-wide">
+                                Total Votes
+                              </p>
+                              <p className="text-2xl font-bold text-white">
+                                {proposal.votes}
+                              </p>
+                            </div>
 
-                          <div className="ml-4 border-l border-gray-300 pl-4">
-                            <h4 className="sr-only">Scores</h4>
-                            <div className="flex items-center">
-                              <div className="flex items-center">
-                                Scores: {formatNumberUSStyle(totalScore, true)}
-                              </div>
-                              <p className="sr-only">
-                                {totalScore} out of {proposal.quorum} quorum
+                            <div className="text-center md:text-left">
+                              <p className="text-gray-300 text-sm font-medium uppercase tracking-wide">
+                                Total Score
+                              </p>
+                              <p className="text-2xl font-bold text-white">
+                                {formatNumberUSStyle(totalScore, true)}
+                              </p>
+                            </div>
+
+                            <div className="text-center md:text-left">
+                              <p className="text-gray-300 text-sm font-medium uppercase tracking-wide">
+                                Your Voting Power
+                              </p>
+                              <p className="text-2xl font-bold text-blue-400">
+                                {formatNumberUSStyle(vp, true)} {symbol}
                               </p>
                             </div>
                           </div>
                         </div>
-
-                        <div className="mt-3 flex items-center">
-                          <p className="ml-1 font-medium text-gray-500">
-                            Voting power: {formatNumberUSStyle(vp, true)}{' '}
-                            {symbol}
-                          </p>
-                        </div>
                       </section>
 
+                      {/* Voting Section */}
                       <section
                         aria-labelledby="options-heading"
-                        className="mt-6"
+                        className="space-y-6"
                       >
                         <h3 id="options-heading" className="sr-only">
                           Voting options
                         </h3>
 
-                        <form>
-                          <div className="">
-                            {/* Option selector */}
+                        <form className="space-y-6">
+                          {/* Option selector */}
+                          <div>
+                            <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-4">
+                              Select Your Choice
+                            </h4>
                             {(proposal.type == 'single-choice' ||
                               proposal.type == 'basic') && (
                               <BasicChoiceSelector
@@ -227,38 +258,35 @@ export default function VotingModal({
 
                           {/* Votes under shutter mode won't have reason */}
                           {proposal.privacy !== 'shutter' && (
-                            <div className="mt-2">
+                            <div>
                               <label
                                 htmlFor="comment"
-                                className="block text-sm font-medium text-gray-700"
+                                className="block text-gray-300 font-medium text-sm uppercase tracking-wide mb-3"
                               >
-                                Reason
+                                Reason (Optional)
                               </label>
-                              <div className="mt-1">
+                              <div>
                                 <textarea
                                   rows={3}
                                   maxLength={140}
                                   name="reason"
                                   id="reason"
-                                  className="block w-full resize-none rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:text-white dark:bg-gray-600 p-1"
+                                  placeholder="Share your reasoning for this vote..."
+                                  className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none"
                                   value={reason}
                                   onChange={(e) => setReason(e.target.value)}
                                 />
+                                <div className="mt-2 text-right">
+                                  <span className="text-xs text-gray-400">
+                                    {reason.length}/140 characters
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           )}
 
-                          {/* Vote button and error info */}
-                          <div className="mt-6">{renderVoteButton()}</div>
-                          {/* <div className="mt-6 text-center">
-                            <a href="#" className="group inline-flex text-base font-medium">
-                              <ShieldCheckIcon
-                                className="flex-shrink-0 mr-2 h-6 w-6 text-gray-400 group-hover:text-gray-500"
-                                aria-hidden="true"
-                              />
-                              <span className="text-gray-500 group-hover:text-gray-700">Lifetime Guarantee</span>
-                            </a>
-                          </div> */}
+                          {/* Vote button */}
+                          <div className="pt-4">{renderVoteButton()}</div>
                         </form>
                       </section>
                     </div>
@@ -282,41 +310,37 @@ interface SelectorProps {
 function BasicChoiceSelector({ value, setValue, choices }: SelectorProps) {
   return (
     <RadioGroup value={value} onChange={setValue}>
-      <RadioGroup.Label className="block text-sm font-medium text-gray-700">
-        Options
-      </RadioGroup.Label>
-      <div className="mt-1 grid w-full grid-cols-1 gap-4">
+      <div className="space-y-3">
         {choices.map((choice, index) => (
           <RadioGroup.Option
             as="div"
             key={choice}
             value={index + 1}
-            className={({ active }) =>
+            className={({ active, checked }) =>
               classNames(
-                active ? 'ring-2 ring-indigo-500' : '',
-                'relative block cursor-pointer rounded-lg border border-gray-300 p-4 text-center focus:outline-none'
+                'relative block cursor-pointer rounded-lg p-4 transition-all duration-200',
+                checked
+                  ? 'bg-blue-500/20 border-2 border-blue-500/50 shadow-lg'
+                  : 'bg-black/20 border border-white/10 hover:bg-black/30 hover:border-white/20',
+                active ? 'ring-2 ring-blue-500/50' : ''
               )
             }
           >
             {({ active, checked }) => (
               <>
-                <RadioGroup.Label
-                  as="p"
-                  className="text-base font-medium text-gray-900 dark:text-white"
-                >
-                  {choice}
-                </RadioGroup.Label>
-                {/* <RadioGroup.Description as="p" className="mt-1 text-sm text-gray-500">
-                  {size.description}
-                </RadioGroup.Description> */}
-                <div
-                  className={classNames(
-                    active ? 'border' : 'border-2',
-                    checked ? 'border-indigo-500' : 'border-transparent',
-                    'pointer-events-none absolute -inset-px rounded-lg'
+                <div className="flex items-center justify-between">
+                  <RadioGroup.Label
+                    as="p"
+                    className="text-base font-medium text-white"
+                  >
+                    {choice}
+                  </RadioGroup.Label>
+                  {checked && (
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
                   )}
-                  aria-hidden="true"
-                />
+                </div>
               </>
             )}
           </RadioGroup.Option>
@@ -356,31 +380,33 @@ function WeightedChoiceSelector({
   const totalUnits = Object.values(value ?? {}).reduce((a, b) => a + b, 0)
 
   return (
-    <div className="mt-1 grid grid-cols-1 gap-4">
+    <div className="space-y-3">
       {choices.map((choice, index) => (
         <div
           key={choice}
-          className="flex gap-2 rounded-lg p-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          className="bg-black/20 border border-white/10 rounded-lg p-4 hover:bg-black/30 hover:border-white/20 transition-all duration-200"
         >
-          <label className="w-3/5">{choice}</label>
-          <input
-            className="w-1/5 rounded-lg dark:text-white dark:bg-[#071732] p-1 pl-2 border border-gray-300 dark:border-[#CBE4F7]"
-            type="number"
-            placeholder="0"
-            min={0}
-            step={1}
-            {...register((index + 1).toString(), {
-              shouldUnregister: true,
-              valueAsNumber: true,
-            })}
-          />
-          <span className="w-1/5 italic">
-            {isNaN(getValues((index + 1).toString())) || totalUnits == 0
-              ? '0%'
-              : `${Math.round(
-                  (getValues((index + 1).toString()) / totalUnits) * 100
-                )}%`}
-          </span>
+          <div className="flex items-center gap-4">
+            <label className="flex-1 text-white font-medium">{choice}</label>
+            <input
+              className="w-24 bg-black/30 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
+              type="number"
+              placeholder="0"
+              min={0}
+              step={1}
+              {...register((index + 1).toString(), {
+                shouldUnregister: true,
+                valueAsNumber: true,
+              })}
+            />
+            <span className="w-16 text-right text-gray-300 text-sm">
+              {isNaN(getValues((index + 1).toString())) || totalUnits == 0
+                ? '0%'
+                : `${Math.round(
+                    (getValues((index + 1).toString()) / totalUnits) * 100
+                  )}%`}
+            </span>
+          </div>
         </div>
       ))}
     </div>
@@ -396,43 +422,72 @@ function RankedChoiceSelector({
 }) {
   function getOrderNumber(val: number) {
     const index = value.findIndex((v) => v === val)
-    return index !== -1 ? `(No.${index + 1})` : ''
+    return index !== -1 ? `#${index + 1}` : ''
   }
 
   return (
-    <div className="space-y-2">
-      {choices.map((choice, index) => (
-        <div
-          key={choice}
-          aria-label={choice}
-          onClick={() => {
-            const choiceVal = index + 1
-            if (value.includes(choiceVal)) {
-              const newValue = value.filter((val) => val !== choiceVal)
-              setValue(newValue)
-            } else {
-              const newValue = [...value, choiceVal]
-              setValue(newValue)
-            }
-          }}
-          className="group flex justify-between cursor-pointer rounded-lg border border-gray-300 px-6 py-4 shadow-sm focus:outline-none data-[focus]:border-indigo-600 data-[focus]:ring-2 data-[focus]:ring-indigo-600"
-        >
-          <p className="text-gray-500">{getOrderNumber(index + 1)}</p>
+    <div className="space-y-3">
+      {choices.map((choice, index) => {
+        const choiceVal = index + 1
+        const isSelected = value.includes(choiceVal)
+        const orderNumber = getOrderNumber(choiceVal)
 
-          <p className="font-medium text-gray-900 dark:text-white">{choice}</p>
-
-          <p className="">
-            {value.findIndex((v) => v === index + 1) !== -1 && (
-              <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+        return (
+          <div
+            key={choice}
+            onClick={() => {
+              if (isSelected) {
+                const newValue = value.filter((val) => val !== choiceVal)
+                setValue(newValue)
+              } else {
+                const newValue = [...value, choiceVal]
+                setValue(newValue)
+              }
+            }}
+            className={classNames(
+              'cursor-pointer rounded-lg p-4 border transition-all duration-200 group',
+              isSelected
+                ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
+                : 'bg-black/20 border-white/10 hover:bg-black/30 hover:border-white/20'
             )}
-          </p>
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                {isSelected && (
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">
+                      {orderNumber}
+                    </span>
+                  </div>
+                )}
+                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
+                  {choice}
+                </p>
+              </div>
 
-          <p
-            aria-hidden="true"
-            className="pointer-events-none absolute -inset-px rounded-lg border-2 border-transparent group-data-[focus]:border group-data-[checked]:border-indigo-600"
-          />
+              {isSelected && (
+                <button
+                  type="button"
+                  className="p-1 hover:bg-red-500/20 rounded-full transition-colors duration-200 group"
+                >
+                  <XMarkIcon
+                    className="h-5 w-5 text-red-400"
+                    aria-hidden="true"
+                  />
+                </button>
+              )}
+            </div>
+          </div>
+        )
+      })}
+
+      {value.length > 0 && (
+        <div className="bg-black/10 rounded-lg p-3 border border-white/5">
+          <p className="text-gray-400 text-sm text-center">
+            Click choices in order of preference. Click again to remove.
+          </p>
         </div>
-      ))}
+      )}
     </div>
   )
 }
