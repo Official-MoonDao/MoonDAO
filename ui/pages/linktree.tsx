@@ -52,12 +52,6 @@ const LinkTree: React.FC = () => {
       icon: NewspaperIcon,
     },
     {
-      name: 'NFT Marketplace',
-      description: 'Discover space-themed collectibles',
-      url: 'https://market.moondao.com',
-      icon: ShoppingBagIcon,
-    },
-    {
       name: 'Instagram',
       description: 'Behind-the-scenes space content',
       url: '/instagram',
@@ -66,7 +60,7 @@ const LinkTree: React.FC = () => {
     {
       name: 'YouTube',
       description: 'Space missions & educational content',
-      url: 'https://youtube.com/@moondao',
+      url: 'https://youtube.com/@officialmoondao',
       icon: PlayIcon,
     }
   ]
