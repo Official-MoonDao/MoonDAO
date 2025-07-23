@@ -26,6 +26,7 @@
     }
   ],
   "run_settings": {
+    "package_manager": "yarn",
     "specs": "cypress/e2e/*.cy.ts",
     "cypress_config_file": "cypress.config.js",
     "cache_dependencies": false,
