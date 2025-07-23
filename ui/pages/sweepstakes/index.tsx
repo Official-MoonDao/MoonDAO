@@ -1,5 +1,4 @@
 import Head from '../../components/layout/Head'
-import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import SweepstakesHighlights from '@/components/ticket-to-space/SweepstakesHighlights'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
