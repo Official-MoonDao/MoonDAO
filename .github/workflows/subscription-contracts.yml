@@ -55,7 +55,7 @@ jobs:
       - name: Run Local Arbitrum Chain with Anvil
         run: |
           anvil --fork-url https://42161.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --port 8546 &
-          sleep 10
+          sleep 5
         id: local-arbitrum
 
       - name: Install npm dependencies
