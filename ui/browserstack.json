@@ -29,13 +29,7 @@
     "package_manager": "yarn",
     "specs": "cypress/e2e/*.cy.ts",
     "cypress_config_file": "cypress.config.js",
-    "cache_dependencies": false,
-    "npm_dependencies": {
-      "dotenv": "latest",
-      "browserstack-cypress-cli": "latest",
-      "typescript": "latest",
-      "@types/node": "latest"
-    },
+    "cache_dependencies": true,
     "project_name": "MoonDAO",
     "build_name": "MoonDAO-E2E-Tests",
     "parallels": 5,
