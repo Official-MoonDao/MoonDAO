@@ -56,6 +56,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ui/node_modules
+            ~/.cache/yarn
+          key: ui-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
+          restore-keys: |
+            ui-${{ runner.os }}-
+
       # BrowserStack Environment Setup - Required before any other BrowserStack actions
       - name: "BrowserStack Env Setup"
         uses: "browserstack/github-actions/setup-env@master"
@@ -68,6 +78,10 @@ jobs:
       - name: Install dependencies
         working-directory: ui
         run: yarn install
+
+      - name: Install npm dependencies
+        working-directory: ui
+        run: npm install --legacy-peer-deps
 
       # Build the web application
       - name: Build next app
