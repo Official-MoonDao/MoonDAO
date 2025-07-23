@@ -56,6 +56,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Cache node modules
+        if: always()
+        uses: actions/cache@v3
+        with:
+          path: |
+            ui/node_modules
+            ~/.cache/yarn
+          key: ui-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
+          restore-keys: |
+            ui-${{ runner.os }}-
+
+      - name: Cache Next.js build
+        if: always()
+        uses: actions/cache@v3
+        with:
+          path: ui/.next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
+          restore-keys: |
+            next-${{ runner.os }}-
+
       # BrowserStack Environment Setup - Required before any other BrowserStack actions
       - name: "BrowserStack Env Setup"
         uses: "browserstack/github-actions/setup-env@master"
@@ -68,6 +88,10 @@ jobs:
       - name: Install dependencies
         working-directory: ui
         run: yarn install
+
+      - name: Install npm dependencies
+        working-directory: ui
+        run: npm install --legacy-peer-deps
 
       # Build the web application
       - name: Build next app
@@ -92,7 +116,7 @@ jobs:
       # Run Cypress E2E tests on BrowserStack with local testing enabled
       - name: Run Cypress E2E Testing on BrowserStack
         working-directory: ui
-        run: BROWSERSTACK_LOCAL=true browserstack-cypress run --force-upload
+        run: BROWSERSTACK_LOCAL=true browserstack-cypress run --force-upload --verbose
         env:
           BROWSERSTACK_LOCAL: true
 

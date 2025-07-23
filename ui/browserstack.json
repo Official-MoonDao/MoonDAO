@@ -3,6 +3,8 @@
     "username": "${BROWSERSTACK_USERNAME}",
     "access_key": "${BROWSERSTACK_ACCESS_KEY}"
   },
+  "browserstack.console": "info",
+  "debug": true,
   "browsers": [
     {
       "browser": "chrome",
@@ -28,7 +30,7 @@
   "run_settings": {
     "specs": "cypress/e2e/*.cy.ts",
     "cypress_config_file": "cypress.config.js",
-    "cache_dependencies": false,
+    "cache_dependencies": true,
     "npm_dependencies": {
       "dotenv": "latest",
       "browserstack-cypress-cli": "latest",
