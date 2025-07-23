@@ -11,9 +11,8 @@ export default function Sweepstakes() {
         title="Ticket to Space"
         image="https://gray-main-toad-36.mypinata.cloud/ipfs/QmdTYGGb5ayHor23WeCsNeT61Qzj8JK9EQmxKWeuGTQhYq"
       />
-      <section className="w-[calc(100vw-20px)]">
-        <Container>
-          <ContentLayout
+      <div className="w-full">
+        <ContentLayout
             header="Meet Our Astronauts"
             headerSize="max(20px, 3vw)"
             description="We sent the first crowdraised astronaut to space, selected via onchain voting, and a second everyday person chosen randomly via onchain sweepstakes. Discover the brave astronauts who represent MoonDAO's mission to space and learn about their journeys as they pioneer humanity's path to the stars."
@@ -35,8 +34,7 @@ export default function Sweepstakes() {
           >
             <SweepstakesHighlights />
           </ContentLayout>
-        </Container>
-      </section>
+        </div>
     </>
   )
 }
