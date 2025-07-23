@@ -66,6 +66,14 @@ jobs:
           restore-keys: |
             ui-${{ runner.os }}-
 
+      - name: Cache Next.js build
+        uses: actions/cache@v3
+        with:
+          path: ui/.next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
+          restore-keys: |
+            next-${{ runner.os }}-
+
       # BrowserStack Environment Setup - Required before any other BrowserStack actions
       - name: "BrowserStack Env Setup"
         uses: "browserstack/github-actions/setup-env@master"
