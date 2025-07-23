@@ -2,7 +2,7 @@
 pragma solidity 0.8.10;
 import {IVotingEscrow} from "../../../governance/IVotingEscrow.sol";
 
-contract MockVotingEscrow is IVotingEscrow {
+abstract contract MockVotingEscrow is IVotingEscrow {
     string name;
     string symbol;
 

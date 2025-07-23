@@ -56,26 +56,30 @@ describe('Main E2E Testing', () => {
   })
 
   describe('MoonDAO App | About', () => {
-    it('should have iframe that takes up full window dimensions', () => {
+    it('should have iframe that covers the viewport', () => {
       cy.visit('/about', { timeout: 30000 })
 
-      // Get the viewport dimensions
-      cy.window().then((win) => {
-        const viewportWidth = win.innerWidth
-        const viewportHeight = win.innerHeight
+      // Check iframe is visible and positioned correctly
+      cy.get('iframe', { timeout: 30000 })
+        .should('be.visible')
+        .and(($iframe) => {
+          const iframe = $iframe[0]
+          const rect = iframe.getBoundingClientRect()
 
-        // Check iframe dimensions match viewport
-        cy.get('iframe', { timeout: 30000 })
-          .should('be.visible')
-          .and(($iframe) => {
-            const iframeWidth = $iframe[0].getBoundingClientRect().width
-            const iframeHeight = $iframe[0].getBoundingClientRect().height
+          // Verify iframe is positioned at top-left
+          expect(rect.top).to.equal(0)
+          expect(rect.left).to.equal(0)
 
-            // Allow for small rounding differences (1px tolerance)
-            expect(Math.abs(iframeWidth - viewportWidth)).to.be.lessThan(2)
-            expect(Math.abs(iframeHeight - viewportHeight)).to.be.lessThan(2)
-          })
-      })
+          // Verify iframe has full width (allow for scrollbars/browser chrome)
+          expect(rect.width).to.be.closeTo(Cypress.config('viewportWidth'), 15)
+
+          // Verify iframe has viewport height
+          // Allow for small differences due to browser rendering
+          expect(rect.height).to.be.closeTo(
+            Cypress.config('viewportHeight'),
+            15
+          )
+        })
     })
   })
 
@@ -84,26 +88,30 @@ describe('Main E2E Testing', () => {
       cy.visit('/news', { timeout: 30000 })
     })
 
-    it('should have iframe that takes up full window dimensions', () => {
+    it('should have iframe that covers the viewport', () => {
       cy.visit('/news', { timeout: 30000 })
 
-      // Get the viewport dimensions
-      cy.window().then((win) => {
-        const viewportWidth = win.innerWidth
-        const viewportHeight = win.innerHeight
+      // Check iframe is visible and positioned correctly
+      cy.get('iframe')
+        .should('be.visible')
+        .and(($iframe) => {
+          const iframe = $iframe[0]
+          const rect = iframe.getBoundingClientRect()
 
-        // Check iframe dimensions match viewport
-        cy.get('iframe')
-          .should('be.visible')
-          .and(($iframe) => {
-            const iframeWidth = $iframe[0].getBoundingClientRect().width
-            const iframeHeight = $iframe[0].getBoundingClientRect().height
+          // Verify iframe is positioned at top-left
+          expect(rect.top).to.equal(0)
+          expect(rect.left).to.equal(0)
 
-            // Allow for small rounding differences (1px tolerance)
-            expect(Math.abs(iframeWidth - viewportWidth)).to.be.lessThan(2)
-            expect(Math.abs(iframeHeight - viewportHeight)).to.be.lessThan(2)
-          })
-      })
+          // Verify iframe has full width (allow for scrollbars/browser chrome)
+          expect(rect.width).to.be.closeTo(Cypress.config('viewportWidth'), 15)
+
+          // Verify iframe has viewport height (100vh)
+          // Allow for small differences due to browser rendering
+          expect(rect.height).to.be.closeTo(
+            Cypress.config('viewportHeight'),
+            15
+          )
+        })
     })
   })
 

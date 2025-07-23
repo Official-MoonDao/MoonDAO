@@ -88,7 +88,7 @@ const timelineEvents: TimelineEvent[] = [
     year: 2025,
     title: 'Starship Access',
     description:
-      '10,000s of engaged members. Fundraise for ownership of a Starship or equivalent launch vehicle, and guaranteed refuel missions.',
+      'Fundraise for ownership of a Starship or equivalent launch vehicle, and guaranteed refuel missions.',
     icon: '/assets/icon-plane.svg',
     iconAlt: 'Starship Ownership',
   },
@@ -97,7 +97,7 @@ const timelineEvents: TimelineEvent[] = [
     year: 2026,
     title: 'Settlement Design',
     description:
-      '100,000s of engaged members. Design of major lunar settlement components completed, ready for manufacturing on Earth.',
+      'Design of major lunar settlement components completed, ready for manufacturing on Earth.',
     icon: '/assets/icon-project.svg',
     iconAlt: 'Settlement Design',
   },
@@ -106,7 +106,7 @@ const timelineEvents: TimelineEvent[] = [
     year: 2027,
     title: 'Manufacturing',
     description:
-      '1,000,000s of engaged members. Selection of first Moon settlers. Manufacturing of key components with Earth-based simulations.',
+      'Selection of first Moon settlers. Manufacturing of key components with Earth-based simulations.',
     icon: '/assets/icon-contract.svg',
     iconAlt: 'Manufacturing',
   },
@@ -115,14 +115,14 @@ const timelineEvents: TimelineEvent[] = [
     year: 2028,
     title: 'Ready for Launch',
     description:
-      '10,000,000s of engaged members. Components tested and ready for launch with Earth-based simulation complete.',
+      'Components tested and ready for launch with Earth-based simulation complete.',
     icon: '/assets/icon-lander.svg',
     iconAlt: 'Ready for Launch',
   },
   {
     date: '2029',
     year: 2029,
-    title: 'Moon Construction',
+    title: 'Base Construction',
     description:
       'Infrastructure is sent to the Moon and the first crew begins construction of the lunar settlement.',
     icon: '/assets/icon-globe.svg',
@@ -203,7 +203,7 @@ export default function Timeline() {
     if (!isDragging || !scrollContainerRef.current) return
     e.preventDefault()
     const x = e.pageX - (scrollContainerRef.current.offsetLeft || 0)
-    const walk = (x - startX) * 2
+    const walk = (x - startX) * 2 // Restored original multiplier for responsive scrolling
     scrollContainerRef.current.scrollLeft = scrollLeft - walk
   }
 
@@ -222,7 +222,7 @@ export default function Timeline() {
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging || !scrollContainerRef.current) return
     const x = e.touches[0].pageX - (scrollContainerRef.current.offsetLeft || 0)
-    const walk = (x - startX) * 2
+    const walk = (x - startX) * 2 // Restored original multiplier for responsive scrolling
     scrollContainerRef.current.scrollLeft = scrollLeft - walk
   }
 
@@ -237,20 +237,12 @@ export default function Timeline() {
         index
       ] as HTMLElement
       if (eventElement) {
-        const container = scrollContainerRef.current
-        const containerRect = container.getBoundingClientRect()
-        const elementRect = eventElement.getBoundingClientRect()
-
-        // Calculate the scroll position to center the element
-        const scrollPosition =
-          container.scrollLeft +
-          elementRect.left -
-          containerRect.left -
-          (containerRect.width - elementRect.width) / 2
-
-        container.scrollTo({
-          left: scrollPosition,
+        // Use the browser's native scrollIntoView with smooth behavior
+        // This works better with scroll snap
+        eventElement.scrollIntoView({
           behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center',
         })
       }
     }
@@ -501,7 +493,7 @@ export default function Timeline() {
           <div className="xl:hidden w-full">
             <div
               ref={scrollContainerRef}
-              className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 cursor-grab active:cursor-grabbing"
+              className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 cursor-grab active:cursor-grabbing scroll-smooth"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}

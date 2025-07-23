@@ -23,7 +23,7 @@ export default function VotingInfo({
     .join(', ')
 
   return (
-    <p className="flex flex-wrap gap-x-1 text-xs text-gray-500">
+    <p className="flex flex-wrap gap-x-1 text-xs text-gray-400 font-RobotoMono">
       {`${quorumLabel}${scoresLabel} (${votingInfo.votes} voters)`}
     </p>
   )

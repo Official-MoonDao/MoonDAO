@@ -898,6 +898,22 @@ body {
   animation: bounce-gentle 2s infinite;
 }
 
+/* Sidebar navigation wave animation */
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.6s ease-out;
+}
+
 /* Hero section improvements to prevent button cutoff */
 #hero-section {
   overflow-x: hidden;

@@ -18,28 +18,11 @@ export default function Callout2() {
     >
       <div
         id="callout2-container"
-        className="z-10 md:rounded-tl-[5vmax] relative flex flex-col-reverse lg:flex-row items-center justify-center lg:justify-between pt-5 p-5 pb-[120px] md:pr-10 md:pl-10 2xl:pr-20 2xl:pl-20 3xl:pr-32 3xl:pl-32 min-h-[800px] md:h-[80vh] md:min-h-[90vmin] lg:min-h-[800px] 2xl:min-h-[900px] 3xl:min-h-[1000px] bg-gradient-to-bl from-transparent via-[#090D21] via-10% to-transparent to-40%"
+        className="z-10 relative flex flex-col-reverse lg:flex-row items-center justify-center lg:justify-between pt-5 p-5 pb-[120px] md:pr-10 md:pl-10 2xl:pr-20 2xl:pl-20 3xl:pr-32 3xl:pl-32 min-h-[800px] md:h-[80vh] md:min-h-[90vmin] lg:min-h-[800px] 2xl:min-h-[900px] 3xl:min-h-[1000px] bg-gradient-to-bl from-transparent via-[#090D21] via-10% to-transparent to-40% max-w-[2400px] mx-auto"
       >
-        <div id="background-elements">
-          <div
-            id="background-gradient"
-            className="w-full h-[50%] absolute bottom-0 left-0"
-          ></div>
-          <div
-            id="bottom-divider"
-            className="hidden divider-4 absolute left-0 bottom-[-2px] w-[60%] h-full"
-          >
-            <Image
-              src="/assets/divider-4.svg"
-              alt="Divider 4"
-              width={1000}
-              height={1000}
-            />
-          </div>
-        </div>
         <div
           id="content"
-          className="relative w-full lg:w-[50%] 2xl:w-[45%] 3xl:w-[40%] text-center lg:text-left lg:pl-[80px] 2xl:pl-[100px] 3xl:pl-[120px] mt-8 md:mt-12 lg:mt-0"
+          className="relative w-full lg:w-[50%] 2xl:w-[45%] 3xl:w-[50%] text-center lg:text-left lg:pl-[80px] 2xl:pl-[100px] 3xl:pl-[120px] mt-8 md:mt-12 lg:mt-0"
         >
           <div className="max-w-[1200px] 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto lg:mx-0">
             <div className="md:w-[95%] lg:w-[70%] 2xl:w-[85%] 3xl:w-[90%]">
@@ -92,7 +75,7 @@ export default function Callout2() {
         </div>
         <div
           id="astronauts-container"
-          className="w-full lg:w-[50%] 2xl:w-[55%] 3xl:w-[60%] flex flex-row justify-center lg:justify-end items-start gap-5 2xl:gap-8 3xl:gap-12 mt-10 lg:mt-0"
+          className="w-full lg:w-[50%] 2xl:w-[55%] 3xl:w-[50%] flex flex-row justify-center lg:justify-end items-start gap-5 2xl:gap-6 3xl:gap-8 mt-10 lg:mt-0"
         >
           <Speaker
             alt="Coby Cotton"

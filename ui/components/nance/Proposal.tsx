@@ -33,7 +33,7 @@ export default function Proposal({
       </div>
       <div className="flex justify-between items-center mt-4">
         <div className="flex flex-col items-start">
-          <p className="text-sm leading-6 text-gray-900 dark:text-white">
+          <p className="text-sm leading-6 text-white font-RobotoMono font-medium">
             {proposal.status}
           </p>
           {['Voting', 'Temperature Check'].includes(proposal.status) ? (
@@ -41,12 +41,12 @@ export default function Proposal({
               <div className="flex-none rounded-full bg-emerald-500/20 p-1">
                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               </div>
-              <p className="text-xs leading-5 text-gray-500 dark:text-gray-400">
+              <p className="text-xs leading-5 text-gray-400 font-RobotoMono">
                 Voting
               </p>
             </div>
           ) : (
-            <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-xs leading-5 text-gray-400 font-RobotoMono">
               <span className="sr-only">Last edited</span>
               <time dateTime={proposal.lastEditedTime}>
                 {formatDistanceStrict(

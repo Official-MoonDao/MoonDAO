@@ -47,11 +47,16 @@ jobs:
         with:
           version: nightly
 
-      - name: Run Local Chain with Anvil
+      - name: Run Local Sepolia Chain with Anvil
         run: |
           anvil --fork-url https://11155111.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} &
+        id: local-sepolia
+
+      - name: Run Local Arbitrum Chain with Anvil
+        run: |
           anvil --fork-url https://42161.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --port 8546 &
-        id: local-chain
+          sleep 5
+        id: local-arbitrum
 
       - name: Install npm dependencies
         run: |
