@@ -4,14 +4,6 @@ import Link from 'next/link'
 export default function SweepstakesHighlights() {
   return (
     <div>
-      <div className="mt-5 bg-gradient-to-br from-gray-900/40 via-blue-900/20 to-purple-900/10 backdrop-blur-xl rounded-2xl shadow-2xl w-full xl:w-[95%] p-6">
-        <p className="text-white xl:text-left text-sm xl:text-base">
-          We sent the first crowdraised astronaut to space, selected via onchain
-          voting, and a second everyday person chosen randomly via onchain
-          sweepstakes.
-        </p>
-      </div>
-
       {/* Highlighting Astronauts */}
       <div className="mt-10 flex flex-col lg:flex-row items-center">
         <div className="lg:w-1/3">

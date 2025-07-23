@@ -1,22 +1,42 @@
 import Head from '../../components/layout/Head'
 import Container from '@/components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
 import SweepstakesHighlights from '@/components/ticket-to-space/SweepstakesHighlights'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 export default function Sweepstakes() {
   return (
-    <Container>
-      <main className="animate-fadeIn">
-        <Head
-          title="Ticket to Space"
-          image="https://gray-main-toad-36.mypinata.cloud/ipfs/QmdTYGGb5ayHor23WeCsNeT61Qzj8JK9EQmxKWeuGTQhYq"
-        />
-        <div className="mt-3 px-5 lg:px-7 xl:px-10 py-12 lg:py-14 bg-gradient-to-br from-gray-900/40 via-blue-900/20 to-purple-900/10 backdrop-blur-xl rounded-2xl shadow-2xl lg:mt-10 lg:w-full lg:max-w-[1080px] z-50">
-          <h1 className="text-white font-bold font-GoodTimes text-2xl">
-            Meet Our Astronauts | Ticket to Space
-          </h1>
-          <SweepstakesHighlights />
-        </div>
-      </main>
-    </Container>
+    <>
+      <Head
+        title="Ticket to Space"
+        image="https://gray-main-toad-36.mypinata.cloud/ipfs/QmdTYGGb5ayHor23WeCsNeT61Qzj8JK9EQmxKWeuGTQhYq"
+      />
+      <section className="w-[calc(100vw-20px)]">
+        <Container>
+          <ContentLayout
+            header="Meet Our Astronauts"
+            headerSize="max(20px, 3vw)"
+            description="We sent the first crowdraised astronaut to space, selected via onchain voting, and a second everyday person chosen randomly via onchain sweepstakes. Discover the brave astronauts who represent MoonDAO's mission to space and learn about their journeys as they pioneer humanity's path to the stars."
+            preFooter={
+              <NoticeFooter
+                defaultImage="../assets/MoonDAO-Logo-White.svg"
+                defaultTitle="Join the Mission"
+                defaultDescription="Be part of the Space Acceleration Network and play a role in establishing a permanent human presence on the Moon and beyond."
+                defaultButtonText="Learn More"
+                defaultButtonLink="/join"
+                imageWidth={200}
+                imageHeight={200}
+              />
+            }
+            mainPadding
+            isProfile
+            mode="compact"
+            popOverEffect={false}
+          >
+            <SweepstakesHighlights />
+          </ContentLayout>
+        </Container>
+      </section>
+    </>
   )
 }
