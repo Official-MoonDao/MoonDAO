@@ -1,6 +1,10 @@
-import { randomBytes } from 'crypto'
-import { SignJWT } from 'jose'
 import { NextApiRequest, NextApiResponse } from 'next'
+import {
+  validateCDPCredentials,
+  makeCDPRequest,
+  handleAPIError,
+  SessionTokenRequest,
+} from '../../../lib/coinbase'
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,55 +19,16 @@ export default async function handler(
       address,
       blockchains = ['ethereum', 'base'],
       assets = ['ETH', 'USDC'],
-    } = req.body
+    }: SessionTokenRequest = req.body
 
     if (!address) {
       return res.status(400).json({ error: 'Address is required' })
     }
 
-    const apiKeyName = process.env.CB_API_KEY
-    const apiKeySecret = process.env.CB_API_SECRET
+    // Validate CDP credentials
+    const credentials = validateCDPCredentials()
 
-    if (!apiKeyName || !apiKeySecret) {
-      return res.status(500).json({
-        error: 'CDP API credentials not configured',
-        details:
-          'Missing COINBASE_API_KEY or COINBASE_API_SECRET environment variables',
-      })
-    }
-
-    // For CDP API authentication, we need to create a JWT with specific claims
-    const now = Math.floor(Date.now() / 1000)
-
-    // Define the endpoint being accessed for the URI claim
-    const requestMethod = 'POST'
-    const requestHost = 'api.developer.coinbase.com'
-    const requestPath = '/onramp/v1/token'
-    const uri = `${requestMethod} ${requestHost}${requestPath}`
-
-    // Create JWT payload for CDP - all required claims per documentation
-    const payload = {
-      sub: apiKeyName, // API key name
-      iss: 'cdp', // Required issuer for CDP
-      nbf: now, // Not before (current time)
-      exp: now + 120, // Expires in 2 minutes (max allowed)
-      uri: uri, // The endpoint being accessed
-    }
-
-    // Generate a random nonce as required by CDP
-    const nonce = randomBytes(16).toString('hex')
-
-    // Create JWT header with required fields
-    const header = {
-      alg: 'EdDSA',
-      kid: apiKeyName, // Key ID as required
-      nonce: nonce, // Random nonce as required
-    }
-
-    // Generate JWT with proper CDP format
-    const jwt = await generateCDPJWT(header, payload, apiKeySecret, apiKeyName)
-
-    // Prepare request body for CDP session token API - match documentation format
+    // Prepare request body for CDP session token API
     const requestBody = {
       addresses: [
         {
@@ -75,17 +40,11 @@ export default async function handler(
     }
 
     // Call CDP session token endpoint
-    const response = await fetch(
-      'https://api.developer.coinbase.com/onramp/v1/token',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${jwt}`,
-          'User-Agent': 'MoonDAO/1.0',
-        },
-        body: JSON.stringify(requestBody),
-      }
+    const response = await makeCDPRequest(
+      '/onramp/v1/token',
+      'POST',
+      requestBody,
+      credentials
     )
 
     if (!response.ok) {
@@ -104,57 +63,7 @@ export default async function handler(
       channelId: data?.channel_id,
     })
   } catch (error: any) {
-    return res.status(500).json({
-      error: 'Internal server error',
-      message: error.message,
-    })
-  }
-}
-
-// CDP JWT generation - handle Ed25519 key format from CDP per official documentation
-async function generateCDPJWT(
-  header: any,
-  payload: any,
-  privateKeyBase64: string,
-  apiKeyName: string
-): Promise<string> {
-  try {
-    // Decode the 64-byte key from CDP
-    const keyBuffer = Buffer.from(privateKeyBase64, 'base64')
-
-    if (keyBuffer.length !== 64) {
-      throw new Error(
-        `Expected 64-byte Ed25519 key, got ${keyBuffer.length} bytes`
-      )
-    }
-
-    // For Ed25519, the 64-byte format is typically: private_key (32 bytes) + public_key (32 bytes)
-    const privateKeyBytes = keyBuffer.slice(0, 32)
-    const publicKeyBytes = keyBuffer.slice(32, 64)
-
-    // Convert to base64url for JWK format
-    const privateKeyBase64Url = privateKeyBytes.toString('base64url')
-    const publicKeyBase64Url = publicKeyBytes.toString('base64url')
-
-    // Create JWK for Ed25519
-    const jwk = {
-      kty: 'OKP',
-      crv: 'Ed25519',
-      d: privateKeyBase64Url,
-      x: publicKeyBase64Url,
-      use: 'sig',
-      alg: 'EdDSA',
-    }
-
-    const { importJWK } = await import('jose')
-    const privateKey = await importJWK(jwk, 'EdDSA')
-
-    const jwt = await new SignJWT(payload)
-      .setProtectedHeader(header) // Use the full header with kid and nonce
-      .sign(privateKey)
-
-    return jwt
-  } catch (error: any) {
-    throw new Error(`CDP Ed25519 JWT generation failed: ${error.message}`)
+    const errorResponse = handleAPIError(error, 'session token generation')
+    return res.status(errorResponse.status).json(errorResponse.body)
   }
 }
