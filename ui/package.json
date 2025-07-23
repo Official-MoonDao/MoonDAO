@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@arbitrum/sdk": "^3.3.3",
+    "@covalenthq/client-sdk": "^2.3.1",
     "@google-cloud/storage": "^7.16.0",
     "@hatsprotocol/sdk-v1-core": "^0.9.0",
     "@hatsprotocol/sdk-v1-subgraph": "^0.4.3",

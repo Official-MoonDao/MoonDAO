@@ -17,14 +17,14 @@ import {
 import { formatDistanceToNow, fromUnixTime } from 'date-fns'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useContext } from 'react'
+import { useContext, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { getCitizenSubgraphData } from '@/lib/citizen/citizen-subgraph'
+import { getAUMHistory, getARRHistory } from '@/lib/covalent'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import { getAUMHistory } from '@/lib/moralis'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
@@ -38,8 +38,10 @@ import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget } from '@/lib/utils/rewards'
+import { ARRChart } from '@/components/dashboard/treasury/ARRChart'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { ProposalCard } from '@/components/home/ProposalCard'
+import ChartModal from '@/components/layout/ChartModal'
 import Container from '@/components/layout/Container'
 import Frame from '@/components/layout/Frame'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
@@ -57,12 +59,60 @@ export default function Home({
   newestListings,
   newestJobs,
   citizenSubgraphData,
-  aumHistory,
+  aumData,
+  arrData,
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
   const { citizen } = useContext(CitizenContext)
+
+  // Modal state for charts
+  const [chartModalOpen, setChartModalOpen] = useState(false)
+  const [chartModalComponent, setChartModalComponent] =
+    useState<React.ReactNode>(null)
+  const [chartModalTitle, setChartModalTitle] = useState('')
+
+  // Chart modal handlers
+  const openCitizensChart = () => {
+    setChartModalComponent(
+      <CitizensChart
+        transfers={citizenSubgraphData.transfers}
+        isLoading={false}
+        height={400}
+        compact={false}
+        createdAt={citizenSubgraphData.createdAt}
+      />
+    )
+    setChartModalTitle('CITIZENS TIMELINE')
+    setChartModalOpen(true)
+  }
+
+  const openAUMChart = () => {
+    setChartModalComponent(
+      <AUMChart
+        data={aumData.aumHistory}
+        compact={false}
+        height={400}
+        isLoading={false}
+      />
+    )
+    setChartModalTitle('ASSETS UNDER MANAGEMENT')
+    setChartModalOpen(true)
+  }
+
+  const openARRChart = () => {
+    setChartModalComponent(
+      <ARRChart
+        data={arrData?.arrHistory || []}
+        compact={false}
+        height={400}
+        isLoading={false}
+      />
+    )
+    setChartModalTitle('ANNUAL RECURRING REVENUE')
+    setChartModalOpen(true)
+  }
 
   const { proposals, packet, votingInfoMap } = useNewestProposals(100)
   const account = useActiveAccount()
@@ -278,7 +328,11 @@ export default function Home({
               topRight="0px"
               topLeft="0px"
             >
-              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-4 text-center">
+              <div
+                className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-4 text-center cursor-pointer transition-all duration-200 hover:scale-105 hover:opacity-80 rounded"
+                onClick={openCitizensChart}
+                title="Click to view full chart"
+              >
                 <h3 className="text-sm font-medium text-gray-400 mb-2">
                   Citizens
                 </h3>
@@ -306,19 +360,33 @@ export default function Home({
               topRight="0px"
               topLeft="0px"
             >
-              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-4 text-center">
+              <div
+                className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-4 text-center cursor-pointer transition-all duration-200 hover:scale-105 hover:opacity-80 rounded"
+                onClick={openAUMChart}
+                title="Click to view full chart"
+              >
                 <h3 className="text-sm font-medium text-gray-400 mb-2">AUM</h3>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-2xl font-bold text-white">1.1m</span>
-                  <div className="w-24 h-12">
-                    <AUMChart
-                      compact={true}
-                      height={48}
-                      days={365}
-                      data={aumHistory}
-                    />
+                {aumData ? (
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-2xl font-bold text-white">
+                      ${aumData.aum.toLocaleString()}
+                    </span>
+                    <div className="w-24 h-12">
+                      <AUMChart
+                        compact={true}
+                        height={48}
+                        days={365}
+                        data={aumData.aumHistory}
+                      />
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-center justify-center mb-2">
+                    <span className="text-sm text-gray-400">
+                      AUM data unavailable
+                    </span>
+                  </div>
+                )}
               </div>
             </Frame>
 
@@ -329,24 +397,33 @@ export default function Home({
               topRight="0px"
               topLeft="0px"
             >
-              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-4 text-center">
+              <div
+                className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-4 text-center cursor-pointer transition-all duration-200 hover:scale-105 hover:opacity-80 rounded"
+                onClick={openARRChart}
+                title="Click to view full chart"
+              >
                 <h3 className="text-sm font-medium text-gray-400 mb-2">ARR</h3>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-2xl font-bold text-white">34k</span>
-                  <div className="w-8 h-8 bg-purple-500/20 rounded flex items-center justify-center">
-                    <svg
-                      className="w-4 h-4 text-purple-400"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
-                        clipRule="evenodd"
+                {arrData ? (
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-2xl font-bold text-white">
+                      ${arrData.currentARR.toLocaleString()}
+                    </span>
+                    <div className="w-24 h-12">
+                      <ARRChart
+                        data={arrData.arrHistory}
+                        compact={true}
+                        height={48}
+                        isLoading={false}
                       />
-                    </svg>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-center justify-center mb-2">
+                    <span className="text-sm text-gray-400">
+                      ARR data unavailable
+                    </span>
+                  </div>
+                )}
               </div>
             </Frame>
           </div>
@@ -632,6 +709,14 @@ export default function Home({
             />
           </div>
         </Frame>
+
+        {/* Chart Modal */}
+        <ChartModal
+          isOpen={chartModalOpen}
+          setIsOpen={setChartModalOpen}
+          chartComponent={chartModalComponent}
+          chartTitle={chartModalTitle}
+        />
       </div>
     </Container>
   )
@@ -642,10 +727,25 @@ export async function getStaticProps() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
 
-  // Fetch AUM history data
-  const aumHistory = await getAUMHistory(365) // Get 1 year of data
+  // Fetch AUM history data with error handling
+  let aumData = null
+  try {
+    aumData = await getAUMHistory(365) // Get 1 year of data
+    console.log('AUM Data fetched successfully:', aumData)
+  } catch (error) {
+    console.error('Failed to fetch AUM data during build:', error)
+    // aumData remains null, component will handle this gracefully
+  }
 
-  console.log('AUM History:', aumHistory)
+  // Fetch ARR history data with error handling
+  let arrData = null
+  try {
+    arrData = await getARRHistory(365) // Get 1 year of data
+    console.log('ARR Data fetched successfully:', arrData)
+  } catch (error) {
+    console.error('Failed to fetch ARR data during build:', error)
+    // arrData remains null, component will handle this gracefully
+  }
 
   const newestNewsletters: any = []
 
@@ -694,7 +794,7 @@ export async function getStaticProps() {
     `SELECT * FROM ${jobTableName} ORDER BY id DESC LIMIT 10`
   )
 
-  const citizenSubgraphData = await getCitizenSubgraphData()
+  const citizenSubgraphData = (await getCitizenSubgraphData()) || []
 
   return {
     props: {
@@ -703,7 +803,8 @@ export async function getStaticProps() {
       newestListings,
       newestJobs,
       citizenSubgraphData,
-      aumHistory, // Add AUM history to props
+      aumData, // Will be null if API key is missing or other errors occur
+      arrData, // Will be null if errors occur
     },
     revalidate: 3600, // Revalidate every hour
   }
