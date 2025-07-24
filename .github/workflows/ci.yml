@@ -151,7 +151,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: browserstack-cypress-report
-          path: ui/browserstack/reports/report.log
+          path: browserstack/reports/report.log
 
       - name: Cache node modules
         uses: actions/cache/save/@v4
