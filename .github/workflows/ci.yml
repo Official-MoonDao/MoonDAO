@@ -188,7 +188,7 @@ jobs:
           BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           BROWSERSTACK_LOCAL: true
-          BROWSERSTACK_LOCAL_IDENTIFIER: "moon-dao-tests"
+          BROWSERSTACK_LOCAL_IDENTIFIER: "moon-dao-tests-${BUILD_NUMBER}"
           CYPRESS_BASE_URL: "http://localhost:3000"
           BUILD_NUMBER: ${{ github.run_id }}
 

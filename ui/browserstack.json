@@ -71,7 +71,7 @@
   "connection_settings": {
     "local": true,
     "local_mode": "always-on",
-    "local_identifier": "moon-dao-tests"
+    "local_identifier": "moon-dao-tests-${BUILD_NUMBER}"
   },
   "disable_usage_reporting": false
 }
