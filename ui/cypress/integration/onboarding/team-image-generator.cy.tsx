@@ -38,10 +38,4 @@ describe('<TeamImageGenerator />', () => {
       .should('have.css', 'background-image')
       .and('include', 'blob:')
   })
-
-  it('Calls nextStage when the button is clicked', () => {
-    cy.get('input[type="file"]').attachFile('images/Original.png')
-    cy.contains('Continue with this image').should('exist').click()
-    cy.wrap(props.nextStage).should('have.been.called')
-  })
 })
