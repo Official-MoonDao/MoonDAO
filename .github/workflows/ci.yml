@@ -157,51 +157,51 @@ jobs:
       - name: Install browserstack-cypress-cli
         run: npm install -g browserstack-cypress-cli
 
-            - name: Start server and run E2E tests
+      - name: Start server and run E2E tests
         working-directory: ui
         run: |
           # Start server in background - Next.js production mode
           echo "Starting Next.js server..."
           yarn next start -p 3000 &
           SERVER_PID=$!
-          
+
           # Give server time to initialize
           sleep 10
 
           # Wait for server to be ready with comprehensive health check
           echo "Waiting for server to start..."
-          timeout 180 bash -c 'while ! curl -s -f http://localhost:3000 > /dev/null; do echo "Still waiting for server..."; sleep 3; done'
-          
+          timeout 180 bash -c 'until curl -s http://localhost:3000 > /dev/null; do echo "Still waiting for server..."; sleep 3; done'
+
           # Verify server accessibility
           echo "Server accessibility check:"
           curl -I http://localhost:3000 || echo "❌ Server health check failed"
-          
+
           # Test a simple page request
           echo "Testing page load:"
           curl -s -o /dev/null -w "HTTP Status: %{http_code}, Time: %{time_total}s\n" http://localhost:3000 || echo "❌ Page request failed"
-          
+
           # Network and port debugging
           echo "Network diagnostics:"
-          echo "- Listening on port 3000: $(ss -tlnp | grep :3000 || echo 'Not found')"
-          echo "- Network interfaces: $(ip addr show | grep -E 'inet.*scope global' || echo 'No global IPs')"
-          
+          echo "- Listening on port 3000: $(netstat -an | grep :3000 || echo 'Not found')"
+          echo "- Process using port 3000: $(lsof -ti:3000 || echo 'No process found')"
+
           # Environment debugging
           echo "BrowserStack Environment:"
           echo "- BROWSERSTACK_LOCAL: $BROWSERSTACK_LOCAL"
           echo "- BROWSERSTACK_LOCAL_IDENTIFIER: $BROWSERSTACK_LOCAL_IDENTIFIER"
           echo "- CYPRESS_BASE_URL: $CYPRESS_BASE_URL"
           echo "- BUILD_NUMBER: $BUILD_NUMBER"
-          
+
           # Show browserstack.json config
           echo "BrowserStack config:"
-          cat browserstack.json | jq '.connection_settings, .run_settings.build_name, .run_settings.parallels' || echo "Failed to read config"
-          
+          cat browserstack.json || echo "Failed to read config file"
+
           # Test if we can access the app from the expected URL
           echo "Testing app accessibility:"
-          echo "- Home page: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 2>/dev/null)"
+          echo "- Home page status: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 2>/dev/null || echo 'Failed')"
           echo "- App layout element check:"
-          curl -s http://localhost:3000 | grep -o '<[^>]*id="app-layout"[^>]*>' || echo "No app-layout element found"
-          
+          curl -s http://localhost:3000 | grep 'id="app-layout"' || echo "No app-layout element found"
+
           # Run tests with detailed logging and let BrowserStack manage local connection
           echo "Starting Cypress tests..."
           echo "Command: browserstack-cypress run --force-upload --verbose"
@@ -211,6 +211,8 @@ jobs:
           echo "Cleaning up..."
           kill $SERVER_PID || true
         env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           BROWSERSTACK_LOCAL: true
           BROWSERSTACK_LOCAL_IDENTIFIER: "moon-dao-tests"
           CYPRESS_BASE_URL: "http://localhost:3000"
