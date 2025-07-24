@@ -81,7 +81,7 @@ export default function SpaceIndex() {
         Cast your vote for active proposals and view the vote record and history
         for all past proposals. You can{' '}
         <u>
-          <Link href="/submit">submit a proposal</Link>
+          <Link href="/proposals">submit a proposal</Link>
         </u>{' '}
         to receive financing or support from the MoonDAO community. Please refer
         to{' '}
@@ -97,7 +97,7 @@ export default function SpaceIndex() {
         for more details on the project system and governance processes.
       </p>
       <StandardButtonPlus
-        link="/submit"
+        link="/proposals"
         className="mt-4 gradient-2 rounded-full"
       >
         Create a Proposal

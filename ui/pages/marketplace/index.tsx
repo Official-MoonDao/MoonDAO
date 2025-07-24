@@ -126,7 +126,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
         <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
           <div className="w-full flex flex-row min-[800px]:flex-row gap-4 items-center">
             {/* Search Bar */}
-            <div className="w-fit max-w-[260px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 px-3 py-1">
+            <div className="w-fit max-w-[260px] bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl px-3 py-1">
               <Search
                 className="w-full flex-grow"
                 input={input}
@@ -161,7 +161,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
           isProfile
         >
           <div className="flex flex-row w-full">
-            <div className="p-4 md:px-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 lg:p-8 rounded-[2vmax] shadow-2xl md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1400px]">
+            <div className="p-4 md:px-8 bg-black/20 backdrop-blur-sm border border-white/10 lg:p-8 rounded-[2vmax] md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1400px]">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-fr">
                 {filteredListings && filteredListings.length > 0 ? (
                   (() => {
@@ -201,7 +201,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 
               {/* Pagination */}
               {filteredListings && filteredListings.length > ITEMS_PER_PAGE && (
-                <div className="w-full rounded-[2vmax] bg-gradient-to-b from-slate-700/20 to-slate-800/30 border border-slate-600/30 p-6 mt-8">
+                <div className="w-full rounded-[2vmax] bg-black/20 backdrop-blur-sm border border-white/10 p-6 mt-8">
                   <div className="w-full flex justify-center">
                     <PaginationButtons
                       handlePageChange={handlePageChange}

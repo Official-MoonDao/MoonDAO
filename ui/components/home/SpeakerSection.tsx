@@ -32,7 +32,7 @@ export default function SpeakerSection() {
                 alt="Charlie Duke"
                 logo="/assets/Speaker-Charlie-Duke.png"
                 name="Charlie Duke"
-                subtitle="Apollo 16 Moonwalker, NASA Astronaut"
+                subtitle="Apollo 16 Moonwalker"
                 link="https://www.youtube.com/watch?v=79dThcv3PdU"
               />
               <Speaker

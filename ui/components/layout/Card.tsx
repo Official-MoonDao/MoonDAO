@@ -46,7 +46,7 @@ export default function Card({
     <>
       {paragraph}
       {metadata?.id !== undefined ? (
-        <div id="details-container" className="">
+        <div id="details-container" className="font-RobotoMono">
           <p id="org-description">
             {metadata.description && metadata.description.length > 100
               ? `${metadata.description.slice(0, 100)}...`
@@ -58,7 +58,7 @@ export default function Card({
         </div>
       ) : (
         profile && (
-          <div id="details-container" className="">
+          <div id="details-container" className="font-RobotoMono">
             <p id="org-description">This citizen has yet to add a profile.</p>
             <div id="handle-container">Discord: NONE</div>
           </div>

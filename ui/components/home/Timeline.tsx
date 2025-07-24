@@ -88,7 +88,7 @@ const timelineEvents: TimelineEvent[] = [
     year: 2025,
     title: 'Starship Access',
     description:
-      '10,000s of engaged members. Fundraise for ownership of a Starship or equivalent launch vehicle, and guaranteed refuel missions.',
+      'Fundraise for ownership of a Starship or equivalent launch vehicle, and guaranteed refuel missions.',
     icon: '/assets/icon-plane.svg',
     iconAlt: 'Starship Ownership',
   },
@@ -97,7 +97,7 @@ const timelineEvents: TimelineEvent[] = [
     year: 2026,
     title: 'Settlement Design',
     description:
-      '100,000s of engaged members. Design of major lunar settlement components completed, ready for manufacturing on Earth.',
+      'Design of major lunar settlement components completed, ready for manufacturing on Earth.',
     icon: '/assets/icon-project.svg',
     iconAlt: 'Settlement Design',
   },
@@ -106,7 +106,7 @@ const timelineEvents: TimelineEvent[] = [
     year: 2027,
     title: 'Manufacturing',
     description:
-      '1,000,000s of engaged members. Selection of first Moon settlers. Manufacturing of key components with Earth-based simulations.',
+      'Selection of first Moon settlers. Manufacturing of key components with Earth-based simulations.',
     icon: '/assets/icon-contract.svg',
     iconAlt: 'Manufacturing',
   },
@@ -115,14 +115,14 @@ const timelineEvents: TimelineEvent[] = [
     year: 2028,
     title: 'Ready for Launch',
     description:
-      '10,000,000s of engaged members. Components tested and ready for launch with Earth-based simulation complete.',
+      'Components tested and ready for launch with Earth-based simulation complete.',
     icon: '/assets/icon-lander.svg',
     iconAlt: 'Ready for Launch',
   },
   {
     date: '2029',
     year: 2029,
-    title: 'Moon Construction',
+    title: 'Base Construction',
     description:
       'Infrastructure is sent to the Moon and the first crew begins construction of the lunar settlement.',
     icon: '/assets/icon-globe.svg',

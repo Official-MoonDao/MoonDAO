@@ -61,6 +61,7 @@ contract Config is Script {
         VMOONEY_ADDRESSES[MAINNET] = ethJson.readAddress(".vMOONEYToken");
         VMOONEY_ADDRESSES[POLYGON] = polygonJson.readAddress(".vMOONEYToken");
         VMOONEY_ADDRESSES[SEP] = sepJson.readAddress(".vMOONEYToken");
+        VMOONEY_ADDRESSES[ARB_SEP] = arbSepJson.readAddress(".vMOONEYToken");
 
         STARGATE_POOLS[SEP] = 0x9Cc7e185162Aa5D1425ee924D97a87A0a34A0706;
         STARGATE_POOLS[ARB_SEP] = 0x6fddB6270F6c71f31B62AE0260cfa8E2e2d186E0;
@@ -149,8 +150,8 @@ contract Config is Script {
         FEE_HOOK_ADDRESSES[SEP] = sepJson.readAddress(".FeeHook");
         FEE_HOOK_ADDRESSES[ARBITRUM] = arbJson.readAddress(".FeeHook");
 
-        TEST_TOKEN_ADDRESSES[ARB_SEP] = 0x53acb7A819A579436527B22eFbf4be81f24EfC33;
-        TEST_TOKEN_ADDRESSES[SEP] = 0x5016B1fed78cCDad9bD426C9426B0f557B75fAA1;
+        TEST_TOKEN_ADDRESSES[ARB_SEP] = 0x1Bbb4C328874E9A41B435cC3f19fC916d1C4b7Fa;
+        TEST_TOKEN_ADDRESSES[SEP] = 0x62075D143Bb826DA711d5211c06D2A95056733E1;
 
         MISSION_CREATOR_ADDRESSES[ARBITRUM] = arbJson.readAddress(".MissionCreator");
         MISSION_CREATOR_ADDRESSES[SEP] = sepJson.readAddress(".MissionCreator");

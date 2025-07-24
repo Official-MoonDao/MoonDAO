@@ -10,8 +10,10 @@ import Callout3 from '../components/home/Callout3'
 import Feature from '../components/home/Feature'
 import GovernanceSection from '../components/home/GovernanceSection'
 import Hero from '../components/home/Hero'
+import LaunchpadSection from '../components/home/LaunchpadSection'
 import NetworkSection from '../components/home/NetworkSection'
 import PartnerSection from '../components/home/PartnerSection'
+import ProjectsSection from '../components/home/ProjectsSection'
 import SpeakerSection from '../components/home/SpeakerSection'
 import Timeline from '../components/home/Timeline'
 import Container from '../components/layout/Container'
@@ -55,7 +57,9 @@ export default function Home({ linkSource }: any) {
         <Callout1 />
         <Callout2 />
         <Feature />
+        <LaunchpadSection />
         <GovernanceSection />
+        <ProjectsSection />
         <NetworkSection />
         <Timeline />
         <SpeakerSection />

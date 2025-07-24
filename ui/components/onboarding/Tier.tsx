@@ -37,11 +37,11 @@ export default function Tier({
   return (
     <section
       id="callout-card-container"
-      className={`bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl md:bg-transparent z-[50] ${
+      className={`bg-black/20 backdrop-blur-sm border border-white/10 rounded-[2vmax] md:bg-transparent z-[50] ${
         compact && 'max-w-[900px]'
       }`}
     >
-      <div className="bg-gradient-to-b from-slate-700/30 to-slate-800/40 md:rounded-[2vmax] p-8 border border-slate-600/30">
+      <div className="bg-black/20 backdrop-blur-sm border border-white/10 md:rounded-[2vmax] p-8">
         <div
           className={`w-full transition-all duration-150 ${
             !compact && 'pb-10'
@@ -119,7 +119,7 @@ export default function Tier({
                 return (
                   <div
                     key={`${label}-tier-point-${i}`}
-                    className="flex flex-row items-start pb-2 rounded-lg bg-slate-800/30 border border-slate-600/30 p-3 mb-2 space-x-3"
+                    className="flex flex-row items-start pb-2 rounded-lg bg-black/20 backdrop-blur-sm border border-white/10 p-3 mb-2 space-x-3"
                   >
                     <Image
                       alt="Bullet Point"

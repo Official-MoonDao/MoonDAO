@@ -22,7 +22,7 @@ contract ERC5643Test is Test {
     address user1 = address(0x43b8880beE7fAb93F522AC8e121FF13fB77AF711);
     address user2 = address(0x2);
     address user3 = address(0x3);
-    address user4 = address(0xd1916F254866E4e70abA86F0dD668DD5942E032a);
+    address user4 = address(0x69420);
     uint256 tokenId = 0;
     uint256 tokenId2 = 1;
     uint256 tokenId3= 2;

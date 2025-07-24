@@ -14,7 +14,7 @@ contract SmartWalletChecker is Ownable {
     event RevokeWallet(address);
     event WhitelistEnabled(bool);
 
-    constructor(bool _isWhitelistEnabled) public Ownable() {
+    constructor(bool _isWhitelistEnabled) public Ownable(msg.sender) {
         // Set state variables
         setIsWhitelistEnabled(_isWhitelistEnabled);
     }
