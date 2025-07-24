@@ -184,7 +184,7 @@ export default function NativeToMooney({ selectedChain }: any) {
 
           {/* Arrow Separator */}
           <div className="w-full flex justify-center">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full shadow-lg transform hover:scale-110 transition-transform duration-200 cursor-pointer">
+            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full shadow-lg">
               <ArrowDownIcon width={14} height={14} className="text-white" />
             </div>
           </div>

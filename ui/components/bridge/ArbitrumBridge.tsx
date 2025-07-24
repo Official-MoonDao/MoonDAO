@@ -28,7 +28,7 @@ export default function ArbitrumBridge() {
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const [amount, setAmount] = useState<any>(0)
-  const [inputToken, setInputToken] = useState('eth')
+  const [inputToken, setInputToken] = useState('mooney')
   const bridgeType = 'deposit'
   const [nativeBalance, setNativeBalance] = useState<any>(0)
   const [ethMooneyBalance, setEthMooneyBalance] = useState<any>()
@@ -255,7 +255,7 @@ export default function ArbitrumBridge() {
   }, [setSelectedChain])
 
   return (
-    <div className="w-full max-w-2xl">
+    <div className="w-full">
       <div className="mb-4">
         <p className="text-gray-300 text-base leading-relaxed">
           This bridge transfers your ETH and MOONEY tokens from Ethereum mainnet to Arbitrum. 

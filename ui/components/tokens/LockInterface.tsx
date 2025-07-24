@@ -29,6 +29,12 @@ export default function LockInterface() {
 
   const [refresh, setRefresh] = useState(false)
 
+  // Helper function to format MOONEY amounts as whole numbers
+  const formatMooneyAmount = (amount: any) => {
+    if (!amount) return '0'
+    return Math.round(parseFloat(ethers.utils.formatEther(amount))).toString()
+  }
+
   const mooneyContract = useContract({
     address: MOONEY_ADDRESSES[chainSlug],
     abi: ERC20ABI,
@@ -117,7 +123,7 @@ export default function LockInterface() {
   useEffect(() => {
     if (hasLock && VMOONEYLock) {
       if (!lockAmount || lockAmount === '' || lockAmount === '0') {
-        setLockAmount(ethers.utils.formatEther(VMOONEYLock[0]))
+        setLockAmount(formatMooneyAmount(VMOONEYLock[0]))
       }
       const origTime = {
         value: BigNumber.from(VMOONEYLock[1]),
@@ -213,6 +219,7 @@ export default function LockInterface() {
                           <Balance
                             balance={MOONEYBalance?.toString() / 1e18}
                             loading={MOONEYBalanceLoading}
+                            decimals={0}
                           />
                         </div>
                         <Image
@@ -248,7 +255,7 @@ export default function LockInterface() {
                         }
                         min={
                           VMOONEYLock
-                            ? ethers.utils.formatEther(VMOONEYLock?.[0])
+                            ? formatMooneyAmount(VMOONEYLock?.[0])
                             : 0
                         }
                         onChange={(e: any) => {
@@ -269,24 +276,24 @@ export default function LockInterface() {
                           setWantsToIncrease(true)
                         }}
                       />
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <span className="text-gray-400 text-sm">
                           MOONEY
                         </span>
                         <button
-                          className="text-blue-400 hover:text-blue-300 font-medium transition-colors px-2 py-1 bg-blue-400/10 hover:bg-blue-400/20 rounded text-xs"
+                          className="text-blue-400 hover:text-blue-300 font-medium transition-colors px-1.5 py-1 bg-blue-400/10 hover:bg-blue-400/20 rounded text-xs flex-shrink-0"
                           disabled={
                             (!MOONEYBalance || +MOONEYBalance?.toString() === 0) && !hasLock
                           }
                           onClick={() => {
                             setLockAmount(
                               VMOONEYLock
-                                ? ethers.utils.formatEther(
+                                ? formatMooneyAmount(
                                     BigNumber.from(VMOONEYLock[0]).add(
                                       MOONEYBalance || 0
                                     )
                                   )
-                                : ethers.utils.formatEther(
+                                : formatMooneyAmount(
                                     MOONEYBalance?.value.toString() || '0'
                                   )
                             )
@@ -297,9 +304,9 @@ export default function LockInterface() {
                         </button>
                         {hasLock && VMOONEYLock && (
                           <button
-                            className="text-orange-400 hover:text-orange-300 font-medium transition-colors px-2 py-1 bg-orange-400/10 hover:bg-orange-400/20 rounded text-xs"
+                            className="text-orange-400 hover:text-orange-300 font-medium transition-colors px-1.5 py-1 bg-orange-400/10 hover:bg-orange-400/20 rounded text-xs flex-shrink-0"
                             onClick={() => {
-                              setLockAmount(ethers.utils.formatEther(VMOONEYLock[0]))
+                              setLockAmount(formatMooneyAmount(VMOONEYLock[0]))
                               setWantsToIncrease(true)
                             }}
                           >
@@ -441,14 +448,14 @@ export default function LockInterface() {
                         <div className="text-right min-w-0 flex-shrink-0">
                           <span className="text-white text-xl font-RobotoMono">
                             {calculateVMOONEY({
-                              CurrentMOONEYLock: ethers.utils.formatEther(
+                              CurrentMOONEYLock: formatMooneyAmount(
                                 VMOONEYLock?.[0] || 0
                               ),
                               MOONEYAmount:
                                 +lockAmount ||
-                                ethers.utils.formatEther(
+                                parseFloat(formatMooneyAmount(
                                   VMOONEYLock?.[0] || 0
-                                ),
+                                )),
                               VMOONEYAmount: transformNumber(
                                 VMOONEYBalance
                                   ? +VMOONEYBalance?.toString() / 10 ** 18
@@ -478,14 +485,14 @@ export default function LockInterface() {
                               const vMooneyAmount = parseFloat(
                                 calculateVMOONEY({
                                   CurrentMOONEYLock:
-                                    ethers.utils.formatEther(
+                                    formatMooneyAmount(
                                       VMOONEYLock?.[0] || 0
                                     ),
                                   MOONEYAmount:
                                     +lockAmount ||
-                                    ethers.utils.formatEther(
+                                    parseFloat(formatMooneyAmount(
                                       VMOONEYLock?.[0] || 0
-                                    ),
+                                    )),
                                   VMOONEYAmount: transformNumber(
                                     VMOONEYBalance
                                       ? +VMOONEYBalance?.toString() /
