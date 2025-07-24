@@ -148,6 +148,7 @@ jobs:
 
       - name: Cache node modules
         uses: actions/cache/save/@v4
+        if: always()
         with:
           path: |
             ui/node_modules
@@ -158,6 +159,7 @@ jobs:
 
       - name: Cache Next.js build
         uses: actions/cache/save@v4
+        if: always()
         with:
           path: ui/.next/cache
           key: next-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
