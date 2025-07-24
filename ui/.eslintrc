@@ -1,10 +1,5 @@
 {
-  "extends": [
-    "next",
-    "prettier",
-    "plugin:cypress/recommended",
-    "plugin:@next/next/recommended"
-  ],
+  "extends": ["next/core-web-vitals", "prettier", "plugin:cypress/recommended"],
   "rules": {
     "sort-imports": 0,
     "react/no-unescaped-entities": 0,
