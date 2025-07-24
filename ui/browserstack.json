@@ -54,7 +54,6 @@
       "next.config.js",
       "i18n.js",
       "next-sitemap.config.js",
-      "cypress/fixtures/**",
       "cypress/support/**",
       "cypress/mock/**",
       "cypress/videos/**",
