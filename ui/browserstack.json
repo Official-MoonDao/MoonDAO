@@ -39,6 +39,7 @@
     },
     "project_name": "MoonDAO",
     "build_name": "MoonDAO-E2E-Tests",
+    "build_identifier": "${BUILD_NUMBER}",
     "parallels": 5,
     "exclude": [
       ".next/**",

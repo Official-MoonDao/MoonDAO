@@ -160,14 +160,30 @@ jobs:
       - name: Start server and run E2E tests
         working-directory: ui
         run: |
-          # Start server in background
-          yarn next start -p 3000 &
+          # Start server in background with host binding for BrowserStack
+          yarn next start -p 3000 -H 0.0.0.0 &
           SERVER_PID=$!
 
           # Wait for server to be ready with proper health check
-          timeout 60 bash -c 'until curl -s http://localhost:3000 > /dev/null; do sleep 1; done'
+          echo "Waiting for server to start..."
+          timeout 120 bash -c 'until curl -s http://localhost:3000 > /dev/null; do echo "Waiting..."; sleep 2; done'
+          echo "Server is ready!"
 
-          # Run tests with proper local identifier
+          # Verify server is responding
+          curl -I http://localhost:3000 || echo "Server health check failed"
+
+          # Add debugging information
+          echo "Server info:"
+          echo "- Port 3000 status: $(netstat -an | grep :3000 || echo 'Port not found')"
+          echo "- Server response: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 2>/dev/null || echo 'No response')"
+
+          # List environment variables for debugging
+          echo "BrowserStack Environment:"
+          echo "- BROWSERSTACK_LOCAL: $BROWSERSTACK_LOCAL"
+          echo "- BROWSERSTACK_LOCAL_IDENTIFIER: $BROWSERSTACK_LOCAL_IDENTIFIER"
+          echo "- CYPRESS_BASE_URL: $CYPRESS_BASE_URL"
+
+          # Run tests with proper local identifier and base URL
           browserstack-cypress run --force-upload --verbose
 
           # Clean up
@@ -175,6 +191,8 @@ jobs:
         env:
           BROWSERSTACK_LOCAL: true
           BROWSERSTACK_LOCAL_IDENTIFIER: "moon-dao-tests"
+          CYPRESS_BASE_URL: "http://localhost:3000"
+          BUILD_NUMBER: ${{ github.run_id }}
 
   # Component tests - can run in parallel with E2E tests
   component-tests:
