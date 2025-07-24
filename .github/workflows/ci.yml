@@ -113,8 +113,7 @@ jobs:
 
       # Install browserstack-cypress-cli globally
       - name: Install browserstack-cypress-cli
-        run: npm install --save-dev cypress-terminal-report
-
+        run: npm install -g cypress-terminal-report
 
       # Run Cypress E2E tests on BrowserStack with local testing enabled
       - name: Run Cypress E2E Testing on BrowserStack
