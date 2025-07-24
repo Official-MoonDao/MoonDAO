@@ -212,7 +212,7 @@ export default function Lock() {
                 {',  '}
                 <button
                   className="underline"
-                  onClick={() => router.push('/get-mooney')}
+                                    onClick={() => router.push('/mooney?tab=buy')}
                 >
                   {'swap for $MOONEY'}
                 </button>

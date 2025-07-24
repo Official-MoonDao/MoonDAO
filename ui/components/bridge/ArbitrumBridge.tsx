@@ -257,7 +257,7 @@ export default function ArbitrumBridge() {
   return (
     <div className="w-full max-w-2xl">
       <div className="mb-4">
-        <p className="text-gray-400 text-sm">
+        <p className="text-gray-300 text-base leading-relaxed">
           This bridge transfers your ETH and MOONEY tokens from Ethereum mainnet to Arbitrum. 
           Arbitrum offers faster transactions and lower fees while maintaining full security.
         </p>

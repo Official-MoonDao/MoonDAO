@@ -18,10 +18,10 @@ export default function Tab({
   return (
     <button
       className={`
-          flex justify-center items-center text-white px-4 py-1 rounded-lg transition-all duration-200 h-9 flex-shrink-0
+          flex justify-center items-center text-white px-4 py-1 rounded-lg transition-all duration-300 h-9 flex-shrink-0 overflow-hidden
           ${currentTab === tab 
-            ? 'bg-gradient-to-b from-slate-600/50 to-slate-700/50 border border-slate-500/50 shadow-lg' 
-            : 'hover:bg-slate-700/30 border border-transparent'
+            ? 'bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg shadow-blue-500/25' 
+            : 'hover:bg-white/10 bg-black/20'
           }
           ${className}
         `}
@@ -54,7 +54,7 @@ export default function Tab({
             )}
           </div>
         )}
-        <div id="text-container" className={`${currentTab === tab ? 'text-white font-medium' : 'text-slate-300'} transition-colors duration-200 whitespace-nowrap text-sm`}>
+        <div id="text-container" className={`${currentTab === tab ? 'text-white font-semibold drop-shadow-sm' : 'text-gray-300 font-medium'} transition-all duration-300 whitespace-nowrap text-sm`}>
           {children}
         </div>
       </div>

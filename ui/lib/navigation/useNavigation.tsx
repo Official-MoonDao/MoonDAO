@@ -54,19 +54,6 @@ export default function useNavigation(citizen: any) {
         ],
       },
       {
-        name: '$MOONEY',
-        icon: CircleStackIcon,
-        href: '/get-mooney',
-        children: [
-          {
-            name: 'Buy',
-            href: '/get-mooney',
-          },
-          { name: 'Lock', href: '/lock' },
-          { name: 'Bridge', href: '/bridge' },
-        ],
-      },
-      {
         name: 'Projects',
         icon: WrenchScrewdriverIcon,
         href: '/projects',
@@ -92,6 +79,11 @@ export default function useNavigation(citizen: any) {
           { name: 'Analytics', href: '/analytics' },
           { name: 'FAQ', href: '/faq' },
         ],
+      },
+      {
+        name: '$MOONEY',
+        icon: CircleStackIcon,
+        href: '/mooney',
       },
       {
         name: 'Marketplace',
