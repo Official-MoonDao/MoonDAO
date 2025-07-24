@@ -81,6 +81,14 @@ jobs:
           restore-keys: |
             ui-${{ runner.os }}-
 
+      - name: Cache Cypress binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
+          restore-keys: |
+            cypress-${{ runner.os }}-
+
       - name: Cache Next.js build
         uses: actions/cache@v4
         with:
@@ -92,6 +100,10 @@ jobs:
       - name: Install dependencies
         working-directory: ui
         run: yarn install --frozen-lockfile
+
+      - name: Install Cypress binary
+        working-directory: ui
+        run: npx cypress install
 
       - name: Build application
         working-directory: ui
@@ -119,6 +131,14 @@ jobs:
             ui/node_modules
             ~/.cache/yarn
           key: ${{ needs.build.outputs.cache-key }}
+
+      - name: Restore Cypress binary cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
+          restore-keys: |
+            cypress-${{ runner.os }}-
 
       - name: Restore Next.js build cache
         uses: actions/cache@v4
@@ -182,6 +202,14 @@ jobs:
             ~/.cache/yarn
           key: ${{ needs.build.outputs.cache-key }}
 
+      - name: Restore Cypress binary cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
+          restore-keys: |
+            cypress-${{ runner.os }}-
+
       - name: Restore Next.js build cache
         uses: actions/cache@v4
         with:
@@ -198,10 +226,6 @@ jobs:
           component: true
           browser: chrome
           record: false
-          parallel: true
-          group: "component-tests-${{ matrix.test-group }}"
-        env:
-          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
 
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v4
@@ -216,62 +240,5 @@ jobs:
         if: always()
         with:
           name: cypress-videos-component-${{ matrix.test-group }}
-          path: ui/cypress/videos
-          retention-days: 7
-
-  # Optional: Local E2E tests as fallback/additional coverage
-  e2e-local:
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'pull_request' # Only run on PRs to save resources
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-          cache: "yarn"
-          cache-dependency-path: ui/yarn.lock
-
-      - name: Restore node modules cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ui/node_modules
-            ~/.cache/yarn
-          key: ${{ needs.build.outputs.cache-key }}
-
-      - name: Restore Next.js build cache
-        uses: actions/cache@v4
-        with:
-          path: ui/.next
-          key: next-${{ runner.os }}-${{ github.sha }}
-
-      - name: Run Local E2E Tests
-        uses: cypress-io/github-action@v6
-        with:
-          working-directory: ui
-          install: false
-          start: yarn next start -p 3002
-          wait-on: "http://localhost:3002"
-          browser: chrome
-          spec: cypress/e2e/**/*.cy.ts
-          record: false
-
-      - name: Upload Cypress Screenshots
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: cypress-screenshots-e2e-local
-          path: ui/cypress/screenshots
-          retention-days: 7
-
-      - name: Upload Cypress Videos
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: cypress-videos-e2e-local
           path: ui/cypress/videos
           retention-days: 7
