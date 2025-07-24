@@ -87,7 +87,7 @@ export default function useNavigation(citizen: any) {
         children: [
           { name: 'Buy MOONEY', href: '/mooney#buy' },
           { name: 'Lock for Voting Power', href: '/mooney#lock' },
-          { name: 'Bridge Tokens', href: '/mooney#bridge' },
+          { name: 'Bridge Tokens', href: '/bridge' },
         ],
       },
       {

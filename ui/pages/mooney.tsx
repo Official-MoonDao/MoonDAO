@@ -451,30 +451,6 @@ export default function Mooney() {
           </div>
         </section>
 
-        {/* Bridge Section */}
-        <section id="bridge" className="py-12 px-6 bg-gradient-to-br from-blue-900/20 to-purple-900/20 w-full">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl md:text-4xl font-bold font-GoodTimes text-white mb-4">
-                Bridge to Arbitrum
-              </h2>
-              <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-                Transfer MOONEY between Ethereum and Arbitrum for lower fees.
-              </p>
-            </div>
-            
-            <div className="max-w-xl mx-auto">
-              <div className="bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-4 border border-white/10">
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <ArbitrumBridge />
-                  </Suspense>
-                </ErrorBoundary>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Call to Action Section */}
         <section className="py-16 px-6 bg-gradient-to-br from-purple-900/30 to-blue-900/30 w-full">
           <div className="max-w-4xl mx-auto text-center space-y-6">
