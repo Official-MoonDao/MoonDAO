@@ -167,13 +167,14 @@ jobs:
           # Wait for server to be ready with proper health check
           timeout 60 bash -c 'until curl -s http://localhost:3000 > /dev/null; do sleep 1; done'
 
-          # Run tests
-          BROWSERSTACK_LOCAL=true browserstack-cypress run --force-upload --verbose
+          # Run tests with proper local identifier
+          browserstack-cypress run --force-upload --verbose
 
           # Clean up
           kill $SERVER_PID || true
         env:
           BROWSERSTACK_LOCAL: true
+          BROWSERSTACK_LOCAL_IDENTIFIER: "moon-dao-tests"
 
   # Component tests - can run in parallel with E2E tests
   component-tests:
