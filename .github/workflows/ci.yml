@@ -50,11 +50,8 @@ env:
   BENDYSTRAW_API_KEY: ${{secrets.BENDYSTRAW_API_KEY}}
 
 jobs:
-  # Build job - runs once, shared by all test jobs
-  build:
+  cypress-run:
     runs-on: ubuntu-latest
-    outputs:
-      cache-key: ${{ steps.cache-keys.outputs.cache-key }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,18 +63,13 @@ jobs:
           cache: "yarn"
           cache-dependency-path: ui/yarn.lock
 
-      - name: Generate cache keys
-        id: cache-keys
-        run: |
-          echo "cache-key=ui-${{ runner.os }}-${{ hashFiles('ui/yarn.lock', 'ui/package.json') }}" >> $GITHUB_OUTPUT
-
       - name: Cache node modules
         uses: actions/cache@v4
         with:
           path: |
             ui/node_modules
             ~/.cache/yarn
-          key: ${{ steps.cache-keys.outputs.cache-key }}
+          key: ui-${{ runner.os }}-${{ hashFiles('ui/yarn.lock', 'ui/package.json') }}
           restore-keys: |
             ui-${{ runner.os }}-
 
@@ -97,56 +89,8 @@ jobs:
           restore-keys: |
             next-${{ runner.os }}-
 
-      - name: Install dependencies
-        working-directory: ui
-        run: yarn install --frozen-lockfile
-
-      - name: Install Cypress binary
-        working-directory: ui
-        run: npx cypress install
-
-      - name: Build application
-        working-directory: ui
-        run: yarn build
-
-  # E2E tests on BrowserStack - can run in parallel with component tests
-  e2e-tests:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-          cache: "yarn"
-          cache-dependency-path: ui/yarn.lock
-
-      - name: Restore node modules cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ui/node_modules
-            ~/.cache/yarn
-          key: ${{ needs.build.outputs.cache-key }}
-
-      - name: Restore Cypress binary cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/Cypress
-          key: cypress-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
-          restore-keys: |
-            cypress-${{ runner.os }}-
-
-      - name: Restore Next.js build cache
-        uses: actions/cache@v4
-        with:
-          path: ui/.next
-          key: next-${{ runner.os }}-${{ github.sha }}
-
-      - name: BrowserStack Env Setup
+      # BrowserStack Environment Setup - Required before any other BrowserStack actions
+      - name: "BrowserStack Env Setup"
         uses: "browserstack/github-actions/setup-env@master"
         with:
           username: ${{ secrets.BROWSERSTACK_USERNAME }}
@@ -154,9 +98,28 @@ jobs:
           build-name: "BUILD_INFO"
           project-name: "REPO_NAME"
 
+      - name: Install dependencies
+        working-directory: ui
+        run: yarn install --frozen-lockfile
+
+      - name: Install npm dependencies
+        working-directory: ui
+        run: npm install --legacy-peer-deps
+
+      - name: Install Cypress binary
+        working-directory: ui
+        run: npx cypress install
+
+      # Build the web application
+      - name: Build next app
+        working-directory: ui
+        run: yarn build
+
+      # Install browserstack-cypress-cli globally
       - name: Install browserstack-cypress-cli
         run: npm install -g browserstack-cypress-cli
 
+      # Start the web server for testing
       - name: Start server and run E2E tests
         working-directory: ui
         run: |
@@ -165,47 +128,17 @@ jobs:
           yarn next start -p 3000 &
           SERVER_PID=$!
 
-          # Give server time to initialize
-          sleep 10
-
-          # Wait for server to be ready with comprehensive health check
+          # Wait for server to be ready
           echo "Waiting for server to start..."
-          timeout 180 bash -c 'until curl -s http://localhost:3000 > /dev/null; do echo "Still waiting for server..."; sleep 3; done'
+          sleep 15
 
-          # Verify server accessibility
-          echo "Server accessibility check:"
+          # Simple health check
+          echo "Server health check:"
           curl -I http://localhost:3000 || echo "❌ Server health check failed"
 
-          # Test a simple page request
-          echo "Testing page load:"
-          curl -s -o /dev/null -w "HTTP Status: %{http_code}, Time: %{time_total}s\n" http://localhost:3000 || echo "❌ Page request failed"
-
-          # Network and port debugging
-          echo "Network diagnostics:"
-          echo "- Listening on port 3000: $(netstat -an | grep :3000 || echo 'Not found')"
-          echo "- Process using port 3000: $(lsof -ti:3000 || echo 'No process found')"
-
-          # Environment debugging
-          echo "BrowserStack Environment:"
-          echo "- BROWSERSTACK_LOCAL: $BROWSERSTACK_LOCAL"
-          echo "- BROWSERSTACK_LOCAL_IDENTIFIER: $BROWSERSTACK_LOCAL_IDENTIFIER"
-          echo "- CYPRESS_BASE_URL: $CYPRESS_BASE_URL"
-          echo "- BUILD_NUMBER: $BUILD_NUMBER"
-
-          # Show browserstack.json config
-          echo "BrowserStack config:"
-          cat browserstack.json || echo "Failed to read config file"
-
-          # Test if we can access the app from the expected URL
-          echo "Testing app accessibility:"
-          echo "- Home page status: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 2>/dev/null || echo 'Failed')"
-          echo "- App layout element check:"
-          curl -s http://localhost:3000 | grep 'id="app-layout"' || echo "No app-layout element found"
-
-          # Run tests with detailed logging and let BrowserStack manage local connection
-          echo "Starting Cypress tests..."
-          echo "Command: browserstack-cypress run --force-upload --verbose"
-          browserstack-cypress run --force-upload --verbose || echo "❌ Tests failed to run"
+          # Run tests with BrowserStack local tunnel
+          echo "Starting BrowserStack Cypress tests..."
+          BROWSERSTACK_LOCAL=true browserstack-cypress run --force-upload --verbose || echo "❌ Tests failed to run"
 
           # Clean up
           echo "Cleaning up..."
@@ -218,44 +151,8 @@ jobs:
           CYPRESS_BASE_URL: "http://localhost:3000"
           BUILD_NUMBER: ${{ github.run_id }}
 
-  # Component tests - can run in parallel with E2E tests
-  component-tests:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-          cache: "yarn"
-          cache-dependency-path: ui/yarn.lock
-
-      - name: Restore node modules cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ui/node_modules
-            ~/.cache/yarn
-          key: ${{ needs.build.outputs.cache-key }}
-
-      - name: Restore Cypress binary cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/Cypress
-          key: cypress-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
-          restore-keys: |
-            cypress-${{ runner.os }}-
-
-      - name: Restore Next.js build cache
-        uses: actions/cache@v4
-        with:
-          path: ui/.next
-          key: next-${{ runner.os }}-${{ github.sha }}
-
-      - name: Run Component Tests
+      # Run cypress component tests
+      - name: Run Cypress Component Testing
         uses: cypress-io/github-action@v6
         with:
           working-directory: ui
@@ -266,18 +163,20 @@ jobs:
           browser: chrome
           record: false
 
+      # Save screenshots on fail
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: cypress-screenshots-component
+          name: cypress-screenshots
           path: ui/cypress/screenshots
           retention-days: 7
 
+      # Save test run videos, always
       - name: Upload Cypress Videos
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cypress-videos-component
+          name: cypress-videos
           path: ui/cypress/videos
           retention-days: 7
