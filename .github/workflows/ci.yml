@@ -179,10 +179,6 @@ jobs:
   component-tests:
     runs-on: ubuntu-latest
     needs: build
-    strategy:
-      matrix:
-        # Split component tests into groups for parallel execution
-        test-group: [1, 2, 3]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -231,7 +227,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: cypress-screenshots-component-${{ matrix.test-group }}
+          name: cypress-screenshots-component
           path: ui/cypress/screenshots
           retention-days: 7
 
@@ -239,6 +235,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cypress-videos-component-${{ matrix.test-group }}
+          name: cypress-videos-component
           path: ui/cypress/videos
           retention-days: 7
