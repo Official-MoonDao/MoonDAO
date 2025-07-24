@@ -50,8 +50,10 @@ env:
   BENDYSTRAW_API_KEY: ${{secrets.BENDYSTRAW_API_KEY}}
 
 jobs:
-  cypress-run:
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache-keys.outputs.cache-key }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,13 +65,18 @@ jobs:
           cache: "yarn"
           cache-dependency-path: ui/yarn.lock
 
+      - name: Generate cache keys
+        id: cache-keys
+        run: |
+          echo "cache-key=ui-${{ runner.os }}-${{ hashFiles('ui/yarn.lock', 'ui/package.json') }}" >> $GITHUB_OUTPUT
+
       - name: Cache node modules
         uses: actions/cache@v4
         with:
           path: |
             ui/node_modules
             ~/.cache/yarn
-          key: ui-${{ runner.os }}-${{ hashFiles('ui/yarn.lock', 'ui/package.json') }}
+          key: ${{ steps.cache-keys.outputs.cache-key }}
           restore-keys: |
             ui-${{ runner.os }}-
 
@@ -89,15 +96,6 @@ jobs:
           restore-keys: |
             next-${{ runner.os }}-
 
-      # BrowserStack Environment Setup - Required before any other BrowserStack actions
-      - name: "BrowserStack Env Setup"
-        uses: "browserstack/github-actions/setup-env@master"
-        with:
-          username: ${{ secrets.BROWSERSTACK_USERNAME }}
-          access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-          build-name: "BUILD_INFO"
-          project-name: "REPO_NAME"
-
       - name: Install dependencies
         working-directory: ui
         run: yarn install --frozen-lockfile
@@ -110,22 +108,65 @@ jobs:
         working-directory: ui
         run: npx cypress install
 
-      # Build the web application
-      - name: Build next app
+      - name: Build application
         working-directory: ui
         run: yarn build
 
-      # Install browserstack-cypress-cli globally
+  # E2E tests on BrowserStack - can run in parallel with component tests
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "yarn"
+          cache-dependency-path: ui/yarn.lock
+
+      - name: Restore node modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ui/node_modules
+            ~/.cache/yarn
+          key: ${{ needs.build.outputs.cache-key }}
+
+      - name: Restore Cypress binary cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
+          restore-keys: |
+            cypress-${{ runner.os }}-
+
+      - name: Restore Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: ui/.next
+          key: next-${{ runner.os }}-${{ github.sha }}
+
+      # BrowserStack Environment Setup - Must be in the same job where it's used
+      - name: BrowserStack Env Setup
+        uses: "browserstack/github-actions/setup-env@master"
+        with:
+          username: ${{ secrets.BROWSERSTACK_USERNAME }}
+          access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+          build-name: "BUILD_INFO"
+          project-name: "REPO_NAME"
+
       - name: Install browserstack-cypress-cli
         run: npm install -g browserstack-cypress-cli
 
-      # Start the web server for testing
       - name: Start server and run E2E tests
         working-directory: ui
         run: |
-          # Start server in background - Next.js production mode
+          # Start server in background - Next.js standalone mode
           echo "Starting Next.js server..."
-          yarn next start -p 3000 &
+          PORT=3000 node .next/standalone/server.js &
           SERVER_PID=$!
 
           # Wait for server to be ready
@@ -151,32 +192,66 @@ jobs:
           CYPRESS_BASE_URL: "http://localhost:3000"
           BUILD_NUMBER: ${{ github.run_id }}
 
-      # Run cypress component tests
-      - name: Run Cypress Component Testing
+  # Component tests - can run in parallel with E2E tests
+  component-tests:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "yarn"
+          cache-dependency-path: ui/yarn.lock
+
+      - name: Restore node modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ui/node_modules
+            ~/.cache/yarn
+          key: ${{ needs.build.outputs.cache-key }}
+
+      - name: Restore Cypress binary cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
+          restore-keys: |
+            cypress-${{ runner.os }}-
+
+      - name: Restore Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: ui/.next
+          key: next-${{ runner.os }}-${{ github.sha }}
+
+      - name: Run Component Tests
         uses: cypress-io/github-action@v6
         with:
           working-directory: ui
           install: false
-          start: yarn next start -p 3001
+          start: PORT=3001 node .next/standalone/server.js
           wait-on: "http://localhost:3001"
           component: true
           browser: chrome
           record: false
 
-      # Save screenshots on fail
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: cypress-screenshots
+          name: cypress-screenshots-component
           path: ui/cypress/screenshots
           retention-days: 7
 
-      # Save test run videos, always
       - name: Upload Cypress Videos
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cypress-videos
+          name: cypress-videos-component
           path: ui/cypress/videos
           retention-days: 7
