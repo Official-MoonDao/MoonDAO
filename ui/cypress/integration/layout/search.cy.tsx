@@ -5,7 +5,7 @@ describe('<Search />', () => {
   it('Renders the search component', () => {
     cy.mount(<Search input="" setInput={() => {}} />)
 
-    cy.get('.bg-search').should('exist')
+    cy.get('div.relative').should('exist')
     cy.get('img[alt="Search Icon"]').should('be.visible')
     cy.get('input[name="search"]').should('exist')
   })
@@ -27,7 +27,9 @@ describe('<Search />', () => {
   })
 
   it('Uses custom placeholder when provided', () => {
-    cy.mount(<Search input="" setInput={() => {}} placeholder="Search jobs..." />)
+    cy.mount(
+      <Search input="" setInput={() => {}} placeholder="Search jobs..." />
+    )
 
     cy.get('input[name="search"]').should(
       'have.attr',

@@ -28,7 +28,7 @@ describe('<TeamImageGenerator />', () => {
     cy.get('img').should(
       'have.attr',
       'src',
-      '/_next/image?url=https%3A%2F%2Fgray-main-toad-36.mypinata.cloud%2Fipfs%2F%2FOriginal.png&w=1200&q=75'
+      '/_next/image?url=https%3A%2F%2Fgray-main-toad-36.mypinata.cloud%2Fipfs%2F%2FOriginal.png&w=828&q=75'
     )
   })
 
@@ -41,7 +41,7 @@ describe('<TeamImageGenerator />', () => {
 
   it('Calls nextStage when the button is clicked', () => {
     cy.get('input[type="file"]').attachFile('images/Original.png')
-    cy.contains('Next').should('exist').click()
+    cy.contains('Continue with this image').should('exist').click()
     cy.wrap(props.nextStage).should('have.been.called')
   })
 })

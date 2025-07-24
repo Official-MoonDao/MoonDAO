@@ -25,7 +25,7 @@ describe('<CitizenActions />', () => {
     cy.contains('Create Project').should('exist')
     cy.contains('Get Mooney').should('exist')
     cy.contains('Create Project').should('exist')
-    cy.contains('Get Rewards').should('exist')
+    cy.contains('Submit Contribution').should('exist')
     cy.contains('Explore Map').should('exist')
     cy.contains('Unlock Roles').should('exist')
     cy.contains('Create a Team').should('exist')

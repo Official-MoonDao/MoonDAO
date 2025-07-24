@@ -9,11 +9,14 @@ interface SearchProps {
   placeholder?: string
 }
 
-export default function Search({ input, setInput, className, placeholder = "Search..." }: SearchProps) {
+export default function Search({
+  input,
+  setInput,
+  className,
+  placeholder = 'Search...',
+}: SearchProps) {
   return (
-    <div
-      className={`relative w-auto flex items-center space-x-2 ${className}`}
-    >
+    <div className={`relative w-auto flex items-center space-x-2 ${className}`}>
       <Image
         src="/assets/icon-mag.svg"
         alt="Search Icon"
