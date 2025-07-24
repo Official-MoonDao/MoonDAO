@@ -4,6 +4,7 @@ const path = require('path')
 const FormData = require('form-data')
 const fs = require('fs')
 const axios = require('axios')
+const installLogsPrinter = require('cypress-terminal-report').install
 
 dotenv.config({ path: path.resolve(__dirname, '.env.local') })
 
@@ -14,6 +15,7 @@ module.exports = defineConfig({
         ...config.env,
         ...process.env,
       }
+      installLogsPrinter(on) // ✨ add this line
 
       on('task', {
         log(message) {
