@@ -146,6 +146,13 @@ jobs:
           name: cypress-videos
           path: ui/cypress/videos
 
+      - name: Upload BrowserStack Cypress report
+        if: always() # Upload even if tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserstack-cypress-report
+          path: ui/browserstack/reports/report.log
+
       - name: Cache node modules
         uses: actions/cache/save/@v4
         if: always()
