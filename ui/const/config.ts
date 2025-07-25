@@ -361,6 +361,26 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
   'base-sepolia-testnet': '0x050E797f3625EC8785265e1d9BDd4799b97528A1',
 }
 
+export const UNISWAP_V4_ROUTER_ADDRESSES: Index = {
+  ethereum: '0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af',
+  arbitrum: '0xA51afAFe0263b40EdaEf0Df8781eA9aa03E381a3',
+  base: '0x6fF5693b99212Da76ad316178A184AB56D299b43',
+  polygon: '0x1095692A6237d83C6a72F3F5eFEdb9A670C49223',
+  sepolia: '0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b',
+  'arbitrum-sepolia': '0xeFd1D4bD4cf1e86Da286BB4CB1B8BcED9C10BA47',
+}
+
+export const UNISWAP_V4_LP_FEE: { [key: string]: number } = {
+  ethereum: 10000,
+  arbitrum: 10000,
+  base: 10000,
+  polygon: 10000,
+  sepolia: 500000,
+  'arbitrum-sepolia': 500000,
+}
+
+export const UNISWAP_V4_TICK_SPACING = 100
+
 export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
   'arbitrum-sepolia': '0xF4f865fA947376f47C74ffD05dd59763c0824bAD',
   ethereum: '0xDc07FbCcF7Dd55014C8A2a605C671d01137B4937',

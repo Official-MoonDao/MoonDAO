@@ -73,6 +73,7 @@ import { Mission } from '@/components/mission/MissionCard'
 import MissionFundingProgressBar from '@/components/mission/MissionFundingProgressBar'
 import MissionInfo from '@/components/mission/MissionInfo'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
+import MissionTokenPoolBuy from '@/components/mission/MissionTokenPoolBuy'
 import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import MissionStat from '@/components/mission/MissionStat'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
@@ -542,6 +543,11 @@ export default function MissionProfile({
                     jbTokensContract={jbTokensContract}
                     refreshBackers={refreshBackers}
                   />
+                  {stage === 4 && token?.tokenAddress && (
+                    <div className="p-4">
+                      <MissionTokenPoolBuy tokenAddress={token.tokenAddress} />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="p-4 text-center">
