@@ -1,4 +1,3 @@
-// components/treasury/AUMChart.tsx
 import LineChart, { LineChartData } from '@/components/layout/LineChart'
 
 interface AUMChartProps {
@@ -37,6 +36,7 @@ export function AUMChart({
         timeRange: {
           compactDays: 365,
         },
+        fillMissingDays: true,
       }}
     />
   )

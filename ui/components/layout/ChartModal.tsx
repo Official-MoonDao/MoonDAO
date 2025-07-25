@@ -26,7 +26,7 @@ export default function ChartModal({
         topRight="0px"
         topLeft="10px"
       >
-        <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-6 min-w-[800px] max-w-[90vw]">
+        <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-4 md:p-6 w-[95vw] md:min-w-[800px] max-w-[95vw] md:max-w-[90vw]">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-GoodTimes text-white">{chartTitle}</h2>
             <button

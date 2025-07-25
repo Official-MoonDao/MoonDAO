@@ -1,6 +1,6 @@
 import { setPublicHeaders } from 'middleware/publicHeaders'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getARRHistory } from '@/lib/covalent'
+import { getARRHistoryFromSubgraph } from '@/lib/treasury/arr'
 
 export default async function handler(
   req: NextApiRequest,
@@ -21,7 +21,7 @@ export default async function handler(
     const { days = '365' } = req.query
     const numDays = parseInt(String(days), 10)
 
-    const arrData = await getARRHistory(numDays)
+    const arrData = await getARRHistoryFromSubgraph(numDays)
 
     res.setHeader(
       'Cache-Control',

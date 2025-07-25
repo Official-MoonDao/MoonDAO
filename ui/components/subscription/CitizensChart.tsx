@@ -46,6 +46,7 @@ export default function CitizensChart({
         timeRange: {
           compactDays: 365,
         },
+        fillMissingDays: true,
       }}
     />
   )

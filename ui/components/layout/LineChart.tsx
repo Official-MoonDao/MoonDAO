@@ -45,6 +45,7 @@ export type LineChartProps = {
       compactDays?: number
       defaultRange?: number
     }
+    fillMissingDays?: boolean
   }
 }
 
@@ -65,6 +66,7 @@ export default function LineChart({
     labels,
     styling = {},
     timeRange = {},
+    fillMissingDays = false,
   } = config
 
   const stroke = styling.stroke || 'white'
@@ -89,12 +91,14 @@ export default function LineChart({
   const xTicks = useTicks({
     range: xDomain,
     resolution: compact ? 10 : 7,
-    offset: 0.5,
+    offset: 0,
   })
 
   // Process data based on configuration
   const processedPoints = useMemo(() => {
     if (!data?.length || isLoading) return []
+
+    let points: any[] = []
 
     if (dataProcessing === 'cumulative') {
       // Sort data by timestamp
@@ -109,9 +113,6 @@ export default function LineChart({
         (entry) => parseInt(String(entry[timestampField])) < xDomain[0]
       )
       let cumulativeCount = entriesBeforeRange.length
-
-      // Create points array with cumulative count
-      const points: any[] = []
 
       // Add initial point at the start of the range with the count up to that point
       points.push({
@@ -136,11 +137,9 @@ export default function LineChart({
         timestamp: xDomain[1],
         [valueField]: cumulativeCount,
       })
-
-      return points
     } else {
       // Direct data processing - filter by time range and use values directly
-      return data
+      points = data
         .filter((entry) => {
           const timestamp = parseInt(String(entry[timestampField]))
           return timestamp >= xDomain[0] && timestamp <= xDomain[1]
@@ -151,7 +150,50 @@ export default function LineChart({
         }))
         .sort((a, b) => a.timestamp - b.timestamp)
     }
-  }, [data, xDomain, isLoading, dataProcessing, timestampField, valueField])
+
+    // Fill missing days if requested
+    if (fillMissingDays && points.length > 0) {
+      const filledPoints: any[] = []
+      const startDay = Math.floor(xDomain[0] / (24 * 60 * 60)) * (24 * 60 * 60)
+      const endDay = Math.floor(xDomain[1] / (24 * 60 * 60)) * (24 * 60 * 60)
+
+      // Create a map of existing data points by day
+      const pointsByDay = new Map()
+      points.forEach((point) => {
+        const dayTimestamp =
+          Math.floor(point.timestamp / (24 * 60 * 60)) * (24 * 60 * 60)
+        pointsByDay.set(dayTimestamp, point[valueField])
+      })
+
+      let lastValue = points[0][valueField] // Start with the first available value
+
+      // Generate all days in the range
+      for (let day = startDay; day <= endDay; day += 24 * 60 * 60) {
+        if (pointsByDay.has(day)) {
+          // Use actual data point value and update lastValue
+          lastValue = pointsByDay.get(day)
+        }
+        // Always add a point for this day (either with actual value or filled value)
+        const numericValue = Number(lastValue)
+        filledPoints.push({
+          timestamp: day,
+          [valueField]: isNaN(numericValue) ? 0 : numericValue, // Ensure it's a valid number
+        })
+      }
+
+      return filledPoints.sort((a, b) => a.timestamp - b.timestamp)
+    }
+
+    return points
+  }, [
+    data,
+    xDomain,
+    isLoading,
+    dataProcessing,
+    timestampField,
+    valueField,
+    fillMissingDays,
+  ])
 
   const yTicks = useMemo(() => {
     if (!processedPoints?.length) return [0, 1, 2, 3, 4, 5]
@@ -217,7 +259,7 @@ export default function LineChart({
           <XAxis hide domain={xDomain} type="number" dataKey="timestamp" />
           <defs>
             <linearGradient
-              id={`compactColorGradient-${valueField}`}
+              id={`colorGradient-${valueField}-compact`}
               x1="0"
               y1="0"
               x2="1"
@@ -230,11 +272,11 @@ export default function LineChart({
           {processedPoints?.length && (
             <Line
               dot={false}
-              stroke={`url(#compactColorGradient-${valueField})`}
+              stroke={`url(#colorGradient-${valueField}-compact)`}
               strokeWidth={compactStrokeWidth}
-              type="monotone"
+              type="linear"
               dataKey={valueField}
-              animationDuration={750}
+              animationDuration={0}
             />
           )}
         </RechartsLineChart>
@@ -337,25 +379,52 @@ export default function LineChart({
             />
             <defs>
               <linearGradient
-                id={`colorGradient-${valueField}`}
+                id={`colorGradient-${valueField}-${
+                  compact ? 'compact' : 'full'
+                }`}
                 x1="0"
                 y1="0"
                 x2="1"
                 y2="0"
+                gradientUnits="objectBoundingBox"
               >
                 <stop offset="5%" stopColor="#425eeb" />
                 <stop offset="90%" stopColor="#6d3f79" />
               </linearGradient>
+              {fillMissingDays && (
+                <linearGradient
+                  id={`fillColorGradient-${valueField}-${
+                    compact ? 'compact' : 'full'
+                  }`}
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="0%"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop offset="0%" stopColor="#425eeb" />
+                  <stop offset="100%" stopColor="#6d3f79" />
+                </linearGradient>
+              )}
             </defs>
             {processedPoints?.length && (
               <Line
                 dot={false}
-                stroke={`url(#colorGradient-${valueField})`}
+                stroke={
+                  fillMissingDays
+                    ? `url(#fillColorGradient-${valueField}-${
+                        compact ? 'compact' : 'full'
+                      })`
+                    : `url(#colorGradient-${valueField}-${
+                        compact ? 'compact' : 'full'
+                      })`
+                }
                 strokeWidth={strokeWidth}
-                type="monotone"
+                type="linear"
                 dataKey={valueField}
-                activeDot={{ r: 6, fill: '#6d3f79', stroke: undefined }}
-                animationDuration={750}
+                animationDuration={0}
+                connectNulls={true}
+                isAnimationActive={false}
               />
             )}
             <Tooltip
@@ -371,7 +440,7 @@ export default function LineChart({
                       {dateStringForBlockTime(payload[0].payload.timestamp)}
                     </div>
                     <div className="font-medium">
-                      {value} {labels.valueLabel}
+                      {value.toLocaleString()} {labels.valueLabel}
                     </div>
                   </div>
                 )

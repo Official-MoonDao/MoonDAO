@@ -22,10 +22,11 @@ import { getContract, readContract } from 'thirdweb'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { getCitizenSubgraphData } from '@/lib/citizen/citizen-subgraph'
-import { getAUMHistory, getARRHistory } from '@/lib/covalent'
+import { getAUMHistory } from '@/lib/covalent'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
+import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
@@ -34,6 +35,8 @@ import client, { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
+import { getARRHistoryFromSubgraph } from '@/lib/treasury/arr'
+import { calculateARRFromTransfers } from '@/lib/treasury/arr'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
@@ -320,7 +323,7 @@ export default function Home({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Frame
               noPadding
               bottomLeft="10px"
@@ -410,7 +413,7 @@ export default function Home({
                     </span>
                     <div className="w-24 h-12">
                       <ARRChart
-                        data={arrData.arrHistory}
+                        data={arrData.arrHistory || []}
                         compact={true}
                         height={48}
                         isLoading={false}
@@ -722,29 +725,41 @@ export default function Home({
   )
 }
 
-// Keep the existing getStaticProps function unchanged
 export async function getStaticProps() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
 
-  // Fetch AUM history data with error handling
+  let transferData = null
+  let arrData = null
+  let citizenSubgraphData = { transfers: [] as any[], createdAt: Date.now() }
+
+  try {
+    transferData = await getAllNetworkTransfers()
+
+    arrData = await calculateARRFromTransfers(
+      transferData.citizenTransfers,
+      transferData.teamTransfers,
+      365
+    )
+
+    citizenSubgraphData = {
+      transfers: transferData.citizenTransfers.map((transfer) => ({
+        id: transfer.id,
+        from: transfer.transactionHash,
+        blockTimestamp: transfer.blockTimestamp,
+      })),
+      createdAt: Date.now(),
+    }
+  } catch (error) {
+    console.error('Failed to fetch transfer data during build:', error)
+  }
+
   let aumData = null
   try {
-    aumData = await getAUMHistory(365) // Get 1 year of data
+    aumData = await getAUMHistory(365)
     console.log('AUM Data fetched successfully:', aumData)
   } catch (error) {
     console.error('Failed to fetch AUM data during build:', error)
-    // aumData remains null, component will handle this gracefully
-  }
-
-  // Fetch ARR history data with error handling
-  let arrData = null
-  try {
-    arrData = await getARRHistory(365) // Get 1 year of data
-    console.log('ARR Data fetched successfully:', arrData)
-  } catch (error) {
-    console.error('Failed to fetch ARR data during build:', error)
-    // arrData remains null, component will handle this gracefully
   }
 
   const newestNewsletters: any = []
@@ -794,8 +809,6 @@ export async function getStaticProps() {
     `SELECT * FROM ${jobTableName} ORDER BY id DESC LIMIT 10`
   )
 
-  const citizenSubgraphData = (await getCitizenSubgraphData()) || []
-
   return {
     props: {
       newestNewsletters,
@@ -803,9 +816,9 @@ export async function getStaticProps() {
       newestListings,
       newestJobs,
       citizenSubgraphData,
-      aumData, // Will be null if API key is missing or other errors occur
-      arrData, // Will be null if errors occur
+      aumData,
+      arrData,
     },
-    revalidate: 3600, // Revalidate every hour
+    revalidate: 60,
   }
 }
