@@ -74,11 +74,9 @@ const getCachedCitizen = (address: string, chainId: number): any => {
 
   try {
     const cacheKey = getCacheKey(address, chainId)
-    console.log('Looking for cache with key:', cacheKey)
     const cached = localStorage.getItem(cacheKey)
 
     if (!cached) {
-      console.log('No cache found for key:', cacheKey)
       return null
     }
 
@@ -87,7 +85,6 @@ const getCachedCitizen = (address: string, chainId: number): any => {
 
     // Check if cache is expired
     if (now - parsedCache.timestamp > CACHE_EXPIRY_MS) {
-      console.log('Cache expired, removing:', cacheKey)
       localStorage.removeItem(cacheKey)
       return null
     }
@@ -97,12 +94,6 @@ const getCachedCitizen = (address: string, chainId: number): any => {
       parsedCache.address.toLowerCase() !== address.toLowerCase() ||
       parsedCache.chainId !== chainId
     ) {
-      console.log('Cache address/chain mismatch:', {
-        cachedAddress: parsedCache.address,
-        currentAddress: address,
-        cachedChain: parsedCache.chainId,
-        currentChain: chainId,
-      })
       localStorage.removeItem(cacheKey)
       return null
     }
@@ -185,12 +176,8 @@ export default function CitizenProvider({
       return
     }
 
-    console.log('ADDRESS', address)
-    console.log('CHAIN ID', chainId)
-
     // Only need address and chainId for cache loading
     if (!address || !chainId) {
-      console.log('Address or chainId not available yet')
       return
     }
 
@@ -200,11 +187,7 @@ export default function CitizenProvider({
     // Try to load from cache immediately
     const cachedData = getCachedCitizen(address, chainId)
     if (cachedData) {
-      console.log('Loaded citizen from cache:', cachedData)
       setCitizen(cachedData)
-    } else {
-      console.log('No valid cache found, will fetch fresh data')
-      // Don't set to undefined here - let the fetch effect handle it
     }
   }, [address, chainId, mock])
 
@@ -219,13 +202,10 @@ export default function CitizenProvider({
     )
 
     if (hasValidCachedData) {
-      console.log('Already have valid cached data, skipping fetch')
       return
     }
 
     async function fetchCitizenData() {
-      console.log('Fetching fresh citizen data for', address)
-
       try {
         const contract = getContract({
           client,
@@ -240,22 +220,17 @@ export default function CitizenProvider({
           params: [address],
         })
 
-        console.log('OWNED TOKEN ID', ownedTokenId)
-
         const nft = await getNFT({
           contract: contract,
           tokenId: BigInt(ownedTokenId),
         })
 
-        console.log('NFT', nft)
-
         setCitizen(nft)
-        setCachedCitizen(address, chainId, nft)
-        console.log('Cached fresh citizen data:', nft)
+        setCachedCitizen(address || '', chainId, nft)
       } catch (err: any) {
         if (err.reason === 'No token owned') {
           setCitizen(undefined)
-          setCachedCitizen(address, chainId, undefined)
+          setCachedCitizen(address || '', chainId, undefined)
         }
       }
     }
@@ -272,7 +247,6 @@ export default function CitizenProvider({
     mock,
   ])
 
-  // Handle authentication state changes
   useEffect(() => {
     if (mock) return
 
