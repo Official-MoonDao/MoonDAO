@@ -179,7 +179,7 @@ jobs:
 
           # Run tests with BrowserStack local tunnel
           echo "Starting BrowserStack Cypress tests..."
-          BROWSERSTACK_LOCAL=true browserstack-cypress run --force-upload --verbose || echo "❌ Tests failed to run"
+          BROWSERSTACK_LOCAL=true browserstack-cypress run --force-upload --verbose || { echo "❌ Tests failed to run"; exit 1; }
 
           # Clean up
           echo "Cleaning up..."
