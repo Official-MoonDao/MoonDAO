@@ -81,18 +81,50 @@ export default function LineChart({
   })
 
   const xDomain = useMemo(() => {
-    const endOfDay = Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60)
+    const startOfToday =
+      Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60)
+    const endOfToday = startOfToday + 24 * 60 * 60 // Add 24 hours to get end of today
     const days = compact ? timeRange.compactDays || 365 : +range
-    const startOfDay = endOfDay - days * 24 * 60 * 60
+    const startOfRange = endOfToday - days * 24 * 60 * 60
 
-    return [startOfDay, endOfDay] as [number, number]
+    return [startOfRange, endOfToday] as [number, number]
   }, [range, compact, timeRange.compactDays])
 
-  const xTicks = useTicks({
+  const defaultXTicks = useTicks({
     range: xDomain,
     resolution: compact ? 10 : 7,
     offset: 0,
   })
+
+  const xTicks = useMemo(() => {
+    if (fillMissingDays) {
+      // When filling missing days, align ticks with day boundaries
+      const startDay = Math.floor(xDomain[0] / (24 * 60 * 60)) * (24 * 60 * 60)
+      const endDay = Math.floor(xDomain[1] / (24 * 60 * 60)) * (24 * 60 * 60)
+      const totalDays = (endDay - startDay) / (24 * 60 * 60)
+
+      // Calculate appropriate tick interval based on range
+      let tickInterval = 1 // Default to daily ticks
+      if (totalDays > 30) {
+        tickInterval = Math.ceil(totalDays / 7) // Show ~7 ticks for longer ranges
+      } else if (totalDays > 14) {
+        tickInterval = Math.ceil(totalDays / 7) // Show ~7 ticks for 30-day range
+      }
+
+      const ticks = []
+      for (
+        let day = startDay;
+        day <= endDay;
+        day += tickInterval * 24 * 60 * 60
+      ) {
+        ticks.push(day)
+      }
+      return ticks
+    } else {
+      // Use the default tick calculation for non-filled data
+      return defaultXTicks
+    }
+  }, [xDomain, fillMissingDays, compact, defaultXTicks])
 
   // Process data based on configuration
   const processedPoints = useMemo(() => {
@@ -202,7 +234,6 @@ export default function LineChart({
       ...processedPoints.map((point) => Number(point[valueField]))
     )
 
-    // Handle different scales more intelligently
     let roundedMax: number
     let tickCount = compact ? 3 : 5
 
@@ -316,9 +347,9 @@ export default function LineChart({
           <RechartsLineChart
             margin={{
               top: 10,
-              right: 0,
+              right: 24,
               bottom: 10,
-              left: 1,
+              left: 24,
             }}
             data={processedPoints}
           >
