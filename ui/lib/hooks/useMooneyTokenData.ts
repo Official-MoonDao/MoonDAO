@@ -35,8 +35,6 @@ export function useMooneyTokenData() {
     setError(null)
     
     try {
-      console.log('Fetching MOONEY data from CoinGecko API...')
-      
       // Use CoinGecko's free API which works without API key and doesn't have CORS issues
       const response = await fetch(
         'https://api.coingecko.com/api/v3/coins/mooney?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false'
@@ -47,15 +45,12 @@ export function useMooneyTokenData() {
       }
       
       const data = await response.json()
-      console.log('CoinGecko API response:', data)
       
       if (!data.market_data) {
         throw new Error('MOONEY market data not found in API response')
       }
       
       const marketData = data.market_data
-      
-      console.log('Processing MOONEY data:', marketData)
       
       // Extract data from CoinGecko API response
       const price = marketData.current_price?.usd || 0
@@ -78,16 +73,6 @@ export function useMooneyTokenData() {
       if (calculatedMarketCap === 0 && price > 0 && circulatingSupply > 0) {
         calculatedMarketCap = price * circulatingSupply
       }
-      
-      console.log('Extracted CoinGecko data:', {
-        price,
-        priceChange24h,
-        volume24h,
-        marketCapFromAPI,
-        calculatedMarketCap,
-        totalSupply,
-        circulatingSupply
-      })
       
       // Format numbers nicely
       const formatMarketCap = (value: number) => {
@@ -145,12 +130,7 @@ export function useMooneyTokenData() {
         lastUpdated: new Date().toLocaleTimeString()
       })
       
-      console.log('Token data updated successfully from CoinGecko live API')
-      
-      console.log('Token data updated successfully')
-      
     } catch (err) {
-      console.error('Error fetching token data:', err)
       setError(`API Error: ${err instanceof Error ? err.message : 'Unknown error'}`)
       
       // Don't update data on error - keep showing "---" or last known values
