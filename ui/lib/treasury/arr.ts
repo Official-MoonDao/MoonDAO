@@ -7,7 +7,7 @@ import {
 } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
 import {
-  getAllTransfers,
+  getAllNetworkTransfers,
   CitizenTransfer,
   TeamTransfer,
 } from '@/lib/network/networkSubgraph'
@@ -227,9 +227,6 @@ export async function calculateARRFromTransfers(
       getEthPrice(),
     ])
 
-    console.log('Contract prices:', contractPrices)
-    console.log('ETH price:', ethPrice)
-
     // Convert transfers to subscription events
     const citizenEvents = convertTransfersToEvents(
       citizenTransfers,
@@ -294,16 +291,6 @@ export async function calculateARRFromTransfers(
     const currentTimestamp = Date.now()
     const currentARRData = calculateCumulativeARR(currentTimestamp, allEvents)
 
-    console.log('Final ARR Calculation Results:', {
-      currentARR: currentARRData.totalARR,
-      citizenARR: currentARRData.citizenARR,
-      teamARR: currentARRData.teamARR,
-      totalSubscribers: currentARRData.citizenCount + currentARRData.teamCount,
-      citizenSubscribers: currentARRData.citizenCount,
-      teamSubscribers: currentARRData.teamCount,
-      dataPoints: arrHistory.length,
-    })
-
     return {
       arrHistory,
       currentARR: currentARRData.totalARR,
@@ -331,7 +318,7 @@ export async function getARRHistoryFromSubgraph(
     console.log('Starting ARR calculation from subgraph...')
 
     // Get all transfers from subgraph
-    const { citizenTransfers, teamTransfers } = await getAllTransfers()
+    const { citizenTransfers, teamTransfers } = await getAllNetworkTransfers()
 
     return calculateARRFromTransfers(citizenTransfers, teamTransfers, days)
   } catch (error) {
@@ -352,7 +339,7 @@ export async function getDetailedARRAnalytics(days: number = 365) {
   const result = await getARRHistoryFromSubgraph(days)
 
   try {
-    const { citizenTransfers, teamTransfers } = await getAllTransfers()
+    const { citizenTransfers, teamTransfers } = await getAllNetworkTransfers()
 
     const citizenTotal =
       citizenTransfers.reduce((sum, t) => sum + parseFloat(t.ethValue), 0) /

@@ -19,7 +19,7 @@ export function ProposalCard({ proposal, index }: ProposalCardProps) {
     proposal?.voteURL,
     1000, // first
     0, // skip
-    'time', // orderBy
+    'created', // orderBy
     fetchVotes // shouldFetch
   )
 

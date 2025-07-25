@@ -17,14 +17,9 @@ import ProjectsSection from '../components/home/ProjectsSection'
 import SpeakerSection from '../components/home/SpeakerSection'
 import Timeline from '../components/home/Timeline'
 import Container from '../components/layout/Container'
+import { ExpandedFooter } from '../components/layout/ExpandedFooter'
 import WebsiteHead from '../components/layout/Head'
 import PageEnder from '../components/layout/PreFooter'
-<<<<<<< HEAD
-import StandardButton from '@/components/layout/StandardButton'
-=======
-import { ExpandedFooter } from '../components/layout/ExpandedFooter'
-
->>>>>>> 3982731a0bc116e27b7cd189722e96f5088b61c0
 
 export default function Home({ linkSource }: any) {
   const router = useRouter()
@@ -66,23 +61,11 @@ export default function Home({ linkSource }: any) {
         <Callout3 />
         <PartnerSection />
         <PageEnder />
-<<<<<<< HEAD
-        <StandardButton
-          onClick={() => {
-            sendDiscordMessage('networkNotifications', 'TEST NOTIFICATION')
-            toast.success('TEST NOTIFICATION')
-          }}
-        >
-          {'TEST NOTIFICATION'}
-        </StandardButton>
-        <Footer darkBackground={true} />
-=======
-        <ExpandedFooter 
+        <ExpandedFooter
           hasCallToAction={false}
           darkBackground={true}
           isFullwidth={true}
         />
->>>>>>> 3982731a0bc116e27b7cd189722e96f5088b61c0
       </div>
     </Container>
   )
