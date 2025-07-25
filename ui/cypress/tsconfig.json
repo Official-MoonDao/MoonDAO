@@ -1,12 +1,17 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "module": "esnext",
+    "module": "es2022",
     "moduleResolution": "node",
-    "target": "es2020",
-    "lib": ["es2020", "dom", "esnext"],
+    "target": "es2022",
+    "lib": ["es2022", "dom"],
     "types": ["cypress", "node"],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "noEmit": true
   },
-  "include": ["**/*.ts", "**/*.tsx"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
 }

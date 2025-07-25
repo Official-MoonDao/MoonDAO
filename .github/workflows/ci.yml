@@ -100,10 +100,6 @@ jobs:
         working-directory: ui
         run: yarn install --frozen-lockfile
 
-      - name: Install npm dependencies
-        working-directory: ui
-        run: npm install --legacy-peer-deps
-
       - name: Install Cypress binary
         working-directory: ui
         run: npx cypress install
