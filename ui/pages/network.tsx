@@ -164,9 +164,7 @@ export default function Network({
               id="filter-container"
               className="hidden min-[1150px]:block flex-shrink-0"
             >
-              <div 
-                className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-1.5"
-              >
+              <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
                 <div className="flex text-sm gap-1">
                   <Tab
                     tab="citizens"
@@ -298,7 +296,7 @@ export default function Network({
       const link = `/${type === 'team' ? 'team' : 'citizen'}/${
         type === 'team'
           ? generatePrettyLink(nft.metadata.name)
-          : generatePrettyLinkWithId(nft.metadata.name, nft.metadata.id)
+          : generatePrettyLinkWithId(nft.metadata.name, nft.id.toString())
       }`
 
       return (
