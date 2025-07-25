@@ -5,7 +5,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CheckCircleIcon, ShieldCheckIcon, UsersIcon, GlobeAltIcon, LockClosedIcon, ScaleIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
+import { CheckCircleIcon, ShieldCheckIcon, UsersIcon, GlobeAltIcon, LockClosedIcon, ScaleIcon, ArrowRightIcon, ChartPieIcon } from '@heroicons/react/24/outline'
 import { ethereum } from '@/lib/infura/infuraChains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -62,6 +62,82 @@ function LoadingSpinner() {
   )
 }
 
+// Simple Pie Chart Component
+function TokenDistributionChart() {
+  const data = [
+    { name: 'Circulating', value: 28.79, color: '#EF4444', amount: 727.19 },
+    { name: 'Locked', value: 18.28, color: '#F59E0B', amount: 462.13 },
+    { name: 'Liquidity', value: 18.09, color: '#8B5CF6', amount: 457.25 },
+    { name: 'Projects System', value: 16.11, color: '#10B981', amount: 407.41 },
+    { name: 'DAO Treasury', value: 15.15, color: '#3B82F6', amount: 383.10 }
+  ]
+
+  const total = data.reduce((sum, item) => sum + item.value, 0)
+  let cumulativePercentage = 0
+
+  return (
+    <div className="flex flex-col lg:flex-row items-center gap-8">
+      {/* Pie Chart */}
+      <div className="relative w-64 h-64 flex-shrink-0">
+        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
+          <circle
+            cx="100"
+            cy="100"
+            r="90"
+            fill="none"
+            stroke="#1F2937"
+            strokeWidth="2"
+          />
+          {data.map((segment, index) => {
+            const percentage = (segment.value / total) * 100
+            const strokeDasharray = `${percentage * 5.65} ${565 - percentage * 5.65}`
+            const strokeDashoffset = -cumulativePercentage * 5.65
+            cumulativePercentage += percentage
+            
+            return (
+              <circle
+                key={index}
+                cx="100"
+                cy="100"
+                r="90"
+                fill="none"
+                stroke={segment.color}
+                strokeWidth="20"
+                strokeDasharray={strokeDasharray}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-300 hover:stroke-width-[25]"
+              />
+            )
+          })}
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-xl font-bold text-white">2.53B</div>
+            <div className="text-xs text-gray-400">Total Supply</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="space-y-2 flex-1">
+        {data.map((segment, index) => (
+          <div key={index} className="flex items-center gap-3 p-2 bg-black/20 rounded-lg hover:bg-black/30 transition-colors">
+            <div 
+              className="w-3 h-3 rounded-full flex-shrink-0" 
+              style={{ backgroundColor: segment.color }}
+            ></div>
+            <div className="flex-1 min-w-0">
+              <div className="text-white font-medium text-xs truncate">{segment.name}</div>
+              <div className="text-gray-400 text-xs">{segment.amount.toFixed(0)}M MOONEY</div>
+            </div>
+            <div className="text-white font-bold text-sm">{segment.value.toFixed(2)}%</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Mooney() {
   const account = useActiveAccount()
   const address = account?.address
@@ -82,9 +158,9 @@ export default function Mooney() {
         <div className="min-h-screen bg-dark-cool text-white w-full">
           
           {/* Hero Section */}
-          <section className="relative py-20 px-6 w-full" style={{backgroundImage: 'url(/assets/MooneyHeroImg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', imageRendering: 'crisp-edges'}}>
+          <section className="relative min-h-screen px-6 w-full flex items-center justify-center" style={{backgroundImage: 'url(/assets/MooneyHeroImg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', imageRendering: 'crisp-edges'}}>
             <div className="absolute inset-0 bg-black/40"></div>
-            <div className="max-w-7xl mx-auto text-center space-y-8 relative z-10">
+            <div className="max-w-7xl mx-auto text-center space-y-8 relative z-10 -mt-20">
               <div className="flex justify-center">
                 <Image 
                   src="/coins/MOONEY.png" 
@@ -209,38 +285,92 @@ export default function Mooney() {
               </div>
             </div>
 
-            {/* Treasury & Distribution */}
-            <div className="bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
+            {/* Token Usage Distribution Chart */}
+            <div className="bg-gradient-to-br from-gray-900/50 to-purple-900/20 rounded-xl p-6 border border-white/10 mt-8">
               <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                <ShieldCheckIcon className="h-5 w-5 text-green-400" />
-                Token Distribution & Treasury
+                <ChartPieIcon className="h-5 w-5 text-purple-400" />
+                Token Usage & Allocation
               </h3>
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <UsersIcon className="h-8 w-8 text-blue-400" />
+              <TokenDistributionChart />
+              <div className="mt-6 text-center">
+                <div className="inline-flex items-center gap-2 bg-purple-500/10 rounded-lg px-4 py-2 border border-purple-400/20">
+                  <span className="text-purple-300 text-sm">
+                    🚀 Subject to change last updated on July 7th 2025
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Geometric Release Schedule Section */}
+            <div className="bg-gradient-to-br from-gray-900/50 to-orange-900/20 rounded-xl p-6 border border-white/10 mt-8">
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <CheckCircleIcon className="h-5 w-5 text-orange-400" />
+                Projects System Reward Structure
+              </h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="bg-black/20 rounded-lg p-4">
+                    <h4 className="text-orange-300 font-semibold mb-3">Quarterly Reward Pool</h4>
+                    <div className="space-y-3 text-sm text-gray-300">
+                      <div className="flex justify-between">
+                        <span>Starting Quarter (Q4 2022):</span>
+                        <span className="text-orange-300 font-medium">15M MOONEY</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Reduction Rate:</span>
+                        <span className="text-orange-300 font-medium">5% per quarter</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Schedule Type:</span>
+                        <span className="text-orange-300 font-medium">Geometric Decay</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Community Circle:</span>
+                        <span className="text-orange-300 font-medium">10% of total</span>
+                      </div>
+                    </div>
                   </div>
-                  <h4 className="text-white font-semibold mb-2">Community</h4>
-                  <p className="text-blue-300 text-2xl font-bold">54%</p>
-                  <p className="text-gray-400 text-sm">Circulating Supply</p>
+                  <div className="bg-orange-500/10 rounded-lg p-3 border border-orange-400/20">
+                    <p className="text-orange-300 text-sm">
+                      💡 Retroactive rewards incentivize completed projects that advance MoonDAO's mission
+                    </p>
+                  </div>
+                  <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-400/20">
+                    <p className="text-blue-300 text-sm">
+                      📖 <a href="https://docs.moondao.com/Projects/Project-System" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-200">
+                        Learn more about the Projects System
+                      </a>
+                    </p>
+                  </div>
                 </div>
                 
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <LockClosedIcon className="h-8 w-8 text-purple-400" />
+                <div className="space-y-4">
+                  <div className="bg-black/20 rounded-lg p-4">
+                    <h4 className="text-blue-300 font-semibold mb-3">Contributor Rewards</h4>
+                    <div className="space-y-3 text-sm text-gray-300">
+                      <div className="flex justify-between items-center">
+                        <span>ETH Rewards:</span>
+                        <span className="text-blue-300 font-medium">Lump sum payment</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>MOONEY Rewards:</span>
+                        <span className="text-purple-300 font-medium">4-year vMOONEY lock</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>ETH Pool:</span>
+                        <span className="text-green-300 font-medium">5% of DAO assets</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Distribution:</span>
+                        <span className="text-orange-300 font-medium">Based on DAO vote</span>
+                      </div>
+                    </div>
                   </div>
-                  <h4 className="text-white font-semibold mb-2">Locked/Reserved</h4>
-                  <p className="text-purple-300 text-2xl font-bold">46%</p>
-                  <p className="text-gray-400 text-sm">Future distribution</p>
-                </div>
-                
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <CheckCircleIcon className="h-8 w-8 text-green-400" />
+                  <div className="text-center">
+                    <div className="inline-flex items-center gap-2 bg-blue-500/10 rounded-lg px-3 py-2 border border-blue-400/20">
+                      <span className="text-blue-300 text-sm font-medium">Geometric decay: 15M → 14.25M → 13.54M MOONEY per quarter</span>
+                    </div>
                   </div>
-                  <h4 className="text-white font-semibold mb-2">Fixed Supply</h4>
-                  <p className="text-green-300 text-2xl font-bold">0%</p>
-                  <p className="text-gray-400 text-sm">Inflation Rate</p>
                 </div>
               </div>
             </div>
