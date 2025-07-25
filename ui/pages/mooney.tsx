@@ -10,7 +10,6 @@ import { ethereum } from '@/lib/infura/infuraChains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import viemChains from '@/lib/viem/viemChains'
-import { useMooneyTokenData } from '@/lib/hooks/useMooneyTokenData'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Container from '@/components/layout/Container'
@@ -70,9 +69,6 @@ export default function Mooney() {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const { fundWallet } = useFundWallet()
-  
-  // Live token data
-  const { tokenData, loading, error, refetch } = useMooneyTokenData()
 
   return (
     <>
@@ -103,20 +99,6 @@ export default function Mooney() {
                   MOONEY TOKEN
                 </h1>
                 
-                {/* Live Price Display */}
-                <div className="bg-black/20 backdrop-blur-sm rounded-xl p-4 border border-white/10 max-w-md mx-auto">
-                  <div className="flex items-center justify-center gap-3">
-                    <span className="text-gray-300 text-lg">Live Price:</span>
-                    <span className="text-white text-2xl font-bold font-mono">{tokenData.price}</span>
-                    <span className={`text-sm font-medium ${tokenData.priceChange.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
-                      {tokenData.priceChange}
-                    </span>
-                    {loading && (
-                      <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin"></div>
-                    )}
-                  </div>
-                </div>
-                
                 <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
                   The governance token that powers MoonDAO's mission to create a self-sustaining, 
                   self-governing settlement on the Moon by 2030.
@@ -138,68 +120,9 @@ export default function Mooney() {
         {/* Token Information Section */}
         <section className="py-16 px-6 bg-gradient-to-br from-gray-900/60 to-black/40 w-full">
           <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-center gap-4 mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold font-GoodTimes text-center text-white">
-                Token Information
-              </h2>
-              <div className="flex items-center gap-2">
-                {loading && (
-                  <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                )}
-                <button
-                  onClick={refetch}
-                  className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors px-3 py-1 bg-blue-400/10 hover:bg-blue-400/20 rounded-lg border border-blue-400/20"
-                  disabled={loading}
-                >
-                  {loading ? 'Updating...' : 'Refresh'}
-                </button>
-              </div>
-            </div>
-            
-            {error && (
-              <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4 mb-6 text-center">
-                <p className="text-red-300 text-sm">{error}</p>
-              </div>
-            )}
-            
-            <div className="text-center mb-8">
-              <p className="text-gray-400 text-sm">Last updated: {tokenData.lastUpdated}</p>
-            </div>
-            
-            {/* Market Stats Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              <div className="bg-gradient-to-br from-gray-900/80 to-blue-900/40 rounded-xl p-6 border border-white/10 relative overflow-hidden">
-                {loading && <div className="absolute inset-0 bg-blue-500/5 animate-pulse"></div>}
-                <h3 className="text-blue-400 text-sm font-semibold mb-2">Market Cap</h3>
-                <p className="text-white text-2xl font-bold">{tokenData.marketCap}</p>
-                <p className={`text-sm ${tokenData.marketCapChange.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
-                  {tokenData.marketCapChange}
-                </p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-gray-900/80 to-purple-900/40 rounded-xl p-6 border border-white/10 relative overflow-hidden">
-                {loading && <div className="absolute inset-0 bg-purple-500/5 animate-pulse"></div>}
-                <h3 className="text-purple-400 text-sm font-semibold mb-2">Total Supply</h3>
-                <p className="text-white text-2xl font-bold">{tokenData.totalSupply}</p>
-                <p className="text-gray-400 text-sm">MOONEY</p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-gray-900/80 to-green-900/40 rounded-xl p-6 border border-white/10 relative overflow-hidden">
-                {loading && <div className="absolute inset-0 bg-green-500/5 animate-pulse"></div>}
-                <h3 className="text-green-400 text-sm font-semibold mb-2">Circulating Supply</h3>
-                <p className="text-white text-2xl font-bold">{tokenData.circulatingSupply}</p>
-                <p className="text-gray-400 text-sm">{tokenData.circulatingPercent} of total</p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-gray-900/80 to-orange-900/40 rounded-xl p-6 border border-white/10 relative overflow-hidden">
-                {loading && <div className="absolute inset-0 bg-orange-500/5 animate-pulse"></div>}
-                <h3 className="text-orange-400 text-sm font-semibold mb-2">24h Volume</h3>
-                <p className="text-white text-2xl font-bold">{tokenData.volume24h}</p>
-                <p className={`text-sm ${tokenData.volumeChange.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
-                  {tokenData.volumeChange}
-                </p>
-              </div>
-            </div>
+            <h2 className="text-3xl md:text-4xl font-bold font-GoodTimes text-center text-white mb-12">
+              Token Information
+            </h2>
 
             {/* Contract Addresses & Technical Info */}
             <div className="grid md:grid-cols-2 gap-8 mb-12">
