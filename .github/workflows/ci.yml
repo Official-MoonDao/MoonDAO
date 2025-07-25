@@ -106,6 +106,10 @@ jobs:
           cache: "yarn"
           cache-dependency-path: ui/yarn.lock
 
+      - name: Install dependencies
+        working-directory: ui
+        run: yarn install --frozen-lockfile
+
       - name: Restore Cypress binary cache
         uses: actions/cache@v4
         with:
@@ -177,6 +181,10 @@ jobs:
           node-version: "20"
           cache: "yarn"
           cache-dependency-path: ui/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ui
+        run: yarn install --frozen-lockfile
 
       - name: Restore Cypress binary cache
         uses: actions/cache@v4
