@@ -347,7 +347,7 @@ export default function MissionPayRedeem({
 
   // USD input state and handlers
   const [usdInput, setUsdInput] = useState(() => {
-    const urlAmount = router.query.usdAmount
+    const urlAmount = router?.query?.usdAmount
     return typeof urlAmount === 'string' ? urlAmount : ''
   })
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(
@@ -1013,7 +1013,7 @@ export default function MissionPayRedeem({
 
   // Add a function to clear the parameter only when needed
   const clearOnrampSuccessParam = useCallback(() => {
-    if (router.query.onrampSuccess || router.query.usdAmount) {
+    if (router?.query?.onrampSuccess || router?.query?.usdAmount) {
       router.replace(
         {
           pathname: router.pathname,
@@ -1141,9 +1141,9 @@ export default function MissionPayRedeem({
   // Add this new useEffect to restore USD input from URL
   useEffect(() => {
     if (
-      router.isReady &&
-      router.query.usdAmount &&
-      typeof router.query.usdAmount === 'string'
+      router?.isReady &&
+      router?.query?.usdAmount &&
+      typeof router?.query?.usdAmount === 'string'
     ) {
       const amount = router.query.usdAmount.replace(/[^0-9.]/g, '') // Clean the input, allow decimals
 
@@ -1155,7 +1155,7 @@ export default function MissionPayRedeem({
         }
       }
     }
-  }, [router.isReady, router.query.usdAmount, ethUsdPrice])
+  }, [router?.isReady, router?.query?.usdAmount, ethUsdPrice])
 
   // Auto-adjust USD amount after onramp success
   useEffect(() => {
