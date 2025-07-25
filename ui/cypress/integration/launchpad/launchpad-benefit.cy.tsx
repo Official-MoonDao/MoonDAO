@@ -21,9 +21,10 @@ describe('<LaunchpadBenefit />', () => {
   it('Should render with right alignment', () => {
     cy.mount(<LaunchpadBenefit {...defaultProps} align="right" />)
 
-    cy.get('#benefit-content').within(() => {
-      cy.get('#benefit-text').should('exist')
+    cy.get('#benefit-container').within(() => {
+      cy.get('#benefit-content').should('exist')
       cy.get('#benefit-icon-container').should('exist')
+      cy.get('#benefit-text').should('exist')
     })
   })
 

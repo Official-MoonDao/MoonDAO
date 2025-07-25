@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 import { mongoConfig } from '../../const/config'
 
 declare global {
-  var mongoose: any // This must be a `var` and not a `let / const`
+  var mongooseCache: any // This must be a `var` and not a `let / const`
 }
 
 if (!mongoConfig.url) {
@@ -11,10 +11,10 @@ if (!mongoConfig.url) {
   )
 }
 
-let cached = global.mongoose
+let cached = global.mongooseCache
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null }
+  cached = global.mongooseCache = { conn: null, promise: null }
 }
 
 async function dbConnect() {

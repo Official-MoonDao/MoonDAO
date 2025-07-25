@@ -105,11 +105,11 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
           method: 'POST',
         }
       )
-      
+
       if (!responseRes.ok) {
         throw new Error(`API call failed with status: ${responseRes.status}`)
       }
-      
+
       const data = await responseRes.json()
 
       if (!data.answers) {
@@ -127,7 +127,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     } catch (error) {
       console.error('Error submitting typeform:', error)
       // You might want to show an error message to the user here
-      alert('There was an error processing your form submission. Please try again.')
+      alert(
+        'There was an error processing your form submission. Please try again.'
+      )
     }
   }, [])
 
@@ -142,7 +144,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
           headerSize="max(20px, 3vw)"
           preFooter={
             <>
-              <ExpandedFooter 
+              <ExpandedFooter
                 callToActionImage="/assets/MoonDAO-Logo-White.svg"
                 callToActionTitle="Join the Network"
                 callToActionButtonText="Learn More"
@@ -214,7 +216,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                 >
                   {teamImage && (
                     <div className="w-full bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6 mb-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">Team Image Preview</h3>
+                      <h3 className="text-lg font-semibold text-white mb-4">
+                        Team Image Preview
+                      </h3>
                       <div className="flex justify-start">
                         <Image
                           src={URL.createObjectURL(teamImage)}
@@ -229,7 +233,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
 
                   <div className="flex flex-col w-full md:p-5 mt-8 max-w-[600px]">
                     <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-                      <h3 className="font-GoodTimes text-xl mb-4 text-white">Team Overview</h3>
+                      <h3 className="font-GoodTimes text-xl mb-4 text-white">
+                        Team Overview
+                      </h3>
                       <div className="grid gap-4">
                         {isMobile ? (
                           Object.keys(teamData)
@@ -240,7 +246,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                                   className="flex flex-col p-4 bg-slate-800/50 rounded-lg border border-slate-600/30"
                                   key={'entityData' + i}
                                 >
-                                  <p className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-1">{v}:</p>
+                                  <p className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-1">
+                                    {v}:
+                                  </p>
                                   <p className="text-white">
                                     {/**@ts-expect-error */}
                                     {teamData[v]!}
@@ -254,7 +262,10 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                               .filter((v) => v != 'formResponseId')
                               .map((v, i) => {
                                 return (
-                                  <div className="flex justify-between p-4 bg-slate-800/50 rounded-lg border border-slate-600/30" key={'entityData' + i}>
+                                  <div
+                                    className="flex justify-between p-4 bg-slate-800/50 rounded-lg border border-slate-600/30"
+                                    key={'entityData' + i}
+                                  >
                                     <span className="text-sm font-semibold text-slate-300 uppercase tracking-wide">
                                       {v}:
                                     </span>
@@ -275,32 +286,38 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                       <h2 className="font-GoodTimes text-xl mb-6 text-white">
                         Important Information
                       </h2>
-                    <div className="flex flex-col rounded-[20px] bg-slate-800/50 border border-slate-600/30 p-5 pb-10 md:p-5">
-                      <h3 className="font-GoodTimes text-lg mb-3 text-white">Treasury</h3>
-                      <p className="text-slate-300 leading-relaxed">
-                        A self-custodied multisignature treasury will secure
-                        your organization’s assets, allowing interaction with
-                        any smart contracts within the Ethereum ecosystem.
-                        <br /><br />
-                        You can add more signers later via your Team management
-                        portal.
+                      <div className="flex flex-col rounded-[20px] bg-slate-800/50 border border-slate-600/30 p-5 pb-10 md:p-5">
+                        <h3 className="font-GoodTimes text-lg mb-3 text-white">
+                          Treasury
+                        </h3>
+                        <p className="text-slate-300 leading-relaxed">
+                          A self-custodied multisignature treasury will secure
+                          your organization’s assets, allowing interaction with
+                          any smart contracts within the Ethereum ecosystem.
+                          <br />
+                          <br />
+                          You can add more signers later via your Team
+                          management portal.
+                        </p>
+                      </div>
+                      <div className="flex flex-col bg-slate-800/50 border border-slate-600/30 rounded-[20px] pb-10 p-5 mt-5">
+                        <h3 className="font-GoodTimes text-lg mb-3 text-white">
+                          Manager
+                        </h3>
+                        <p className="text-slate-300 leading-relaxed">
+                          The manager can modify your organization’s
+                          information. To begin, the currently connected wallet
+                          will act as the Manager.
+                          <br />
+                          <br />
+                          You can add a manager or members to your organization
+                          using your Team Management Portal.
+                        </p>
+                      </div>
+                      <p className="mt-6 text-center text-slate-300 font-medium">
+                        Welcome to the future of on-chain, off-world
+                        coordination with MoonDAO!
                       </p>
-                    </div>
-                    <div className="flex flex-col bg-slate-800/50 border border-slate-600/30 rounded-[20px] pb-10 p-5 mt-5">
-                      <h3 className="font-GoodTimes text-lg mb-3 text-white">Manager</h3>
-                      <p className="text-slate-300 leading-relaxed">
-                        The manager can modify your organization’s information.
-                        To begin, the currently connected wallet will act as the
-                        Manager.
-                        <br /><br />
-                        You can add a manager or members to your organization
-                        using your Team Management Portal.
-                      </p>
-                    </div>
-                    <p className="mt-6 text-center text-slate-300 font-medium">
-                      Welcome to the future of on-chain, off-world coordination
-                      with MoonDAO!
-                    </p>
                     </div>
                   </div>
                   <div className="flex flex-row items-center mt-6 p-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl">
@@ -535,7 +552,8 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                         Creating your team on the blockchain...
                       </p>
                       <p className="text-slate-400 text-sm text-center mt-2">
-                        This process can take up to a minute. Please wait while the transaction is processed.
+                        This process can take up to a minute. Please wait while
+                        the transaction is processed.
                       </p>
                     </div>
                   )}
@@ -546,8 +564,12 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
           {/* Dev Buttons */}
           {process.env.NEXT_PUBLIC_ENV === 'dev' && (
             <div className="flex flex-row justify-center gap-4">
-              <button onClick={() => setStage(stage - 1)}>BACK</button>
-              <button onClick={() => setStage(stage + 1)}>NEXT</button>
+              <button id="team-back-button" onClick={() => setStage(stage - 1)}>
+                BACK
+              </button>
+              <button id="team-next-button" onClick={() => setStage(stage + 1)}>
+                NEXT
+              </button>
             </div>
           )}
         </ContentLayout>

@@ -28,15 +28,21 @@ describe('<CreateCitizen />', () => {
     cy.contains(
       'Create your unique and personalized AI passport photo.'
     ).should('exist')
+
     // Simulate image upload
     cy.get('input[type="file"]').attachFile('images/Original.png')
-    cy.contains('Generate').click()
+
+    // Click generate to start image generation
+    cy.contains('Generate Image').click()
+
+    // Click Next to advance to the typeform stage
+    cy.get('#citizen-next-button').click()
 
     //TYPEFORM
-    cy.contains('Please complete your citizen profile.').should('exist')
     cy.get('iframe').should('exist')
     cy.get('iframe').should('have.attr', 'src').should('include', 'typeform')
-    cy.contains('NEXT').click()
+
+    cy.get('#citizen-next-button').click()
 
     //MINT
     cy.get('#citizen-checkout-button').should('be.disabled')

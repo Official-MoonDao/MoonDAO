@@ -128,12 +128,14 @@ module.exports = defineConfig({
       return config
     },
     specPattern: 'cypress/e2e/**/*.cy.{js,ts,jsx,tsx}',
-    baseUrl: 'http://localhost:3000',
+    baseUrl: process.env.CYPRESS_BASE_URL || 'http://localhost:3000',
     supportFile: false,
     requestTimeout: 60000,
     responseTimeout: 60000,
     pageLoadTimeout: 120000,
     defaultCommandTimeout: 60000,
+    viewportWidth: 1280,
+    viewportHeight: 720,
     video: false,
   },
   component: {
