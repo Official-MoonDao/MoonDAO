@@ -85,13 +85,22 @@ async function getContractPrices() {
     ])
 
     const citizenPrice = Number(citizenPricePerSecond)
-    const teamPrice = Number(teamPricePerSecond) * (7 / 1000) // always apply discount to team price
+    const teamPrice = Number(teamPricePerSecond) * (67 / 1000) // always apply discount to team price
 
     return {
-      citizenPricePerSecond: citizenPrice,
-      teamPricePerSecond: teamPrice,
+      citizenPricePerSecond: isNaN(citizenPrice) ? 351978691 : citizenPrice,
+      teamPricePerSecond: isNaN(teamPrice)
+        ? 15854895991 * (67 / 1000)
+        : teamPrice,
     }
-  } catch (error) {}
+  } catch (error) {
+    console.error('Failed to fetch contract prices:', error)
+    // Fallback prices with discount already applied for teams
+    return {
+      citizenPricePerSecond: 351978691, // ~0.0111 ETH / year
+      teamPricePerSecond: 15854895991 * (67 / 1000), // ~0.0333 ETH / year after discount
+    }
+  }
 }
 
 // Convert transfers to subscription events (each transfer = new subscription)
