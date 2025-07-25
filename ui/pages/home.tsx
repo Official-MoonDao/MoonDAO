@@ -14,14 +14,12 @@ import {
   TEAM_ADDRESSES,
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
 } from 'const/config'
-import { formatDistanceToNow, fromUnixTime } from 'date-fns'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import { getCitizenSubgraphData } from '@/lib/citizen/citizen-subgraph'
 import { getAUMHistory } from '@/lib/covalent'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
@@ -35,7 +33,6 @@ import client, { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
-import { getARRHistoryFromSubgraph } from '@/lib/treasury/arr'
 import { calculateARRFromTransfers } from '@/lib/treasury/arr'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
@@ -48,13 +45,9 @@ import ChartModal from '@/components/layout/ChartModal'
 import Container from '@/components/layout/Container'
 import Frame from '@/components/layout/Frame'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
+import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import CitizensChart from '@/components/subscription/CitizensChart'
-
-function truncateText(text: string, maxLength: number) {
-  if (text?.length <= maxLength) return text
-  return text?.slice(0, maxLength) + '...'
-}
 
 export default function Home({
   newestNewsletters,
@@ -87,7 +80,7 @@ export default function Home({
         createdAt={citizenSubgraphData.createdAt}
       />
     )
-    setChartModalTitle('CITIZENS TIMELINE')
+    setChartModalTitle('CITIZENS')
     setChartModalOpen(true)
   }
 
@@ -113,7 +106,7 @@ export default function Home({
         isLoading={false}
       />
     )
-    setChartModalTitle('ANNUAL RECURRING REVENUE')
+    setChartModalTitle('ESTIMATED ANNUAL RECURRING REVENUE')
     setChartModalOpen(true)
   }
 
@@ -236,12 +229,18 @@ export default function Home({
                       </div>
                     </div>
                     <div className="flex gap-3 mb-3">
-                      <button className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm rounded-lg font-medium transition-all duration-200">
+                      <StandardButton
+                        className="gradient-2 rounded-full"
+                        link="/get-mooney"
+                      >
                         Buy $MOONEY
-                      </button>
-                      <button className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-sm rounded-lg font-medium transition-all duration-200">
+                      </StandardButton>
+                      <StandardButton
+                        className="gradient-2 rounded-full"
+                        link="/lock"
+                      >
                         Stake $MOONEY
-                      </button>
+                      </StandardButton>
                     </div>
                     <div className="flex gap-6 text-xs text-white/70">
                       <span>🗳️ {voteCount} Votes</span>
@@ -409,7 +408,7 @@ export default function Home({
                 {arrData ? (
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <span className="text-2xl font-bold text-white">
-                      ${arrData.currentARR.toLocaleString()}
+                      ~${arrData.currentARR.toLocaleString()}
                     </span>
                     <div className="w-24 h-12">
                       <ARRChart
@@ -691,27 +690,6 @@ export default function Home({
             </div>
           </Frame>
         </div>
-
-        {/* Network Growth Chart */}
-        <Frame
-          noPadding
-          bottomLeft="0px"
-          bottomRight="0px"
-          topRight="0px"
-          topLeft="0px"
-        >
-          <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-5">
-            <h2 className="text-xl font-GoodTimes text-white mb-4">
-              NETWORK GROWTH
-            </h2>
-            <CitizensChart
-              transfers={citizenSubgraphData.transfers}
-              isLoading={false}
-              height={300}
-              createdAt={citizenSubgraphData.createdAt}
-            />
-          </div>
-        </Frame>
 
         {/* Chart Modal */}
         <ChartModal

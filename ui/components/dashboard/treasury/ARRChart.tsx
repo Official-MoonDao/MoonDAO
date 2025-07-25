@@ -34,7 +34,7 @@ export function ARRChart({
         valueField: 'arr',
         dataProcessing: 'direct',
         labels: {
-          title: 'Annual Recurring Revenue',
+          title: 'Estimated Annual Recurring Revenue',
           valueLabel: compact ? '' : 'USD', // Hide label in compact mode
           emptyMessage: 'No ARR Data',
         },

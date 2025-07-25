@@ -31,7 +31,7 @@ export default function CitizensChart({
         valueField: 'citizens',
         dataProcessing: 'cumulative',
         labels: {
-          title: 'Citizens Timeline',
+          title: 'Citizens',
           valueLabel: 'Citizens',
           emptyMessage: 'No Citizens Yet',
         },
