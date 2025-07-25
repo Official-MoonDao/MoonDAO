@@ -1,13 +1,16 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import VestingWithdraw from './VestingWithdraw'
+import MissionTokenSwap from './MissionTokenSwap'
 
 export default function MissionTokenInfo({
   mission,
   token,
+  poolDeployerAddress,
 }: {
   mission: any
   token: any
+  poolDeployerAddress?: string
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -87,6 +90,9 @@ export default function MissionTokenInfo({
         </Link>
       </div>
       <VestingWithdraw missionId={mission?.id} token={token} />
+      {poolDeployerAddress && (
+        <MissionTokenSwap poolDeployerAddress={poolDeployerAddress} />
+      )}
     </div>
   )
 }

@@ -568,6 +568,7 @@ export default function MissionProfile({
                   token={token}
                   userMissionTokenBalance={userMissionTokenBalance}
                   primaryTerminalAddress={primaryTerminalAddress}
+                  poolDeployerAddress={poolDeployerAddress}
                 />
               </div>
             </div>
