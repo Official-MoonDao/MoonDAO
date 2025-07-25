@@ -10,6 +10,7 @@ import MissionActivityList from './MissionActivityList'
 import MissionPayRedeem from './MissionPayRedeem'
 import MissionTimelineChart from './MissionTimelineChart'
 import MissionTokenInfo from './MissionTokenInfo'
+import NativeToMissionToken from '../uniswap/NativeToMissionToken'
 
 export type MissionInfoTabType = 'activity' | 'about' | 'tokenomics'
 
@@ -268,6 +269,16 @@ export default function MissionInfo({
                 icon="/assets/icon-star-blue.svg"
               />
               <MissionTokenInfo mission={mission} token={token} />
+              {stage >= 2 &&
+                token?.tokenAddress &&
+                token.tokenAddress !== '0x0000000000000000000000000000000000000000' && (
+                  <NativeToMissionToken
+                    selectedChain={selectedChain}
+                    tokenAddress={token.tokenAddress}
+                    tokenSymbol={token.tokenSymbol}
+                    tokenImage={mission?.metadata?.logoUri}
+                  />
+                )}
             </div>
           )}
         </div>
