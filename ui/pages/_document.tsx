@@ -45,7 +45,7 @@ class WebsiteDocument extends Document {
           />
 
           {/* Vimeo Player SDK */}
-          <script src="https://player.vimeo.com/api/player.js"></script>
+          <script async src="https://player.vimeo.com/api/player.js"></script>
         </Head>
         <body className="overflow-hidden relative">
           <div className="w-full gradient-9 max-h-[100vh] h-full fixed top-0 left-0"></div>

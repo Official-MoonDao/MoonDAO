@@ -7,6 +7,7 @@ import React from 'react'
 import { useState } from 'react'
 import { useContext } from 'react'
 import { Toaster } from 'react-hot-toast'
+import { Analytics } from "@vercel/analytics/next"
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useNavigation from '@/lib/navigation/useNavigation'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -109,6 +110,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
 
       <CookieBanner />
       <Toaster />
+      <Analytics />
     </div>
   )
 
