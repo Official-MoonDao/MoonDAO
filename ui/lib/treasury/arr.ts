@@ -4,6 +4,7 @@ import {
   CITIZEN_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
   DEFAULT_CHAIN_V5,
+  CITIZEN_ADDRESSES,
 } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
 import {
@@ -60,7 +61,7 @@ async function getContractPrices() {
   try {
     const citizenContract = getContract({
       client: serverClient,
-      address: CITIZEN_TABLE_ADDRESSES[chainSlug],
+      address: CITIZEN_ADDRESSES[chainSlug],
       chain: chain,
       abi: CitizenABI as any,
     })
@@ -84,22 +85,13 @@ async function getContractPrices() {
     ])
 
     const citizenPrice = Number(citizenPricePerSecond)
-    const teamPrice = Number(teamPricePerSecond)
-
-    console.log('Contract prices:', { citizenPrice, teamPrice })
+    const teamPrice = Number(teamPricePerSecond) * (7 / 1000) // always apply discount to team price
 
     return {
-      citizenPricePerSecond: isNaN(citizenPrice) ? 351978691 : citizenPrice,
-      teamPricePerSecond: isNaN(teamPrice) ? 15854895991 : teamPrice,
+      citizenPricePerSecond: citizenPrice,
+      teamPricePerSecond: teamPrice,
     }
-  } catch (error) {
-    console.error('Failed to fetch contract prices:', error)
-    // Fallback prices (approximate values)
-    return {
-      citizenPricePerSecond: 351978691, // ~0.1 ETH / year
-      teamPricePerSecond: 15854895991, // Higher price for teams
-    }
-  }
+  } catch (error) {}
 }
 
 // Convert transfers to subscription events (each transfer = new subscription)
