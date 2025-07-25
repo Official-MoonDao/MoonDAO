@@ -11,7 +11,7 @@ export default function CitizenProfileLink() {
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  if (citizen?.metadata?.id !== null && citizen?.metadata?.id !== undefined) {
+  if (citizen?.metadata?.name) {
     return (
       <button
         onClick={async () => {
