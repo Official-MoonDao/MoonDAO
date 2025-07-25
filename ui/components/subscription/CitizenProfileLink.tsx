@@ -11,17 +11,16 @@ export default function CitizenProfileLink() {
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  if (citizen?.metadata?.id !== null && citizen?.metadata?.id !== undefined) {
+  if (citizen?.metadata?.name) {
     return (
       <button
         onClick={async () => {
           setIsLoading(true)
-          await router.push(
-            `/citizen/${generatePrettyLinkWithId(
-              citizen.metadata.name as string,
-              citizen.metadata.id
-            )}`
+          const prettyLink = generatePrettyLinkWithId(
+            citizen.metadata.name as string,
+            citizen.id.toString()
           )
+          await router.push(`/citizen/${prettyLink}`)
           setIsLoading(false)
         }}
       >
