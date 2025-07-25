@@ -58,8 +58,8 @@ import CitizenABI from '../../const/abis/Citizen.json'
 import CrossChainMinterABI from '../../const/abis/CrossChainMinter.json'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
-import FileInput from '../layout/FileInput'
 import { ExpandedFooter } from '../layout/ExpandedFooter'
+import FileInput from '../layout/FileInput'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { ImageGenerator } from './CitizenImageGenerator'
@@ -173,7 +173,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const callMint = async () => {
     const imageToUse = citizenImage || inputImage
     if (!imageToUse)
-      return toast.error('Please upload an image and complete the previous steps.')
+      return toast.error(
+        'Please upload an image and complete the previous steps.'
+      )
 
     if (!account || !address) {
       return toast.error('Please connect your wallet to continue.')
@@ -339,7 +341,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         headerSize="max(20px, 3vw)"
         preFooter={
           <>
-            <ExpandedFooter 
+            <ExpandedFooter
               callToActionImage="/assets/MoonDAO-Logo-White.svg"
               callToActionTitle="Join the Network"
               callToActionButtonText="Learn More"
@@ -473,7 +475,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     {!citizenImage && !inputImage && (
                       <div className="absolute inset-0 flex items-center justify-center bg-slate-800/50 rounded-2xl">
                         <p className="text-white text-center px-4">
-                          Please complete the previous steps to generate your citizen image
+                          Please complete the previous steps to generate your
+                          citizen image
                         </p>
                       </div>
                     )}
@@ -508,18 +511,24 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
                 <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
                   <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-                    <h3 className="font-GoodTimes text-xl mb-4 text-white">Citizen Overview</h3>
+                    <h3 className="font-GoodTimes text-xl mb-4 text-white">
+                      Citizen Overview
+                    </h3>
                     <div className="grid gap-4">
                       {isMobile ? (
                         Object.keys(citizenData)
-                          .filter((v) => v != 'newsletterSub' && v != 'formResponseId')
+                          .filter(
+                            (v) => v != 'newsletterSub' && v != 'formResponseId'
+                          )
                           .map((v, i) => {
                             return (
                               <div
                                 className="flex flex-col p-4 bg-slate-800/50 rounded-lg border border-slate-600/30"
                                 key={'citizenData' + i}
                               >
-                                <p className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-1">{v}:</p>
+                                <p className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-1">
+                                  {v}:
+                                </p>
                                 <p className="text-white">
                                   {/**@ts-expect-error */}
                                   {citizenData[v]!}
@@ -530,10 +539,16 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                       ) : (
                         <div className="space-y-3">
                           {Object.keys(citizenData)
-                            .filter((v) => v != 'newsletterSub' && v != 'formResponseId')
+                            .filter(
+                              (v) =>
+                                v != 'newsletterSub' && v != 'formResponseId'
+                            )
                             .map((v, i) => {
                               return (
-                                <div className="flex justify-between p-4 bg-slate-800/50 rounded-lg border border-slate-600/30" key={'citizenData' + i}>
+                                <div
+                                  className="flex justify-between p-4 bg-slate-800/50 rounded-lg border border-slate-600/30"
+                                  key={'citizenData' + i}
+                                >
                                   <span className="text-sm font-semibold text-slate-300 uppercase tracking-wide">
                                     {v}:
                                   </span>
@@ -555,7 +570,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                       Important Information
                     </h2>
                     <div className="flex flex-col rounded-[20px] bg-slate-800/50 border border-slate-600/30 p-5 pb-10 md:p-5">
-                      <h3 className="font-GoodTimes text-lg mb-3 text-white">Citizenship</h3>
+                      <h3 className="font-GoodTimes text-lg mb-3 text-white">
+                        Citizenship
+                      </h3>
                       <p className="text-slate-300 leading-relaxed">
                         Citizenship lasts for one year and can be renewed at any
                         time. Any wallet funds are self-custodied and are not
@@ -631,7 +648,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 <PrivyWeb3Button
                   id="citizen-checkout-button"
                   skipNetworkCheck={true}
-                  label={isLoadingMint ? "Creating Citizen..." : "Become a Citizen"}
+                  label={
+                    isLoadingMint ? 'Creating Citizen...' : 'Become a Citizen'
+                  }
                   className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   isDisabled={!agreedToCondition || isLoadingMint}
                   action={callMint}
@@ -642,7 +661,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                       Creating your citizen profile on the blockchain...
                     </p>
                     <p className="text-slate-400 text-sm text-center mt-2">
-                      This process can take up to a minute. Please wait while the transaction is processed.
+                      This process can take up to a minute. Please wait while
+                      the transaction is processed.
                     </p>
                   </div>
                 )}
@@ -653,8 +673,18 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         {/* Dev Buttons */}
         {process.env.NEXT_PUBLIC_ENV === 'dev' && (
           <div className="flex flex-row justify-center gap-4">
-            <button onClick={() => setStage(stage - 1)}>BACK</button>
-            <button onClick={() => setStage(stage + 1)}>NEXT</button>
+            <button
+              id="citizen-back-button"
+              onClick={() => setStage(stage - 1)}
+            >
+              BACK
+            </button>
+            <button
+              id="citizen-next-button"
+              onClick={() => setStage(stage + 1)}
+            >
+              NEXT
+            </button>
           </div>
         )}
       </ContentLayout>

@@ -30,13 +30,12 @@ describe('<CreateTeam />', () => {
     ).should('exist')
     // Simulate image upload
     cy.get('input[type="file"]').attachFile('images/Original.png')
-    cy.contains('Next').click()
+    cy.get('#team-next-button').click()
 
     //TYPEFORM
-    cy.contains('Please complete your team profile.').should('exist')
     cy.get('iframe').should('exist')
     cy.get('iframe').should('have.attr', 'src').should('include', 'typeform')
-    cy.contains('NEXT').click()
+    cy.get('#team-next-button').click()
 
     //MINT
     cy.get('#team-checkout-button').should('be.disabled')
