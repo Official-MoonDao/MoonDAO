@@ -241,6 +241,7 @@ jobs:
           record: false
         env:
           PORT: 3001
+          CYPRESS_BASE_URL: "http://localhost:3001"
 
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v4
