@@ -16,12 +16,11 @@ export default function CitizenProfileLink() {
       <button
         onClick={async () => {
           setIsLoading(true)
-          await router.push(
-            `/citizen/${generatePrettyLinkWithId(
-              citizen.metadata.name as string,
-              citizen.metadata.id
-            )}`
+          const prettyLink = generatePrettyLinkWithId(
+            citizen.metadata.name as string,
+            citizen.id.toString()
           )
+          await router.push(`/citizen/${prettyLink}`)
           setIsLoading(false)
         }}
       >
