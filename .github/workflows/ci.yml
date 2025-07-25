@@ -166,7 +166,7 @@ jobs:
         run: |
           # Start server in background - Next.js standalone mode
           echo "Starting Next.js server..."
-          PORT=3000 node .next/standalone/server.js &
+          yarn next start -p 3000 &
           SERVER_PID=$!
 
           # Wait for server to be ready
