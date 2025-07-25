@@ -707,18 +707,127 @@ export async function getStaticProps() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
 
-  let transferData = null
-  let arrData = null
+  // Initialize all data structures with fallbacks
+  let transferData = { citizenTransfers: [], teamTransfers: [] }
+  let arrData = { arrHistory: [], currentARR: 0, citizenARR: 0, teamARR: 0 }
   let citizenSubgraphData = { transfers: [] as any[], createdAt: Date.now() }
+  let aumData = null
+  let newestCitizens: any = []
+  let newestListings: any = []
+  let newestJobs: any = []
 
-  try {
-    transferData = await getAllNetworkTransfers()
+  // Batch all contract operations to reduce API calls
+  const contractOperations = async () => {
+    try {
+      const citizenTableContract = getContract({
+        client: serverClient,
+        address: CITIZEN_TABLE_ADDRESSES[chainSlug],
+        chain: chain,
+        abi: CitizenTableABI as any,
+      })
 
-    arrData = await calculateARRFromTransfers(
-      transferData.citizenTransfers,
-      transferData.teamTransfers,
-      365
-    )
+      const marketplaceTableContract = getContract({
+        client: serverClient,
+        address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
+        chain: chain,
+        abi: MarketplaceTableABI as any,
+      })
+
+      const jobTableContract = getContract({
+        client: serverClient,
+        address: JOBS_TABLE_ADDRESSES[chainSlug],
+        chain: chain,
+        abi: JobTableABI as any,
+      })
+
+      // Batch all table name reads
+      const [citizenTableName, marketplaceTableName, jobTableName] =
+        await Promise.all([
+          readContract({
+            contract: citizenTableContract,
+            method: 'getTableName',
+          }),
+          readContract({
+            contract: marketplaceTableContract,
+            method: 'getTableName',
+          }),
+          readContract({ contract: jobTableContract, method: 'getTableName' }),
+        ])
+
+      // Batch all table queries
+      const [citizens, listings, jobs] = await Promise.all([
+        queryTable(
+          chain,
+          `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 10`
+        ),
+        queryTable(
+          chain,
+          `SELECT * FROM ${marketplaceTableName} ORDER BY id DESC LIMIT 10`
+        ),
+        queryTable(
+          chain,
+          `SELECT * FROM ${jobTableName} ORDER BY id DESC LIMIT 10`
+        ),
+      ])
+
+      return { citizens, listings, jobs }
+    } catch (error) {
+      console.error('Contract operations failed:', error)
+      return { citizens: [], listings: [], jobs: [] }
+    }
+  }
+
+  // Get all transfer data as requested
+  const allTransferData = async () => {
+    try {
+      console.log('Fetching all network transfers...')
+      const transfers = await getAllNetworkTransfers()
+      console.log(
+        `Fetched ${transfers.citizenTransfers.length} citizen transfers and ${transfers.teamTransfers.length} team transfers`
+      )
+      return transfers
+    } catch (error) {
+      console.error('Transfer data fetch failed:', error)
+      return { citizenTransfers: [], teamTransfers: [] }
+    }
+  }
+
+  // Get AUM data with proper error handling
+  const getAUMData = async () => {
+    try {
+      console.log('Fetching AUM data...')
+      const aum = await getAUMHistory(365)
+      console.log('AUM data fetched successfully')
+      return aum
+    } catch (error) {
+      console.error('AUM data fetch failed:', error)
+      return null
+    }
+  }
+
+  // Use Promise.allSettled to run all operations in parallel with individual error handling
+  const [transferResult, contractResult, aumResult] = await Promise.allSettled([
+    allTransferData(),
+    contractOperations(),
+    getAUMData(),
+  ])
+
+  // Extract results with fallbacks
+  if (transferResult.status === 'fulfilled') {
+    transferData = transferResult.value
+
+    // Calculate ARR from all transfer data
+    try {
+      console.log('Calculating ARR from all transfers...')
+      arrData = await calculateARRFromTransfers(
+        transferData.citizenTransfers,
+        transferData.teamTransfers,
+        365
+      )
+      console.log('ARR calculation completed')
+    } catch (error) {
+      console.error('ARR calculation failed:', error)
+    }
 
     citizenSubgraphData = {
       transfers: transferData.citizenTransfers.map((transfer) => ({
@@ -728,64 +837,22 @@ export async function getStaticProps() {
       })),
       createdAt: Date.now(),
     }
-  } catch (error) {
-    console.error('Failed to fetch transfer data during build:', error)
   }
 
-  let aumData = null
-  try {
-    aumData = await getAUMHistory(365)
-    console.log('AUM Data fetched successfully:', aumData)
-  } catch (error) {
-    console.error('Failed to fetch AUM data during build:', error)
+  if (contractResult.status === 'fulfilled') {
+    const { citizens, listings, jobs } = contractResult.value
+    newestCitizens = citizens
+    newestListings = listings
+    newestJobs = jobs
+  }
+
+  if (aumResult.status === 'fulfilled') {
+    aumData = aumResult.value
   }
 
   const newestNewsletters: any = []
 
-  const citizenTableContract = getContract({
-    client: serverClient,
-    address: CITIZEN_TABLE_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: CitizenTableABI as any,
-  })
-  const citizenTableName = await readContract({
-    contract: citizenTableContract,
-    method: 'getTableName',
-  })
-  const newestCitizens: any = await queryTable(
-    chain,
-    `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 10`
-  )
-
-  const marketplaceTableContract = getContract({
-    client: serverClient,
-    address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: MarketplaceTableABI as any,
-  })
-  const marketplaceTableName = await readContract({
-    contract: marketplaceTableContract,
-    method: 'getTableName',
-  })
-  const newestListings: any = await queryTable(
-    chain,
-    `SELECT * FROM ${marketplaceTableName} ORDER BY id DESC LIMIT 10`
-  )
-
-  const jobTableContract = getContract({
-    client: serverClient,
-    address: JOBS_TABLE_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: JobTableABI as any,
-  })
-  const jobTableName = await readContract({
-    contract: jobTableContract,
-    method: 'getTableName',
-  })
-  const newestJobs: any = await queryTable(
-    chain,
-    `SELECT * FROM ${jobTableName} ORDER BY id DESC LIMIT 10`
-  )
+  console.log('ARR Data:', arrData)
 
   return {
     props: {
@@ -797,6 +864,6 @@ export async function getStaticProps() {
       aumData,
       arrData,
     },
-    revalidate: 60,
+    revalidate: 300, // Increase cache time to 5 minutes to reduce build frequency
   }
 }
