@@ -52,6 +52,8 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache-keys.outputs.cache-key }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,6 +64,21 @@ jobs:
           node-version: "20"
           cache: "yarn"
           cache-dependency-path: ui/yarn.lock
+
+      - name: Generate cache keys
+        id: cache-keys
+        run: |
+          echo "cache-key=ui-${{ runner.os }}-${{ hashFiles('ui/yarn.lock', 'ui/package.json') }}" >> $GITHUB_OUTPUT
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ui/node_modules
+            ~/.cache/yarn
+          key: ${{ steps.cache-keys.outputs.cache-key }}
+          restore-keys: |
+            ui-${{ runner.os }}-
 
       - name: Cache Cypress binary
         uses: actions/cache@v4
@@ -106,9 +123,13 @@ jobs:
           cache: "yarn"
           cache-dependency-path: ui/yarn.lock
 
-      - name: Install dependencies
-        working-directory: ui
-        run: yarn install --frozen-lockfile
+      - name: Restore node modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ui/node_modules
+            ~/.cache/yarn
+          key: ${{ needs.build.outputs.cache-key }}
 
       - name: Restore Cypress binary cache
         uses: actions/cache@v4
@@ -182,9 +203,13 @@ jobs:
           cache: "yarn"
           cache-dependency-path: ui/yarn.lock
 
-      - name: Install dependencies
-        working-directory: ui
-        run: yarn install --frozen-lockfile
+      - name: Restore node modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ui/node_modules
+            ~/.cache/yarn
+          key: ${{ needs.build.outputs.cache-key }}
 
       - name: Restore Cypress binary cache
         uses: actions/cache@v4
