@@ -234,11 +234,13 @@ jobs:
         with:
           working-directory: ui
           install: false
-          start: PORT=3001 node .next/standalone/server.js
+          start: yarn next start -p 3001
           wait-on: "http://localhost:3001"
           component: true
           browser: chrome
           record: false
+        env:
+          PORT: 3001
 
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v4
