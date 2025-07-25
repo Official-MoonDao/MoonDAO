@@ -65,6 +65,7 @@ export default function MissionInfo({
   userMissionTokenBalance,
   primaryTerminalAddress,
   stage,
+  poolDeployerAddress,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -267,7 +268,11 @@ export default function MissionInfo({
                 title="Mission Tokenomics"
                 icon="/assets/icon-star-blue.svg"
               />
-              <MissionTokenInfo mission={mission} token={token} />
+              <MissionTokenInfo
+                mission={mission}
+                token={token}
+                poolDeployerAddress={poolDeployerAddress}
+              />
             </div>
           )}
         </div>
