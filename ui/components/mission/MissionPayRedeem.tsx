@@ -1,4 +1,3 @@
-import { getOnrampBuyUrl } from '@coinbase/onchainkit/fund'
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
 import { useFundWallet } from '@privy-io/react-auth'
