@@ -2,6 +2,7 @@ import {
   ClockIcon,
   LockClosedIcon,
   MoonIcon,
+  StarIcon,
 } from '@heroicons/react/24/outline'
 import { BigNumber, ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
@@ -39,36 +40,29 @@ export function LockData({
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* vMOONEY Balance */}
+            {/* Voting Power */}
             <div className="bg-black/20 rounded-xl p-4 border border-white/5">
               <div className="flex items-center mb-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                    <MoonIcon className="h-4 w-4 text-blue-400" />
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <StarIcon className="h-4 w-4 text-green-400" />
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs">vMOONEY Balance</p>
-                    <p className="text-white text-sm font-medium">Voting Power</p>
+                    <p className="text-gray-400 text-xs">Voting Power</p>
+                    <p className="text-white text-sm font-medium">√vMOONEY</p>
                   </div>
                 </div>
               </div>
               <div className="flex items-center text-left">
-                <span className="text-blue-400 text-2xl font-RobotoMono font-semibold flex items-center">
+                <span className="text-green-400 text-2xl font-RobotoMono font-semibold flex items-center">
                   <Balance
-                    id="lock-data-vmooney-balance"
-                    balance={VMOONEYBalance?.toString() / 10 ** 18}
+                    id="lock-data-voting-power"
+                    balance={VMOONEYBalance ? Math.sqrt(VMOONEYBalance?.toString() / 10 ** 18) : 0}
                     loading={VMOONEYBalanceLoading}
-                    decimals={
-                      VMOONEYBalance &&
-                      BigNumber.from(VMOONEYBalance)?.gt(
-                        ethers.utils.parseEther('1')
-                      )
-                        ? 2
-                        : 8
-                    }
+                    decimals={2}
                     token=""
                   />
-                  <span className="ml-1 text-base md:text-lg">vMOONEY</span>
+                  <span className="ml-1 text-base md:text-lg">VP</span>
                 </span>
               </div>
             </div>
@@ -92,7 +86,7 @@ export function LockData({
                     id="lock-data-locked-mooney"
                     balance={VMOONEYLock && BigNumber.from(VMOONEYLock[0])}
                     loading={VMOONEYLockLoading}
-                    decimals={2}
+                    decimals={0}
                   />
                   <Image
                     src="/coins/MOONEY.png"

@@ -141,7 +141,7 @@ const PATHS_WITH_NO_SIGNIN_REDIRECT = [
   '/proposal/[proposal]',
   '/lock',
   '/join',
-  '/get-mooney',
+  '/mooney',
   '/bridge',
   '/citizen',
   '/citizen/[tokenId]',

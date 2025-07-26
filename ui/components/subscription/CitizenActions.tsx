@@ -82,7 +82,7 @@ export default function CitizenActions({
                           width={30}
                         />
                       }
-                      onClick={() => router.push('/get-mooney')}
+                      onClick={() => router.push('/mooney')}
                     />
                   )}
                   {hasMooney && !hasVmooney && (

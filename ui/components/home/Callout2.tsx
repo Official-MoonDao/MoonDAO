@@ -64,7 +64,7 @@ export default function Callout2() {
                   backgroundColor="bg-white"
                   textColor="text-dark-cool"
                   borderRadius="rounded-tl-[10px] rounded-[2vmax]"
-                  link="/get-mooney"
+                  link="/mooney"
                   paddingOnHover="pl-5"
                 >
                   Buy $MOONEY

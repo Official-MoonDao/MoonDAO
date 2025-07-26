@@ -308,6 +308,16 @@ module.exports = withTM(
           permanent: true,
         },
         {
+          source: '/get-mooney',
+          destination: '/mooney#buy',
+          permanent: true,
+        },
+        {
+          source: '/lock',
+          destination: '/mooney#lock',
+          permanent: true,
+        },
+        {
           source: '/launchpad',
           destination: '/launch',
           permanent: true,
