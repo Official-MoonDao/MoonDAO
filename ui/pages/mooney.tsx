@@ -404,7 +404,7 @@ export default function Mooney() {
                 </div>
                 <h3 className="text-lg font-bold text-white mb-2 font-GoodTimes">Fixed Supply</h3>
                 <p className="text-gray-300 text-sm mb-3">
-                  Only 2.6B MOONEY will ever exist. No new tokens minted.
+                  Only 2.53B MOONEY will ever exist. No new tokens minted.
                 </p>
               </div>
               
