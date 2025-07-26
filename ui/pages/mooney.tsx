@@ -158,8 +158,12 @@ export default function Mooney() {
         <div className="min-h-screen bg-dark-cool text-white w-full">
           
           {/* Hero Section */}
-          <section className="relative min-h-screen px-6 w-full flex items-center justify-center" style={{backgroundImage: 'url(/assets/MooneyHeroImg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', imageRendering: 'crisp-edges'}}>
-            <div className="absolute inset-0 bg-black/40"></div>
+          <section className="relative min-h-screen px-6 w-full flex items-center justify-center overflow-hidden">
+            <div
+              className="w-full h-full absolute top-0 left-0 bg-cover bg-no-repeat bg-center z-0"
+              style={{backgroundImage: 'url("/assets/launchpad/JWST_hero.width-2000.jpg")'}}
+            ></div>
+            <div className="absolute inset-0 bg-black/40 z-1"></div>
             <div className="max-w-7xl mx-auto text-center space-y-8 relative z-10 -mt-20">
               <div className="flex justify-center">
                 <Image 
@@ -182,10 +186,10 @@ export default function Mooney() {
                 
                 {/* Quick Navigation */}
                 <div className="flex flex-wrap justify-center gap-4 pt-8">
-                  <a href="#buy" className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all transform hover:scale-105">
+                  <a href="#buy" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-4 px-8 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg">
                     Buy MOONEY
                   </a>
-                  <a href="#lock" className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-all transform hover:scale-105">
+                  <a href="#lock" className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white py-4 px-8 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg">
                     Lock & Vote
                   </a>
                 </div>
