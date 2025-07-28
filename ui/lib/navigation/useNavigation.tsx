@@ -84,11 +84,6 @@ export default function useNavigation(citizen: any) {
         name: '$MOONEY',
         icon: CircleStackIcon,
         href: '/mooney',
-        children: [
-          { name: 'Buy MOONEY', href: '/mooney#buy' },
-          { name: 'Lock for Voting Power', href: '/mooney#lock' },
-          { name: 'Bridge Tokens', href: '/bridge' },
-        ],
       },
       {
         name: 'Marketplace',

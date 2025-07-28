@@ -318,6 +318,11 @@ module.exports = withTM(
           permanent: true,
         },
         {
+          source: '/bridge',
+          destination: '/mooney#bridge',
+          permanent: true,
+        },
+        {
           source: '/launchpad',
           destination: '/launch',
           permanent: true,
