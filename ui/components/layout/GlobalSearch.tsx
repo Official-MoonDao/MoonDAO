@@ -361,17 +361,9 @@ export default function GlobalSearch() {
               onKeyDown={handleKeyDown}
               onFocus={() => query.trim() && setIsOpen(results.length > 0)}
               placeholder="Search..."
-              className="w-full pl-10 pr-20 py-3 bg-black/70 backdrop-blur-md border border-white/20 rounded-2xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all relative z-0"
+              className="w-full pl-10 pr-12 py-3 bg-black/70 backdrop-blur-md border border-white/20 rounded-2xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all relative z-0"
             />
-            <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-3">
-              {query && (
-                <button
-                  onClick={clearSearch}
-                  className="text-gray-400 hover:text-white transition-colors p-1"
-                >
-                  <XMarkIcon className="h-4 w-4" />
-                </button>
-              )}
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
               <button
                 onClick={() => setIsExpanded(false)}
                 className="text-gray-400 hover:text-white transition-colors p-1"
