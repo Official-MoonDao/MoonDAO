@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { approveToken } from '@/lib/tokens/approve'
 import { calculateVMOONEY, createLock, increaseLock, withdrawLock } from '@/lib/tokens/ve-token'
 import { bigNumberToDate, dateOut, dateToReadable } from '@/lib/utils/dates'
-import { NumberType, transformNumber } from '@/lib/utils/numbers'
+import { NumberType, transformNumber, formatNumberWithCommas } from '@/lib/utils/numbers'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -77,7 +77,28 @@ export default function LockInterface() {
 
   const [hasExpired, setHasExpired] = useState<boolean>()
   const [lockAmount, setLockAmount] = useState<string>('')
+  const [lockAmountDisplay, setLockAmountDisplay] = useState<string>('')
   const [wantsToIncrease, setWantsToIncrease] = useState(false)
+
+  // Helper functions for comma formatting
+  const removeCommas = (value: string): string => {
+    return value.replace(/,/g, '')
+  }
+
+  const formatForDisplay = (value: string): string => {
+    if (!value || value === '') return ''
+    const cleanValue = removeCommas(value)
+    if (cleanValue.includes('.')) {
+      const [integerPart, decimalPart] = cleanValue.split('.')
+      return formatNumberWithCommas(integerPart) + '.' + decimalPart
+    }
+    return formatNumberWithCommas(cleanValue)
+  }
+
+  // Update display whenever lockAmount changes
+  useEffect(() => {
+    setLockAmountDisplay(formatForDisplay(lockAmount))
+  }, [lockAmount])
 
   const oneWeekOut = dateOut(new Date(), { days: 7 })
   const [lockTime, setLockTime] = useState({
@@ -245,34 +266,38 @@ export default function LockInterface() {
                   <div className="bg-black/30 rounded-xl p-3 border border-white/10 focus-within:border-blue-400/50 transition-colors">
                     <div className="flex items-center justify-between">
                       <input
-                        type="number"
-                        step="any"
-                        placeholder="0.0"
-                        className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        value={lockAmount || ''}
+                        type="text"
+                        placeholder="0"
+                        className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1"
+                        value={lockAmountDisplay || ''}
                         disabled={
                           (!MOONEYBalance || +MOONEYBalance.toString() === 0) && !hasLock
                         }
-                        min={
-                          VMOONEYLock
-                            ? formatMooneyAmount(VMOONEYLock?.[0])
-                            : 0
-                        }
                         onChange={(e: any) => {
                           let value = e.target.value
+                          // Remove commas for processing
+                          const cleanValue = removeCommas(value)
+                          
+                          // Allow only numbers and decimal point
+                          if (!/^\d*\.?\d*$/.test(cleanValue)) return
+                          
                           // Prevent negative values
-                          if (parseFloat(value) < 0) {
-                            value = '0'
+                          if (parseFloat(cleanValue) < 0) {
+                            return
                           }
+                          
                           // Remove leading zero if user types a number after it
+                          let processedValue = cleanValue
                           if (
-                            value.startsWith('0') &&
-                            value.length > 1 &&
-                            value[1] !== '.'
+                            processedValue.startsWith('0') &&
+                            processedValue.length > 1 &&
+                            processedValue[1] !== '.'
                           ) {
-                            value = value.substring(1)
+                            processedValue = processedValue.substring(1)
                           }
-                          setLockAmount(value)
+                          
+                          // Update the clean value for logic and let useEffect handle display formatting
+                          setLockAmount(processedValue)
                           setWantsToIncrease(true)
                         }}
                       />
