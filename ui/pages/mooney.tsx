@@ -197,6 +197,78 @@ export default function Mooney() {
             </div>
           </section>
 
+        {/* Key Features Section */}
+        <section className="py-20 px-6 bg-gradient-to-br from-gray-900/50 to-blue-900/20 w-full">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold font-GoodTimes text-center text-white mb-8">
+              Key Features
+            </h2>
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 rounded-xl p-6 border border-white/10">
+                <div className="bg-blue-500/20 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <ScaleIcon className="w-6 h-6 text-blue-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 font-GoodTimes">Quadratic Voting</h3>
+                <p className="text-gray-300 text-sm mb-3">
+                  Lock MOONEY to get vMOONEY voting power. Influence = √(vMOONEY balance).
+                </p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 rounded-xl p-6 border border-white/10">
+                <div className="bg-purple-500/20 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <ShieldCheckIcon className="w-6 h-6 text-purple-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 font-GoodTimes">Fixed Supply</h3>
+                <p className="text-gray-300 text-sm mb-3">
+                  Only 2.53B MOONEY will ever exist. No new tokens minted.
+                </p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 rounded-xl p-6 border border-white/10">
+                <div className="bg-green-500/20 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <GlobeAltIcon className="w-6 h-6 text-green-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 font-GoodTimes">Multi-Chain</h3>
+                <p className="text-gray-300 text-sm mb-3">
+                  Available on Ethereum, Arbitrum, Polygon, and Base.
+                </p>
+                <div className="flex gap-1 flex-wrap">
+                  <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded">ETH</span>
+                  <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded">ARB</span>
+                  <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded">MATIC</span>
+                  <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded">BASE</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Governance Flow Card */}
+            <div className="bg-gradient-to-r from-black/40 via-blue-900/20 to-purple-900/20 rounded-2xl p-6 border border-white/10">
+              <div className="grid md:grid-cols-4 gap-4 text-center">
+                <div className="space-y-2">
+                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mx-auto text-white font-bold">1</div>
+                  <span className="text-blue-300 text-sm font-semibold">Get MOONEY</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mx-auto text-white font-bold">2</div>
+                  <span className="text-purple-300 text-sm font-semibold">Lock for vMOONEY</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mx-auto text-white font-bold">3</div>
+                  <span className="text-green-300 text-sm font-semibold">Vote on Proposals</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mx-auto text-white font-bold">4</div>
+                  <span className="text-orange-300 text-sm font-semibold">Shape Mission</span>
+                </div>
+              </div>
+              <div className="text-center mt-6">
+                <code className="text-blue-300 font-mono text-lg">Voting Power = √(vMOONEY)</code>
+                <p className="text-gray-400 text-sm mt-1">Quadratic voting prevents whale dominance</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Token Information Section */}
         <section className="py-16 px-6 bg-gradient-to-br from-gray-900/60 to-black/40 w-full">
           <div className="max-w-6xl mx-auto">
@@ -280,10 +352,11 @@ export default function Mooney() {
                       <p>1,000,000 vMOONEY = √1,000,000 = 1,000 voting power</p>
                     </div>
                   </div>
-                  <div className="bg-green-500/10 rounded-lg p-3 border border-green-400/20">
-                    <p className="text-green-300 text-sm">
-                      💡 This prevents whale dominance in governance
-                    </p>
+                  <div className="bg-black/20 rounded-lg p-4">
+                    <h4 className="text-green-300 font-semibold mb-2">Fair Governance</h4>
+                    <div className="text-gray-300 text-sm">
+                      <p>Prevents whale dominance by limiting large holder influence. Ensures democratic participation in DAO governance.</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -293,16 +366,9 @@ export default function Mooney() {
             <div className="bg-gradient-to-br from-gray-900/50 to-purple-900/20 rounded-xl p-6 border border-white/10 mt-8">
               <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                 <ChartPieIcon className="h-5 w-5 text-purple-400" />
-                Token Usage & Allocation
+                Token Usage & Allocation (Last updated July 7th 2025)
               </h3>
               <TokenDistributionChart />
-              <div className="mt-6 text-center">
-                <div className="inline-flex items-center gap-2 bg-purple-500/10 rounded-lg px-4 py-2 border border-purple-400/20">
-                  <span className="text-purple-300 text-sm">
-                    🚀 Subject to change last updated on July 7th 2025
-                  </span>
-                </div>
-              </div>
             </div>
 
             {/* Geometric Release Schedule Section */}
@@ -376,78 +442,6 @@ export default function Mooney() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Key Features Section */}
-        <section className="py-20 px-6 bg-gradient-to-br from-gray-900/50 to-blue-900/20 w-full">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold font-GoodTimes text-center text-white mb-8">
-              Key Features
-            </h2>
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 rounded-xl p-6 border border-white/10">
-                <div className="bg-blue-500/20 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                  <ScaleIcon className="w-6 h-6 text-blue-400" />
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2 font-GoodTimes">Quadratic Voting</h3>
-                <p className="text-gray-300 text-sm mb-3">
-                  Lock MOONEY to get vMOONEY voting power. Influence = √(vMOONEY balance).
-                </p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 rounded-xl p-6 border border-white/10">
-                <div className="bg-purple-500/20 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                  <ShieldCheckIcon className="w-6 h-6 text-purple-400" />
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2 font-GoodTimes">Fixed Supply</h3>
-                <p className="text-gray-300 text-sm mb-3">
-                  Only 2.53B MOONEY will ever exist. No new tokens minted.
-                </p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 rounded-xl p-6 border border-white/10">
-                <div className="bg-green-500/20 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                  <GlobeAltIcon className="w-6 h-6 text-green-400" />
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2 font-GoodTimes">Multi-Chain</h3>
-                <p className="text-gray-300 text-sm mb-3">
-                  Available on Ethereum, Arbitrum, Polygon, and Base.
-                </p>
-                <div className="flex gap-1 flex-wrap">
-                  <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded">ETH</span>
-                  <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded">ARB</span>
-                  <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded">MATIC</span>
-                  <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded">BASE</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Governance Flow Card */}
-            <div className="bg-gradient-to-r from-black/40 via-blue-900/20 to-purple-900/20 rounded-2xl p-6 border border-white/10">
-              <div className="grid md:grid-cols-4 gap-4 text-center">
-                <div className="space-y-2">
-                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mx-auto text-white font-bold">1</div>
-                  <span className="text-blue-300 text-sm font-semibold">Get MOONEY</span>
-                </div>
-                <div className="space-y-2">
-                  <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mx-auto text-white font-bold">2</div>
-                  <span className="text-purple-300 text-sm font-semibold">Lock for vMOONEY</span>
-                </div>
-                <div className="space-y-2">
-                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mx-auto text-white font-bold">3</div>
-                  <span className="text-green-300 text-sm font-semibold">Vote on Proposals</span>
-                </div>
-                <div className="space-y-2">
-                  <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mx-auto text-white font-bold">4</div>
-                  <span className="text-orange-300 text-sm font-semibold">Shape Mission</span>
-                </div>
-              </div>
-              <div className="text-center mt-6">
-                <code className="text-blue-300 font-mono text-lg">Voting Power = √(vMOONEY)</code>
-                <p className="text-gray-400 text-sm mt-1">Quadratic voting prevents whale dominance</p>
               </div>
             </div>
           </div>
