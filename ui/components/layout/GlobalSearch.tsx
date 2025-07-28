@@ -82,6 +82,13 @@ const searchMappings = [
     category: 'Projects'
   },
   {
+    keywords: ['launchpad', 'launch pad', 'startup', 'accelerator', 'launch', 'new projects', 'venture', 'fundraise', 'mission'],
+    title: 'Launchpad',
+    description: 'Launch your space venture with MoonDAO support',
+    link: '/launchpad',
+    category: 'Projects'
+  },
+  {
     keywords: ['jobs', 'careers', 'work', 'employment', 'opportunities', 'hiring', 'job board', 'find work', 'career opportunities', 'space jobs', 'space careers'],
     title: 'Jobs Board',
     description: 'Find career opportunities in the space industry',
