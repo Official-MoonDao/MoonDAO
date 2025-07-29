@@ -21,6 +21,7 @@ import { getContract, readContract } from 'thirdweb'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { getAUMHistory } from '@/lib/coinstats'
+import { getMooneyPrice } from '@/lib/coinstats'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
@@ -38,6 +39,7 @@ import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget } from '@/lib/utils/rewards'
+import { NewsletterSubModal } from '../components/newsletter/NewsletterSubModal'
 import { ARRChart } from '@/components/dashboard/treasury/ARRChart'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { ProposalCard } from '@/components/home/ProposalCard'
@@ -48,6 +50,7 @@ import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import CitizensChart from '@/components/subscription/CitizensChart'
+import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 
 export default function Home({
   newestNewsletters,
@@ -57,6 +60,7 @@ export default function Home({
   citizenSubgraphData,
   aumData,
   arrData,
+  mooneyPrice, // Add this new prop
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
@@ -68,6 +72,9 @@ export default function Home({
   const [chartModalComponent, setChartModalComponent] =
     useState<React.ReactNode>(null)
   const [chartModalTitle, setChartModalTitle] = useState('')
+
+  // Newsletter modal state
+  const [newsletterModalOpen, setNewsletterModalOpen] = useState(false)
 
   // Chart modal handlers
   const openCitizensChart = () => {
@@ -164,15 +171,16 @@ export default function Home({
         {/* Welcome Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Welcome Card */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 h-full">
             <Frame
               noPadding
               bottomLeft="20px"
               bottomRight="20px"
               topRight="0px"
               topLeft="10px"
+              className="h-full"
             >
-              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-6">
+              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-6 h-full flex flex-col">
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/30">
                     {citizen?.metadata?.image ? (
@@ -204,14 +212,14 @@ export default function Home({
                         <span className="text-blue-300">
                           {MOONEYBalance
                             ? Math.round(MOONEYBalance).toLocaleString()
-                            : '12.4m'}
+                            : ''}
                         </span>{' '}
                         MOONEY{' '}
                         <span className="text-white/60">
                           ($
-                          {MOONEYBalance
-                            ? (MOONEYBalance * 0.12).toFixed(0)
-                            : '12,342'}
+                          {MOONEYBalance && mooneyPrice
+                            ? (MOONEYBalance * mooneyPrice).toFixed(0)
+                            : ''}
                           )
                         </span>
                       </div>
@@ -219,16 +227,9 @@ export default function Home({
                         <span className="text-purple-300">
                           {VMOONEYBalance
                             ? Math.round(VMOONEYBalance).toLocaleString()
-                            : '1.2m'}
+                            : ''}
                         </span>{' '}
                         vMOONEY{' '}
-                        <span className="text-white/60">
-                          ($
-                          {VMOONEYBalance
-                            ? (VMOONEYBalance * 0.12).toFixed(0)
-                            : '1,442'}
-                          )
-                        </span>
                       </div>
                     </div>
                     <div className="flex gap-3 mb-3">
@@ -265,46 +266,8 @@ export default function Home({
           </div>
 
           {/* Weekly Reward Pool */}
-          <div>
-            <Frame
-              noPadding
-              bottomLeft="20px"
-              bottomRight="20px"
-              topRight="0px"
-              topLeft="10px"
-            >
-              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-6 h-full">
-                <h3 className="text-sm font-GoodTimes text-white/80 mb-2">
-                  WEEKLY REWARD POOL
-                </h3>
-                <div className="mb-4">
-                  <p className="text-3xl font-bold text-white mb-1">
-                    💎{' '}
-                    {withdrawable ? (+withdrawable / 1e18).toFixed(2) : '0.32'}{' '}
-                    ETH
-                  </p>
-                  <p className="text-sm text-white/70">
-                    Your Reward:{' '}
-                    {withdrawable
-                      ? ((+withdrawable / 1e18) * 0.007).toFixed(4)
-                      : '0.0023'}{' '}
-                    ETH
-                  </p>
-                </div>
-                <button className="w-full py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm rounded-lg font-medium transition-all duration-200">
-                  Claim Now
-                </button>
-                <div className="mt-3 text-center">
-                  <Link
-                    href="/learn"
-                    className="text-xs text-blue-300 hover:text-blue-200"
-                  >
-                    Learn More
-                  </Link>
-                </div>
-              </div>
-            </Frame>
-          </div>
+
+          <WeeklyRewardPool />
         </div>
 
         {/* What's New Section */}
@@ -315,12 +278,18 @@ export default function Home({
               <span>Latest Newsletter: Datacenters on the moon?</span>
               <span>Next Townhall: Thursday, June 19th, 2025 @ 3PM EST</span>
               <div className="flex gap-2">
-                <button className="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs rounded">
+                <StandardButton
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs rounded"
+                  link="/news"
+                >
                   All News
-                </button>
-                <button className="px-3 py-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs rounded">
+                </StandardButton>
+                <StandardButton
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs rounded"
+                  onClick={() => setNewsletterModalOpen(true)}
+                >
                   Subscribe
-                </button>
+                </StandardButton>
               </div>
             </div>
           </div>
@@ -703,6 +672,11 @@ export default function Home({
           chartComponent={chartModalComponent}
           chartTitle={chartModalTitle}
         />
+
+        {/* Newsletter Modal */}
+        {newsletterModalOpen && (
+          <NewsletterSubModal setEnabled={setNewsletterModalOpen} />
+        )}
       </div>
     </Container>
   )
@@ -725,6 +699,19 @@ export async function getStaticProps() {
   let newestCitizens: any = []
   let newestListings: any = []
   let newestJobs: any = []
+  let mooneyPrice = 0.0003605 // Default fallback price
+
+  // Get MOONEY price data
+  const getMooneyPriceData = async () => {
+    try {
+      const priceData = await getMooneyPrice()
+      console.log('PRICE DATA', priceData)
+      return priceData?.price || 0
+    } catch (error) {
+      console.error('MOONEY price fetch failed:', error)
+      return 0
+    }
+  }
 
   // Batch all contract operations to reduce API calls
   const contractOperations = async () => {
@@ -814,11 +801,13 @@ export async function getStaticProps() {
   }
 
   // Use Promise.allSettled to run all operations in parallel with individual error handling
-  const [transferResult, contractResult, aumResult] = await Promise.allSettled([
-    allTransferData(),
-    contractOperations(),
-    getAUMData(),
-  ])
+  const [transferResult, contractResult, aumResult, mooneyPriceResult] =
+    await Promise.allSettled([
+      allTransferData(),
+      contractOperations(),
+      getAUMData(),
+      getMooneyPriceData(),
+    ])
 
   // Extract results with fallbacks and proper type handling
   if (transferResult.status === 'fulfilled') {
@@ -856,6 +845,10 @@ export async function getStaticProps() {
     aumData = aumResult.value
   }
 
+  if (mooneyPriceResult.status === 'fulfilled') {
+    mooneyPrice = mooneyPriceResult.value
+  }
+
   const newestNewsletters: any = []
 
   return {
@@ -867,7 +860,8 @@ export async function getStaticProps() {
       citizenSubgraphData,
       aumData,
       arrData,
+      mooneyPrice,
     },
-    revalidate: 300, // Increase cache time to 5 minutes to reduce build frequency
+    revalidate: 300,
   }
 }
