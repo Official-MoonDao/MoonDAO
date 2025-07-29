@@ -78,6 +78,7 @@ export default function Home({
         height={400}
         compact={false}
         createdAt={citizenSubgraphData.createdAt}
+        defaultRange={365}
       />
     )
     setChartModalTitle('CITIZENS')
@@ -91,6 +92,7 @@ export default function Home({
         compact={false}
         height={400}
         isLoading={false}
+        defaultRange={365}
       />
     )
     setChartModalTitle('ASSETS UNDER MANAGEMENT')
@@ -104,6 +106,7 @@ export default function Home({
         compact={false}
         height={400}
         isLoading={false}
+        defaultRange={365}
       />
     )
     setChartModalTitle('ESTIMATED ANNUAL RECURRING REVENUE')

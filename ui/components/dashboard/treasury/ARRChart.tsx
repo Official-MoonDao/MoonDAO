@@ -7,6 +7,7 @@ interface ARRChartProps {
   height?: number
   days?: number
   isLoading?: boolean
+  defaultRange?: number
 }
 
 export function ARRChart({
@@ -14,6 +15,7 @@ export function ARRChart({
   compact = false,
   height = 300,
   isLoading = false,
+  defaultRange,
 }: ARRChartProps) {
   // Transform ARR data to LineChart format
   // Convert timestamps from milliseconds to seconds for LineChart compatibility
@@ -29,6 +31,7 @@ export function ARRChart({
       isLoading={isLoading}
       height={height}
       compact={compact}
+      defaultRange={defaultRange}
       config={{
         timestampField: 'timestamp',
         valueField: 'arr',

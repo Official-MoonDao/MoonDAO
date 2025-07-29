@@ -6,6 +6,7 @@ interface AUMChartProps {
   height?: number
   days?: number
   isLoading?: boolean
+  defaultRange?: number
 }
 
 export function AUMChart({
@@ -13,6 +14,7 @@ export function AUMChart({
   compact = false,
   height = 300,
   isLoading = false,
+  defaultRange,
 }: AUMChartProps) {
   return (
     <LineChart
@@ -20,6 +22,7 @@ export function AUMChart({
       isLoading={isLoading}
       height={height}
       compact={compact}
+      defaultRange={defaultRange}
       config={{
         timestampField: 'timestamp',
         valueField: 'value',

@@ -1,5 +1,5 @@
 import moment from 'moment'
-import { useMemo } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import {
   CartesianGrid,
   Line,
@@ -24,6 +24,7 @@ export type LineChartProps = {
   height: number
   compact?: boolean
   createdAt?: number
+  defaultRange?: number
   config: {
     timestampField: string
     valueField: string
@@ -57,6 +58,7 @@ export default function LineChart({
   height,
   compact = false,
   createdAt = 0,
+  defaultRange,
   config,
 }: LineChartProps) {
   const {
@@ -76,9 +78,31 @@ export default function LineChart({
   const strokeWidth = styling.strokeWidth || 4
   const compactStrokeWidth = styling.compactStrokeWidth || 1.5
 
-  const [range, setRange] = useTimelineRange({
+  const hookResult = useTimelineRange({
     createdAt: createdAt,
-  })
+  }) as [number, (value: number) => void]
+
+  // Use local state for range when defaultRange is provided
+  const [localRange, setLocalRange] = useState<number | null>(null)
+  const [initializedDefault, setInitializedDefault] = useState(false)
+
+  // Initialize with defaultRange if provided
+  useEffect(() => {
+    if (defaultRange !== undefined && !initializedDefault) {
+      setLocalRange(defaultRange)
+      setInitializedDefault(true)
+    }
+  }, [defaultRange, initializedDefault])
+
+  // Use local range if available, otherwise use hook result
+  const range = localRange !== null ? localRange : hookResult[0]
+  const setRange = (value: number) => {
+    if (localRange !== null) {
+      setLocalRange(value)
+    } else {
+      hookResult[1](value)
+    }
+  }
 
   const xDomain = useMemo(() => {
     const startOfToday =

@@ -10,6 +10,7 @@ export type CitizensChartProps = {
   height: number
   compact?: boolean
   createdAt?: number
+  defaultRange?: number
 }
 
 export default function CitizensChart({
@@ -18,6 +19,7 @@ export default function CitizensChart({
   height,
   compact = false,
   createdAt = 0,
+  defaultRange,
 }: CitizensChartProps) {
   return (
     <LineChart
@@ -26,6 +28,7 @@ export default function CitizensChart({
       height={height}
       compact={compact}
       createdAt={createdAt}
+      defaultRange={defaultRange}
       config={{
         timestampField: 'blockTimestamp',
         valueField: 'citizens',
