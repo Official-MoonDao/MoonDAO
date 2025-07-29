@@ -23,13 +23,14 @@ export default function CitizenProfileLink() {
           await router.push(`/citizen/${prettyLink}`)
           setIsLoading(false)
         }}
+        className="flex items-center justify-center"
       >
-        <div className="rounded-[100%] w-[40px] h-[40px] overflow-hidden  animate-fadeIn">
+        <div className="rounded-[100%] w-[40px] h-[40px] overflow-hidden animate-fadeIn flex items-center justify-center">
           {isLoading ? (
             <LoadingSpinner />
           ) : (
             <IPFSRenderer
-              className=""
+              className="object-cover"
               src={citizen.metadata.image}
               width={40}
               height={40}
