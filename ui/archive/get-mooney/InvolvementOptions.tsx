@@ -7,7 +7,7 @@ import {
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { PopupButton } from 'react-calendly'
-import { NewsletterSubModal } from './NewsletterSubModal'
+import { NewsletterSubModal } from '../../components/newsletter/NewsletterSubModal'
 
 export function InvolvementOptions() {
   const router = useRouter()
