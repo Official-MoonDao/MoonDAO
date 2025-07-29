@@ -20,7 +20,7 @@ import { useContext, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import { getAUMHistory } from '@/lib/covalent'
+import { getAUMHistory } from '@/lib/coinstats'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
@@ -87,7 +87,7 @@ export default function Home({
   const openAUMChart = () => {
     setChartModalComponent(
       <AUMChart
-        data={aumData.aumHistory}
+        data={aumData?.aumHistory || []}
         compact={false}
         height={400}
         isLoading={false}
@@ -368,7 +368,9 @@ export default function Home({
                 title="Click to view full chart"
               >
                 <h3 className="text-sm font-medium text-gray-400 mb-2">AUM</h3>
-                {aumData ? (
+                {aumData &&
+                aumData.aumHistory &&
+                aumData.aumHistory.length > 0 ? (
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <span className="text-2xl font-bold text-white">
                       ${aumData.aum.toLocaleString()}
@@ -707,10 +709,15 @@ export async function getStaticProps() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
 
-  // Initialize all data structures with fallbacks
-  let transferData = { citizenTransfers: [], teamTransfers: [] }
-  let arrData = { arrHistory: [], currentARR: 0, citizenARR: 0, teamARR: 0 }
-  let citizenSubgraphData = { transfers: [] as any[], createdAt: Date.now() }
+  // Initialize all data structures with proper types
+  let transferData: any = { citizenTransfers: [], teamTransfers: [] }
+  let arrData: any = {
+    arrHistory: [],
+    currentARR: 0,
+    citizenARR: 0,
+    teamARR: 0,
+  }
+  let citizenSubgraphData: any = { transfers: [], createdAt: Date.now() }
   let aumData = null
   let newestCitizens: any = []
   let newestListings: any = []
@@ -812,7 +819,7 @@ export async function getStaticProps() {
     getAUMData(),
   ])
 
-  // Extract results with fallbacks
+  // Extract results with fallbacks and proper type handling
   if (transferResult.status === 'fulfilled') {
     transferData = transferResult.value
 
@@ -830,7 +837,7 @@ export async function getStaticProps() {
     }
 
     citizenSubgraphData = {
-      transfers: transferData.citizenTransfers.map((transfer) => ({
+      transfers: transferData.citizenTransfers.map((transfer: any) => ({
         id: transfer.id,
         from: transfer.transactionHash,
         blockTimestamp: transfer.blockTimestamp,
@@ -851,6 +858,10 @@ export async function getStaticProps() {
   }
 
   const newestNewsletters: any = []
+
+  console.log('AUM Data:', aumData)
+  console.log('AUM History Length:', aumData?.aumHistory?.length || 0)
+  console.log('AUM Value:', aumData?.aum || 0)
 
   console.log('ARR Data:', arrData)
 

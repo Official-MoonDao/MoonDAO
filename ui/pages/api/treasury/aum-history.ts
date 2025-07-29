@@ -1,6 +1,6 @@
 import { setPublicHeaders } from 'middleware/publicHeaders'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getAUMHistory } from '@/lib/covalent'
+import { getAUMHistory } from '@/lib/coinstats'
 
 export default async function handler(
   req: NextApiRequest,

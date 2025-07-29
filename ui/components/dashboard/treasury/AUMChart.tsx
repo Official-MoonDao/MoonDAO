@@ -22,7 +22,7 @@ export function AUMChart({
       compact={compact}
       config={{
         timestampField: 'timestamp',
-        valueField: 'aum',
+        valueField: 'value',
         dataProcessing: 'direct',
         labels: {
           title: 'Assets Under Management',
