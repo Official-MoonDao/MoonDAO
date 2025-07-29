@@ -802,9 +802,7 @@ export async function getStaticProps() {
   // Get AUM data with proper error handling
   const getAUMData = async () => {
     try {
-      console.log('Fetching AUM data...')
       const aum = await getAUMHistory(365)
-      console.log('AUM data fetched successfully')
       return aum
     } catch (error) {
       console.error('AUM data fetch failed:', error)
@@ -825,13 +823,11 @@ export async function getStaticProps() {
 
     // Calculate ARR from all transfer data
     try {
-      console.log('Calculating ARR from all transfers...')
       arrData = await calculateARRFromTransfers(
         transferData.citizenTransfers,
         transferData.teamTransfers,
         365
       )
-      console.log('ARR calculation completed')
     } catch (error) {
       console.error('ARR calculation failed:', error)
     }
@@ -858,12 +854,6 @@ export async function getStaticProps() {
   }
 
   const newestNewsletters: any = []
-
-  console.log('AUM Data:', aumData)
-  console.log('AUM History Length:', aumData?.aumHistory?.length || 0)
-  console.log('AUM Value:', aumData?.aum || 0)
-
-  console.log('ARR Data:', arrData)
 
   return {
     props: {

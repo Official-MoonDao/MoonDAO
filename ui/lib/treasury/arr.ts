@@ -3,7 +3,6 @@ import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
-  DEFAULT_CHAIN_V5,
   CITIZEN_ADDRESSES,
 } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
@@ -14,6 +13,7 @@ import {
 } from '@/lib/network/networkSubgraph'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
+import { arbitrum } from '../infura/infuraChains'
 
 export interface ARRDataPoint {
   timestamp: number
@@ -55,7 +55,7 @@ async function getEthPrice(): Promise<number> {
 
 // Helper function to get price per second from contracts
 async function getContractPrices() {
-  const chain = DEFAULT_CHAIN_V5
+  const chain = arbitrum
   const chainSlug = getChainSlug(chain)
 
   try {
