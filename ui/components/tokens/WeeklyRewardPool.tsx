@@ -58,7 +58,7 @@ export default function WeeklyRewardPool() {
   const [estimatedFees, setEstimatedFees] = useState<string | null>(null)
   const [feeData, setFeeData] = useState<any[]>([])
 
-  const VMOONEYBalance = useTotalVP(address || '')
+  const { walletVP: VMOONEYBalance } = useTotalVP(address || '')
 
   // Fee-related useEffect hooks
   useEffect(() => {

@@ -128,7 +128,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
 
   const MOONEYBalance = useTotalMooneyBalance(isGuest ? address : nft?.owner)
 
-  const VMOONEYBalance = useTotalVP(nft?.owner)
+  const { walletVP: VMOONEYBalance } = useTotalVP(nft?.owner)
 
   // Subscription Data
   const [expiresAt, setExpiresAt] = useState<any>()
