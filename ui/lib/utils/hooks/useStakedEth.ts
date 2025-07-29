@@ -18,20 +18,21 @@ export default function useStakedEth() {
     abi: StakedEthABI as any,
     chain: ethereum,
   })
-  const provider = ethers5Adapter.provider.toEthers({
-    client,
-    chain: ethereum,
-  })
-  const ethersContract = new Contract(
-    STAKED_ETH_ADDRESS,
-    StakedEthABI, // include at least the Deposit event ABI
-    provider
-  )
 
   useEffect(() => {
     async function fetchStakedEth() {
       setIsLoading(true)
       try {
+        const provider = ethers5Adapter.provider.toEthers({
+          client,
+          chain: ethereum,
+        })
+        const ethersContract = new Contract(
+          STAKED_ETH_ADDRESS,
+          StakedEthABI, // include at least the Deposit event ABI
+          provider
+        )
+
         const filter = ethersContract.filters.Deposit(null, MOONDAO_TREASURY)
 
         // Inital stake transaction
