@@ -17,6 +17,7 @@ interface DeploymentConfig {
   MoonDAOTeam: string
   FeeHook: string
   MissionCreator: string
+  UniswapV4Router?: string
 }
 
 type Index = { [key: string]: string }
@@ -362,12 +363,8 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
 }
 
 export const V4_ROUTER_ADDRESSES: Index = {
-  ethereum: '0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af',
-  arbitrum: '0xA51afAFe0263b40EdaEf0Df8781eA9aa03E381a3',
-  base: '0x6fF5693b99212Da76ad316178A184AB56D299b43',
-  polygon: '0x1095692A6237d83C6a72F3F5eFEdb9A670C49223',
-  sepolia: '0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b',
-  'arbitrum-sepolia': '0xeFd1D4bD4cf1e86Da286BB4CB1B8BcED9C10BA47',
+  sepolia: sepoliaConfig.UniswapV4Router,
+  arbitrum: arbitrumConfig.UniswapV4Router,
 }
 
 export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {

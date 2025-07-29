@@ -91,7 +91,7 @@ export default function MissionTokenInfo({
       </div>
       <VestingWithdraw missionId={mission?.id} token={token} />
       {poolDeployerAddress && (
-        <MissionTokenSwap poolDeployerAddress={poolDeployerAddress} />
+        <MissionTokenSwap tokenAddress={token.tokenAddress} />
       )}
     </div>
   )
