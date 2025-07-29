@@ -848,7 +848,6 @@ export default function Home({
               <span className="text-gray-400">→</span>
             </div>
           </div>
-        </div>
 
           {/* Citizens Section */}
           <div className="mb-12">
@@ -923,9 +922,10 @@ export default function Home({
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Interactive Map Section */}
-          <div className="bg-gray-900 rounded-2xl p-8 shadow-xl border border-gray-700">
+        {/* Interactive Map Section */}
+        <div className="bg-gray-900 rounded-2xl p-8 shadow-xl border border-gray-700 mx-5">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-GoodTimes text-white">GLOBAL COMMUNITY MAP</h3>
               <Link
