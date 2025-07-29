@@ -65,7 +65,7 @@ export default function Home({
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
-  const { citizen } = useContext(CitizenContext)
+  const { citizen, isLoading } = useContext(CitizenContext)
 
   // Modal state for charts
   const [chartModalOpen, setChartModalOpen] = useState(false)
@@ -127,7 +127,11 @@ export default function Home({
   const { data: voteCount } = useVoteCountOfAddress(address)
 
   const MOONEYBalance = useTotalMooneyBalance(address)
-  const VMOONEYBalance = useTotalVP(address || '')
+  const {
+    walletVP,
+    isLoading: isLoadingVP,
+    isError: isErrorVP,
+  } = useTotalVP(address || '')
 
   const { quarter, year } = getRelativeQuarter(0)
 
@@ -199,14 +203,18 @@ export default function Home({
                     )}
                   </div>
                   <div className="flex-1">
-                    <h1 className="text-2xl font-GoodTimes text-white mb-2">
-                      WELCOME,{' '}
-                      {citizen
-                        ? citizen.metadata.name.toUpperCase()
-                        : address
-                        ? address.slice(0, 6) + '...' + address.slice(-4)
-                        : ''}
-                    </h1>
+                    {address && (
+                      <h1 className="text-2xl font-GoodTimes text-white mb-2 flex gap-2">
+                        WELCOME,{' '}
+                        {isLoading ? (
+                          <LoadingSpinner width="w-8" height="h-8" />
+                        ) : citizen ? (
+                          citizen.metadata.name.toUpperCase()
+                        ) : (
+                          'GUEST'
+                        )}
+                      </h1>
+                    )}
                     <div className="grid grid-cols-2 gap-4 text-sm text-white/90 mb-4">
                       <div>
                         <span className="text-blue-300">
@@ -223,10 +231,11 @@ export default function Home({
                           )
                         </span>
                       </div>
+
                       <div>
                         <span className="text-purple-300">
-                          {VMOONEYBalance
-                            ? Math.round(VMOONEYBalance).toLocaleString()
+                          {walletVP
+                            ? Math.round(walletVP).toLocaleString()
                             : ''}
                         </span>{' '}
                         vMOONEY{' '}
