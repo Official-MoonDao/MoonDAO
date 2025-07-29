@@ -2,6 +2,7 @@ import CitizenTableABI from 'const/abis/CitizenTable.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
 import TeamABI from 'const/abis/Team.json'
+import TeamTableABI from 'const/abis/TeamTable.json'
 import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
 import {
   ARBITRUM_ASSETS_URL,
@@ -12,8 +13,11 @@ import {
   MARKETPLACE_TABLE_ADDRESSES,
   POLYGON_ASSETS_URL,
   TEAM_ADDRESSES,
+  TEAM_TABLE_ADDRESSES,
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
 } from 'const/config'
+import { blockedTeams, featuredTeams } from 'const/whitelist'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useState } from 'react'
@@ -27,6 +31,7 @@ import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client, { serverClient } from '@/lib/thirdweb/client'
@@ -49,6 +54,8 @@ import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import CitizensChart from '@/components/subscription/CitizensChart'
 
+const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
+
 export default function Home({
   newestNewsletters,
   newestCitizens,
@@ -57,6 +64,8 @@ export default function Home({
   citizenSubgraphData,
   aumData,
   arrData,
+  citizensLocationData,
+  filteredTeams,
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
@@ -775,6 +784,202 @@ export default function Home({
           </div>
         </div>
 
+        {/* Citizens and Teams Section */}
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 py-20 px-12 rounded-2xl shadow-lg border border-gray-200 mx-5">
+          <div className="mb-12">
+            <h2 className="text-5xl font-GoodTimes text-gray-900 text-center mb-4">COMMUNITY</h2>
+            <p className="text-gray-700 text-center max-w-4xl mx-auto text-lg leading-relaxed">
+              Meet the citizens and teams driving MoonDAO's mission forward. Join our growing community of space enthusiasts, builders, and visionaries.
+            </p>
+          </div>
+
+          {/* Teams Section */}
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-GoodTimes text-gray-900">TEAMS</h3>
+              <Link
+                href="/network?tab=teams"
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                See All
+              </Link>
+            </div>
+            
+            <div className="relative">
+              <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+                {filteredTeams && filteredTeams.length > 0 ? (
+                  filteredTeams.slice(0, 6).map((team: any, index: number) => (
+                    <div key={team.id || index} className="flex-shrink-0 w-72 bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                      <Link href={`/teams/${team.id}`} className="block">
+                        <div className="w-full h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 shadow-lg">
+                          <span className="text-white font-bold text-2xl">🚀</span>
+                        </div>
+                        <h4 className="font-bold text-gray-900 mb-2 text-lg">{team.name || 'Unnamed Team'}</h4>
+                        <p className="text-gray-600 text-sm mb-3">{team.metadata?.description || 'No description available'}</p>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                          <span className="text-sm text-gray-700 font-medium">Team #{team.id}</span>
+                        </div>
+                      </Link>
+                    </div>
+                  ))
+                ) : (
+                  // Fallback team cards when no data is available
+                  <>
+                    {/* Team Card 1 */}
+                    <div className="flex-shrink-0 w-72 bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                      <div className="w-full h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 shadow-lg">
+                        <span className="text-white font-bold text-2xl">🚀</span>
+                      </div>
+                      <h4 className="font-bold text-gray-900 mb-2 text-lg">Mission Control</h4>
+                      <p className="text-gray-600 text-sm mb-3">Strategic planning and operations</p>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-sm text-gray-700 font-medium">12 Members</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+              
+            {/* Scroll indicators */}
+            <div className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow-lg">
+              <span className="text-gray-400">→</span>
+            </div>
+          </div>
+        </div>
+
+          {/* Citizens Section */}
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-GoodTimes text-gray-900">CITIZENS</h3>
+              <Link
+                href="/network?tab=citizens"
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                See All
+              </Link>
+            </div>
+            
+            <div className="relative">
+              <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+                {newestCitizens && newestCitizens.length > 0 ? (
+                  newestCitizens?.slice(0, 8).map((citizen: any) => {
+                    const link = `/citizen/${generatePrettyLinkWithId(
+                      citizen.name,
+                      citizen.id
+                    )}`
+
+                    return (
+                      <div key={citizen.id} className="flex-shrink-0 w-60 bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                        <div className="w-full h-40 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 shadow-lg overflow-hidden">
+                          {citizen.image ? (
+                            <img 
+                              src={citizen.image} 
+                              alt={citizen.name} 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-white font-bold text-3xl">
+                              {citizen.name?.[0] || 'C'}
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="font-bold text-gray-900 mb-2 text-lg">
+                          {citizen.name || 'Anonymous Citizen'}
+                        </h4>
+                        <p className="text-gray-600 text-sm mb-4">
+                          {citizen.description || 'MoonDAO Citizen'}
+                        </p>
+                        <Link
+                          href={link}
+                          className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg font-medium transition-all duration-200 text-center block"
+                        >
+                          View Profile
+                        </Link>
+                      </div>
+                    )
+                  })
+                ) : (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex-shrink-0 w-60 bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
+                      <div className="w-full h-40 bg-gradient-to-br from-gray-200 to-gray-300 rounded-xl flex items-center justify-center mb-4">
+                        <span className="text-gray-400 text-2xl">👤</span>
+                      </div>
+                      <h4 className="font-bold text-gray-900 mb-2 text-lg">Citizen Profile</h4>
+                      <p className="text-gray-600 text-sm mb-4">Loading citizen data...</p>
+                      <div className="w-full py-2 bg-gray-100 text-gray-400 text-sm rounded-lg text-center">
+                        Loading...
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              {/* Scroll indicators */}
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow-lg">
+                <span className="text-gray-400">→</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Map Section */}
+          <div className="bg-gray-900 rounded-2xl p-8 shadow-xl border border-gray-700">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-GoodTimes text-white">GLOBAL COMMUNITY MAP</h3>
+              <Link
+                href="/map"
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                View Full Map
+              </Link>
+            </div>
+            
+            <div className="relative w-full h-[700px] bg-gradient-to-br from-blue-900 to-purple-900 rounded-xl overflow-hidden">
+              {/* Earth Globe Component */}
+              <div className="absolute inset-0 flex items-center justify-center p-12">
+                <div className="w-[500px] h-[500px] max-w-full max-h-full flex items-center justify-center">
+                  <Earth pointsData={citizensLocationData || []} />
+                </div>
+              </div>
+
+              {/* Stats overlay */}
+              <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm rounded-xl p-4">
+                <div className="text-white">
+                  <div className="text-2xl font-bold">{citizenSubgraphData?.transfers?.length || '2,341'}</div>
+                  <div className="text-sm opacity-80">Global Citizens</div>
+                </div>
+              </div>
+
+              <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-4">
+                <div className="text-white">
+                  <div className="text-2xl font-bold">47</div>
+                  <div className="text-sm opacity-80">Countries</div>
+                </div>
+              </div>
+
+              <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm rounded-xl p-4">
+                <div className="text-white">
+                  <div className="text-2xl font-bold">24/7</div>
+                  <div className="text-sm opacity-80">Activity</div>
+                </div>
+              </div>
+
+              <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-4">
+                <div className="text-white">
+                  <div className="text-2xl font-bold">{filteredTeams?.length || teamHats?.length || '12'}</div>
+                  <div className="text-sm opacity-80">Active Teams</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 text-center">
+              <p className="text-gray-300 mb-4">Connected with our global network of space enthusiasts and contributors</p>
+            </div>
+          </div>
+        </div>
+
         {/* Chart Modal */}
         <ChartModal
           isOpen={chartModalOpen}
@@ -782,7 +987,6 @@ export default function Home({
           chartComponent={chartModalComponent}
           chartTitle={chartModalTitle}
         />
-      </div>
     </Container>
   )
 }
@@ -804,6 +1008,9 @@ export async function getStaticProps() {
   let newestCitizens: any = []
   let newestListings: any = []
   let newestJobs: any = []
+  let newestTeams: any = []
+  let filteredTeams: any = []
+  let citizensLocationData: any = []
 
   // Batch all contract operations to reduce API calls
   const contractOperations = async () => {
@@ -829,8 +1036,15 @@ export async function getStaticProps() {
         abi: JobTableABI as any,
       })
 
+      const teamTableContract = getContract({
+        client: serverClient,
+        address: TEAM_TABLE_ADDRESSES[chainSlug],
+        chain: chain,
+        abi: TeamTableABI as any,
+      })
+
       // Batch all table name reads
-      const [citizenTableName, marketplaceTableName, jobTableName] =
+      const [citizenTableName, marketplaceTableName, jobTableName, teamTableName] =
         await Promise.all([
           readContract({
             contract: citizenTableContract,
@@ -841,10 +1055,11 @@ export async function getStaticProps() {
             method: 'getTableName',
           }),
           readContract({ contract: jobTableContract, method: 'getTableName' }),
+          readContract({ contract: teamTableContract, method: 'getTableName' }),
         ])
 
       // Batch all table queries
-      const [citizens, listings, jobs] = await Promise.all([
+      const [citizens, listings, jobs, teams] = await Promise.all([
         queryTable(
           chain,
           `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 10`
@@ -857,12 +1072,16 @@ export async function getStaticProps() {
           chain,
           `SELECT * FROM ${jobTableName} ORDER BY id DESC LIMIT 10`
         ),
+        queryTable(
+          chain,
+          `SELECT * FROM ${teamTableName} ORDER BY id DESC LIMIT 10`
+        ),
       ])
 
-      return { citizens, listings, jobs }
+      return { citizens, listings, jobs, teams }
     } catch (error) {
       console.error('Contract operations failed:', error)
-      return { citizens: [], listings: [], jobs: [] }
+      return { citizens: [], listings: [], jobs: [], teams: [] }
     }
   }
 
@@ -925,10 +1144,23 @@ export async function getStaticProps() {
   }
 
   if (contractResult.status === 'fulfilled') {
-    const { citizens, listings, jobs } = contractResult.value
+    const { citizens, listings, jobs, teams } = contractResult.value
     newestCitizens = citizens
     newestListings = listings
     newestJobs = jobs
+    newestTeams = teams
+
+    // Process teams data for home page display
+    filteredTeams = teams.filter((team: any) => team.id && team.name)
+
+    // Process citizens data for map display
+    citizensLocationData = citizens
+      .filter((citizen: any) => citizen.location)
+      .map((citizen: any) => ({
+        name: citizen.name || 'Anonymous',
+        location: citizen.location,
+        bio: citizen.bio || '',
+      }))
   }
 
   if (aumResult.status === 'fulfilled') {
@@ -946,6 +1178,8 @@ export async function getStaticProps() {
       citizenSubgraphData,
       aumData,
       arrData,
+      filteredTeams,
+      citizensLocationData,
     },
     revalidate: 300, // Increase cache time to 5 minutes to reduce build frequency
   }
