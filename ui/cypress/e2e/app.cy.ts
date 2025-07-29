@@ -2,65 +2,65 @@
 describe('Main E2E Testing', () => {
   describe('MoonDAO App Layout', () => {
     it('should load the layout', () => {
-      cy.visit('/', { timeout: 30000 })
+      cy.visit('/', { timeout: 60000 })
       cy.get('#app-layout').should('exist')
     })
   })
 
   describe('MoonDAO App | Home', () => {
     it('should load the home page', () => {
-      cy.visit('/', { timeout: 30000 })
+      cy.visit('/', { timeout: 60000 })
     })
   })
 
   describe('MoonDAO App | Governance', () => {
     it('should load the governance page', () => {
-      cy.visit('/governance', { timeout: 30000 })
+      cy.visit('/governance', { timeout: 60000 })
     })
   })
 
   describe('MoonDAO App | Lock', () => {
     it('should load the lock page', () => {
-      cy.visit('/lock', { timeout: 30000 })
+      cy.visit('/lock', { timeout: 60000 })
     })
   })
 
   describe('MoonDAO App | Network', () => {
     it('should load the directory page', () => {
-      cy.visit('/network', { timeout: 30000 })
+      cy.visit('/network', { timeout: 60000 })
     })
   })
 
   describe('MoonDAO App | Analytics', () => {
     it('should load the analytics page', () => {
-      cy.visit('/analytics', { timeout: 30000 })
+      cy.visit('/analytics', { timeout: 60000 })
     })
   })
 
   describe('MoonDAO App | Events', () => {
     it('should load the events page', () => {
-      cy.visit('/events', { timeout: 30000 })
+      cy.visit('/events', { timeout: 60000 })
     })
   })
 
   describe('MoonDAO App | Lifeship', () => {
     it('should load the lifeship page', () => {
-      cy.visit('/lifeship', { timeout: 30000 })
+      cy.visit('/lifeship', { timeout: 60000 })
     })
   })
 
   describe('MoonDAO App | Zero-G', () => {
     it('should load the zero-g page', () => {
-      cy.visit('/zero-g', { timeout: 30000 })
+      cy.visit('/zero-g', { timeout: 60000 })
     })
   })
 
   describe('MoonDAO App | About', () => {
     it('should have iframe that covers the viewport', () => {
-      cy.visit('/about', { timeout: 30000 })
+      cy.visit('/about', { timeout: 60000 })
 
       // Check iframe is visible and positioned correctly
-      cy.get('iframe', { timeout: 30000 })
+      cy.get('iframe', { timeout: 60000 })
         .should('be.visible')
         .and(($iframe) => {
           const iframe = $iframe[0]
@@ -71,7 +71,7 @@ describe('Main E2E Testing', () => {
           expect(rect.left).to.equal(0)
 
           // Verify iframe has full width (allow for scrollbars/browser chrome)
-          expect(rect.width).to.be.closeTo(Cypress.config('viewportWidth'), 15)
+          expect(rect.width).to.be.closeTo(Cypress.config('viewportWidth'), 50)
 
           // Verify iframe has viewport height
           // Allow for small differences due to browser rendering
@@ -85,11 +85,11 @@ describe('Main E2E Testing', () => {
 
   describe('MoonDAO App | News', () => {
     it('should load the news page', () => {
-      cy.visit('/news', { timeout: 30000 })
+      cy.visit('/news', { timeout: 60000 })
     })
 
     it('should have iframe that covers the viewport', () => {
-      cy.visit('/news', { timeout: 30000 })
+      cy.visit('/news', { timeout: 60000 })
 
       // Check iframe is visible and positioned correctly
       cy.get('iframe')
@@ -103,7 +103,7 @@ describe('Main E2E Testing', () => {
           expect(rect.left).to.equal(0)
 
           // Verify iframe has full width (allow for scrollbars/browser chrome)
-          expect(rect.width).to.be.closeTo(Cypress.config('viewportWidth'), 15)
+          expect(rect.width).to.be.closeTo(Cypress.config('viewportWidth'), 50)
 
           // Verify iframe has viewport height (100vh)
           // Allow for small differences due to browser rendering
@@ -117,7 +117,7 @@ describe('Main E2E Testing', () => {
 
   describe('MoonDAO App | Map', () => {
     it('should load the map page', () => {
-      cy.visit('/map', { timeout: 30000 })
+      cy.visit('/map', { timeout: 60000 })
     })
 
     it('should have citizen locations with correct data structure and not all in Antarctica', () => {

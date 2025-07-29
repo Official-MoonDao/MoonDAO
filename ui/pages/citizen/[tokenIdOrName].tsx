@@ -1,4 +1,5 @@
 //Citizen Profile
+import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import {
   GlobeAltIcon,
   LockOpenIcon,
@@ -12,6 +13,7 @@ import {
   DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
+  MOONDAO_HAT_TREE_IDS,
   TEAM_ADDRESSES,
 } from 'const/config'
 import { HATS_ADDRESS } from 'const/config'
@@ -27,6 +29,7 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
+import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { useVotesOfAddress } from '@/lib/snapshot'
@@ -66,7 +69,7 @@ import HatsABI from '../../const/abis/Hats.json'
 import JobsABI from '../../const/abis/JobBoardTable.json'
 import MarketplaceABI from '../../const/abis/MarketplaceTable.json'
 
-export default function CitizenDetailPage({ nft, tokenId }: any) {
+export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
@@ -140,8 +143,6 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
     }
     if (citizenContract && nft?.metadata?.id && !isGuest) checkExpiration()
   }, [citizenContract, nft?.metadata?.id, isGuest])
-  // Hats
-  const hats = useTeamWearer(teamContract, selectedChain, nft?.owner)
 
   const hatsContract = useContract({
     chain: selectedChain,
@@ -585,6 +586,104 @@ export default function CitizenDetailPage({ nft, tokenId }: any) {
   )
 }
 
+async function getTeamWearerServerSide(
+  chain: any,
+  teamContract: any,
+  address: any
+) {
+  try {
+    if (!address) return []
+
+    const chainSlug = getChainSlug(chain)
+
+    // Get wearer hats from subgraph
+    const hats = await hatsSubgraphClient.getWearer({
+      chainId: chain.id,
+      wearerAddress: address,
+      props: {
+        currentHats: {
+          props: {
+            tree: {},
+            admin: {
+              admin: {
+                admin: {},
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (hats.currentHats) {
+      // Filter hats to only include hats that are in the MoonDAO hat tree
+      const moondaoHats = hats.currentHats.filter(
+        (hat: any) => hat.tree.id === MOONDAO_HAT_TREE_IDS[chainSlug]
+      )
+
+      // Add the teamId to each hat
+      const moondaoHatsWithTeamId = await Promise.all(
+        moondaoHats.map(async (hat: any) => {
+          const teamIdFromHat = await readContract({
+            contract: teamContract,
+            method: 'adminHatToTokenId' as string,
+            params: [hat.id],
+          })
+          const teamIdFromAdmin = await readContract({
+            contract: teamContract,
+            method: 'adminHatToTokenId' as string,
+            params: [hat.admin.id],
+          })
+          const teamIdFromAdminAdmin = await readContract({
+            contract: teamContract,
+            method: 'adminHatToTokenId' as string,
+            params: [hat.admin.admin.id],
+          })
+
+          let teamId
+          if (+teamIdFromHat.toString() !== 0) {
+            teamId = teamIdFromHat
+          } else if (+teamIdFromAdmin.toString() !== 0) {
+            teamId = teamIdFromAdmin
+          } else if (+teamIdFromAdminAdmin.toString() !== 0) {
+            teamId = teamIdFromAdminAdmin
+          } else {
+            teamId = 0
+          }
+
+          const adminHatId = await readContract({
+            contract: teamContract,
+            method: 'teamAdminHat' as string,
+            params: [teamId],
+          })
+          const prettyAdminHatId = hatIdDecimalToHex(
+            BigInt(adminHatId.toString())
+          )
+
+          if (
+            hat.id === prettyAdminHatId ||
+            hat.admin.id === prettyAdminHatId ||
+            hat.admin.admin.id === prettyAdminHatId ||
+            hat.admin.admin.admin.id === prettyAdminHatId
+          ) {
+            return {
+              ...hat,
+              teamId: teamId.toString(),
+            }
+          }
+          return null
+        })
+      ).then((results) => results.filter((result) => result !== null))
+
+      return moondaoHatsWithTeamId
+    } else {
+      return []
+    }
+  } catch (err) {
+    console.log(err)
+    return []
+  }
+}
+
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const tokenIdOrName: any = params?.tokenIdOrName
 
@@ -646,10 +745,22 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
+    const teamContract = getContract({
+      client: serverClient,
+      chain: chain,
+      address: TEAM_ADDRESSES[chainSlug],
+      abi: TeamABI as any,
+    })
+
+    const hats = await getTeamWearerServerSide(chain, teamContract, nft.owner)
+
+    console.log('HATS', hats)
+
     return {
       props: {
         nft,
         tokenId,
+        hats,
       },
     }
   }
@@ -658,6 +769,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     props: {
       nft,
       tokenId,
+      hats: [],
     },
   }
 }
