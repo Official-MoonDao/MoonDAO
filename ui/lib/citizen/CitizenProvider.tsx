@@ -162,6 +162,7 @@ export default function CitizenProvider({
   mock = false,
 }: any) {
   const [citizen, setCitizen] = useState<any>()
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const account = useActiveAccount()
   const { authenticated, user } = usePrivy()
 
@@ -188,6 +189,11 @@ export default function CitizenProvider({
     const cachedData = getCachedCitizen(address, chainId)
     if (cachedData) {
       setCitizen(cachedData)
+    } else {
+      // If no cached data and we have auth, we'll need to fetch
+      if (authenticated && user) {
+        setIsLoading(true)
+      }
     }
   }, [address, chainId, mock])
 
@@ -207,6 +213,7 @@ export default function CitizenProvider({
 
     async function fetchCitizenData() {
       try {
+        setIsLoading(true)
         const contract = getContract({
           client,
           address: CITIZEN_ADDRESSES[chainSlug],
@@ -232,6 +239,8 @@ export default function CitizenProvider({
           setCitizen(undefined)
           setCachedCitizen(address || '', chainId, undefined)
         }
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -252,11 +261,12 @@ export default function CitizenProvider({
 
     if (!authenticated) {
       setCitizen(undefined)
+      setIsLoading(false)
     }
   }, [authenticated, mock])
 
   return (
-    <CitizenContext.Provider value={{ citizen, setCitizen }}>
+    <CitizenContext.Provider value={{ citizen, setCitizen, isLoading }}>
       {children}
     </CitizenContext.Provider>
   )
