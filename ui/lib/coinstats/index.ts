@@ -811,3 +811,47 @@ export function setCachedAUMHistory(data: LineChartData[]): void {
     // Silently fail if localStorage is not available
   }
 }
+
+// Get current MOONEY token price from CoinStats API (for use in getStaticProps)
+export async function getMooneyPrice(): Promise<{
+  price: number
+  priceChange24h: number
+} | null> {
+  try {
+    const response = await fetch(
+      'https://openapiv1.coinstats.app/coins?currency=USD&symbol=MOONEY&blockchains=ethereum&limit=1',
+      {
+        method: 'GET',
+        headers: {
+          'X-API-KEY': process.env.COINSTATS_API_KEY || '',
+          accept: 'application/json',
+        },
+      }
+    )
+
+    if (!response.ok) {
+      console.error(
+        'Failed to fetch MOONEY price:',
+        response.status,
+        response.statusText
+      )
+      return null
+    }
+
+    const data = await response.json()
+
+    if (data.result && data.result.length > 0) {
+      const mooneyData = data.result[0]
+      return {
+        price: mooneyData.price || 0,
+        priceChange24h: mooneyData.priceChange1d || 0,
+      }
+    }
+
+    console.warn('No MOONEY price data found in response')
+    return null
+  } catch (error) {
+    console.error('Error fetching MOONEY price:', error)
+    return null
+  }
+}
