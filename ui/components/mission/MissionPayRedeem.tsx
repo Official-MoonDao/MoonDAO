@@ -1,4 +1,5 @@
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
+import MissionTokenSwapV4 from '@/components/uniswap/MissionTokenSwapV4'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
 import { useFundWallet } from '@privy-io/react-auth'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
@@ -179,6 +180,7 @@ function MissionPayRedeemContent({
           >
             Contribute
           </StandardButton>
+          <MissionTokenSwapV4 token={token} />
           <div className="w-full">
             <AcceptedPaymentMethods />
             <p className="xl:text-sm text-center">
@@ -879,9 +881,10 @@ export default function MissionPayRedeem({
             {token?.tokenSymbol && (
               <div className="w-full flex justify-between">
                 <p>{'Receive'}</p>
-                <p id="token-output">{`${formatTokenAmount(output, 2)} ${
-                  token?.tokenSymbol
-                }`}</p>
+                <p id="token-output">{`${formatTokenAmount(
+                  output,
+                  2
+                )} ${token?.tokenSymbol}`}</p>
               </div>
             )}
 

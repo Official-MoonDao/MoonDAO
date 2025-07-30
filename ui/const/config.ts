@@ -367,6 +367,11 @@ export const UNISWAP_V4_ROUTER_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.UniswapV4Router,
 }
 
+export const UNISWAP_V4_QUOTER_ADDRESSES: Index = {
+  sepolia: '0x61B3f2011A92d183C7dbaDBdA940a7555Ccf9227',
+  arbitrum: '0x3972C00f7ed4885e145823eb7C655375d275A1C5',
+}
+
 export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
   'arbitrum-sepolia': '0xF4f865fA947376f47C74ffD05dd59763c0824bAD',
   ethereum: '0xDc07FbCcF7Dd55014C8A2a605C671d01137B4937',
