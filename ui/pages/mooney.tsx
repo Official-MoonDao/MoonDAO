@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, Suspense } from 'react'
+import React, { useContext, useEffect } from 'react'
 import { useFundWallet } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
 import { useActiveAccount } from 'thirdweb/react'
@@ -17,50 +17,9 @@ import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import NativeToMooney from '@/components/uniswap/NativeToMooney'
 import ArbitrumBridge from '@/components/bridge/ArbitrumBridge'
 import LockInterface from '../components/tokens/LockInterface'
-
-// Error Boundary Component
-class ErrorBoundary extends React.Component {
-  constructor(props: any) {
-    super(props)
-    this.state = { hasError: false, error: null }
-  }
-
-  static getDerivedStateFromError(error: any) {
-    return { hasError: true, error }
-  }
-
-  componentDidCatch(error: any, errorInfo: any) {
-    console.error('Component error:', error, errorInfo)
-  }
-
-  render() {
-    if ((this.state as any).hasError) {
-      return (
-        <div className="p-6 bg-red-900/20 border border-red-500/50 rounded-lg">
-          <h3 className="text-red-400 font-semibold mb-2">Component Error</h3>
-          <p className="text-red-300 text-sm">This component failed to load. Please refresh the page or check your wallet connection.</p>
-          <button 
-            onClick={() => this.setState({ hasError: false, error: null })}
-            className="mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      )
-    }
-
-    return (this.props as any).children
-  }
-}
-
-// Loading component
-function LoadingSpinner() {
-  return (
-    <div className="flex items-center justify-center py-12">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-    </div>
-  )
-}
+import SimpleLockInterface from '../components/tokens/SimpleLockInterface'
+import WithdrawVMooney from '../components/tokens/WithdrawVMooney'
+import YourMooneySection from '../components/tokens/YourMooneySection'
 
 // Simple Pie Chart Component
 function TokenDistributionChart() {
@@ -189,7 +148,7 @@ export default function Mooney() {
                   <a href="#buy" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-4 px-8 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg">
                     Buy MOONEY
                   </a>
-                  <a href="#lock" className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white py-4 px-8 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg">
+                  <a href="#buy" className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white py-4 px-8 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg">
                     Lock & Vote
                   </a>
                 </div>
@@ -447,56 +406,95 @@ export default function Mooney() {
           </div>
         </section>
 
-        {/* Buy MOONEY Section */}
+        {/* Buy and Lock Section */}
         <section id="buy" className="py-12 px-6 bg-gradient-to-br from-gray-900/50 to-blue-900/20 w-full">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="text-center mb-8">
               <h2 className="text-3xl md:text-4xl font-bold font-GoodTimes text-white mb-4">
-                Buy MOONEY
+                Buy and Lock
               </h2>
-              <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-                Get MOONEY tokens by swapping from other cryptocurrencies.
+              <p className="text-lg text-gray-300 max-w-3xl mx-auto">
+                Get MOONEY tokens and lock them to receive vMOONEY for governance voting power.
               </p>
             </div>
-            
-            <div className="max-w-xl mx-auto space-y-6">
-              <div className="bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-4 border border-white/10">
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <NetworkSelector />
-                  </Suspense>
-                </ErrorBoundary>
+
+            {/* Network Selection */}
+            <div className="mb-8">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10 max-w-4xl mx-auto">
+                <div className="flex-1 max-w-md">
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    Network Selection
+                  </h3>
+                  <p className="text-gray-300 text-sm">
+                    Select which network you want to buy MOONEY on
+                  </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <NetworkSelector />
+                </div>
               </div>
-              <div className="bg-gradient-to-br from-gray-900/50 to-purple-900/20 rounded-xl p-4 border border-white/10">
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <NativeToMooney selectedChain={selectedChain} />
-                  </Suspense>
-                </ErrorBoundary>
+            </div>
+            
+            <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
+              {/* Buy MOONEY */}
+              <div className="flex-1 space-y-6">
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Buy MOONEY
+                  </h3>
+                  <p className="text-gray-300 text-sm">
+                    Get MOONEY tokens by swapping from other cryptocurrencies.
+                  </p>
+                </div>
+                <div>
+                  <NativeToMooney selectedChain={selectedChain} />
+                </div>
+              </div>
+
+              {/* Arrow */}
+              <div className="flex-shrink-0 flex items-center justify-center">
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-full p-3 shadow-lg">
+                  <ArrowRightIcon className="w-6 h-6 text-white transform lg:rotate-0 rotate-90" />
+                </div>
+              </div>
+
+              {/* Lock MOONEY */}
+              <div className="flex-1 space-y-6">
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Lock for Voting Power
+                  </h3>
+                  <p className="text-gray-300 text-sm">
+                    Lock MOONEY to receive vMOONEY and gain voting power in governance.
+                  </p>
+                </div>
+                <div>
+                  <SimpleLockInterface />
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Lock MOONEY Section */}
-        <section id="lock" className="py-12 px-6 bg-gradient-to-br from-purple-900/20 to-gray-900/50 w-full">
+        {/* Your MOONEY Section */}
+        <section id="your-mooney" className="py-12 px-6 bg-gradient-to-br from-purple-900/20 to-gray-900/50 w-full">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
               <h2 className="text-3xl md:text-4xl font-bold font-GoodTimes text-white mb-4">
-                Lock for Voting Power
+                Your MOONEY
               </h2>
               <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-                Lock MOONEY to receive vMOONEY and gain voting power in governance.
+                View your lock overview, claim rewards, and extend your lock period.
               </p>
             </div>
             
-            <div className="max-w-xl mx-auto">
-              <div className="bg-gradient-to-br from-gray-900/50 to-purple-900/20 rounded-xl p-4 border border-white/10">
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <LockInterface />
-                  </Suspense>
-                </ErrorBoundary>
+            <div className="space-y-6">
+              {/* Lock Overview and Extend Lock Options */}
+              <YourMooneySection />
+
+              {/* Claim Rewards */}
+              <div className="bg-gradient-to-br from-gray-900/50 to-green-900/20 rounded-xl p-6 border border-white/10">
+                <WithdrawVMooney />
               </div>
             </div>
           </div>
@@ -516,11 +514,7 @@ export default function Mooney() {
             
             <div className="max-w-xl mx-auto">
               <div className="bg-gradient-to-br from-gray-900/50 to-green-900/20 rounded-xl p-4 border border-white/10">
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <ArbitrumBridge />
-                  </Suspense>
-                </ErrorBoundary>
+                <ArbitrumBridge />
               </div>
             </div>
           </div>
@@ -543,10 +537,10 @@ export default function Mooney() {
                 Get MOONEY <ArrowRightIcon className="w-5 h-5" />
               </a>
               <a
-                href="#lock"
+                href="#your-mooney"
                 className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white py-3 px-8 rounded-xl text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg flex items-center gap-2 justify-center"
               >
-                Lock for Voting Power <ArrowRightIcon className="w-5 h-5" />
+                Your MOONEY <ArrowRightIcon className="w-5 h-5" />
               </a>
               <Link
                 href="/vote"
