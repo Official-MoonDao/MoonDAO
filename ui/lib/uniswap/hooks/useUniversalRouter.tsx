@@ -6,7 +6,7 @@ import {
   SwapRoute,
   SwapType,
 } from '@uniswap/smart-order-router'
-import { SwapRouter, UniswapTrade } from '@uniswap/universal-router-sdk'
+import { SwapRouter, UniswapTrade, Trade } from '@uniswap/universal-router-sdk'
 import { ethers } from 'ethers'
 import { useContext } from 'react'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
@@ -70,7 +70,8 @@ export function useUniversalRouter(
     }
 
     const params = SwapRouter.swapCallParameters(
-      new UniswapTrade(swapRoute.trade, options),
+      //new UniswapTrade(swapRoute.trade, options),
+      Trade(tokenIn, tokenOut, tradeType),
       options
     )
 
