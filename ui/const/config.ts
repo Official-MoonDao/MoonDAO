@@ -17,7 +17,7 @@ interface DeploymentConfig {
   MoonDAOTeam: string
   FeeHook: string
   MissionCreator: string
-  UniswapV4Router?: string
+  UniswapV4Router: string
 }
 
 type Index = { [key: string]: string }
