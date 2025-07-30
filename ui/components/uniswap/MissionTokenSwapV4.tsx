@@ -107,7 +107,7 @@ export default function MissionTokenSwapV4({ token }: { token: any }) {
         </div>
         <div className="flex justify-between items-center">
           <p className="text-xl font-bold">
-            {parseFloat(amountOut) && amountIn
+            {amountOut && parseFloat(amountOut) && amountIn
               ? parseFloat(amountOut).toPrecision(3)
               : '0.0'}
           </p>
