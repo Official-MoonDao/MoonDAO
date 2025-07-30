@@ -10,6 +10,10 @@ import { ethereum } from '@/lib/infura/infuraChains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import viemChains from '@/lib/viem/viemChains'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
+import { VOTING_ESCROW_DEPOSITOR_ADDRESSES } from 'const/config'
+import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Container from '@/components/layout/Container'
@@ -104,6 +108,14 @@ export default function Mooney() {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const { fundWallet } = useFundWallet()
+
+  // Check withdrawable amount to conditionally render rewards section
+  const votingEscrowDepositorContract = useContract({
+    address: VOTING_ESCROW_DEPOSITOR_ADDRESSES[chainSlug],
+    abi: VotingEscrowDepositor.abi,
+    chain: selectedChain,
+  })
+  const withdrawable = useWithdrawAmount(votingEscrowDepositorContract, address)
 
   return (
     <>
@@ -492,10 +504,12 @@ export default function Mooney() {
               {/* Lock Overview and Extend Lock Options */}
               <YourMooneySection />
 
-              {/* Claim Rewards */}
-              <div className="bg-gradient-to-br from-gray-900/50 to-green-900/20 rounded-xl p-6 border border-white/10">
-                <WithdrawVMooney />
-              </div>
+              {/* Claim Rewards - Only show if there are withdrawable rewards */}
+              {Number(withdrawable) > 0 && (
+                <div className="bg-gradient-to-br from-gray-900/50 to-green-900/20 rounded-xl p-6 border border-white/10">
+                  <WithdrawVMooney />
+                </div>
+              )}
             </div>
           </div>
         </section>

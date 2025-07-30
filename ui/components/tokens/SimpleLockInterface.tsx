@@ -26,22 +26,6 @@ export default function SimpleLockInterface() {
 
   const [refresh, setRefresh] = useState(false)
 
-  // Early return if no chain or addresses configured
-  if (!selectedChain || !chainSlug || !MOONEY_ADDRESSES[chainSlug] || !VMOONEY_ADDRESSES[chainSlug]) {
-    return (
-      <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
-        <div className="p-6 text-center">
-          <h3 className="text-lg font-bold text-white mb-2">
-            Network Not Supported
-          </h3>
-          <p className="text-gray-300 text-sm">
-            Please switch to a supported network to lock MOONEY tokens.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   // Helper function to format MOONEY amounts as whole numbers
   const formatMooneyAmount = (amount: any): string => {
     try {
@@ -153,6 +137,32 @@ export default function SimpleLockInterface() {
       : undefined,
   })
 
+  // Check what can be increased
+  const canIncrease = useMemo(() => {
+    const amount = lockAmount && parseFloat(lockAmount) > 0
+    const time = hasLock && lockTime?.orig
+      ? Date.parse(lockTime.formatted) > Date.parse(lockTime.orig.formatted)
+      : Date.parse(lockTime.formatted) > Date.now()
+    
+    return { amount, time }
+  }, [lockAmount, lockTime, hasLock])
+
+  // Early return if no chain or addresses configured
+  if (!selectedChain || !chainSlug || !MOONEY_ADDRESSES[chainSlug] || !VMOONEY_ADDRESSES[chainSlug]) {
+    return (
+      <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
+        <div className="p-6 text-center">
+          <h3 className="text-lg font-bold text-white mb-2">
+            Network Not Supported
+          </h3>
+          <p className="text-gray-300 text-sm">
+            Please switch to a supported network to lock MOONEY tokens.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   // If no wallet connected, show connect wallet message
   if (!address) {
     return (
@@ -168,16 +178,6 @@ export default function SimpleLockInterface() {
       </div>
     )
   }
-
-  // Check what can be increased
-  const canIncrease = useMemo(() => {
-    const amount = lockAmount && parseFloat(lockAmount) > 0
-    const time = hasLock && lockTime?.orig
-      ? Date.parse(lockTime.formatted) > Date.parse(lockTime.orig.formatted)
-      : Date.parse(lockTime.formatted) > Date.now()
-    
-    return { amount, time }
-  }, [lockAmount, lockTime, hasLock])
 
   return (
     <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
