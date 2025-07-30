@@ -2,9 +2,9 @@ import { ArrowDownIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
 import { useEffect, useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useUniswapV4 } from '@/lib/uniswap/hooks/useUniswapV4'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
-import useETHPrice from '@/lib/etherscan/useETHPrice'
 
 export default function MissionTokenSwapV4({ token }: { token: any }) {
   const [usdInput, setUsdInput] = useState('')
@@ -26,8 +26,8 @@ export default function MissionTokenSwapV4({ token }: { token: any }) {
     if (!usdInput || !ethUsdPrice || isNaN(Number(usdInput))) return '0.0000'
     const ethAmount = (Number(usdInput) / ethUsdPrice).toFixed(6)
     return parseFloat(ethAmount).toLocaleString('en-US', {
-      minimumFractionDigits: 6,
-      maximumFractionDigits: 6,
+      minimumFractionDigits: 4,
+      maximumFractionDigits: 4,
     })
   }, [usdInput, ethUsdPrice])
 
@@ -76,12 +76,20 @@ export default function MissionTokenSwapV4({ token }: { token: any }) {
                 onChange={handleUsdInputChange}
                 placeholder="0"
                 maxLength={9}
-                style={{ width: `${Math.max(formattedUsdInput.length || 1, 1)}ch` }}
+                style={{
+                  width: `${Math.max(formattedUsdInput.length || 1, 1)}ch`,
+                }}
               />
               <span className="text-xl font-bold">USD</span>
             </div>
             <div className="flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full sm:px-3 py-1">
-              <Image src="/icons/eth.svg" alt="ETH" width={16} height={16} className="w-5 h-5 bg-light-cool rounded-full" />
+              <Image
+                src="/coins/ETH.svg"
+                alt="ETH"
+                width={16}
+                height={16}
+                className="w-5 h-5 bg-light-cool rounded-full"
+              />
               <span className="text-base">{calculateEthAmount()} ETH</span>
             </div>
           </div>
@@ -99,11 +107,13 @@ export default function MissionTokenSwapV4({ token }: { token: any }) {
         </div>
         <div className="flex justify-between items-center">
           <p className="text-xl font-bold">
-            {parseFloat(amountOut).toPrecision(3) || '0.0'}
+            {parseFloat(amountOut) && amountIn
+              ? parseFloat(amountOut).toPrecision(3)
+              : '0.0'}
           </p>
           <div className="flex gap-2 items-center bg-[#111C42] rounded-full p-1 px-2">
             <Image
-              src="/Original.png"
+              src="/assets/icon-star.svg"
               alt={token.tokenSymbol}
               width={20}
               height={20}
@@ -114,8 +124,8 @@ export default function MissionTokenSwapV4({ token }: { token: any }) {
         </div>
       </div>
       <PrivyWeb3Button
-        className="w-full bg-moon-indigo rounded-xl py-2 text-white"
-        label="Swap"
+        className="rounded-full gradient-2 rounded-full w-full py-1"
+        label="Buy"
         action={async () => {
           if (!amountIn) return toast.error('Enter amount')
           try {

@@ -117,7 +117,7 @@ export function useUniswapV4(tokenAddress: string, tokenDecimals: number) {
       //return 0
       return ethers.utils.formatUnits(result.amountOut, tokenDecimals)
     },
-    [chainSlug, tokenAddress, tokenDecimals]
+    [chainSlug, tokenAddress, tokenDecimals, wallets]
   )
 
   const swap = useCallback(
@@ -203,7 +203,7 @@ export function useUniswapV4(tokenAddress: string, tokenDecimals: number) {
 
       return tx.wait()
     },
-    [chainSlug, tokenAddress, tokenDecimals]
+    [chainSlug, tokenAddress, tokenDecimals, wallets]
   )
 
   return { quote, swap }
