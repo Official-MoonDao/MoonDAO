@@ -53,7 +53,19 @@ export function suckerGroupMomentsQuery(
 ) {
   return `
     query {
-      suckerGroupMoments(where: {
+      previous: suckerGroupMoments(where: {
+        suckerGroupId: "${suckerGroupId}",
+        timestamp_lt: ${startTimestamp}
+      }, orderBy: "timestamp", orderDirection: "desc", limit: 1) {
+        items {
+          balance
+          volume
+          trendingScore
+          timestamp
+          suckerGroupId
+        }
+      }
+      range: suckerGroupMoments(where: {
         suckerGroupId: "${suckerGroupId}",
         timestamp_gte: ${startTimestamp},
         timestamp_lte: ${endTimestamp}
@@ -162,7 +174,6 @@ export function trendingProjectsQuery(
     query {
       projects(
         limit: ${count}
-        skip: ${skip}
         orderBy: "${orderBy}"
         orderDirection: "desc"
       ) {

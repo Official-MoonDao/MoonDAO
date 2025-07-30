@@ -62,6 +62,8 @@ export default function MissionInfo({
   jbControllerContract,
   points,
   isLoadingPoints,
+  range,
+  setRange,
   userMissionTokenBalance,
   primaryTerminalAddress,
   stage,
@@ -253,6 +255,8 @@ export default function MissionInfo({
                 isLoadingPoints={isLoadingPoints}
                 height={500}
                 createdAt={subgraphData?.createdAt}
+                range={range}
+                setRange={setRange}
               />
               <MissionActivityList
                 selectedChain={selectedChain}
