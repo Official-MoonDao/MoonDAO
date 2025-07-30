@@ -45,7 +45,7 @@
     "@types/canvas-confetti": "^1.9.0",
     "@uniswap/sdk-core": "^4.0.7",
     "@uniswap/smart-order-router": "github:namedotget/smart-order-router#main",
-    "@uniswap/universal-router-sdk": "^2.0.2",
+    "@uniswap/universal-router-sdk": "^4.19.6",
     "@upstash/ratelimit": "^2.0.1",
     "@upstash/redis": "^1.33.0",
     "@vercel/analytics": "^1.5.0",

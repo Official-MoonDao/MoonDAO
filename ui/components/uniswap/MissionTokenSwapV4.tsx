@@ -1,12 +1,12 @@
 import { useWallets } from '@privy-io/react-auth'
+import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import { useContext } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
-import { ethers } from 'ethers'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { useContext } from 'react'
 import { useUniswapV4 } from '@/lib/uniswap/hooks/useUniswapV4'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -16,7 +16,7 @@ export default function MissionTokenSwapV4({ token }: { token: any }) {
   const account = useActiveAccount()
   const address = account?.address
   const { wallets } = useWallets()
-  const signer = wallets[0]?.getEthersSigner?.()
+  //console.log('token', token)
 
   const [amountIn, setAmountIn] = useState('')
   const [amountOut, setAmountOut] = useState<string>()
@@ -55,19 +55,23 @@ export default function MissionTokenSwapV4({ token }: { token: any }) {
       </div>
       <div className="flex items-center justify-between bg-black/20 p-4 rounded-xl">
         <div className="flex items-center gap-2">
-          <Image src="/Original.png" alt={token.tokenSymbol} width={24} height={24} />
+          <Image
+            src="/Original.png"
+            alt={token.tokenSymbol}
+            width={24}
+            height={24}
+          />
           <span>{token.tokenSymbol}</span>
         </div>
-        <span>{amountOut || '0.0'}</span>
+        <span>{parseFloat(amountOut).toPrecision(3) || '0.0'}</span>
       </div>
       <PrivyWeb3Button
         className="w-full bg-moon-indigo rounded-xl py-2 text-white"
         label="Swap"
         action={async () => {
-          if (!signer) return toast.error('Connect wallet')
           if (!amountIn) return toast.error('Enter amount')
           try {
-            await swap(amountIn, signer, '0')
+            await swap(amountIn, '0')
             toast.success('Swap submitted')
           } catch (err) {
             console.error(err)
