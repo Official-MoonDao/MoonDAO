@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { wadToFloat } from '../utils/numbers'
-import { daysToMS, minutesToMS } from '../utils/timestamp'
+import { minutesToMS } from '../utils/timestamp'
 import { projectQuery, suckerGroupMomentsQuery } from './subgraph'
 import { useJBProjectTimelineRange } from './useJBProjectTimelineRange'
 
