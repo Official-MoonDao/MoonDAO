@@ -106,8 +106,11 @@ export default function WithdrawVMooney() {
   }, [VMOONEYLock, VMOONEYLockLoading, address, thirtySixMonths])
 
   const handleWithdraw = async () => {
+    if (!account) {
+      toast.error('Please connect your wallet.', { style: toastStyle })
+      return
+    }
     try {
-      if (!account) throw new Error('No account found')
       const millisecondsPerSecond = 1000
       const fourYearsOut = BigNumber.from(
         +dateOut(new Date(), { days: 1461 })
@@ -119,15 +122,24 @@ export default function WithdrawVMooney() {
             method: 'drip' as string,
             params: [],
           })
-          const dripReceipt = await sendAndConfirmTransaction({
-            transaction: dripTx,
+          await sendAndConfirmTransaction({ transaction: dripTx, account })
+        }
+
+        const initialLockAmount = utils.parseUnits('1', MOONEY_DECIMALS)
+        const currentAllowance = BigNumber.from(mooneyAllowance || 0)
+        if (currentAllowance.lt(initialLockAmount)) {
+          await approveToken({
             account,
+            tokenContract: mooneyContract,
+            spender: VMOONEY_ADDRESSES[chainSlug],
+            allowance: initialLockAmount,
           })
         }
+
         await createLock({
           account,
           votingEscrowContract: vMooneyContract,
-          amount: utils.parseUnits('1', MOONEY_DECIMALS),
+          amount: initialLockAmount,
           time: fourYearsOut,
         })
       }
@@ -142,7 +154,12 @@ export default function WithdrawVMooney() {
       }
       const mooneyAllowanceBigNum = BigNumber.from(mooneyAllowance)
       const withdrawableBigNum = BigNumber.from(withdrawable.toString())
-      if (mooneyAllowanceLoading) throw new Error('Loading...')
+      if (mooneyAllowanceLoading) {
+        toast.error('Fetching allowance, please try again in a moment.', {
+          style: toastStyle,
+        })
+        return
+      }
       if (
         mooneyAllowanceBigNum &&
         withdrawableBigNum &&
@@ -173,10 +190,20 @@ export default function WithdrawVMooney() {
           router.reload()
         }, 5000)
       }
-    } catch (error) {
-      toast.error('Error withdrawing. Please try again.', {
-        style: toastStyle,
-      })
+    } catch (error: any) {
+      console.error(error)
+      if (!hasMoreThan36Months) {
+        toast.error(
+          'Failed to extend your lock. Please ensure your lock duration is at least 3 years.',
+          {
+            style: toastStyle,
+          }
+        )
+      } else {
+        toast.error(error?.message || 'Error withdrawing. Please try again.', {
+          style: toastStyle,
+        })
+      }
     }
   }
 
