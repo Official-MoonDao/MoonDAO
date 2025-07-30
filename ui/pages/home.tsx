@@ -74,7 +74,7 @@ export default function Home({
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
-  const { citizen, isLoading } = useContext(CitizenContext)
+  const { citizen, isLoading: isLoadingCitizen } = useContext(CitizenContext)
 
   // Modal state for charts
   const [chartModalOpen, setChartModalOpen] = useState(false)
@@ -212,44 +212,66 @@ export default function Home({
                     )}
                   </div>
                   <div className="flex-1">
+                    <h1 className="text-2xl font-GoodTimes text-white mb-2 flex gap-2">
+                      WELCOME,{' '}
+                      {isLoadingCitizen ? (
+                        <LoadingSpinner width="w-8" height="h-8" />
+                      ) : citizen ? (
+                        citizen.metadata.name.toUpperCase()
+                      ) : (
+                        'GUEST'
+                      )}
+                    </h1>
                     {address && (
-                      <h1 className="text-2xl font-GoodTimes text-white mb-2 flex gap-2">
-                        WELCOME,{' '}
-                        {isLoading ? (
-                          <LoadingSpinner width="w-8" height="h-8" />
-                        ) : citizen ? (
-                          citizen.metadata.name.toUpperCase()
-                        ) : (
-                          'GUEST'
-                        )}
-                      </h1>
-                    )}
-                    <div className="grid grid-cols-2 gap-4 text-sm text-white/90 mb-4">
-                      <div>
-                        <span className="text-blue-300">
-                          {MOONEYBalance
-                            ? Math.round(MOONEYBalance).toLocaleString()
-                            : ''}
-                        </span>{' '}
-                        MOONEY{' '}
-                        <span className="text-white/60">
-                          ($
-                          {MOONEYBalance && mooneyPrice
-                            ? (MOONEYBalance * mooneyPrice).toFixed(0)
-                            : ''}
-                          )
-                        </span>
-                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm text-white/90 mb-4">
+                        <div>
+                          {/* MOONEY Balance with skeleton */}
+                          {!MOONEYBalance && address ? (
+                            // Loading skeleton for MOONEY balance
+                            <div className="animate-pulse flex items-center gap-2">
+                              <div className="h-4 bg-white/20 rounded w-20 "></div>
+                              <span className="text-white/60">MOONEY</span>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="text-blue-300">
+                                {MOONEYBalance
+                                  ? Math.round(MOONEYBalance).toLocaleString()
+                                  : ''}
+                              </span>{' '}
+                              MOONEY{' '}
+                              <span className="text-white/60">
+                                ($
+                                {MOONEYBalance && mooneyPrice
+                                  ? (MOONEYBalance * mooneyPrice).toFixed(0)
+                                  : ''}
+                                )
+                              </span>
+                            </>
+                          )}
+                        </div>
 
-                      <div>
-                        <span className="text-purple-300">
-                          {walletVP
-                            ? Math.round(walletVP).toLocaleString()
-                            : ''}
-                        </span>{' '}
-                        vMOONEY{' '}
+                        <div>
+                          {/* vMOONEY Balance with skeleton */}
+                          {isLoadingVP ? (
+                            // Loading skeleton for vMOONEY balance
+                            <div className="animate-pulse flex items-center gap-2">
+                              <div className="h-4 bg-white/20 rounded w-16 "></div>
+                              <span className="text-white/60">vMOONEY</span>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="text-purple-300">
+                                {walletVP
+                                  ? Math.round(walletVP).toLocaleString()
+                                  : ''}
+                              </span>{' '}
+                              vMOONEY{' '}
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                     <div className="flex gap-3 mb-3">
                       <StandardButton
                         className="gradient-2 rounded-full"
@@ -264,19 +286,21 @@ export default function Home({
                         Stake $MOONEY
                       </StandardButton>
                     </div>
-                    <div className="flex gap-6 text-xs text-white/70">
-                      <span>🗳️ {voteCount} Votes</span>
-                      {/* <span>📋 {proposals.length} Proposal</span> */}
-                      <span className="flex items-center gap-2">
-                        👥{' '}
-                        {teamHats?.length !== undefined ? (
-                          teamHats.length
-                        ) : (
-                          <LoadingSpinner width="w-4" height="h-4" />
-                        )}{' '}
-                        Teams
-                      </span>
-                    </div>
+                    {address && (
+                      <div className="flex gap-6 text-xs text-white/70">
+                        <span>🗳️ {voteCount} Votes</span>
+                        {/* <span>📋 {proposals.length} Proposal</span> */}
+                        <span className="flex items-center gap-2">
+                          👥{' '}
+                          {teamHats?.length !== undefined ? (
+                            teamHats.length
+                          ) : (
+                            <LoadingSpinner width="w-4" height="h-4" />
+                          )}{' '}
+                          Teams
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
