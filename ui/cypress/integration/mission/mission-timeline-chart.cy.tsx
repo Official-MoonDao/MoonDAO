@@ -21,6 +21,8 @@ describe('MissionTimelineChart', () => {
     isLoadingPoints: false,
     height: 400,
     createdAt: Math.floor(Date.now() / 1000) - 86400 * 7, // 7 days ago
+    range: 7,
+    setRange: (range: number) => {}, // Mock function for tests
   }
 
   beforeEach(() => {
@@ -69,5 +71,12 @@ describe('MissionTimelineChart', () => {
   it('Handles different views (volume, balance, trendingScore)', () => {
     cy.mount(<MissionTimelineChart {...defaultProps} />)
     cy.get('#chart-container').should('exist')
+  })
+
+  it('Range selector displays the current range', () => {
+    cy.mount(<MissionTimelineChart {...defaultProps} />)
+    cy.get('#range-selector').should('exist')
+    // Should show "7 days" since range is set to 7
+    cy.get('#range-selector').should('contain', '7 days')
   })
 })
