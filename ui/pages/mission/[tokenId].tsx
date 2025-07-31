@@ -293,7 +293,12 @@ export default function MissionProfile({
 
   const teamHats = useSubHats(selectedChain, adminHatId, true)
 
-  const { points, isLoading: isLoadingPoints } = useJBProjectTimeline(
+  const {
+    points,
+    isLoading: isLoadingPoints,
+    range,
+    setRange,
+  } = useJBProjectTimeline(
     selectedChain,
     subgraphData?.createdAt,
     subgraphData?.suckerGroupId,
@@ -495,7 +500,7 @@ export default function MissionProfile({
         sendPayouts={sendPayouts}
         deployLiquidityPool={deployLiquidityPool}
       />
-      
+
       <Container containerwidth={true}>
         <Head
           title={mission?.metadata?.name}
@@ -569,6 +574,8 @@ export default function MissionProfile({
                   jbControllerContract={jbControllerContract}
                   points={points}
                   isLoadingPoints={isLoadingPoints}
+                  range={range}
+                  setRange={setRange}
                   subgraphData={subgraphData}
                   fundingGoal={fundingGoal}
                   token={token}

@@ -55,6 +55,7 @@ export default function Hero() {
             MoonDAO is an open platform to fund, collaborate, and compete on
             challenges that get us closer to a lunar settlement.
           </p>
+
           <div className="flex items-start justify-start min-h-[60px] mb-4 relative z-20">
             <StandardButton
               backgroundColor="bg-white"
