@@ -1,12 +1,12 @@
 import { useWallets } from '@privy-io/react-auth'
-import { CurrencyAmount, Percent, TradeType, Trade } from '@uniswap/sdk-core'
+import { CurrencyAmount, Percent, TradeType } from '@uniswap/sdk-core'
 import {
   AlphaRouter,
   SwapOptionsUniversalRouter,
   SwapRoute,
   SwapType,
 } from '@uniswap/smart-order-router'
-import { SwapRouter, UniswapTrade } from '@uniswap/universal-router-sdk'
+import { SwapRouter, UniswapTrade } from '@uniswap/universal-router-sdk-v2'
 import { ethers } from 'ethers'
 import { useContext } from 'react'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
@@ -70,8 +70,7 @@ export function useUniversalRouter(
     }
 
     const params = SwapRouter.swapCallParameters(
-      //new UniswapTrade(swapRoute.trade, options),
-      Trade(tokenIn, tokenOut, tradeType),
+      new UniswapTrade(swapRoute.trade, options),
       options
     )
 
