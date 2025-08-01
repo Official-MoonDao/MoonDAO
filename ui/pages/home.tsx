@@ -50,6 +50,7 @@ import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { ProposalCard } from '@/components/home/ProposalCard'
 import ChartModal from '@/components/layout/ChartModal'
 import Container from '@/components/layout/Container'
+import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import Frame from '@/components/layout/Frame'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import StandardButton from '@/components/layout/StandardButton'
@@ -180,868 +181,470 @@ export default function Home({
 
   return (
     <Container>
-      <div className="flex flex-col gap-5 mt-24">
-        {/* Welcome Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 px-5">
-          {/* Welcome Card */}
-          <div className="lg:col-span-2 h-full">
-            <Frame
-              noPadding
-              bottomLeft="20px"
-              bottomRight="20px"
-              topRight="0px"
-              topLeft="10px"
-              className="h-full"
-            >
-              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-6 h-full flex flex-col">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/30">
-                    {citizen?.metadata?.image ? (
-                      <MediaRenderer
-                        client={client}
-                        src={citizen.metadata.image}
-                        alt={citizen.metadata.name}
-                        className="w-full h-full object-cover"
-                      />
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header Section - Clean Profile Style */}
+        <div className="bg-gradient-to-br from-slate-900 via-blue-900/40 to-purple-900/30 backdrop-blur-xl border border-white/10 rounded-2xl p-8 mb-6">
+          <div className="flex items-center gap-8">
+            {/* Profile Picture */}
+            <div className="w-28 h-28 rounded-full overflow-hidden border border-white/20 shadow-lg">
+              {citizen?.metadata?.image ? (
+                <MediaRenderer
+                  client={client}
+                  src={citizen.metadata.image}
+                  alt={citizen.metadata.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                  <span className="text-white font-bold text-3xl">
+                    {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Profile Info */}
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold text-white mb-4">
+                {isLoadingCitizen ? (
+                  <span className="flex items-center gap-3">
+                    Welcome...
+                    <LoadingSpinner width="w-6" height="h-6" />
+                  </span>
+                ) : citizen ? (
+                  `Welcome, ${citizen.metadata.name}`
+                ) : (
+                  'Welcome to MoonDAO'
+                )}
+              </h1>
+              
+              {address && (
+                <div className="flex flex-wrap gap-6 text-base text-white/80 mb-6">
+                  <div className="flex items-center gap-3">
+                    <Image src="/coins/MOONEY.png" width={20} height={20} alt="MOONEY" className="rounded-full" />
+                    {MOONEYBalance === undefined || MOONEYBalance === null ? (
+                      <div className="animate-pulse bg-white/20 rounded w-24 h-5"></div>
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">
-                          {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
-                        </span>
-                      </div>
+                      <span>
+                        <span className="text-blue-300 font-semibold text-lg">{Math.round(MOONEYBalance).toLocaleString()}</span> MOONEY
+                        {mooneyPrice && (
+                          <span className="text-white/60 ml-2">
+                            (${(MOONEYBalance * mooneyPrice).toFixed(0)})
+                          </span>
+                        )}
+                      </span>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <h1 className="text-2xl font-GoodTimes text-white mb-2 flex gap-2">
-                      WELCOME,{' '}
-                      {isLoadingCitizen ? (
-                        <LoadingSpinner width="w-8" height="h-8" />
-                      ) : citizen ? (
-                        citizen.metadata.name.toUpperCase()
-                      ) : (
-                        'GUEST'
-                      )}
-                    </h1>
-                    {address && (
-                      <div className="grid grid-cols-2 gap-4 text-sm text-white/90 mb-4">
-                        <div>
-                          {/* MOONEY Balance with skeleton */}
-                          {!MOONEYBalance && address ? (
-                            // Loading skeleton for MOONEY balance
-                            <div className="animate-pulse flex items-center gap-2">
-                              <div className="h-4 bg-white/20 rounded w-20 "></div>
-                              <span className="text-white/60">MOONEY</span>
-                            </div>
-                          ) : (
-                            <>
-                              <span className="text-blue-300">
-                                {MOONEYBalance
-                                  ? Math.round(MOONEYBalance).toLocaleString()
-                                  : ''}
-                              </span>{' '}
-                              MOONEY{' '}
-                              <span className="text-white/60">
-                                ($
-                                {MOONEYBalance && mooneyPrice
-                                  ? (MOONEYBalance * mooneyPrice).toFixed(0)
-                                  : ''}
-                                )
-                              </span>
-                            </>
-                          )}
-                        </div>
 
-                        <div>
-                          {/* vMOONEY Balance with skeleton */}
-                          {isLoadingVP ? (
-                            // Loading skeleton for vMOONEY balance
-                            <div className="animate-pulse flex items-center gap-2">
-                              <div className="h-4 bg-white/20 rounded w-16 "></div>
-                              <span className="text-white/60">vMOONEY</span>
-                            </div>
-                          ) : (
-                            <>
-                              <span className="text-purple-300">
-                                {walletVP
-                                  ? Math.round(walletVP).toLocaleString()
-                                  : ''}
-                              </span>{' '}
-                              vMOONEY{' '}
-                            </>
-                          )}
-                        </div>
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 bg-purple-500 rounded-full"></div>
+                    {walletVP === undefined || walletVP === null ? (
+                      <div className="animate-pulse bg-white/20 rounded w-20 h-5"></div>
+                    ) : (
+                      <span>
+                        <span className="text-purple-300 font-semibold text-lg">{Math.round(walletVP).toLocaleString()}</span> vMOONEY
+                      </span>
                     )}
-                    <div className="flex gap-3 mb-3">
-                      <StandardButton
-                        className="gradient-2 rounded-full"
-                        link="/get-mooney"
-                      >
-                        Buy $MOONEY
-                      </StandardButton>
-                      <StandardButton
-                        className="gradient-2 rounded-full"
-                        link="/lock"
-                      >
-                        Stake $MOONEY
-                      </StandardButton>
-                    </div>
-                    {address && (
-                      <div className="flex gap-6 text-xs text-white/70">
-                        <span>🗳️ {voteCount} Votes</span>
-                        {/* <span>📋 {proposals.length} Proposal</span> */}
-                        <span className="flex items-center gap-2">
-                          👥{' '}
-                          {teamHats?.length !== undefined ? (
-                            teamHats.length
-                          ) : (
-                            <LoadingSpinner width="w-4" height="h-4" />
-                          )}{' '}
-                          Teams
-                        </span>
-                      </div>
-                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-white/70">
+                    <span className="text-lg">🗳️ <span className="font-semibold">{voteCount}</span> votes</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-white/70">
+                    <span className="text-lg">👥 <span className="font-semibold">{teamHats?.length || 0}</span> teams</span>
                   </div>
                 </div>
-              </div>
-            </Frame>
-          </div>
+              )}
 
-          {/* Weekly Reward Pool */}
-
-          <WeeklyRewardPool />
-        </div>
-
-        {/* What's New Section */}
-        <div className="px-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-GoodTimes text-white">WHAT'S NEW?</h2>
-            <div className="flex items-center gap-4 text-sm text-gray-400">
-              <span>Latest Newsletter: Datacenters on the moon?</span>
-              <span>Next Townhall: Thursday, June 19th, 2025 @ 3PM EST</span>
-              <div className="flex gap-2">
-                <StandardButton
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs rounded"
-                  link="/news"
-                >
-                  All News
+              {/* Quick Actions */}
+              <div className="grid grid-cols-3 gap-4">
+                <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-base font-medium transition-all" link="/get-mooney">
+                  Buy MOONEY
                 </StandardButton>
-                <StandardButton
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs rounded"
-                  onClick={() => setNewsletterModalOpen(true)}
-                >
-                  Subscribe
+                <StandardButton className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-base font-medium transition-all" link="/lock">
+                  Stake MOONEY
+                </StandardButton>
+                <StandardButton className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg text-base font-medium transition-all" link="/governance">
+                  Vote
                 </StandardButton>
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Frame
-              noPadding
-              bottomLeft="10px"
-              bottomRight="10px"
-              topRight="0px"
-              topLeft="0px"
-            >
-              <div
-                className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-4 text-center cursor-pointer transition-all duration-200 hover:scale-105 hover:opacity-80 rounded"
-                onClick={openCitizensChart}
-                title="Click to view full chart"
-              >
-                <h3 className="text-sm font-medium text-gray-400 mb-2">
-                  Citizens
-                </h3>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-2xl font-bold text-white">
-                    {citizenSubgraphData?.transfers?.length}
-                  </span>
-                  <div className="w-24 h-12">
+            {/* Quick Stats Card */}
+            <div className="bg-black/20 rounded-xl p-6 border border-white/10">
+              <WeeklyRewardPool />
+            </div>
+          </div>
+        </div>
+
+        {/* Dashboard Grid - Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          {/* Left Column - Metrics */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Key Metrics */}
+            <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Key Metrics</h3>
+              <div className="space-y-4">
+                <div 
+                  className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-lg p-3"
+                  onClick={openCitizensChart}
+                  title="Click to view full chart"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-400 text-sm">Citizens</span>
+                    <span className="text-white font-bold text-xl">
+                      {citizenSubgraphData?.transfers?.length || '2,341'}
+                    </span>
+                  </div>
+                  <div className="h-16">
                     <CitizensChart
                       transfers={citizenSubgraphData.transfers}
                       isLoading={false}
-                      height={48}
+                      height={64}
                       compact={true}
                       createdAt={citizenSubgraphData.createdAt}
                     />
                   </div>
                 </div>
-              </div>
-            </Frame>
 
-            <Frame
-              noPadding
-              bottomLeft="10px"
-              bottomRight="10px"
-              topRight="0px"
-              topLeft="0px"
-            >
-              <div
-                className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-4 text-center cursor-pointer transition-all duration-200 hover:scale-105 hover:opacity-80 rounded"
-                onClick={openAUMChart}
-                title="Click to view full chart"
-              >
-                <h3 className="text-sm font-medium text-gray-400 mb-2">AUM</h3>
-                {aumData &&
-                aumData.aumHistory &&
-                aumData.aumHistory.length > 0 ? (
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-2xl font-bold text-white">
-                      ${aumData.aum.toLocaleString()}
-                    </span>
-                    <div className="w-24 h-12">
+                {aumData && (
+                  <div 
+                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-lg p-3"
+                    onClick={openAUMChart}
+                    title="Click to view full chart"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-gray-400 text-sm">AUM</span>
+                      <span className="text-white font-bold text-xl">
+                        ${aumData.aum.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="h-16">
                       <AUMChart
                         compact={true}
-                        height={48}
+                        height={64}
                         days={365}
                         data={aumData.aumHistory}
                       />
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center mb-2">
-                    <span className="text-sm text-gray-400">
-                      AUM data unavailable
-                    </span>
-                  </div>
                 )}
-              </div>
-            </Frame>
 
-            <Frame
-              noPadding
-              bottomLeft="10px"
-              bottomRight="10px"
-              topRight="0px"
-              topLeft="0px"
-            >
-              <div
-                className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-4 text-center cursor-pointer transition-all duration-200 hover:scale-105 hover:opacity-80 rounded"
-                onClick={openARRChart}
-                title="Click to view full chart"
-              >
-                <h3 className="text-sm font-medium text-gray-400 mb-2">ARR</h3>
-                {arrData ? (
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-2xl font-bold text-white">
-                      ~${arrData.currentARR.toLocaleString()}
-                    </span>
-                    <div className="w-24 h-12">
+                {arrData && (
+                  <div 
+                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-lg p-3"
+                    onClick={openARRChart}
+                    title="Click to view full chart"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-gray-400 text-sm">ARR</span>
+                      <span className="text-white font-bold text-xl">
+                        ~${arrData.currentARR.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="h-16">
                       <ARRChart
                         data={arrData.arrHistory || []}
                         compact={true}
-                        height={48}
+                        height={64}
                         isLoading={false}
                       />
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center mb-2">
-                    <span className="text-sm text-gray-400">
-                      ARR data unavailable
-                    </span>
-                  </div>
                 )}
               </div>
-            </Frame>
-          </div>
-        </div>
-
-        {/* Launchpad Section */}
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 py-20 px-12 rounded-2xl shadow-lg border border-gray-200 mx-5">
-          <div className="flex items-center justify-between mb-10">
-            <div className="flex-1 pr-8">
-              <h2 className="text-5xl font-GoodTimes text-gray-900 mb-4">
-                LAUNCHPAD
-              </h2>
-              <p className="text-gray-700 max-w-4xl text-lg leading-relaxed">
-                Fund your next mission with MoonDAO. Simple enough for a student
-                project, robust enough to handle billion dollar moonshots. Built
-                on a proven framework with built-in liquidity mining.
-              </p>
             </div>
-            <div className="flex gap-4 flex-shrink-0">
-              <button className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                Learn More
-              </button>
-              <button className="px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                Apply
-              </button>
+
+            {/* Quick Actions */}
+            <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <StandardButton className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-3 rounded-lg transition-all" link="/launchpad">
+                  <div className="text-center">
+                    <div className="text-lg mb-1">🚀</div>
+                    <div>Launchpad</div>
+                  </div>
+                </StandardButton>
+                <StandardButton className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm py-3 rounded-lg transition-all" link="/governance">
+                  <div className="text-center">
+                    <div className="text-lg mb-1">🗳️</div>
+                    <div>Governance</div>
+                  </div>
+                </StandardButton>
+                <StandardButton className="w-full bg-green-600 hover:bg-green-700 text-white text-sm py-3 rounded-lg transition-all" link="/network">
+                  <div className="text-center">
+                    <div className="text-lg mb-1">👥</div>
+                    <div>Network</div>
+                  </div>
+                </StandardButton>
+                <StandardButton className="w-full bg-orange-600 hover:bg-orange-700 text-white text-sm py-3 rounded-lg transition-all" link="/marketplace">
+                  <div className="text-center">
+                    <div className="text-lg mb-1">🛒</div>
+                    <div>Market</div>
+                  </div>
+                </StandardButton>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Frank To Space */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex items-center gap-6 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                  F
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-GoodTimes text-gray-900 mb-2">
-                    FRANK TO SPACE
-                  </h3>
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="w-3 h-3 bg-green-500 rounded-full shadow-sm"></div>
-                    <span className="text-gray-700 font-medium">
-                      Active Campaign
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-bold text-gray-900 mb-2">
-                    1.2 / 31 ETH
-                  </p>
-                  <div className="w-28 bg-gray-200 rounded-full h-3 shadow-inner">
-                    <div
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full shadow-sm"
-                      style={{ width: `${(1.2 / 31) * 100}%` }}
-                    />
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {Math.round((1.2 / 31) * 100)}% funded
-                  </p>
+          {/* Center Column - Activity Feed */}
+          <div className="lg:col-span-2 space-y-4">
+            {/* Recent Activity */}
+            <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Recent Activity</h3>
+                <div className="flex gap-2">
+                  <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md transition-all" link="/news">
+                    All News
+                  </StandardButton>
+                  <StandardButton 
+                    className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 rounded-md transition-all"
+                    onClick={() => setNewsletterModalOpen(true)}
+                  >
+                    Subscribe
+                  </StandardButton>
                 </div>
               </div>
-              <button className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                Buy $FRANK
-              </button>
-            </div>
 
-            {/* Save The Mice */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex items-center gap-6 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-2xl shadow-lg">
-                  🐭
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-GoodTimes text-gray-900 mb-2">
-                    SAVE THE MICE
-                  </h3>
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="w-3 h-3 bg-orange-500 rounded-full shadow-sm"></div>
-                    <span className="text-gray-700 font-medium">
-                      Refunds Available
-                    </span>
+              {/* Activity Items */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm">📰</div>
+                  <div className="flex-1">
+                    <p className="text-white text-sm">Latest Newsletter: Datacenters on the moon?</p>
+                    <p className="text-gray-400 text-xs">2 hours ago</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xl font-bold text-gray-900 mb-2">
-                    1.2 / 31 ETH
-                  </p>
-                  <div className="w-28 bg-gray-200 rounded-full h-3 shadow-inner">
-                    <div
-                      className="bg-gradient-to-r from-orange-500 to-red-600 h-3 rounded-full shadow-sm"
-                      style={{ width: `${(1.2 / 31) * 100}%` }}
-                    />
+                
+                <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
+                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-sm">🏛️</div>
+                  <div className="flex-1">
+                    <p className="text-white text-sm">Next Townhall: Thursday, June 19th, 2025 @ 3PM EST</p>
+                    <p className="text-gray-400 text-xs">Upcoming event</p>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {Math.round((1.2 / 31) * 100)}% funded
-                  </p>
                 </div>
-              </div>
-              <button className="w-full py-4 rounded-xl bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                Get Refund
-              </button>
-            </div>
-          </div>
-        </div>
 
-        {/* Contribute Section */}
-        <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-violet-900 py-20 px-12 rounded-2xl shadow-2xl relative overflow-hidden mx-5">
-          {/* Background decorations */}
-          <div className="absolute inset-0">
-            <div className="absolute top-10 right-10 w-32 h-32 bg-purple-500 rounded-full opacity-10 blur-xl"></div>
-            <div className="absolute bottom-10 left-10 w-40 h-40 bg-blue-500 rounded-full opacity-10 blur-xl"></div>
-          </div>
-
-          <div className="relative z-10">
-            <div className="mb-10">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex-1 pr-8">
-                  <h2 className="text-5xl font-GoodTimes text-white mb-4">
-                    CONTRIBUTE
-                  </h2>
-                  <p className="text-white/90 max-w-4xl text-lg leading-relaxed">
-                    Every week we vote on projects supported by the community.
-                    Approved projects are eligible to receive a share from this
-                    pool. Each contributor's project may also accommodate
-                    contributions to support their mission.
-                  </p>
-                </div>
-                <button className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex-shrink-0">
-                  Learn More
-                </button>
-              </div>
-
-              {/* Quarterly Reward Pool */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 mb-10 border border-white/20 shadow-xl">
-                <h3 className="text-2xl font-GoodTimes text-white mb-6 text-center">
-                  QUARTERLY REWARD POOL
-                </h3>
-                <div className="flex justify-center items-center gap-12">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-                      <span className="text-white font-bold text-xl">Ξ</span>
-                    </div>
-                    <div>
-                      <span className="text-3xl font-bold text-white">
-                        12.32 ETH
-                      </span>
-                      <p className="text-white/70 text-sm">≈ $41,890 USD</p>
-                    </div>
+                <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
+                  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-sm">🚀</div>
+                  <div className="flex-1">
+                    <p className="text-white text-sm">New proposal: MDP-177: Lunar Surface Settlement Study</p>
+                    <p className="text-gray-400 text-xs">6 hours ago</p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                      <span className="text-white font-bold text-xl">M</span>
-                    </div>
-                    <div>
-                      <span className="text-3xl font-bold text-white">
-                        8.9m vMOONEY
-                      </span>
-                      <p className="text-white/70 text-sm">Community Staked</p>
-                    </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
+                  <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center text-sm">👥</div>
+                  <div className="flex-1">
+                    <p className="text-white text-sm">New team formed: Lunar Mining Research Initiative</p>
+                    <p className="text-gray-400 text-xs">12 hours ago</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Proposals Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              {/* Left Column - Proposals */}
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-2xl font-GoodTimes text-white">
-                    PROPOSALS
-                  </h3>
-                  <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                    See All Proposals
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {proposals &&
-                    proposals.slice(0, 3).map((proposal: any, i: number) => (
-                      <div
-                        key={proposal.proposalId || i}
-                        className="bg-white/10 border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-200 backdrop-blur-sm shadow-lg"
-                      >
-                        <div className="flex justify-between items-start mb-3">
-                          <span className="text-white font-semibold text-lg">
-                            {proposal.title ||
-                              `MDP-${
-                                179 - i
-                              }: Study on Lunar Surface Selection For Settlement`}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center mb-3">
-                          <div className="text-white/80">💰 2.2 ETH</div>
-                          <div className="text-white/80">
-                            ⏰ {3 + i} days left
-                          </div>
-                        </div>
-                        {i === 0 && (
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-green-400 rounded-full shadow-sm"></div>
-                            <span className="text-sm text-green-300 font-medium">
-                              Active Proposal
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                </div>
-
-                <div className="mt-6">
-                  <button className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/20 hover:border-white/30 py-4 rounded-xl font-semibold transition-all duration-200 backdrop-blur-sm shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                    Propose Project
-                  </button>
-                </div>
+            {/* Active Proposals */}
+            <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Active Proposals</h3>
+                <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md transition-all" link="/governance">
+                  View All
+                </StandardButton>
               </div>
-
-              {/* Right Column - Quarterly Reward Pool Details */}
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-2xl font-GoodTimes text-white">
-                    REWARD BREAKDOWN
-                  </h3>
-                </div>
-
-                <div className="bg-white/10 border border-white/20 rounded-xl p-8 backdrop-blur-sm shadow-lg">
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between p-4 bg-black/20 border border-white/10 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <Image
-                          src="/coins/ETH.svg"
-                          alt="ETH"
-                          width={24}
-                          height={24}
-                        />
-                        <span className="text-white font-semibold text-lg">
-                          32.3 ETH
-                        </span>
-                      </div>
-                      <span className="text-white/70">~$123,456</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-black/20 border border-white/10 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <Image
-                          src="/coins/MOONEY.png"
-                          alt="MOONEY"
-                          width={24}
-                          height={24}
-                        />
-                        <span className="text-white font-semibold text-lg">
-                          8.8m vMOONEY
-                        </span>
-                      </div>
-                      <span className="text-white/70">~$1.1m</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-8 p-4 bg-purple-500/20 border border-purple-400/30 rounded-xl">
-                    <h4 className="text-white font-semibold mb-2">
-                      💡 How it works
-                    </h4>
-                    <p className="text-white/80 text-sm">
-                      Community members propose projects, vote on submissions,
-                      and approved projects receive funding from the quarterly
-                      pool based on their impact and completion.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Space Acceleration Network Section */}
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 py-20 px-12 rounded-2xl shadow-lg border border-gray-200 mx-5">
-          <div className="mb-12">
-            <h2 className="text-5xl font-GoodTimes text-gray-900 text-center mb-4">
-              SPACE ACCELERATION NETWORK
-            </h2>
-            <p className="text-gray-700 text-center max-w-5xl mx-auto text-lg leading-relaxed">
-              Connect with leading organizations and projects accelerating
-              humanity's journey to becoming a multiplanetary species.
-            </p>
-          </div>
-
-          {/* Company Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-            {/* Row 1 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 text-center hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <span className="text-white font-bold text-2xl">🚀</span>
-              </div>
-              <h3 className="font-bold text-gray-900 mb-2 text-lg">SpaceX</h3>
-              <p className="text-gray-600 text-sm">Launch Provider</p>
-              <div className="mt-4 w-full h-1 bg-gray-200 rounded-full">
-                <div className="w-4/5 h-1 bg-blue-500 rounded-full"></div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 text-center hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <span className="text-white font-bold text-2xl">🌱</span>
-              </div>
-              <h3 className="font-bold text-gray-900 mb-2 text-lg">
-                Blue Origin
-              </h3>
-              <p className="text-gray-600 text-sm">Space Tourism</p>
-              <div className="mt-4 w-full h-1 bg-gray-200 rounded-full">
-                <div className="w-3/5 h-1 bg-green-500 rounded-full"></div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 text-center hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <span className="text-white font-bold text-2xl">🛰️</span>
-              </div>
-              <h3 className="font-bold text-gray-900 mb-2 text-lg">NASA</h3>
-              <p className="text-gray-600 text-sm">Space Agency</p>
-              <div className="mt-4 w-full h-1 bg-gray-200 rounded-full">
-                <div className="w-full h-1 bg-purple-500 rounded-full"></div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 text-center hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <span className="text-white font-bold text-2xl">🌙</span>
-              </div>
-              <h3 className="font-bold text-gray-900 mb-2 text-lg">
-                Lunar Outpost
-              </h3>
-              <p className="text-gray-600 text-sm">Lunar Infrastructure</p>
-              <div className="mt-4 w-full h-1 bg-gray-200 rounded-full">
-                <div className="w-2/3 h-1 bg-orange-500 rounded-full"></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Projects */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex items-center gap-6 mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-2xl">🎯</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-GoodTimes text-gray-900 mb-1">
-                    1kg to the Moon
-                  </h3>
-                  <p className="text-gray-600 text-lg">
-                    Payload delivery mission
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span className="text-sm text-gray-700 font-medium">
-                      Mission Active
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <button className="w-full py-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                Learn More
-              </button>
-            </div>
-
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex items-center gap-6 mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-2xl">📋</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-GoodTimes text-gray-900 mb-1">
-                    MDP Project
-                  </h3>
-                  <p className="text-gray-600 text-lg">
-                    Moonbeam Development Program
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
-                    <span className="text-sm text-gray-700 font-medium">
-                      In Development
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <button className="w-full py-4 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                Learn More
-              </button>
-            </div>
-          </div>
-
-          {/* Stats Section */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-white/50 rounded-xl border border-gray-200">
-              <div className="text-3xl font-bold text-gray-900 mb-2">50+</div>
-              <div className="text-gray-600">Partner Organizations</div>
-            </div>
-            <div className="text-center p-6 bg-white/50 rounded-xl border border-gray-200">
-              <div className="text-3xl font-bold text-gray-900 mb-2">$2.1B</div>
-              <div className="text-gray-600">Total Network Value</div>
-            </div>
-            <div className="text-center p-6 bg-white/50 rounded-xl border border-gray-200">
-              <div className="text-3xl font-bold text-gray-900 mb-2">12</div>
-              <div className="text-gray-600">Active Missions</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Citizens and Teams Section */}
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 py-20 px-12 rounded-2xl shadow-lg border border-gray-200 mx-5">
-          <div className="mb-12">
-            <h2 className="text-5xl font-GoodTimes text-gray-900 text-center mb-4">
-              COMMUNITY
-            </h2>
-            <p className="text-gray-700 text-center max-w-4xl mx-auto text-lg leading-relaxed">
-              Meet the citizens and teams driving MoonDAO's mission forward.
-              Join our growing community of space enthusiasts, builders, and
-              visionaries.
-            </p>
-          </div>
-
-          {/* Teams Section */}
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-GoodTimes text-gray-900">TEAMS</h3>
-              <Link
-                href="/network?tab=teams"
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                See All
-              </Link>
-            </div>
-
-            <div className="relative">
-              <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
-                {filteredTeams && filteredTeams.length > 0 ? (
-                  filteredTeams.slice(0, 6).map((team: any, index: number) => (
-                    <div
-                      key={team.id || index}
-                      className="flex-shrink-0 w-72 bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                    >
-                      <Link href={`/teams/${team.id}`} className="block">
-                        <div className="w-full h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 shadow-lg">
-                          <span className="text-white font-bold text-2xl">
-                            🚀
-                          </span>
-                        </div>
-                        <h4 className="font-bold text-gray-900 mb-2 text-lg">
-                          {team.name || 'Unnamed Team'}
-                        </h4>
-                        <p className="text-gray-600 text-sm mb-3">
-                          {team.metadata?.description ||
-                            'No description available'}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                          <span className="text-sm text-gray-700 font-medium">
-                            Team #{team.id}
-                          </span>
-                        </div>
-                      </Link>
-                    </div>
-                  ))
-                ) : (
-                  // Fallback team cards when no data is available
-                  <>
-                    {/* Team Card 1 */}
-                    <div className="flex-shrink-0 w-72 bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                      <div className="w-full h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 shadow-lg">
-                        <span className="text-white font-bold text-2xl">
-                          🚀
-                        </span>
-                      </div>
-                      <h4 className="font-bold text-gray-900 mb-2 text-lg">
-                        Mission Control
+              
+              <div className="space-y-3">
+                {proposals && proposals.slice(0, 3).map((proposal: any, i: number) => (
+                  <div key={proposal.proposalId || i} className="p-4 bg-black/20 rounded-lg border border-white/5 hover:border-white/10 transition-all">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="text-white font-medium text-sm">
+                        {proposal.title || `MDP-${179 - i}: Study on Lunar Surface Selection For Settlement`}
                       </h4>
-                      <p className="text-gray-600 text-sm mb-3">
-                        Strategic planning and operations
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm text-gray-700 font-medium">
-                          12 Members
-                        </span>
-                      </div>
+                      {i === 0 && (
+                        <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">Active</span>
+                      )}
                     </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Scroll indicators */}
-            <div className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow-lg">
-              <span className="text-gray-400">→</span>
-            </div>
-          </div>
-
-          {/* Citizens Section */}
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-GoodTimes text-gray-900">
-                CITIZENS
-              </h3>
-              <Link
-                href="/network?tab=citizens"
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                See All
-              </Link>
-            </div>
-
-            <div className="relative">
-              <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
-                {newestCitizens && newestCitizens.length > 0
-                  ? newestCitizens?.slice(0, 8).map((citizen: any) => {
-                      const link = `/citizen/${generatePrettyLinkWithId(
-                        citizen.name,
-                        citizen.id
-                      )}`
-
-                      return (
-                        <div
-                          key={citizen.id}
-                          className="flex-shrink-0 w-60 bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                        >
-                          <div className="w-full h-40 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 shadow-lg overflow-hidden">
-                            {citizen.image ? (
-                              <img
-                                src={citizen.image}
-                                alt={citizen.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-white font-bold text-3xl">
-                                {citizen.name?.[0] || 'C'}
-                              </span>
-                            )}
-                          </div>
-                          <h4 className="font-bold text-gray-900 mb-2 text-lg">
-                            {citizen.name || 'Anonymous Citizen'}
-                          </h4>
-                          <p className="text-gray-600 text-sm mb-4">
-                            {citizen.description || 'MoonDAO Citizen'}
-                          </p>
-                          <Link
-                            href={link}
-                            className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg font-medium transition-all duration-200 text-center block"
-                          >
-                            View Profile
-                          </Link>
-                        </div>
-                      )
-                    })
-                  : Array.from({ length: 4 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="flex-shrink-0 w-60 bg-white rounded-2xl p-6 shadow-lg border border-gray-200"
-                      >
-                        <div className="w-full h-40 bg-gradient-to-br from-gray-200 to-gray-300 rounded-xl flex items-center justify-center mb-4">
-                          <span className="text-gray-400 text-2xl">👤</span>
-                        </div>
-                        <h4 className="font-bold text-gray-900 mb-2 text-lg">
-                          Citizen Profile
-                        </h4>
-                        <p className="text-gray-600 text-sm mb-4">
-                          Loading citizen data...
-                        </p>
-                        <div className="w-full py-2 bg-gray-100 text-gray-400 text-sm rounded-lg text-center">
-                          Loading...
-                        </div>
-                      </div>
-                    ))}
-              </div>
-
-              {/* Scroll indicators */}
-              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow-lg">
-                <span className="text-gray-400">→</span>
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>💰 2.2 ETH requested</span>
+                      <span>⏰ {3 + i} days left</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Interactive Map Section */}
-        <div className="bg-gray-900 rounded-2xl p-8 shadow-xl border border-gray-700 mx-5">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-GoodTimes text-white">
-              GLOBAL COMMUNITY MAP
-            </h3>
-            <Link
-              href="/map"
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-            >
-              View Full Map
-            </Link>
+        {/* Compact Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Launchpad Section - Simplified */}
+          <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Launchpad</h3>
+              <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-all" link="/launchpad">
+                View All
+              </StandardButton>
+            </div>
+            <p className="text-gray-300 text-sm mb-4">Fund your next mission with MoonDAO. Simple enough for a student project, robust enough for moonshots.</p>
+            
+            <div className="space-y-3">
+              <div className="bg-black/20 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">F</div>
+                    <div>
+                      <h4 className="font-semibold text-white">Frank to Space</h4>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-gray-400">Active</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-white">1.2 / 31 ETH</p>
+                    <div className="w-20 bg-gray-600 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: '4%' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="relative w-full h-[700px] bg-gradient-to-br from-blue-900 to-purple-900 rounded-xl overflow-hidden">
-            {/* Earth Globe Component */}
-            <div className="absolute inset-0 flex items-center justify-center p-12">
-              <div className="w-[500px] h-[500px] max-w-full max-h-full flex items-center justify-center">
-                <Earth pointsData={citizensLocationData || []} />
+          {/* Governance Section - Simplified */}
+          <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Governance</h3>
+              <StandardButton className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-all" link="/governance">
+                View All
+              </StandardButton>
+            </div>
+            <p className="text-gray-300 text-sm mb-4">Weekly voting on community projects and proposals.</p>
+            
+            <div className="bg-black/20 rounded-lg p-4 border border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-lg font-bold text-white">32.3 ETH</div>
+                  <div className="text-sm text-gray-400">Quarterly Pool</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-white">8.9M</div>
+                  <div className="text-sm text-gray-400">vMOONEY Staked</div>
+                </div>
+              </div>
+              
+              {proposals && proposals.length > 0 && (
+                <div className="pt-3 border-t border-white/10">
+                  <div className="text-sm">
+                    <span className="font-medium text-white">Latest:</span> <span className="text-gray-300">{proposals[0].title || 'MDP-179: Lunar Surface Study'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Community Section - Simplified */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Teams */}
+          <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Active Teams</h3>
+              <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md transition-all" link="/network?tab=teams">
+                See All
+              </StandardButton>
+            </div>
+            
+            <div className="space-y-3">
+              {filteredTeams && filteredTeams.length > 0 ? (
+                filteredTeams.slice(0, 3).map((team: any, index: number) => (
+                  <div key={team.id || index} className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                      {team.image ? (
+                        <MediaRenderer
+                          client={client}
+                          src={team.image}
+                          alt={team.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
+                          {team.name?.[0] || 'T'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-white font-medium text-sm">{team.name || 'Team'}</h4>
+                      <p className="text-gray-400 text-xs">Team #{team.id}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">🚀</div>
+                  <div className="flex-1">
+                    <h4 className="text-white font-medium text-sm">Mission Control</h4>
+                    <p className="text-gray-400 text-xs">Strategic planning team</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Citizens */}
+          <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Recent Citizens</h3>
+              <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md transition-all" link="/network?tab=citizens">
+                See All
+              </StandardButton>
+            </div>
+            
+            <div className="space-y-3">
+              {newestCitizens && newestCitizens.length > 0 ? (
+                newestCitizens.slice(0, 3).map((citizen: any) => (
+                  <div key={citizen.id} className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                      {citizen.image ? (
+                        <MediaRenderer
+                          client={client}
+                          src={citizen.image}
+                          alt={citizen.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
+                          {citizen.name?.[0] || 'C'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-white font-medium text-sm">{citizen.name || 'Anonymous'}</h4>
+                      <p className="text-gray-400 text-xs">Citizen #{citizen.id}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-400 text-sm text-center py-4">
+                  Loading citizen data...
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Global Community Map - Compact */}
+        <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Global Community</h3>
+            <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md transition-all" link="/map">
+              View Full Map
+            </StandardButton>
+          </div>
+
+          <div className="relative w-full h-[400px] bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-xl overflow-hidden">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="flex items-center justify-center" style={{ width: '400px', height: '400px' }}>
+                <Earth pointsData={citizensLocationData || []} width={400} height={400} />
               </div>
             </div>
 
@@ -1078,13 +681,6 @@ export default function Home({
               </div>
             </div>
           </div>
-
-          <div className="mt-6 text-center">
-            <p className="text-gray-300 mb-4">
-              Connected with our global network of space enthusiasts and
-              contributors
-            </p>
-          </div>
         </div>
       </div>
 
@@ -1100,6 +696,13 @@ export default function Home({
       {newsletterModalOpen && (
         <NewsletterSubModal setEnabled={setNewsletterModalOpen} />
       )}
+
+      {/* Extended Footer */}
+      <ExpandedFooter
+        hasCallToAction={false}
+        darkBackground={true}
+        isFullwidth={true}
+      />
     </Container>
   )
 }
