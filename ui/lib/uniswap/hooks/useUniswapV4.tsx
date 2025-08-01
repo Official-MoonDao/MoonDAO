@@ -1,5 +1,5 @@
 import { useWallets } from '@privy-io/react-auth'
-import { CommandType, RoutePlanner } from '@uniswap/universal-router-sdk'
+import { CommandType, RoutePlanner } from '@uniswap/universal-router-sdk-v4'
 import { Actions, V4Planner, SwapExactInSingle } from '@uniswap/v4-sdk'
 import QUOTER_ABI from 'const/abis/V4Quoter.json'
 import {
