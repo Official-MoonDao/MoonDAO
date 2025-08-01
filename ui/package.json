@@ -112,10 +112,6 @@
     "viem": "^2.21.10",
     "wagmi": "^2.14.13"
   },
-  "overrides": {
-    "@uniswap/smart-order-router>router-sdk": "1.12.0",
-    "@uniswap/smart-order-router>universal-router-sdk": "2.0.2"
-  },
   "devDependencies": {
     "@bygdle/javascript-lp-solver": "^0.4.26",
     "@cypress/webpack-preprocessor": "^6.0.2",
