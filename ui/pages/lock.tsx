@@ -2,11 +2,13 @@ import { useFundWallet } from '@privy-io/react-auth'
 import { BigNumber, ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import React from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
+import { LockClosedIcon, ScaleIcon, UsersIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
 import { approveToken } from '../lib/tokens/approve'
 import {
   calculateVMOONEY,
@@ -23,7 +25,6 @@ import useRead from '@/lib/thirdweb/hooks/useRead'
 import viemChains from '@/lib/viem/viemChains'
 import Balance from '../components/Balance'
 import Container from '../components/layout/Container'
-import ContentLayout from '../components/layout/ContentLayout'
 import Head from '../components/layout/Head'
 import { LockData } from '../components/lock/LockData'
 import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
@@ -125,7 +126,8 @@ export default function Lock() {
       address &&
       !VMOONEYLockLoading &&
       VMOONEYLock &&
-      VMOONEYLock[0] != 0
+      VMOONEYLock[0] &&
+      !BigNumber.from(VMOONEYLock[0]).isZero()
     )
   }, [VMOONEYLock, VMOONEYLockLoading, address, selectedChain])
 
@@ -190,86 +192,59 @@ export default function Lock() {
   return (
     <>
       <Head title="Lock $MOONEY" />
-      <div className="w-full">
-        <ContentLayout
-          header="Lock $MOONEY"
-          headerSize="max(20px, 3vw)"
-          description={
-            <div className="max-w-full">
-              <p>
-                {'Playing an active role in MoonDAO governance is simple: '}
-                <button
-                  className="underline"
-                  onClick={() => {
-                    if (!address)
-                      return toast.error('Please connect your wallet.')
-                    fundWallet(address, {
-                      chain: viemChains[selectedChain.slug],
-                    })
-                  }}
-                >
-                  {'fund your account'}
-                </button>
-                {',  '}
-                <button
-                  className="underline"
-                  onClick={() => router.push('/get-mooney')}
-                >
-                  {'swap for $MOONEY'}
-                </button>
-                {', and '}
-                <button
-                  className="underline"
-                  onClick={() => {
-                    router.push('/lock')
-                  }}
-                >
-                  {'lock for voting power'}
-                </button>
-                {'.'}
-              </p>
-            </div>
-          }
-          preFooter={
-            <NoticeFooter
-              defaultImage="../assets/MoonDAO-Logo-White.svg"
-              defaultTitle="Need Help?"
-              defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
-              defaultButtonText="Submit a Ticket"
-              defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
-              imageWidth={200}
-              imageHeight={200}
-            />
-          }
-          mainPadding
-          isProfile
-          mode="compact"
-          popOverEffect={false}
-        >
-          <div className="max-w-2xl mx-auto">
-            <WithdrawVMooney />
-            <LockData
-              hasLock={hasLock}
-              VMOONEYBalance={VMOONEYBalance}
-              VMOONEYBalanceLoading={VMOONEYBalanceLoading}
-              VMOONEYLock={VMOONEYLock}
-              VMOONEYLockLoading={VMOONEYLockLoading}
-            />
-
-            <div className="mb-6">
-              <div className="mb-3">
-                <p className="text-gray-300 text-base leading-relaxed">
-                  Select the blockchain network where you want to lock your
-                  MOONEY tokens. Each network has its own voting escrow
-                  contract.
+      
+      <Container is_fullwidth={true}>
+        <div className="min-h-screen bg-dark-cool text-white w-full">
+          
+          {/* Lock MOONEY Section */}
+          <section className="py-12 px-6 bg-gradient-to-br from-gray-900/50 to-blue-900/20 w-full min-h-screen">
+            <div className="max-w-4xl mx-auto w-full">
+              <div className="text-center mb-8">
+                <h1 className="text-3xl md:text-4xl font-bold font-GoodTimes text-white mb-4">
+                  Lock MOONEY
+                </h1>
+                <p className="text-lg text-gray-300 max-w-3xl mx-auto">
+                  Lock your MOONEY tokens to receive vMOONEY and gain voting power in MoonDAO governance.
                 </p>
               </div>
-              <NetworkSelector />
-            </div>
 
-            {/* Main Lock Interface */}
-            <div className="w-full mt-6">
-              <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
+              {/* vMOONEY Withdraw Section */}
+              <div className="mb-8">
+                <WithdrawVMooney />
+              </div>
+
+              {/* Lock Data Display */}
+              <div className="mb-8">
+                <LockData
+                  hasLock={hasLock}
+                  VMOONEYBalance={VMOONEYBalance}
+                  VMOONEYBalanceLoading={VMOONEYBalanceLoading}
+                  VMOONEYLock={VMOONEYLock}
+                  VMOONEYLockLoading={VMOONEYLockLoading}
+                />
+              </div>
+
+              {/* Network Selection */}
+              <div className="mb-8">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
+                  <div className="flex-1 max-w-md">
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      Network Selection
+                    </h3>
+                    <p className="text-gray-300 text-sm">
+                      Select the blockchain network where you want to lock your MOONEY tokens
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <NetworkSelector />
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Lock Interface - Preserve existing complex logic */}
+              <div className="max-w-xl mx-auto mb-12">
+                <div className="w-full mt-6">
+                  <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
                 {!hasExpired ? (
                   <div>
                     {/* Compact Header */}
@@ -750,9 +725,268 @@ export default function Lock() {
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* User Lock Overview Section */}
+              {hasLock && VMOONEYLock && (
+                <div className="max-w-4xl mx-auto mb-12">
+                  <div className="text-center mb-8">
+                    <h2 className="text-2xl md:text-3xl font-bold font-GoodTimes text-white mb-4">
+                      Your Lock Overview
+                    </h2>
+                    <p className="text-lg text-gray-300 max-w-3xl mx-auto">
+                      Monitor your locked MOONEY, voting power, and manage your lock duration.
+                    </p>
+                  </div>
+
+                  <div className="grid md:grid-cols-3 gap-6 mb-8">
+                    {/* Locked MOONEY */}
+                    <div className="bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
+                      <div className="text-center">
+                        <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <LockClosedIcon className="w-6 h-6 text-blue-400" />
+                        </div>
+                        <h3 className="text-lg font-bold text-white mb-2">Locked MOONEY</h3>
+                        <div className="text-2xl font-bold text-blue-400 mb-1">
+                          <Balance
+                            balance={VMOONEYLock && BigNumber.from(VMOONEYLock[0])}
+                            loading={VMOONEYLockLoading}
+                            decimals={2}
+                          />
+                        </div>
+                        <p className="text-gray-400 text-sm">Original amount locked</p>
+                      </div>
+                    </div>
+
+                    {/* Current vMOONEY */}
+                    <div className="bg-gradient-to-br from-gray-900/50 to-purple-900/20 rounded-xl p-6 border border-white/10">
+                      <div className="text-center">
+                        <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <ScaleIcon className="w-6 h-6 text-purple-400" />
+                        </div>
+                        <h3 className="text-lg font-bold text-white mb-2">Current vMOONEY</h3>
+                        <div className="text-2xl font-bold text-purple-400 mb-1">
+                          <Balance
+                            balance={VMOONEYBalance?.toString() / 10 ** 18}
+                            loading={VMOONEYBalanceLoading}
+                            decimals={2}
+                          />
+                        </div>
+                        <p className="text-gray-400 text-sm">Decays until unlock</p>
+                      </div>
+                    </div>
+
+                    {/* Voting Power */}
+                    <div className="bg-gradient-to-br from-gray-900/50 to-green-900/20 rounded-xl p-6 border border-white/10">
+                      <div className="text-center">
+                        <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <UsersIcon className="w-6 h-6 text-green-400" />
+                        </div>
+                        <h3 className="text-lg font-bold text-white mb-2">Voting Power</h3>
+                        <div className="text-2xl font-bold text-green-400 mb-1">
+                          {VMOONEYBalance && !VMOONEYBalanceLoading ? 
+                            Math.floor(Math.sqrt(VMOONEYBalance?.toString() / 10 ** 18)).toLocaleString()
+                            : '...'
+                          }
+                        </div>
+                        <p className="text-gray-400 text-sm">√(vMOONEY balance)</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Lock Details & Extension */}
+                  <div className="grid md:grid-cols-2 gap-8">
+                    {/* Lock Information */}
+                    <div className="bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
+                      <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <LockClosedIcon className="h-5 w-5 text-blue-400" />
+                        Lock Details
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-300">Lock Expires:</span>
+                          <span className="text-blue-400 font-semibold">
+                            {VMOONEYLock && dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-300">Days Remaining:</span>
+                          <span className="text-purple-400 font-semibold">
+                            {VMOONEYLock && (() => {
+                              const lockEndDate = bigNumberToDate(VMOONEYLock?.[1]);
+                              if (!lockEndDate) return 0;
+                              const now = new Date();
+                              const diffMs = lockEndDate.getTime() - now.getTime();
+                              const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+                              return diffDays;
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-300">Lock Status:</span>
+                          <span className={`font-semibold ${hasExpired ? 'text-red-400' : 'text-green-400'}`}>
+                            {hasExpired ? 'Expired' : 'Active'}
+                          </span>
+                        </div>
+                        {!hasExpired && (
+                          <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-400/20 mt-4">
+                            <p className="text-blue-300 text-sm">
+                              💡 Your vMOONEY balance decays linearly until unlock date
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Extend Lock */}
+                    <div className="bg-gradient-to-br from-gray-900/50 to-purple-900/20 rounded-xl p-6 border border-white/10">
+                      <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <ScaleIcon className="h-5 w-5 text-purple-400" />
+                        Extend Lock
+                      </h3>
+                      <div className="space-y-4">
+                        <p className="text-gray-300 text-sm">
+                          Extend your lock duration to maintain or increase your voting power. Longer locks give more influence in governance.
+                        </p>
+                        
+                        {!hasExpired ? (
+                          <div className="space-y-4">
+                            <div className="bg-black/20 rounded-lg p-4">
+                              <h4 className="text-purple-300 font-semibold mb-2">Benefits of Extending:</h4>
+                              <ul className="text-gray-300 text-sm space-y-1">
+                                <li>• Maintain higher voting power</li>
+                                <li>• Show long-term commitment</li>
+                                <li>• Increase governance influence</li>
+                              </ul>
+                            </div>
+                            
+                            <div className="text-center">
+                              <p className="text-gray-400 text-xs mb-3">Use the lock interface above to extend your lock duration</p>
+                              <div className="inline-flex items-center gap-2 bg-purple-500/10 rounded-lg px-3 py-2 border border-purple-400/20">
+                                <span className="text-purple-300 text-sm">Max extension: 4 years from today</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center">
+                            <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <span className="text-red-400 text-lg">⏰</span>
+                            </div>
+                            <p className="text-red-400 font-semibold mb-2">Lock Expired</p>
+                            <p className="text-gray-300 text-sm mb-4">
+                              Your lock has expired. Withdraw your MOONEY or create a new lock.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Voting Power Chart */}
+                  <div className="bg-gradient-to-r from-black/40 via-blue-900/20 to-purple-900/20 rounded-2xl p-6 border border-white/10 mt-8">
+                    <h3 className="text-xl font-bold text-white mb-6 text-center">
+                      Your Voting Power Over Time
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div className="bg-black/20 rounded-lg p-4">
+                          <h4 className="text-blue-300 font-semibold mb-2">Current Status</h4>
+                          <div className="space-y-2 text-sm text-gray-300">
+                            <div className="flex justify-between">
+                              <span>vMOONEY Balance:</span>
+                              <span className="text-blue-400">
+                                <Balance
+                                  balance={VMOONEYBalance?.toString() / 10 ** 18}
+                                  loading={VMOONEYBalanceLoading}
+                                  decimals={2}
+                                />
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Voting Power:</span>
+                              <span className="text-purple-400">
+                                {VMOONEYBalance && !VMOONEYBalanceLoading ? 
+                                  Math.floor(Math.sqrt(VMOONEYBalance?.toString() / 10 ** 18)).toLocaleString()
+                                  : '...'
+                                }
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="bg-black/20 rounded-lg p-4">
+                          <h4 className="text-green-300 font-semibold mb-2">At Lock Expiry</h4>
+                          <div className="space-y-2 text-sm text-gray-300">
+                            <div className="flex justify-between">
+                              <span>vMOONEY Balance:</span>
+                              <span className="text-blue-400">0</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Voting Power:</span>
+                              <span className="text-purple-400">0</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-center mt-4">
+                      <p className="text-gray-400 text-sm">
+                        💡 vMOONEY decays linearly from lock amount to 0 over the lock period
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Next Steps */}
+              <div className="max-w-2xl mx-auto">
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    After Locking
+                  </h3>
+                  <p className="text-gray-300 text-sm">
+                    Once you lock MOONEY tokens, you'll receive vMOONEY for voting in governance proposals.
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-gray-900/50 to-purple-900/20 rounded-xl p-6 border border-white/10">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <Link 
+                      href="/get-mooney"
+                      className="block bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 text-center"
+                    >
+                      Buy More MOONEY
+                    </Link>
+                    <Link 
+                      href="/vote"
+                      className="block bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 text-center"
+                    >
+                      Vote on Proposals
+                    </Link>
+                  </div>
+                  <div className="text-center text-xs text-gray-400 mt-4">
+                    Longer lock periods give you more voting power per token
+                  </div>
+                </div>
+              </div>
             </div>
-        </ContentLayout>
-      </div>
+          </section>
+
+          {/* Footer */}
+          <div className="flex justify-center w-full">
+            <NoticeFooter
+              defaultImage="../assets/MoonDAO-Logo-White.svg"
+              defaultTitle="Need Help?"
+              defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+              defaultButtonText="Submit a Ticket"
+              defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+              imageWidth={200}
+              imageHeight={200}
+            />
+          </div>
+        </div>
+      </Container>
     </>
   )
 }
