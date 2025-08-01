@@ -252,9 +252,37 @@ export default function GlobalSearch() {
   const [isOpen, setIsOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true)
+  const [lastScrollY, setLastScrollY] = useState(0)
   const router = useRouter()
   const searchRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Track navbar visibility based on scroll - same logic as navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      
+      // Show navbar if at top of page
+      if (currentScrollY < 10) {
+        setIsNavbarVisible(true)
+      }
+      // Hide when scrolling down, show when scrolling up
+      else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsNavbarVisible(false)
+      } else if (currentScrollY < lastScrollY) {
+        setIsNavbarVisible(true)
+      }
+      
+      setLastScrollY(currentScrollY)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [lastScrollY])
 
   useEffect(() => {
     if (query.trim()) {
@@ -332,7 +360,7 @@ export default function GlobalSearch() {
   return (
     <div
       ref={searchRef}
-      className="fixed top-20 right-4 z-50 transition-all duration-300"
+      className={`fixed ${isNavbarVisible ? 'top-20' : 'top-4'} right-4 z-50 transition-all duration-300`}
     >
       {/* Collapsed state - just a search icon */}
       {!isExpanded && (
