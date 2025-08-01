@@ -219,7 +219,7 @@ export default function Home({
                 <div className="flex flex-wrap gap-6 text-base text-white/80 mb-6">
                   <div className="flex items-center gap-3">
                     <Image src="/coins/MOONEY.png" width={20} height={20} alt="MOONEY" className="rounded-full" />
-                    {!MOONEYBalance ? (
+                    {MOONEYBalance === undefined || MOONEYBalance === null ? (
                       <div className="animate-pulse bg-white/20 rounded w-24 h-5"></div>
                     ) : (
                       <span>
@@ -235,11 +235,11 @@ export default function Home({
 
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 bg-purple-500 rounded-full"></div>
-                    {isLoadingVP ? (
+                    {walletVP === undefined || walletVP === null ? (
                       <div className="animate-pulse bg-white/20 rounded w-20 h-5"></div>
                     ) : (
                       <span>
-                        <span className="text-purple-300 font-semibold text-lg">{walletVP ? Math.round(walletVP).toLocaleString() : '0'}</span> vMOONEY
+                        <span className="text-purple-300 font-semibold text-lg">{Math.round(walletVP).toLocaleString()}</span> vMOONEY
                       </span>
                     )}
                   </div>
