@@ -67,6 +67,7 @@ export default function MissionInfo({
   userMissionTokenBalance,
   primaryTerminalAddress,
   stage,
+  deadline,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -282,6 +283,7 @@ export default function MissionInfo({
               mission={mission}
               teamNFT={teamNFT}
               token={token}
+              deadline={deadline}
               primaryTerminalAddress={primaryTerminalAddress}
               jbTokensContract={jbTokensContract}
               jbControllerContract={jbControllerContract}

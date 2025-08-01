@@ -63,6 +63,7 @@ function MissionPayRedeemContent({
   tokenBalance,
   currentStage,
   stage,
+  deadline,
   tokenCredit,
   claimTokenCredit,
   handleUsdInputChange,
@@ -73,6 +74,8 @@ function MissionPayRedeemContent({
   isLoadingRedeemAmount,
 }: any) {
   const isRefundable = stage === 3
+  const deadlineHasPassed = deadline ? deadline < Date.now() : false
+  const shouldShowSwapOnly = deadlineHasPassed && stage === 2
 
   if (
     isRefundable &&
@@ -87,7 +90,10 @@ function MissionPayRedeemContent({
       id="mission-pay-redeem-container"
       className="z-50 bg-[#020617] rounded-[5vw] md:rounded-[2vw] w-full flex flex-col gap-4 lg:min-w-[430px] xl:items-stretch"
     >
-      {!isRefundable && (
+      {shouldShowSwapOnly ? (
+        <MissionTokenSwapV4 token={token} />
+      ) : (
+        !isRefundable && (
         <div
           id="mission-pay-container"
           className="lg:rounded-lg w-full flex-1 p-5 xl:p-5 flex flex-col gap-4 rounded-2xl justify-between"
@@ -201,6 +207,7 @@ function MissionPayRedeemContent({
             </StandardButton>
           )}
         </div>
+        )
       )}
       {/* Token stats and redeem container */}
       <div className="xl:pt-4 flex flex-row justify-between gap-4 w-full">
@@ -277,6 +284,7 @@ export type MissionPayRedeemProps = {
   token: any
   teamNFT: any
   stage: any
+  deadline?: number
   onlyModal?: boolean
   modalEnabled?: boolean
   setModalEnabled?: (enabled: boolean) => void
@@ -292,6 +300,7 @@ export default function MissionPayRedeem({
   token,
   teamNFT,
   stage,
+  deadline,
   onlyModal = false,
   modalEnabled = false,
   setModalEnabled,
@@ -822,6 +831,7 @@ export default function MissionPayRedeem({
               claimTokenCredit={claimTokenCredit}
               currentStage={currentStage}
               stage={stage}
+              deadline={deadline}
               handleUsdInputChange={handleUsdInputChange}
               calculateEthAmount={calculateEthAmount}
               formattedUsdInput={formattedUsdInput}
