@@ -297,11 +297,11 @@ export default function Home({
                       {citizenSubgraphData?.transfers?.length || '2,341'}
                     </span>
                   </div>
-                  <div className="h-8">
+                  <div className="h-16">
                     <CitizensChart
                       transfers={citizenSubgraphData.transfers}
                       isLoading={false}
-                      height={32}
+                      height={64}
                       compact={true}
                       createdAt={citizenSubgraphData.createdAt}
                     />
@@ -320,10 +320,10 @@ export default function Home({
                         ${aumData.aum.toLocaleString()}
                       </span>
                     </div>
-                    <div className="h-8">
+                    <div className="h-16">
                       <AUMChart
                         compact={true}
-                        height={32}
+                        height={64}
                         days={365}
                         data={aumData.aumHistory}
                       />
@@ -343,11 +343,11 @@ export default function Home({
                         ~${arrData.currentARR.toLocaleString()}
                       </span>
                     </div>
-                    <div className="h-8">
+                    <div className="h-16">
                       <ARRChart
                         data={arrData.arrHistory || []}
                         compact={true}
-                        height={32}
+                        height={64}
                         isLoading={false}
                       />
                     </div>
@@ -430,6 +430,14 @@ export default function Home({
                   <div className="flex-1">
                     <p className="text-white text-sm">New proposal: MDP-177: Lunar Surface Settlement Study</p>
                     <p className="text-gray-400 text-xs">6 hours ago</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
+                  <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center text-sm">👥</div>
+                  <div className="flex-1">
+                    <p className="text-white text-sm">New team formed: Lunar Mining Research Initiative</p>
+                    <p className="text-gray-400 text-xs">12 hours ago</p>
                   </div>
                 </div>
               </div>
