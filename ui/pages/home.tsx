@@ -207,7 +207,10 @@ export default function Home({
             <div className="flex-1">
               <h1 className="text-4xl font-bold text-white mb-4">
                 {isLoadingCitizen ? (
-                  <LoadingSpinner width="w-8" height="h-8" />
+                  <span className="flex items-center gap-3">
+                    Welcome...
+                    <LoadingSpinner width="w-6" height="h-6" />
+                  </span>
                 ) : citizen ? (
                   `Welcome, ${citizen.metadata.name}`
                 ) : (
