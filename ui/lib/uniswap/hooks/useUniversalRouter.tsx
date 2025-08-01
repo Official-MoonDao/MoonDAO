@@ -1,5 +1,5 @@
 import { useWallets } from '@privy-io/react-auth'
-import { CurrencyAmount, Percent, TradeType } from '@uniswap/sdk-core'
+import { Currency, CurrencyAmount, Percent, TradeType } from '@uniswap/sdk-core'
 import {
   AlphaRouter,
   SwapOptionsUniversalRouter,
@@ -71,8 +71,11 @@ export function useUniversalRouter(
     }
 
     const params = SwapRouter.swapCallParameters(
-      new UniswapTrade(swapRoute.trade as unknown as RouterTrade, options),
-      options
+      new UniswapTrade(
+        swapRoute.trade as unknown as RouterTrade<Currency, Currency, TradeType>,
+        options,
+      ),
+      options,
     )
 
     const gasLimit = await signer.estimateGas({
