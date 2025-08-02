@@ -80,18 +80,18 @@ export default function CitizenActions({
 
       // Process citizen role result
       if (citizenResponse.status === 'fulfilled' && citizenResponse.value.ok) {
-        setCitizenRoleStatus('✅ Citizen')
+        setCitizenRoleStatus('Citizen')
         citizenSuccess = true
       } else {
-        setCitizenRoleStatus('❌ Citizen')
+        setCitizenRoleStatus('Citizen (Not Eligible)')
       }
 
       // Process voter role result
       if (voterResponse.status === 'fulfilled' && voterResponse.value.ok) {
-        setVoterRoleStatus('✅ Voter')
+        setVoterRoleStatus('Voter')
         voterSuccess = true
       } else {
-        setVoterRoleStatus('❌ Voter')
+        setVoterRoleStatus('Voter (Not Eligible)')
       }
 
       // Set clean result message
@@ -100,10 +100,10 @@ export default function CitizenActions({
       } else if (citizenSuccess || voterSuccess) {
         setRoleCheckResult('Some roles assigned')
       } else {
-        setRoleCheckResult('❌ Check requirements and try again')
+        setRoleCheckResult('Check requirements and try again')
       }
     } catch (error) {
-      setRoleCheckResult('❌ Error checking roles. Please try again.')
+      setRoleCheckResult('Error checking roles. Please try again.')
       console.error('Error checking Discord roles:', error)
     } finally {
       setIsCheckingRoles(false)
@@ -217,12 +217,47 @@ export default function CitizenActions({
                     title="Check Roles"
                     description={
                       isCheckingRoles ? (
-                        'Checking your Discord roles...'
+                        'Checking eligibility...'
                       ) : roleCheckResult ? (
-                        <div>
-                          <div>{roleCheckResult}</div>
-                          <div className="mt-1">
-                            {citizenRoleStatus} {voterRoleStatus}
+                        <div className="space-y-2">
+                          <div
+                            className={`font-medium ${
+                              roleCheckResult === 'All Discord roles assigned!'
+                                ? 'text-green-400'
+                                : roleCheckResult === 'Some roles assigned'
+                                ? 'text-yellow-400'
+                                : 'text-red-400'
+                            }`}
+                          >
+                            {roleCheckResult}
+                          </div>
+                          <div className="grid grid-cols-2 gap-1">
+                            {citizenRoleStatus && (
+                              <div
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+                                  citizenRoleStatus.includes('Not Eligible')
+                                    ? 'bg-red-900/20 border-red-500/30 text-red-400'
+                                    : 'bg-green-900/20 border-green-500/30 text-green-400'
+                                }`}
+                              >
+                                <span className="text-sm font-medium">
+                                  {citizenRoleStatus}
+                                </span>
+                              </div>
+                            )}
+                            {voterRoleStatus && (
+                              <div
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+                                  voterRoleStatus.includes('Not Eligible')
+                                    ? 'bg-red-900/20 border-red-500/30 text-red-400'
+                                    : 'bg-green-900/20 border-green-500/30 text-green-400'
+                                }`}
+                              >
+                                <span className="text-sm font-medium">
+                                  {voterRoleStatus}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ) : (
