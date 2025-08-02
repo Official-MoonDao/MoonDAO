@@ -17,6 +17,7 @@ interface DeploymentConfig {
   MoonDAOTeam: string
   FeeHook: string
   MissionCreator: string
+  UniswapV4Router: string
 }
 
 type Index = { [key: string]: string }
@@ -359,6 +360,16 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
   base: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
   'arbitrum-sepolia': '0x4A7b5Da61326A6379179b40d00F57E5bbDC962c2',
   'base-sepolia-testnet': '0x050E797f3625EC8785265e1d9BDd4799b97528A1',
+}
+
+export const UNISWAP_V4_ROUTER_ADDRESSES: Index = {
+  sepolia: sepoliaConfig.UniswapV4Router,
+  arbitrum: arbitrumConfig.UniswapV4Router,
+}
+
+export const UNISWAP_V4_QUOTER_ADDRESSES: Index = {
+  sepolia: '0x61B3f2011A92d183C7dbaDBdA940a7555Ccf9227',
+  arbitrum: '0x3972C00f7ed4885e145823eb7C655375d275A1C5',
 }
 
 export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {

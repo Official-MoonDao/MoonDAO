@@ -105,6 +105,7 @@ export default function MissionWideCard({
             mission={mission}
             token={token}
             teamNFT={teamNFT}
+            deadline={deadline}
             onlyModal
             modalEnabled={payModalEnabled}
             setModalEnabled={setPayModalEnabled}

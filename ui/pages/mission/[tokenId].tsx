@@ -542,6 +542,7 @@ export default function MissionProfile({
                     teamNFT={teamNFT}
                     token={token}
                     stage={stage}
+                    deadline={deadline}
                     primaryTerminalAddress={primaryTerminalAddress}
                     jbControllerContract={jbControllerContract}
                     jbTokensContract={jbTokensContract}
@@ -561,6 +562,7 @@ export default function MissionProfile({
                   selectedChain={selectedChain}
                   mission={mission}
                   stage={stage}
+                  deadline={deadline}
                   teamNFT={teamNFT}
                   ruleset={ruleset}
                   jbDirectoryContract={jbDirectoryContract}
