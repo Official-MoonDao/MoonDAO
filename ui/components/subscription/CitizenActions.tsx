@@ -4,7 +4,9 @@ import {
   LockClosedIcon,
   PlusIcon,
   UserIcon,
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline'
+import { usePrivy } from '@privy-io/react-auth'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -33,14 +35,80 @@ export default function CitizenActions({
   setCitizenMetadataModalEnabled,
 }: CitizenActionsProps) {
   const router = useRouter()
+  const { getAccessToken } = usePrivy()
 
   const [hasMooney, setHasMooney] = useState<boolean>(false)
   const [hasVmooney, setHasVmooney] = useState<boolean>(false)
+  // Add these new state variables
+  const [isCheckingRoles, setIsCheckingRoles] = useState<boolean>(false)
+  const [roleCheckResult, setRoleCheckResult] = useState<string | null>(null)
+  const [citizenRoleStatus, setCitizenRoleStatus] = useState<string | null>(
+    null
+  )
+  const [voterRoleStatus, setVoterRoleStatus] = useState<string | null>(null)
 
   useEffect(() => {
     if (mooneyBalance && mooneyBalance > 0) setHasMooney(true)
     if (vmooneyBalance && vmooneyBalance > 0) setHasVmooney(true)
   }, [mooneyBalance, vmooneyBalance])
+
+  const checkDiscordRoles = async () => {
+    setIsCheckingRoles(true)
+    setRoleCheckResult(null)
+    setCitizenRoleStatus(null)
+    setVoterRoleStatus(null)
+
+    try {
+      const accessToken = await getAccessToken()
+
+      // Check both citizen and voter roles in parallel
+      const [citizenResponse, voterResponse] = await Promise.allSettled([
+        fetch('/api/discord/@citizen', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessToken }),
+        }),
+        fetch('/api/discord/@voter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessToken }),
+        }),
+      ])
+
+      let citizenSuccess = false
+      let voterSuccess = false
+
+      // Process citizen role result
+      if (citizenResponse.status === 'fulfilled' && citizenResponse.value.ok) {
+        setCitizenRoleStatus('✅ Citizen')
+        citizenSuccess = true
+      } else {
+        setCitizenRoleStatus('❌ Citizen')
+      }
+
+      // Process voter role result
+      if (voterResponse.status === 'fulfilled' && voterResponse.value.ok) {
+        setVoterRoleStatus('✅ Voter')
+        voterSuccess = true
+      } else {
+        setVoterRoleStatus('❌ Voter')
+      }
+
+      // Set clean result message
+      if (citizenSuccess && voterSuccess) {
+        setRoleCheckResult('All Discord roles assigned!')
+      } else if (citizenSuccess || voterSuccess) {
+        setRoleCheckResult('Some roles assigned')
+      } else {
+        setRoleCheckResult('❌ Check requirements and try again')
+      }
+    } catch (error) {
+      setRoleCheckResult('❌ Error checking roles. Please try again.')
+      console.error('Error checking Discord roles:', error)
+    } finally {
+      setIsCheckingRoles(false)
+    }
+  }
 
   return (
     <div id="citizen-actions-container" className="py-5 md:px-5 md:py-0 z-30">
@@ -144,6 +212,32 @@ export default function CitizenActions({
                     description="Join Guild.xyz by connecting your wallet and Discord to unlock new roles."
                     icon={<ArrowUpRightIcon height={30} width={30} />}
                     onClick={() => window.open('https://guild.xyz/moondao')}
+                  />
+                  <Action
+                    title="Check Roles"
+                    description={
+                      isCheckingRoles ? (
+                        'Checking your Discord roles...'
+                      ) : roleCheckResult ? (
+                        <div>
+                          <div>{roleCheckResult}</div>
+                          <div className="mt-1">
+                            {citizenRoleStatus} {voterRoleStatus}
+                          </div>
+                        </div>
+                      ) : (
+                        'Verify your Citizen NFT and vMOONEY to get Discord roles automatically.'
+                      )
+                    }
+                    icon={
+                      isCheckingRoles ? (
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                      ) : (
+                        <CheckCircleIcon height={30} width={30} />
+                      )
+                    }
+                    onClick={isCheckingRoles ? undefined : checkDiscordRoles}
+                    disabled={isCheckingRoles}
                   />
 
                   {!isTeamMember && (
