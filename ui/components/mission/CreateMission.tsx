@@ -103,6 +103,7 @@ export type CreateMissionProps = {
   setStatus: (status: 'idle' | 'loggingIn' | 'apply' | 'create') => void
   userTeams: any
   userTeamsAsManager: any
+  userTeamsAsManagerLoading: boolean
 }
 
 const MISSION_DESCRIPTION_TEMPLATE = `
@@ -208,6 +209,7 @@ export default function CreateMission({
   setStatus,
   userTeams,
   userTeamsAsManager,
+  userTeamsAsManagerLoading,
 }: CreateMissionProps) {
   const router = useRouter()
   const account = useActiveAccount()
@@ -277,12 +279,16 @@ export default function CreateMission({
     useState(false)
 
   const [teamRequirementModalEnabled, setTeamRequirementModalEnabled] =
-    useState(userTeamsAsManager && userTeamsAsManager?.[0] === undefined)
+    useState(
+      !userTeamsAsManagerLoading &&
+        userTeamsAsManager &&
+        userTeamsAsManager?.[0] === undefined
+    )
 
   useEffect(() => {
-    if (userTeams)
+    if (userTeams && !userTeamsAsManagerLoading)
       setTeamRequirementModalEnabled(userTeamsAsManager?.[0] === undefined)
-  }, [userTeams, userTeamsAsManager])
+  }, [userTeams, userTeamsAsManager, userTeamsAsManagerLoading])
 
   const {
     data: fundingGoalInETH,
@@ -616,7 +622,15 @@ export default function CreateMission({
                   }}
                 >
                   <div className="flex justify-between">
-                    {!userTeamsAsManager || userTeamsAsManager.length === 0 ? (
+                    {userTeamsAsManagerLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span className="text-white">
+                          Loading your teams...
+                        </span>
+                      </div>
+                    ) : !userTeamsAsManager ||
+                      userTeamsAsManager.length === 0 ? (
                       <StandardButton
                         className="gradient-2"
                         hoverEffect={false}
@@ -628,22 +642,30 @@ export default function CreateMission({
                       <></>
                     )}
                   </div>
-                  {userTeamsAsManager && userTeamsAsManager.length > 1 && (
+                  {userTeamsAsManagerLoading && (
                     <div>
-                      <p>
-                        You are a manager of multiple teams, please select one:
-                      </p>
                       <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
-                        {!userTeamsAsManager ? (
-                          Array.from({ length: 3 }).map((_, index) => (
-                            <div
-                              key={`team-${index}`}
-                              className="w-[350px] h-[100px] bg-dark-cool p-2"
-                            ></div>
-                          ))
-                        ) : userTeamsAsManager &&
-                          userTeamsAsManager.length > 0 ? (
-                          userTeamsAsManager.map((team: any) => (
+                        {Array.from({ length: 2 }).map((_, index) => (
+                          <div
+                            key={`team-loading-${index}`}
+                            className="w-[350px] h-[100px] bg-dark-cool p-2 rounded-2xl animate-pulse"
+                          >
+                            <div className="h-full bg-gray-600 rounded-xl"></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {!userTeamsAsManagerLoading &&
+                    userTeamsAsManager &&
+                    userTeamsAsManager.length > 1 && (
+                      <div>
+                        <p>
+                          You are a manager of multiple teams, please select
+                          one:
+                        </p>
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
+                          {userTeamsAsManager.map((team: any) => (
                             <button
                               key={`team-${team.id}`}
                               className="bg-dark-cool p-2 rounded-2xl"
@@ -660,13 +682,10 @@ export default function CreateMission({
                                 isDisabled={true}
                               />
                             </button>
-                          ))
-                        ) : (
-                          <p>You are not a manager of any teams</p>
-                        )}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                   {selectedTeamNFT && (
                     <p className="mt-4 font-GoodTimes">
                       {`Selected Team : `}
