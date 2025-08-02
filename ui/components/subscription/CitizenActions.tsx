@@ -35,7 +35,7 @@ export default function CitizenActions({
   setCitizenMetadataModalEnabled,
 }: CitizenActionsProps) {
   const router = useRouter()
-  const { getAccessToken } = usePrivy()
+  const { getAccessToken, linkDiscord, user } = usePrivy()
 
   const [hasMooney, setHasMooney] = useState<boolean>(false)
   const [hasVmooney, setHasVmooney] = useState<boolean>(false)
@@ -46,13 +46,55 @@ export default function CitizenActions({
     null
   )
   const [voterRoleStatus, setVoterRoleStatus] = useState<string | null>(null)
+  const [hasDiscordLinked, setHasDiscordLinked] = useState<boolean>(false)
 
   useEffect(() => {
     if (mooneyBalance && mooneyBalance > 0) setHasMooney(true)
     if (vmooneyBalance && vmooneyBalance > 0) setHasVmooney(true)
   }, [mooneyBalance, vmooneyBalance])
 
+  useEffect(() => {
+    // Check if user has Discord linked
+    if (user?.linkedAccounts) {
+      const hasDiscord = user.linkedAccounts.some(
+        (acc: any) => acc.type === 'discord_oauth' || acc.type === 'discord'
+      )
+
+      // If Discord was just linked (from false to true), scroll to Check Roles action
+      if (!hasDiscordLinked && hasDiscord) {
+        setTimeout(() => {
+          const checkRolesElement =
+            document.getElementById('check-roles-action')
+          if (checkRolesElement) {
+            checkRolesElement.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+            })
+          }
+        }, 500) // Small delay to ensure the page has fully loaded
+      }
+
+      setHasDiscordLinked(hasDiscord)
+    }
+  }, [user?.linkedAccounts, hasDiscordLinked])
+
   const checkDiscordRoles = async () => {
+    // If Discord is not linked, prompt user to link it
+    if (!hasDiscordLinked) {
+      try {
+        setIsCheckingRoles(true)
+        await linkDiscord()
+        // After linking, the user effect will update hasDiscordLinked
+        setRoleCheckResult('Discord linked! Click again to check roles.')
+      } catch (error) {
+        console.error('Error linking Discord:', error)
+        setRoleCheckResult('Failed to link Discord. Please try again.')
+      } finally {
+        setIsCheckingRoles(false)
+      }
+      return
+    }
+
     setIsCheckingRoles(true)
     setRoleCheckResult(null)
     setCitizenRoleStatus(null)
@@ -213,67 +255,78 @@ export default function CitizenActions({
                     icon={<ArrowUpRightIcon height={30} width={30} />}
                     onClick={() => window.open('https://guild.xyz/moondao')}
                   />
-                  <Action
-                    title="Check Roles"
-                    description={
-                      isCheckingRoles ? (
-                        'Checking eligibility...'
-                      ) : roleCheckResult ? (
-                        <div className="space-y-2">
-                          <div
-                            className={`font-medium ${
-                              roleCheckResult === 'All Discord roles assigned!'
-                                ? 'text-green-400'
-                                : roleCheckResult === 'Some roles assigned'
-                                ? 'text-yellow-400'
-                                : 'text-red-400'
-                            }`}
-                          >
-                            {roleCheckResult}
+                  <div id="check-roles-action">
+                    <Action
+                      title={!hasDiscordLinked ? 'Link Discord' : 'Check Roles'}
+                      description={
+                        isCheckingRoles ? (
+                          !hasDiscordLinked ? (
+                            'Linking Discord...'
+                          ) : (
+                            'Checking eligibility...'
+                          )
+                        ) : roleCheckResult ? (
+                          <div className="space-y-2">
+                            <div
+                              className={`font-medium ${
+                                roleCheckResult ===
+                                'All Discord roles assigned!'
+                                  ? 'text-green-400'
+                                  : roleCheckResult === 'Some roles assigned'
+                                  ? 'text-yellow-400'
+                                  : roleCheckResult.includes('Discord linked!')
+                                  ? 'text-blue-400'
+                                  : 'text-red-400'
+                              }`}
+                            >
+                              {roleCheckResult}
+                            </div>
+                            <div className="grid grid-cols-2 gap-1">
+                              {citizenRoleStatus && (
+                                <div
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+                                    citizenRoleStatus.includes('Not Eligible')
+                                      ? 'bg-red-900/20 border-red-500/30 text-red-400'
+                                      : 'bg-green-900/20 border-green-500/30 text-green-400'
+                                  }`}
+                                >
+                                  <span className="text-sm font-medium">
+                                    {citizenRoleStatus}
+                                  </span>
+                                </div>
+                              )}
+                              {voterRoleStatus && (
+                                <div
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+                                    voterRoleStatus.includes('Not Eligible')
+                                      ? 'bg-red-900/20 border-red-500/30 text-red-400'
+                                      : 'bg-green-900/20 border-green-500/30 text-green-400'
+                                  }`}
+                                >
+                                  <span className="text-sm font-medium">
+                                    {voterRoleStatus}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-1">
-                            {citizenRoleStatus && (
-                              <div
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
-                                  citizenRoleStatus.includes('Not Eligible')
-                                    ? 'bg-red-900/20 border-red-500/30 text-red-400'
-                                    : 'bg-green-900/20 border-green-500/30 text-green-400'
-                                }`}
-                              >
-                                <span className="text-sm font-medium">
-                                  {citizenRoleStatus}
-                                </span>
-                              </div>
-                            )}
-                            {voterRoleStatus && (
-                              <div
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
-                                  voterRoleStatus.includes('Not Eligible')
-                                    ? 'bg-red-900/20 border-red-500/30 text-red-400'
-                                    : 'bg-green-900/20 border-green-500/30 text-green-400'
-                                }`}
-                              >
-                                <span className="text-sm font-medium">
-                                  {voterRoleStatus}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        'Verify your Citizen NFT and vMOONEY to get Discord roles automatically.'
-                      )
-                    }
-                    icon={
-                      isCheckingRoles ? (
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                      ) : (
-                        <CheckCircleIcon height={30} width={30} />
-                      )
-                    }
-                    onClick={isCheckingRoles ? undefined : checkDiscordRoles}
-                    disabled={isCheckingRoles}
-                  />
+                        ) : !hasDiscordLinked ? (
+                          'Link your Discord account to get roles based on your Citizen NFT and vMOONEY.'
+                        ) : (
+                          'Verify your Citizen NFT and vMOONEY to get Discord roles automatically.'
+                        )
+                      }
+                      icon={
+                        isCheckingRoles ? (
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                        ) : (
+                          <CheckCircleIcon height={30} width={30} />
+                        )
+                      }
+                      onClick={isCheckingRoles ? undefined : checkDiscordRoles}
+                      disabled={isCheckingRoles}
+                    />
+                  </div>
 
                   {!isTeamMember && (
                     <Action
