@@ -1,7 +1,7 @@
 import { PrivyProvider } from '@privy-io/react-auth'
-import { SessionProvider } from 'next-auth/react'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { FlagProvider } from 'const/flags'
+import { SessionProvider } from 'next-auth/react'
 import { NextQueryParamProvider } from 'next-query-params'
 import React, { useEffect, useState } from 'react'
 import { Chain as ChainV5 } from 'thirdweb/chains'
@@ -41,7 +41,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
           <PrivyProvider
             appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}
             config={{
-              loginMethods: ['wallet', 'sms', 'google', 'twitter'],
+              loginMethods: ['wallet', 'sms', 'google', 'twitter', 'discord'],
               appearance: {
                 theme: '#252c4d',
                 showWalletLoginFirst: false,
