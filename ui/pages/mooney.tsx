@@ -19,11 +19,41 @@ import NativeToMooney from '@/components/uniswap/NativeToMooney'
 // Simple Pie Chart Component
 function TokenDistributionChart() {
   const data = [
-    { name: 'Circulating', value: 28.79, color: '#EF4444', amount: 727.19 },
-    { name: 'Locked', value: 18.28, color: '#F59E0B', amount: 462.13 },
-    { name: 'Liquidity', value: 18.09, color: '#8B5CF6', amount: 457.25 },
-    { name: 'Projects System', value: 16.11, color: '#10B981', amount: 407.41 },
-    { name: 'DAO Treasury', value: 15.15, color: '#3B82F6', amount: 383.10 }
+    { 
+      name: 'Circulating', 
+      value: 28.79, 
+      color: '#EF4444', 
+      amount: 727.19,
+      description: 'Tokens currently in circulation and available for trading on exchanges.'
+    },
+    { 
+      name: 'Locked', 
+      value: 18.28, 
+      color: '#F59E0B', 
+      amount: 462.13,
+      description: 'Tokens locked by users for governance voting power(vMOONEY).'
+    },
+    { 
+      name: 'Liquidity', 
+      value: 18.09, 
+      color: '#8B5CF6', 
+      amount: 457.25,
+      description: 'Tokens provided to liquidity pools on decentralized exchanges.'
+    },
+    { 
+      name: 'Projects System', 
+      value: 16.11, 
+      color: '#10B981', 
+      amount: 407.41,
+      description: 'Tokens reserved for quarterly rewards for projects that contribute to MoonDAO\'s mission.'
+    },
+    { 
+      name: 'DAO Treasury', 
+      value: 15.15, 
+      color: '#3B82F6', 
+      amount: 383.10,
+      description: 'Unallocated tokens released through governace for operational expenses and project funding.'
+    }
   ]
 
   const total = data.reduce((sum, item) => sum + item.value, 0)
@@ -75,16 +105,20 @@ function TokenDistributionChart() {
       {/* Legend */}
       <div className="space-y-2 flex-1">
         {data.map((segment, index) => (
-          <div key={index} className="flex items-center gap-3 p-2 bg-black/20 rounded-lg hover:bg-black/30 transition-colors">
+          <div key={index} className="flex items-start gap-3 p-3 bg-black/20 rounded-lg hover:bg-black/30 transition-colors">
             <div 
-              className="w-3 h-3 rounded-full flex-shrink-0" 
+              className="w-3 h-3 rounded-full flex-shrink-0 mt-1" 
               style={{ backgroundColor: segment.color }}
             ></div>
             <div className="flex-1 min-w-0">
-              <div className="text-white font-medium text-xs truncate">{segment.name}</div>
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-white font-medium text-sm">
+                  {segment.name}<span className="text-gray-300 font-normal">: {segment.description}</span>
+                </div>
+                <div className="text-white font-bold text-sm">{segment.value.toFixed(2)}%</div>
+              </div>
               <div className="text-gray-400 text-xs">{segment.amount.toFixed(0)}M MOONEY</div>
             </div>
-            <div className="text-white font-bold text-sm">{segment.value.toFixed(2)}%</div>
           </div>
         ))}
       </div>
@@ -331,10 +365,10 @@ export default function Mooney() {
                   Projects System Reward Structure
                 </h3>
                 <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="bg-black/20 rounded-lg p-4">
-                      <h4 className="text-orange-300 font-semibold mb-3">Quarterly Reward Pool</h4>
-                      <div className="space-y-3 text-sm text-gray-300">
+                  <div className="flex flex-col h-full">
+                    <div className="bg-black/20 rounded-lg p-4 flex-1">
+                      <h4 className="text-orange-300 font-semibold mb-6">Quarterly Reward Pool</h4>
+                      <div className="space-y-6 text-sm text-gray-300 mb-6">
                         <div className="flex justify-between">
                           <span>Starting Quarter (Q4 2022):</span>
                           <span className="text-orange-300 font-medium">15M MOONEY</span>
@@ -348,41 +382,95 @@ export default function Mooney() {
                           <span className="text-orange-300 font-medium">Geometric Decay</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Community Circle:</span>
-                          <span className="text-orange-300 font-medium">10% of total</span>
+                          <span>MOONEY Rewards:</span>
+                          <span className="text-purple-300 font-medium">4-year vMOONEY lock</span>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-orange-500/10 rounded-lg p-3 border border-orange-400/20">
+                    <div className="bg-orange-500/10 rounded-lg p-3 border border-orange-400/20 mt-4">
                       <p className="text-orange-300 text-sm">
                         💡 Retroactive rewards incentivize projects that advance MoonDAO's mission
                       </p>
                     </div>
                   </div>
                   
-                  <div className="space-y-4">
-                    <div className="bg-black/20 rounded-lg p-4">
-                      <h4 className="text-blue-300 font-semibold mb-3">Contributor Rewards</h4>
-                      <div className="space-y-3 text-sm text-gray-300">
-                        <div className="flex justify-between items-center">
-                          <span>MOONEY Rewards:</span>
-                          <span className="text-purple-300 font-medium">4-year vMOONEY lock</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>Distribution:</span>
-                          <span className="text-orange-300 font-medium">Based on DAO vote</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>Senate Membership:</span>
-                          <span className="text-green-300 font-medium">Project Leads join Senate</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>Intellectual Property:</span>
-                          <span className="text-blue-300 font-medium">Creative Commons license</span>
-                        </div>
+                  <div className="flex flex-col h-full">
+                    <div className="bg-black/20 rounded-lg p-4 flex-1">
+                      <h4 className="text-blue-300 font-semibold mb-3">Geometric Decay Visualization</h4>
+                      <div className="h-48 bg-gray-900/80 rounded-lg p-4 relative overflow-hidden border border-gray-700/50">
+                        <svg className="w-full h-full" viewBox="0 0 320 120">
+                          {/* Background grid */}
+                          <defs>
+                            <pattern id="grid" width="32" height="24" patternUnits="userSpaceOnUse">
+                              <path d="M 32 0 L 0 0 0 24" fill="none" stroke="#374151" strokeWidth="0.5" opacity="0.2"/>
+                            </pattern>
+                            <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" style={{stopColor: '#F59E0B', stopOpacity: 0.3}} />
+                              <stop offset="100%" style={{stopColor: '#F59E0B', stopOpacity: 0.05}} />
+                            </linearGradient>
+                          </defs>
+                          <rect width="320" height="120" fill="url(#grid)" />
+                          
+                          {/* Y-axis labels */}
+                          <text x="15" y="25" fontSize="8" fill="#9CA3AF" textAnchor="middle">15M</text>
+                          <text x="15" y="50" fontSize="8" fill="#9CA3AF" textAnchor="middle">12M</text>
+                          <text x="15" y="75" fontSize="8" fill="#9CA3AF" textAnchor="middle">9M</text>
+                          <text x="15" y="100" fontSize="8" fill="#9CA3AF" textAnchor="middle">6M</text>
+                          
+                          {/* Area under curve */}
+                          <path
+                            d="M 30 20 L 70 25 L 110 32 L 150 40 L 190 49 L 230 59 L 270 70 L 310 82 L 310 110 L 30 110 Z"
+                            fill="url(#areaGradient)"
+                          />
+                          
+                          {/* Main decay curve */}
+                          <path
+                            d="M 30 20 L 70 25 L 110 32 L 150 40 L 190 49 L 230 59 L 270 70 L 310 82"
+                            fill="none"
+                            stroke="#F59E0B"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          
+                          {/* X-axis line */}
+                          <line x1="30" y1="110" x2="310" y2="110" stroke="#4B5563" strokeWidth="1" />
+                          
+                          {/* Y-axis line */}
+                          <line x1="30" y1="15" x2="30" y2="110" stroke="#4B5563" strokeWidth="1" />
+                          
+                          {/* Data points with values */}
+                          {[
+                            { x: 30, y: 20, quarter: 'Q4 22', value: '15.0M' },
+                            { x: 70, y: 25, quarter: 'Q1 23', value: '14.3M' },
+                            { x: 110, y: 32, quarter: 'Q2 23', value: '13.5M' },
+                            { x: 150, y: 40, quarter: 'Q3 23', value: '12.8M' },
+                            { x: 190, y: 49, quarter: 'Q4 23', value: '12.2M' },
+                            { x: 230, y: 59, quarter: 'Q1 24', value: '11.6M' },
+                            { x: 270, y: 70, quarter: 'Q2 24', value: '11.0M' }
+                          ].map((point, i) => (
+                            <g key={i}>
+                              <circle cx={point.x} cy={point.y} r="3" fill="#1F2937" stroke="#F59E0B" strokeWidth="2" />
+                              <circle cx={point.x} cy={point.y} r="1.5" fill="#F59E0B" />
+                              <text x={point.x} y={point.y - 12} fontSize="7" fill="#D1D5DB" textAnchor="middle" fontWeight="500">
+                                {point.quarter}
+                              </text>
+                              {i !== 0 && (
+                                <text x={point.x} y={point.y + 18} fontSize="6" fill="#9CA3AF" textAnchor="middle">
+                                  {point.value}
+                                </text>
+                              )}
+                            </g>
+                          ))}
+                          
+                          {/* Trend annotation */}
+                          <text x="280" y="15" fontSize="8" fill="#F59E0B" textAnchor="end" fontWeight="600">
+                            -5% per quarter
+                          </text>
+                        </svg>
                       </div>
                     </div>
-                    <div className="bg-green-500/10 rounded-lg p-3 border border-green-400/20">
+                    <div className="bg-green-500/10 rounded-lg p-3 border border-green-400/20 mt-4">
                       <p className="text-green-300 text-sm">
                         📖 <a href="https://docs.moondao.com/Projects/Project-System" target="_blank" rel="noopener noreferrer" className="underline hover:text-green-200">
                           Learn more about the Projects System
