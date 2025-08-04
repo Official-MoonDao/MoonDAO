@@ -100,6 +100,11 @@ module.exports = withTM(
           permanent: true,
         },
         {
+          source: '/get-mooney',
+          destination: '/mooney',
+          permanent: true,
+        },
+        {
           source: '/docs/project-guidelines',
           destination: 'https://docs.moondao.com/Projects/Project-System',
           permanent: true,

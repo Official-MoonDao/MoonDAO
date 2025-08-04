@@ -60,7 +60,7 @@ export default function useNavigation(citizen: any) {
         children: [
           {
             name: 'Buy',
-            href: '/get-mooney',
+            href: '/mooney',
           },
           { name: 'Lock', href: '/lock' },
           { name: 'Bridge', href: '/bridge' },

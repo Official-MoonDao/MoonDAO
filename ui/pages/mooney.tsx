@@ -355,14 +355,7 @@ export default function Mooney() {
                     </div>
                     <div className="bg-orange-500/10 rounded-lg p-3 border border-orange-400/20">
                       <p className="text-orange-300 text-sm">
-                        💡 Retroactive rewards incentivize completed projects that advance MoonDAO's mission
-                      </p>
-                    </div>
-                    <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-400/20">
-                      <p className="text-blue-300 text-sm">
-                        📖 <a href="https://docs.moondao.com/Projects/Project-System" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-200">
-                          Learn more about the Projects System
-                        </a>
+                        💡 Retroactive rewards incentivize projects that advance MoonDAO's mission
                       </p>
                     </div>
                   </div>
@@ -372,27 +365,29 @@ export default function Mooney() {
                       <h4 className="text-blue-300 font-semibold mb-3">Contributor Rewards</h4>
                       <div className="space-y-3 text-sm text-gray-300">
                         <div className="flex justify-between items-center">
-                          <span>ETH Rewards:</span>
-                          <span className="text-blue-300 font-medium">Lump sum payment</span>
-                        </div>
-                        <div className="flex justify-between items-center">
                           <span>MOONEY Rewards:</span>
                           <span className="text-purple-300 font-medium">4-year vMOONEY lock</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>ETH Pool:</span>
-                          <span className="text-green-300 font-medium">5% of DAO assets</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span>Distribution:</span>
                           <span className="text-orange-300 font-medium">Based on DAO vote</span>
                         </div>
+                        <div className="flex justify-between items-center">
+                          <span>Senate Membership:</span>
+                          <span className="text-green-300 font-medium">Project Leads join Senate</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span>Intellectual Property:</span>
+                          <span className="text-blue-300 font-medium">Creative Commons license</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-center">
-                      <div className="inline-flex items-center gap-2 bg-blue-500/10 rounded-lg px-3 py-2 border border-blue-400/20">
-                        <span className="text-blue-300 text-sm font-medium">Geometric decay: 15M → 14.25M → 13.54M MOONEY per quarter</span>
-                      </div>
+                    <div className="bg-green-500/10 rounded-lg p-3 border border-green-400/20">
+                      <p className="text-green-300 text-sm">
+                        📖 <a href="https://docs.moondao.com/Projects/Project-System" target="_blank" rel="noopener noreferrer" className="underline hover:text-green-200">
+                          Learn more about the Projects System
+                        </a>
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -414,17 +409,19 @@ export default function Mooney() {
 
               {/* Network Selection */}
               <div className="mb-8">
-                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
-                  <div className="flex-1 max-w-md">
-                    <h3 className="text-lg font-semibold text-white mb-2">
-                      Network Selection
-                    </h3>
-                    <p className="text-gray-300 text-sm">
-                      Select which network you want to buy MOONEY on
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <NetworkSelector />
+                <div className="max-w-2xl mx-auto bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        Network Selection
+                      </h3>
+                      <p className="text-gray-300 text-sm">
+                        Select a network to buy MOONEY on
+                      </p>
+                    </div>
+                    <div className="ml-6">
+                      <NetworkSelector />
+                    </div>
                   </div>
                 </div>
               </div>
