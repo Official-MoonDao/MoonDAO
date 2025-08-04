@@ -398,7 +398,7 @@ export default function Mooney() {
                     <div className="bg-black/20 rounded-lg p-4 flex-1">
                       <h4 className="text-blue-300 font-semibold mb-3">Geometric Decay Visualization</h4>
                       <div className="h-48 bg-gray-900/80 rounded-lg p-4 relative overflow-hidden border border-gray-700/50">
-                        <svg className="w-full h-full" viewBox="0 0 320 120">
+                        <svg className="w-full h-full" viewBox="0 0 340 130">
                           {/* Background grid */}
                           <defs>
                             <pattern id="grid" width="32" height="24" patternUnits="userSpaceOnUse">
@@ -409,23 +409,24 @@ export default function Mooney() {
                               <stop offset="100%" style={{stopColor: '#F59E0B', stopOpacity: 0.05}} />
                             </linearGradient>
                           </defs>
-                          <rect width="320" height="120" fill="url(#grid)" />
+                          <rect width="340" height="130" fill="url(#grid)" />
                           
                           {/* Y-axis labels */}
-                          <text x="15" y="25" fontSize="8" fill="#9CA3AF" textAnchor="middle">15M</text>
-                          <text x="15" y="50" fontSize="8" fill="#9CA3AF" textAnchor="middle">12M</text>
-                          <text x="15" y="75" fontSize="8" fill="#9CA3AF" textAnchor="middle">9M</text>
-                          <text x="15" y="100" fontSize="8" fill="#9CA3AF" textAnchor="middle">6M</text>
+                          <text x="20" y="30" fontSize="8" fill="#9CA3AF" textAnchor="middle">15M</text>
+                          <text x="20" y="50" fontSize="8" fill="#9CA3AF" textAnchor="middle">14M</text>
+                          <text x="20" y="70" fontSize="8" fill="#9CA3AF" textAnchor="middle">13M</text>
+                          <text x="20" y="90" fontSize="8" fill="#9CA3AF" textAnchor="middle">12M</text>
+                          <text x="20" y="110" fontSize="8" fill="#9CA3AF" textAnchor="middle">11M</text>
                           
                           {/* Area under curve */}
                           <path
-                            d="M 30 20 L 70 25 L 110 32 L 150 40 L 190 49 L 230 59 L 270 70 L 310 82 L 310 110 L 30 110 Z"
+                            d="M 35 30 L 75 45 L 115 60 L 155 75 L 195 90 L 235 100 L 275 110 L 315 115 L 35 115 Z"
                             fill="url(#areaGradient)"
                           />
                           
-                          {/* Main decay curve */}
+                          {/* Main decay curve - smooth exponential */}
                           <path
-                            d="M 30 20 L 70 25 L 110 32 L 150 40 L 190 49 L 230 59 L 270 70 L 310 82"
+                            d="M 35 30 C 50 35 60 40 75 45 C 90 50 100 55 115 60 C 130 65 140 70 155 75 C 170 80 180 85 195 90 C 210 94 220 97 235 100 C 250 103 260 106 275 110"
                             fill="none"
                             stroke="#F59E0B"
                             strokeWidth="2.5"
@@ -434,20 +435,20 @@ export default function Mooney() {
                           />
                           
                           {/* X-axis line */}
-                          <line x1="30" y1="110" x2="310" y2="110" stroke="#4B5563" strokeWidth="1" />
+                          <line x1="35" y1="115" x2="315" y2="115" stroke="#4B5563" strokeWidth="1" />
                           
                           {/* Y-axis line */}
-                          <line x1="30" y1="15" x2="30" y2="110" stroke="#4B5563" strokeWidth="1" />
+                          <line x1="35" y1="25" x2="35" y2="115" stroke="#4B5563" strokeWidth="1" />
                           
                           {/* Data points with values */}
                           {[
-                            { x: 30, y: 20, quarter: 'Q4 22', value: '15.0M' },
-                            { x: 70, y: 25, quarter: 'Q1 23', value: '14.3M' },
-                            { x: 110, y: 32, quarter: 'Q2 23', value: '13.5M' },
-                            { x: 150, y: 40, quarter: 'Q3 23', value: '12.8M' },
-                            { x: 190, y: 49, quarter: 'Q4 23', value: '12.2M' },
-                            { x: 230, y: 59, quarter: 'Q1 24', value: '11.6M' },
-                            { x: 270, y: 70, quarter: 'Q2 24', value: '11.0M' }
+                            { x: 35, y: 30, quarter: 'Q4 22', value: '15.0M' },
+                            { x: 75, y: 45, quarter: 'Q1 23', value: '14.3M' },
+                            { x: 115, y: 60, quarter: 'Q2 23', value: '13.5M' },
+                            { x: 155, y: 75, quarter: 'Q3 23', value: '12.9M' },
+                            { x: 195, y: 90, quarter: 'Q4 23', value: '12.2M' },
+                            { x: 235, y: 100, quarter: 'Q1 24', value: '11.6M' },
+                            { x: 275, y: 110, quarter: 'Q2 24', value: '11.0M' }
                           ].map((point, i) => (
                             <g key={i}>
                               <circle cx={point.x} cy={point.y} r="3" fill="#1F2937" stroke="#F59E0B" strokeWidth="2" />
@@ -464,7 +465,7 @@ export default function Mooney() {
                           ))}
                           
                           {/* Trend annotation */}
-                          <text x="280" y="15" fontSize="8" fill="#F59E0B" textAnchor="end" fontWeight="600">
+                          <text x="300" y="20" fontSize="8" fill="#F59E0B" textAnchor="end" fontWeight="600">
                             -5% per quarter
                           </text>
                         </svg>
