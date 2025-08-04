@@ -176,6 +176,7 @@ export const VMOONEY_FAUCET_ADDRESSES: Index = {
 }
 
 export const FEE_HOOK_ADDRESSES: Index = {
+  ethereum: ethConfig.FeeHook,
   sepolia: sepoliaConfig.FeeHook,
   'arbitrum-sepolia': arbitrumSepoliaConfig.FeeHook,
   arbitrum: arbitrumConfig.FeeHook,
@@ -363,11 +364,13 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
 }
 
 export const UNISWAP_V4_ROUTER_ADDRESSES: Index = {
+  ethereum: '0x66a9893cc07d91d95644aedd05d03f95e1dba8af',
   sepolia: sepoliaConfig.UniswapV4Router,
   arbitrum: arbitrumConfig.UniswapV4Router,
 }
 
 export const UNISWAP_V4_QUOTER_ADDRESSES: Index = {
+  ethereum: '0x52f0e24d1c21c8a0cb1e5a5dd6198556bd9e1203',
   sepolia: '0x61B3f2011A92d183C7dbaDBdA940a7555Ccf9227',
   arbitrum: '0x3972C00f7ed4885e145823eb7C655375d275A1C5',
 }
