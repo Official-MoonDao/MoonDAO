@@ -17,6 +17,7 @@ import { LogoSidebarLight, LogoSidebar } from '../assets'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import CookieBanner from './CookieBanner'
+import GlobalSearch from './GlobalSearch'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import LanguageChange from './Sidebar/LanguageChange'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
@@ -107,6 +108,9 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
             {children}
           </div>
         </main>
+
+        {/* Global Search - Sticky on all pages */}
+        <GlobalSearch />
       </>
 
       <CookieBanner />

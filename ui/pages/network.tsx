@@ -152,6 +152,120 @@ export default function Network({
 
   useChainDefault()
 
+  const descriptionSection = (
+    <div className="pt-2">
+      <div className="mb-4">
+        The Space Acceleration Network is an onchain startup society focused on
+        building a permanent settlement on the Moon and beyond. Help build our
+        multiplanetary future and{' '}
+        <u>
+          <Link href="/join">join the network</Link>
+        </u>
+        .
+      </div>
+      <div className="relative w-full flex flex-col gap-3">
+        {/* Search Bar and Tabs - Same Row */}
+        <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
+          <div className="w-full flex flex-row min-[800px]:flex-row gap-4 items-center overflow-hidden">
+            {/* Search Bar */}
+            <div className="w-full min-w-0 max-w-[250px] sm:max-w-[280px] md:max-w-[320px] bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 px-3 py-1">
+              <Search
+                className="w-full flex-grow"
+                input={input}
+                setInput={setInput}
+                placeholder="Search..."
+              />
+            </div>
+
+            <div
+              id="filter-container"
+              className="hidden min-[1150px]:block flex-shrink-0"
+            >
+              <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
+                <div className="flex text-sm gap-1">
+                  <Tab
+                    tab="citizens"
+                    currentTab={tab}
+                    setTab={handleTabChange}
+                    icon="/assets/icon-passport.svg"
+                  >
+                    Citizens
+                  </Tab>
+                  <Tab
+                    tab="teams"
+                    currentTab={tab}
+                    setTab={handleTabChange}
+                    icon="/assets/icon-org.svg"
+                  >
+                    Teams
+                  </Tab>
+                  <Tab
+                    tab="map"
+                    currentTab={tab}
+                    setTab={() => {
+                      router.push('/map')
+                    }}
+                    icon={<GlobeAmericasIcon width={20} height={20} />}
+                  >
+                    Map
+                  </Tab>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-shrink-0 flex justify-end md:justify-start">
+              <StandardButton
+                className="gradient-2 rounded-2xl hover:scale-105 transition-transform"
+                hoverEffect={false}
+                link="/join"
+              >
+                <div className="flex items-center justify-start gap-2">
+                  <PlusCircleIcon width={20} height={20} />
+                  {'Join'}
+                </div>
+              </StandardButton>
+            </div>
+          </div>
+          <div
+            id="filter-container"
+            className="min-[1150px]:hidden mt-4 min-[900px]:mt-2"
+          >
+            <div className="w-fit max-w-[300px] sm:max-w-none h-fit bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-1.5 overflow-x-auto">
+              <div className="flex text-sm gap-1 min-w-fit">
+                <Tab
+                  tab="teams"
+                  currentTab={tab}
+                  setTab={handleTabChange}
+                  icon="/assets/icon-org.svg"
+                >
+                  Teams
+                </Tab>
+                <Tab
+                  tab="citizens"
+                  currentTab={tab}
+                  setTab={handleTabChange}
+                  icon="/assets/icon-passport.svg"
+                >
+                  Citizens
+                </Tab>
+                <Tab
+                  tab="map"
+                  currentTab={tab}
+                  setTab={() => {
+                    router.push('/map')
+                  }}
+                  icon={<GlobeAmericasIcon width={20} height={20} />}
+                >
+                  Map
+                </Tab>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
   const renderNFTs = () => {
     if (!cachedNFTs?.[0]) {
       return (
@@ -199,7 +313,7 @@ export default function Network({
       const link = `/${type === 'team' ? 'team' : 'citizen'}/${
         type === 'team'
           ? generatePrettyLink(nft.metadata.name)
-          : generatePrettyLinkWithId(nft.metadata.name, nft.metadata.id)
+          : generatePrettyLinkWithId(nft.metadata.name, nft.id.toString())
       }`
 
       return (

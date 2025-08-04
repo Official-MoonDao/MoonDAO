@@ -157,7 +157,7 @@ export default function Lock() {
   useEffect(() => {
     if (hasLock && VMOONEYLock) {
       const currentLockEnd = bigNumberToDate(BigNumber.from(VMOONEYLock[1]))
-      const maxLockTime = dateOut(new Date(), { days: 1461 }) // 4 years from now
+      const maxLockTime = dateOut(new Date(), { days: 1460 }) // 4 years minus 1 day from now
       
       setMinMaxLockTime({
         min: dateToReadable(oneWeekOut),
@@ -170,16 +170,17 @@ export default function Lock() {
         time: 
           lockTime?.value &&
           lockTime.value.gt(BigNumber.from(VMOONEYLock[1]).mul(1000)) && // New time must be greater than current lock end
-          lockTime.value.lte(BigNumber.from(+maxLockTime)), // New time must be within 4 years from now
+          lockTime.value.lte(BigNumber.from(+maxLockTime)), // New time must be within max lock time
       })
     } else {
       setMinMaxLockTime({
         min: dateToReadable(oneWeekOut),
-        max: dateToReadable(dateOut(new Date(), { days: 1461 })),
+        max: dateToReadable(dateOut(new Date(), { days: 1460 })),
       })
       setCanIncrease({
         amount: !!(lockAmount && lockAmount !== '' && lockAmount !== '0'),
-        time: lockTime?.value && lockTime.value.gt(ethers.BigNumber.from(+oneWeekOut)),
+        time: lockTime?.value && lockTime.value.gt(ethers.BigNumber.from(+oneWeekOut)) &&
+               lockTime.value.lte(BigNumber.from(+dateOut(new Date(), { days: 1460 }))),
       })
     }
   }, [hasLock, lockAmount, lockTime, VMOONEYLock, address])
@@ -400,7 +401,7 @@ export default function Lock() {
                                 { label: '6M', days: 182 },
                                 { label: '1Y', days: 365 },
                                 { label: '2Y', days: 730 },
-                                { label: '4Y', days: 1461 },
+                                { label: '4Y', days: 1460 }, // 4 years minus 1 day to stay under limit
                               ].map(({ label, days }) => {
                                 const targetDate = dateOut(new Date(), { days })
                                 const isSelected =
@@ -478,6 +479,7 @@ export default function Lock() {
                                   if (inputValue && inputValue.length === 10) {
                                     const selectedDate = new Date(inputValue)
                                     const minDate = dateOut(new Date(), { days: 7 })
+                                    const maxDate = dateOut(new Date(), { days: 1460 }) // 4 years minus 1 day
 
                                     if (selectedDate < minDate) {
                                       toast.error(
@@ -485,6 +487,19 @@ export default function Lock() {
                                       )
                                       // Reset to minimum valid date
                                       const validDate = dateToReadable(minDate)
+                                      setLockTime({
+                                        ...lockTime,
+                                        formatted: validDate,
+                                        value: ethers.BigNumber.from(
+                                          Date.parse(validDate)
+                                        ),
+                                      })
+                                    } else if (selectedDate > maxDate) {
+                                      toast.error(
+                                        'Lock period cannot exceed 4 years. Date has been adjusted to the maximum allowed.'
+                                      )
+                                      // Auto-correct to maximum valid date
+                                      const validDate = dateToReadable(maxDate)
                                       setLockTime({
                                         ...lockTime,
                                         formatted: validDate,
@@ -610,6 +625,13 @@ export default function Lock() {
                               try {
                                 if (!account)
                                   throw new Error('No account connected')
+                                
+                                // Additional validation before attempting lock
+                                const maxLockTime = dateOut(new Date(), { days: 1460 })
+                                if (lockTime?.value && lockTime.value.gt(BigNumber.from(+maxLockTime))) {
+                                  throw new Error('Lock period cannot exceed 4 years. Please adjust your lock duration.')
+                                }
+                                
                                 const lockedMooney = VMOONEYLock?.[0]
                                 const lockAmountBigNum =
                                   ethers.utils.parseEther(lockAmount)
@@ -658,8 +680,15 @@ export default function Lock() {
                                   )
                                   setRefresh((prev) => !prev)
                                 }
-                              } catch (error) {
-                                throw error
+                              } catch (error: any) {
+                                // Check for specific error messages related to lock time limits
+                                if (error.message?.includes('Lock period') || 
+                                    error.message?.includes('exceed') ||
+                                    error.reason?.includes('VOTING_ESCROW_LOCK_TIME_TOO_BIG')) {
+                                  toast.error('Lock period exceeds maximum allowed time. Please reduce the lock duration.')
+                                } else {
+                                  throw error
+                                }
                               }
                             }}
                             isDisabled={
