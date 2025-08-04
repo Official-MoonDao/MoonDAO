@@ -11,6 +11,7 @@ import GasIcon from '../assets/GasIcon'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export default function NativeToMooney({ selectedChain }: any) {
+  console.log('selectedChain:', selectedChain)
   const chainSlug = getChainSlug(selectedChain)
 
   const nativeBalance = useNativeBalance()

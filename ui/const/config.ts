@@ -364,7 +364,7 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
 }
 
 export const UNISWAP_V4_ROUTER_ADDRESSES: Index = {
-  ethereum: '0x66a9893cc07d91d95644aedd05d03f95e1dba8af',
+  ethereum: '0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af',
   sepolia: sepoliaConfig.UniswapV4Router,
   arbitrum: arbitrumConfig.UniswapV4Router,
 }

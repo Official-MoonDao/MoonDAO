@@ -1,5 +1,5 @@
 import { useWallets } from '@privy-io/react-auth'
-import { CommandType, RoutePlanner } from '@uniswap/universal-router-sdk-v4'
+import { CommandType, RoutePlanner } from '@uniswap/universal-router-sdk'
 import { Actions, V4Planner, SwapExactInSingle } from '@uniswap/v4-sdk'
 import QUOTER_ABI from 'const/abis/V4Quoter.json'
 import {
@@ -36,12 +36,13 @@ export function useUniswapV4(tokenAddress: string, tokenDecimals: number) {
 
   const quote = useCallback(
     async (amountIn: string) => {
+      console.log('tokenAddress', tokenAddress)
       const config: SwapExactInSingle = {
         poolKey: {
           currency0: ethers.constants.AddressZero,
           currency1: tokenAddress,
           fee: 10000,
-          tickSpacing: 100,
+          tickSpacing: 200,
           hooks: FEE_HOOK_ADDRESSES[chainSlug],
         },
         zeroForOne: true,
@@ -49,15 +50,18 @@ export function useUniswapV4(tokenAddress: string, tokenDecimals: number) {
         amountOutMinimum: '0',
         hookData: '0x00',
       }
+      console.log('quoter address', UNISWAP_V4_QUOTER_ADDRESSES[chainSlug])
 
       const wallet = wallets[selectedWallet]
       const provider = await wallet.getEthersProvider()
+      console.log('provider', provider)
 
       const quoterContract = new ethers.Contract(
         UNISWAP_V4_QUOTER_ADDRESSES[chainSlug],
         QUOTER_ABI,
         provider
       )
+      console.log('config', config)
       const result = await quoterContract.callStatic.quoteExactInputSingle({
         poolKey: config.poolKey,
         zeroForOne: config.zeroForOne,
@@ -76,7 +80,7 @@ export function useUniswapV4(tokenAddress: string, tokenDecimals: number) {
           currency0: ethers.constants.AddressZero,
           currency1: tokenAddress,
           fee: 10000,
-          tickSpacing: 100,
+          tickSpacing: 200,
           hooks: FEE_HOOK_ADDRESSES[chainSlug],
         },
         zeroForOne: true,
