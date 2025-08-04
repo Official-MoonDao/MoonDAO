@@ -244,7 +244,7 @@ export default function Network({
                 The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond
               </p>
               <StandardButton
-                backgroundColor="bg-blue-600 hover:bg-blue-700"
+                className="gradient-2 hover:opacity-90 transition-opacity"
                 textColor="text-white"
                 borderRadius="rounded-xl"
                 hoverEffect={false}
@@ -302,7 +302,7 @@ export default function Network({
                       <div className="text-green-400 text-sm font-medium mt-2">✓ 12 Month Passport</div>
                     </div>
                     <StandardButton
-                      backgroundColor="bg-blue-600 hover:bg-blue-700"
+                      className="gradient-2 hover:opacity-90 transition-opacity"
                       textColor="text-white"
                       borderRadius="rounded-xl"
                       hoverEffect={false}
@@ -336,7 +336,7 @@ export default function Network({
                       <div className="text-green-400 text-sm font-medium mt-2">✓ 12 Month Passport</div>
                     </div>
                     <StandardButton
-                      backgroundColor="bg-purple-600 hover:bg-purple-700"
+                      className="gradient-2 hover:opacity-90 transition-opacity"
                       textColor="text-white"
                       borderRadius="rounded-xl"
                       hoverEffect={false}
