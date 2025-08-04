@@ -372,8 +372,9 @@ export default function Network({
       </Container>
 
       <Container>
-        {/* Join MoonDAO Section */}
-        <div id="join-moondao" className="relative w-full min-h-[120vh] overflow-hidden">
+      {/* Join MoonDAO Section */}
+      <div id="join-moondao" className="relative w-full py-16 md:py-24">
+        <div className="absolute inset-0">
           <Image
             src="/assets/JoinImage.png"
             alt="Join MoonDAO"
@@ -382,89 +383,89 @@ export default function Network({
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          <div className="absolute inset-0 flex flex-col justify-center py-24 px-4 pt-40">
-            <Container>
-            <div className="text-center mb-8">
-              <h2 className="header font-GoodTimes text-white mb-4 drop-shadow-lg">
-                Join MoonDAO
-              </h2>
-              <p className="sub-header text-white/90 max-w-3xl mx-auto drop-shadow-lg">
-                Join our decentralized space collective and help accelerate humanity's expansion to the Moon and beyond
-              </p>
+        </div>
+        
+        <div className="relative z-10 max-w-6xl mx-auto px-6">
+          <div className="text-center mb-8">
+            <h2 className="header font-GoodTimes text-white mb-4 drop-shadow-lg">
+              Join MoonDAO
+            </h2>
+            <p className="sub-header text-white/90 max-w-3xl mx-auto drop-shadow-lg">
+              Join our decentralized space collective and help accelerate humanity's expansion to the Moon and beyond
+            </p>
+          </div>
+          
+          <div className="flex flex-col lg:flex-row gap-6">
+            <div className="flex-1">
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 h-full">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
+                    <Image
+                      src="/assets/citizen-default.png"
+                      width={96}
+                      height={96}
+                      alt="Become a Citizen"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h3 className="text-2xl font-GoodTimes text-white mb-4">Become a Citizen</h3>
+                  <p className="text-slate-300 mb-6 leading-relaxed">
+                    Citizens are the trailblazers supporting the creation of off-world settlements. Whether you're already part of a team or seeking to join one, everyone has a crucial role to play in this mission.
+                  </p>
+                  <div className="flex flex-col items-center mb-6">
+                    <div className="text-2xl font-semibold text-white">~$41 / Year</div>
+                    <div className="text-sm text-slate-400">(0.0111 Arbitrum ETH)</div>
+                    <div className="text-green-400 text-sm font-medium mt-2">✓ 12 Month Passport</div>
+                  </div>
+                  <StandardButton
+                    className="gradient-2 hover:opacity-90 transition-opacity"
+                    textColor="text-white"
+                    borderRadius="rounded-xl"
+                    hoverEffect={false}
+                    link="/join"
+                  >
+                    Become a Citizen
+                  </StandardButton>
+                </div>
+              </div>
             </div>
             
-            <div className="flex flex-col lg:flex-row gap-6 max-w-6xl mx-auto">
-              <div className="flex-1">
-                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 h-full">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
-                      <Image
-                        src="/assets/citizen-default.png"
-                        width={96}
-                        height={96}
-                        alt="Become a Citizen"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <h3 className="text-2xl font-GoodTimes text-white mb-4">Become a Citizen</h3>
-                    <p className="text-slate-300 mb-6 leading-relaxed">
-                      Citizens are the trailblazers supporting the creation of off-world settlements. Whether you're already part of a team or seeking to join one, everyone has a crucial role to play in this mission.
-                    </p>
-                    <div className="flex flex-col items-center mb-6">
-                      <div className="text-2xl font-semibold text-white">~$41 / Year</div>
-                      <div className="text-sm text-slate-400">(0.0111 Arbitrum ETH)</div>
-                      <div className="text-green-400 text-sm font-medium mt-2">✓ 12 Month Passport</div>
-                    </div>
-                    <StandardButton
-                      className="gradient-2 hover:opacity-90 transition-opacity"
-                      textColor="text-white"
-                      borderRadius="rounded-xl"
-                      hoverEffect={false}
-                      link="/join"
-                    >
-                      Become a Citizen
-                    </StandardButton>
+            <div className="flex-1">
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 h-full">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
+                    <Image
+                      src="/assets/team_image.png"
+                      width={96}
+                      height={96}
+                      alt="Create a Team"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                </div>
-              </div>
-              
-              <div className="flex-1">
-                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 h-full">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
-                      <Image
-                        src="/assets/team_image.png"
-                        width={96}
-                        height={96}
-                        alt="Create a Team"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <h3 className="text-2xl font-GoodTimes text-white mb-4">Create a Team</h3>
-                    <p className="text-slate-300 mb-6 leading-relaxed">
-                      Teams are driving innovation and tackling ambitious space challenges together. From non-profits to startups and university teams, every group has something to contribute to our multiplanetary future.
-                    </p>
-                    <div className="flex flex-col items-center mb-6">
-                      <div className="text-2xl font-semibold text-white">~$122 / Year</div>
-                      <div className="text-sm text-slate-400">(0.0333 Arbitrum ETH)</div>
-                      <div className="text-green-400 text-sm font-medium mt-2">✓ 12 Month Passport</div>
-                    </div>
-                    <StandardButton
-                      className="gradient-2 hover:opacity-90 transition-opacity"
-                      textColor="text-white"
-                      borderRadius="rounded-xl"
-                      hoverEffect={false}
-                      link="/join"
-                    >
-                      Create a Team
-                    </StandardButton>
+                  <h3 className="text-2xl font-GoodTimes text-white mb-4">Create a Team</h3>
+                  <p className="text-slate-300 mb-6 leading-relaxed">
+                    Teams are driving innovation and tackling ambitious space challenges together. From non-profits to startups and university teams, every group has something to contribute to our multiplanetary future.
+                  </p>
+                  <div className="flex flex-col items-center mb-6">
+                    <div className="text-2xl font-semibold text-white">~$122 / Year</div>
+                    <div className="text-sm text-slate-400">(0.0333 Arbitrum ETH)</div>
+                    <div className="text-green-400 text-sm font-medium mt-2">✓ 12 Month Passport</div>
                   </div>
+                  <StandardButton
+                    className="gradient-2 hover:opacity-90 transition-opacity"
+                    textColor="text-white"
+                    borderRadius="rounded-xl"
+                    hoverEffect={false}
+                    link="/join"
+                  >
+                    Create a Team
+                  </StandardButton>
                 </div>
               </div>
             </div>
-            </Container>
           </div>
         </div>
+      </div>
       </Container>
 
       <Container>
