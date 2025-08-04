@@ -1,3 +1,10 @@
+import {
+  MOONEY_ADDRESSES,
+  VMOONEY_ADDRESSES,
+  DAI_ADDRESSES,
+  USDC_ADDRESSES,
+  USDT_ADDRESSES,
+} from 'const/config'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
@@ -11,7 +18,39 @@ let tokenCache: Map<
   }
 > = new Map()
 
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes cache
+const CACHE_DURATION = 60 * 1000 // 1 minute cache
+
+// Function to get legitimate token addresses for filtering
+function getLegitimateTokenAddresses(chain: string): Set<string> {
+  const legitimateTokens = new Set<string>()
+
+  // Add MOONEY addresses
+  if (MOONEY_ADDRESSES[chain]) {
+    legitimateTokens.add(MOONEY_ADDRESSES[chain].toLowerCase())
+  }
+
+  // Add vMOONEY addresses
+  if (VMOONEY_ADDRESSES[chain]) {
+    legitimateTokens.add(VMOONEY_ADDRESSES[chain].toLowerCase())
+  }
+
+  // Add DAI addresses
+  if (DAI_ADDRESSES[chain]) {
+    legitimateTokens.add(DAI_ADDRESSES[chain].toLowerCase())
+  }
+
+  // Add USDC addresses
+  if (USDC_ADDRESSES[chain]) {
+    legitimateTokens.add(USDC_ADDRESSES[chain].toLowerCase())
+  }
+
+  // Add USDT addresses
+  if (USDT_ADDRESSES[chain]) {
+    legitimateTokens.add(USDT_ADDRESSES[chain].toLowerCase())
+  }
+
+  return legitimateTokens
+}
 
 // Function to detect if a token name/symbol contains URL patterns (likely scam)
 function containsUrlPattern(text: string): boolean {
@@ -139,10 +178,18 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
-    // Step 3: Fetch current balance for each token using V2 API
+    // Step 3: Get legitimate token addresses for this chain
+    const legitimateTokens = getLegitimateTokenAddresses(chain as string)
+
+    // Step 4: Fetch current balance for each token using V2 API
     const tokensWithBalances = []
 
     for (const [contractAddress, tokenInfo] of tokenMap) {
+      // Filter out tokens that are not in our legitimate tokens list
+      if (!legitimateTokens.has(contractAddress.toLowerCase())) {
+        continue
+      }
+
       const balance = await fetchTokenBalance(
         contractAddress,
         address as string,
