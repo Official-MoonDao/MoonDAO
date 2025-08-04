@@ -29,11 +29,6 @@ function getLegitimateTokenAddresses(chain: string): Set<string> {
     legitimateTokens.add(MOONEY_ADDRESSES[chain].toLowerCase())
   }
 
-  // Add vMOONEY addresses
-  if (VMOONEY_ADDRESSES[chain]) {
-    legitimateTokens.add(VMOONEY_ADDRESSES[chain].toLowerCase())
-  }
-
   // Add DAI addresses
   if (DAI_ADDRESSES[chain]) {
     legitimateTokens.add(DAI_ADDRESSES[chain].toLowerCase())
