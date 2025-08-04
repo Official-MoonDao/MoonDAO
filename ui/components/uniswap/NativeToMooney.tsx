@@ -1,89 +1,55 @@
 import { ArrowDownIcon } from '@heroicons/react/24/outline'
-import { Token, TradeType } from '@uniswap/sdk-core'
-import { nativeOnChain, SwapRoute } from '@uniswap/smart-order-router'
-import { CHAIN_TOKEN_NAMES, DAI_ADDRESSES } from 'const/config'
+import { CHAIN_TOKEN_NAMES } from 'const/config'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
-import { useUniversalRouter } from '../../lib/uniswap/hooks/useUniversalRouter'
-import { ethereum } from '@/lib/infura/infuraChains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
-import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
+import { useUniswapV4 } from '@/lib/uniswap/hooks/useUniswapV4'
 import GasIcon from '../assets/GasIcon'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export default function NativeToMooney({ selectedChain }: any) {
-  const chainSlug = getChainSlug(selectedChain)
-
   const nativeBalance = useNativeBalance()
 
   const account = useActiveAccount()
   const address = account?.address
 
   const [amount, setAmount] = useState<string>('')
-  const [inputToken, setInputToken] = useState<any>()
-  const [outputToken, setOutputToken] = useState<any>()
   const [output, setOutput] = useState<number>()
-  const [swapRoute, setSwapRoute] = useState<SwapRoute>()
   const [isGeneratingRoute, setIsGeneratingRoute] = useState(false)
-  const [estimatedGasUsedUSD, setEstimatedGasUsedUSD] = useState<any>(0)
+  const [estimatedGasUsedUSD] = useState<any>(0)
   const [usdCost, setUSDCost] = useState<string>()
 
-  const { NATIVE, MOONEY, DAI } = useUniswapTokens(selectedChain)
+  const { MOONEY, DAI } = useUniswapTokens(selectedChain)
 
-  const { generateRoute, executeRoute } = useUniversalRouter(
-    parseFloat(amount) || 0,
-    NATIVE,
-    MOONEY
-  )
+  const { quote, swap } = useUniswapV4(MOONEY.address, MOONEY.decimals)
+  const { quote: quoteDai } = useUniswapV4(DAI.address, DAI.decimals)
 
   useEffect(() => {
     const numAmount = parseFloat(amount) || 0
     if (numAmount > 0) {
       setIsGeneratingRoute(true)
-      generateRoute(TradeType.EXACT_INPUT).then((route) => {
-        setSwapRoute(route)
-        setOutput(route?.route[0].rawQuote.toString() / 10 ** 18 || 0)
-
-        const estimatedGasUSD = route?.estimatedGasUsedUSD.toFixed(2)
-
-        if (estimatedGasUSD < 0.01) {
-          setEstimatedGasUsedUSD('<0.01')
-        } else {
-          setEstimatedGasUsedUSD(estimatedGasUSD || 0)
-        }
-        setIsGeneratingRoute(false)
-      })
+      quote(amount)
+        .then((result) => {
+          setOutput(parseFloat(result))
+          setIsGeneratingRoute(false)
+        })
+        .catch(() => {
+          setOutput(undefined)
+          setIsGeneratingRoute(false)
+        })
+    } else {
+      setOutput(undefined)
     }
-  }, [amount, selectedChain, inputToken, outputToken, address])
+  }, [amount, quote])
 
   useEffect(() => {
     async function getUSDCost() {
       try {
-        const numAmount = parseFloat(amount) || 0
-        let nativeToDAISwapRoute
-        if (chainSlug === 'polygon') {
-          nativeToDAISwapRoute = await pregenSwapRoute(
-            selectedChain,
-            numAmount,
-            nativeOnChain(selectedChain.id),
-            DAI
-          )
-        } else {
-          nativeToDAISwapRoute = await pregenSwapRoute(
-            ethereum,
-            numAmount,
-            nativeOnChain(ethereum.id),
-            new Token(ethereum.id, DAI_ADDRESSES['ethereum'], 18)
-          )
-        }
-
-        const cost =
-          nativeToDAISwapRoute.route[0].rawQuote.toString() / 10 ** 18
-
+        const cost = parseFloat(await quoteDai(amount))
         if (cost < 0.01) setUSDCost('<0.01')
         else if (cost < 1) setUSDCost(cost.toFixed(2))
         else setUSDCost(String(Math.ceil(cost)))
@@ -97,7 +63,7 @@ export default function NativeToMooney({ selectedChain }: any) {
     if (numAmount > 0) {
       getUSDCost()
     }
-  }, [amount, DAI, selectedChain])
+  }, [amount, quoteDai])
 
   return (
     <div className="w-full max-w-2xl mt-6 px-4">
@@ -229,7 +195,7 @@ export default function NativeToMooney({ selectedChain }: any) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
           
           {/* Transaction Details */}
-          {(parseFloat(amount) > 0 || swapRoute) && (
+          {(parseFloat(amount) > 0 || output) && (
             <div className="lg:col-span-2 space-y-3">
               <h4 className="text-gray-300 font-medium text-xs uppercase tracking-wide">Details</h4>
               
@@ -247,11 +213,7 @@ export default function NativeToMooney({ selectedChain }: any) {
                 <div className="bg-black/10 rounded-xl p-3 border border-white/5 hover:bg-black/20 transition-colors duration-200">
                   <div className="flex items-center justify-between">
                     <p className="text-gray-400 text-xs">Impact</p>
-                    <p className={`text-xs font-medium ${
-                      swapRoute && swapRoute.trade.priceImpact.toFixed(2) > '5' ? 'text-red-400' : 'text-orange-400'
-                    }`}>
-                      {swapRoute ? `${swapRoute.trade.priceImpact.toFixed(2)}%` : '0%'}
-                    </p>
+                    <p className="text-orange-400 text-xs font-medium">0%</p>
                   </div>
                 </div>
               </div>
@@ -276,27 +238,27 @@ export default function NativeToMooney({ selectedChain }: any) {
               v5
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
               label={
-                isGeneratingRoute 
-                  ? 'Finding Route...' 
+                isGeneratingRoute
+                  ? 'Finding Route...'
                   : !amount || parseFloat(amount) === 0
-                  ? 'Enter Amount' 
-                  : !swapRoute 
-                  ? 'No Route Available'
+                  ? 'Enter Amount'
+                  : !output
+                  ? 'No Quote Available'
                   : 'Swap'
               }
               action={async () => {
                 const numAmount = parseFloat(amount) || 0
                 if (numAmount === 0) return toast.error('Enter an amount.')
-                if (!swapRoute) return toast.error('No route found.')
+                if (!output) return toast.error('No quote found.')
 
                 // check native balance
                 if (numAmount > +nativeBalance) {
                   return toast.error('Insufficient balance.')
                 }
 
-                await executeRoute(swapRoute)
+                await swap(amount, (output * 0.95).toString())
               }}
-              isDisabled={isGeneratingRoute || !amount || parseFloat(amount) === 0 || !swapRoute}
+              isDisabled={isGeneratingRoute || !amount || parseFloat(amount) === 0 || !output}
             />
             
             {/* Additional Info */}
