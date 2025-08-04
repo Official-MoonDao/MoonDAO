@@ -9,7 +9,7 @@ import {
 import { usePrivy } from '@privy-io/react-auth'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Frame from '@/components/layout/Frame'
 import Action from '@/components/subscription/Action'
 import { TwitterIcon } from '../assets'
@@ -46,6 +46,12 @@ export default function CitizenActions({
     null
   )
   const [voterRoleStatus, setVoterRoleStatus] = useState<string | null>(null)
+  const [citizenErrorMessage, setCitizenErrorMessage] = useState<string | null>(
+    null
+  )
+  const [voterErrorMessage, setVoterErrorMessage] = useState<string | null>(
+    null
+  )
   const [hasDiscordLinked, setHasDiscordLinked] = useState<boolean>(false)
 
   useEffect(() => {
@@ -53,52 +59,14 @@ export default function CitizenActions({
     if (vmooneyBalance && vmooneyBalance > 0) setHasVmooney(true)
   }, [mooneyBalance, vmooneyBalance])
 
-  useEffect(() => {
-    // Check if user has Discord linked
-    if (user?.linkedAccounts) {
-      const hasDiscord = user.linkedAccounts.some(
-        (acc: any) => acc.type === 'discord_oauth' || acc.type === 'discord'
-      )
-
-      // If Discord was just linked (from false to true), scroll to Check Roles action
-      if (!hasDiscordLinked && hasDiscord) {
-        setTimeout(() => {
-          const checkRolesElement =
-            document.getElementById('check-roles-action')
-          if (checkRolesElement) {
-            checkRolesElement.scrollIntoView({
-              behavior: 'smooth',
-              block: 'center',
-            })
-          }
-        }, 500) // Small delay to ensure the page has fully loaded
-      }
-
-      setHasDiscordLinked(hasDiscord)
-    }
-  }, [user?.linkedAccounts, hasDiscordLinked])
-
-  const checkDiscordRoles = async () => {
-    // If Discord is not linked, prompt user to link it
-    if (!hasDiscordLinked) {
-      try {
-        setIsCheckingRoles(true)
-        await linkDiscord()
-        // After linking, the user effect will update hasDiscordLinked
-        setRoleCheckResult('Discord linked! Click again to check roles.')
-      } catch (error) {
-        console.error('Error linking Discord:', error)
-        setRoleCheckResult('Failed to link Discord. Please try again.')
-      } finally {
-        setIsCheckingRoles(false)
-      }
-      return
-    }
-
+  // Separate function for just checking roles (when Discord is already linked)
+  const performRoleCheck = useCallback(async () => {
     setIsCheckingRoles(true)
     setRoleCheckResult(null)
     setCitizenRoleStatus(null)
     setVoterRoleStatus(null)
+    setCitizenErrorMessage(null)
+    setVoterErrorMessage(null)
 
     try {
       const accessToken = await getAccessToken()
@@ -126,6 +94,17 @@ export default function CitizenActions({
         citizenSuccess = true
       } else {
         setCitizenRoleStatus('Citizen (Not Eligible)')
+        // Extract error message from citizen API response
+        if (citizenResponse.status === 'fulfilled') {
+          try {
+            const errorData = await citizenResponse.value.json()
+            setCitizenErrorMessage(errorData.error || 'Unknown error occurred')
+          } catch {
+            setCitizenErrorMessage('Failed to get error details')
+          }
+        } else {
+          setCitizenErrorMessage('Network error - please try again')
+        }
       }
 
       // Process voter role result
@@ -134,6 +113,17 @@ export default function CitizenActions({
         voterSuccess = true
       } else {
         setVoterRoleStatus('Voter (Not Eligible)')
+        // Extract error message from voter API response
+        if (voterResponse.status === 'fulfilled') {
+          try {
+            const errorData = await voterResponse.value.json()
+            setVoterErrorMessage(errorData.error || 'Unknown error occurred')
+          } catch {
+            setVoterErrorMessage('Failed to get error details')
+          }
+        } else {
+          setVoterErrorMessage('Network error - please try again')
+        }
       }
 
       // Set clean result message
@@ -146,11 +136,78 @@ export default function CitizenActions({
       }
     } catch (error) {
       setRoleCheckResult('Error checking roles. Please try again.')
+      setCitizenErrorMessage('Network error - please try again')
+      setVoterErrorMessage('Network error - please try again')
       console.error('Error checking Discord roles:', error)
     } finally {
       setIsCheckingRoles(false)
     }
-  }
+  }, [getAccessToken])
+
+  const checkDiscordRoles = useCallback(async () => {
+    // If Discord is not linked, prompt user to link it
+    if (!hasDiscordLinked) {
+      try {
+        setIsCheckingRoles(true)
+        setRoleCheckResult(null)
+        setCitizenErrorMessage(null)
+        setVoterErrorMessage(null)
+        // Set a flag in localStorage to track that we're attempting to link Discord
+        localStorage.setItem('moondao_discord_linking_attempted', 'true')
+
+        await linkDiscord()
+        // After linking, the useEffect will automatically trigger role checking
+        setRoleCheckResult('Discord linked! Checking roles...')
+      } catch (error) {
+        console.error('Error linking Discord:', error)
+        setRoleCheckResult('Failed to link Discord. Please try again.')
+        // Clear the flag if linking failed
+        localStorage.removeItem('moondao_discord_linking_attempted')
+      } finally {
+        setIsCheckingRoles(false)
+      }
+      return
+    }
+
+    // If Discord is already linked, perform role check
+    await performRoleCheck()
+  }, [hasDiscordLinked, linkDiscord, performRoleCheck])
+
+  useEffect(() => {
+    // Check if user has Discord linked
+    if (user?.linkedAccounts) {
+      const hasDiscord = user.linkedAccounts.some(
+        (acc: any) => acc.type === 'discord_oauth' || acc.type === 'discord'
+      )
+
+      // Check if we were attempting to link Discord
+      const wasLinkingDiscord =
+        localStorage.getItem('moondao_discord_linking_attempted') === 'true'
+
+      // If Discord was just linked AND we were attempting to link it, automatically check roles
+      if (!hasDiscordLinked && hasDiscord && wasLinkingDiscord) {
+        // Clear the localStorage flag
+        localStorage.removeItem('moondao_discord_linking_attempted')
+
+        setTimeout(() => {
+          const checkRolesElement =
+            document.getElementById('check-roles-action')
+          if (checkRolesElement) {
+            checkRolesElement.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+            })
+          }
+          // Automatically trigger role checking after Discord is linked
+          setTimeout(() => {
+            performRoleCheck()
+          }, 1000) // Additional delay to ensure smooth scrolling completes
+        }, 500) // Small delay to ensure the page has fully loaded
+      }
+
+      setHasDiscordLinked(hasDiscord)
+    }
+  }, [user?.linkedAccounts, hasDiscordLinked, performRoleCheck])
 
   return (
     <div id="citizen-actions-container" className="py-5 md:px-5 md:py-0 z-30">
@@ -249,12 +306,6 @@ export default function CitizenActions({
                     icon={<GlobeAmericasIcon height={40} width={40} />}
                     onClick={() => router.push('/map')}
                   />
-                  <Action
-                    title="Unlock Roles"
-                    description="Join Guild.xyz by connecting your wallet and Discord to unlock new roles."
-                    icon={<ArrowUpRightIcon height={30} width={30} />}
-                    onClick={() => window.open('https://guild.xyz/moondao')}
-                  />
                   <div id="check-roles-action">
                     <Action
                       title={!hasDiscordLinked ? 'Link Discord' : 'Check Roles'}
@@ -281,10 +332,10 @@ export default function CitizenActions({
                             >
                               {roleCheckResult}
                             </div>
-                            <div className="grid grid-cols-2 gap-1">
+                            <div className="flex flex-col gap-1">
                               {citizenRoleStatus && (
                                 <div
-                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+                                  className={`flex flex-col gap-1 px-3 py-2 rounded-lg border ${
                                     citizenRoleStatus.includes('Not Eligible')
                                       ? 'bg-red-900/20 border-red-500/30 text-red-400'
                                       : 'bg-green-900/20 border-green-500/30 text-green-400'
@@ -293,11 +344,16 @@ export default function CitizenActions({
                                   <span className="text-sm font-medium">
                                     {citizenRoleStatus}
                                   </span>
+                                  {citizenErrorMessage && (
+                                    <span className="text-xs text-gray-400 leading-tight">
+                                      {citizenErrorMessage}
+                                    </span>
+                                  )}
                                 </div>
                               )}
                               {voterRoleStatus && (
                                 <div
-                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+                                  className={`flex flex-col gap-1 px-3 py-2 rounded-lg border ${
                                     voterRoleStatus.includes('Not Eligible')
                                       ? 'bg-red-900/20 border-red-500/30 text-red-400'
                                       : 'bg-green-900/20 border-green-500/30 text-green-400'
@@ -306,6 +362,11 @@ export default function CitizenActions({
                                   <span className="text-sm font-medium">
                                     {voterRoleStatus}
                                   </span>
+                                  {voterErrorMessage && (
+                                    <span className="text-xs text-gray-400 leading-tight">
+                                      {voterErrorMessage}
+                                    </span>
+                                  )}
                                 </div>
                               )}
                             </div>
