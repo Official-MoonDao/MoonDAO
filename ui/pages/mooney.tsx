@@ -397,7 +397,7 @@ export default function Mooney() {
                   <div className="flex flex-col h-full">
                     <div className="bg-black/20 rounded-lg p-4 flex-1">
                       <h4 className="text-blue-300 font-semibold mb-3">Geometric Decay Visualization</h4>
-                      <div className="h-48 bg-gray-900/80 rounded-lg p-4 relative overflow-hidden border border-gray-700/50">
+                      <div className="h-52 bg-gray-900/80 rounded-lg p-2 relative overflow-hidden border border-gray-700/50">
                         <svg className="w-full h-full" viewBox="0 0 340 130">
                           {/* Background grid */}
                           <defs>
@@ -412,11 +412,11 @@ export default function Mooney() {
                           <rect width="340" height="130" fill="url(#grid)" />
                           
                           {/* Y-axis labels */}
-                          <text x="20" y="30" fontSize="8" fill="#9CA3AF" textAnchor="middle">15M</text>
-                          <text x="20" y="50" fontSize="8" fill="#9CA3AF" textAnchor="middle">14M</text>
-                          <text x="20" y="70" fontSize="8" fill="#9CA3AF" textAnchor="middle">13M</text>
-                          <text x="20" y="90" fontSize="8" fill="#9CA3AF" textAnchor="middle">12M</text>
-                          <text x="20" y="110" fontSize="8" fill="#9CA3AF" textAnchor="middle">11M</text>
+                          <text x="20" y="30" fontSize="10" fill="#9CA3AF" textAnchor="middle">15M</text>
+                          <text x="20" y="50" fontSize="10" fill="#9CA3AF" textAnchor="middle">14M</text>
+                          <text x="20" y="70" fontSize="10" fill="#9CA3AF" textAnchor="middle">13M</text>
+                          <text x="20" y="90" fontSize="10" fill="#9CA3AF" textAnchor="middle">12M</text>
+                          <text x="20" y="110" fontSize="10" fill="#9CA3AF" textAnchor="middle">11M</text>
                           
                           {/* Area under curve */}
                           <path
@@ -453,11 +453,11 @@ export default function Mooney() {
                             <g key={i}>
                               <circle cx={point.x} cy={point.y} r="3" fill="#1F2937" stroke="#F59E0B" strokeWidth="2" />
                               <circle cx={point.x} cy={point.y} r="1.5" fill="#F59E0B" />
-                              <text x={point.x} y={point.y - 12} fontSize="7" fill="#D1D5DB" textAnchor="middle" fontWeight="500">
+                              <text x={point.x} y={point.y - 12} fontSize="9" fill="#D1D5DB" textAnchor="middle" fontWeight="500">
                                 {point.quarter}
                               </text>
                               {i !== 0 && (
-                                <text x={point.x} y={point.y + 18} fontSize="6" fill="#9CA3AF" textAnchor="middle">
+                                <text x={point.x} y={point.y + 18} fontSize="8" fill="#9CA3AF" textAnchor="middle">
                                   {point.value}
                                 </text>
                               )}
@@ -465,7 +465,7 @@ export default function Mooney() {
                           ))}
                           
                           {/* Trend annotation */}
-                          <text x="300" y="20" fontSize="8" fill="#F59E0B" textAnchor="end" fontWeight="600">
+                          <text x="300" y="20" fontSize="10" fill="#F59E0B" textAnchor="end" fontWeight="600">
                             -5% per quarter
                           </text>
                         </svg>
