@@ -409,7 +409,7 @@ export default function Mooney() {
 
               {/* Network Selection */}
               <div className="mb-8">
-                <div className="max-w-2xl mx-auto bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
+                <div className="max-w-xl mx-auto bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-white mb-2">
