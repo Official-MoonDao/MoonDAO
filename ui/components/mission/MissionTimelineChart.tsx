@@ -13,8 +13,6 @@ import {
   YAxis,
 } from 'recharts'
 import useJBTrendingProjects from '@/lib/juicebox/useJBTrendingProjects'
-import { useTicks } from '@/lib/juicebox/useTicks'
-import { useTimelineRange } from '@/lib/juicebox/useTimelineRange'
 import { useTimelineYDomain } from '@/lib/juicebox/useTimelineYDomain'
 import { truncateTokenValue, wadToFloat } from '@/lib/utils/numbers'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
@@ -25,15 +23,17 @@ export type MissionTimelineChartProps = {
   isLoadingPoints: boolean
   height: number
   createdAt: number
+  range: number
+  setRange: (range: number) => void
 }
-
-const now = Date.now().valueOf() // Using real current time
 
 export default function MissionTimelineChart({
   points,
   isLoadingPoints,
   height,
   createdAt,
+  range,
+  setRange,
 }: MissionTimelineChartProps) {
   const stroke = 'white'
   const color = 'white'
@@ -43,91 +43,65 @@ export default function MissionTimelineChart({
   const [view, setView] = useState<'volume' | 'balance' | 'trendingScore'>(
     'volume'
   )
-  const [range, setRange] = useTimelineRange({
-    createdAt,
-  })
 
+  // Use official Juicebox x-domain calculation pattern
   const xDomain = useMemo(() => {
-    const endOfDay = Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60) // Round to midnight
-    const startOfDay = endOfDay - +range * 24 * 60 * 60
+    const now = Date.now().valueOf()
+    const daysToMS = (days: number) => days * 24 * 60 * 60 * 1000
+    return [
+      Math.floor((now - daysToMS(range)) / 1000),
+      Math.floor(now / 1000),
+    ] as [number, number]
+  }, [range])
 
-    // Find the min and max timestamps from points with volume
-    let minTime = startOfDay
-    let maxTime = endOfDay
-
-    if (points?.length) {
-      const pointsWithVolume = points.filter((p) => p.volume > 0)
-      if (pointsWithVolume.length) {
-        const timestamps = pointsWithVolume.map((p) => p.timestamp)
-        minTime = Math.min(minTime, ...timestamps)
-        maxTime = Math.max(maxTime, ...timestamps)
-      }
-    }
-
-    return [minTime, maxTime] as [number, number]
-  }, [range, points])
-
-  const xTicks = useTicks({
-    range: xDomain,
-    resolution: 7,
-    offset: 0.5,
-  })
-
-  // Process points to ensure all x-ticks have data points with y values defaulting to 0
+  // Process points to ensure all values exist - keep it simple like official Juicebox
   const processedPoints = useMemo(() => {
     if (!points?.length || isLoadingPoints) return []
 
-    // Process the original points to ensure all values exist
-    const processedOriginalPoints = points.map((point) => ({
-      ...point,
-      volume: point.volume ?? 0,
-      balance: point.balance ?? 0,
-      trendingScore: point.trendingScore ?? 0,
-    }))
+    const processed = points
+      .map((point) => ({
+        ...point,
+        volume: point.volume ?? 0,
+        balance: point.balance ?? 0,
+        trendingScore: point.trendingScore ?? 0,
+      }))
+      .sort((a, b) => a.timestamp - b.timestamp)
 
-    // Group points by date (using moment to get date string without time)
-    const pointsByDate = new Map()
+    // Chart data is now properly synchronized with timeline hook
 
-    // First group the actual data points by date
-    processedOriginalPoints.forEach((point) => {
-      const dateKey = moment(point.timestamp * 1000).format('YYYY-MM-DD')
+    return processed
+  }, [points, isLoadingPoints])
 
-      // If we already have a point for this date, keep the one with higher values
-      if (pointsByDate.has(dateKey)) {
-        const existingPoint = pointsByDate.get(dateKey)
-        pointsByDate.set(dateKey, {
-          ...point,
-          // For each metric, use the higher value between existing and new point
-          volume: Math.max(existingPoint.volume, point.volume),
-          balance: Math.max(existingPoint.balance, point.balance),
-          trendingScore: Math.max(
-            existingPoint.trendingScore,
-            point.trendingScore
-          ),
-        })
-      } else {
-        pointsByDate.set(dateKey, point)
+  // Generate exactly 7 x-axis ticks from actual data points
+  const xTicks = useMemo(() => {
+    if (!processedPoints?.length) {
+      // Fallback when no data
+      const [min, max] = xDomain
+      const ticks = []
+      for (let i = 0; i < 7; i++) {
+        const timestamp = Math.round(min + (max - min) * (i / 6))
+        ticks.push(timestamp)
       }
-    })
+      return ticks
+    }
 
-    // Make sure all tick dates have entries (but don't overwrite existing data)
-    xTicks.forEach((tick) => {
-      const dateKey = moment(tick * 1000).format('YYYY-MM-DD')
-      if (!pointsByDate.has(dateKey)) {
-        pointsByDate.set(dateKey, {
-          timestamp: tick,
-          volume: 0,
-          balance: 0,
-          trendingScore: 0,
-        })
-      }
-    })
+    // Sample exactly 7 ticks from the actual data points
+    const dataTimestamps = processedPoints.map((p) => p.timestamp)
 
-    // Convert back to array and sort by timestamp
-    return Array.from(pointsByDate.values()).sort(
-      (a, b) => a.timestamp - b.timestamp
-    )
-  }, [points, xTicks, view])
+    if (dataTimestamps.length <= 7) {
+      // If we have 7 or fewer data points, use them all
+      return dataTimestamps
+    }
+
+    // Sample 7 evenly distributed timestamps from the data
+    const sampledTicks = []
+    for (let i = 0; i < 7; i++) {
+      const index = Math.round((dataTimestamps.length - 1) * (i / 6))
+      sampledTicks.push(dataTimestamps[index])
+    }
+
+    return sampledTicks
+  }, [processedPoints, xDomain])
 
   const defaultYDomain = useTimelineYDomain(
     processedPoints?.map((point) => point[view])
@@ -230,7 +204,7 @@ export default function MissionTimelineChart({
   return (
     <div id="mission-timeline-chart">
       <div className="mt-8 w-full flex items-center justify-between gap-8">
-        <div id="range-selector">
+        <div id="range-selector" className="w-full pl-5 z-[1000]">
           <RangeSelector range={range} setRange={setRange} />
         </div>
         <div className="flex items-center gap-2">
@@ -264,10 +238,10 @@ export default function MissionTimelineChart({
         <ResponsiveContainer height={height} id="chart-container">
           <LineChart
             margin={{
-              top: 10, // hacky way to hide top border of CartesianGrid
-              right: 0,
+              top: 10,
+              right: 24,
               bottom: 10,
-              left: 1, // ensure y axis isn't cut off
+              left: 24,
             }}
             data={processedPoints}
           >
@@ -335,7 +309,7 @@ export default function MissionTimelineChart({
                 <text
                   fontSize={fontSize}
                   fill={color}
-                  transform={`translate(${props.x - 14},${props.y + 14})`}
+                  transform={`translate(${props.x - 12},${props.y + 14})`}
                 >
                   {dateStringForBlockTime(props.payload.value)}
                 </text>
@@ -347,7 +321,7 @@ export default function MissionTimelineChart({
               tickSize={0}
               type="number"
               dataKey="timestamp"
-              allowDataOverflow={false}
+              scale="time"
             />
             {view === 'trendingScore' &&
               highTrendingScore &&
@@ -370,20 +344,29 @@ export default function MissionTimelineChart({
                 />
               )}
             <defs>
-              <linearGradient id="colorGradient" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="5%" stopColor="#425eeb" />
-                <stop offset="90%" stopColor="#6d3f79" />
+              <linearGradient
+                id={`colorGradient`}
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="0%"
+                gradientUnits="userSpaceOnUse"
+              >
+                <stop offset="0%" stopColor="#425eeb" />
+                <stop offset="100%" stopColor="#6d3f79" />
               </linearGradient>
             </defs>
+
             {processedPoints?.length && (
               <Line
                 dot={false}
-                stroke="url(#colorGradient)"
+                stroke={'url(#colorGradient)'}
                 strokeWidth={4}
                 type="monotone"
                 dataKey={view}
                 activeDot={{ r: 6, fill: '#6d3f79', stroke: undefined }}
                 animationDuration={750}
+                connectNulls={false}
               />
             )}
             <Tooltip

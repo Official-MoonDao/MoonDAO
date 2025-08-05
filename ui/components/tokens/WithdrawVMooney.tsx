@@ -6,6 +6,7 @@ import {
   MOONEY_ADDRESSES,
   VMOONEY_ADDRESSES,
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
+  DEFAULT_CHAIN_V5,
   VMOONEY_FAUCET_ADDRESSES,
   MOONEY_DECIMALS,
 } from 'const/config'
@@ -28,7 +29,7 @@ import { createLock, increaseLock } from '@/lib/tokens/ve-token'
 import { dateOut } from '@/lib/utils/dates'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
-import StandardButton from '@/components/layout/StandardButton'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 
 export default function WithdrawVMooney() {
   useChainDefault()
@@ -39,6 +40,7 @@ export default function WithdrawVMooney() {
 
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
+  const chain = DEFAULT_CHAIN_V5
 
   //Contracts
   const votingEscrowDepositorContract = useContract({
@@ -106,8 +108,11 @@ export default function WithdrawVMooney() {
   }, [VMOONEYLock, VMOONEYLockLoading, address, thirtySixMonths])
 
   const handleWithdraw = async () => {
+    if (!account) {
+      toast.error('Please connect your wallet.', { style: toastStyle })
+      return
+    }
     try {
-      if (!account) throw new Error('No account found')
       const millisecondsPerSecond = 1000
       const fourYearsOut = BigNumber.from(
         +dateOut(new Date(), { days: 1461 })
@@ -119,15 +124,24 @@ export default function WithdrawVMooney() {
             method: 'drip' as string,
             params: [],
           })
-          const dripReceipt = await sendAndConfirmTransaction({
-            transaction: dripTx,
+          await sendAndConfirmTransaction({ transaction: dripTx, account })
+        }
+
+        const initialLockAmount = utils.parseUnits('1', MOONEY_DECIMALS)
+        const currentAllowance = BigNumber.from(mooneyAllowance || 0)
+        if (currentAllowance.lt(initialLockAmount)) {
+          await approveToken({
             account,
+            tokenContract: mooneyContract,
+            spender: VMOONEY_ADDRESSES[chainSlug],
+            allowance: initialLockAmount,
           })
         }
+
         await createLock({
           account,
           votingEscrowContract: vMooneyContract,
-          amount: utils.parseUnits('1', MOONEY_DECIMALS),
+          amount: initialLockAmount,
           time: fourYearsOut,
         })
       }
@@ -142,7 +156,12 @@ export default function WithdrawVMooney() {
       }
       const mooneyAllowanceBigNum = BigNumber.from(mooneyAllowance)
       const withdrawableBigNum = BigNumber.from(withdrawable.toString())
-      if (mooneyAllowanceLoading) throw new Error('Loading...')
+      if (mooneyAllowanceLoading) {
+        toast.error('Fetching allowance, please try again in a moment.', {
+          style: toastStyle,
+        })
+        return
+      }
       if (
         mooneyAllowanceBigNum &&
         withdrawableBigNum &&
@@ -173,10 +192,20 @@ export default function WithdrawVMooney() {
           router.reload()
         }, 5000)
       }
-    } catch (error) {
-      toast.error('Error withdrawing. Please try again.', {
-        style: toastStyle,
-      })
+    } catch (error: any) {
+      console.error(error)
+      if (!hasMoreThan36Months) {
+        toast.error(
+          'Failed to extend your lock. Please ensure your lock duration is at least 3 years.',
+          {
+            style: toastStyle,
+          }
+        )
+      } else {
+        toast.error(error?.message || 'Error withdrawing. Please try again.', {
+          style: toastStyle,
+        })
+      }
     }
   }
 
@@ -203,43 +232,52 @@ export default function WithdrawVMooney() {
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Unclaimed Rewards</p>
-                  <p className="text-white text-lg font-medium">vMOONEY Available</p>
+                  <p className="text-white text-lg font-medium">
+                    vMOONEY Available
+                  </p>
                 </div>
               </div>
-              
+
               <div className="bg-black/20 rounded-xl p-4 border border-white/5 mb-4">
                 <div className="text-center">
                   <p className="text-green-400 text-3xl font-RobotoMono font-bold mb-2">
                     {String(
-                      (Number(withdrawable) / 10 ** MOONEY_DECIMALS).toLocaleString()
+                      (
+                        Number(withdrawable) /
+                        10 ** MOONEY_DECIMALS
+                      ).toLocaleString()
                     )}
                   </p>
                   <p className="text-gray-400 text-sm">vMOONEY Tokens</p>
                 </div>
               </div>
-              
-              <StandardButton
+
+              <PrivyWeb3Button
                 className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 px-6 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-[1.01] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                onClick={handleWithdraw}
-                disabled={Number(withdrawable) === 0}
-                data-tip="You dont have any vMOONEY to withdraw"
-              >
-                Withdraw Rewards
-              </StandardButton>
+                action={handleWithdraw}
+                isDisabled={Number(withdrawable) === 0}
+                requiredChain={chain}
+                label="Withdraw Rewards"
+              />
             </div>
 
             {/* Information Section */}
             <div className="flex-1 bg-black/10 rounded-xl p-4 border border-white/5">
-              <h3 className="text-lg font-bold text-white mb-3">💰 Claim Your Rewards!</h3>
+              <h3 className="text-lg font-bold text-white mb-3">
+                💰 Claim Your Rewards!
+              </h3>
               <div className="space-y-3 text-sm text-gray-300">
                 <p>
-                  Click 'Withdraw Rewards' to claim your vMOONEY rewards and increase your voting impact!
+                  Click 'Withdraw Rewards' to claim your vMOONEY rewards and
+                  increase your voting impact!
                 </p>
                 <p>
-                  You'll be prompted to create or increase the duration of your lock to 4 years. Expect to sign 2-4 transactions.
+                  You'll be prompted to create or increase the duration of your
+                  lock to 4 years. Expect to sign 2-4 transactions.
                 </p>
                 <p className="text-blue-400">
-                  💡 Increase your stake amount or duration at any time for greater impact!
+                  💡 Increase your stake amount or duration at any time for
+                  greater impact!
                 </p>
               </div>
             </div>

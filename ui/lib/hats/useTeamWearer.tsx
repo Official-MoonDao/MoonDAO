@@ -10,12 +10,18 @@ export function useTeamWearer(
   address: any
 ) {
   const [wornMoondaoHats, setWornMoondaoHats] = useState<any>()
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     async function getWearerTeamHats() {
       try {
+        setIsLoading(true)
         setWornMoondaoHats(undefined)
-        if (!address) return []
+        if (!address) {
+          setWornMoondaoHats([])
+          setIsLoading(false)
+          return
+        }
         const res = await fetch('/api/hats/get-wearer', {
           method: 'POST',
           headers: {
@@ -107,14 +113,20 @@ export function useTeamWearer(
         } else {
           setWornMoondaoHats([])
         }
+        setIsLoading(false)
       } catch (err) {
         console.log(err)
         setWornMoondaoHats([])
+        setIsLoading(false)
       }
     }
 
-    if (teamContract && selectedChain) getWearerTeamHats()
+    if (teamContract && selectedChain) {
+      getWearerTeamHats()
+    } else {
+      setIsLoading(false)
+    }
   }, [teamContract, selectedChain, address])
 
-  return wornMoondaoHats
+  return { userTeams: wornMoondaoHats, isLoading }
 }

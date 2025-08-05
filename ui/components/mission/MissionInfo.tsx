@@ -56,15 +56,16 @@ export default function MissionInfo({
   teamNFT,
   subgraphData,
   token,
-  fundingGoal,
-  ruleset,
   jbTokensContract,
   jbControllerContract,
   points,
   isLoadingPoints,
-  userMissionTokenBalance,
+  range,
+  setRange,
   primaryTerminalAddress,
   stage,
+  refreshBackers,
+  refreshTotalFunding,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -267,6 +268,8 @@ export default function MissionInfo({
                 isLoadingPoints={isLoadingPoints}
                 height={500}
                 createdAt={subgraphData?.createdAt}
+                range={range}
+                setRange={setRange}
               />
               <MissionActivityList
                 selectedChain={selectedChain}
@@ -295,6 +298,8 @@ export default function MissionInfo({
               primaryTerminalAddress={primaryTerminalAddress}
               jbTokensContract={jbTokensContract}
               jbControllerContract={jbControllerContract}
+              refreshBackers={refreshBackers}
+              refreshTotalFunding={refreshTotalFunding}
             />
           </div>
         </div>

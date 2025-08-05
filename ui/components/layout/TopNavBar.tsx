@@ -215,7 +215,7 @@ const TopNavBar = ({
                   citizenContract={citizenContract}
                 />
               </div>
-              <div className="scale-90 lg:scale-100 xl:scale-105 flex-shrink-0">
+              <div className="scale-90 lg:scale-100 xl:scale-105 flex-shrink-0 flex items-center justify-center">
                 <CitizenProfileLink />
               </div>
             </div>

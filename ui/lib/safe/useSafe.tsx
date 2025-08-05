@@ -582,8 +582,6 @@ export default function useSafe(
       }
     }
 
-    console.log(safeTransactionData)
-
     return queueSafeTx(safeTransactionData)
   }
 

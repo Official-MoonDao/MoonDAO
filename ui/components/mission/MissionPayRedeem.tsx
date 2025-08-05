@@ -1,6 +1,5 @@
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
-import { useFundWallet } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBMultiTerminalABI from 'const/abis/JBV4MultiTerminal.json'
@@ -14,6 +13,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import React from 'react'
 import { useContext, useEffect, useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import {
@@ -43,7 +43,6 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
-import viemChains from '@/lib/viem/viemChains'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import { CopyIcon } from '../assets'
 import { CBOnramp } from '../coinbase/CBOnramp'
@@ -73,6 +72,8 @@ function MissionPayRedeemContent({
   formatTokenAmount,
   redeemAmount,
   isLoadingRedeemAmount,
+  isLoadingEthUsdPrice,
+  usdInput,
 }: any) {
   const isRefundable = stage === 3
 
@@ -179,8 +180,13 @@ function MissionPayRedeemContent({
             className="rounded-full gradient-2 rounded-full w-full py-1"
             onClick={() => setMissionPayModalEnabled(true)}
             hoverEffect={false}
+            disabled={
+              isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
+            }
           >
-            Contribute
+            {isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
+              ? 'Loading ETH price...'
+              : 'Contribute'}
           </StandardButton>
           <div className="w-full">
             <AcceptedPaymentMethods />
@@ -191,15 +197,15 @@ function MissionPayRedeemContent({
             </p>
           </div>
           {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
-            <StandardButton
+            <PrivyWeb3Button
               id="claim-button"
+              label={`Claim ${formatTokenAmount(
+                tokenCredit.toString() / 1e18,
+                0
+              )} $${token?.tokenSymbol}`}
               className="rounded-full gradient-2 rounded-full w-full py-1"
-              onClick={claimTokenCredit}
-              hoverEffect={false}
-            >
-              Claim {formatTokenAmount(tokenCredit.toString() / 1e18, 0)} $
-              {token?.tokenSymbol}
-            </StandardButton>
+              action={claimTokenCredit}
+            />
           )}
         </div>
       )}
@@ -286,10 +292,10 @@ export type MissionPayRedeemProps = {
   jbTokensContract?: any
   forwardClient?: any
   refreshBackers?: () => void
-  onrampSuccess?: boolean
+  refreshTotalFunding?: () => void
 }
 
-export default function MissionPayRedeem({
+function MissionPayRedeemComponent({
   mission,
   token,
   teamNFT,
@@ -302,7 +308,7 @@ export default function MissionPayRedeem({
   jbTokensContract,
   forwardClient,
   refreshBackers,
-  onrampSuccess = false,
+  refreshTotalFunding,
 }: MissionPayRedeemProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -312,6 +318,9 @@ export default function MissionPayRedeem({
   const chains = isTestnet
     ? [sepolia, optimismSepolia]
     : [arbitrum, base, ethereum]
+
+  // Extract onrampSuccess from URL query parameters
+  const onrampSuccess = router?.query?.onrampSuccess === 'true'
 
   const [missionPayModalEnabled, setMissionPayModalEnabled] = useState(false)
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
@@ -438,7 +447,13 @@ export default function MissionPayRedeem({
 
   // Calculate ETH amount from USD for display
   const calculateEthAmount = useCallback(() => {
-    if (!usdInput || !ethUsdPrice || isNaN(Number(usdInput))) {
+    if (!usdInput || isNaN(Number(usdInput))) {
+      return '0.0000'
+    }
+    if (isLoadingEthUsdPrice) {
+      return <LoadingSpinner />
+    }
+    if (!ethUsdPrice) {
       return '0.0000'
     }
     const ethAmount = (Number(usdInput) / ethUsdPrice).toFixed(4)
@@ -446,7 +461,7 @@ export default function MissionPayRedeem({
       minimumFractionDigits: 4,
       maximumFractionDigits: 4,
     })
-  }, [usdInput, ethUsdPrice])
+  }, [usdInput, ethUsdPrice, isLoadingEthUsdPrice])
 
   // Format number with commas
   const formatWithCommas = useCallback((value: string) => {
@@ -483,11 +498,11 @@ export default function MissionPayRedeem({
         setInput('0')
         return
       }
+      // Only update ETH input if price is available
       if (ethUsdPrice && !isNaN(Number(inputValue))) {
         setInput((Number(inputValue) / ethUsdPrice).toFixed(6))
-      } else {
-        setInput('0')
       }
+      // Don't set input to '0' if price isn't loaded yet - keep existing value
     },
     [ethUsdPrice, setInput]
   )
@@ -498,8 +513,6 @@ export default function MissionPayRedeem({
     teamNFT?.owner,
     DEFAULT_CHAIN_V5
   )
-
-  const { fundWallet } = useFundWallet()
   const [agreedToCondition, setAgreedToCondition] = useState(false)
 
   const currentStage = useMissionFundingStage(mission?.id)
@@ -530,10 +543,14 @@ export default function MissionPayRedeem({
     selectedChain,
     token?.tokenAddress || JB_NATIVE_TOKEN_ADDRESS
   )
+
+  const [tokenBalanceRefresh, setTokenBalanceRefresh] = useState(0)
+
   const { data: tokenCredit } = useRead({
     contract: jbTokensContract,
     method: 'creditBalanceOf' as string,
     params: [address, mission?.projectId],
+    deps: [tokenBalanceRefresh],
   })
 
   // Get the proper JB token balance instead of ERC20 balance
@@ -541,6 +558,7 @@ export default function MissionPayRedeem({
     contract: jbTokensContract,
     method: 'totalBalanceOf' as string,
     params: [address, mission?.projectId],
+    deps: [tokenBalanceRefresh],
   })
 
   // Gas estimation function for mission token purchase
@@ -654,12 +672,30 @@ export default function MissionPayRedeem({
 
   //check if the connected wallet is a signer of the team's multisig
   useEffect(() => {
-    const isSigner = async () => {
-      const isSigner = await safe?.isOwner(address || '')
-      setIsTeamSigner(isSigner || false)
+    const checkIsSigner = async () => {
+      const result = await safe?.isOwner(address || '')
+      const newValue = result || false
+
+      // Only update state if the value actually changed
+      setIsTeamSigner((prev) => {
+        if (prev !== newValue) {
+          return newValue
+        }
+        return prev
+      })
     }
-    if (safe && address) isSigner()
+    if (safe && address) checkIsSigner()
   }, [safe, address])
+
+  const refreshTokenBalances = useCallback(() => {
+    setTokenBalanceRefresh((prev) => prev + 1)
+  }, [])
+
+  const refreshMissionData = useCallback(() => {
+    refreshTotalFunding?.()
+    refreshBackers?.()
+    refreshTokenBalances()
+  }, [refreshTotalFunding, refreshBackers, refreshTokenBalances])
 
   const getQuote = useCallback(async () => {
     if (!address) return
@@ -702,6 +738,12 @@ export default function MissionPayRedeem({
       return
     }
     if (!jbTokenBalance && !tokenCredit) return
+    // Don't attempt to get redeem quote if refunds aren't available
+    if (stage !== 3) {
+      setRedeemAmount(0)
+      setIsLoadingRedeemAmount(false)
+      return
+    }
 
     setIsLoadingRedeemAmount(true)
     try {
@@ -740,6 +782,8 @@ export default function MissionPayRedeem({
     mission?.projectId,
     jbTokenBalance,
     tokenCredit,
+    account,
+    stage,
   ])
 
   const buyMissionToken = useCallback(async () => {
@@ -758,18 +802,28 @@ export default function MissionPayRedeem({
       return
     }
 
-    const inputValue = parseFloat(input) || 0
-    if (inputValue <= 0) {
-      toast.error('Please enter a valid amount.', {
+    // Check if ETH price is still loading
+    if (isLoadingEthUsdPrice || !ethUsdPrice) {
+      toast.error('Please wait for ETH price to load.', {
         style: toastStyle,
       })
       return
     }
-    if (inputValue > +nativeBalance) {
-      return fundWallet(address, {
-        amount: (inputValue - +nativeBalance).toString(),
-        chain: viemChains[chainSlug],
+
+    const inputValue = parseFloat(input) || 0
+    const usdValue = parseFloat(usdInput) || 0
+
+    // Validate based on USD input if available, otherwise fall back to ETH input
+    if (usdInput && usdValue <= 0) {
+      toast.error('Please enter a valid amount.', {
+        style: toastStyle,
       })
+      return
+    } else if (!usdInput && inputValue <= 0) {
+      toast.error('Please enter a valid amount.', {
+        style: toastStyle,
+      })
+      return
     }
 
     try {
@@ -849,11 +903,9 @@ export default function MissionPayRedeem({
         colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
       })
 
-      refreshBackers?.()
+      refreshMissionData()
       setMissionPayModalEnabled(false)
       setJustCompletedFiatPurchase(false)
-      // Clear query parameters and reload the page
-      router.push(`/mission/${mission?.id}`)
     } catch (error) {
       console.error('Error purchasing tokens:', error)
       toast.error('Failed to purchase tokens', {
@@ -863,15 +915,22 @@ export default function MissionPayRedeem({
   }, [
     account,
     primaryTerminalContract,
-    mission?.projectId,
+    mission,
     input,
     address,
     output,
     message,
-    router,
+    refreshMissionData,
     nativeBalance,
     chainSlug,
     agreedToCondition,
+    defaultChainSlug,
+    crossChainPayContract,
+    fundWallet,
+    isTestnet,
+    isLoadingEthUsdPrice,
+    ethUsdPrice,
+    usdInput,
   ])
 
   //Redeem (stage 3 refund) all mission tokens for the connected wallet
@@ -885,7 +944,7 @@ export default function MissionPayRedeem({
       return
     }
 
-    if (tokenBalance < 0) {
+    if (tokenBalance <= 0) {
       toast.error('You have no tokens to redeem.', {
         style: toastStyle,
       })
@@ -924,7 +983,7 @@ export default function MissionPayRedeem({
       toast.success('Tokens redeemed successfully!', {
         style: toastStyle,
       })
-      router.reload()
+      refreshMissionData()
     } catch (error: any) {
       console.error('Error redeeming tokens:', error)
       if (error.message.includes('Project funding deadline has not passed.')) {
@@ -945,7 +1004,7 @@ export default function MissionPayRedeem({
     primaryTerminalContract,
     address,
     mission?.projectId,
-    router,
+    refreshMissionData,
     tokenBalance,
     jbTokenBalance,
     tokenCredit,
@@ -982,14 +1041,21 @@ export default function MissionPayRedeem({
       toast.success('Token credit claimed successfully!', {
         style: toastStyle,
       })
-      router.reload()
+      refreshMissionData()
     } catch (error) {
       console.error('Error claiming token credit:', error)
       toast.error('Failed to claim token credit.', {
         style: toastStyle,
       })
     }
-  }, [account, address, jbTokensContract, mission?.projectId, tokenCredit])
+  }, [
+    account,
+    address,
+    jbControllerContract,
+    mission?.projectId,
+    tokenCredit,
+    refreshMissionData,
+  ])
 
   useEffect(() => {
     if (parseFloat(input) > 0) {
@@ -997,19 +1063,21 @@ export default function MissionPayRedeem({
     } else if (input === '0' || input === '') {
       setOutput(0)
     }
-  }, [input])
+  }, [input, getQuote])
 
   useEffect(() => {
+    // Only try to get redeem quote when refunds are actually available (stage === 3)
     if (
-      (jbTokenBalance && jbTokenBalance > 0) ||
-      (tokenCredit && tokenCredit > 0)
+      stage === 3 &&
+      ((jbTokenBalance && jbTokenBalance > 0) ||
+        (tokenCredit && tokenCredit > 0))
     ) {
       getRedeemQuote()
     } else {
       setRedeemAmount(0)
       setIsLoadingRedeemAmount(false)
     }
-  }, [jbTokenBalance, tokenCredit, getRedeemQuote, stage])
+  }, [jbTokenBalance, tokenCredit, stage, getRedeemQuote])
 
   // Add a function to clear the parameter only when needed
   const clearOnrampSuccessParam = useCallback(() => {
@@ -1308,6 +1376,8 @@ export default function MissionPayRedeem({
               formatTokenAmount={formatTokenAmount}
               redeemAmount={redeemAmount}
               isLoadingRedeemAmount={isLoadingRedeemAmount}
+              isLoadingEthUsdPrice={isLoadingEthUsdPrice}
+              usdInput={usdInput}
             />
           </div>
         </>
@@ -1650,3 +1720,5 @@ export default function MissionPayRedeem({
     </>
   )
 }
+
+export default MissionPayRedeemComponent

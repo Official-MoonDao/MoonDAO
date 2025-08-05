@@ -11,7 +11,8 @@ import client from '../thirdweb/client'
 export function useCitizen(
   selectedChain: any,
   citizenContract?: any,
-  citizenAddress?: string
+  citizenAddress?: string,
+  skipFetch: boolean = false
 ) {
   const chainSlug = getChainSlug(selectedChain)
   const account = useActiveAccount()
@@ -20,9 +21,16 @@ export function useCitizen(
   const [citizenNFT, setCitizenNFT] = useState<any>()
 
   useEffect(() => {
+    // Check skipFetch FIRST, before changing any state
+    if (skipFetch) {
+      console.log('Skipping citizen fetch - cache not checked yet')
+      return
+    }
+
     async function getCitizenNFTByAddress() {
       setCitizenNFT(undefined)
       if (!authenticated || !user) return
+
       try {
         let contract
         if (citizenContract) {
@@ -62,6 +70,7 @@ export function useCitizen(
     user,
     authenticated,
     citizenAddress,
+    skipFetch,
   ])
 
   return citizenNFT

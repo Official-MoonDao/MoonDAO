@@ -1,7 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Options } from '@layerzerolabs/lz-v2-utilities'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
-import { useFundWallet } from '@privy-io/react-auth'
+import { getAccessToken, useFundWallet } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import {
   CITIZEN_ADDRESSES,
@@ -141,12 +141,16 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
     await waitForResponse(formId, responseId)
 
-    const responseRes = await fetch(
-      `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
-      {
-        method: 'POST',
-      }
-    )
+    const accessToken = await getAccessToken()
+
+    const responseRes = await fetch(`/api/typeform/response`, {
+      method: 'POST',
+      body: JSON.stringify({
+        accessToken: accessToken,
+        responseId: responseId,
+        formId: formId,
+      }),
+    })
 
     const data = await responseRes.json()
 
