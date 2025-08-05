@@ -168,7 +168,7 @@ export default function Mooney() {
                 
                 <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
                   The governance token that powers MoonDAO's mission to create a self-sustaining, 
-                  self-governing settlement on the Moon by 2030.
+                  self-governing settlement on the Moon.
                 </p>
                 
                 {/* Quick Navigation */}
@@ -498,9 +498,9 @@ export default function Mooney() {
 
               {/* Network Selection */}
               <div className="mb-8">
-                <div className="max-w-xl mx-auto bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
+                <div className="max-w-xl mx-auto bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-4 border border-white/10">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-semibold text-white mb-2">
                         Network Selection
                       </h3>
@@ -508,7 +508,7 @@ export default function Mooney() {
                         Select a network to buy MOONEY on
                       </p>
                     </div>
-                    <div className="ml-6">
+                    <div className="flex-shrink-0">
                       <NetworkSelector />
                     </div>
                   </div>
