@@ -6,6 +6,7 @@ import {
   MapPinIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
+import { getAccessToken } from '@privy-io/react-auth'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
@@ -44,6 +45,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
+import { getAttribute } from '@/lib/utils/nft'
 import { DiscordIcon, TwitterIcon } from '@/components/assets'
 import { Hat } from '@/components/hats/Hat'
 import Address from '@/components/layout/Address'
@@ -171,6 +173,29 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
               id="profile-description-section"
               className="flex w-full flex-col lg:flex-row items-start lg:items-center"
             >
+              <button
+                onClick={async () => {
+                  const accessToken = await getAccessToken()
+                  console.log(
+                    getAttribute(nft?.metadata?.attributes, 'formId').value
+                  )
+                  const response = await fetch(`/api/typeform/response`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      accessToken,
+                      formId: process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID,
+                      responseId: getAttribute(
+                        nft?.metadata?.attributes,
+                        'formId'
+                      ).value,
+                    }),
+                  })
+                  const data = await response.json()
+                  console.log(data)
+                }}
+              >
+                RESPONSE
+              </button>
               {nft?.metadata?.image ? (
                 <div
                   id="citizen-image-container"

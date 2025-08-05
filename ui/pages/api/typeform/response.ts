@@ -1,6 +1,11 @@
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { getPrivyUserData } from '@/lib/privy'
+import {
+  hasAccessToResponse,
+  fetchResponseFromFormIds,
+} from '@/lib/typeform/hasAccessToResponse'
 
 //https://github.com/mathio/nextjs-embed-demo/blob/main/pages/api/response.js
 
@@ -31,16 +36,20 @@ async function retryGetResponse(formId: string, responseId: string) {
     try {
       result = await getResponse(formId, responseId)
       data = await result.json()
-      
+
       if (!result.ok) {
-        console.error(`Typeform API error: ${result.status} - ${data.description || 'Unknown error'}`)
+        console.error(
+          `Typeform API error: ${result.status} - ${
+            data.description || 'Unknown error'
+          }`
+        )
         if (counter >= 4) {
           return null
         }
       } else {
         totalItems = data.total_items
       }
-      
+
       await wait(1000)
       counter += 1
     } catch (error) {
@@ -60,19 +69,46 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).send('Method Not Allowed')
   }
 
-  const { formId, responseId } = req.query
-
-  if (!formId || !responseId) {
-    return res.status(400).json({ message: 'Missing formId or responseId' })
-  }
-
-  if (!process.env.TYPEFORM_PERSONAL_ACCESS_TOKEN) {
-    console.error('TYPEFORM_PERSONAL_ACCESS_TOKEN is not set')
-    return res.status(500).json({ message: 'Server configuration error' })
-  }
+  const { accessToken, responseId, formId } = JSON.parse(req.body)
 
   try {
-    const data = await retryGetResponse(formId as string, responseId as string)
+    const privyUserData = await getPrivyUserData(accessToken as string)
+
+    if (!privyUserData) {
+      return res.status(401).json({ message: 'Invalid access token' })
+    }
+
+    const { walletAddresses } = privyUserData
+
+    if (!formId || !responseId) {
+      return res.status(400).json({ message: 'Missing formId or responseId' })
+    }
+
+    if (!process.env.TYPEFORM_PERSONAL_ACCESS_TOKEN) {
+      console.error('TYPEFORM_PERSONAL_ACCESS_TOKEN is not set')
+      return res.status(500).json({ message: 'Server configuration error' })
+    }
+
+    // Check if user has access to this response
+    const { hasAccess, error, formIds } = await hasAccessToResponse(
+      walletAddresses,
+      responseId
+    )
+
+    if (!hasAccess) {
+      return res.status(401).json({ message: error || 'Access denied' })
+    }
+
+    // Fetch response from the appropriate form IDs based on type
+    let data: any = null
+    if (formIds && formIds.length > 0) {
+      data = await fetchResponseFromFormIds(formIds, responseId as string)
+    }
+
+    // Fallback to the original formId if no data found from type-specific forms
+    if (!data && formId) {
+      data = await retryGetResponse(formId as string, responseId as string)
+    }
 
     if (!data) {
       return res

@@ -4,7 +4,9 @@ import withMiddleware from 'middleware/withMiddleware'
 import { waitForReceipt } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { transporter, opEmail } from '@/lib/nodemailer/nodemailer'
+import { getPrivyUserData } from '@/lib/privy'
 import { serverClient } from '@/lib/thirdweb/client'
+import { getBlocksInTimeframe } from '@/lib/utils/blocks'
 
 const MARKETPLACE_VENDOR_PURHCASE_FIELDS: any = {
   address: 'Address',
@@ -112,7 +114,16 @@ async function handler(req: any, res: any) {
       return res.status(400).send({ message: 'Bad request' })
     }
 
-    const { teamEmail, email, txHash } = JSON.parse(data)
+    const { teamEmail, email, txHash, accessToken, teamAddress } =
+      JSON.parse(data)
+
+    const privyUserData = await getPrivyUserData(accessToken)
+
+    if (!privyUserData) {
+      return res.status(400).send({ message: 'Invalid access token' })
+    }
+
+    const { walletAddresses } = privyUserData
 
     const txReceipt = await waitForReceipt({
       client: serverClient,
@@ -120,11 +131,55 @@ async function handler(req: any, res: any) {
       transactionHash: txHash,
     })
 
+    if (walletAddresses.length === 0) {
+      return res.status(400).send({ message: 'No wallet addresses found' })
+    }
+
+    let txIsFromUsersWallet = false
+
+    for (const walletAddress of walletAddresses) {
+      if (txReceipt.from.toLowerCase() === walletAddress.toLowerCase()) {
+        txIsFromUsersWallet = true
+        break
+      }
+    }
+
+    if (!txIsFromUsersWallet) {
+      return res
+        .status(400)
+        .send({ message: "Transaction is not from the user's wallet" })
+    }
+
+    if (teamAddress.toLowerCase() !== txReceipt.to?.toLowerCase()) {
+      return res
+        .status(400)
+        .send({ message: 'Transaction is not to the team address' })
+    }
+
+    const txBlockNumber = Number(txReceipt.blockNumber) // Convert BigInt to number
+
     const provider = ethers5Adapter.provider.toEthers({
       client: serverClient,
       chain: DEFAULT_CHAIN_V5,
     })
-    const currBlockNumber = await provider?.getBlockNumber()
+
+    const currBlockNumber = await provider.getBlockNumber()
+
+    // Check if transaction is within 5 minutes (in blocks)
+    const maxBlocksAge = getBlocksInTimeframe(DEFAULT_CHAIN_V5, 5)
+    const blockAge = currBlockNumber - txBlockNumber
+
+    if (blockAge > maxBlocksAge) {
+      return res.status(400).send({
+        message: `Transaction is too old. Must be within 5 minutes (${maxBlocksAge} blocks). Transaction is ${blockAge} blocks old.`,
+        blockInfo: {
+          currentBlock: currBlockNumber,
+          transactionBlock: txBlockNumber,
+          blockAge: blockAge,
+          maxAllowedAge: maxBlocksAge,
+        },
+      })
+    }
 
     try {
       await transporter.sendMail({

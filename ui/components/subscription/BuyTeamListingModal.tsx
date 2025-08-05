@@ -1,4 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { getAccessToken } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import ERC20ABI from 'const/abis/ERC20.json'
 import TeamABI from 'const/abis/Team.json'
@@ -78,7 +79,7 @@ export default function BuyTeamListingModal({
   })
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  const citizenEmail = useCitizenEmail(citizenNFT)
+  const citizenEmail = useCitizenEmail(citizen)
 
   const currencyAddresses: any = {
     MOONEY: MOONEY_ADDRESSES[chainSlug],
@@ -179,6 +180,8 @@ export default function BuyTeamListingModal({
 
         const shipping = Object.values(shippingInfo).join(', ')
 
+        const accessToken = await getAccessToken()
+
         //send email to entity w/ purchase details
         const res = await fetch('/api/marketplace/marketplace-purchase', {
           method: 'POST',
@@ -197,9 +200,11 @@ export default function BuyTeamListingModal({
             isCitizen: citizen ? true : false,
             shipping,
             teamEmail,
+            teamAddress: teamNFT.owner,
             teamLink: `${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
               teamNFT.metadata.name
             )}`,
+            accessToken: accessToken,
           }),
         })
 
@@ -224,7 +229,7 @@ export default function BuyTeamListingModal({
     } catch (err: any) {
       console.log(err)
       if (err && !err.message.startsWith('user rejected transaction')) {
-        toast.error('Insufficient funds.')
+        toast.error(err.message)
       }
     }
     setIsLoading(false)
@@ -284,7 +289,7 @@ export default function BuyTeamListingModal({
               <p className="font-GoodTimes">{listing.title}</p>
               <p className="text-[75%]">{listing.description}</p>
               <p id="listing-price" className="font-bold">{`${
-                citizen 
+                citizen
                   ? truncateTokenValue(listing.price, listing.currency)
                   : truncateTokenValue(+listing.price * 1.1, listing.currency)
               } ${listing.currency}`}</p>
