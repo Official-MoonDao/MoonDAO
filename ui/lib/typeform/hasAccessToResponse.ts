@@ -186,12 +186,7 @@ export async function hasAccessToResponse(
       return { hasAccess: false, error: 'User does not own the citizen nft' }
     }
 
-    // If we reach here, the user has access
-    console.log('TEAM', team)
-    console.log('CITIZEN', citizen)
-    console.log('RESPONSE ID', responseId)
     const type = team.length > 0 ? 'team' : 'citizen'
-    console.log('TYPE', type)
     const formIds = await getFormIdsByType(type)
     return { hasAccess: true, type, formIds }
   } catch (error) {
