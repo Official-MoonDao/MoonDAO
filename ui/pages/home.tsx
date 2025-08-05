@@ -181,127 +181,162 @@ export default function Home({
 
   return (
     <Container>
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header Section - Clean Profile Style */}
-        <div className="bg-gradient-to-br from-slate-900 via-blue-900/40 to-purple-900/30 backdrop-blur-xl border border-white/10 rounded-2xl p-8 mb-6">
-          <div className="flex items-center gap-8">
-            {/* Profile Picture */}
-            <div className="w-28 h-28 rounded-full overflow-hidden border border-white/20 shadow-lg">
-              {citizen?.metadata?.image ? (
-                <MediaRenderer
-                  client={client}
-                  src={citizen.metadata.image}
-                  alt={citizen.metadata.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                  <span className="text-white font-bold text-3xl">
-                    {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Profile Info */}
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-white mb-4">
-                {isLoadingCitizen ? (
-                  <span className="flex items-center gap-3">
-                    Welcome...
-                    <LoadingSpinner width="w-6" height="h-6" />
-                  </span>
-                ) : citizen ? (
-                  `Welcome, ${citizen.metadata.name}`
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        {/* Compact All-in-One Header */}
+        <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-6 mb-6 overflow-hidden">
+          <div className="absolute inset-0 bg-black/20 rounded-2xl"></div>
+          
+          <div className="relative z-10 flex items-center justify-between">
+            {/* Left Side - Profile & Title */}
+            <div className="flex items-center gap-4">
+              {/* Profile Picture */}
+              <div className="w-20 h-20 rounded-full overflow-hidden border-3 border-white shadow-xl bg-white relative">
+                {citizen?.metadata?.image ? (
+                  <MediaRenderer
+                    client={client}
+                    src={citizen.metadata.image}
+                    alt={citizen.metadata.name}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  'Welcome to MoonDAO'
+                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">
+                      {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
+                    </span>
+                  </div>
                 )}
-              </h1>
+                {/* Online status indicator */}
+                <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+              </div>
               
-              {address && (
-                <div className="flex flex-wrap gap-6 text-base text-white/80 mb-6">
-                  <div className="flex items-center gap-3">
-                    <Image src="/coins/MOONEY.png" width={20} height={20} alt="MOONEY" className="rounded-full" />
-                    {MOONEYBalance === undefined || MOONEYBalance === null ? (
-                      <div className="animate-pulse bg-white/20 rounded w-24 h-5"></div>
-                    ) : (
-                      <span>
-                        <span className="text-blue-300 font-semibold text-lg">{Math.round(MOONEYBalance).toLocaleString()}</span> MOONEY
-                        {mooneyPrice && (
-                          <span className="text-white/60 ml-2">
-                            (${(MOONEYBalance * mooneyPrice).toFixed(0)})
-                          </span>
-                        )}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 bg-purple-500 rounded-full"></div>
-                    {walletVP === undefined || walletVP === null ? (
-                      <div className="animate-pulse bg-white/20 rounded w-20 h-5"></div>
-                    ) : (
-                      <span>
-                        <span className="text-purple-300 font-semibold text-lg">{Math.round(walletVP).toLocaleString()}</span> vMOONEY
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 text-white/70">
-                    <span className="text-lg">🗳️ <span className="font-semibold">{voteCount}</span> votes</span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-white/70">
-                    <span className="text-lg">👥 <span className="font-semibold">{teamHats?.length || 0}</span> teams</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Quick Actions */}
-              <div className="grid grid-cols-3 gap-4">
-                <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-base font-medium transition-all" link="/get-mooney">
-                  Buy MOONEY
-                </StandardButton>
-                <StandardButton className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-base font-medium transition-all" link="/lock">
-                  Stake MOONEY
-                </StandardButton>
-                <StandardButton className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg text-base font-medium transition-all" link="/governance">
-                  Vote
-                </StandardButton>
+              {/* Title & Subtitle */}
+              <div>
+                <h1 className="text-2xl font-bold text-white mb-1 drop-shadow-lg">
+                  {isLoadingCitizen ? (
+                    <span className="flex items-center gap-2">
+                      Welcome...
+                      <LoadingSpinner width="w-4" height="h-4" />
+                    </span>
+                  ) : citizen ? (
+                    citizen.metadata.name
+                  ) : (
+                    'Welcome to MoonDAO'
+                  )}
+                </h1>
+                <p className="text-white/90 text-sm font-medium drop-shadow">
+                  Building the future of space exploration together
+                </p>
               </div>
             </div>
 
-            {/* Quick Stats Card */}
-            <div className="bg-black/20 rounded-xl p-6 border border-white/10">
-              <WeeklyRewardPool />
+            {/* Center - Stats */}
+            {address && (
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Image src="/coins/MOONEY.png" width={16} height={16} alt="MOONEY" className="rounded-full" />
+                  </div>
+                  {MOONEYBalance === undefined || MOONEYBalance === null ? (
+                    <div className="animate-pulse bg-white/20 rounded w-12 h-4 mx-auto mb-1"></div>
+                  ) : (
+                    <div className="text-lg font-bold text-blue-300">
+                      {Math.round(MOONEYBalance).toLocaleString()}
+                    </div>
+                  )}
+                  <div className="text-xs text-white/70">MOONEY</div>
+                </div>
+
+                <div className="text-center">
+                  <div className="w-4 h-4 bg-purple-500 rounded-full mx-auto mb-1"></div>
+                  {walletVP === undefined || walletVP === null ? (
+                    <div className="animate-pulse bg-white/20 rounded w-12 h-4 mx-auto mb-1"></div>
+                  ) : (
+                    <div className="text-lg font-bold text-purple-300">
+                      {Math.round(walletVP).toLocaleString()}
+                    </div>
+                  )}
+                  <div className="text-xs text-white/70">vMOONEY</div>
+                </div>
+
+                <div className="text-center">
+                  <div className="text-sm mb-1">🗳️</div>
+                  <div className="text-lg font-bold text-green-300">{voteCount}</div>
+                  <div className="text-xs text-white/70">Votes</div>
+                </div>
+
+                <div className="text-center">
+                  <div className="text-sm mb-1">👥</div>
+                  <div className="text-lg font-bold text-orange-300">{teamHats?.length || 0}</div>
+                  <div className="text-xs text-white/70">Teams</div>
+                </div>
+              </div>
+            )}
+
+            {/* Right Side - Action Buttons */}
+            <div className="flex gap-2">
+              <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all" link="/get-mooney">
+                💰 Buy
+              </StandardButton>
+              <StandardButton className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all" link="/lock">
+                🔒 Stake
+              </StandardButton>
+              <StandardButton className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all" link="/governance">
+                🗳️ Vote
+              </StandardButton>
             </div>
           </div>
         </div>
 
-        {/* Dashboard Grid - Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Left Column - Metrics */}
-          <div className="lg:col-span-1 space-y-4">
-            {/* Key Metrics */}
-            <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Key Metrics</h3>
+        {/* Main Content - Facebook Style Three Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Sidebar - Key Metrics & Quick Actions */}
+          <div className="lg:col-span-3 space-y-4">
+            {/* Weekly Reward Pool - Moved from header */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <WeeklyRewardPool />
+            </div>
+
+            {/* Navigation Menu */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <h3 className="font-semibold text-white mb-4 text-lg">Navigate</h3>
+              <div className="space-y-2">
+                {[
+                  { icon: '🚀', label: 'Launchpad', href: '/launchpad', color: 'hover:bg-blue-600/20' },
+                  { icon: '🗳️', label: 'Governance', href: '/governance', color: 'hover:bg-purple-600/20' },
+                  { icon: '👥', label: 'Network', href: '/network', color: 'hover:bg-green-600/20' },
+                  { icon: '🛒', label: 'Marketplace', href: '/marketplace', color: 'hover:bg-orange-600/20' },
+                  { icon: '📰', label: 'News', href: '/news', color: 'hover:bg-red-600/20' },
+                ].map((item) => (
+                  <Link key={item.label} href={item.href}>
+                    <div className={`flex items-center gap-3 p-3 rounded-xl text-white/80 hover:text-white transition-all cursor-pointer ${item.color}`}>
+                      <span className="text-xl">{item.icon}</span>
+                      <span className="font-medium">{item.label}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Key Metrics Card */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <h3 className="font-semibold text-white mb-4 text-lg">DAO Metrics</h3>
               <div className="space-y-4">
                 <div 
-                  className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-lg p-3"
+                  className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-4 border border-white/5"
                   onClick={openCitizensChart}
                   title="Click to view full chart"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-400 text-sm">Citizens</span>
-                    <span className="text-white font-bold text-xl">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-gray-300 font-medium">Citizens</span>
+                    <span className="text-white font-bold text-2xl">
                       {citizenSubgraphData?.transfers?.length || '2,341'}
                     </span>
                   </div>
-                  <div className="h-16">
+                  <div className="h-12">
                     <CitizensChart
                       transfers={citizenSubgraphData.transfers}
                       isLoading={false}
-                      height={64}
+                      height={48}
                       compact={true}
                       createdAt={citizenSubgraphData.createdAt}
                     />
@@ -310,20 +345,20 @@ export default function Home({
 
                 {aumData && (
                   <div 
-                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-lg p-3"
+                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-4 border border-white/5"
                     onClick={openAUMChart}
                     title="Click to view full chart"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-gray-400 text-sm">AUM</span>
-                      <span className="text-white font-bold text-xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-gray-300 font-medium">AUM</span>
+                      <span className="text-white font-bold text-2xl">
                         ${aumData.aum.toLocaleString()}
                       </span>
                     </div>
-                    <div className="h-16">
+                    <div className="h-12">
                       <AUMChart
                         compact={true}
-                        height={64}
+                        height={48}
                         days={365}
                         data={aumData.aumHistory}
                       />
@@ -333,21 +368,21 @@ export default function Home({
 
                 {arrData && (
                   <div 
-                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-lg p-3"
+                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-4 border border-white/5"
                     onClick={openARRChart}
                     title="Click to view full chart"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-gray-400 text-sm">ARR</span>
-                      <span className="text-white font-bold text-xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-gray-300 font-medium">ARR</span>
+                      <span className="text-white font-bold text-2xl">
                         ~${arrData.currentARR.toLocaleString()}
                       </span>
                     </div>
-                    <div className="h-16">
+                    <div className="h-12">
                       <ARRChart
                         data={arrData.arrHistory || []}
                         compact={true}
-                        height={64}
+                        height={48}
                         isLoading={false}
                       />
                     </div>
@@ -355,51 +390,55 @@ export default function Home({
                 )}
               </div>
             </div>
+          </div>
 
+          {/* Center Column - Main Feed */}
+          <div className="lg:col-span-6 space-y-6">
             {/* Quick Actions */}
-            <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <StandardButton className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-3 rounded-lg transition-all" link="/launchpad">
-                  <div className="text-center">
-                    <div className="text-lg mb-1">🚀</div>
-                    <div>Launchpad</div>
-                  </div>
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-full overflow-hidden">
+                  {citizen?.metadata?.image ? (
+                    <MediaRenderer
+                      client={client}
+                      src={citizen.metadata.image}
+                      alt={citizen.metadata.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                      {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-1">Quick Actions</h3>
+                  <p className="text-white/70 text-sm">What would you like to do today?</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <StandardButton className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all duration-200" link="/governance">
+                  🗳️ Create Proposal
                 </StandardButton>
-                <StandardButton className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm py-3 rounded-lg transition-all" link="/governance">
-                  <div className="text-center">
-                    <div className="text-lg mb-1">🗳️</div>
-                    <div>Governance</div>
-                  </div>
+                <StandardButton className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all duration-200" link="/launchpad">
+                  🚀 Launch Project
                 </StandardButton>
-                <StandardButton className="w-full bg-green-600 hover:bg-green-700 text-white text-sm py-3 rounded-lg transition-all" link="/network">
-                  <div className="text-center">
-                    <div className="text-lg mb-1">👥</div>
-                    <div>Network</div>
-                  </div>
-                </StandardButton>
-                <StandardButton className="w-full bg-orange-600 hover:bg-orange-700 text-white text-sm py-3 rounded-lg transition-all" link="/marketplace">
-                  <div className="text-center">
-                    <div className="text-lg mb-1">🛒</div>
-                    <div>Market</div>
-                  </div>
+                <StandardButton className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all duration-200" link="/network">
+                  👥 Join Team
                 </StandardButton>
               </div>
             </div>
-          </div>
 
-          {/* Center Column - Activity Feed */}
-          <div className="lg:col-span-2 space-y-4">
-            {/* Recent Activity */}
-            <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">Recent Activity</h3>
+            {/* Activity Feed */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white">Recent Activity</h3>
                 <div className="flex gap-2">
-                  <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md transition-all" link="/news">
-                    All News
+                  <StandardButton className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all" link="/news">
+                    View All
                   </StandardButton>
                   <StandardButton 
-                    className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 rounded-md transition-all"
+                    className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 text-sm px-4 py-2 rounded-lg transition-all"
                     onClick={() => setNewsletterModalOpen(true)}
                   >
                     Subscribe
@@ -407,135 +446,294 @@ export default function Home({
                 </div>
               </div>
 
-              {/* Activity Items */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm">📰</div>
-                  <div className="flex-1">
-                    <p className="text-white text-sm">Latest Newsletter: Datacenters on the moon?</p>
-                    <p className="text-gray-400 text-xs">2 hours ago</p>
+              <div className="space-y-4">
+                {[
+                  {
+                    type: 'newsletter',
+                    icon: '📰',
+                    color: 'bg-blue-600',
+                    title: 'Latest Newsletter: Datacenters on the moon?',
+                    time: '2 hours ago',
+                    engagement: '1.2k views'
+                  },
+                  {
+                    type: 'event',
+                    icon: '🏛️',
+                    color: 'bg-green-600',
+                    title: 'Next Townhall: Thursday, June 19th, 2025 @ 3PM EST',
+                    time: 'Upcoming event',
+                    engagement: '234 interested'
+                  },
+                  {
+                    type: 'proposal',
+                    icon: '🚀',
+                    color: 'bg-purple-600',
+                    title: 'New proposal: MDP-177: Lunar Surface Settlement Study',
+                    time: '6 hours ago',
+                    engagement: '45 votes'
+                  },
+                  {
+                    type: 'team',
+                    icon: '👥',
+                    color: 'bg-orange-600',
+                    title: 'New team formed: Lunar Mining Research Initiative',
+                    time: '12 hours ago',
+                    engagement: '8 members'
+                  }
+                ].map((item, index) => (
+                  <div key={index} className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5">
+                    <div className="flex items-start gap-4">
+                      <div className={`w-12 h-12 ${item.color} rounded-full flex items-center justify-center text-white text-lg font-semibold shadow-lg`}>
+                        {item.icon}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-white font-medium mb-1">{item.title}</p>
+                        <div className="flex items-center gap-4 text-sm text-gray-400">
+                          <span>{item.time}</span>
+                          <span>•</span>
+                          <span>{item.engagement}</span>
+                        </div>
+                      </div>
+                      <div className="text-gray-400 hover:text-white">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
-                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-sm">🏛️</div>
-                  <div className="flex-1">
-                    <p className="text-white text-sm">Next Townhall: Thursday, June 19th, 2025 @ 3PM EST</p>
-                    <p className="text-gray-400 text-xs">Upcoming event</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
-                  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-sm">🚀</div>
-                  <div className="flex-1">
-                    <p className="text-white text-sm">New proposal: MDP-177: Lunar Surface Settlement Study</p>
-                    <p className="text-gray-400 text-xs">6 hours ago</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
-                  <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center text-sm">👥</div>
-                  <div className="flex-1">
-                    <p className="text-white text-sm">New team formed: Lunar Mining Research Initiative</p>
-                    <p className="text-gray-400 text-xs">12 hours ago</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* Active Proposals */}
-            <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">Active Proposals</h3>
-                <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md transition-all" link="/governance">
+            {/* Active Proposals Card */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white">Active Proposals</h3>
+                <StandardButton className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all" link="/governance">
                   View All
                 </StandardButton>
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {proposals && proposals.slice(0, 3).map((proposal: any, i: number) => (
-                  <div key={proposal.proposalId || i} className="p-4 bg-black/20 rounded-lg border border-white/5 hover:border-white/10 transition-all">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="text-white font-medium text-sm">
+                  <div key={proposal.proposalId || i} className="bg-white/5 rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all">
+                    <div className="flex justify-between items-start mb-3">
+                      <h4 className="text-white font-semibold">
                         {proposal.title || `MDP-${179 - i}: Study on Lunar Surface Selection For Settlement`}
                       </h4>
                       {i === 0 && (
-                        <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">Active</span>
+                        <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
+                          Active
+                        </span>
                       )}
                     </div>
-                    <div className="flex justify-between text-xs text-gray-400">
-                      <span>💰 2.2 ETH requested</span>
-                      <span>⏰ {3 + i} days left</span>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-4 text-sm text-gray-300">
+                        <span className="flex items-center gap-1">
+                          💰 <span className="font-medium">2.2 ETH</span> requested
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          ⏰ <span className="font-medium">{3 + i} days</span> left
+                        </span>
+                      </div>
+                      <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition-all">
+                        Vote
+                      </StandardButton>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Compact Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Launchpad Section - Simplified */}
-          <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">Launchpad</h3>
-              <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-all" link="/launchpad">
-                View All
-              </StandardButton>
-            </div>
-            <p className="text-gray-300 text-sm mb-4">Fund your next mission with MoonDAO. Simple enough for a student project, robust enough for moonshots.</p>
-            
-            <div className="space-y-3">
-              <div className="bg-black/20 rounded-lg p-4 border border-white/10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">F</div>
-                    <div>
-                      <h4 className="font-semibold text-white">Frank to Space</h4>
-                      <div className="flex items-center gap-2 text-xs">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-gray-400">Active</span>
+          {/* Right Sidebar - Community & Stats */}
+          <div className="lg:col-span-3 space-y-4">
+            {/* Teams */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white text-lg">Teams</h3>
+                <StandardButton className="text-blue-300 text-sm hover:text-blue-200 transition-all" link="/network?tab=teams">
+                  See all
+                </StandardButton>
+              </div>
+              
+              <div className="space-y-3">
+                {filteredTeams && filteredTeams.length > 0 ? (
+                  filteredTeams.slice(0, 5).map((team: any, index: number) => (
+                    <div key={team.id || index} className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                        {team.image ? (
+                          <MediaRenderer
+                            client={client}
+                            src={team.image}
+                            alt={team.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                            {team.name?.[0] || 'T'}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-white font-medium text-sm truncate">{team.name || 'Team'}</h4>
+                        <p className="text-gray-400 text-xs">{team.memberCount || '8'} members</p>
                       </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-white">1.2 / 31 ETH</p>
-                    <div className="w-20 bg-gray-600 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: '4%' }}></div>
+                  ))
+                ) : (
+                  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">🚀</div>
+                    <div className="flex-1">
+                      <h4 className="text-white font-medium text-sm">Mission Control</h4>
+                      <p className="text-gray-400 text-xs">12 members</p>
                     </div>
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recent Citizens */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white text-lg">New Citizens</h3>
+                <StandardButton className="text-blue-300 text-sm hover:text-blue-200 transition-all" link="/network?tab=citizens">
+                  See all
+                </StandardButton>
+              </div>
+              
+              <div className="space-y-3">
+                {newestCitizens && newestCitizens.length > 0 ? (
+                  newestCitizens.slice(0, 5).map((citizen: any) => (
+                    <div key={citizen.id} className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                        {citizen.image ? (
+                          <MediaRenderer
+                            client={client}
+                            src={citizen.image}
+                            alt={citizen.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                            {citizen.name?.[0] || 'C'}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-white font-medium text-sm truncate">{citizen.name || 'Anonymous'}</h4>
+                        <p className="text-gray-400 text-xs">New citizen</p>
+                      </div>
+                      <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-lg transition-all">
+                        Connect
+                      </StandardButton>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-400 text-sm text-center py-4">
+                    Loading...
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <h3 className="font-semibold text-white text-lg mb-4">Quick Stats</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">Total Citizens</span>
+                  <span className="text-white font-bold">
+                    {citizenSubgraphData?.transfers?.length || '2,341'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">Teams</span>
+                  <span className="text-white font-bold">
+                    {filteredTeams?.length || '12'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">Active Proposals</span>
+                  <span className="text-white font-bold">3</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">Countries</span>
+                  <span className="text-white font-bold">47</span>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Governance Section - Simplified */}
-          <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">Governance</h3>
-              <StandardButton className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-all" link="/governance">
-                View All
+        {/* Featured Projects Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 mb-8">
+          {/* Launchpad Feature */}
+          <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-2">🚀 Launchpad</h3>
+                <p className="text-blue-200">Fund your next mission to space</p>
+              </div>
+              <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all" link="/launchpad">
+                Launch Project
               </StandardButton>
             </div>
-            <p className="text-gray-300 text-sm mb-4">Weekly voting on community projects and proposals.</p>
             
-            <div className="bg-black/20 rounded-lg p-4 border border-white/10">
-              <div className="flex items-center justify-between mb-3">
+            <div className="bg-black/20 rounded-xl p-6 border border-blue-500/20">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">F</div>
+                  <div>
+                    <h4 className="font-bold text-white text-lg">Frank to Space</h4>
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-blue-200">Active Funding</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-white text-lg">1.2 / 31 ETH</p>
+                  <p className="text-blue-200 text-sm">3.9% funded</p>
+                </div>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-3 mb-4">
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all" style={{ width: '4%' }}></div>
+              </div>
+              <p className="text-blue-100 text-sm">Send Frank Miller to space as MoonDAO's first citizen astronaut mission.</p>
+            </div>
+          </div>
+
+          {/* Governance Feature */}
+          <div className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-2">🗳️ Governance</h3>
+                <p className="text-purple-200">Shape the future of space exploration</p>
+              </div>
+              <StandardButton className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all" link="/governance">
+                Vote Now
+              </StandardButton>
+            </div>
+            
+            <div className="bg-black/20 rounded-xl p-6 border border-purple-500/20">
+              <div className="grid grid-cols-2 gap-6 mb-4">
                 <div>
-                  <div className="text-lg font-bold text-white">32.3 ETH</div>
-                  <div className="text-sm text-gray-400">Quarterly Pool</div>
+                  <div className="text-2xl font-bold text-white">32.3 ETH</div>
+                  <div className="text-purple-200 text-sm">Quarterly Treasury</div>
                 </div>
                 <div>
-                  <div className="text-lg font-bold text-white">8.9M</div>
-                  <div className="text-sm text-gray-400">vMOONEY Staked</div>
+                  <div className="text-2xl font-bold text-white">8.9M</div>
+                  <div className="text-purple-200 text-sm">vMOONEY Staked</div>
                 </div>
               </div>
               
               {proposals && proposals.length > 0 && (
-                <div className="pt-3 border-t border-white/10">
+                <div className="pt-4 border-t border-purple-500/20">
                   <div className="text-sm">
-                    <span className="font-medium text-white">Latest:</span> <span className="text-gray-300">{proposals[0].title || 'MDP-179: Lunar Surface Study'}</span>
+                    <span className="font-medium text-white">Latest Proposal:</span>
+                    <p className="text-purple-100 mt-1">{proposals[0].title || 'MDP-179: Lunar Surface Settlement Study'}</p>
                   </div>
                 </div>
               )}
@@ -543,141 +741,55 @@ export default function Home({
           </div>
         </div>
 
-        {/* Community Section - Simplified */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Teams */}
-          <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Active Teams</h3>
-              <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md transition-all" link="/network?tab=teams">
-                See All
-              </StandardButton>
+        {/* Global Community Map - Enhanced */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-2">🌍 Global Community</h3>
+              <p className="text-gray-300">MoonDAO citizens around the world</p>
             </div>
-            
-            <div className="space-y-3">
-              {filteredTeams && filteredTeams.length > 0 ? (
-                filteredTeams.slice(0, 3).map((team: any, index: number) => (
-                  <div key={team.id || index} className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
-                    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                      {team.image ? (
-                        <MediaRenderer
-                          client={client}
-                          src={team.image}
-                          alt={team.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
-                          {team.name?.[0] || 'T'}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-white font-medium text-sm">{team.name || 'Team'}</h4>
-                      <p className="text-gray-400 text-xs">Team #{team.id}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">🚀</div>
-                  <div className="flex-1">
-                    <h4 className="text-white font-medium text-sm">Mission Control</h4>
-                    <p className="text-gray-400 text-xs">Strategic planning team</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Citizens */}
-          <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Recent Citizens</h3>
-              <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md transition-all" link="/network?tab=citizens">
-                See All
-              </StandardButton>
-            </div>
-            
-            <div className="space-y-3">
-              {newestCitizens && newestCitizens.length > 0 ? (
-                newestCitizens.slice(0, 3).map((citizen: any) => (
-                  <div key={citizen.id} className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
-                    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                      {citizen.image ? (
-                        <MediaRenderer
-                          client={client}
-                          src={citizen.image}
-                          alt={citizen.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                          {citizen.name?.[0] || 'C'}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-white font-medium text-sm">{citizen.name || 'Anonymous'}</h4>
-                      <p className="text-gray-400 text-xs">Citizen #{citizen.id}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-gray-400 text-sm text-center py-4">
-                  Loading citizen data...
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Global Community Map - Compact */}
-        <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Global Community</h3>
-            <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md transition-all" link="/map">
-              View Full Map
+            <StandardButton className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl font-semibold transition-all" link="/map">
+              Explore Map
             </StandardButton>
           </div>
 
-          <div className="relative w-full h-[400px] bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-xl overflow-hidden">
+          <div className="relative w-full h-[500px] bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-2xl overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="flex items-center justify-center" style={{ width: '400px', height: '400px' }}>
-                <Earth pointsData={citizensLocationData || []} width={400} height={400} />
+              <div className="flex items-center justify-center" style={{ width: '500px', height: '500px' }}>
+                <Earth pointsData={citizensLocationData || []} width={500} height={500} />
               </div>
             </div>
 
-            {/* Stats overlay */}
-            <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm rounded-xl p-4">
+            {/* Enhanced Stats overlay with glassmorphism */}
+            <div className="absolute top-6 left-6 bg-black/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
               <div className="text-white">
-                <div className="text-2xl font-bold">
+                <div className="text-3xl font-bold mb-1">
                   {citizenSubgraphData?.transfers?.length || '2,341'}
                 </div>
-                <div className="text-sm opacity-80">Global Citizens</div>
+                <div className="text-sm opacity-90">Global Citizens</div>
               </div>
             </div>
 
-            <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-4">
+            <div className="absolute top-6 right-6 bg-black/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
               <div className="text-white">
-                <div className="text-2xl font-bold">47</div>
-                <div className="text-sm opacity-80">Countries</div>
+                <div className="text-3xl font-bold mb-1">47</div>
+                <div className="text-sm opacity-90">Countries</div>
               </div>
             </div>
 
-            <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm rounded-xl p-4">
+            <div className="absolute bottom-6 left-6 bg-black/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
               <div className="text-white">
-                <div className="text-2xl font-bold">24/7</div>
-                <div className="text-sm opacity-80">Activity</div>
+                <div className="text-3xl font-bold mb-1">24/7</div>
+                <div className="text-sm opacity-90">Active Community</div>
               </div>
             </div>
 
-            <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-4">
+            <div className="absolute bottom-6 right-6 bg-black/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
               <div className="text-white">
-                <div className="text-2xl font-bold">
+                <div className="text-3xl font-bold mb-1">
                   {filteredTeams?.length || teamHats?.length || '12'}
                 </div>
-                <div className="text-sm opacity-80">Active Teams</div>
+                <div className="text-sm opacity-90">Active Teams</div>
               </div>
             </div>
           </div>
