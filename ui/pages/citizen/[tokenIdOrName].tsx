@@ -173,29 +173,6 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
               id="profile-description-section"
               className="flex w-full flex-col lg:flex-row items-start lg:items-center"
             >
-              <button
-                onClick={async () => {
-                  const accessToken = await getAccessToken()
-                  console.log(
-                    getAttribute(nft?.metadata?.attributes, 'formId').value
-                  )
-                  const response = await fetch(`/api/typeform/response`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      accessToken,
-                      formId: process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID,
-                      responseId: getAttribute(
-                        nft?.metadata?.attributes,
-                        'formId'
-                      ).value,
-                    }),
-                  })
-                  const data = await response.json()
-                  console.log(data)
-                }}
-              >
-                RESPONSE
-              </button>
               {nft?.metadata?.image ? (
                 <div
                   id="citizen-image-container"
