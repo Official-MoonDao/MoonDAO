@@ -36,7 +36,6 @@ export function useUniswapV4(tokenAddress: string, tokenDecimals: number) {
 
   const quote = useCallback(
     async (amountIn: string) => {
-      console.log('tokenAddress', tokenAddress)
       const config: SwapExactInSingle = {
         poolKey: {
           currency0: ethers.constants.AddressZero,
@@ -51,26 +50,14 @@ export function useUniswapV4(tokenAddress: string, tokenDecimals: number) {
         amountOutMinimum: '0',
         hookData: '0x00',
       }
-      console.log('quoter address', UNISWAP_V4_QUOTER_ADDRESSES[chainSlug])
 
       const wallet = wallets[selectedWallet]
       const provider = await wallet.getEthersProvider()
-      console.log('provider', provider)
 
       const quoterContract = new ethers.Contract(
         UNISWAP_V4_QUOTER_ADDRESSES[chainSlug],
         QUOTER_ABI,
         provider
-      )
-      console.log('config', config)
-      console.log(
-        'params',
-        JSON.stringify({
-          poolKey: config.poolKey,
-          zeroForOne: config.zeroForOne,
-          exactAmount: config.amountIn,
-          hookData: config.hookData,
-        })
       )
       const result = await quoterContract.callStatic.quoteExactInputSingle({
         poolKey: config.poolKey,

@@ -11,7 +11,6 @@ import GasIcon from '../assets/GasIcon'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export default function NativeToMooney({ selectedChain }: any) {
-  console.log('selectedChain:', selectedChain)
   const chainSlug = getChainSlug(selectedChain)
 
   const nativeBalance = useNativeBalance()
@@ -28,7 +27,6 @@ export default function NativeToMooney({ selectedChain }: any) {
 
   const mooneyAddress = MOONEY_ADDRESSES[chainSlug]
   const { quote, swap } = useUniswapV4(mooneyAddress, 18)
-  console.log('mooneyAddress:', mooneyAddress)
 
   useEffect(() => {
     const numAmount = parseFloat(amount) || 0
