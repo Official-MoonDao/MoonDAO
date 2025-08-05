@@ -65,7 +65,7 @@ export default function NetworkSection() {
                   textColor="text-white"
                   borderRadius="rounded-xl"
                   hoverEffect={false}
-                  link="/network"
+                  link="/team"
                 >
                   Join as Company →
                 </StandardButton>
@@ -105,7 +105,7 @@ export default function NetworkSection() {
                   textColor="text-white"
                   borderRadius="rounded-xl"
                   hoverEffect={false}
-                  link="/network"
+                  link="/join"
                 >
                   Find Opportunities →
                 </StandardButton>
@@ -145,7 +145,7 @@ export default function NetworkSection() {
                   textColor="text-white"
                   borderRadius="rounded-xl"
                   hoverEffect={false}
-                  link="/network"
+                  link="#explore-network-header"
                 >
                   Explore Network →
                 </StandardButton>
@@ -171,7 +171,7 @@ export default function NetworkSection() {
                   textColor="text-gray-900"
                   borderRadius="rounded-xl"
                   hoverEffect={false}
-                  link="/network"
+                  link="#explore-network-header"
                 >
                   Explore the Network
                 </StandardButton>
