@@ -3,7 +3,6 @@ import { CommandType, RoutePlanner } from '@uniswap/universal-router-sdk'
 import { Actions, V4Planner, SwapExactInSingle } from '@uniswap/v4-sdk'
 import QUOTER_ABI from 'const/abis/V4Quoter.json'
 import {
-  FEE_HOOK_ADDRESSES,
   UNISWAP_V4_ROUTER_ADDRESSES,
   UNISWAP_V4_QUOTER_ADDRESSES,
 } from 'const/config'
@@ -28,7 +27,12 @@ const UNIVERSAL_ROUTER_ABI = [
   },
 ]
 
-export function useUniswapV4(tokenAddress: string, tokenDecimals: number) {
+export function useUniswapV4(
+  tokenAddress: string,
+  tokenDecimals: number,
+  tickSpacing: number = 200,
+  hookAddress: string = ethers.constants.AddressZero
+) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const { selectedWallet } = useContext(PrivyWalletContext)
@@ -41,9 +45,8 @@ export function useUniswapV4(tokenAddress: string, tokenDecimals: number) {
           currency0: ethers.constants.AddressZero,
           currency1: tokenAddress,
           fee: 10000,
-          tickSpacing: 200,
-          //hooks: FEE_HOOK_ADDRESSES[chainSlug],
-          hooks: ethers.constants.AddressZero, // Assuming no hooks for this example
+          tickSpacing: tickSpacing,
+          hooks: hookAddress,
         },
         zeroForOne: true,
         amountIn: ethers.utils.parseEther(amountIn).toString(),
@@ -77,8 +80,8 @@ export function useUniswapV4(tokenAddress: string, tokenDecimals: number) {
           currency0: ethers.constants.AddressZero,
           currency1: tokenAddress,
           fee: 10000,
-          tickSpacing: 200,
-          hooks: FEE_HOOK_ADDRESSES[chainSlug],
+          tickSpacing: tickSpacing,
+          hooks: hookAddress,
         },
         zeroForOne: true,
         amountIn: ethers.utils.parseEther(amountIn).toString(),

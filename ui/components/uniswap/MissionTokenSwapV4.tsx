@@ -1,16 +1,26 @@
 import { ArrowDownIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useContext } from 'react'
 import toast from 'react-hot-toast'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useUniswapV4 } from '@/lib/uniswap/hooks/useUniswapV4'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import { FEE_HOOK_ADDRESSES, TICK_SPACING } from 'const/config'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 
 export default function MissionTokenSwapV4({ token }: { token: any }) {
+  const { selectedChain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(selectedChain)
   const [usdInput, setUsdInput] = useState('')
   const [amountIn, setAmountIn] = useState('')
   const [amountOut, setAmountOut] = useState<string>()
-  const { quote, swap } = useUniswapV4(token.tokenAddress, token.tokenDecimals)
+  const { quote, swap } = useUniswapV4(
+    token.tokenAddress,
+    token.tokenDecimals,
+    TICK_SPACING,
+    FEE_HOOK_ADDRESSES[chainSlug]
+  )
   const { data: ethUsdPrice } = useETHPrice(1, 'ETH_TO_USD')
 
   const formatWithCommas = useCallback((value: string) => {
