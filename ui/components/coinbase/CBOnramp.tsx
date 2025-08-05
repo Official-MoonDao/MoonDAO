@@ -233,24 +233,11 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
               if (coinbaseOnrampUrl) {
                 let finalUrl = coinbaseOnrampUrl
 
-                // Add redirect URL with the actual USD value of ETH they're buying
+                // Add redirect URL
                 if (redirectUrl) {
-                  // Use the USD value of the ETH they're purchasing for the redirect
-                  const ethUsdValue = ethToUsdValue || paymentSubtotal
-                  const correctedRedirectUrl = redirectUrl.includes(
-                    'usdAmount='
-                  )
-                    ? redirectUrl.replace(
-                        /usdAmount=[^&]*/,
-                        `usdAmount=${ethUsdValue.toFixed(2)}`
-                      )
-                    : redirectUrl +
-                      (redirectUrl.includes('?') ? '&' : '?') +
-                      `usdAmount=${ethUsdValue.toFixed(2)}`
-
                   const separator = finalUrl.includes('?') ? '&' : '?'
                   finalUrl += `${separator}redirectUrl=${encodeURIComponent(
-                    correctedRedirectUrl
+                    redirectUrl
                   )}`
                 }
 

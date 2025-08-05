@@ -319,31 +319,17 @@ function MissionPayRedeemComponent({
     ? [sepolia, optimismSepolia]
     : [arbitrum, base, ethereum]
 
-  // Extract onrampSuccess from URL query parameters
   const onrampSuccess = router?.query?.onrampSuccess === 'true'
 
   const [missionPayModalEnabled, setMissionPayModalEnabled] = useState(false)
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
 
-  // Remove payment method state - we'll determine this automatically
-  const [justCompletedFiatPurchase, setJustCompletedFiatPurchase] =
-    useState(false)
+  // Payment processing state
   const [isFiatPaymentProcessing, setIsFiatPaymentProcessing] = useState(false)
-  const [isWaitingForBalance, setIsWaitingForBalance] = useState(false)
-  const [initialBalance, setInitialBalance] = useState<number | null>(null)
 
   // Add state to track if we've processed the onramp success
   const [hasProcessedOnrampSuccess, setHasProcessedOnrampSuccess] =
     useState(false)
-
-  // Add state to track if we're waiting for balance after onramp
-  const [isWaitingForBalanceUpdate, setIsWaitingForBalanceUpdate] =
-    useState(false)
-
-  // Add state to track USD amount adjustments
-  const [hasAdjustedAmount, setHasAdjustedAmount] = useState(false)
-  const [originalRequestedAmount, setOriginalRequestedAmount] =
-    useState<string>('')
 
   const account = useActiveAccount()
   const address = account?.address
@@ -363,87 +349,6 @@ function MissionPayRedeemComponent({
     1,
     'ETH_TO_USD'
   )
-
-  // Available payment methods detection
-  const availablePaymentMethods = {
-    applePay: typeof window !== 'undefined' && 'ApplePaySession' in window,
-    googlePay: typeof window !== 'undefined' && 'google' in window,
-  }
-
-  // Payment handler functions
-  const handleApplePaySuccess = useCallback(
-    async (paymentResult: any): Promise<boolean> => {
-      try {
-        console.log('Apple Pay success:', paymentResult)
-        setIsFiatPaymentProcessing(true)
-        setJustCompletedFiatPurchase(true)
-        toast.success('Payment processed successfully!', { style: toastStyle })
-        return true
-      } catch (error) {
-        console.error('Error processing Apple Pay success:', error)
-        toast.error('Payment processing failed. Please try again.', {
-          style: toastStyle,
-        })
-        return false
-      } finally {
-        setIsFiatPaymentProcessing(false)
-      }
-    },
-    []
-  )
-
-  const handleApplePayError = useCallback(
-    async (error: any): Promise<boolean> => {
-      console.error('Apple Pay error:', error)
-      toast.error('Payment failed. Please try again.', { style: toastStyle })
-      setIsFiatPaymentProcessing(false)
-      return false
-    },
-    []
-  )
-
-  const handleApplePayCancel = useCallback(async (): Promise<boolean> => {
-    console.log('Apple Pay cancelled')
-    setIsFiatPaymentProcessing(false)
-    return false
-  }, [])
-
-  const handleGooglePaySuccess = useCallback(
-    async (paymentResult: any): Promise<boolean> => {
-      try {
-        console.log('Google Pay success:', paymentResult)
-        setIsFiatPaymentProcessing(true)
-        setJustCompletedFiatPurchase(true)
-        toast.success('Payment processed successfully!', { style: toastStyle })
-        return true
-      } catch (error) {
-        console.error('Error processing Google Pay success:', error)
-        toast.error('Payment processing failed. Please try again.', {
-          style: toastStyle,
-        })
-        return false
-      } finally {
-        setIsFiatPaymentProcessing(false)
-      }
-    },
-    []
-  )
-
-  const handleGooglePayError = useCallback(
-    async (error: any): Promise<boolean> => {
-      console.error('Google Pay error:', error)
-      toast.error('Payment failed. Please try again.', { style: toastStyle })
-      setIsFiatPaymentProcessing(false)
-      return false
-    },
-    []
-  )
-
-  const handleGooglePayCancel = useCallback(async (): Promise<boolean> => {
-    console.log('Google Pay cancelled')
-    setIsFiatPaymentProcessing(false)
-    return false
-  }, [])
 
   // Calculate ETH amount from USD for display
   const calculateEthAmount = useCallback(() => {
@@ -560,115 +465,6 @@ function MissionPayRedeemComponent({
     params: [address, mission?.projectId],
     deps: [tokenBalanceRefresh],
   })
-
-  // Gas estimation function for mission token purchase
-  const estimateGasCost = useCallback(
-    async (ethAmount: number): Promise<number> => {
-      if (!primaryTerminalContract || !address) return 0.003 // Default fallback
-
-      try {
-        const transaction = prepareContractCall({
-          contract: primaryTerminalContract,
-          method: 'pay' as string,
-          params: [
-            mission?.projectId,
-            JB_NATIVE_TOKEN_ADDRESS,
-            BigInt(Math.trunc(ethAmount * 1e18)),
-            address || ZERO_ADDRESS,
-            0,
-            message,
-            '0x00',
-          ],
-          value: BigInt(Math.trunc(ethAmount * 1e18)),
-        })
-
-        // Estimate gas for the transaction
-        const gasEstimate = await simulateTransaction({
-          transaction,
-          account,
-        })
-
-        // Convert gas estimate to ETH cost (rough estimation)
-        // For mainnet, gas price is typically 20-50 gwei, we'll use 30 gwei as conservative estimate
-        // For other chains, use lower estimates
-        const gasPrice = chainSlug === 'ethereum' ? 30e9 : 5e9 // in wei
-        const gasCostInWei = BigInt(500000) * BigInt(gasPrice) // 500k gas limit * gas price
-        const gasCostInEth = Number(gasCostInWei) / 1e18
-
-        return gasCostInEth
-      } catch (error) {
-        console.error('Error estimating gas:', error)
-        // Fallback gas estimates by chain
-        switch (chainSlug) {
-          case 'ethereum':
-            return 0.003 // ~$10-15 at typical gas prices
-          case 'arbitrum':
-            return 0.0005 // Much cheaper on L2
-          case 'base':
-            return 0.0005
-          default:
-            return 0.002
-        }
-      }
-    },
-    [
-      primaryTerminalContract,
-      address,
-      mission?.projectId,
-      message,
-      chainSlug,
-      account,
-    ]
-  )
-
-  // Auto-adjust USD amount based on actual ETH balance after onramp
-  const autoAdjustContributionAmount = useCallback(async () => {
-    if (!ethUsdPrice || !nativeBalance || !usdInput) return
-
-    const currentEthBalance = Number(nativeBalance)
-    const requestedUsdAmount = Number(usdInput)
-
-    // Only adjust if we have a meaningful balance and this looks like a post-onramp scenario
-    if (currentEthBalance < 0.0001 || requestedUsdAmount <= 0) return
-
-    // Estimate gas cost
-    const estimatedGasCost = await estimateGasCost(currentEthBalance * 0.5) // Estimate with half balance
-
-    // Calculate maximum contribution (leave 10% buffer)
-    const safeEthForContribution = Math.max(
-      0,
-      currentEthBalance - estimatedGasCost - currentEthBalance * 0.1
-    )
-    const maxUsdContribution = safeEthForContribution * ethUsdPrice
-
-    // Only adjust if the requested amount is significantly more than what they can afford
-    if (requestedUsdAmount > maxUsdContribution && maxUsdContribution > 0) {
-      const adjustedAmount = Math.floor(maxUsdContribution).toString()
-
-      if (adjustedAmount !== usdInput && !hasAdjustedAmount) {
-        setOriginalRequestedAmount(usdInput)
-        setUsdInput(adjustedAmount)
-        setInput((maxUsdContribution / ethUsdPrice).toFixed(6))
-        setHasAdjustedAmount(true)
-
-        // Show informative toast
-        toast.success(
-          `Adjusted contribution from $${requestedUsdAmount} to $${adjustedAmount} to account for fees and gas costs.`,
-          {
-            style: toastStyle,
-            duration: 6000,
-          }
-        )
-      }
-    }
-  }, [
-    ethUsdPrice,
-    nativeBalance,
-    usdInput,
-    estimateGasCost,
-    hasAdjustedAmount,
-    setInput,
-  ])
 
   //check if the connected wallet is a signer of the team's multisig
   useEffect(() => {
@@ -905,7 +701,6 @@ function MissionPayRedeemComponent({
 
       refreshMissionData()
       setMissionPayModalEnabled(false)
-      setJustCompletedFiatPurchase(false)
     } catch (error) {
       console.error('Error purchasing tokens:', error)
       toast.error('Failed to purchase tokens', {
@@ -921,12 +716,10 @@ function MissionPayRedeemComponent({
     output,
     message,
     refreshMissionData,
-    nativeBalance,
     chainSlug,
     agreedToCondition,
     defaultChainSlug,
     crossChainPayContract,
-    fundWallet,
     isTestnet,
     isLoadingEthUsdPrice,
     ethUsdPrice,
@@ -1081,14 +874,13 @@ function MissionPayRedeemComponent({
 
   // Add a function to clear the parameter only when needed
   const clearOnrampSuccessParam = useCallback(() => {
-    if (router?.query?.onrampSuccess || router?.query?.usdAmount) {
+    if (router?.query?.onrampSuccess) {
       router.replace(
         {
           pathname: router.pathname,
           query: {
             ...router.query,
             onrampSuccess: undefined,
-            usdAmount: undefined,
           },
         },
         undefined,
@@ -1099,74 +891,19 @@ function MissionPayRedeemComponent({
 
   // Clear parameter when modal is closed
   const handleModalClose = useCallback(() => {
-    setJustCompletedFiatPurchase(false)
     setMissionPayModalEnabled(false)
     clearOnrampSuccessParam() // Only clear when modal closes
   }, [clearOnrampSuccessParam])
 
-  // Main onrampSuccess effect
+  // Open modal after onramp success
   useEffect(() => {
     if (onrampSuccess && account?.address && !hasProcessedOnrampSuccess) {
       setHasProcessedOnrampSuccess(true)
-
-      setJustCompletedFiatPurchase(true)
-
-      // For testnets, skip balance waiting and open modal immediately
-      // For mainnet, open modal immediately and balance checks will handle the rest
       setTimeout(() => {
         setMissionPayModalEnabled(true)
       }, 500)
     }
-  }, [onrampSuccess, account?.address, hasProcessedOnrampSuccess, isTestnet])
-
-  // Watch for input changes to enable form when they have enough for their input
-  useEffect(() => {
-    if (onrampSuccess && justCompletedFiatPurchase && hasEnoughBalance) {
-      setIsWaitingForBalance(false)
-    }
-  }, [onrampSuccess, justCompletedFiatPurchase, hasEnoughBalance])
-
-  // Watch for balance updates after onramp
-  useEffect(() => {
-    if (
-      isWaitingForBalance &&
-      initialBalance !== null &&
-      nativeBalance !== undefined &&
-      Number(nativeBalance) > initialBalance &&
-      Number(nativeBalance) > 0.001 // Ensure we have a meaningful amount
-    ) {
-      // Balance has increased, onramp successful
-      setIsWaitingForBalance(false)
-      setJustCompletedFiatPurchase(true)
-
-      // Set a small delay to ensure state is updated before opening modal
-      setTimeout(() => {
-        setMissionPayModalEnabled(true)
-      }, 500)
-
-      toast.success('Balance updated! You can now contribute to the mission.', {
-        style: toastStyle,
-      })
-
-      // Clear the URL parameter
-      router.replace(
-        {
-          pathname: router.pathname,
-          query: { ...router.query, onrampSuccess: undefined },
-        },
-        undefined,
-        { shallow: true }
-      )
-    }
-  }, [isWaitingForBalance, initialBalance, nativeBalance, router])
-
-  // Cleanup effect when component unmounts or onrampSuccess changes
-  useEffect(() => {
-    if (!onrampSuccess) {
-      setIsWaitingForBalance(false)
-      setInitialBalance(null)
-    }
-  }, [onrampSuccess])
+  }, [onrampSuccess, account?.address, hasProcessedOnrampSuccess])
 
   // Cleanup when component unmounts
   useEffect(() => {
@@ -1175,62 +912,24 @@ function MissionPayRedeemComponent({
     }
   }, [])
 
-  // Enhanced balance checking for onramp success - only for mainnet
-  useEffect(() => {
-    // Don't show waiting for balance update on testnets since onramp is disabled
-    if (isTestnet) {
-      setIsWaitingForBalanceUpdate(false)
-      return
-    }
-
-    if (usdInput && ethUsdPrice && nativeBalance !== undefined) {
-      // If onrampSuccess is true but they don't have enough balance, show waiting message
-      if (onrampSuccess && !hasEnoughBalance && usdInput) {
-        setIsWaitingForBalanceUpdate(true)
-      } else {
-        setIsWaitingForBalanceUpdate(false)
-      }
-    } else {
-      if (onrampSuccess && usdInput) {
-        setIsWaitingForBalanceUpdate(true)
-      } else {
-        setIsWaitingForBalanceUpdate(false)
-      }
-    }
-  }, [
-    usdInput,
-    ethUsdPrice,
-    nativeBalance,
-    onrampSuccess,
-    hasEnoughBalance,
-    isTestnet,
-  ])
-
-  // Add this new useEffect to restore USD input from URL
+  // Auto-populate USD input with wallet balance value after onramp success
   useEffect(() => {
     if (
-      router?.isReady &&
-      router?.query?.usdAmount &&
-      typeof router?.query?.usdAmount === 'string'
+      onrampSuccess &&
+      account?.address &&
+      nativeBalance &&
+      ethUsdPrice &&
+      !usdInput
     ) {
-      const amount = router.query.usdAmount.replace(/[^0-9.]/g, '') // Clean the input, allow decimals
-
-      if (amount && !isNaN(Number(amount))) {
-        setUsdInput(amount)
-        // Also update the ETH input based on the USD amount
-        if (ethUsdPrice) {
-          setInput((Number(amount) / ethUsdPrice).toFixed(6))
-        }
+      // Show the USD value of their current ETH balance as a suggestion
+      const balanceUsd = (Number(nativeBalance) * ethUsdPrice).toFixed(0)
+      if (Number(balanceUsd) > 1) {
+        // Only if meaningful amount
+        setUsdInput(balanceUsd)
+        setInput(Number(nativeBalance).toFixed(6))
       }
     }
-  }, [router?.isReady, router?.query?.usdAmount, ethUsdPrice])
-
-  // Auto-adjust USD amount after onramp success
-  useEffect(() => {
-    if (onrampSuccess && account?.address) {
-      autoAdjustContributionAmount()
-    }
-  }, [onrampSuccess, account?.address, autoAdjustContributionAmount])
+  }, [onrampSuccess, account?.address, nativeBalance, ethUsdPrice, usdInput])
 
   if (stage === 4) return null
 
@@ -1264,100 +963,6 @@ function MissionPayRedeemComponent({
                 </StandardButton>
               </div>
             )}
-
-          {/* Amount adjustment notice */}
-          {hasAdjustedAmount && originalRequestedAmount && (
-            <div className="bg-[#020617] rounded-[5vw] md:rounded-[2vw] p-6 mb-4 border border-orange-500/30">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">!</span>
-                </div>
-                <h3 className="text-lg font-semibold text-orange-400">
-                  Contribution Amount Adjusted
-                </h3>
-              </div>
-              <p className="text-sm opacity-80 mb-2">
-                Your contribution was adjusted from ${originalRequestedAmount}{' '}
-                to ${usdInput} to account for:
-              </p>
-              <ul className="text-xs opacity-70 mb-3 ml-4 list-disc">
-                <li>
-                  Coinbase purchase fees (you received less ETH than the USD
-                  amount paid)
-                </li>
-                <li>Network gas fees for the contribution transaction</li>
-                <li>Safety buffer to ensure transaction success</li>
-              </ul>
-              <p className="text-xs opacity-60">
-                This ensures you have enough ETH to complete your contribution
-                successfully.
-              </p>
-            </div>
-          )}
-
-          {/* Waiting for balance update after onramp - only show for mainnet */}
-          {isWaitingForBalanceUpdate && !isTestnet && (
-            <div className="bg-[#020617] rounded-[5vw] md:rounded-[2vw] p-6 mb-4 border border-blue-500/30">
-              <div className="flex items-center gap-3 mb-3">
-                <LoadingSpinner />
-                <h3 className="text-lg font-semibold text-blue-400">
-                  Waiting for ETH Balance Update
-                </h3>
-              </div>
-              <p className="text-sm opacity-80 mb-3">
-                Your ETH purchase was successful! We're waiting for your wallet
-                balance to update. This usually takes 1-2 minutes.
-              </p>
-              <p className="text-xs opacity-60 mb-4">
-                Once your balance updates, you'll automatically be able to
-                contribute to the mission.
-              </p>
-              <div className="flex gap-3">
-                <StandardButton
-                  styleOnly
-                  className="flex-1 px-4 py-2 text-sm border border-blue-500/50 rounded-lg hover:bg-blue-500/10"
-                  onClick={() => {
-                    setIsWaitingForBalanceUpdate(false)
-                    setMissionPayModalEnabled(true)
-
-                    // Clear the URL parameter
-                    router.replace(
-                      {
-                        pathname: router.pathname,
-                        query: { ...router.query, onrampSuccess: undefined },
-                      },
-                      undefined,
-                      { shallow: true }
-                    )
-                  }}
-                  hoverEffect={false}
-                >
-                  Continue Anyway
-                </StandardButton>
-                <StandardButton
-                  styleOnly
-                  className="px-4 py-2 text-sm border border-gray-500/50 rounded-lg hover:bg-gray-500/10"
-                  onClick={() => {
-                    setIsWaitingForBalanceUpdate(false)
-                    setInitialBalance(null)
-
-                    // Clear the URL parameter
-                    router.replace(
-                      {
-                        pathname: router.pathname,
-                        query: { ...router.query, onrampSuccess: undefined },
-                      },
-                      undefined,
-                      { shallow: true }
-                    )
-                  }}
-                  hoverEffect={false}
-                >
-                  Cancel
-                </StandardButton>
-              </div>
-            </div>
-          )}
 
           <div className="mt-2">
             <MissionPayRedeemContent
@@ -1396,47 +1001,80 @@ function MissionPayRedeemComponent({
               </button>
             </div>
 
-            {onrampSuccess ? (
-              // Simplified view when returning from Coinbase
+            {/* Full view for all flows */}
+            <div className="w-full flex justify-between">
+              <p>{'Total Amount'}</p>
+              <div className="flex gap-2 items-center bg-moon-indigo/20 rounded-full px-3 py-1">
+                <Image
+                  src="/coins/ETH.svg"
+                  alt="ETH"
+                  width={16}
+                  height={16}
+                  className="w-5 h-5 bg-light-cool rounded-full"
+                />
+                <span className="text-base">{calculateEthAmount()} ETH</span>
+              </div>
+            </div>
+            <div className="w-full flex justify-end">
+              <div className="flex gap-2 items-center">
+                <span>$</span>
+                <input
+                  id="payment-input"
+                  type="text"
+                  className="text-right bg-transparent w-[100px] rounded-md px-2 outline-none font-bold border-[1px] border-moon-indigo [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  value={formattedUsdInput}
+                  onChange={handleUsdInputChange}
+                  maxLength={10}
+                  disabled={isFiatPaymentProcessing}
+                />
+                <span>{'USD'}</span>
+              </div>
+            </div>
+            <hr className="w-full" />
+            {token?.tokenSymbol && (
+              <div className="w-full flex justify-between">
+                <p>{'Receive'}</p>
+                <p id="token-output">{`${formatTokenAmount(output, 2)} ${
+                  token?.tokenSymbol
+                }`}</p>
+              </div>
+            )}
+
+            <div className="w-full flex items-center gap-2">
+              <p>{`NFTs, tokens and rewards will be sent to:`}</p>
+              <button
+                className="p-1 px-4 flex items-center gap-2 bg-moon-indigo rounded-xl"
+                onClick={(e: any) => {
+                  navigator.clipboard.writeText(address || '')
+                  toast.success('Address copied to clipboard.', {
+                    style: toastStyle,
+                  })
+                }}
+              >
+                {address?.slice(0, 6)}...{address?.slice(-4)}
+                <CopyIcon />
+              </button>
+            </div>
+
+            {token?.tokenSymbol && token?.tokenName && (
+              <div className="flex items-center gap-2">
+                <Image
+                  src={mission?.metadata.logoUri}
+                  width={100}
+                  height={100}
+                  className="rounded-full"
+                  alt={`${token?.tokenSymbol} logo`}
+                />
+                <p>{`${token?.tokenSymbol} (${token?.tokenName})`}</p>
+              </div>
+            )}
+
+            <hr className="w-full" />
+
+            {/* Unified flow: Show crypto form if balance sufficient, otherwise show CBOnramp */}
+            {hasEnoughBalance ? (
+              // User has enough balance - show crypto pay form
               <>
-                <div className="w-full flex items-center gap-2">
-                  <p>{`NFTs, tokens and rewards will be sent to:`}</p>
-                  <button
-                    className="p-1 px-4 flex items-center gap-2 bg-moon-indigo rounded-xl"
-                    onClick={(e: any) => {
-                      navigator.clipboard.writeText(address || '')
-                      toast.success('Address copied to clipboard.', {
-                        style: toastStyle,
-                      })
-                    }}
-                  >
-                    {address?.slice(0, 6)}...{address?.slice(-4)}
-                    <CopyIcon />
-                  </button>
-                </div>
-
-                {/* Show adjustment notice in modal */}
-                {hasAdjustedAmount && originalRequestedAmount && (
-                  <div className="w-full p-4 bg-orange-500/20 border border-orange-500/50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-xs font-bold">!</span>
-                      </div>
-                      <h4 className="text-sm font-semibold text-orange-400">
-                        Amount Adjusted
-                      </h4>
-                    </div>
-                    <p className="text-xs text-orange-300 mb-1">
-                      Contribution adjusted from ${originalRequestedAmount} to $
-                      {usdInput}
-                    </p>
-                    <p className="text-xs text-orange-200 opacity-80">
-                      This accounts for Coinbase fees and gas costs to ensure
-                      your transaction succeeds.
-                    </p>
-                  </div>
-                )}
-
                 <div className="w-full flex flex-col gap-4 justify-between">
                   <p>{`Message (optional)`}</p>
                   <input
@@ -1474,245 +1112,86 @@ function MissionPayRedeemComponent({
                   />
                 </div>
 
-                <PrivyWeb3Button
-                  id="contribute-button"
-                  className="w-full bg-moon-indigo rounded-xl py-3"
-                  label={`Contribute`}
-                  action={buyMissionToken}
-                  isDisabled={
-                    !agreedToCondition ||
-                    !usdInput ||
-                    parseFloat(usdInput as string) <= 0
-                  }
-                />
+                <div className="w-full flex justify-between gap-4">
+                  <NetworkSelector
+                    chains={chains}
+                    compact={true}
+                    align="left"
+                  />
+                </div>
+
+                <div className="w-full flex justify-between gap-4">
+                  <StandardButton
+                    styleOnly
+                    className="w-1/2 p-2 text-center border-moon-indigo border-[1px] rounded-xl"
+                    onClick={handleModalClose}
+                    hoverEffect={false}
+                  >
+                    Cancel
+                  </StandardButton>
+
+                  <PrivyWeb3Button
+                    id="contribute-button"
+                    className="w-1/2 bg-moon-indigo rounded-xl"
+                    label={`Contribute $${formattedUsdInput || '0'} USD`}
+                    action={buyMissionToken}
+                    isDisabled={
+                      !agreedToCondition ||
+                      !usdInput ||
+                      parseFloat(usdInput as string) <= 0
+                    }
+                  />
+                </div>
               </>
             ) : (
-              // Full view for normal flow
-              <>
-                {/* Removed Payment Method Selection - flow is now automatic based on balance */}
-
-                <div className="w-full flex justify-between">
-                  <p>{'Total Amount'}</p>
-                  <div className="flex gap-2 items-center bg-moon-indigo/20 rounded-full px-3 py-1">
-                    <Image
-                      src="/coins/ETH.svg"
-                      alt="ETH"
-                      width={16}
-                      height={16}
-                      className="w-5 h-5 bg-light-cool rounded-full"
-                    />
-                    <span className="text-base">
-                      {calculateEthAmount()} ETH
-                    </span>
-                  </div>
-                </div>
-                <div className="w-full flex justify-end">
-                  <div className="flex gap-2 items-center">
-                    <span>$</span>
-                    <input
-                      id="payment-input"
-                      type="text"
-                      className="text-right bg-transparent w-[100px] rounded-md px-2 outline-none font-bold border-[1px] border-moon-indigo [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      value={formattedUsdInput}
-                      onChange={handleUsdInputChange}
-                      maxLength={10}
-                      disabled={isFiatPaymentProcessing}
-                    />
-                    <span>{'USD'}</span>
-                  </div>
-                </div>
-                <hr className="w-full" />
-                {token?.tokenSymbol && (
-                  <div className="w-full flex justify-between">
-                    <p>{'Receive'}</p>
-                    <p id="token-output">{`${formatTokenAmount(output, 2)} ${
-                      token?.tokenSymbol
-                    }`}</p>
-                  </div>
-                )}
-
-                <div className="w-full flex items-center gap-2">
-                  <p>{`NFTs, tokens and rewards will be sent to:`}</p>
-                  <button
-                    className="p-1 px-4 flex items-center gap-2 bg-moon-indigo rounded-xl"
-                    onClick={(e: any) => {
-                      navigator.clipboard.writeText(address || '')
-                      toast.success('Address copied to clipboard.', {
+              // User needs more ETH - show CBOnramp for mainnet or faucets for testnet
+              <div className="w-full flex flex-col gap-4">
+                {/* Always show CBOnramp */}
+                <CBOnramp
+                  address={address || ''}
+                  selectedChain={selectedChain}
+                  usdInput={usdInput as string}
+                  onSuccess={() => {
+                    setIsFiatPaymentProcessing(false)
+                    toast.success(
+                      'ETH purchase completed! You can now contribute to the mission.',
+                      {
                         style: toastStyle,
-                      })
-                    }}
+                      }
+                    )
+                  }}
+                  redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
+                />
+
+                {usdInput && (
+                  <div className="w-full p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                    <p className="text-sm text-yellow-400">
+                      You need more ETH to contribute ${usdInput} USD. Use
+                      Coinbase above to purchase ETH.
+                    </p>
+                  </div>
+                )}
+
+                <div className="w-full flex gap-3">
+                  <StandardButton
+                    styleOnly
+                    className="w-full p-2 text-center border-moon-indigo border-[1px] rounded-xl"
+                    onClick={handleModalClose}
+                    hoverEffect={false}
                   >
-                    {address?.slice(0, 6)}...{address?.slice(-4)}
-                    <CopyIcon />
-                  </button>
+                    Close
+                  </StandardButton>
                 </div>
+              </div>
+            )}
 
-                {token?.tokenSymbol && token?.tokenName && (
-                  <div className="flex items-center gap-2">
-                    <Image
-                      src={mission?.metadata.logoUri}
-                      width={100}
-                      height={100}
-                      className="rounded-full"
-                      alt={`${token?.tokenSymbol} logo`}
-                    />
-                    <p>{`${token?.tokenSymbol} (${token?.tokenName})`}</p>
-                  </div>
-                )}
-
-                <hr className="w-full" />
-
-                {/* Unified flow: Show crypto form if balance sufficient, otherwise show CBOnramp */}
-                {hasEnoughBalance ? (
-                  // User has enough balance - show crypto pay form
-                  <>
-                    <div className="w-full flex flex-col gap-4 justify-between">
-                      <p>{`Message (optional)`}</p>
-                      <input
-                        id="payment-message-input"
-                        type="text"
-                        className="w-full bg-darkest-cool border-moon-indigo border-[1px] rounded-xl p-2"
-                        placeholder="Attach an on-chain message to this payment"
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        maxLength={100}
-                      />
-                    </div>
-
-                    <MissionTokenNotice />
-
-                    <div>
-                      <ConditionCheckbox
-                        id="contribution-terms-checkbox"
-                        label={
-                          <p className="text-sm">
-                            {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
-                            <Link
-                              href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
-                              className="text-moon-blue"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              risks
-                            </Link>{' '}
-                            {`associated with participation in the MoonDAO Launchpad.`}
-                          </p>
-                        }
-                        agreedToCondition={agreedToCondition}
-                        setAgreedToCondition={setAgreedToCondition}
-                      />
-                    </div>
-
-                    <div className="w-full flex justify-between gap-4">
-                      <NetworkSelector
-                        chains={chains}
-                        compact={true}
-                        align="left"
-                      />
-                    </div>
-
-                    <div className="w-full flex justify-between gap-4">
-                      <StandardButton
-                        styleOnly
-                        className="w-1/2 p-2 text-center border-moon-indigo border-[1px] rounded-xl"
-                        onClick={handleModalClose}
-                        hoverEffect={false}
-                      >
-                        Cancel
-                      </StandardButton>
-
-                      <PrivyWeb3Button
-                        id="contribute-button"
-                        className="w-1/2 bg-moon-indigo rounded-xl"
-                        label={`Contribute $${formattedUsdInput || '0'} USD`}
-                        action={buyMissionToken}
-                        isDisabled={
-                          !agreedToCondition ||
-                          !usdInput ||
-                          parseFloat(usdInput as string) <= 0
-                        }
-                      />
-                    </div>
-                  </>
-                ) : (
-                  // User needs more ETH - show CBOnramp for mainnet or faucets for testnet
-                  <div className="w-full flex flex-col gap-4">
-                    {isWaitingForBalanceUpdate && (
-                      <div className="w-full p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
-                        <div className="flex items-center gap-3 mb-2">
-                          <LoadingSpinner />
-                          <h4 className="text-lg font-semibold text-blue-400">
-                            Waiting for Balance Update
-                          </h4>
-                        </div>
-                        <p className="text-sm text-blue-300 mb-2">
-                          Your ETH purchase was successful! We're waiting for
-                          your wallet balance to update.
-                        </p>
-                        <p className="text-xs text-blue-200 opacity-80">
-                          This usually takes 1-2 minutes. Once updated, you'll
-                          be able to contribute immediately.
-                        </p>
-                      </div>
-                    )}
-
-                    {!isWaitingForBalanceUpdate && (
-                      <>
-                        {/* Always show CBOnramp */}
-                        <CBOnramp
-                          address={address || ''}
-                          selectedChain={selectedChain}
-                          usdInput={usdInput as string}
-                          onSuccess={() => {
-                            setJustCompletedFiatPurchase(true)
-                            setIsFiatPaymentProcessing(false)
-                            toast.success(
-                              'ETH purchase completed! You can now contribute to the mission.',
-                              {
-                                style: toastStyle,
-                              }
-                            )
-                          }}
-                          redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true&usdAmount=${usdInput}`}
-                        />
-
-                        {usdInput && (
-                          <div className="w-full p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-                            <p className="text-sm text-yellow-400">
-                              You need more ETH to contribute ${usdInput} USD.
-                              Use Coinbase above to purchase ETH.
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    <div className="w-full flex gap-3">
-                      <StandardButton
-                        styleOnly
-                        className={`${
-                          isWaitingForBalanceUpdate
-                            ? 'px-4 py-2 text-sm border border-gray-500/50 rounded-lg hover:bg-gray-500/10'
-                            : 'w-full p-2 text-center border-moon-indigo border-[1px] rounded-xl'
-                        }`}
-                        onClick={handleModalClose}
-                        hoverEffect={false}
-                      >
-                        Close
-                      </StandardButton>
-                    </div>
-                  </div>
-                )}
-
-                {isFiatPaymentProcessing && (
-                  <div className="w-full p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <LoadingSpinner />
-                      <p className="text-sm">Processing your payment...</p>
-                    </div>
-                  </div>
-                )}
-              </>
+            {isFiatPaymentProcessing && (
+              <div className="w-full p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner />
+                  <p className="text-sm">Processing your payment...</p>
+                </div>
+              </div>
             )}
           </div>
         </Modal>
