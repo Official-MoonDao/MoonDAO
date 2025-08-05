@@ -167,15 +167,6 @@ export default function NetworkSection() {
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <StandardButton
-                  backgroundColor="bg-white hover:bg-gray-100"
-                  textColor="text-gray-900"
-                  borderRadius="rounded-xl"
-                  hoverEffect={false}
-                  link="#explore-network-header"
-                >
-                  Explore the Network
-                </StandardButton>
-                <StandardButton
                   backgroundColor="bg-transparent border-2 border-white hover:bg-white"
                   textColor="text-white hover:text-gray-900"
                   borderRadius="rounded-xl"
