@@ -173,7 +173,7 @@ export default function Network({
                 className="w-full flex-grow"
                 input={input}
                 setInput={setInput}
-                placeholder="Search..."
+                placeholder={tab === 'teams' ? 'Search teams' : 'Search citizens'}
               />
             </div>
 
@@ -492,7 +492,7 @@ export default function Network({
                 className="w-full"
                 input={input}
                 setInput={setInput}
-                placeholder="Search citizens and teams..."
+                placeholder={tab === 'teams' ? 'Search teams' : 'Search citizens'}
               />
             </div>
 
