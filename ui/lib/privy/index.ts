@@ -11,7 +11,6 @@ export async function getPrivyUserData(
 ): Promise<PrivyUserData | null> {
   try {
     // Verify Privy auth and get user data
-    console.log('ACCESS TOKEN', accessToken)
     const verifiedClaims = await verifyPrivyAuth(accessToken)
     if (!verifiedClaims) {
       return null
