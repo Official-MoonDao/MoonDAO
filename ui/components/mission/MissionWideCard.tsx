@@ -68,7 +68,7 @@ export default function MissionWideCard({
   const [teamNFT, setTeamNFT] = useState<any>(null)
 
   const { data: ethPrice } = useETHPrice(1)
-  const totalFunding = useTotalFunding(mission?.projectId)
+  const { totalFunding } = useTotalFunding(mission?.projectId)
 
   const duration = useMemo(() => {
     return deadline ? formatTimeUntilDeadline(new Date(deadline)) : undefined

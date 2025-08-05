@@ -489,8 +489,12 @@ function MissionPayRedeemComponent({
 
   const refreshMissionData = useCallback(() => {
     refreshTotalFunding?.()
-    refreshBackers?.()
     refreshTokenBalances()
+
+    //Wait for terminal subgraph to update
+    setTimeout(() => {
+      refreshBackers?.()
+    }, 3000)
   }, [refreshTotalFunding, refreshBackers, refreshTokenBalances])
 
   const getQuote = useCallback(async () => {
