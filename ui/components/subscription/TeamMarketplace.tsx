@@ -55,8 +55,6 @@ export default function TeamMarketplace({
     }
   }, [router.query.listingId])
 
-  if (!listings?.[0]) return null
-
   return (
     <div
       id="team-marketplace"

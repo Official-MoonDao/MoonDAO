@@ -1,4 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import TeamTableABI from 'const/abis/TeamTable.json'
 import { DEFAULT_CHAIN_V5, TEAM_TABLE_ADDRESSES } from 'const/config'
@@ -7,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
-import { unpin } from '@/lib/ipfs/unpin'
+import { unpin, unpinTeamImage } from '@/lib/ipfs/unpin'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -137,12 +138,16 @@ export default function TeamMetadataModal({
 
         await waitForResponse(formId, responseId)
 
-        const res = await fetch(
-          `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
-          {
-            method: 'POST',
-          }
-        )
+        const accessToken = await getAccessToken()
+
+        const res = await fetch(`/api/typeform/response`, {
+          method: 'POST',
+          body: JSON.stringify({
+            accessToken: accessToken,
+            responseId: responseId,
+            formId: formId,
+          }),
+        })
 
         if (res.ok) {
           setFormResponseId(responseId)
@@ -176,8 +181,12 @@ export default function TeamMetadataModal({
       <div className="w-full flex flex-col gap-6 items-start justify-start w-[100vw] md:w-[700px] p-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl h-screen md:h-auto">
         <div className="w-full flex items-center justify-between">
           <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-GoodTimes text-white">Update Team Info</h1>
-            <p className="text-slate-300 text-sm">Manage your team profile and settings</p>
+            <h1 className="text-2xl font-GoodTimes text-white">
+              Update Team Info
+            </h1>
+            <p className="text-slate-300 text-sm">
+              Manage your team profile and settings
+            </p>
           </div>
           <button
             id="close-modal"
@@ -193,7 +202,9 @@ export default function TeamMetadataModal({
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <h3 className="text-lg font-semibold text-white">Team Image</h3>
-                <p className="text-slate-300 text-sm">Upload or update your team image</p>
+                <p className="text-slate-300 text-sm">
+                  Upload or update your team image
+                </p>
               </div>
               <ImageGenerator
                 setImage={setNewTeamImage}
@@ -217,8 +228,12 @@ export default function TeamMetadataModal({
           <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 p-6">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <h3 className="text-lg font-semibold text-white">Email Update</h3>
-                <p className="text-slate-300">{"Would you like to update your team's email address?"}</p>
+                <h3 className="text-lg font-semibold text-white">
+                  Email Update
+                </h3>
+                <p className="text-slate-300">
+                  {"Would you like to update your team's email address?"}
+                </p>
               </div>
               <div className="flex gap-4">
                 <button
@@ -241,13 +256,18 @@ export default function TeamMetadataModal({
           <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 overflow-hidden">
             <div className="p-6 border-b border-slate-600/30">
               <h3 className="text-lg font-semibold text-white">Update Email</h3>
-              <p className="text-slate-300 text-sm">Please fill out the form below to update your email</p>
+              <p className="text-slate-300 text-sm">
+                Please fill out the form below to update your email
+              </p>
             </div>
             <div className="relative">
               <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
                 <Widget
                   className="w-full"
-                  id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string}
+                  id={
+                    process.env
+                      .NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string
+                  }
                   onSubmit={submitTypeform}
                   height={500}
                 />
@@ -263,8 +283,12 @@ export default function TeamMetadataModal({
           <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 p-6">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <h3 className="text-lg font-semibold text-white">Team Information</h3>
-                <p className="text-slate-300 text-sm">Update your team details and contact information</p>
+                <h3 className="text-lg font-semibold text-white">
+                  Team Information
+                </h3>
+                <p className="text-slate-300 text-sm">
+                  Update your team details and contact information
+                </p>
               </div>
               <TeamMetadataForm teamData={teamData} setTeamData={setTeamData} />
               <div className="border-t border-slate-600/30 pt-4">
@@ -279,104 +303,109 @@ export default function TeamMetadataModal({
                 className="mt-4 w-full gradient-2 hover:scale-105 transition-transform rounded-2xl py-3 font-medium"
                 requiredChain={DEFAULT_CHAIN_V5}
                 label="Update Team Information"
-                isDisabled={!agreedToOnChainData}                action={async () => {
-                if (!teamData.name || teamData.name.trim() === '') {
-                  return toast.error('Please enter a name.')
-                }
-
-                try {
-                  let imageIpfsLink
-
-                  if (!newTeamImage && currTeamImage && currTeamImage !== '') {
-                    imageIpfsLink = currTeamImage
-                  } else {
-                    if (!newTeamImage) return console.error('No new image')
-
-                    const renamedTeamImage = renameFile(
-                      newTeamImage,
-                      `${teamData?.name} Team Image`
-                    )
-
-                    //pin new image
-                    const { cid: newImageIpfsHash } = await pinBlobOrFile(
-                      renamedTeamImage
-                    )
-
-                    //unpin old iamge
-                    await unpin(currTeamImage.split('ipfs://')[1])
-
-                    imageIpfsLink = `ipfs://${newImageIpfsHash}`
+                isDisabled={!agreedToOnChainData}
+                action={async () => {
+                  if (!teamData.name || teamData.name.trim() === '') {
+                    return toast.error('Please enter a name.')
                   }
 
-                  const oldFormResponseId = getAttribute(
-                    nft.metadata.attributes,
-                    'formId'
-                  ).value
+                  try {
+                    let imageIpfsLink
 
-                  if (oldFormResponseId !== formResponseId) {
-                    //delete old typeform response
-                    await deleteResponse(
-                      process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
-                      oldFormResponseId
-                    )
-                  }
+                    if (
+                      !newTeamImage &&
+                      currTeamImage &&
+                      currTeamImage !== ''
+                    ) {
+                      imageIpfsLink = currTeamImage
+                    } else {
+                      if (!newTeamImage) return console.error('No new image')
 
-                  const cleanedTeamData = cleanData(teamData)
+                      const renamedTeamImage = renameFile(
+                        newTeamImage,
+                        `${teamData?.name} Team Image`
+                      )
 
-                  const formattedTeamTwitter = cleanedTeamData.twitter
-                    ? addHttpsIfMissing(cleanedTeamData.twitter)
-                    : ''
-                  const formattedTeamCommunications =
-                    cleanedTeamData.communications
-                      ? addHttpsIfMissing(cleanedTeamData.communications)
+                      //pin new image
+                      const { cid: newImageIpfsHash } = await pinBlobOrFile(
+                        renamedTeamImage
+                      )
+
+                      //unpin old iamge
+                      await unpinTeamImage(nft.metadata.id)
+
+                      imageIpfsLink = `ipfs://${newImageIpfsHash}`
+                    }
+
+                    const oldFormResponseId = getAttribute(
+                      nft.metadata.attributes,
+                      'formId'
+                    ).value
+
+                    if (oldFormResponseId !== formResponseId) {
+                      //delete old typeform response
+                      await deleteResponse(
+                        process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
+                        oldFormResponseId
+                      )
+                    }
+
+                    const cleanedTeamData = cleanData(teamData)
+
+                    const formattedTeamTwitter = cleanedTeamData.twitter
+                      ? addHttpsIfMissing(cleanedTeamData.twitter)
                       : ''
-                  const formattedTeamWebsite = cleanedTeamData.website
-                    ? addHttpsIfMissing(cleanedTeamData.website)
-                    : ''
+                    const formattedTeamCommunications =
+                      cleanedTeamData.communications
+                        ? addHttpsIfMissing(cleanedTeamData.communications)
+                        : ''
+                    const formattedTeamWebsite = cleanedTeamData.website
+                      ? addHttpsIfMissing(cleanedTeamData.website)
+                      : ''
 
-                  const transaction = prepareContractCall({
-                    contract: teamTableContract,
-                    method: 'updateTableDynamic' as string,
-                    params: [
-                      nft.metadata.id,
-                      [
-                        'name',
-                        'description',
-                        'image',
-                        'twitter',
-                        'communications',
-                        'website',
-                        'view',
-                        'formId',
+                    const transaction = prepareContractCall({
+                      contract: teamTableContract,
+                      method: 'updateTableDynamic' as string,
+                      params: [
+                        nft.metadata.id,
+                        [
+                          'name',
+                          'description',
+                          'image',
+                          'twitter',
+                          'communications',
+                          'website',
+                          'view',
+                          'formId',
+                        ],
+                        [
+                          cleanedTeamData.name,
+                          cleanedTeamData.description,
+                          imageIpfsLink,
+                          formattedTeamTwitter,
+                          formattedTeamCommunications,
+                          formattedTeamWebsite,
+                          cleanedTeamData.view,
+                          formResponseId,
+                        ],
                       ],
-                      [
-                        cleanedTeamData.name,
-                        cleanedTeamData.description,
-                        imageIpfsLink,
-                        formattedTeamTwitter,
-                        formattedTeamCommunications,
-                        formattedTeamWebsite,
-                        cleanedTeamData.view,
-                        formResponseId,
-                      ],
-                    ],
-                  })
+                    })
 
-                  const receipt = await sendAndConfirmTransaction({
-                    transaction,
-                    account,
-                  })
+                    const receipt = await sendAndConfirmTransaction({
+                      transaction,
+                      account,
+                    })
 
-                  if (receipt) {
-                    setTimeout(() => {
-                      setEnabled(false)
-                      router.reload()
-                    }, 30000)
+                    if (receipt) {
+                      setTimeout(() => {
+                        setEnabled(false)
+                        router.reload()
+                      }, 30000)
+                    }
+                  } catch (err) {
+                    console.log(err)
                   }
-                } catch (err) {
-                  console.log(err)
-                }
-              }}
+                }}
               />
             </div>
           </div>

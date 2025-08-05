@@ -10,6 +10,6 @@ export async function verifyPrivyAuth(accessToken: string = '') {
     const verifiedClaims = await privy.verifyAuthToken(accessToken)
     return verifiedClaims
   } catch (err) {
-    console.log('Token verification failed.')
+    console.log('Token verification failed.', err)
   }
 }

@@ -11,34 +11,20 @@ export default function useCitizenEmail(nft: any) {
 
   useEffect(() => {
     async function getCitizenEmail() {
-      if (nft.owner !== address) return setEmail('')
+      if (nft.owner.toLowerCase() !== address?.toLowerCase())
+        return setEmail('')
       const formResponseId = getAttribute(
         nft?.metadata?.attributes,
         'formId'
       ).value
 
       try {
-        const citizenFormV1Email = await fetchEmail(
+        const citizenEmail = await fetchEmail(
           process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
-          formResponseId,
-          'LzGGOX3e8Sfv'
+          formResponseId
         )
 
-        const citizenShortFormEmail = await fetchEmail(
-          process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID as string,
-          formResponseId,
-          'JEiG9XCW6M73'
-        )
-
-        const citizenEmailFormEmail = await fetchEmail(
-          process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string,
-          formResponseId,
-          'Z3IMkpvJUfdl'
-        )
-
-        setEmail(
-          citizenEmailFormEmail || citizenShortFormEmail || citizenFormV1Email
-        )
+        setEmail(citizenEmail)
       } catch (err: any) {
         console.log(err)
       }

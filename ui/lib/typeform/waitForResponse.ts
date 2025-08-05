@@ -1,18 +1,24 @@
+import { getAccessToken } from '@privy-io/react-auth'
+
 export default async function waitForResponse(
   formId: string,
   responseId: string,
   maxRetries: number = 20
 ): Promise<boolean> {
-  let retries = 0;
-  
+  let retries = 0
+
   while (retries < maxRetries) {
     try {
-      const res = await fetch(
-        `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
-        {
-          method: 'POST',
-        }
-      )
+      const accessToken = await getAccessToken()
+
+      const res = await fetch(`/api/typeform/response`, {
+        method: 'POST',
+        body: JSON.stringify({
+          accessToken: accessToken,
+          responseId: responseId,
+          formId: formId,
+        }),
+      })
 
       if (res.ok) {
         const data = await res.json()
@@ -25,12 +31,12 @@ export default async function waitForResponse(
     } catch (error) {
       console.error('Error in waitForResponse:', error)
     }
-    
+
     retries++
     if (retries < maxRetries) {
       await new Promise((resolve) => setTimeout(resolve, 5000))
     }
   }
-  
+
   throw new Error(`Failed to get response after ${maxRetries} attempts`)
 }

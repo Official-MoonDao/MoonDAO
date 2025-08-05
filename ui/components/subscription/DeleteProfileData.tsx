@@ -4,7 +4,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import { unpin } from '@/lib/ipfs/unpin'
+import { unpinCitizenImage, unpinTeamImage } from '@/lib/ipfs/unpin'
 import deleteResponse from '@/lib/typeform/deleteResponse'
 import { getAttribute } from '@/lib/utils/nft'
 import Modal from '../layout/Modal'
@@ -62,14 +62,13 @@ function DeleteProfileDataModal({
             action={async () => {
               setIsLoading(true)
 
-              //unpin image
-              await unpin(nft.metadata.image.split('ipfs://')[1])
-
               const formResponseId = getAttribute(nft, 'formResponseId')?.value
 
               try {
                 let transaction
                 if (type === 'team') {
+                  await unpinTeamImage(tokenId)
+
                   await deleteResponse(
                     process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
                     formResponseId
@@ -94,6 +93,8 @@ function DeleteProfileDataModal({
                     ],
                   })
                 } else if (type === 'citizen') {
+                  await unpinCitizenImage(tokenId)
+
                   await deleteResponse(
                     process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
                     formResponseId

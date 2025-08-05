@@ -56,18 +56,17 @@ export default function MissionInfo({
   teamNFT,
   subgraphData,
   token,
-  fundingGoal,
-  ruleset,
   jbTokensContract,
   jbControllerContract,
   points,
   isLoadingPoints,
   range,
   setRange,
-  userMissionTokenBalance,
   primaryTerminalAddress,
   stage,
   deadline,
+  refreshBackers,
+  refreshTotalFunding,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -287,6 +286,8 @@ export default function MissionInfo({
               primaryTerminalAddress={primaryTerminalAddress}
               jbTokensContract={jbTokensContract}
               jbControllerContract={jbControllerContract}
+              refreshBackers={refreshBackers}
+              refreshTotalFunding={refreshTotalFunding}
             />
           </div>
         </div>
