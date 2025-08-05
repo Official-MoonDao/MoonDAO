@@ -23,6 +23,17 @@ import Link from 'next/link'
 import { useContext, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import {
+  RocketLaunchIcon,
+  BanknotesIcon,
+  CheckBadgeIcon,
+  UserGroupIcon,
+  ShoppingBagIcon,
+  NewspaperIcon,
+  GlobeAmericasIcon,
+  ChartBarIcon,
+  BoltIcon
+} from '@heroicons/react/24/outline'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { getAUMHistory } from '@/lib/coinstats'
 import { getMooneyPrice } from '@/lib/coinstats'
@@ -247,7 +258,9 @@ export default function Home({
                 </div>
 
                 <div className="text-center">
-                  <div className="w-4 h-4 bg-purple-500 rounded-full mx-auto mb-1"></div>
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <BoltIcon className="w-4 h-4" />
+                  </div>
                   {walletVP === undefined || walletVP === null ? (
                     <div className="animate-pulse bg-white/20 rounded w-12 h-4 mx-auto mb-1"></div>
                   ) : (
@@ -259,13 +272,17 @@ export default function Home({
                 </div>
 
                 <div className="text-center">
-                  <div className="text-sm mb-1">🗳️</div>
+                  <div className="text-sm mb-1 flex items-center justify-center">
+                    <CheckBadgeIcon className="w-4 h-4" />
+                  </div>
                   <div className="text-lg font-bold text-green-300">{voteCount}</div>
                   <div className="text-xs text-white/70">Votes</div>
                 </div>
 
                 <div className="text-center">
-                  <div className="text-sm mb-1">👥</div>
+                  <div className="text-sm mb-1 flex items-center justify-center">
+                    <UserGroupIcon className="w-4 h-4" />
+                  </div>
                   <div className="text-lg font-bold text-orange-300">{teamHats?.length || 0}</div>
                   <div className="text-xs text-white/70">Teams</div>
                 </div>
@@ -274,14 +291,17 @@ export default function Home({
 
             {/* Right Side - Action Buttons */}
             <div className="flex gap-2">
-              <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all" link="/get-mooney">
-                💰 Buy
+              <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2" link="/get-mooney">
+                <BanknotesIcon className="w-4 h-4" />
+                Buy
               </StandardButton>
-              <StandardButton className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all" link="/lock">
-                🔒 Stake
+              <StandardButton className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2" link="/lock">
+                <BoltIcon className="w-4 h-4" />
+                Stake
               </StandardButton>
-              <StandardButton className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all" link="/governance">
-                🗳️ Vote
+              <StandardButton className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2" link="/governance">
+                <CheckBadgeIcon className="w-4 h-4" />
+                Vote
               </StandardButton>
             </div>
           </div>
@@ -301,15 +321,15 @@ export default function Home({
               <h3 className="font-semibold text-white mb-4 text-lg">Navigate</h3>
               <div className="space-y-2">
                 {[
-                  { icon: '🚀', label: 'Launchpad', href: '/launchpad', color: 'hover:bg-blue-600/20' },
-                  { icon: '🗳️', label: 'Governance', href: '/governance', color: 'hover:bg-purple-600/20' },
-                  { icon: '👥', label: 'Network', href: '/network', color: 'hover:bg-green-600/20' },
-                  { icon: '🛒', label: 'Marketplace', href: '/marketplace', color: 'hover:bg-orange-600/20' },
-                  { icon: '📰', label: 'News', href: '/news', color: 'hover:bg-red-600/20' },
+                  { icon: RocketLaunchIcon, label: 'Launchpad', href: '/launchpad', color: 'hover:bg-blue-600/20' },
+                  { icon: CheckBadgeIcon, label: 'Governance', href: '/governance', color: 'hover:bg-purple-600/20' },
+                  { icon: UserGroupIcon, label: 'Network', href: '/network', color: 'hover:bg-green-600/20' },
+                  { icon: ShoppingBagIcon, label: 'Marketplace', href: '/marketplace', color: 'hover:bg-orange-600/20' },
+                  { icon: NewspaperIcon, label: 'News', href: '/news', color: 'hover:bg-red-600/20' },
                 ].map((item) => (
                   <Link key={item.label} href={item.href}>
                     <div className={`flex items-center gap-3 p-3 rounded-xl text-white/80 hover:text-white transition-all cursor-pointer ${item.color}`}>
-                      <span className="text-xl">{item.icon}</span>
+                      <item.icon className="w-5 h-5" />
                       <span className="font-medium">{item.label}</span>
                     </div>
                   </Link>
@@ -416,15 +436,22 @@ export default function Home({
                   <p className="text-white/70 text-sm">What would you like to do today?</p>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <StandardButton className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all duration-200" link="/governance">
-                  🗳️ Create Proposal
+              <div className="grid grid-cols-4 gap-3">
+                <StandardButton className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1" link="/governance">
+                  <CheckBadgeIcon className="w-4 h-4" />
+                  Propose
                 </StandardButton>
-                <StandardButton className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all duration-200" link="/launchpad">
-                  🚀 Launch Project
+                <StandardButton className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1" link="/launchpad">
+                  <RocketLaunchIcon className="w-4 h-4" />
+                  Launch
                 </StandardButton>
-                <StandardButton className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all duration-200" link="/network">
-                  👥 Join Team
+                <StandardButton className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1" link="/network">
+                  <UserGroupIcon className="w-4 h-4" />
+                  Join Team
+                </StandardButton>
+                <StandardButton className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1" link="/marketplace">
+                  <ShoppingBagIcon className="w-4 h-4" />
+                  Shop
                 </StandardButton>
               </div>
             </div>
@@ -450,7 +477,7 @@ export default function Home({
                 {[
                   {
                     type: 'newsletter',
-                    icon: '📰',
+                    icon: '',
                     color: 'bg-blue-600',
                     title: 'Latest Newsletter: Datacenters on the moon?',
                     time: '2 hours ago',
@@ -458,7 +485,7 @@ export default function Home({
                   },
                   {
                     type: 'event',
-                    icon: '🏛️',
+                    icon: '',
                     color: 'bg-green-600',
                     title: 'Next Townhall: Thursday, June 19th, 2025 @ 3PM EST',
                     time: 'Upcoming event',
@@ -466,7 +493,7 @@ export default function Home({
                   },
                   {
                     type: 'proposal',
-                    icon: '🚀',
+                    icon: '',
                     color: 'bg-purple-600',
                     title: 'New proposal: MDP-177: Lunar Surface Settlement Study',
                     time: '6 hours ago',
@@ -474,7 +501,7 @@ export default function Home({
                   },
                   {
                     type: 'team',
-                    icon: '👥',
+                    icon: '',
                     color: 'bg-orange-600',
                     title: 'New team formed: Lunar Mining Research Initiative',
                     time: '12 hours ago',
@@ -484,7 +511,7 @@ export default function Home({
                   <div key={index} className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5">
                     <div className="flex items-start gap-4">
                       <div className={`w-12 h-12 ${item.color} rounded-full flex items-center justify-center text-white text-lg font-semibold shadow-lg`}>
-                        {item.icon}
+                        {item.type[0].toUpperCase()}
                       </div>
                       <div className="flex-1">
                         <p className="text-white font-medium mb-1">{item.title}</p>
@@ -530,11 +557,11 @@ export default function Home({
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-4 text-sm text-gray-300">
                         <span className="flex items-center gap-1">
-                          💰 <span className="font-medium">2.2 ETH</span> requested
+                          <span className="font-medium">2.2 ETH</span> requested
                         </span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
-                          ⏰ <span className="font-medium">{3 + i} days</span> left
+                          <span className="font-medium">{3 + i} days</span> left
                         </span>
                       </div>
                       <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition-all">
@@ -584,7 +611,7 @@ export default function Home({
                   ))
                 ) : (
                   <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">🚀</div>
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">M</div>
                     <div className="flex-1">
                       <h4 className="text-white font-medium text-sm">Mission Control</h4>
                       <p className="text-gray-400 text-xs">12 members</p>
@@ -625,7 +652,10 @@ export default function Home({
                         <h4 className="text-white font-medium text-sm truncate">{citizen.name || 'Anonymous'}</h4>
                         <p className="text-gray-400 text-xs">New citizen</p>
                       </div>
-                      <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-lg transition-all">
+                      <StandardButton 
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-lg transition-all"
+                        link={`/citizen/${citizen.name && citizen.id ? generatePrettyLinkWithId(citizen.name, citizen.id) : citizen.id || 'anonymous'}`}
+                      >
                         Connect
                       </StandardButton>
                     </div>
@@ -673,7 +703,10 @@ export default function Home({
           <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-8">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-2xl font-bold text-white mb-2">🚀 Launchpad</h3>
+                <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                  <RocketLaunchIcon className="w-7 h-7" />
+                  Launchpad
+                </h3>
                 <p className="text-blue-200">Fund your next mission to space</p>
               </div>
               <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all" link="/launchpad">
@@ -709,7 +742,10 @@ export default function Home({
           <div className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-8">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-2xl font-bold text-white mb-2">🗳️ Governance</h3>
+                <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                  <CheckBadgeIcon className="w-7 h-7" />
+                  Governance
+                </h3>
                 <p className="text-purple-200">Shape the future of space exploration</p>
               </div>
               <StandardButton className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all" link="/governance">
@@ -745,7 +781,10 @@ export default function Home({
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-2xl font-bold text-white mb-2">🌍 Global Community</h3>
+              <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                <GlobeAmericasIcon className="w-7 h-7" />
+                Global Community
+              </h3>
               <p className="text-gray-300">MoonDAO citizens around the world</p>
             </div>
             <StandardButton className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl font-semibold transition-all" link="/map">
