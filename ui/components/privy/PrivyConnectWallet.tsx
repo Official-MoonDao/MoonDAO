@@ -75,7 +75,6 @@ function useWalletTokens(address: string | undefined, chain: string) {
         setError(data.error)
         setTokens([])
       } else if (data.result) {
-        // Filter out tokens with zero balance and format the data
         const formattedTokens = data.result
           .filter(
             (token: any) =>
@@ -107,6 +106,10 @@ function useWalletTokens(address: string | undefined, chain: string) {
 
   useEffect(() => {
     fetchTokens()
+    const interval = setInterval(() => {
+      fetchTokens()
+    }, 60000)
+    return () => clearInterval(interval)
   }, [fetchTokens])
 
   return { tokens, loading, error, refetch: fetchTokens }
@@ -1091,7 +1094,7 @@ export function PrivyConnectWallet({
 
                 {/* Network Selection */}
                 <div className="network-dropdown-container relative">
-                  <div 
+                  <div
                     className="bg-black/20 rounded-xl p-4 mb-6 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group"
                     onClick={() => setNetworkDropdownOpen(!networkDropdownOpen)}
                   >
@@ -1116,7 +1119,11 @@ export function PrivyConnectWallet({
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <ChevronDownIcon className={`w-5 h-5 text-gray-400 group-hover:text-white transition-all duration-200 ${networkDropdownOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDownIcon
+                          className={`w-5 h-5 text-gray-400 group-hover:text-white transition-all duration-200 ${
+                            networkDropdownOpen ? 'rotate-180' : ''
+                          }`}
+                        />
                       </div>
                     </div>
                   </div>
