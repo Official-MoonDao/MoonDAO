@@ -43,7 +43,8 @@ export function useUniswapV4(tokenAddress: string, tokenDecimals: number) {
           currency1: tokenAddress,
           fee: 10000,
           tickSpacing: 200,
-          hooks: FEE_HOOK_ADDRESSES[chainSlug],
+          //hooks: FEE_HOOK_ADDRESSES[chainSlug],
+          hooks: ethers.constants.AddressZero, // Assuming no hooks for this example
         },
         zeroForOne: true,
         amountIn: ethers.utils.parseEther(amountIn).toString(),
@@ -62,6 +63,15 @@ export function useUniswapV4(tokenAddress: string, tokenDecimals: number) {
         provider
       )
       console.log('config', config)
+      console.log(
+        'params',
+        JSON.stringify({
+          poolKey: config.poolKey,
+          zeroForOne: config.zeroForOne,
+          exactAmount: config.amountIn,
+          hookData: config.hookData,
+        })
+      )
       const result = await quoterContract.callStatic.quoteExactInputSingle({
         poolKey: config.poolKey,
         zeroForOne: config.zeroForOne,

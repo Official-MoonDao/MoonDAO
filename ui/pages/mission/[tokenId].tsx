@@ -309,6 +309,7 @@ export default function MissionProfile({
     abi: JBV4TokenABI as any,
     chain: selectedChain,
   })
+  console.log('token.tokenAddress', token.tokenAddress)
 
   const {
     data: userMissionTokenBalance,
