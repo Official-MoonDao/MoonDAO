@@ -32,7 +32,11 @@ import {
   NewspaperIcon,
   GlobeAmericasIcon,
   ChartBarIcon,
-  BoltIcon
+  BoltIcon,
+  TrophyIcon,
+  StarIcon,
+  FireIcon,
+  GiftIcon
 } from '@heroicons/react/24/outline'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { getAUMHistory } from '@/lib/coinstats'
@@ -190,6 +194,97 @@ export default function Home({
 
   const withdrawable = useWithdrawAmount(votingEscrowDepositorContract, address)
 
+  // Quest System - Mock data for now (would come from backend/contracts in production)
+  const userLevel = 1 // Current user level
+  const currentXP = 150 // Current XP
+  const xpForNextLevel = 300 // XP needed for next level
+  const xpProgress = (currentXP / xpForNextLevel) * 100
+
+  // Calculate level rewards - exponential scaling
+  const getLevelReward = (level: number) => {
+    return Math.floor(1000 * Math.pow(1.5, level - 1))
+  }
+
+  // Quest definitions
+  const onboardingQuests = [
+    {
+      id: 'claim-mooney',
+      title: 'Claim Your First MOONEY',
+      description: 'Get your first MOONEY tokens from the faucet or purchase',
+      xpReward: 50,
+      mooneyReward: 0,
+      completed: MOONEYBalance > 0,
+      icon: BanknotesIcon,
+      action: '/get-mooney',
+      actionText: 'Get MOONEY'
+    },
+    {
+      id: 'lock-mooney',
+      title: 'Lock Your First MOONEY',
+      description: 'Stake MOONEY to get vMOONEY and voting power',
+      xpReward: 75,
+      mooneyReward: 0,
+      completed: walletVP > 0,
+      icon: BoltIcon,
+      action: '/lock',
+      actionText: 'Stake Now'
+    },
+    {
+      id: 'first-vote',
+      title: 'Cast Your First Vote',
+      description: 'Participate in governance by voting on a proposal',
+      xpReward: 100,
+      mooneyReward: 0,
+      completed: (voteCount || 0) > 0,
+      icon: CheckBadgeIcon,
+      action: '/governance',
+      actionText: 'Vote Now'
+    }
+  ]
+
+  const weeklyQuests = [
+    {
+      id: 'weekly-vote',
+      title: 'Weekly Voter',
+      description: 'Vote on at least 3 proposals this week',
+      xpReward: 25,
+      mooneyReward: 50,
+      completed: false,
+      icon: CheckBadgeIcon,
+      progress: 1,
+      target: 3,
+      action: '/governance',
+      actionText: 'Vote'
+    },
+    {
+      id: 'team-join',
+      title: 'Join a Team',
+      description: 'Become a member of a MoonDAO team',
+      xpReward: 50,
+      mooneyReward: 100,
+      completed: (teamHats?.length || 0) > 0,
+      icon: UserGroupIcon,
+      action: '/network',
+      actionText: 'Browse Teams'
+    },
+    {
+      id: 'marketplace-visit',
+      title: 'Explore Marketplace',
+      description: 'Check out items in the MoonDAO marketplace',
+      xpReward: 15,
+      mooneyReward: 25,
+      completed: false,
+      icon: ShoppingBagIcon,
+      action: '/marketplace',
+      actionText: 'Explore'
+    }
+  ]
+
+  // Calculate completion stats
+  const onboardingCompleted = onboardingQuests.filter(q => q.completed).length
+  const onboardingTotal = onboardingQuests.length
+  const isOnboardingComplete = onboardingCompleted === onboardingTotal
+
   return (
     <Container>
       <div className="max-w-7xl mx-auto px-4 py-4">
@@ -286,6 +381,14 @@ export default function Home({
                   <div className="text-lg font-bold text-orange-300">{teamHats?.length || 0}</div>
                   <div className="text-xs text-white/70">Teams</div>
                 </div>
+
+                <div className="text-center">
+                  <div className="text-sm mb-1 flex items-center justify-center">
+                    <TrophyIcon className="w-4 h-4 text-yellow-400" />
+                  </div>
+                  <div className="text-lg font-bold text-yellow-300">{userLevel}</div>
+                  <div className="text-xs text-white/70">Level</div>
+                </div>
               </div>
             )}
 
@@ -306,6 +409,194 @@ export default function Home({
             </div>
           </div>
         </div>
+
+        {/* Quest System - Horizontal Section */}
+        {address && (
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <h3 className="font-semibold text-white text-lg flex items-center gap-2">
+                  <TrophyIcon className="w-5 h-5 text-yellow-400" />
+                  Quest Progress
+                </h3>
+                <div className="flex items-center gap-1 text-yellow-400 text-xs font-medium bg-yellow-400/20 px-2 py-1 rounded-full">
+                  <StarIcon className="w-3 h-3" />
+                  Level {userLevel}
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                {/* View All Quests Button */}
+                <StandardButton className="text-purple-300 text-sm hover:text-purple-200 transition-all bg-purple-600/20 hover:bg-purple-600/30 px-3 py-1 rounded-lg">
+                  View All Quests
+                </StandardButton>
+                
+                {/* XP Progress Bar - Horizontal */}
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="text-white text-xs font-medium">{currentXP} / {xpForNextLevel} XP</div>
+                    <div className="text-xs text-gray-400">
+                      Next: <span className="text-yellow-400 font-medium">{getLevelReward(userLevel + 1).toLocaleString()} MOONEY</span>
+                    </div>
+                  </div>
+                  <div className="w-32">
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${xpProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Onboarding Quests */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-white flex items-center gap-2 text-sm">
+                    <FireIcon className="w-4 h-4 text-orange-400" />
+                    Onboarding ({onboardingCompleted}/{onboardingTotal})
+                  </h4>
+                  {isOnboardingComplete && (
+                    <div className="flex items-center gap-1 text-green-400 text-xs font-medium bg-green-500/20 px-2 py-1 rounded-full">
+                      <GiftIcon className="w-3 h-3" />
+                      1000 MOONEY!
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  {onboardingQuests.map((quest) => (
+                    <div 
+                      key={quest.id} 
+                      className={`p-3 rounded-lg border transition-all h-24 flex items-center ${
+                        quest.completed 
+                          ? 'bg-green-500/10 border-green-500/30' 
+                          : 'bg-white/5 border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <div className={`p-2 rounded-lg flex-shrink-0 ${
+                          quest.completed ? 'bg-green-500/20' : 'bg-blue-500/20'
+                        }`}>
+                          <quest.icon className={`w-4 h-4 ${
+                            quest.completed ? 'text-green-400' : 'text-blue-400'
+                          }`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h5 className={`font-medium text-sm ${
+                              quest.completed ? 'text-green-300' : 'text-white'
+                            }`}>
+                              {quest.title}
+                            </h5>
+                            {quest.completed && (
+                              <CheckBadgeIcon className="w-4 h-4 text-green-400 flex-shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-gray-400 text-xs mb-2 line-clamp-1">{quest.description}</p>
+                          <div className="flex items-center gap-3">
+                            <span className="text-yellow-400 text-xs font-medium">+{quest.xpReward} XP</span>
+                            {!quest.completed && (
+                              <StandardButton 
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-lg transition-all"
+                                link={quest.action}
+                              >
+                                {quest.actionText}
+                              </StandardButton>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Weekly Quests */}
+              <div>
+                <h4 className="font-medium text-white mb-3 flex items-center gap-2 text-sm">
+                  <StarIcon className="w-4 h-4 text-purple-400" />
+                  Weekly Quests
+                </h4>
+                
+                <div className="space-y-2">
+                  {weeklyQuests.slice(0, 2).map((quest) => (
+                    <div 
+                      key={quest.id} 
+                      className={`p-3 rounded-lg border transition-all h-24 flex items-center ${
+                        quest.completed 
+                          ? 'bg-green-500/10 border-green-500/30' 
+                          : 'bg-white/5 border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <div className={`p-2 rounded-lg flex-shrink-0 ${
+                          quest.completed ? 'bg-green-500/20' : 'bg-purple-500/20'
+                        }`}>
+                          <quest.icon className={`w-4 h-4 ${
+                            quest.completed ? 'text-green-400' : 'text-purple-400'
+                          }`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h5 className={`font-medium text-sm ${
+                              quest.completed ? 'text-green-300' : 'text-white'
+                            }`}>
+                              {quest.title}
+                            </h5>
+                            {quest.completed && (
+                              <CheckBadgeIcon className="w-4 h-4 text-green-400 flex-shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-gray-400 text-xs mb-2 line-clamp-1">{quest.description}</p>
+                          <div className="flex items-center gap-3">
+                            <span className="text-yellow-400 text-xs font-medium">+{quest.xpReward} XP</span>
+                            <span className="text-blue-400 text-xs font-medium">+{quest.mooneyReward} MOONEY</span>
+                            {!quest.completed && (
+                              <StandardButton 
+                                className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 rounded-lg transition-all"
+                                link={quest.action}
+                              >
+                                {quest.actionText}
+                              </StandardButton>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Show one more quest in condensed form */}
+                  <div className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-all h-24 flex items-center">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 rounded bg-purple-500/20 flex-shrink-0">
+                          <ShoppingBagIcon className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <h6 className="text-white text-sm font-medium truncate">Explore Marketplace</h6>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-yellow-400">+15 XP</span>
+                            <span className="text-blue-400">+25 MOONEY</span>
+                          </div>
+                        </div>
+                      </div>
+                      <StandardButton 
+                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 rounded-lg transition-all flex-shrink-0"
+                        link="/marketplace"
+                      >
+                        Explore
+                      </StandardButton>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
