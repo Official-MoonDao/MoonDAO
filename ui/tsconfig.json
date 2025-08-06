@@ -114,5 +114,5 @@
     "pages/api/nodemailer",
     "next-sitemap.config.js"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "archive"]
 }
