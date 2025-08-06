@@ -4,6 +4,7 @@ import JBV4TokenABI from 'const/abis/JBV4Token.json'
 import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
 import LaunchPadPayHookABI from 'const/abis/LaunchPadPayHook.json'
 import MissionCreatorABI from 'const/abis/MissionCreatorSep.json'
+import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
   IPFS_GATEWAY,
@@ -13,10 +14,13 @@ import {
   MISSION_CREATOR_ADDRESSES,
   JB_NATIVE_TOKEN_ADDRESS,
   MISSION_TABLE_NAMES,
+  TEAM_ADDRESSES,
 } from 'const/config'
 import { blockedMissions } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import { getContract, readContract } from 'thirdweb'
+import { getNFT } from 'thirdweb/extensions/erc721'
+import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -87,6 +91,8 @@ type ProjectProfileProps = {
   _refundPeriod: number | undefined
   _primaryTerminalAddress: string
   _token?: any
+  _teamNFT?: any
+  _teamHats?: any[]
 }
 
 export default function MissionProfilePage({
@@ -96,6 +102,8 @@ export default function MissionProfilePage({
   _refundPeriod,
   _primaryTerminalAddress,
   _token,
+  _teamNFT,
+  _teamHats,
 }: ProjectProfileProps) {
   const selectedChain = DEFAULT_CHAIN_V5
 
@@ -111,6 +119,8 @@ export default function MissionProfilePage({
         _refundPeriod={_refundPeriod}
         _primaryTerminalAddress={_primaryTerminalAddress}
         _token={_token}
+        _teamNFT={_teamNFT}
+        _teamHats={_teamHats}
       />
     </JuiceProviders>
   )
@@ -324,11 +334,84 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
-    const mission = {
+    const mission: any = {
       id: missionRow.id,
       teamId: missionRow.teamId,
       projectId: missionRow.projectId,
       metadata: metadata,
+    }
+
+    // Fetch team data and hats if teamId exists
+    let teamNFT: any = null
+    let teamHats: any[] = []
+
+    if (mission.teamId) {
+      try {
+        // Create team contract
+        const teamContract = getContract({
+          client: serverClient,
+          address: TEAM_ADDRESSES[chainSlug],
+          abi: TeamABI as any,
+          chain: chain,
+        })
+
+        // Fetch team NFT data
+        teamNFT = await getNFT({
+          contract: teamContract,
+          tokenId: BigInt(mission.teamId),
+        })
+
+        if (teamNFT) {
+          teamNFT = {
+            ...teamNFT,
+            metadata: { ...teamNFT.metadata, id: teamNFT.id.toString() },
+          }
+
+          // Fetch admin hat ID from team contract
+          const adminHatId = await readContract({
+            contract: teamContract,
+            method: 'teamAdminHat' as string,
+            params: [mission.teamId],
+          })
+
+          if (adminHatId) {
+            // Fetch sub-hats using the hats subgraph client
+            const hat = await hatsSubgraphClient.getHat({
+              chainId: chain.id,
+              hatId: adminHatId.toString(),
+              props: {
+                subHats: {
+                  props: {
+                    details: true,
+                    wearers: {
+                      props: {},
+                    },
+                    subHats: {
+                      props: {
+                        details: true,
+                        wearers: {
+                          props: {},
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            })
+
+            if (hat?.subHats) {
+              const subHatsLevel1 = hat.subHats
+              const subHatsLevel2 = subHatsLevel1
+                ?.map((hat: any) => hat.subHats)
+                .flat()
+              teamHats = subHatsLevel1.concat(subHatsLevel2)
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to fetch team data or hats:', error)
+        // Continue without team data if fetch fails
+      }
     }
 
     return {
@@ -339,6 +422,11 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         _refundPeriod: refundPeriod,
         _primaryTerminalAddress: primaryTerminalAddress,
         _token: tokenData,
+        _teamNFT: {
+          ...teamNFT,
+          id: teamNFT.id.toString(),
+        },
+        _teamHats: teamHats,
       },
     }
   } catch (error) {

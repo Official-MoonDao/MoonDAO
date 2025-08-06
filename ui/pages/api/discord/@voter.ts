@@ -4,7 +4,7 @@ import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { assignDiscordRoleById } from '@/lib/discord/assignRole'
-import { verifyPrivyAuth } from '@/lib/privy/privyAuth'
+import { getPrivyUserData } from '@/lib/privy'
 
 async function checkVotingPower(address: string): Promise<number> {
   try {
@@ -39,47 +39,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'Access token is required' })
     }
 
-    // Verify Privy auth and get user data
-    const verifiedClaims = await verifyPrivyAuth(accessToken)
-    if (!verifiedClaims) {
+    // Get Privy user data
+    const privyUserData = await getPrivyUserData(accessToken)
+    if (!privyUserData) {
       return res.status(401).json({ error: 'Invalid access token' })
     }
 
-    // Fetch user data with linked accounts from Privy API
-    const userResponse = await fetch(
-      `https://auth.privy.io/api/v1/users/${verifiedClaims.userId}`,
-      {
-        headers: {
-          Authorization: `Basic ${Buffer.from(
-            `${process.env.NEXT_PUBLIC_PRIVY_APP_ID}:${process.env.PRIVY_APP_SECRET}`
-          ).toString('base64')}`,
-          'privy-app-id': process.env.NEXT_PUBLIC_PRIVY_APP_ID as string,
-        },
-      }
-    )
-
-    if (!userResponse.ok) {
-      return res
-        .status(500)
-        .json({ error: 'Failed to fetch user data from Privy' })
-    }
-
-    const userData = await userResponse.json()
-    const walletAddresses: string[] = []
-    let discordAccount: any = null
-
-    // Extract wallet addresses from the user's linked accounts
-    if (userData.linked_accounts) {
-      for (const account of userData.linked_accounts) {
-        if (account.type === 'wallet' && account.address) {
-          walletAddresses.push(account.address)
-        }
-        // Find the Discord account
-        if (account.type === 'discord_oauth') {
-          discordAccount = account
-        }
-      }
-    }
+    const { walletAddresses, discordAccount } = privyUserData
 
     if (walletAddresses.length === 0) {
       return res

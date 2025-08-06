@@ -41,7 +41,6 @@ import {
 } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
-import { useSubHats } from '@/lib/hats/useSubHats'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import useMissionData from '@/lib/mission/useMissionData'
@@ -87,6 +86,8 @@ type MissionProfileProps = {
   _refundPeriod: number | undefined
   _primaryTerminalAddress: string
   _token?: any
+  _teamNFT?: any
+  _teamHats?: any[]
 }
 
 export default function MissionProfile({
@@ -96,13 +97,15 @@ export default function MissionProfile({
   _refundPeriod,
   _primaryTerminalAddress,
   _token,
+  _teamNFT,
+  _teamHats,
 }: MissionProfileProps) {
   const account = useActiveAccount()
 
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
-  const [teamNFT, setTeamNFT] = useState<any>()
+  const [teamNFT, setTeamNFT] = useState<any>(_teamNFT)
   const [availableTokens, setAvailableTokens] = useState<number>(0)
   const [availablePayouts, setAvailablePayouts] = useState<number>(0)
 
@@ -248,7 +251,7 @@ export default function MissionProfile({
     teamNFT
   )
 
-  const teamHats = useSubHats(selectedChain, adminHatId, true)
+  const teamHats = _teamHats || []
 
   const {
     points,
@@ -426,7 +429,6 @@ export default function MissionProfile({
       const teamNFT = await getNFT({
         contract: teamContract,
         tokenId: BigInt(mission.teamId),
-        includeOwner: true,
       })
       setTeamNFT({
         ...teamNFT,
@@ -434,8 +436,11 @@ export default function MissionProfile({
       })
     }
 
-    getTeamNFT()
-  }, [teamContract, mission?.teamId])
+    // Only fetch teamNFT if not provided via props
+    if (!_teamNFT) {
+      getTeamNFT()
+    }
+  }, [teamContract, mission?.teamId, _teamNFT])
 
   useChainDefault()
 

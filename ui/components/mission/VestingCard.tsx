@@ -10,6 +10,19 @@ import { useActiveAccount } from 'thirdweb/react'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
+function VestingCardSkeleton({ isTeam = false }: { isTeam?: boolean }) {
+  return (
+    <div className="flex flex-col gap-2 bg-dark-cool p-4 rounded-lg animate-pulse">
+      <div className="h-7 bg-gray-700/50 rounded w-32 animate-pulse" />
+      <div className="h-4 bg-gray-700/50 rounded w-20 animate-pulse mt-1" />
+      <div className="h-6 bg-gray-700/50 rounded w-24 animate-pulse" />
+      <div className="h-4 bg-gray-700/50 rounded w-20 animate-pulse mt-1" />
+      <div className="h-6 bg-gray-700/50 rounded w-24 animate-pulse" />
+      <div className="h-10 bg-gray-700/50 rounded-full w-20 animate-pulse mt-2" />
+    </div>
+  )
+}
+
 export default function VestingCard({
   address,
   chain,
@@ -29,37 +42,44 @@ export default function VestingCard({
   })
   const [withdrawable, setWithdrawable] = useState<string>('0')
   const [total, setTotal] = useState<string>('0')
+  const [isLoading, setIsLoading] = useState<boolean>(true)
 
   useEffect(() => {
     async function fetchData() {
       if (!address || !vestingContract) return
-      const [vested, withdrawn, totalReceived, beneficiary] = await Promise.all(
-        [
-          readContract({
-            contract: vestingContract,
-            method: 'vestedAmount' as string,
-            params: [],
-          }),
-          readContract({
-            contract: vestingContract,
-            method: 'totalWithdrawn' as string,
-            params: [],
-          }),
-          readContract({
-            contract: vestingContract,
-            method: 'totalReceived' as string,
-            params: [],
-          }),
-          readContract({
-            contract: vestingContract,
-            method: 'beneficiary' as string,
-            params: [],
-          }),
-        ]
-      )
-      const available = BigInt(String(vested)) - BigInt(String(withdrawn))
-      setWithdrawable((Number(available) / 1e18).toFixed(10))
-      setTotal((Number(totalReceived) / 1e18).toFixed(4))
+      setIsLoading(true)
+      try {
+        const [vested, withdrawn, totalReceived, beneficiary] =
+          await Promise.all([
+            readContract({
+              contract: vestingContract,
+              method: 'vestedAmount' as string,
+              params: [],
+            }),
+            readContract({
+              contract: vestingContract,
+              method: 'totalWithdrawn' as string,
+              params: [],
+            }),
+            readContract({
+              contract: vestingContract,
+              method: 'totalReceived' as string,
+              params: [],
+            }),
+            readContract({
+              contract: vestingContract,
+              method: 'beneficiary' as string,
+              params: [],
+            }),
+          ])
+        const available = BigInt(String(vested)) - BigInt(String(withdrawn))
+        setWithdrawable((Number(available) / 1e18).toFixed(10))
+        setTotal((Number(totalReceived) / 1e18).toFixed(4))
+      } catch (error) {
+        console.error('Error fetching vesting data:', error)
+      } finally {
+        setIsLoading(false)
+      }
     }
     fetchData()
   }, [address, chain, vestingContract])
@@ -78,6 +98,11 @@ export default function VestingCard({
       console.error(error)
       toast.error('Withdrawal failed.')
     }
+  }
+
+  // Show skeleton while loading
+  if (isLoading) {
+    return <VestingCardSkeleton isTeam={isTeam} />
   }
 
   return (
@@ -99,6 +124,7 @@ export default function VestingCard({
         onSuccess={() => {
           // Refresh data after successful withdrawal
           setWithdrawable('0')
+          setIsLoading(true)
         }}
       />
     </div>

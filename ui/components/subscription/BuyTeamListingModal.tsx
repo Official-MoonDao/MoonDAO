@@ -1,4 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { getAccessToken } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import ERC20ABI from 'const/abis/ERC20.json'
 import TeamABI from 'const/abis/Team.json'
@@ -24,7 +25,6 @@ import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
-import useTeamEmail from '@/lib/team/useTeamEmail'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -66,8 +66,6 @@ export default function BuyTeamListingModal({
   const [teamNFT, setTeamNFT] = useState<any>()
   const [citizenNFT, setCitizenNFT] = useState<any>()
 
-  const teamEmail = useTeamEmail(teamNFT)
-
   const [email, setEmail] = useState<string>()
   const [shippingInfo, setShippingInfo] = useState({
     streetAddress: '',
@@ -78,7 +76,7 @@ export default function BuyTeamListingModal({
   })
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  const citizenEmail = useCitizenEmail(citizenNFT)
+  const citizenEmail = useCitizenEmail(citizen)
 
   const currencyAddresses: any = {
     MOONEY: MOONEY_ADDRESSES[chainSlug],
@@ -122,7 +120,7 @@ export default function BuyTeamListingModal({
     }
     if (teamContract) getTeamNFT()
     if (account && citizenContract) getCitizenNFT()
-  }, [account, teamContract, citizenContract])
+  }, [account, teamContract, citizenContract, listing.teamId])
 
   useEffect(() => {
     setEmail(citizenEmail)
@@ -130,8 +128,8 @@ export default function BuyTeamListingModal({
 
   async function buyListing() {
     if (!account) return
-    let price
 
+    let price
     if (citizen) {
       price = +listing.price
     } else {
@@ -140,7 +138,9 @@ export default function BuyTeamListingModal({
 
     setIsLoading(true)
     let transactionHash
+
     try {
+      // Execute the transaction
       if (+listing.price <= 0) {
         transactionHash = 'none'
       } else if (listing.currency === 'ETH') {
@@ -179,7 +179,9 @@ export default function BuyTeamListingModal({
 
         const shipping = Object.values(shippingInfo).join(', ')
 
-        //send email to entity w/ purchase details
+        const accessToken = await getAccessToken()
+
+        // Send email request with transaction verification
         const res = await fetch('/api/marketplace/marketplace-purchase', {
           method: 'POST',
           body: JSON.stringify({
@@ -196,24 +198,24 @@ export default function BuyTeamListingModal({
             recipient,
             isCitizen: citizen ? true : false,
             shipping,
-            teamEmail,
             teamLink: `${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
               teamNFT.metadata.name
             )}`,
+            accessToken,
           }),
         })
 
-        const { success, message } = await res.json()
+        const { success, message: responseMessage } = await res.json()
 
         if (success) {
           toast.success(
-            "Successfull purchase! You'll receive an email shortly.",
+            "Successful purchase! You'll receive an email shortly.",
             {
               duration: 10000,
             }
           )
         } else {
-          console.log(message)
+          console.log(responseMessage)
           toast.error('Something went wrong, please contact support.', {
             duration: 10000,
           })
@@ -224,7 +226,7 @@ export default function BuyTeamListingModal({
     } catch (err: any) {
       console.log(err)
       if (err && !err.message.startsWith('user rejected transaction')) {
-        toast.error('Insufficient funds.')
+        toast.error(err.message)
       }
     }
     setIsLoading(false)
@@ -284,7 +286,7 @@ export default function BuyTeamListingModal({
               <p className="font-GoodTimes">{listing.title}</p>
               <p className="text-[75%]">{listing.description}</p>
               <p id="listing-price" className="font-bold">{`${
-                citizen 
+                citizen
                   ? truncateTokenValue(listing.price, listing.currency)
                   : truncateTokenValue(+listing.price * 1.1, listing.currency)
               } ${listing.currency}`}</p>
@@ -371,10 +373,10 @@ export default function BuyTeamListingModal({
                 )
                   return toast.error('Please fill out all fields.')
               }
-              buyListing()
+              await buyListing()
             }}
             className="mt-4 w-full gradient-2 rounded-[5vmax]"
-            isDisabled={isLoading || !teamEmail || !recipient}
+            isDisabled={isLoading || !recipient}
           />
           {isLoading && (
             <p>Do not leave the page until the transaction is complete.</p>
