@@ -268,9 +268,6 @@ export function RetroactiveRewards({
   const { tokens: polygonTokens } = useAssets(POLYGON_ASSETS_URL)
   const { tokens: baseTokens } = useAssets(BASE_ASSETS_URL)
   const { stakedEth, error } = useStakedEth()
-  console.log('mainnetTokens', mainnetTokens)
-  //mainnetTokens[0].balance = 137.28
-  //mainnetTokens[0].usd = 137.28 * 2407
 
   // Memoize the tokens array to prevent unnecessary re-renders
   const tokens = useMemo(() => {
@@ -287,7 +284,8 @@ export function RetroactiveRewards({
     mooneyBudget,
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
-  const ethBudget = 15.412
+  const ethBudget = 17.09
+
   const usdBudget = ethBudget * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
