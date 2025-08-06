@@ -67,15 +67,19 @@ export type RetroactiveRewardsProps = {
 }
 
 // Helper function to format large numbers for mobile display
-function formatValueForDisplay(value: string | number): { full: string; abbreviated: string } {
-  const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
-  
+function formatValueForDisplay(value: string | number): {
+  full: string
+  abbreviated: string
+} {
+  const numValue =
+    typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
+
   if (isNaN(numValue)) {
     return { full: value.toString(), abbreviated: value.toString() }
   }
-  
+
   const full = numValue.toLocaleString()
-  
+
   // Create abbreviated version for very large numbers
   if (numValue >= 1000000) {
     const millions = numValue / 1000000
@@ -86,7 +90,7 @@ function formatValueForDisplay(value: string | number): { full: string; abbrevia
     const abbreviated = `${thousands.toFixed(1)} K`
     return { full, abbreviated }
   }
-  
+
   return { full, abbreviated: full }
 }
 
@@ -100,7 +104,7 @@ function RewardAsset({
     ? `/coins/${name}.${assetImageExtension[name]}`
     : '/coins/DEFAULT.png'
   const usd = Number(usdValue)
-  
+
   const formattedValue = formatValueForDisplay(value)
 
   return (
@@ -271,6 +275,7 @@ export function RetroactiveRewards({
       .concat(arbitrumTokens)
       .concat(polygonTokens)
       .concat(baseTokens)
+      .filter((token) => token.usd > 1)
       .concat([{ symbol: 'stETH', balance: stakedEth }])
   }, [mainnetTokens, arbitrumTokens, polygonTokens, baseTokens, stakedEth])
 
@@ -279,8 +284,7 @@ export function RetroactiveRewards({
     mooneyBudget,
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
-
-  const ethBudget = 15.4072
+  const ethBudget = 15.43
   const usdBudget = ethBudget * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
