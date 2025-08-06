@@ -385,7 +385,7 @@ export default function Network({
 
       <Container>
       {/* Join MoonDAO Section */}
-      <div id="join-moondao" className="relative w-full py-16 md:py-24">
+      <div id="join-moondao" className="relative w-full py-12 md:py-14 lg:py-20 xl:py-24 2xl:py-32">
         <div className="absolute inset-0">
           <Image
             src="/assets/JoinImage.png"
@@ -478,19 +478,16 @@ export default function Network({
           </div>
         </div>
       </div>
-      </Container>
-
-      <Container>
-
+      
         {/* Network Explainer Section */}
         <NetworkSection />
 
         {/* Explore the Network Header */}
-        <div id="explore-network-header" className="max-w-6xl mx-auto mb-8 px-6 pt-16">
+        <div id="explore-network-header" className="max-w-6xl mx-auto mb-8 px-6 pt-12">
           <h2 className="header font-GoodTimes text-white text-center mb-4">
             Explore the Network
           </h2>
-          <p className="sub-header text-white/80 text-center mb-12 max-w-3xl mx-auto">
+          <p className="sub-header text-white/80 text-center mb-8 max-w-3xl mx-auto">
             Discover and connect with citizens and teams building the future of space exploration
           </p>
         </div>
