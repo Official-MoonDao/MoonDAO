@@ -301,17 +301,31 @@ export function getBudget(tokens: any, year: number, quarter: number) {
   let usdBudget = 0
   let mooneyBudget = 0
   let ethPrice = 0
+  let btcPriceCurrent = 0
   const ethToken = tokens.find(
     (token: any) => token.symbol === 'ETH' && token.balance > 0
   )
   if (tokens && ethToken) {
-    ethPrice = ethToken.usd / ethToken.balance
+    ethPriceCurrent = ethToken.usd / ethToken.balance
+    ethPrice =  2407
+      btcPrice = 115341
     for (const token of tokens) {
       if (token.symbol !== 'MOONEY') {
+          if ('BTC' in token.symbol) {
+              btcPriceCurrent = token.usd / token.balance
+          }
         if (token.symbol == 'stETH') {
           usdValue += token.balance * ethPrice
         } else {
+            if ('ETH' in token.symbol) {
+              usdValue += token.usd  * ethPrice / ethPriceCurrent
+            }
+            else if ('BTC' in token.symbol) {
+              usdValue += token.usd * btcPrice /btcPriceCurrent
+            }
+            else {
           usdValue += token.usd
+            }
         }
       }
     }

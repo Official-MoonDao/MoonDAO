@@ -268,6 +268,9 @@ export function RetroactiveRewards({
   const { tokens: polygonTokens } = useAssets(POLYGON_ASSETS_URL)
   const { tokens: baseTokens } = useAssets(BASE_ASSETS_URL)
   const { stakedEth, error } = useStakedEth()
+  console.log('mainnetTokens', mainnetTokens)
+  //mainnetTokens[0].balance = 137.28
+  //mainnetTokens[0].usd = 137.28 * 2407
 
   // Memoize the tokens array to prevent unnecessary re-renders
   const tokens = useMemo(() => {
