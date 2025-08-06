@@ -271,7 +271,7 @@ export function RetroactiveRewards({
       .concat(arbitrumTokens)
       .concat(polygonTokens)
       .concat(baseTokens)
-      .filter((token) => token.usd > 1)
+      .filter((token: any) => token.usd > 1)
       .concat([{ symbol: 'stETH', balance: stakedEth }])
   }, [mainnetTokens, arbitrumTokens, polygonTokens, baseTokens, stakedEth])
 
