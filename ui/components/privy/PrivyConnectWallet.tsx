@@ -1,3 +1,4 @@
+import { generateOnRampURL } from '@coinbase/cbpay-js'
 import {
   ArrowDownOnSquareIcon,
   ArrowUpRightIcon,
@@ -7,13 +8,7 @@ import {
   WalletIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import {
-  useFundWallet,
-  useLogin,
-  usePrivy,
-  useWallets,
-} from '@privy-io/react-auth'
-import CitizenABI from 'const/abis/Citizen.json'
+import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
 import { COIN_ICONS } from 'const/icons'
 import { ethers } from 'ethers'
 import Image from 'next/image'
@@ -24,10 +19,8 @@ import toast from 'react-hot-toast'
 import {
   getContract,
   prepareContractCall,
-  readContract,
   sendAndConfirmTransaction,
 } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
@@ -41,12 +34,10 @@ import {
   arbitrumSepolia,
   optimismSepolia,
 } from '@/lib/infura/infuraChains'
-import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import viemChains from '@/lib/viem/viemChains'
-import { CITIZEN_ADDRESSES } from '../../const/config'
 import Modal from '../layout/Modal'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import NetworkSelector from '../thirdweb/NetworkSelector'
@@ -79,7 +70,6 @@ function useWalletTokens(address: string | undefined, chain: string) {
         setError(data.error)
         setTokens([])
       } else if (data.result) {
-        // Filter out tokens with zero balance and format the data
         const formattedTokens = data.result
           .filter(
             (token: any) =>
@@ -111,6 +101,10 @@ function useWalletTokens(address: string | undefined, chain: string) {
 
   useEffect(() => {
     fetchTokens()
+    const interval = setInterval(() => {
+      fetchTokens()
+    }, 60000)
+    return () => clearInterval(interval)
   }, [fetchTokens])
 
   return { tokens, loading, error, refetch: fetchTokens }
@@ -130,27 +124,7 @@ const selectedNativeToken: any = {
   polygon: 'MATIC',
 }
 
-const PATHS_WITH_NO_SIGNIN_REDIRECT = [
-  '/',
-  '/submit',
-  '/proposals',
-  '/contributions',
-  '/final-reports',
-  '/withdraw',
-  '/projects',
-  '/proposal/[proposal]',
-  '/lock',
-  '/join',
-  '/get-mooney',
-  '/bridge',
-  '/citizen',
-  '/citizen/[tokenId]',
-  '/team',
-  '/team/[tokenId]',
-  '/launch',
-  '/mission',
-  '/mission/[tokenId]',
-]
+
 function SendModal({
   account,
   selectedChain,
@@ -642,49 +616,8 @@ export function PrivyConnectWallet({
     optimismSepolia,
   ]
 
-  const { login } = useLogin({
-    onComplete: async (user, isNewUser, wasAlreadyAuthenticated) => {
-      //If the user signs in and wasn't already authenticated, check if they have a citizen NFT and redirect them to their profile or the guest page
-      if (
-        !wasAlreadyAuthenticated &&
-        !PATHS_WITH_NO_SIGNIN_REDIRECT.includes(router.pathname)
-      ) {
-        let citizen
-        try {
-          const citizenContract = getContract({
-            client,
-            address: CITIZEN_ADDRESSES[chainSlug],
-            chain: selectedChain,
-            abi: CitizenABI as any,
-          })
-          const ownedTokenId = await readContract({
-            contract: citizenContract,
-            method: 'getOwnedToken' as string,
-            params: [address],
-          })
-          citizen = await getNFT({
-            contract: citizenContract,
-            tokenId: BigInt(ownedTokenId),
-          })
-        } catch (err) {
-          citizen = undefined
-        }
-        if (citizen) {
-          router.push(
-            `/citizen/${generatePrettyLinkWithId(
-              citizen?.metadata?.name as string,
-              citizen?.metadata?.id as string
-            )}`
-          )
-        } else {
-          router.push('/citizen/guest')
-        }
-      }
-    },
-  })
+  const { login } = useLogin()
   const { wallets } = useWallets()
-
-  const { fundWallet } = useFundWallet()
 
   const [enabled, setEnabled] = useState(false)
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
@@ -698,6 +631,197 @@ export function PrivyConnectWallet({
     loading: tokensLoading,
     error: tokensError,
   } = useWalletTokens(address, chainSlug)
+
+  // Helper function to map chain to Coinbase supported network
+  const getNetworkName = (chain: any) => {
+    const chainName = chain?.name?.toLowerCase() || 'ethereum'
+    const chainId = chain?.id
+
+    switch (chainName) {
+      case 'arbitrum':
+      case 'arbitrum one':
+        return 'arbitrum'
+      case 'arbitrum sepolia':
+        return 'arbitrum'
+      case 'base':
+        return 'base'
+      case 'base sepolia':
+        return 'base'
+      case 'sepolia':
+      case 'ethereum':
+      case 'mainnet':
+        return 'ethereum'
+      case 'optimism':
+        return 'optimism'
+      case 'optimism sepolia':
+        return 'optimism'
+      case 'polygon':
+        return 'polygon'
+      default:
+        switch (chainId) {
+          case 11155111: // Sepolia
+            return 'ethereum'
+          case 421614: // Arbitrum Sepolia
+            return 'arbitrum'
+          case 84532: // Base Sepolia
+            return 'base'
+          case 11155420: // Optimism Sepolia
+            return 'optimism'
+          default:
+            return 'ethereum'
+        }
+    }
+  }
+
+  // Generate session token for Coinbase onramp
+  const generateSessionToken = async () => {
+    try {
+      const networkName = getNetworkName(selectedChain)
+      const response = await fetch('/api/coinbase/session-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address,
+          blockchains: [networkName],
+          assets: ['ETH', 'USDC'],
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: 'Unknown error' }))
+        throw new Error(
+          errorData.error ||
+            `HTTP ${response.status}: Failed to generate session token`
+        )
+      }
+
+      const data = await response.json()
+      if (!data.sessionToken) {
+        throw new Error('No session token received from API')
+      }
+      return data.sessionToken
+    } catch (error: any) {
+      console.error('Session token generation error:', error)
+      throw error
+    }
+  }
+
+  // Open Coinbase onramp directly
+  const openCoinbaseOnramp = async () => {
+    if (!address) {
+      return toast.error('Please connect your wallet.')
+    }
+
+    const projectId = process.env.NEXT_PUBLIC_CB_PROJECT_ID
+    if (!projectId) {
+      return toast.error('Configuration error: Missing project ID')
+    }
+
+    try {
+      // Generate session token
+      const token = await generateSessionToken()
+
+      // Generate URL with session token
+      const url = generateOnRampURL({
+        appId: projectId,
+        sessionToken: token,
+        addresses: {
+          [address]: [getNetworkName(selectedChain)],
+        },
+        presetFiatAmount: 20,
+        fiatCurrency: 'USD',
+        defaultNetwork: getNetworkName(selectedChain),
+        defaultAsset: 'ETH',
+      })
+
+      // Open in popup
+      const popup = window.open(
+        url,
+        'coinbase-onramp',
+        'width=500,height=700,scrollbars=yes,resizable=yes'
+      )
+
+      if (!popup) {
+        return toast.error('Popup blocked. Please allow popups for this site.')
+      }
+
+      let isHandled = false
+
+      // Listen for message events from Coinbase onramp
+      const handleMessage = (event: MessageEvent) => {
+        if (
+          !event.origin.includes('coinbase.com') &&
+          !event.origin.includes('cb-pay.com')
+        ) {
+          return
+        }
+
+        if (event.data && typeof event.data === 'object') {
+          const { eventName, success } = event.data
+
+          // Handle success events
+          if (
+            eventName === 'charge_confirmed' ||
+            eventName === 'payment_success' ||
+            success === true ||
+            event.data.type === 'onramp_success'
+          ) {
+            if (!isHandled) {
+              isHandled = true
+              popup.close()
+              cleanup()
+              toast.success('Purchase completed successfully!')
+            }
+          }
+          // Handle exit/cancel events
+          else if (
+            eventName === 'popup_closed' ||
+            eventName === 'user_closed' ||
+            event.data.type === 'onramp_exit'
+          ) {
+            if (!isHandled) {
+              isHandled = true
+              popup.close()
+              cleanup()
+            }
+          }
+        }
+      }
+
+      // Listen for popup being manually closed
+      const checkClosed = setInterval(() => {
+        if (popup.closed && !isHandled) {
+          isHandled = true
+          cleanup()
+        }
+      }, 1000)
+
+      // Cleanup function
+      const cleanup = () => {
+        clearInterval(checkClosed)
+        window.removeEventListener('message', handleMessage)
+      }
+
+      // Add event listener
+      window.addEventListener('message', handleMessage, false)
+
+      // Cleanup after 10 minutes
+      setTimeout(() => {
+        if (!isHandled) {
+          isHandled = true
+          popup.close()
+          cleanup()
+        }
+      }, 600000)
+    } catch (error: any) {
+      console.error('Onramp initialization error:', error)
+      toast.error('Failed to initialize payment system: ' + error.message)
+    }
+  }
 
   // Helper function to get token icon
   const getTokenIcon = (symbol: string, contractAddress: string) => {
@@ -906,7 +1030,7 @@ export function PrivyConnectWallet({
 
                 {/* Network Selection */}
                 <div className="network-dropdown-container relative">
-                  <div 
+                  <div
                     className="bg-black/20 rounded-xl p-4 mb-6 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group"
                     onClick={() => setNetworkDropdownOpen(!networkDropdownOpen)}
                   >
@@ -931,7 +1055,11 @@ export function PrivyConnectWallet({
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <ChevronDownIcon className={`w-5 h-5 text-gray-400 group-hover:text-white transition-all duration-200 ${networkDropdownOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDownIcon
+                          className={`w-5 h-5 text-gray-400 group-hover:text-white transition-all duration-200 ${
+                            networkDropdownOpen ? 'rotate-180' : ''
+                          }`}
+                        />
                       </div>
                     </div>
                   </div>
@@ -1140,14 +1268,7 @@ export function PrivyConnectWallet({
                       id="wallet-fund-action"
                       label="Fund"
                       icon={<PlusIcon width={20} height={20} />}
-                      onClick={async () => {
-                        if (!address)
-                          return toast.error('Please connect your wallet.')
-                        fundWallet(address, {
-                          chain: viemChains[chainSlug],
-                          asset: 'native-currency',
-                        })
-                      }}
+                      onClick={openCoinbaseOnramp}
                     />
                     <WalletAction
                       id="wallet-send-action"

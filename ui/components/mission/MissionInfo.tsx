@@ -156,11 +156,25 @@ export default function MissionInfo({
   }, [router])
 
   useEffect(() => {
-    shallowQueryRoute({
+    if (!router.isReady || !mission?.id) return
+
+    const queryParams: any = {
       tokenId: mission?.id,
       tab: tab,
+    }
+
+    // Only preserve query parameters that have meaningful values
+    Object.keys(router.query).forEach((key) => {
+      if (key !== 'tokenId' && key !== 'tab') {
+        const value = router.query[key]
+        // Only preserve if value exists and is not empty
+        if (value && value !== '' && value !== 'undefined') {
+          queryParams[key] = value
+        }
+      }
     })
-  }, [tab])
+    shallowQueryRoute(queryParams)
+  }, [tab, router.isReady, mission?.id])
 
   return (
     <div className="w-full">

@@ -66,7 +66,10 @@ const MissionProfileHeader = React.memo(
     isLoadingTotalFunding,
   }: MissionProfileHeaderProps) => {
     const account = useActiveAccount()
-    const { data: ethPrice } = useETHPrice(1, 'ETH_TO_USD')
+    const { data: ethPrice, isLoading: isLoadingEthPrice } = useETHPrice(
+      1,
+      'ETH_TO_USD'
+    )
 
     // Total funding is now passed as props from MissionProfile component
 
@@ -175,7 +178,7 @@ const MissionProfileHeader = React.memo(
               {/* Enhanced Funding Stats Card */}
               <div className="bg-gradient-to-br from-dark-cool to-darkest-cool backdrop-blur-lg rounded-xl p-4 lg:p-5 border border-white/10 shadow-xl w-full max-w-2xl">
                 {/* Raised Amount Badge */}
-                <div className="mb-3">
+                <div className="mb-2">
                   <div className="inline-flex items-center bg-gradient-to-r from-blue-500 to-purple-600 text-white font-GoodTimes py-2 px-4 rounded-full shadow-lg">
                     <Image
                       src="/assets/icon-raised-tokens.svg"
@@ -203,9 +206,9 @@ const MissionProfileHeader = React.memo(
                       </>
                     )}
                   </div>
-                  <p className="text-gray-400 text-xs mt-1 ml-4">
-                    {isLoadingTotalFunding ? (
-                      <></>
+                  <p className="text-gray-400 text-xs mt-2 ml-4">
+                    {isLoadingTotalFunding || isLoadingEthPrice ? (
+                      <TextSkeleton width="w-16" height="h-4" />
                     ) : (
                       <>
                         ≈ $
@@ -216,24 +219,6 @@ const MissionProfileHeader = React.memo(
                       </>
                     )}
                   </p>
-                </div>
-                <div className="flex items-center">
-                  <Image
-                    src="/assets/launchpad/clock.svg"
-                    alt="Deadline"
-                    width={24}
-                    height={24}
-                  />
-                  <div className="ml-2">
-                    <p className="text-gray-400 text-sm">DEADLINE</p>
-                    <p className="text-white font-GoodTimes min-w-[250px]">
-                      {refundPeriodPassed || stage === 4
-                        ? 'PASSED'
-                        : stage === 3
-                        ? 'REFUND'
-                        : duration}
-                    </p>
-                  </div>
                 </div>
                 {/* Progress Bar */}
                 <div className="mb-3">
@@ -285,11 +270,17 @@ const MissionProfileHeader = React.memo(
                         className="mr-1"
                       />
                       <span className="text-gray-400 text-xs uppercase tracking-wide">
-                        Deadline
+                        {refundPeriodPassed || stage === 4 || stage === 3
+                          ? 'Status'
+                          : 'Deadline'}
                       </span>
                     </div>
                     <p className="text-white font-GoodTimes text-xs lg:text-sm">
-                      {duration}
+                      {refundPeriodPassed || stage === 4
+                        ? 'PASSED'
+                        : stage === 3
+                        ? 'REFUND'
+                        : duration}
                     </p>
                   </div>
 
