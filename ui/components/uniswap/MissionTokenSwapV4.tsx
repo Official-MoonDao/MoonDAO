@@ -15,8 +15,6 @@ export default function MissionTokenSwapV4({ token }: { token: any }) {
   const [usdInput, setUsdInput] = useState('')
   const [amountIn, setAmountIn] = useState('')
   const [amountOut, setAmountOut] = useState<string>()
-  console.log('feeHookAddress', FEE_HOOK_ADDRESSES[chainSlug])
-  console.log('tickSpacing', TICK_SPACING)
   const { quote, swap } = useUniswapV4(
     token.tokenAddress,
     token.tokenDecimals,
