@@ -265,9 +265,7 @@ export default function Network({
                 <Tab
                   tab="map"
                   currentTab={tab}
-                  setTab={() => {
-                    router.push('/map')
-                  }}
+                  setTab={handleTabChange}
                   icon={<GlobeAmericasIcon width={20} height={20} />}
                 >
                   Map
@@ -470,7 +468,7 @@ export default function Network({
                     textColor="text-white"
                     borderRadius="rounded-xl"
                     hoverEffect={false}
-                    link="/join"
+                    link="/team"
                   >
                     Create a Team
                   </StandardButton>
