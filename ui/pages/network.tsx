@@ -1,5 +1,5 @@
 import { PlusCircleIcon } from '@heroicons/react/20/solid'
-import { GlobeAmericasIcon, ListBulletIcon } from '@heroicons/react/24/outline'
+import { GlobeAmericasIcon, ListBulletIcon, MoonIcon } from '@heroicons/react/24/outline'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
 import {
@@ -11,6 +11,7 @@ import {
   TEAM_TABLE_ADDRESSES,
 } from 'const/config'
 import { blockedCitizens, blockedTeams, featuredTeams } from 'const/whitelist'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -27,6 +28,7 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import { getAttribute } from '@/lib/utils/nft'
 import Card from '../components/layout/Card'
 import Container from '../components/layout/Container'
 import Frame from '../components/layout/Frame'
@@ -49,16 +51,22 @@ import CitizenABI from '../const/abis/Citizen.json'
 import TeamABI from '../const/abis/Team.json'
 import JobsABI from '../const/abis/JobBoardTable.json'
 
+// Dynamic imports for globe components
+const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
+const Moon = dynamic(() => import('@/components/globe/Moon'), { ssr: false })
+
 type NetworkProps = {
   filteredTeams: any[]
   filteredCitizens: any[]
   jobs: JobType[]
+  citizensLocationData?: any[]
 }
 
 export default function Network({
   filteredTeams,
   filteredCitizens,
   jobs,
+  citizensLocationData,
 }: NetworkProps) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -75,6 +83,8 @@ export default function Network({
   }
 
   const [tab, setTab] = useState<string>('citizens')
+  const [mapView, setMapView] = useState<string>('earth') // For map sub-tabs
+  
   function loadByTab(tab: string) {
     if (tab === 'teams') {
       setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
@@ -82,6 +92,9 @@ export default function Network({
       setCachedNFTs(
         input != '' ? filterBySearch(filteredCitizens) : filteredCitizens
       )
+    } else if (tab === 'map') {
+      // For map tab, we don't need to set cachedNFTs as it shows the globe
+      setCachedNFTs([])
     } else {
       const nfts =
         filteredTeams?.[0] && filteredCitizens?.[0]
@@ -131,7 +144,8 @@ export default function Network({
         : filteredCitizens.length
 
     if (tab === 'teams') setMaxPage(Math.ceil(totalTeams / 10))
-    if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 10))
+    else if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 10))
+    else if (tab === 'map') setMaxPage(1) // Map doesn't need pagination
   }, [tab, input, filteredCitizens, filteredTeams])
 
   const [cachedNFTs, setCachedNFTs] = useState<any[]>([])
@@ -140,7 +154,7 @@ export default function Network({
 
   useEffect(() => {
     const { tab: urlTab, page: urlPage } = router.query
-    if (urlTab && (urlTab === 'teams' || urlTab === 'citizens')) {
+    if (urlTab && (urlTab === 'teams' || urlTab === 'citizens' || urlTab === 'map')) {
       setTab(urlTab as string)
     }
     if (urlPage && !isNaN(Number(urlPage))) {
@@ -175,7 +189,7 @@ export default function Network({
                 className="w-full flex-grow"
                 input={input}
                 setInput={setInput}
-                placeholder={tab === 'teams' ? 'Search teams' : 'Search citizens'}
+                placeholder={tab === 'teams' ? 'Search teams' : tab === 'citizens' ? 'Search citizens' : 'Search network'}
               />
             </div>
 
@@ -204,9 +218,7 @@ export default function Network({
                   <Tab
                     tab="map"
                     currentTab={tab}
-                    setTab={() => {
-                      router.push('/map')
-                    }}
+                    setTab={handleTabChange}
                     icon={<GlobeAmericasIcon width={20} height={20} />}
                   >
                     Map
@@ -488,15 +500,17 @@ export default function Network({
         {/* Controls Section */}
         <div id="network-controls" className="max-w-6xl mx-auto mb-8 px-6">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            {/* Search Bar */}
-            <div className="w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3">
-              <Search
-                className="w-full"
-                input={input}
-                setInput={setInput}
-                placeholder={tab === 'teams' ? 'Search teams' : 'Search citizens'}
-              />
-            </div>
+            {/* Search Bar - Hidden for map tab */}
+            {tab !== 'map' && (
+              <div className="w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3">
+                <Search
+                  className="w-full"
+                  input={input}
+                  setInput={setInput}
+                  placeholder={tab === 'teams' ? 'Search teams' : tab === 'citizens' ? 'Search citizens' : 'Search network'}
+                />
+              </div>
+            )}
 
             {/* Tabs */}
             <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
@@ -520,9 +534,7 @@ export default function Network({
                 <Tab
                   tab="map"
                   currentTab={tab}
-                  setTab={() => {
-                    router.push('/map')
-                  }}
+                  setTab={handleTabChange}
                   icon={<GlobeAmericasIcon width={20} height={20} />}
                 >
                   Map
@@ -544,23 +556,64 @@ export default function Network({
           </div>
         </div>
 
-        {/* Content Grid */}
-        <div id="network-content-grid" className="max-w-6xl mx-auto px-6">
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
-            <CardGridContainer
-              xsCols={1}
-              smCols={1}
-              mdCols={2}
-              lgCols={2}
-              maxCols={2}
-              center
-            >
-              {renderNFTs()}
-            </CardGridContainer>
+        {/* Content Section - Either Grid or Map */}
+        <div id="network-content" className="max-w-6xl mx-auto px-6">
+          {tab === 'map' ? (
+            /* Map View */
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
+              <div className="mb-6">
+                <div className="flex justify-center">
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
+                    <div className="flex text-sm gap-1">
+                      <Tab
+                        tab="earth"
+                        setTab={setMapView}
+                        currentTab={mapView}
+                        icon={<GlobeAmericasIcon width={20} height={20} />}
+                      >
+                        Earth
+                      </Tab>
+                      <Tab
+                        tab="moon"
+                        setTab={setMapView}
+                        currentTab={mapView}
+                        icon={<MoonIcon width={20} height={20} />}
+                      >
+                        Moon
+                      </Tab>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="w-full flex justify-center">
+                <div className="w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
+                  <div className={`flex items-center justify-center ${mapView !== 'earth' && 'hidden'}`}>
+                    <Earth pointsData={citizensLocationData || []} />
+                  </div>
+                  <div className={`${mapView !== 'moon' && 'hidden'}`}>
+                    <Moon />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Network Grid View */
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
+              <CardGridContainer
+                xsCols={1}
+                smCols={1}
+                mdCols={2}
+                lgCols={2}
+                maxCols={2}
+                center
+              >
+                {renderNFTs()}
+              </CardGridContainer>
 
-            {/* Pagination */}
-            <div className="w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mt-8">
-              <div className="w-full flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8">
+              {/* Pagination - Only for non-map tabs */}
+              {tab !== 'map' && (
+                <div className="w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mt-8">
+                  <div className="w-full flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8">
                 <button
                   onClick={() => {
                     if (pageIdx > 1) {
@@ -606,7 +659,9 @@ export default function Network({
                 </button>
               </div>
             </div>
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Jobs Section */}
@@ -840,18 +895,120 @@ export async function getStaticProps() {
       }
     )
 
+    // Generate location data for map
+    let citizensLocationData: any[] = []
+    
+    if (process.env.NEXT_PUBLIC_ENV === 'prod' || process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
+      // Get location data for each citizen
+      for (const citizen of filteredValidCitizens) {
+        const citizenLocation = getAttribute(
+          citizen?.metadata?.attributes as unknown as any[],
+          'location'
+        )?.value
+
+        let locationData
+
+        if (
+          citizenLocation &&
+          citizenLocation !== '' &&
+          !citizenLocation?.startsWith('{')
+        ) {
+          locationData = {
+            results: [
+              {
+                formatted_address: citizenLocation,
+              },
+            ],
+          }
+        } else if (citizenLocation?.startsWith('{')) {
+          const parsedLocationData = JSON.parse(citizenLocation)
+          locationData = {
+            results: [
+              {
+                formatted_address: parsedLocationData.name,
+                geometry: {
+                  location: {
+                    lat: parsedLocationData.lat,
+                    lng: parsedLocationData.lng,
+                  },
+                },
+              },
+            ],
+          }
+        } else {
+          locationData = {
+            results: [
+              {
+                formatted_address: 'Antarctica',
+                geometry: { location: { lat: -90, lng: 0 } },
+              },
+            ],
+          }
+        }
+
+        citizensLocationData.push({
+          id: citizen.metadata.id,
+          name: citizen.metadata.name,
+          location: citizenLocation,
+          formattedAddress:
+            locationData.results?.[0]?.formatted_address || 'Antarctica',
+          image: citizen.metadata.image,
+          lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
+          lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
+        })
+      }
+
+      // Group citizens by lat and lng
+      const locationMap = new Map()
+
+      for (const citizen of citizensLocationData) {
+        const key = `${citizen.lat},${citizen.lng}`
+        if (!locationMap.has(key)) {
+          locationMap.set(key, {
+            citizens: [citizen],
+            names: [citizen.name],
+            formattedAddress: citizen.formattedAddress,
+            lat: citizen.lat,
+            lng: citizen.lng,
+          })
+        } else {
+          const existing = locationMap.get(key)
+          existing.names.push(citizen.name)
+          existing.citizens.push(citizen)
+        }
+      }
+
+      // Convert the map back to an array
+      citizensLocationData = Array.from(locationMap.values()).map(
+        (entry: any) => ({
+          ...entry,
+          color:
+            entry.citizens.length > 3
+              ? '#6a3d79'
+              : entry.citizens.length > 1
+              ? '#5e4dbf'
+              : '#5556eb',
+          size:
+            entry.citizens.length > 1
+              ? Math.min(entry.citizens.length * 0.01, 0.4)
+              : 0.01,
+        })
+      )
+    }
+
     return {
       props: {
         filteredTeams: sortedValidTeams,
         filteredCitizens: filteredValidCitizens.reverse(),
         jobs: jobs || [],
+        citizensLocationData: citizensLocationData,
       },
       revalidate: 60,
     }
   } catch (error) {
     console.error(error)
     return {
-      props: { filteredTeams: [], filteredCitizens: [], jobs: [] },
+      props: { filteredTeams: [], filteredCitizens: [], jobs: [], citizensLocationData: [] },
       revalidate: 60,
     }
   }
