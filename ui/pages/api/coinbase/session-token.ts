@@ -1,3 +1,4 @@
+import { secureHeaders } from 'middleware/secureHeaders'
 import { NextApiRequest, NextApiResponse } from 'next'
 import {
   validateCDPCredentials,
@@ -13,6 +14,8 @@ export default async function handler(
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+
+  secureHeaders(res)
 
   try {
     const {
