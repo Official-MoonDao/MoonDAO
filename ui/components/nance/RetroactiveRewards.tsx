@@ -271,6 +271,7 @@ export function RetroactiveRewards({
       .concat(arbitrumTokens)
       .concat(polygonTokens)
       .concat(baseTokens)
+      .filter((token: any) => token.usd > 1)
       .concat([{ symbol: 'stETH', balance: stakedEth }])
   }, [mainnetTokens, arbitrumTokens, polygonTokens, baseTokens, stakedEth])
 
@@ -279,8 +280,8 @@ export function RetroactiveRewards({
     mooneyBudget,
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
+  const ethBudget = 17.09
 
-  const ethBudget = 15.4072
   const usdBudget = ethBudget * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
