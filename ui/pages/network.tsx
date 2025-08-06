@@ -14,8 +14,9 @@ import { blockedCitizens, blockedTeams, featuredTeams } from 'const/whitelist'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useContext } from 'react'
 import { getContract, NFT, readContract } from 'thirdweb'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import {
   generatePrettyLink,
   generatePrettyLinkWithId,
@@ -61,6 +62,7 @@ export default function Network({
 }: NetworkProps) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
+  const { citizen } = useContext(CitizenContext)
 
   const [input, setInput] = useState('')
   function filterBySearch(nfts: any[]) {
@@ -618,56 +620,83 @@ export default function Network({
             </p>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
-            {jobs && jobs.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {jobs.slice(0, 6).map((job: JobType, index: number) => (
-                  <div key={`job-${job.id}`} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                      </div>
-                      <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">
-                        {job.tag || 'Open'}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-GoodTimes text-white mb-2 line-clamp-1">
-                      {job.title}
-                    </h3>
-                    <p className="text-slate-300 text-sm mb-4 line-clamp-3">
-                      {job.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-400">Team #{job.teamId}</span>
-                      <StandardButton
-                        backgroundColor="bg-blue-600 hover:bg-blue-700"
-                        textColor="text-white"
-                        borderRadius="rounded-lg"
-                        hoverEffect={false}
-                        link="/jobs"
-                        className="text-sm py-2 px-4"
-                      >
-                        View Job
-                      </StandardButton>
-                    </div>
+          <div className={`bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8 relative ${!citizen ? 'overflow-hidden' : ''}`}>
+            {!citizen && (
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-10 flex items-center justify-center">
+                <div className="text-center max-w-md mx-auto p-8">
+                  <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-slate-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
+                  <h3 className="text-xl font-GoodTimes text-white mb-3">Citizen Access Required</h3>
+                  <p className="text-slate-300 mb-6 leading-relaxed">
+                    You must be a Citizen of the Space Acceleration Network to view the jobs board and explore career opportunities.
+                  </p>
+                  <StandardButton
+                    className="gradient-2 hover:opacity-90 transition-opacity"
+                    textColor="text-white"
+                    borderRadius="rounded-xl"
+                    hoverEffect={false}
+                    link="/join"
+                  >
+                    Become a Citizen
+                  </StandardButton>
                 </div>
-                <h3 className="text-xl font-GoodTimes text-white mb-2">No Jobs Available</h3>
-                <p className="text-slate-400 max-w-md mx-auto">
-                  There are currently no open positions. Check back soon for new opportunities to join the space mission!
-                </p>
               </div>
             )}
+            
+            <div className={!citizen ? 'blur-sm pointer-events-none' : ''}>
+              {jobs && jobs.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {jobs.slice(0, 6).map((job: JobType, index: number) => (
+                    <div key={`job-${job.id}`} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                        </div>
+                        <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">
+                          {job.tag || 'Open'}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-GoodTimes text-white mb-2 line-clamp-1">
+                        {job.title}
+                      </h3>
+                      <p className="text-slate-300 text-sm mb-4 line-clamp-3">
+                        {job.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-400">Team #{job.teamId}</span>
+                        <StandardButton
+                          backgroundColor="bg-blue-600 hover:bg-blue-700"
+                          textColor="text-white"
+                          borderRadius="rounded-lg"
+                          hoverEffect={false}
+                          link="/jobs"
+                          className="text-sm py-2 px-4"
+                        >
+                          View Job
+                        </StandardButton>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-slate-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-GoodTimes text-white mb-2">No Jobs Available</h3>
+                  <p className="text-slate-400 max-w-md mx-auto">
+                    There are currently no open positions. Check back soon for new opportunities to join the space mission!
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
