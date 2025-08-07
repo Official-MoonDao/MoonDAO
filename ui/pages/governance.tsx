@@ -181,7 +181,7 @@ const Governance: React.FC = () => {
               <h1 className="header font-GoodTimes text-white drop-shadow-lg mb-4">
                 Governance
               </h1>
-              <p className="sub-header text-white/90 drop-shadow-lg mb-2">
+              <p className="sub-header text-white/90 drop-shadow-lg">
                 MoonDAO is governed by its Citizens. Our decentralized governance system ensures every voice is heard in shaping humanity's multiplanetary future.
               </p>
               <StandardButton
