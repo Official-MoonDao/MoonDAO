@@ -1,7 +1,6 @@
 const ProjectTableABI = require("../../../../../ui/const/abis/ProjectTable.json");
 const ProjectTeamCreatorABI = require("../../../../../ui/const/abis/ProjectTeamCreator.json");
 const { getRelativeQuarter } = require("../../../../../ui/lib/utils/dates");
-import { createThirdwebClient } from "thirdweb";
 require("dotenv").config();
 const { ThirdwebSDK } = require("@thirdweb-dev/sdk");
 const { Arbitrum, Sepolia } = require("@thirdweb-dev/chains");
