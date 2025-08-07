@@ -62,6 +62,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     router.pathname === '/dude-perfect' ||
     router.pathname === '/network' ||
     router.pathname === '/mooney' ||
+    router.pathname === '/governance' ||
     router.pathname === '/get-mooney' ||
     router.pathname === '/lock' ||
     router.pathname === '/bridge'

@@ -86,7 +86,7 @@ function ProposalListSkeleton() {
   )
 }
 
-export default function ProposalList() {
+export default function ProposalList({ noPagination = false }: { noPagination?: boolean }) {
   const router = useRouter()
   const [query, setQuery] = useQueryParams({
     keyword: StringParam,
@@ -139,22 +139,24 @@ export default function ProposalList() {
       }
     })
 
-    // Calculate total pages
+    // Calculate total pages and current page logic
     const totalProposals = allProposals.length
-    const calculatedMaxPage = Math.ceil(totalProposals / itemsPerPage)
+    const currentPageIdx = noPagination ? 1 : pageIdx
+    const calculatedMaxPage = noPagination ? 1 : Math.ceil(totalProposals / itemsPerPage)
+    
     if (calculatedMaxPage !== maxPage) {
       setMaxPage(calculatedMaxPage)
     }
 
     // Get proposals for current page
-    const startIndex = (pageIdx - 1) * itemsPerPage
+    const startIndex = (currentPageIdx - 1) * itemsPerPage
     const endIndex = startIndex + itemsPerPage
     const currentPageProposals = allProposals.slice(startIndex, endIndex)
 
     proposalsPacket = {
       proposalInfo: proposalData.data.proposalInfo,
       proposals: currentPageProposals,
-      hasMore: pageIdx < calculatedMaxPage,
+      hasMore: noPagination ? false : pageIdx < calculatedMaxPage,
     }
   }
 
@@ -199,7 +201,7 @@ export default function ProposalList() {
         </div>
         
         {/* Pagination Controls */}
-        {maxPage > 1 && (
+        {!noPagination && maxPage > 1 && (
           <div className="mt-8">
             <PaginationButtons
               handlePageChange={handlePageChange}
