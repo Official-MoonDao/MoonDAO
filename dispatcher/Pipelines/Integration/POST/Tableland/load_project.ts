@@ -7,7 +7,7 @@ const { ThirdwebSDK } = require("@thirdweb-dev/sdk");
 const { Arbitrum, Sepolia } = require("@thirdweb-dev/chains");
 const prompt = require('prompt-sync')();
 
-const { getProposals } = require("../../GET/Nance/get_proposals");
+const { getProposals, getNextProposalId } = require("../../GET/Nance/get_proposals");
 const {
     PROJECT_TABLE_ADDRESSES,
     PROJECT_CREATOR_ADDRESSES,
@@ -23,9 +23,6 @@ const chain = TEST ? Sepolia : Arbitrum;
 const privateKey = process.env.OPERATOR_PRIVATE_KEY;
 const sdk = ThirdwebSDK.fromPrivateKey(privateKey, chain.slug, {
     secretKey: process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY,
-});
-const client = createThirdwebClient({
-    clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string,
 });
 
 const discordToEthAddress = {
@@ -93,26 +90,59 @@ const discordToEthAddress = {
   ".zeroindex": "0x87D7276B0068ffcBA8C02781AA16484e935Bde27"
 }
 
+async function getAbstract(
+    proposalBody: string
+): Promise<string | null> {
+    const prompt = `You are reading a DAO proposal written in markdown. Extract the Abstract section from the proposal.\n` +
+        `Return ONLY the text of the Abstract section, or null if not found.\n\n` +
+        `Proposal:\n${proposalBody}`;
+
+    try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+            },
+            body: JSON.stringify({
+                model: "openai/gpt-oss-20b",
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0,
+            }),
+        });
+
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content?.trim() || null;
+        return text;
+    } catch (error) {
+        console.error("LLM abstract extraction failed:", error);
+        return null;
+    }
+}
+
 async function getAddresses(
     proposalBody: string,
     patterns: string[]
 ): Promise<[string[], string[]]> {
     const roleDescription = patterns.join(" or ");
-    const prompt = `You are reading a DAO proposal written in markdown. Extract the usernames and corresponding Ethereum addresses for ${roleDescription}.\n` +
-        `If an address is not provided but a Discord handle is, use the mapping below to resolve the handle to an address.\n` +
-        `Return ONLY a JSON array of objects with the keys \"username\" and \"address\". If none are found, return an empty array.\n\n` +
-        `Mapping: ${JSON.stringify(discordToEthAddress)}\n\n` +
+    const prompt = `You are reading a DAO proposal written in markdown. There will be Team Rocketeers, and Intial Team, and Multi-sig Signers. Extract the usernames and corresponding Ethereum addresses for just the ${roleDescription}.\n` +
+        `Look for Discord handles (usernames) and Ethereum addresses (0x...).\n` +
+        `Return ONLY a valid JSON string which is an array of objects with the keys \"username\" and \"address\".\n` +
+        `- If both username and address are provided, include both\n` +
+        `- If only username is provided, set address to null\n` +
+        `- If only address is provided, set username to null\n` +
+        `If none are found, return an empty array.\n\n` +
         `Proposal:\n${proposalBody}`;
 
     try {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+                Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
             },
             body: JSON.stringify({
-                model: "gpt-4o-mini",
+                model: "openai/gpt-oss-20b",
                 messages: [{ role: "user", content: prompt }],
                 temperature: 0,
             }),
@@ -124,13 +154,28 @@ async function getAddresses(
         try {
             parsed = JSON.parse(text);
         } catch (e) {
+            console.log("Failed to parse JSON from LLM response:", text);
+            console.log('error', e);
             parsed = [];
         }
 
-        const usernames: string[] = parsed.map((p: any) => p.username);
-        const addresses: string[] = parsed
-            .map((p: any) => p.address || discordToEthAddress[p.username])
-            .filter((a: string) => a);
+        const usernames: string[] = [];
+        const addresses: string[] = [];
+
+        for (const item of parsed) {
+            const username = item.username;
+            const usernameWithoutAmpersand = username.replace(/&/g, "");
+            let address = item.address;
+
+            // If no address but we have a username, try to resolve from mapping
+            if (!address && username && discordToEthAddress[usernameWithoutAmpersand]) {
+                address = discordToEthAddress[usernameWithoutAmpersand];
+            }
+
+            if (username) usernames.push(username);
+            if (address) addresses.push(address);
+        }
+
         return [addresses, usernames];
     } catch (error) {
         console.error("LLM address extraction failed:", error);
@@ -202,140 +247,142 @@ async function loadProjectData() {
 
         const tablelandMDPs = await projectsRes.json();
         console.log(`Found ${tablelandMDPs.length} existing MPDs in Tableland`);
+        const existingMDPs = new Set(tablelandMDPs.map((row) => row.MDP));
 
         // Get proposals from Nance
-        const proposals = await getProposals("moondao", 47);
+        const nextProposalId = await getNextProposalId("moondao")
+        let cycle = 0
+        let doneLooping = false;
+        while (!doneLooping) {
+            const proposals = await getProposals("moondao",cycle++);
 
-        if (!proposals) {
-            throw new Error("Failed to fetch proposals from Nance");
-        }
-
-        // Insert new projects
-        const existingMDPs = new Set(tablelandMDPs.map((row) => row.MDP));
-        for (const proposal of proposals) {
-            if (
-                !proposal.body.includes("Abstract") ||
-                !proposal.body.includes("Problem")
-            ) {
-                console.log(
-                    "Skipping non project proposal MDP:",
-                    proposal.proposalId,
-                    " ",
-                    proposal.title
-                );
-                continue;
+            if (!proposals) {
+                console.log('No proposals for cycle', cycle);
+                continue
             }
-            var members = [];
-            var membersUsernames = [];
-            if (proposal?.actions?.[0]?.payload?.projectTeam) {
-                members = proposal.actions[0].payload.projectTeam.map((member) => member.votingAddress);
-            }else{
-                const [leads, leadsUsernames] = await getAddresses(proposal.body, ["Project Lead", "Team Rocketeer"]);
+            // sort in order of id
+            proposals.sort((a, b) => a.proposalId - b.proposalId);
+
+            // Insert new projects
+            for (const proposal of proposals) {
+                if (proposal.proposalId === nextProposalId - 1) {
+                    doneLooping = true;
+                }
+                if (
+                    !proposal.body.includes("Abstract") ||
+                    !proposal.body.includes("Problem")
+                ) {
+                    console.log(
+                        "Skipping non project proposal MDP:",
+                        proposal.proposalId,
+                        " ",
+                        proposal.title
+                    );
+                    continue;
+                }
+                if (existingMDPs.has(proposal.proposalId)) {
+                    console.log(
+                        "Skipping existing proposal MDP:",
+                        proposal.proposalId,
+                        " ",
+                        proposal.title
+                    );
+                    continue;
+                }
+                var members = [];
+                var membersUsernames = [];
+                const [leads, leadsUsernames] = await getAddresses(proposal.body, ["Team Rocketeer", "Project Lead"]);
                 [members, membersUsernames] = await getAddresses(proposal.body, ["Initial Team"]);
                 // Only allow the first lead to be the lead for smart contract purposes
                 if (leads.length > 1) {
                     members = [...leads.slice(1), ...members];
                     membersUsernames = [...leadsUsernames.slice(1), ...membersUsernames];
                 }
-            }
-            var signers = [];
-            var signersUsernames = [];
-            if (proposal?.actions?.[0]?.payload?.multisigTeam){
-                signers = proposal.actions[0].payload.multisigTeam.map((member) => member.address);
-            }else{
-                [signers, signersUsernames] = await getAddresses(proposal.body, ["Multi-sig Signers"]);
-            }
+                const [signers, signersUsernames] = await getAddresses(proposal.body, ["Multi-sig Signers"]);
+                const abstractText = await getAbstract(proposal.body);
 
 
-            if (existingMDPs.has(proposal.proposalId)) {
-                console.log(
-                    "Skipping existing proposal MDP:",
-                    proposal.proposalId,
-                    " ",
-                    proposal.title
+                // parse out tables from proposal.body which is in markdown format
+                const getHatMetadataIPFS = async function (hatType: string) {
+                    const hatMetadataBlob = new Blob(
+                        [
+                            JSON.stringify({
+                                type: "1.0",
+                                data: {
+                                    name:
+                                    "MDP-" +
+                                    proposal.proposalId +
+                                    " " +
+                                    hatType,
+                                    description: proposal.title,
+                                },
+                            }),
+                        ],
+                        {
+                            type: "application/json",
+                        }
+                    );
+                    const name = `MDP-${proposal.proposalId}-${hatType}.json`;
+                    const { cid: hatMetadataIpfsHash } = await pinBlobOrFile(
+                        hatMetadataBlob,
+                        name
+                    );
+                    return "ipfs://" + hatMetadataIpfsHash;
+                };
+                const { quarter, year } = getRelativeQuarter(
+                    IS_THIS_QUARTER ? 0 : -1
                 );
-                continue;
-            }
-            // parse out tables from proposal.body which is in markdown format
-            const getHatMetadataIPFS = async function (hatType: string) {
-                const hatMetadataBlob = new Blob(
-                    [
-                        JSON.stringify({
-                            type: "1.0",
-                            data: {
-                                name:
-                                "MDP-" +
-                                proposal.proposalId +
-                                " " +
-                                hatType,
-                                description: proposal.title,
-                            },
-                        }),
-                    ],
-                    {
-                        type: "application/json",
-                    }
-                );
-                const name = `MDP-${proposal.proposalId}-${hatType}.json`;
-                const { cid: hatMetadataIpfsHash } = await pinBlobOrFile(
-                    hatMetadataBlob,
-                    name
-                );
-                return "ipfs://" + hatMetadataIpfsHash;
-            };
-            const { quarter, year } = getRelativeQuarter(
-                IS_THIS_QUARTER ? 0 : -1
-            );
-            const upfrontPayment = proposal.upfrontPayment
-                ? JSON.stringify(proposal.upfrontPayment)
-                : "";
-            const [
-                adminHatMetadataIpfs,
-                managerHatMetadataIpfs,
-                memberHatMetadataIpfs,
-            ] = await Promise.allSettled([
-                getHatMetadataIPFS("Admin"),
-                getHatMetadataIPFS("Manager"),
-                getHatMetadataIPFS("Member"),
-            ]);
-            if (
-                adminHatMetadataIpfs.status !== "fulfilled" ||
-                managerHatMetadataIpfs.status !== "fulfilled" ||
-                memberHatMetadataIpfs.status !== "fulfilled"
-            ) {
-                console.error(
-                    "Failed to pin hat metadata IPFS: ",
+                const upfrontPayment = proposal.upfrontPayment
+                    ? JSON.stringify(proposal.upfrontPayment)
+                    : "";
+                const [
                     adminHatMetadataIpfs,
                     managerHatMetadataIpfs,
-                    memberHatMetadataIpfs
+                    memberHatMetadataIpfs,
+                ] = await Promise.allSettled([
+                    getHatMetadataIPFS("Admin"),
+                    getHatMetadataIPFS("Manager"),
+                    getHatMetadataIPFS("Member"),
+                ]);
+                if (
+                    adminHatMetadataIpfs.status !== "fulfilled" ||
+                    managerHatMetadataIpfs.status !== "fulfilled" ||
+                    memberHatMetadataIpfs.status !== "fulfilled"
+                ) {
+                    console.error(
+                        "Failed to pin hat metadata IPFS: ",
+                        adminHatMetadataIpfs,
+                        managerHatMetadataIpfs,
+                        memberHatMetadataIpfs
+                    );
+                    continue;
+                }
+                // allow keyboard input to confirm the proposal, otherwise skip
+                const conf = prompt(
+                    `Create project for proposal ${proposal.proposalId} ${proposal.title}?\n\nlead ${leads[0]}\nmembers [${members.length > 0 ? members : [proposal.authorAddress]}]\n (${membersUsernames})\nsigners [${signers}]\n (${signersUsernames})\n (y/n)`
                 );
-                continue;
+                if (conf !== "y") {
+                    console.log("Skipping proposal MDP:", proposal.proposalId, " ", proposal.title);
+                    continue;
+                }
+                await projectTeamCreatorContract.call("createProjectTeam", [
+                    adminHatMetadataIpfs.value,
+                    managerHatMetadataIpfs.value,
+                    memberHatMetadataIpfs.value,
+                    proposal.title,
+                    abstractText, // description
+                    "", // image
+                    quarter,
+                    year,
+                    proposal.proposalId,
+                    "", // proposal ipfs
+                    "https://moondao.com/proposal/" + proposal.proposalId,
+                    upfrontPayment,
+                    leads[0] || "", // leadAddress,
+                    members.length > 0 ? members : [proposal.authorAddress], // members
+                    signers.length > 0 ? signers : [proposal.authorAddress], // signers,
+                ]);
             }
-            // allow keyboard input to confirm the proposal, otherwise skip
-            const conf = prompt(
-                `Create project for proposal ${proposal.proposalId} ${proposal.title}?\nlead ${proposal.authorAddress}\n\nmembers [${members}]\n (${membersUsernames})\n\nsigners [${signers}]\n (${signersUsernames})\n (y/n)`
-            );
-            if (conf !== "y") {
-                console.log("Skipping proposal MDP:", proposal.proposalId, " ", proposal.title);
-                continue;
-            }
-            await projectTeamCreatorContract.call("createProjectTeam", [
-                adminHatMetadataIpfs.value,
-                managerHatMetadataIpfs.value,
-                memberHatMetadataIpfs.value,
-                proposal.title,
-                "", // description
-                "", // image
-                quarter,
-                year,
-                proposal.proposalId,
-                "", // proposal ipfs
-                "https://moondao.com/proposal/" + proposal.proposalId,
-                upfrontPayment,
-                proposal.authorAddress || "", // leadAddress,
-                members.length > 0 ? members : [proposal.authorAddress], // members
-                signers.length > 0 ? signers : [proposal.authorAddress], // signers,
-            ]);
         }
 
         console.log("Data loading completed successfully");
