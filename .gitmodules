@@ -88,3 +88,6 @@
 [submodule "xp/lib/forge-std"]
 	path = xp/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "xp/lib/openzeppelin-contracts"]
+	path = xp/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
