@@ -1,7 +1,6 @@
 const ProjectTableABI = require("../../../../../ui/const/abis/ProjectTable.json");
 const ProjectTeamCreatorABI = require("../../../../../ui/const/abis/ProjectTeamCreator.json");
 const { getRelativeQuarter } = require("../../../../../ui/lib/utils/dates");
-import { resolveAddress } from "thirdweb/extensions/ens";
 import { createThirdwebClient } from "thirdweb";
 require("dotenv").config();
 const { ThirdwebSDK } = require("@thirdweb-dev/sdk");
@@ -94,23 +93,49 @@ const discordToEthAddress = {
   ".zeroindex": "0x87D7276B0068ffcBA8C02781AA16484e935Bde27"
 }
 
-function getAddresses(proposalBody: string, patterns: string[]){
-    const matchedLine = proposalBody
-        .split("\n")
-        .reverse()
-        .find((line) => patterns.map(pattern => line.includes(pattern)).some(Boolean));
-    const rawMatches = matchedLine.match(/@[a-zA-Z0-9_.]+/g) || [];
-    const usernames = rawMatches.map(u => u.slice(1));
-    const addresses = usernames.map(username => {
-        const address = discordToEthAddress[username];
-        if (address) {
-            return address;
-        } else {
-            throw new Error(`No address found for username: ${username}`);
-            return null;
+async function getAddresses(
+    proposalBody: string,
+    patterns: string[]
+): Promise<[string[], string[]]> {
+    const roleDescription = patterns.join(" or ");
+    const prompt = `You are reading a DAO proposal written in markdown. Extract the usernames and corresponding Ethereum addresses for ${roleDescription}.\n` +
+        `If an address is not provided but a Discord handle is, use the mapping below to resolve the handle to an address.\n` +
+        `Return ONLY a JSON array of objects with the keys \"username\" and \"address\". If none are found, return an empty array.\n\n` +
+        `Mapping: ${JSON.stringify(discordToEthAddress)}\n\n` +
+        `Proposal:\n${proposalBody}`;
+
+    try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify({
+                model: "gpt-4o-mini",
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0,
+            }),
+        });
+
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content?.trim() || "[]";
+        let parsed;
+        try {
+            parsed = JSON.parse(text);
+        } catch (e) {
+            parsed = [];
         }
-    });
-    return [usernames, addresses.filter(address => address !== null)];
+
+        const usernames: string[] = parsed.map((p: any) => p.username);
+        const addresses: string[] = parsed
+            .map((p: any) => p.address || discordToEthAddress[p.username])
+            .filter((a: string) => a);
+        return [addresses, usernames];
+    } catch (error) {
+        console.error("LLM address extraction failed:", error);
+        return [[], []];
+    }
 }
 
 
@@ -205,8 +230,8 @@ async function loadProjectData() {
             if (proposal?.actions?.[0]?.payload?.projectTeam) {
                 members = proposal.actions[0].payload.projectTeam.map((member) => member.votingAddress);
             }else{
-                const [leads, leadsUsernames] = getAddresses(proposal.body, ["Project Lead", "Team Rocketeer"]);
-                [members, membersUsernames] = getAddresses(proposal.body, ["Initial Team"]);
+                const [leads, leadsUsernames] = await getAddresses(proposal.body, ["Project Lead", "Team Rocketeer"]);
+                [members, membersUsernames] = await getAddresses(proposal.body, ["Initial Team"]);
                 // Only allow the first lead to be the lead for smart contract purposes
                 if (leads.length > 1) {
                     members = [...leads.slice(1), ...members];
@@ -218,7 +243,7 @@ async function loadProjectData() {
             if (proposal?.actions?.[0]?.payload?.multisigTeam){
                 signers = proposal.actions[0].payload.multisigTeam.map((member) => member.address);
             }else{
-                [signers, signersUsernames] = getAddresses(proposal.body, ["Multi-sig Signers"]);
+                [signers, signersUsernames] = await getAddresses(proposal.body, ["Multi-sig Signers"]);
             }
 
 
