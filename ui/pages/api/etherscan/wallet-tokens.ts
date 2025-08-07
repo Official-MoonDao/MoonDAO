@@ -1,6 +1,5 @@
 import {
   MOONEY_ADDRESSES,
-  VMOONEY_ADDRESSES,
   DAI_ADDRESSES,
   USDC_ADDRESSES,
   USDT_ADDRESSES,
@@ -8,6 +7,7 @@ import {
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { getMissionTokenAddresses } from '@/lib/mission/missionSubgraph'
 
 // Cache for wallet tokens (keyed by wallet-chain combination)
 let tokenCache: Map<
@@ -21,7 +21,9 @@ let tokenCache: Map<
 const CACHE_DURATION = 60 * 1000 // 1 minute cache
 
 // Function to get legitimate token addresses for filtering
-function getLegitimateTokenAddresses(chain: string): Set<string> {
+async function getLegitimateTokenAddresses(
+  chain: string
+): Promise<Set<string>> {
   const legitimateTokens = new Set<string>()
 
   // Add MOONEY addresses
@@ -43,6 +45,12 @@ function getLegitimateTokenAddresses(chain: string): Set<string> {
   if (USDT_ADDRESSES[chain]) {
     legitimateTokens.add(USDT_ADDRESSES[chain].toLowerCase())
   }
+
+  // Add mission token addresses
+  const missionTokens = await getMissionTokenAddresses()
+  missionTokens.forEach((tokenAddress) => {
+    legitimateTokens.add(tokenAddress)
+  })
 
   return legitimateTokens
 }
@@ -174,7 +182,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // Step 3: Get legitimate token addresses for this chain
-    const legitimateTokens = getLegitimateTokenAddresses(chain as string)
+    const legitimateTokens = await getLegitimateTokenAddresses(chain as string)
 
     // Step 4: Fetch current balance for each token using V2 API
     const tokensWithBalances = []
