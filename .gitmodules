@@ -91,3 +91,6 @@
 [submodule "xp/lib/openzeppelin-contracts"]
 	path = xp/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "xp/lib/contracts"]
+	path = xp/lib/contracts
+	url = https://github.com/thirdweb-dev/contracts
