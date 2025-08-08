@@ -22,6 +22,7 @@ import {
   Chain,
 } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
+import { GiftIcon, TrophyIcon } from '@heroicons/react/24/outline'
 import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
@@ -338,113 +339,150 @@ export default function WeeklyRewardPool() {
   }
 
   return (
-    <Frame
-      noPadding
-      bottomLeft="20px"
-      bottomRight="20px"
-      topRight="0px"
-      topLeft="10px"
-      className="h-full"
-    >
-      <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 p-6 h-full flex flex-col justify-between">
-        <h3 className="text-sm font-GoodTimes text-white/80">
-          WEEKLY REWARD POOL
-        </h3>
+    <div className="relative overflow-hidden bg-gradient-to-br from-blue-900/80 via-purple-900/60 to-gray-900/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+      {/* Content */}
+      <div className="relative z-10">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-transparent bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text">
+            Weekly Reward Pool
+          </h3>
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-xs text-green-300 font-medium">Live</span>
+          </div>
+        </div>
 
-        {/* Main content area with flex-1 to fill space */}
-        <div className="flex-1 flex flex-col justify-between">
-          {/* Pool Stats - Side by Side */}
-          <div className="mb-3 flex gap-4">
-            {/* Total Pool */}
-            <div className="flex-1 w-1/2">
-              <p className="text-xs text-white/60 mb-1">Total Pool:</p>
-              {feesAvailable !== null ? (
-                <div className="text-white">
-                  <span className="text-lg font-bold">
-                    {formatBalance(feesAvailable)} ETH
-                  </span>
-                  <span className="text-sm text-white/70 ml-2">
-                    (~${formatUSD(feesAvailable, currentEthPrice)})
-                  </span>
+        {/* Pool Stats Cards */}
+        <div className="space-y-4 mb-5">
+          {/* Total Pool Card */}
+          <div className="bg-white/8 backdrop-blur-sm border border-white/15 rounded-xl p-4 hover:bg-white/12 transition-all duration-300">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z"/>
+                </svg>
+              </div>
+              <span className="text-white/70 font-medium text-sm">Total Pool</span>
+            </div>
+            {feesAvailable !== null ? (
+              <div>
+                <div className="text-white font-bold text-2xl mb-1">
+                  {formatBalance(feesAvailable, 4)}
+                </div>
+                <div className="text-blue-300 text-sm">
+                  ~${formatUSD(feesAvailable, currentEthPrice)} USD
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <LoadingSpinner width="w-4" height="h-4" />
+                <span className="text-white/70 text-sm">Loading...</span>
+              </div>
+            )}
+          </div>
+
+          {/* User Reward Card */}
+          <div className="bg-white/8 backdrop-blur-sm border border-white/15 rounded-xl p-4 hover:bg-white/12 transition-all duration-300">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                <GiftIcon className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-white/70 font-medium text-sm">Your Reward</span>
+            </div>
+            {address && VMOONEYBalance && VMOONEYBalance > 0 ? (
+              estimatedFees !== null ? (
+                <div>
+                  <div className="text-white font-bold text-2xl mb-1">
+                    {formatBalance(estimatedFees, 6)}
+                  </div>
+                  <div className="text-purple-300 text-sm">
+                    ~${formatUSD(estimatedFees, currentEthPrice)} USD
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <LoadingSpinner width="w-3" height="h-3" />
-                  <span className="text-white/70 text-xs">Loading...</span>
+                  <LoadingSpinner width="w-4" height="h-4" />
+                  <span className="text-white/70 text-sm">Calculating...</span>
+                </div>
+              )
+            ) : (
+              <div>
+                <div className="text-orange-300 text-lg font-bold mb-1">Need vMOONEY</div>
+                <div className="text-white/60 text-sm">Lock MOONEY first</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Stats Bar */}
+        {feesAvailable !== null && Number(feesAvailable) > 0 && (
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 mb-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrophyIcon className="w-4 h-4 text-yellow-400" />
+                <span className="text-white/80 text-sm">
+                  {checkedInCount !== null
+                    ? checkedInCount > 0
+                      ? `${checkedInCount} participants this week`
+                      : 'Be the first to participate!'
+                    : 'Loading participants...'}
+                </span>
+              </div>
+              {checkedInCount !== null && checkedInCount > 0 && (
+                <div className="flex items-center gap-1">
+                  {[...Array(Math.min(5, checkedInCount))].map((_, i) => (
+                    <div key={i} className="w-2.5 h-2.5 bg-yellow-400 rounded-full"></div>
+                  ))}
+                  {checkedInCount > 5 && (
+                    <span className="text-xs text-yellow-400 ml-1 font-medium">+{checkedInCount - 5}</span>
+                  )}
                 </div>
               )}
             </div>
-
-            {/* User Rewards */}
-            <div className="flex-1 w-1/2">
-              <p className="text-xs text-white/60 mb-1">Your Reward:</p>
-              {address && VMOONEYBalance && VMOONEYBalance > 0 ? (
-                estimatedFees !== null ? (
-                  <div className="text-white">
-                    <span className="text-sm font-medium">
-                      {formatBalance(estimatedFees, 6)} ETH
-                    </span>
-                    <span className="text-xs text-white/70 ml-2">
-                      (~${formatUSD(estimatedFees, currentEthPrice)})
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <LoadingSpinner width="w-3" height="h-3" />
-                    <span className="text-white/70 text-xs">
-                      Calculating...
-                    </span>
-                  </div>
-                )
-              ) : (
-                <div className="text-white/50 text-sm">Need vMOONEY</div>
-              )}
-            </div>
           </div>
+        )}
 
-          {/* Check-in Stats */}
-          {feesAvailable !== null && Number(feesAvailable) > 0 && (
-            <div className="mb-3 text-xs text-white/60">
-              {checkedInCount !== null
-                ? checkedInCount > 0
-                  ? `${checkedInCount} checked in this week`
-                  : 'No one checked in yet'
-                : 'Loading stats...'}
-            </div>
-          )}
-
-          {/* Action Button */}
+        {/* Action Button */}
+        <div className="space-y-4">
           {!address || (VMOONEYBalance && VMOONEYBalance > 0) ? (
             <PrivyWeb3Button
-              label={isCheckedIn ? 'Checked In ✓' : 'Check In & Claim'}
+              label={
+                isCheckedIn 
+                  ? '✨ Already Checked In' 
+                  : '🚀 Check In & Claim Rewards'
+              }
               action={handleCheckIn}
               isDisabled={isCheckedIn}
-              className={`w-full py-2 text-white text-sm rounded-lg font-medium transition-all duration-200 mb-2 ${
+              className={`w-full py-4 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.01] shadow-lg ${
                 isCheckedIn
-                  ? 'bg-green-600 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 cursor-not-allowed shadow-green-500/25'
+                  : 'bg-gradient-to-r from-blue-500 via-purple-600 to-pink-600 hover:from-blue-600 hover:via-purple-700 hover:to-pink-700 shadow-purple-500/25'
               }`}
             />
           ) : (
             <Link
               href="/lock"
-              className="block w-full py-2 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white text-sm rounded-lg font-medium transition-all duration-200 text-center mb-2"
+              className="block w-full py-4 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold rounded-xl transition-all duration-300 text-center shadow-lg shadow-orange-500/25 transform hover:scale-[1.01]"
             >
-              Get vMOONEY to Claim
+              🔒 Get vMOONEY
             </Link>
           )}
 
-          {/* Learn More Link */}
+          {/* Learn More */}
           <div className="text-center">
             <Link
               href="/fees"
-              className="text-xs text-blue-300 hover:text-blue-200"
+              className="inline-flex items-center gap-2 text-sm text-blue-300 hover:text-blue-200 transition-colors duration-200 group"
             >
-              Learn More
+              <span>Learn about rewards</span>
+              <svg className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
           </div>
         </div>
       </div>
-    </Frame>
+    </div>
   )
 }

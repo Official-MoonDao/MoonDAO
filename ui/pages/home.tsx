@@ -599,55 +599,32 @@ export default function Home({
         )}
 
         {/* Main Content - Facebook Style Three Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:grid-rows-1 lg:min-h-[800px]">
           {/* Left Sidebar - Key Metrics & Quick Actions */}
-          <div className="lg:col-span-3 space-y-4">
-            {/* Weekly Reward Pool - Moved from header */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <WeeklyRewardPool />
-            </div>
-
-            {/* Navigation Menu */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <h3 className="font-semibold text-white mb-4 text-lg">Navigate</h3>
-              <div className="space-y-2">
-                {[
-                  { icon: RocketLaunchIcon, label: 'Launchpad', href: '/launchpad', color: 'hover:bg-blue-600/20' },
-                  { icon: CheckBadgeIcon, label: 'Governance', href: '/governance', color: 'hover:bg-purple-600/20' },
-                  { icon: UserGroupIcon, label: 'Network', href: '/network', color: 'hover:bg-green-600/20' },
-                  { icon: ShoppingBagIcon, label: 'Marketplace', href: '/marketplace', color: 'hover:bg-orange-600/20' },
-                  { icon: NewspaperIcon, label: 'News', href: '/news', color: 'hover:bg-red-600/20' },
-                ].map((item) => (
-                  <Link key={item.label} href={item.href}>
-                    <div className={`flex items-center gap-3 p-3 rounded-xl text-white/80 hover:text-white transition-all cursor-pointer ${item.color}`}>
-                      <item.icon className="w-5 h-5" />
-                      <span className="font-medium">{item.label}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
+          <div className="lg:col-span-3 flex flex-col space-y-4">
+            {/* Weekly Reward Pool - Enhanced UI */}
+            <WeeklyRewardPool />
 
             {/* Key Metrics Card */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <h3 className="font-semibold text-white mb-4 text-lg">DAO Metrics</h3>
-              <div className="space-y-4">
+              <h3 className="font-semibold text-white mb-8 text-lg">DAO Metrics</h3>
+              <div className="space-y-8">
                 <div 
-                  className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-4 border border-white/5"
+                  className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
                   onClick={openCitizensChart}
                   title="Click to view full chart"
                 >
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-5">
                     <span className="text-gray-300 font-medium">Citizens</span>
                     <span className="text-white font-bold text-2xl">
                       {citizenSubgraphData?.transfers?.length || '2,341'}
                     </span>
                   </div>
-                  <div className="h-12">
+                  <div className="h-20">
                     <CitizensChart
                       transfers={citizenSubgraphData.transfers}
                       isLoading={false}
-                      height={48}
+                      height={80}
                       compact={true}
                       createdAt={citizenSubgraphData.createdAt}
                     />
@@ -656,20 +633,20 @@ export default function Home({
 
                 {aumData && (
                   <div 
-                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-4 border border-white/5"
+                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
                     onClick={openAUMChart}
                     title="Click to view full chart"
                   >
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-5">
                       <span className="text-gray-300 font-medium">AUM</span>
                       <span className="text-white font-bold text-2xl">
                         ${aumData.aum.toLocaleString()}
                       </span>
                     </div>
-                    <div className="h-12">
+                    <div className="h-20">
                       <AUMChart
                         compact={true}
-                        height={48}
+                        height={80}
                         days={365}
                         data={aumData.aumHistory}
                       />
@@ -679,21 +656,21 @@ export default function Home({
 
                 {arrData && (
                   <div 
-                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-4 border border-white/5"
+                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
                     onClick={openARRChart}
                     title="Click to view full chart"
                   >
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-5">
                       <span className="text-gray-300 font-medium">ARR</span>
                       <span className="text-white font-bold text-2xl">
                         ~${arrData.currentARR.toLocaleString()}
                       </span>
                     </div>
-                    <div className="h-12">
+                    <div className="h-20">
                       <ARRChart
                         data={arrData.arrHistory || []}
                         compact={true}
-                        height={48}
+                        height={80}
                         isLoading={false}
                       />
                     </div>
@@ -704,7 +681,7 @@ export default function Home({
           </div>
 
           {/* Center Column - Main Feed */}
-          <div className="lg:col-span-6 space-y-6">
+          <div className="lg:col-span-6 flex flex-col space-y-6">
             {/* Quick Actions */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center gap-4 mb-4">
@@ -866,7 +843,7 @@ export default function Home({
           </div>
 
           {/* Right Sidebar - Community & Stats */}
-          <div className="lg:col-span-3 space-y-4">
+          <div className="lg:col-span-3 flex flex-col space-y-4">
             {/* Teams */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
