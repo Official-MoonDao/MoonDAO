@@ -366,7 +366,7 @@ export default function GlobalSearch() {
       {!isExpanded && (
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-white whitespace-nowrap bg-black/70 backdrop-blur-md border border-white/20 rounded-full px-3 py-2">
-            Need help?
+            Quick Search
           </span>
           <button
             onClick={toggleExpanded}

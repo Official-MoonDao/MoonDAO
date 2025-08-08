@@ -5,7 +5,7 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 export const DEPLOYED_ORIGIN =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? 'https://moondao.com'
-    : 'https://moondao-git-ng-safe-send-moondao.vercel.app'
+    : 'https://moondao-git-ng-fiat-onramp-moondao.vercel.app/'
 
 interface DeploymentConfig {
   MOONEYToken: string
@@ -17,6 +17,7 @@ interface DeploymentConfig {
   MoonDAOTeam: string
   FeeHook: string
   MissionCreator: string
+  UniswapV4Router: string
 }
 
 type Index = { [key: string]: string }
@@ -175,6 +176,7 @@ export const VMOONEY_FAUCET_ADDRESSES: Index = {
 }
 
 export const FEE_HOOK_ADDRESSES: Index = {
+  ethereum: ethConfig.FeeHook,
   sepolia: sepoliaConfig.FeeHook,
   'arbitrum-sepolia': arbitrumSepoliaConfig.FeeHook,
   arbitrum: arbitrumConfig.FeeHook,
@@ -361,6 +363,18 @@ export const UNIVERSAL_ROUTER_ADDRESSES: Index = {
   'base-sepolia-testnet': '0x050E797f3625EC8785265e1d9BDd4799b97528A1',
 }
 
+export const UNISWAP_V4_ROUTER_ADDRESSES: Index = {
+  ethereum: '0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af',
+  sepolia: sepoliaConfig.UniswapV4Router,
+  arbitrum: arbitrumConfig.UniswapV4Router,
+}
+
+export const UNISWAP_V4_QUOTER_ADDRESSES: Index = {
+  ethereum: '0x52f0e24d1c21c8a0cb1e5a5dd6198556bd9e1203',
+  sepolia: '0x61B3f2011A92d183C7dbaDBdA940a7555Ccf9227',
+  arbitrum: '0x3972C00f7ed4885e145823eb7C655375d275A1C5',
+}
+
 export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
   'arbitrum-sepolia': '0xF4f865fA947376f47C74ffD05dd59763c0824bAD',
   ethereum: '0xDc07FbCcF7Dd55014C8A2a605C671d01137B4937',
@@ -422,3 +436,5 @@ export const MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? 'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-arb/version/latest'
     : 'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-sepolia/version/latest'
+
+export const TICK_SPACING = 100

@@ -211,7 +211,7 @@ export default function Card({
             {hovertext && (
               <span
                 id="hovertext-container"
-                className="hovertext absolute left-0 bottom-[-320px] ml-[-20px] w-[calc(100%+40px)] h-[calc(100%+300px)] p-[20px] text-lg rounded-[10px] text-white md:text-darkest-cool hovertext-bg flex justify-center z-50"
+                className="hovertext absolute left-0 bottom-[-250px] ml-[-20px] w-[calc(100%+40px)] h-[calc(100%+300px)] p-[20px] text-lg rounded-[10px] text-white md:text-darkest-cool hovertext-bg flex justify-center z-50"
               >
                 <span id="hovertext" className="hidden md:block">
                   {hovertext}
@@ -238,18 +238,6 @@ export default function Card({
                 ${link ? 'cursor-pointer' : ''}
             `}
     >
-      {(link || metadata) && (
-        <span
-          id="Interactive-Element"
-          className="clip absolute h-full w-full z-10"
-        ></span>
-      )}
-      {(!link || !metadata) && (
-        <span
-          id="Static-Element"
-          className="divider-8 absolute w-[80%] h-full z-10"
-        ></span>
-      )}
       {link ? (
         <Link
           id="card-link"

@@ -90,11 +90,11 @@ export function ExpandedFooter({
 
   // Navigation link groups - matching topnav organization exactly
   const networkLinks = [
-    { text: 'Explore Network', href: '/network' },
-    { text: 'Become a Citizen', href: '/join' },
-    { text: 'Create a Team', href: '/team' },
+    { text: 'Explore Network', href: '/network#explore-network-header' },
+    { text: 'Become a Citizen', href: '/network#join-moondao' },
+    { text: 'Create a Team', href: '/network#join-moondao' },
     { text: 'Submit Contribution', href: '/contributions' },
-    { text: 'Jobs', href: '/jobs' },
+    { text: 'Jobs', href: '/network#space-careers' },
   ]
 
   const governLinks = [

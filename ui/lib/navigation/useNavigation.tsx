@@ -25,7 +25,7 @@ export default function useNavigation(citizen: any) {
         href: '/network',
         icon: IconOrg,
         children: [
-          { name: 'Explore Network', href: '/network' },
+          { name: 'Network Overview', href: '/network' },
           { name: 'Become a Citizen', href: '/join' },
           { name: 'Create a Team', href: '/team' },
           {
@@ -44,6 +44,10 @@ export default function useNavigation(citizen: any) {
         href: '/governance',
         children: [
           {
+            name: 'Governance Overview',
+            href: '/governance',
+          },
+          {
             name: 'Proposals',
             href: '/vote',
           },
@@ -56,11 +60,11 @@ export default function useNavigation(citizen: any) {
       {
         name: '$MOONEY',
         icon: CircleStackIcon,
-        href: '/get-mooney',
+        href: '/mooney',
         children: [
           {
             name: 'Buy',
-            href: '/get-mooney',
+            href: '/mooney',
           },
           { name: 'Lock', href: '/lock' },
           { name: 'Bridge', href: '/bridge' },
@@ -69,8 +73,12 @@ export default function useNavigation(citizen: any) {
       {
         name: 'Projects',
         icon: WrenchScrewdriverIcon,
-        href: '/projects',
+        href: '/projects-overview',
         children: [
+          {
+            name: 'Projects Overview',
+            href: '/projects-overview',
+          },
           {
             name: 'Project Rewards',
             href: '/projects',

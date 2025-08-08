@@ -1,5 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { useFundWallet } from '@privy-io/react-auth'
+import { getAccessToken, useFundWallet } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import {
   DEPLOYED_ORIGIN,
@@ -99,12 +99,16 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
 
       await waitForResponse(formId, responseId)
 
-      const responseRes = await fetch(
-        `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
-        {
-          method: 'POST',
-        }
-      )
+      const accessToken = await getAccessToken()
+
+      const responseRes = await fetch(`/api/typeform/response`, {
+        body: JSON.stringify({
+          accessToken: accessToken,
+          responseId: responseId,
+          formId: formId,
+        }),
+        method: 'POST',
+      })
 
       if (!responseRes.ok) {
         throw new Error(`API call failed with status: ${responseRes.status}`)

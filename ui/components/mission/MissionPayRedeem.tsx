@@ -1,6 +1,7 @@
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
+import MissionTokenSwapV4 from '@/components/uniswap/MissionTokenSwapV4'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
-import { useFundWallet } from '@privy-io/react-auth'
+import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBMultiTerminalABI from 'const/abis/JBV4MultiTerminal.json'
 import {
@@ -8,11 +9,13 @@ import {
   MISSION_CROSS_CHAIN_PAY_ADDRESS,
   LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID,
   JB_NATIVE_TOKEN_ADDRESS,
+  DEPLOYED_ORIGIN,
 } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import React from 'react'
-import { useContext, useEffect, useState, useCallback, useMemo } from 'react'
+import { useContext, useEffect, useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
@@ -41,9 +44,9 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
-import viemChains from '@/lib/viem/viemChains'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import { CopyIcon } from '../assets'
+import { CBOnramp } from '../coinbase/CBOnramp'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import Modal from '../layout/Modal'
@@ -62,6 +65,7 @@ function MissionPayRedeemContent({
   tokenBalance,
   currentStage,
   stage,
+  deadline,
   tokenCredit,
   claimTokenCredit,
   handleUsdInputChange,
@@ -74,6 +78,8 @@ function MissionPayRedeemContent({
   usdInput,
 }: any) {
   const isRefundable = stage === 3
+  const deadlineHasPassed = deadline ? deadline < Date.now() : true
+  const shouldShowSwapOnly = deadlineHasPassed && stage === 2
 
   if (
     isRefundable &&
@@ -88,124 +94,128 @@ function MissionPayRedeemContent({
       id="mission-pay-redeem-container"
       className="z-50 bg-[#020617] rounded-[5vw] md:rounded-[2vw] w-full flex flex-col gap-4 lg:min-w-[430px] xl:items-stretch"
     >
-      {!isRefundable && (
-        <div
-          id="mission-pay-container"
-          className="lg:rounded-lg w-full flex-1 p-5 xl:p-5 flex flex-col gap-4 rounded-2xl justify-between"
-        >
-          {/* You pay */}
-          <div className="relative flex flex-col gap-4">
-            {/* You pay - USD input with ETH display */}
-            <div className="relative">
-              <div className="p-4 pb-12 flex flex-col gap-3 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-t-2xl">
-                <div className="flex justify-between items-start">
-                  <h3 className="text-sm opacity-60">You pay</h3>
+      {shouldShowSwapOnly ? (
+        <MissionTokenSwapV4 token={token} />
+      ) : (
+        !isRefundable && (
+          <div
+            id="mission-pay-container"
+            className="lg:rounded-lg w-full flex-1 p-5 xl:p-5 flex flex-col gap-4 rounded-2xl justify-between"
+          >
+            {/* You pay */}
+            <div className="relative flex flex-col gap-4">
+              {/* You pay - USD input with ETH display */}
+              <div className="relative">
+                <div className="p-4 pb-12 flex flex-col gap-3 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-t-2xl">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-sm opacity-60">You pay</h3>
+                  </div>
+
+                  <div className="flex justify-between sm:items-center flex-col sm:flex-row ">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xl font-bold">$</span>
+                      <input
+                        id="usd-contribution-input"
+                        type="text"
+                        className="bg-transparent border-none outline-none text-xl font-bold min-w-[1ch] w-auto [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={formattedUsdInput}
+                        onChange={handleUsdInputChange}
+                        placeholder="0"
+                        maxLength={9}
+                        style={{
+                          width: `${Math.max(
+                            formattedUsdInput.length || 1,
+                            1
+                          )}ch`,
+                        }}
+                      />
+                      <span className="text-xl font-bold">USD</span>
+                    </div>
+                    <div className="flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full sm:px-3 py-1">
+                      <Image
+                        src="/coins/ETH.svg"
+                        alt="ETH"
+                        width={16}
+                        height={16}
+                        className="w-5 h-5 bg-light-cool rounded-full"
+                      />
+                      <span className="text-base">
+                        {calculateEthAmount()} ETH
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex justify-between sm:items-center flex-col sm:flex-row ">
-                  <div className="flex items-center gap-1">
-                    <span className="text-xl font-bold">$</span>
-                    <input
-                      id="usd-contribution-input"
-                      type="text"
-                      className="bg-transparent border-none outline-none text-xl font-bold min-w-[1ch] w-auto [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      value={formattedUsdInput}
-                      onChange={handleUsdInputChange}
-                      placeholder="0"
-                      maxLength={9}
-                      style={{
-                        width: `${Math.max(
-                          formattedUsdInput.length || 1,
-                          1
-                        )}ch`,
-                      }}
+                {token?.tokenSymbol && (
+                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center">
+                    <ArrowDownIcon
+                      className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
+                      color={'#121C42'}
                     />
-                    <span className="text-xl font-bold">USD</span>
                   </div>
-                  <div className="flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full sm:px-3 py-1">
-                    <Image
-                      src="/coins/ETH.svg"
-                      alt="ETH"
-                      width={16}
-                      height={16}
-                      className="w-5 h-5 bg-light-cool rounded-full"
-                    />
-                    <span className="text-base">
-                      {calculateEthAmount()} ETH
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
 
+              {/* You receive */}
               {token?.tokenSymbol && (
-                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center">
-                  <ArrowDownIcon
-                    className="p-2 w-12 h-12 bg-darkest-cool rounded-full"
-                    color={'#121C42'}
-                  />
+                <div className="p-4 pb-12 flex flex-col gap-3 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-b-2xl">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-sm opacity-60">You receive</h3>
+                  </div>
+
+                  <div className="sm:flex justify-between items-center">
+                    <p id="token-output" className="text-xl font-bold">
+                      {formatTokenAmount(output, 2)}
+                    </p>
+                    <div className="relative flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full p-1 sm:px-2">
+                      <Image
+                        src="/assets/icon-star.svg"
+                        alt="Token"
+                        width={20}
+                        height={20}
+                        className="bg-orange-500 rounded-full p-1 w-5 h-5"
+                      />
+                      {token?.tokenSymbol}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* You receive */}
-            {token?.tokenSymbol && (
-              <div className="p-4 pb-12 flex flex-col gap-3 bg-gradient-to-r from-[#121C42] to-[#090D21] rounded-b-2xl">
-                <div className="flex justify-between items-start">
-                  <h3 className="text-sm opacity-60">You receive</h3>
-                </div>
-
-                <div className="sm:flex justify-between items-center">
-                  <p id="token-output" className="text-xl font-bold">
-                    {formatTokenAmount(output, 2)}
-                  </p>
-                  <div className="relative flex mt-2 sm:mt-0 gap-2 items-center sm:bg-[#111C42] rounded-full p-1 sm:px-2">
-                    <Image
-                      src="/assets/icon-star.svg"
-                      alt="Token"
-                      width={20}
-                      height={20}
-                      className="bg-orange-500 rounded-full p-1 w-5 h-5"
-                    />
-                    {token?.tokenSymbol}
-                  </div>
-                </div>
-              </div>
+            <StandardButton
+              id="open-contribute-modal"
+              className="rounded-full gradient-2 rounded-full w-full py-1"
+              onClick={() => setMissionPayModalEnabled(true)}
+              hoverEffect={false}
+              disabled={
+                isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
+              }
+            >
+              {isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
+                ? 'Loading ETH price...'
+                : 'Contribute'}
+            </StandardButton>
+            <div className="w-full">
+              <AcceptedPaymentMethods />
+              <p className="xl:text-sm text-center">
+                {'Want to contribute by wire transfer?'}
+                <br />
+                {'Email us at info@moondao.com'}
+              </p>
+            </div>
+            {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
+              <PrivyWeb3Button
+                id="claim-button"
+                label={`Claim ${formatTokenAmount(
+                  tokenCredit.toString() / 1e18,
+                  0
+                )} $${token?.tokenSymbol}`}
+                className="rounded-full gradient-2 rounded-full w-full py-1"
+                action={claimTokenCredit}
+              />
             )}
           </div>
-
-          <StandardButton
-            id="open-contribute-modal"
-            className="rounded-full gradient-2 rounded-full w-full py-1"
-            onClick={() => setMissionPayModalEnabled(true)}
-            hoverEffect={false}
-            disabled={
-              isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
-            }
-          >
-            {isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
-              ? 'Loading ETH price...'
-              : 'Contribute'}
-          </StandardButton>
-          <div className="w-full">
-            <AcceptedPaymentMethods />
-            <p className="xl:text-sm text-center">
-              {'Want to contribute by wire transfer?'}
-              <br />
-              {'Email us at info@moondao.com'}
-            </p>
-          </div>
-          {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
-            <PrivyWeb3Button
-              id="claim-button"
-              label={`Claim ${formatTokenAmount(
-                tokenCredit.toString() / 1e18,
-                0
-              )} $${token?.tokenSymbol}`}
-              className="rounded-full gradient-2 rounded-full w-full py-1"
-              action={claimTokenCredit}
-            />
-          )}
-        </div>
+        )
       )}
       {/* Token stats and redeem container */}
       <div className="xl:pt-4 flex flex-row justify-between gap-4 w-full">
@@ -282,6 +292,7 @@ export type MissionPayRedeemProps = {
   token: any
   teamNFT: any
   stage: any
+  deadline?: number
   onlyModal?: boolean
   modalEnabled?: boolean
   setModalEnabled?: (enabled: boolean) => void
@@ -298,6 +309,7 @@ function MissionPayRedeemComponent({
   token,
   teamNFT,
   stage,
+  deadline,
   onlyModal = false,
   modalEnabled = false,
   setModalEnabled,
@@ -311,15 +323,23 @@ function MissionPayRedeemComponent({
   const { selectedChain } = useContext(ChainContextV5)
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const chainSlug = getChainSlug(selectedChain)
+  const router = useRouter()
+  const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
+  const chains = isTestnet
+    ? [sepolia, optimismSepolia]
+    : [arbitrum, base, ethereum]
 
-  const isTestnet = process.env.NEXT_PUBLIC_CHAIN != 'mainnet'
-  const chains = useMemo(
-    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, base, ethereum]),
-    [isTestnet]
-  )
+  const onrampSuccess = router?.query?.onrampSuccess === 'true'
 
   const [missionPayModalEnabled, setMissionPayModalEnabled] = useState(false)
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
+
+  // Payment processing state
+  const [isFiatPaymentProcessing, setIsFiatPaymentProcessing] = useState(false)
+
+  // Add state to track if we've processed the onramp success
+  const [hasProcessedOnrampSuccess, setHasProcessedOnrampSuccess] =
+    useState(false)
 
   const account = useActiveAccount()
   const address = account?.address
@@ -331,7 +351,10 @@ function MissionPayRedeemComponent({
   const [isLoadingRedeemAmount, setIsLoadingRedeemAmount] = useState(true)
 
   // USD input state and handlers
-  const [usdInput, setUsdInput] = useState('')
+  const [usdInput, setUsdInput] = useState(() => {
+    const urlAmount = router?.query?.usdAmount
+    return typeof urlAmount === 'string' ? urlAmount : ''
+  })
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(
     1,
     'ETH_TO_USD'
@@ -375,7 +398,7 @@ function MissionPayRedeemComponent({
   )
 
   // Get formatted display value
-  const formattedUsdInput = formatWithCommas(usdInput)
+  const formattedUsdInput = formatWithCommas(usdInput as string)
 
   // When USD input changes, update ETH input
   const handleUsdInputChange = useCallback(
@@ -383,7 +406,7 @@ function MissionPayRedeemComponent({
       const inputValue = e.target.value.replace(/[^0-9]/g, '') // Only allow numbers
 
       // Limit to 7 characters (excluding commas)
-      if (inputValue.length > 7) return
+      if (inputValue.length > 10) return
 
       setUsdInput(inputValue)
       if (inputValue === '') {
@@ -405,8 +428,6 @@ function MissionPayRedeemComponent({
     teamNFT?.owner,
     DEFAULT_CHAIN_V5
   )
-
-  const { fundWallet } = useFundWallet()
   const [agreedToCondition, setAgreedToCondition] = useState(false)
 
   const currentStage = useMissionFundingStage(mission?.id)
@@ -426,6 +447,13 @@ function MissionPayRedeemComponent({
   })
 
   const nativeBalance = useNativeBalance()
+
+  // Calculate required ETH amount and determine if user has enough balance
+  const requiredEth =
+    usdInput && ethUsdPrice ? Number(usdInput) / ethUsdPrice : 0
+  const hasEnoughBalance =
+    nativeBalance && Number(nativeBalance) >= requiredEth && requiredEth > 0
+
   const tokenBalance = useWatchTokenBalance(
     selectedChain,
     token?.tokenAddress || JB_NATIVE_TOKEN_ADDRESS
@@ -471,8 +499,12 @@ function MissionPayRedeemComponent({
 
   const refreshMissionData = useCallback(() => {
     refreshTotalFunding?.()
-    refreshBackers?.()
     refreshTokenBalances()
+
+    //Wait for terminal subgraph to update
+    setTimeout(() => {
+      refreshBackers?.()
+    }, 3000)
   }, [refreshTotalFunding, refreshBackers, refreshTokenBalances])
 
   const getQuote = useCallback(async () => {
@@ -603,12 +635,6 @@ function MissionPayRedeemComponent({
       })
       return
     }
-    if (inputValue > +nativeBalance) {
-      return fundWallet(address, {
-        amount: (inputValue - +nativeBalance).toString(),
-        chain: viemChains[chainSlug],
-      })
-    }
 
     try {
       if (chainSlug !== defaultChainSlug) {
@@ -676,8 +702,15 @@ function MissionPayRedeemComponent({
         })
       }
 
-      toast.success('Mission token purchased.', {
+      toast.success('Mission token purchased!', {
         style: toastStyle,
+      })
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        shapes: ['circle', 'star'],
+        colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
       })
 
       refreshMissionData()
@@ -697,12 +730,10 @@ function MissionPayRedeemComponent({
     output,
     message,
     refreshMissionData,
-    nativeBalance,
     chainSlug,
     agreedToCondition,
     defaultChainSlug,
     crossChainPayContract,
-    fundWallet,
     isTestnet,
     isLoadingEthUsdPrice,
     ethUsdPrice,
@@ -855,6 +886,65 @@ function MissionPayRedeemComponent({
     }
   }, [jbTokenBalance, tokenCredit, stage, getRedeemQuote])
 
+  // Add a function to clear the parameter only when needed
+  const clearOnrampSuccessParam = useCallback(() => {
+    if (router?.query?.onrampSuccess) {
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: {
+            ...router.query,
+            onrampSuccess: undefined,
+          },
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+  }, [router])
+
+  // Clear parameter when modal is closed
+  const handleModalClose = useCallback(() => {
+    setMissionPayModalEnabled(false)
+    clearOnrampSuccessParam() // Only clear when modal closes
+  }, [clearOnrampSuccessParam])
+
+  // Open modal after onramp success
+  useEffect(() => {
+    if (onrampSuccess && account?.address && !hasProcessedOnrampSuccess) {
+      setHasProcessedOnrampSuccess(true)
+      setTimeout(() => {
+        setMissionPayModalEnabled(true)
+      }, 500)
+    }
+  }, [onrampSuccess, account?.address, hasProcessedOnrampSuccess])
+
+  // Cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      setHasProcessedOnrampSuccess(false)
+    }
+  }, [])
+
+  // Auto-populate USD input with wallet balance value after onramp success
+  useEffect(() => {
+    if (
+      onrampSuccess &&
+      account?.address &&
+      nativeBalance &&
+      ethUsdPrice &&
+      !usdInput
+    ) {
+      // Show the USD value of their current ETH balance as a suggestion
+      const balanceUsd = (Number(nativeBalance) * ethUsdPrice).toFixed(0)
+      if (Number(balanceUsd) > 1) {
+        // Only if meaningful amount
+        setUsdInput(balanceUsd)
+        setInput(Number(nativeBalance).toFixed(6))
+      }
+    }
+  }, [onrampSuccess, account?.address, nativeBalance, ethUsdPrice, usdInput])
+
   if (stage === 4) return null
 
   return (
@@ -887,6 +977,7 @@ function MissionPayRedeemComponent({
                 </StandardButton>
               </div>
             )}
+
           <div className="mt-2">
             <MissionPayRedeemContent
               token={token}
@@ -898,6 +989,7 @@ function MissionPayRedeemComponent({
               claimTokenCredit={claimTokenCredit}
               currentStage={currentStage}
               stage={stage}
+              deadline={deadline}
               handleUsdInputChange={handleUsdInputChange}
               calculateEthAmount={calculateEthAmount}
               formattedUsdInput={formattedUsdInput}
@@ -918,16 +1010,13 @@ function MissionPayRedeemComponent({
               <button
                 type="button"
                 className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                onClick={(e: any) => {
-                  setModalEnabled
-                    ? setModalEnabled(false)
-                    : setMissionPayModalEnabled(false)
-                }}
+                onClick={handleModalClose} // Use the new handler
               >
                 <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
               </button>
             </div>
 
+            {/* Full view for all flows */}
             <div className="w-full flex justify-between">
               <p>{'Total Amount'}</p>
               <div className="flex gap-2 items-center bg-moon-indigo/20 rounded-full px-3 py-1">
@@ -950,7 +1039,8 @@ function MissionPayRedeemComponent({
                   className="text-right bg-transparent w-[100px] rounded-md px-2 outline-none font-bold border-[1px] border-moon-indigo [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   value={formattedUsdInput}
                   onChange={handleUsdInputChange}
-                  maxLength={9}
+                  maxLength={10}
+                  disabled={isFiatPaymentProcessing}
                 />
                 <span>{'USD'}</span>
               </div>
@@ -959,9 +1049,10 @@ function MissionPayRedeemComponent({
             {token?.tokenSymbol && (
               <div className="w-full flex justify-between">
                 <p>{'Receive'}</p>
-                <p id="token-output">{`${formatTokenAmount(output, 2)} ${
-                  token?.tokenSymbol
-                }`}</p>
+                <p id="token-output">{`${formatTokenAmount(
+                  output,
+                  2
+                )} ${token?.tokenSymbol}`}</p>
               </div>
             )}
 
@@ -996,77 +1087,128 @@ function MissionPayRedeemComponent({
 
             <hr className="w-full" />
 
-            <div className="w-full flex flex-col gap-4 justify-between">
-              <p>{`Message (optional)`}</p>
-              <input
-                id="payment-message-input"
-                type="text"
-                className="w-full bg-darkest-cool border-moon-indigo border-[1px] rounded-xl p-2"
-                placeholder="Attach an on-chain message to this payment"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                maxLength={100}
-              />
-            </div>
+            {/* Unified flow: Show crypto form if balance sufficient, otherwise show CBOnramp */}
+            {hasEnoughBalance ? (
+              // User has enough balance - show crypto pay form
+              <>
+                <div className="w-full flex flex-col gap-4 justify-between">
+                  <p>{`Message (optional)`}</p>
+                  <input
+                    id="payment-message-input"
+                    type="text"
+                    className="w-full bg-darkest-cool border-moon-indigo border-[1px] rounded-xl p-2"
+                    placeholder="Attach an on-chain message to this payment"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    maxLength={100}
+                  />
+                </div>
 
-            <MissionTokenNotice />
+                <MissionTokenNotice />
 
-            <div>
-              <ConditionCheckbox
-                id="contribution-terms-checkbox"
-                label={
-                  <p className="text-sm">
-                    {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
-                    <Link
-                      href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
-                      className="text-moon-blue"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      risks
-                    </Link>{' '}
-                    {`associated with participation in the MoonDAO Launchpad.`}
-                  </p>
-                }
-                agreedToCondition={agreedToCondition}
-                setAgreedToCondition={setAgreedToCondition}
-              />
-            </div>
+                <div>
+                  <ConditionCheckbox
+                    id="contribution-terms-checkbox"
+                    label={
+                      <p className="text-sm">
+                        {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
+                        <Link
+                          href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
+                          className="text-moon-blue"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          risks
+                        </Link>{' '}
+                        {`associated with participation in the MoonDAO Launchpad.`}
+                      </p>
+                    }
+                    agreedToCondition={agreedToCondition}
+                    setAgreedToCondition={setAgreedToCondition}
+                  />
+                </div>
 
-            <div className="w-full flex justify-between gap-4">
-              <NetworkSelector chains={chains} compact={true} align="left" />
-            </div>
-            <div className="w-full flex justify-between gap-4">
-              <StandardButton
-                styleOnly
-                className="w-1/2 p-2 text-center border-moon-indigo border-[1px] rounded-xl"
-                onClick={() => {
-                  setModalEnabled
-                    ? setModalEnabled(false)
-                    : setMissionPayModalEnabled(false)
-                }}
-                hoverEffect={false}
-              >
-                Cancel
-              </StandardButton>
-              <PrivyWeb3Button
-                id="contribute-button"
-                className="w-1/2 bg-moon-indigo rounded-xl"
-                label={
-                  isLoadingEthUsdPrice
-                    ? 'Loading ETH price...'
-                    : `Contribute $${formattedUsdInput || '0'} USD`
-                }
-                action={buyMissionToken}
-                isDisabled={
-                  !agreedToCondition ||
-                  !usdInput ||
-                  parseFloat(usdInput) <= 0 ||
-                  isLoadingEthUsdPrice ||
-                  !ethUsdPrice
-                }
-              />
-            </div>
+                <div className="w-full flex justify-between gap-4">
+                  <NetworkSelector
+                    chains={chains}
+                    compact={true}
+                    align="left"
+                  />
+                </div>
+
+                <div className="w-full flex justify-between gap-4">
+                  <StandardButton
+                    styleOnly
+                    className="w-1/2 p-2 text-center border-moon-indigo border-[1px] rounded-xl"
+                    onClick={handleModalClose}
+                    hoverEffect={false}
+                  >
+                    Cancel
+                  </StandardButton>
+
+                  <PrivyWeb3Button
+                    id="contribute-button"
+                    className="w-1/2 bg-moon-indigo rounded-xl"
+                    label={`Contribute $${formattedUsdInput || '0'} USD`}
+                    action={buyMissionToken}
+                    isDisabled={
+                      !agreedToCondition ||
+                      !usdInput ||
+                      parseFloat(usdInput as string) <= 0
+                    }
+                  />
+                </div>
+              </>
+            ) : (
+              // User needs more ETH - show CBOnramp for mainnet or faucets for testnet
+              <div className="w-full flex flex-col gap-4">
+                {/* Always show CBOnramp */}
+                <CBOnramp
+                  address={address || ''}
+                  selectedChain={selectedChain}
+                  usdInput={usdInput as string}
+                  onSuccess={() => {
+                    setIsFiatPaymentProcessing(false)
+                    toast.success(
+                      'ETH purchase completed! You can now contribute to the mission.',
+                      {
+                        style: toastStyle,
+                      }
+                    )
+                  }}
+                  redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
+                />
+
+                {usdInput && (
+                  <div className="w-full p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                    <p className="text-sm text-yellow-400">
+                      You need more ETH to contribute ${usdInput} USD. Use
+                      Coinbase above to purchase ETH.
+                    </p>
+                  </div>
+                )}
+
+                <div className="w-full flex gap-3">
+                  <StandardButton
+                    styleOnly
+                    className="w-full p-2 text-center border-moon-indigo border-[1px] rounded-xl"
+                    onClick={handleModalClose}
+                    hoverEffect={false}
+                  >
+                    Close
+                  </StandardButton>
+                </div>
+              </div>
+            )}
+
+            {isFiatPaymentProcessing && (
+              <div className="w-full p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner />
+                  <p className="text-sm">Processing your payment...</p>
+                </div>
+              </div>
+            )}
           </div>
         </Modal>
       )}

@@ -65,7 +65,7 @@ export default function NetworkSection() {
                   textColor="text-white"
                   borderRadius="rounded-xl"
                   hoverEffect={false}
-                  link="/network"
+                  link="/team"
                 >
                   Join as Company →
                 </StandardButton>
@@ -105,7 +105,7 @@ export default function NetworkSection() {
                   textColor="text-white"
                   borderRadius="rounded-xl"
                   hoverEffect={false}
-                  link="/network"
+                  link="/join"
                 >
                   Find Opportunities →
                 </StandardButton>
@@ -145,7 +145,7 @@ export default function NetworkSection() {
                   textColor="text-white"
                   borderRadius="rounded-xl"
                   hoverEffect={false}
-                  link="/network"
+                  link="#explore-network-header"
                 >
                   Explore Network →
                 </StandardButton>
@@ -166,15 +166,6 @@ export default function NetworkSection() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <StandardButton
-                  backgroundColor="bg-white hover:bg-gray-100"
-                  textColor="text-gray-900"
-                  borderRadius="rounded-xl"
-                  hoverEffect={false}
-                  link="/network"
-                >
-                  Explore the Network
-                </StandardButton>
                 <StandardButton
                   backgroundColor="bg-transparent border-2 border-white hover:bg-white"
                   textColor="text-white hover:text-gray-900"

@@ -307,7 +307,7 @@ export default function CreateMission({
 
       // Calculate deadline timestamp
       let deadlineTimestamp: number
-      if (missionData.deadline) {
+      if (missionData.deadline && process.env.NEXT_PUBLIC_CHAIN === 'mainnet') {
         // User defined deadline - use end of selected day
         deadlineTimestamp = Math.floor(
           new Date(missionData.deadline + 'T23:59:59').getTime() / 1000
@@ -326,7 +326,10 @@ export default function CreateMission({
       let refundPeriod: number
       if (!missionData.refundsEnabled) {
         refundPeriod = 0 // No refunds
-      } else if (missionData.deadline) {
+      } else if (
+        missionData.deadline &&
+        process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+      ) {
         refundPeriod = 28 * 24 * 60 * 60 // 28 days when user sets deadline
       } else {
         // Use defaults based on environment when no deadline set
