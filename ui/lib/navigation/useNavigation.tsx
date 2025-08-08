@@ -44,6 +44,10 @@ export default function useNavigation(citizen: any) {
         href: '/governance',
         children: [
           {
+            name: 'Governance Overview',
+            href: '/governance',
+          },
+          {
             name: 'Proposals',
             href: '/vote',
           },
@@ -71,6 +75,10 @@ export default function useNavigation(citizen: any) {
         icon: WrenchScrewdriverIcon,
         href: '/projects-overview',
         children: [
+          {
+            name: 'Projects Overview',
+            href: '/projects-overview',
+          },
           {
             name: 'Project Rewards',
             href: '/projects',
