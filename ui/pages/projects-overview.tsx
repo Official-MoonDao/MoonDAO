@@ -62,7 +62,8 @@ const ProjectsOverview: React.FC<{
   const { stakedEth } = useStakedEth()
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
   
-  const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
+  const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState<number | null>(null)
+  const [isLoadingMooneyUSD, setIsLoadingMooneyUSD] = useState(true)
 
   // Combine all tokens
   const tokens = useMemo(() => {
@@ -91,6 +92,7 @@ const ProjectsOverview: React.FC<{
       try {
         if (!mooneyBudget || mooneyBudget < 0.01) {
           setMooneyBudgetUSD(0)
+          setIsLoadingMooneyUSD(false)
           return
         }
 
@@ -99,17 +101,21 @@ const ProjectsOverview: React.FC<{
         if (!isCancelled && route?.route[0]?.rawQuote) {
           const usd = route.route[0].rawQuote.toString() / 1e18
           setMooneyBudgetUSD(usd)
+          setIsLoadingMooneyUSD(false)
         }
       } catch (error) {
         console.error('Error fetching Mooney budget USD:', error)
         if (!isCancelled) {
           setMooneyBudgetUSD(0)
+          setIsLoadingMooneyUSD(false)
         }
       }
     }
 
     if (mooneyBudget && MOONEY && DAI) {
       getMooneyBudgetUSD()
+    } else if (mooneyBudget === 0) {
+      setIsLoadingMooneyUSD(false)
     }
 
     return () => {
@@ -241,7 +247,7 @@ const ProjectsOverview: React.FC<{
                     </div>
                     <h4 className="text-xl font-bold text-white mb-3">ETH Rewards</h4>
                     <div className="bg-gradient-to-r from-orange-500/10 to-yellow-500/10 rounded-lg p-3 mb-3 border border-orange-400/20">
-                      <div className="text-2xl font-bold text-orange-400">~{ethBudget.toFixed(2)} ETH <span className="text-lg text-orange-300">(${usdBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span></div>
+                      <div className="text-2xl font-bold text-orange-400">{ethBudget.toFixed(2)} ETH <span className="text-lg text-orange-300">(${usdBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span></div>
                       <div className="text-sm text-orange-300">Available Q{quarter} {year}</div>
                     </div>
                     <p className="text-gray-300 mb-3">
@@ -261,7 +267,16 @@ const ProjectsOverview: React.FC<{
                     </div>
                     <h4 className="text-xl font-bold text-white mb-3">vMOONEY Rewards</h4>
                     <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg p-3 mb-3 border border-blue-400/20">
-                      <div className="text-2xl font-bold text-blue-400">~{Number(mooneyBudget.toPrecision(3)).toLocaleString()} <span className="text-lg text-blue-300">(${mooneyBudgetUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span></div>
+                      <div className="text-2xl font-bold text-blue-400">
+                        {Number(mooneyBudget.toPrecision(3)).toLocaleString()} 
+                        <span className="text-lg text-blue-300">
+                          {isLoadingMooneyUSD ? (
+                            <span className="ml-2 opacity-70">(...)</span>
+                          ) : mooneyBudgetUSD !== null && mooneyBudgetUSD > 0 ? (
+                            ` (${mooneyBudgetUSD.toLocaleString(undefined, { maximumFractionDigits: 0, style: 'currency', currency: 'USD' })})`
+                          ) : null}
+                        </span>
+                      </div>
                       <div className="text-sm text-blue-300">vMOONEY Available Q{quarter} {year}</div>
                     </div>
                     <p className="text-gray-300 mb-3">
