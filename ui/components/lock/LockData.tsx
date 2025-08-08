@@ -51,7 +51,7 @@ export function LockData({
                 </div>
               </div>
               <div className="flex items-center text-left">
-                <span className="text-blue-400 text-2xl font-RobotoMono font-semibold">
+                <span className="text-blue-400 text-2xl font-RobotoMono font-semibold flex items-center">
                   <Balance
                     id="lock-data-vmooney-balance"
                     balance={VMOONEYBalance?.toString() / 10 ** 18}
@@ -59,6 +59,9 @@ export function LockData({
                     decimals={2}
                     token=""
                   />
+                  <span className="ml-2 text-base md:text-lg">
+                    vMOONEY
+                  </span>
                 </span>
               </div>
             </div>
@@ -76,14 +79,24 @@ export function LockData({
                 </div>
               </div>
               <div className="flex items-center text-left">
-                <div className="text-white text-2xl font-RobotoMono font-semibold">
+                <div className="text-white text-2xl font-RobotoMono font-semibold flex items-center">
                   <Balance
                     id="lock-data-locked-mooney"
                     balance={VMOONEYLock && BigNumber.from(VMOONEYLock[0])}
                     loading={VMOONEYLockLoading}
                     decimals={2}
-                    token="MOONEY"
+                    token=""
                   />
+                  <span className="ml-2 text-base md:text-lg flex items-center gap-1">
+                    MOONEY
+                    <Image
+                      src="/coins/MOONEY.png"
+                      width={20}
+                      height={20}
+                      alt="MOONEY"
+                      className="rounded-full"
+                    />
+                  </span>
                 </div>
               </div>
             </div>
