@@ -69,7 +69,7 @@ export default function useNavigation(citizen: any) {
       {
         name: 'Projects',
         icon: WrenchScrewdriverIcon,
-        href: '/projects',
+        href: '/projects-overview',
         children: [
           {
             name: 'Project Rewards',
