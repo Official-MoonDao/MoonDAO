@@ -266,6 +266,7 @@ export default function Lock() {
                                     <Balance
                                       balance={MOONEYBalance?.toString() / 1e18}
                                       loading={MOONEYBalanceLoading}
+                                      decimals={2}
                                     />
                                   </div>
                                   <Image
@@ -291,25 +292,32 @@ export default function Lock() {
                             <div className="bg-black/30 rounded-xl p-3 border border-white/10 focus-within:border-blue-400/50 transition-colors">
                               <div className="flex items-center justify-between">
                                 <input
-                                  type="number"
-                                  step="any"
-                                  placeholder="0.0"
-                                  className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  value={lockAmount || ''}
+                                  type="text"
+                                  placeholder="0.00"
+                                  className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1"
+                                  value={lockAmount ? parseFloat(lockAmount).toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  }) : ''}
                                   disabled={
                                     (!MOONEYBalance || +MOONEYBalance.toString() === 0) && !hasLock
                                   }
-                                  min={
-                                    VMOONEYLock
-                                      ? ethers.utils.formatEther(VMOONEYLock?.[0])
-                                      : 0
-                                  }
                                   onChange={(e: any) => {
                                     let value = e.target.value
+                                    // Remove commas and non-numeric characters except decimal point
+                                    value = value.replace(/[^0-9.]/g, '')
+                                    
+                                    // Prevent multiple decimal points
+                                    const parts = value.split('.')
+                                    if (parts.length > 2) {
+                                      value = parts[0] + '.' + parts.slice(1).join('')
+                                    }
+                                    
                                     // Prevent negative values
                                     if (parseFloat(value) < 0) {
                                       value = '0'
                                     }
+                                    
                                     // Remove leading zero if user types a number after it
                                     if (
                                       value.startsWith('0') &&
@@ -569,9 +577,13 @@ export default function Lock() {
                                                 : new Date()
                                             ),
                                             max: Date.parse(minMaxLockTime.max),
-                                          }).toString()
+                                          }).toString().replace(/,/g, '')
                                         )
-                                        return Math.sqrt(vMooneyAmount).toFixed(2)
+                                        const votingPower = Math.sqrt(vMooneyAmount)
+                                        return votingPower.toLocaleString('en-US', {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        })
                                       })()}
                                     </span>
                                   </div>
@@ -785,7 +797,10 @@ export default function Lock() {
                         <h3 className="text-lg font-bold text-white mb-2">Voting Power</h3>
                         <div className="text-2xl font-bold text-green-400 mb-1">
                           {VMOONEYBalance && !VMOONEYBalanceLoading ? 
-                            Math.floor(Math.sqrt(VMOONEYBalance?.toString() / 10 ** 18)).toLocaleString()
+                            Math.sqrt(VMOONEYBalance?.toString() / 10 ** 18).toLocaleString('en-US', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
                             : '...'
                           }
                         </div>
@@ -906,7 +921,10 @@ export default function Lock() {
                               <span>Voting Power:</span>
                               <span className="text-purple-400">
                                 {VMOONEYBalance && !VMOONEYBalanceLoading ? 
-                                  Math.floor(Math.sqrt(VMOONEYBalance?.toString() / 10 ** 18)).toLocaleString()
+                                  Math.sqrt(VMOONEYBalance?.toString() / 10 ** 18).toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })
                                   : '...'
                                 }
                               </span>

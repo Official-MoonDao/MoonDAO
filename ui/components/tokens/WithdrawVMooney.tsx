@@ -241,12 +241,14 @@ export default function WithdrawVMooney() {
               <div className="bg-black/20 rounded-xl p-4 border border-white/5 mb-4">
                 <div className="text-center">
                   <p className="text-green-400 text-3xl font-RobotoMono font-bold mb-2">
-                    {String(
-                      (
+                    {(
                         Number(withdrawable) /
                         10 ** MOONEY_DECIMALS
-                      ).toLocaleString()
-                    )}
+                      ).toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })
+                    }
                   </p>
                   <p className="text-gray-400 text-sm">vMOONEY Tokens</p>
                 </div>
