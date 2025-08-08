@@ -142,19 +142,22 @@ const Info: React.FC = () => {
             isProfile
           >
             <div className="mt-10 mb-10">
-              <div className="p-4 md:p-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-                  {infoCards.map((card, index) => (
-                    <InfoCard
-                      key={`info-card-${index}`}
-                      icon={card.icon}
-                      iconAlt={card.iconAlt}
-                      header={card.header}
-                      paragraph={card.paragraph}
-                      link={card.link}
-                      hovertext={card.hovertext}
-                    />
-                  ))}
+              <div className="relative mx-4">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-900/10 via-purple-900/10 to-teal-900/10 rounded-3xl" />
+                <div className="relative p-6 md:p-12 bg-gradient-to-br from-white/5 via-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+                    {infoCards.map((card, index) => (
+                      <InfoCard
+                        key={`info-card-${index}`}
+                        icon={card.icon}
+                        iconAlt={card.iconAlt}
+                        header={card.header}
+                        paragraph={card.paragraph}
+                        link={card.link}
+                        hovertext={card.hovertext}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
