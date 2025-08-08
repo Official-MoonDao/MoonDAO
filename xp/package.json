@@ -1,0 +1,34 @@
+{
+  "name": "xp-manager-voting-power-oracle",
+  "version": "1.0.0",
+  "description": "Off-chain oracle for XP Manager voting power verification",
+  "main": "scripts/VotingPowerOracle.js",
+  "scripts": {
+    "oracle": "node scripts/VotingPowerOracle.js",
+    "example": "node scripts/ExampleVotingPowerUsage.js",
+    "test": "forge test",
+    "deploy": "forge script script/DeployXPManager.s.sol --rpc-url $RPC_URL --broadcast",
+    "deploy-voting-power": "forge script script/DeployHasVotingPower.s.sol --rpc-url $RPC_URL --broadcast"
+  },
+  "dependencies": {
+    "ethers": "^5.7.2",
+    "graphql-request": "^5.0.0"
+  },
+  "devDependencies": {
+    "forge-std": "^1.7.1"
+  },
+  "keywords": [
+    "ethereum",
+    "xp",
+    "voting-power",
+    "oracle",
+    "snapshot",
+    "gamification"
+  ],
+  "author": "MoonDAO",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
+

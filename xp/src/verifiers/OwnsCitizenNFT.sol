@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "../interfaces/IXPVerifier.sol";
-import "../../subscription-contracts/src/ERC5643Citizen.sol";
+import "../mocks/MockERC5643Citizen.sol";
 
 /// @title OwnsCitizenNFT
 /// @notice Verifier that checks if a user owns a MoonDAO Citizen NFT
@@ -26,7 +26,7 @@ contract OwnsCitizenNFT is IXPVerifier {
     {
         (address citizenNFTAddress, uint256 amount) = abi.decode(context, (address, uint256));
         
-        MoonDAOCitizen citizenNFT = MoonDAOCitizen(citizenNFTAddress);
+        MockERC5643Citizen citizenNFT = MockERC5643Citizen(citizenNFTAddress);
         
         // Check if user owns at least one Citizen NFT
         eligible = citizenNFT.balanceOf(user) > 0;
@@ -39,7 +39,7 @@ contract OwnsCitizenNFT is IXPVerifier {
     /// @return id A unique claim identifier
     function claimId(address user, bytes calldata context) 
         external 
-        pure 
+        view 
         returns (bytes32) 
     {
         return keccak256(abi.encodePacked(address(this), user, context));

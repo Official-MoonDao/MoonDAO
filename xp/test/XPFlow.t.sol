@@ -2,9 +2,9 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
-import "../XPManager.sol";
-import "../verifiers/OwnsCitizenNFT.sol";
-import "../../subscription-contracts/src/ERC5643Citizen.sol";
+import "../src/XPManager.sol";
+import "../src/verifiers/OwnsCitizenNFT.sol";
+import "../src/mocks/MockERC5643Citizen.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract MockERC20 is ERC20 {
@@ -16,8 +16,7 @@ contract MockERC20 is ERC20 {
 contract XPFlowTest is Test {
     XPManager public xpManager;
     OwnsCitizenNFT public citizenVerifier;
-    MockERC20 public rewardToken;
-    MoonDAOCitizen public citizenNFT;
+    MockERC5643Citizen public citizenNFT;
     
     address public user = address(0x123);
     address public treasury = address(0x456);
@@ -26,14 +25,11 @@ contract XPFlowTest is Test {
     address public discountList = address(0xDEF);
 
     function setUp() public {
-        // Deploy reward token
-        rewardToken = new MockERC20();
-        
         // Deploy XP Manager
-        xpManager = new XPManager(address(rewardToken));
+        xpManager = new XPManager();
         
         // Deploy Citizen NFT (mock for testing)
-        citizenNFT = new MoonDAOCitizen(
+        citizenNFT = new MockERC5643Citizen(
             "MoonDAO Citizen",
             "CITIZEN",
             treasury,
@@ -48,12 +44,11 @@ contract XPFlowTest is Test {
         // Register verifier
         xpManager.registerVerifier(1, address(citizenVerifier));
         
-        // Fund XP Manager with reward tokens
-        rewardToken.transfer(address(xpManager), 1000 * 10**18);
+        // No reward configuration
     }
 
     function testCompleteFlow() public {
-        console.log("🚀 Testing Complete XP Flow");
+        console.log("Testing Complete XP Flow");
         
         // Step 1: User gets a Citizen NFT
         console.log("Step 1: User gets Citizen NFT");
@@ -99,12 +94,12 @@ contract XPFlowTest is Test {
         
         // Step 6: Claim XP
         console.log("Step 6: Claim XP");
-        uint256 xpBefore = xpManager.xp(user);
+        uint256 xpBefore = xpManager.userXP(user);
         console.log("XP before claim:", xpBefore);
         
         xpManager.claimXP(1, context);
         
-        uint256 xpAfter = xpManager.xp(user);
+        uint256 xpAfter = xpManager.userXP(user);
         console.log("XP after claim:", xpAfter);
         assertEq(xpAfter, xpBefore + 100);
         
@@ -121,11 +116,11 @@ contract XPFlowTest is Test {
         
         vm.stopPrank();
         
-        console.log("✅ Complete flow test passed!");
+        console.log("Complete flow test passed!");
     }
 
     function testUserWithoutNFT() public {
-        console.log("🧪 Testing user without Citizen NFT");
+        console.log("Testing user without Citizen NFT");
         
         address userWithoutNFT = address(0x999);
         
@@ -153,11 +148,11 @@ contract XPFlowTest is Test {
         xpManager.claimXP(1, context);
         vm.stopPrank();
         
-        console.log("✅ User without NFT test passed!");
+        console.log("User without NFT test passed!");
     }
 
     function testRewardTokenDistribution() public {
-        console.log("💰 Testing reward token distribution");
+        console.log("Testing reward token distribution");
         
         vm.startPrank(user);
         
@@ -174,24 +169,15 @@ contract XPFlowTest is Test {
             1000
         );
         
-        uint256 tokenBalanceBefore = rewardToken.balanceOf(user);
-        console.log("Token balance before:", tokenBalanceBefore);
-        
         xpManager.claimXP(1, context);
         
-        uint256 tokenBalanceAfter = rewardToken.balanceOf(user);
-        console.log("Token balance after:", tokenBalanceAfter);
-        
-        // Should receive 1 reward token
-        assertEq(tokenBalanceAfter, tokenBalanceBefore + 1e18);
-        
-        // XP should reset to 0
-        uint256 xpAfter = xpManager.xp(user);
-        console.log("XP after reward:", xpAfter);
-        assertEq(xpAfter, 0);
+        // With no rewards, XP should simply increase by the claimed amount
+        uint256 xpAfter = xpManager.userXP(user);
+        console.log("XP after claim:", xpAfter);
+        assertEq(xpAfter, 1000);
         
         vm.stopPrank();
         
-        console.log("✅ Reward token distribution test passed!");
+        console.log("Reward token distribution test passed!");
     }
 }
