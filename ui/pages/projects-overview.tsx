@@ -5,6 +5,7 @@ import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'                    
 import ProjectsSection from '../components/home/ProjectsSection'
 import StandardButton from '../components/layout/StandardButton'
+import ProjectCard from '@/components/project/ProjectCard'
 import { GetServerSideProps } from 'next'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
@@ -274,6 +275,62 @@ const ProjectsOverview: React.FC<{
               </div>
             </div>
 
+            {/* Active Projects Section */}
+            <div className="relative mx-4 mb-16">
+              <div className="bg-gradient-to-br from-white/5 via-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-3xl p-6 md:p-8 shadow-2xl">
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl md:text-3xl font-GoodTimes text-white mb-4">
+                    Active Projects
+                  </h3>
+                  <p className="text-gray-300 max-w-3xl mx-auto">
+                    Explore the exciting space-focused projects currently in development by our community. Each project represents a step toward our mission of establishing a permanent settlement on the Moon.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-6">
+                  {currentProjects && currentProjects.length > 0 ? (
+                    currentProjects.slice(0, 3).map((project: any, i) => (
+                      <div
+                        key={`active-project-${i}`}
+                        className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+                      >
+                        <ProjectCard
+                          key={`active-project-${i}`}
+                          project={project}
+                          projectContract={null}
+                          hatsContract={null}
+                          distribute={false}
+                          distribution={undefined}
+                          handleDistributionChange={undefined}
+                          userHasVotingPower={false}
+                          isVotingPeriod={false}
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <p>There are no active projects at the moment.</p>
+                      <p className="text-sm mt-2">Check back soon or submit your own project proposal!</p>
+                    </div>
+                  )}
+                </div>
+
+                {currentProjects && currentProjects.length > 3 && (
+                  <div className="text-center mt-8">
+                    <StandardButton
+                      backgroundColor="bg-gradient-to-r from-purple-600 to-pink-600"
+                      textColor="text-white"
+                      borderRadius="rounded-full"
+                      hoverEffect={false}
+                      link="/projects"
+                    >
+                      View All {currentProjects.length} Active Projects
+                    </StandardButton>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Call to Action */}
             <div className="text-center px-4">
               <h3 className="text-2xl md:text-3xl font-GoodTimes text-white mb-6">
@@ -337,7 +394,7 @@ export default ProjectsOverview
 export const getServerSideProps: GetServerSideProps = async () => {
   try {
     // Import the same constants and functions used in the projects page
-    const { DEFAULT_CHAIN_V5, DISTRIBUTION_TABLE_NAMES } = await import('const/config')
+    const { DEFAULT_CHAIN_V5, DISTRIBUTION_TABLE_NAMES, PROJECT_TABLE_NAMES } = await import('const/config')
     const { getChainSlug } = await import('@/lib/thirdweb/chain')
 
     const chain = DEFAULT_CHAIN_V5
@@ -345,27 +402,21 @@ export const getServerSideProps: GetServerSideProps = async () => {
     const { quarter, year } = getRelativeQuarter(0)
 
     // Get current and past projects
-    const statement = `SELECT * FROM ${process.env.NEXT_PUBLIC_PROJECTS_TABLENAME}_${chainSlug}`
+    const statement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
     const projects = await queryTable(chain, statement)
 
     const currentProjects = []
     const pastProjects = []
-    const currentDate = new Date()
-    const currentMonth = currentDate.getMonth()
-    const currentYear = currentDate.getFullYear()
 
     if (projects && projects.length > 0) {
       for (let i = 0; i < projects.length; i++) {
         if (projects[i]) {
           const project = projects[i] as any
-          const endDate = new Date(project.endDate)
-          const endYear = endDate.getFullYear()
-          const endMonth = endDate.getMonth()
-
-          if (endYear < currentYear || (endYear === currentYear && endMonth < currentMonth)) {
-            pastProjects.push(project)
-          } else {
+          // Use the 'active' field to determine current vs past projects
+          if (project.active) {
             currentProjects.push(project)
+          } else {
+            pastProjects.push(project)
           }
         }
       }
