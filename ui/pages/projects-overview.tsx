@@ -140,7 +140,7 @@ const ProjectsOverview: React.FC<{
               <h1 className="header font-GoodTimes text-white drop-shadow-lg mb-4">
                 Project System
               </h1>
-              <p className="sub-header text-white/90 drop-shadow-lg mb-4">
+              <p className="sub-header text-white/90 drop-shadow-lg">
                 MoonDAO's decentralized project system funds mission-aligned initiatives that advance our goal of establishing a permanent settlement on the Moon.
               </p>
               <StandardButton
