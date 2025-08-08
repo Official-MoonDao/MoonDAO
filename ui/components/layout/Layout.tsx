@@ -109,7 +109,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         </div>
 
         {/* Main Content - Full width with top nav */}
-        <main className={`xl:pt-16 w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'flex justify-center'}`}>
+        <main className={`pt-16 w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'flex justify-center'}`}>
           <div className={`w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'max-w-7xl px-4 sm:px-6 lg:px-8'}`}>
             {children}
           </div>
