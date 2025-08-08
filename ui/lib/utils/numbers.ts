@@ -37,6 +37,17 @@ export function formatNumberWithCommas(numStr: string): string {
   return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger
 }
 
+// Utility function to format numbers with commas and exactly 2 decimals
+export function formatNumberWithCommasAndDecimals(num: number | string, decimals: number = 2): string {
+  const numValue = typeof num === 'string' ? parseFloat(num) : num
+  if (isNaN(numValue)) return '0.00'
+  
+  return numValue.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })
+}
+
 export function transformNumber(
   num: number | BigNumber | string,
   to: NumberType,
