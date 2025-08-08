@@ -1384,7 +1384,7 @@ export function PrivyConnectWallet({
                 login()
               }
             }}
-            className="text-[12px] md:text-[18px] font-bold rounded-full px-4 py-1 gradient-2 transition-colors duration-150"
+            className="text-[12px] md:text-[18px] rounded-full px-4 py-1 gradient-2 transition-colors duration-150"
           >
             <div className="flex items-center justify-center">
               <Image
