@@ -768,61 +768,45 @@ export default function Home({
               </div>
 
               <div className="space-y-4">
-                {[
-                  {
-                    type: 'newsletter',
-                    icon: '',
-                    color: 'bg-blue-600',
-                    title: 'Latest Newsletter: Datacenters on the moon?',
-                    time: '2 hours ago',
-                    engagement: '1.2k views'
-                  },
-                  {
-                    type: 'event',
-                    icon: '',
-                    color: 'bg-green-600',
-                    title: 'Next Townhall: Thursday, June 19th, 2025 @ 3PM EST',
-                    time: 'Upcoming event',
-                    engagement: '234 interested'
-                  },
-                  {
-                    type: 'proposal',
-                    icon: '',
-                    color: 'bg-purple-600',
-                    title: 'New proposal: MDP-177: Lunar Surface Settlement Study',
-                    time: '6 hours ago',
-                    engagement: '45 votes'
-                  },
-                  {
-                    type: 'team',
-                    icon: '',
-                    color: 'bg-orange-600',
-                    title: 'New team formed: Lunar Mining Research Initiative',
-                    time: '12 hours ago',
-                    engagement: '8 members'
-                  }
-                ].map((item, index) => (
-                  <div key={index} className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5">
-                    <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 ${item.color} rounded-full flex items-center justify-center text-white text-lg font-semibold shadow-lg`}>
-                        {item.type[0].toUpperCase()}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-white font-medium mb-1">{item.title}</p>
-                        <div className="flex items-center gap-4 text-sm text-gray-400">
-                          <span>{item.time}</span>
-                          <span>•</span>
-                          <span>{item.engagement}</span>
+                {newestNewsletters && newestNewsletters.length > 0 ? (
+                  newestNewsletters.slice(0, 4).map((newsletter: any, index: number) => (
+                    <div key={newsletter.id || index} className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-blue-600">
+                          {newsletter.image ? (
+                            <MediaRenderer
+                              client={client}
+                              src={newsletter.image}
+                              alt={newsletter.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <NewspaperIcon className="w-6 h-6 text-white" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-white font-medium mb-1">{newsletter.title || 'Newsletter Update'}</p>
+                          <div className="flex items-center gap-4 text-sm text-gray-400">
+                            <span>{newsletter.publishedAt ? new Date(newsletter.publishedAt).toLocaleDateString() : 'Recently'}</span>
+                            <span>•</span>
+                            <span>{newsletter.views || 0} views</span>
+                          </div>
+                        </div>
+                        <div className="text-gray-400 hover:text-white">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                          </svg>
                         </div>
                       </div>
-                      <div className="text-gray-400 hover:text-white">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                        </svg>
-                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <NewspaperIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+                    <p className="text-gray-400 text-sm">No newsletters available</p>
+                    <p className="text-gray-500 text-xs mt-1">Check back soon for updates</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
@@ -1437,7 +1421,20 @@ export async function getStaticProps() {
     mooneyPrice = mooneyPriceResult.value
   }
 
-  const newestNewsletters: any = []
+  // Get newsletter data
+  const getNewsletterData = async () => {
+    try {
+      // This would be replaced with actual newsletter API call
+      // For now, returning empty array since no API endpoint exists
+      // You would implement: const response = await fetch('/api/newsletters')
+      return []
+    } catch (error) {
+      console.error('Newsletter data fetch failed:', error)
+      return []
+    }
+  }
+
+  const newestNewsletters: any = await getNewsletterData()
 
   return {
     props: {
