@@ -1,6 +1,7 @@
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
+import ProjectTableABI from 'const/abis/ProjectTable.json'
 import TeamABI from 'const/abis/Team.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
 import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
@@ -12,11 +13,14 @@ import {
   JOBS_TABLE_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
   POLYGON_ASSETS_URL,
+  PROJECT_TABLE_ADDRESSES,
+  PROJECT_TABLE_NAMES,
   TEAM_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
 } from 'const/config'
 import { blockedTeams, featuredTeams } from 'const/whitelist'
+import { blockedProjects } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -38,7 +42,9 @@ import {
   FireIcon,
   GiftIcon
 } from '@heroicons/react/24/outline'
+import { Action, RequestBudget } from '@nance/nance-sdk'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import { formatNumberUSStyle } from '@/lib/nance'
 import { getAUMHistory } from '@/lib/coinstats'
 import { getMooneyPrice } from '@/lib/coinstats'
 import { useAssets } from '@/lib/dashboard/hooks'
@@ -59,6 +65,8 @@ import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget } from '@/lib/utils/rewards'
+import { Project } from '@/lib/project/useProjectData'
+import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
 import { NewsletterSubModal } from '../components/newsletter/NewsletterSubModal'
 import { ARRChart } from '@/components/dashboard/treasury/ARRChart'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
@@ -75,6 +83,23 @@ import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
+// Function to extract ETH amount from proposal actions
+function getEthAmountFromProposal(actions: Action[] | undefined): number {
+  if (!actions) return 0
+  
+  let ethAmount = 0
+  actions
+    .filter((action) => action.type === 'Request Budget')
+    .flatMap((action) => (action.payload as RequestBudget).budget)
+    .forEach((transfer) => {
+      if (transfer.token === ETH_MOCK_ADDRESS) {
+        ethAmount += Number(transfer.amount)
+      }
+    })
+  
+  return ethAmount
+}
+
 export default function Home({
   newestNewsletters,
   newestCitizens,
@@ -86,6 +111,7 @@ export default function Home({
   mooneyPrice, // Add this new prop
   citizensLocationData,
   filteredTeams,
+  currentProjects, // Add current projects
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
@@ -640,7 +666,7 @@ export default function Home({
                     <div className="flex items-center justify-between mb-5">
                       <span className="text-gray-300 font-medium">AUM</span>
                       <span className="text-white font-bold text-2xl">
-                        ${aumData.aum.toLocaleString()}
+                        ${Math.round(aumData.aum).toLocaleString()}
                       </span>
                     </div>
                     <div className="h-20">
@@ -663,7 +689,7 @@ export default function Home({
                     <div className="flex items-center justify-between mb-5">
                       <span className="text-gray-300 font-medium">ARR</span>
                       <span className="text-white font-bold text-2xl">
-                        ~${arrData.currentARR.toLocaleString()}
+                        ${Math.round(arrData.currentARR).toLocaleString()}
                       </span>
                     </div>
                     <div className="h-20">
@@ -810,85 +836,46 @@ export default function Home({
               </div>
               
               <div className="space-y-4">
-                {proposals && proposals.slice(0, 3).map((proposal: any, i: number) => (
-                  <div key={proposal.proposalId || i} className="bg-white/5 rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all">
-                    <div className="flex justify-between items-start mb-3">
-                      <h4 className="text-white font-semibold">
-                        {proposal.title || `MDP-${179 - i}: Study on Lunar Surface Selection For Settlement`}
-                      </h4>
-                      {i === 0 && (
-                        <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
-                          Active
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-4 text-sm text-gray-300">
-                        <span className="flex items-center gap-1">
-                          <span className="font-medium">2.2 ETH</span> requested
-                        </span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <span className="font-medium">{3 + i} days</span> left
-                        </span>
+                {proposals && proposals.slice(0, 3).map((proposal: any, i: number) => {
+                  const ethAmount = getEthAmountFromProposal(proposal.actions)
+                  
+                  return (
+                    <div key={proposal.proposalId || i} className="bg-white/5 rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all">
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 className="text-white font-semibold">
+                          {proposal.title || `MDP-${179 - i}: Study on Lunar Surface Selection For Settlement`}
+                        </h4>
+                        {i === 0 && (
+                          <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
+                            Active
+                          </span>
+                        )}
                       </div>
-                      <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition-all">
-                        Vote
-                      </StandardButton>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4 text-sm text-gray-300">
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">
+                              {ethAmount > 0 ? `${formatNumberUSStyle(ethAmount)} ETH` : 'No funding'}
+                            </span> requested
+                          </span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">{3 + i} days</span> left
+                          </span>
+                        </div>
+                        <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition-all">
+                          Vote
+                        </StandardButton>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>
 
           {/* Right Sidebar - Community & Stats */}
           <div className="lg:col-span-3 flex flex-col space-y-4">
-            {/* Teams */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">Teams</h3>
-                <StandardButton className="text-blue-300 text-sm hover:text-blue-200 transition-all" link="/network?tab=teams">
-                  See all
-                </StandardButton>
-              </div>
-              
-              <div className="space-y-3">
-                {filteredTeams && filteredTeams.length > 0 ? (
-                  filteredTeams.slice(0, 5).map((team: any, index: number) => (
-                    <div key={team.id || index} className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                        {team.image ? (
-                          <MediaRenderer
-                            client={client}
-                            src={team.image}
-                            alt={team.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                            {team.name?.[0] || 'T'}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-sm truncate">{team.name || 'Team'}</h4>
-                        <p className="text-gray-400 text-xs">{team.memberCount || '8'} members</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">M</div>
-                    <div className="flex-1">
-                      <h4 className="text-white font-medium text-sm">Mission Control</h4>
-                      <p className="text-gray-400 text-xs">12 members</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Recent Citizens */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
@@ -936,30 +923,115 @@ export default function Home({
               </div>
             </div>
 
-            {/* Quick Stats */}
+            {/* Featured Teams */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <h3 className="font-semibold text-white text-lg mb-4">Quick Stats</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Total Citizens</span>
-                  <span className="text-white font-bold">
-                    {citizenSubgraphData?.transfers?.length || '2,341'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Teams</span>
-                  <span className="text-white font-bold">
-                    {filteredTeams?.length || '12'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Active Proposals</span>
-                  <span className="text-white font-bold">3</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Countries</span>
-                  <span className="text-white font-bold">47</span>
-                </div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white text-lg">Featured Teams</h3>
+                <StandardButton className="text-blue-300 text-sm hover:text-blue-200 transition-all" link="/network?tab=teams">
+                  See all
+                </StandardButton>
+              </div>
+              
+              <div className="space-y-3">
+                {filteredTeams && filteredTeams.length > 0 ? (
+                  filteredTeams.slice(0, 5).map((team: any, index: number) => (
+                    <div key={team.id || index} className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                        {team.image ? (
+                          <MediaRenderer
+                            client={client}
+                            src={team.image}
+                            alt={team.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                            {team.name?.[0] || 'T'}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-white font-medium text-sm truncate">{team.name || 'Team'}</h4>
+                        <p className="text-gray-400 text-xs">{team.memberCount || '8'} members</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">M</div>
+                    <div className="flex-1">
+                      <h4 className="text-white font-medium text-sm">Mission Control</h4>
+                      <p className="text-gray-400 text-xs">12 members</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Marketplace */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white text-lg">Marketplace</h3>
+                <StandardButton className="text-blue-300 text-sm hover:text-blue-200 transition-all" link="/marketplace">
+                  See all
+                </StandardButton>
+              </div>
+              
+              <div className="space-y-3">
+                {newestListings && newestListings.length > 0 ? (
+                  newestListings.slice(0, 3).map((listing: any, index: number) => (
+                    <div key={listing.id || index} className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                        {listing.image ? (
+                          <MediaRenderer
+                            client={client}
+                            src={listing.image}
+                            alt={listing.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                            <ShoppingBagIcon className="w-5 h-5" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-white font-medium text-sm truncate">{listing.title || 'Marketplace Item'}</h4>
+                        <p className="text-gray-400 text-xs">{listing.price ? `${listing.price} ETH` : 'View details'}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white">
+                        <ShoppingBagIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-white font-medium text-sm">Moon Rock Sample</h4>
+                        <p className="text-gray-400 text-xs">2.5 ETH</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white">
+                        <ShoppingBagIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-white font-medium text-sm">Space Suit NFT</h4>
+                        <p className="text-gray-400 text-xs">1.8 ETH</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white">
+                        <ShoppingBagIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-white font-medium text-sm">Lunar Map Print</h4>
+                        <p className="text-gray-400 text-xs">0.5 ETH</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1006,38 +1078,57 @@ export default function Home({
             </div>
           </div>
 
-          {/* Governance Feature */}
-          <div className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-8">
+          {/* Projects Feature */}
+          <div className="bg-gradient-to-br from-green-600/20 to-emerald-800/20 backdrop-blur-xl border border-green-500/20 rounded-2xl p-8">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                  <CheckBadgeIcon className="w-7 h-7" />
-                  Governance
+                  <RocketLaunchIcon className="w-7 h-7" />
+                  Active Projects
                 </h3>
-                <p className="text-purple-200">Shape the future of space exploration</p>
+                <p className="text-green-200">Contribute to space exploration initiatives</p>
               </div>
-              <StandardButton className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all" link="/governance">
-                Vote Now
+              <StandardButton className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all" link="/projects">
+                View All Projects
               </StandardButton>
             </div>
             
-            <div className="bg-black/20 rounded-xl p-6 border border-purple-500/20">
+            <div className="bg-black/20 rounded-xl p-6 border border-green-500/20">
               <div className="grid grid-cols-2 gap-6 mb-4">
                 <div>
-                  <div className="text-2xl font-bold text-white">32.3 ETH</div>
-                  <div className="text-purple-200 text-sm">Quarterly Treasury</div>
+                  <div className="text-2xl font-bold text-white">{Math.round(ethBudget)} ETH</div>
+                  <div className="text-green-200 text-sm">Quarterly Rewards Budget</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white">8.9M</div>
-                  <div className="text-purple-200 text-sm">vMOONEY Staked</div>
+                  <div className="text-2xl font-bold text-white">{currentProjects?.length || 0}</div>
+                  <div className="text-green-200 text-sm">Active Projects</div>
                 </div>
               </div>
               
-              {proposals && proposals.length > 0 && (
-                <div className="pt-4 border-t border-purple-500/20">
-                  <div className="text-sm">
-                    <span className="font-medium text-white">Latest Proposal:</span>
-                    <p className="text-purple-100 mt-1">{proposals[0].title || 'MDP-179: Lunar Surface Settlement Study'}</p>
+              {currentProjects && currentProjects.length > 0 && (
+                <div className="pt-4 border-t border-green-500/20">
+                  <div className="text-sm mb-3">
+                    <span className="font-medium text-white">Featured Project:</span>
+                  </div>
+                  <div className="bg-black/30 rounded-lg p-4 border border-green-500/10">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-semibold text-white text-sm">{currentProjects[0].name}</h4>
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        currentProjects[0].active ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-300'
+                      }`}>
+                        {currentProjects[0].active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <p className="text-green-100 text-xs leading-relaxed">
+                      {currentProjects[0].description?.length > 120 
+                        ? `${currentProjects[0].description.substring(0, 120)}...` 
+                        : currentProjects[0].description || 'No description available'}
+                    </p>
+                    {currentProjects.length > 1 && (
+                      <p className="text-green-300 text-xs mt-2">
+                        +{currentProjects.length - 1} more projects available
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -1158,6 +1249,7 @@ export async function getStaticProps() {
   }
   let newestTeams: any = []
   let filteredTeams: any = []
+  let currentProjects: Project[] = []
   let citizensLocationData: any = []
 
   // Batch all contract operations to reduce API calls
@@ -1191,12 +1283,20 @@ export async function getStaticProps() {
         abi: TeamTableABI as any,
       })
 
+      const projectTableContract = getContract({
+        client: serverClient,
+        address: PROJECT_TABLE_ADDRESSES[chainSlug],
+        chain: chain,
+        abi: ProjectTableABI as any,
+      })
+
       // Batch all table name reads
       const [
         citizenTableName,
         marketplaceTableName,
         jobTableName,
         teamTableName,
+        projectTableName,
       ] = await Promise.all([
         readContract({
           contract: citizenTableContract,
@@ -1208,10 +1308,11 @@ export async function getStaticProps() {
         }),
         readContract({ contract: jobTableContract, method: 'getTableName' }),
         readContract({ contract: teamTableContract, method: 'getTableName' }),
+        readContract({ contract: projectTableContract, method: 'getTableName' }),
       ])
 
       // Batch all table queries
-      const [citizens, listings, jobs, teams] = await Promise.all([
+      const [citizens, listings, jobs, teams, projects] = await Promise.all([
         queryTable(
           chain,
           `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 10`
@@ -1222,18 +1323,22 @@ export async function getStaticProps() {
         ),
         queryTable(
           chain,
-          `SELECT * FROM ${jobTableName} ORDER BY id DESC LIMIT 10`
+          `SELECT * FROM ${jobTableName} WHERE (endTime = 0 OR endTime >= ${Math.floor(Date.now() / 1000)}) ORDER BY id DESC LIMIT 10`
         ),
         queryTable(
           chain,
           `SELECT * FROM ${teamTableName} ORDER BY id DESC LIMIT 10`
         ),
+        queryTable(
+          chain,
+          `SELECT * FROM ${projectTableName} WHERE active = 1 ORDER BY id DESC LIMIT 10`
+        ),
       ])
 
-      return { citizens, listings, jobs, teams }
+      return { citizens, listings, jobs, teams, projects }
     } catch (error) {
       console.error('Contract operations failed:', error)
-      return { citizens: [], listings: [], jobs: [], teams: [] }
+      return { citizens: [], listings: [], jobs: [], teams: [], projects: [] }
     }
   }
 
@@ -1298,11 +1403,18 @@ export async function getStaticProps() {
   }
 
   if (contractResult.status === 'fulfilled') {
-    const { citizens, listings, jobs, teams } = contractResult.value
+    const { citizens, listings, jobs, teams, projects } = contractResult.value
     newestCitizens = citizens
     newestListings = listings
     newestJobs = jobs
     newestTeams = teams
+
+    // Process projects data for home page display
+    if (projects) {
+      currentProjects = projects.filter((project: any) => 
+        project.active && !blockedProjects.includes(project.id)
+      ) as Project[]
+    }
 
     // Process teams data for home page display
     filteredTeams = teams.filter((team: any) => team.id && team.name)
@@ -1339,6 +1451,7 @@ export async function getStaticProps() {
       mooneyPrice,
       filteredTeams,
       citizensLocationData,
+      currentProjects,
     },
     revalidate: 300,
   }

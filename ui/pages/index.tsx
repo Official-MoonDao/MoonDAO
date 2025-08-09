@@ -1,9 +1,6 @@
 import { useRouter } from 'next/router'
 import { useContext, useEffect } from 'react'
-import toast from 'react-hot-toast'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
-import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import Callout1 from '../components/home/Callout1'
 import Callout2 from '../components/home/Callout2'
 import Callout3 from '../components/home/Callout3'
@@ -25,21 +22,15 @@ export default function Home({ linkSource }: any) {
   const router = useRouter()
   const { citizen } = useContext(CitizenContext)
 
-  //If the user is loading the page directly and has a citizen nft, redirect to their citizen page
-  // Commented out to allow users to stay on homepage even if they have a citizen NFT
-  // useEffect(() => {
-  //   if (
-  //     linkSource === 'direct' &&
-  //     citizen?.metadata?.name &&
-  //     citizen?.metadata?.id
-  //   )
-  //     router.push(
-  //       `/citizen/${generatePrettyLinkWithId(
-  //         citizen?.metadata?.name as string,
-  //         citizen?.metadata?.id
-  //       )}`
-  //     )
-  // }, [linkSource, citizen, router])
+  //If the user is loading the page directly and has a citizen nft, redirect to the home page
+  useEffect(() => {
+    if (
+      linkSource === 'direct' &&
+      citizen?.metadata?.name &&
+      citizen?.metadata?.id
+    )
+      router.push('/home')
+  }, [linkSource, citizen, router])
 
   return (
     <Container>
