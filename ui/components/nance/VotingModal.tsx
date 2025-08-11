@@ -76,7 +76,7 @@ export default function VotingModal({
   const totalScore = hideAbstain
     ? proposal.scores_total - (proposal?.scores[2] ?? 0)
     : proposal.scores_total
-  const symbol = 'Tokens'
+  const symbol = 'VP' // VP stands for Voting Power
 
   const renderVoteButton = () => {
     let canVote = false
@@ -100,7 +100,7 @@ export default function VotingModal({
         type="button"
         disabled={!canVote}
         onClick={canVote ? submitVote : closeModal}
-        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50"
+        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50"
       >
         {label}
       </button>
@@ -139,38 +139,38 @@ export default function VotingModal({
               leaveTo="opacity-0 translate-y-4 md:translate-y-0 md:scale-95"
             >
               <Dialog.Panel className="flex w-full transform text-left text-base transition md:my-8 md:max-w-2xl md:px-4">
-                <div className="relative flex w-full items-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white px-6 pb-8 pt-14 sm:px-8 sm:pt-8 md:p-8 lg:p-10">
+                <div className="relative flex w-full items-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white px-4 pb-6 pt-10 sm:px-6 sm:pt-6 md:p-6">
                   <button
                     type="button"
-                    className="absolute right-4 top-4 p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-full transition-colors duration-200 sm:right-6 sm:top-6 md:right-6 md:top-6 lg:right-8 lg:top-8"
+                    className="absolute right-3 top-3 p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-full transition-colors duration-200"
                     onClick={closeModal}
                   >
                     <span className="sr-only">Close</span>
-                    <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                    <XMarkIcon className="h-5 w-5" aria-hidden="true" />
                   </button>
 
-                  <div className="grid w-full grid-cols-1 items-start gap-x-6 gap-y-8 sm:grid-cols-12 lg:gap-x-8">
-                    <div className="sm:col-span-12 lg:col-span-12">
+                  <div className="grid w-full grid-cols-1 items-start gap-y-4">
+                    <div className="sm:col-span-12">
                       {/* Header Section */}
-                      <div className="flex items-center space-x-3 mb-6">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                          <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                            <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                          <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
                           </div>
                         </div>
                         <div>
-                          <h2 className="text-2xl font-bold text-white">
+                          <h2 className="text-lg font-bold text-white">
                             Vote on Proposal
                           </h2>
-                          <p className="text-gray-300 text-sm">
+                          <p className="text-gray-300 text-xs">
                             Cast your vote and make your voice heard
                           </p>
                         </div>
                       </div>
 
                       {/* Proposal Title */}
-                      <div className="bg-black/20 rounded-xl p-4 mb-6 border border-white/5">
-                        <h3 className="text-xl font-semibold text-white mb-2">
+                      <div className="bg-black/20 rounded-lg p-3 mb-4 border border-white/5">
+                        <h3 className="text-base font-semibold text-white">
                           {proposal.title}
                         </h3>
                       </div>
@@ -178,38 +178,39 @@ export default function VotingModal({
                       {/* Proposal Stats */}
                       <section
                         aria-labelledby="information-heading"
-                        className="mb-6"
+                        className="mb-4"
                       >
                         <h3 id="information-heading" className="sr-only">
                           Proposal information
                         </h3>
 
-                        <div className="bg-black/20 rounded-xl p-4 border border-white/5 space-y-3">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="text-center md:text-left">
-                              <p className="text-gray-300 text-sm font-medium uppercase tracking-wide">
-                                Total Votes
+                        <div className="bg-black/20 rounded-lg p-3 border border-white/5">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
+                            <div>
+                              <p className="text-gray-300 text-xs font-medium uppercase tracking-wide whitespace-nowrap">
+                                Your Voting Power
                               </p>
-                              <p className="text-2xl font-bold text-white">
+                              <p className="text-lg font-bold text-blue-400">
+                                {formatNumberUSStyle(vp, true)}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="text-gray-300 text-xs font-medium uppercase tracking-wide whitespace-nowrap">
+                                <span className="hidden sm:inline">Total Votes</span>
+                                <span className="sm:hidden">Votes</span>
+                              </p>
+                              <p className="text-lg font-bold text-white">
                                 {proposal.votes}
                               </p>
                             </div>
 
-                            <div className="text-center md:text-left">
-                              <p className="text-gray-300 text-sm font-medium uppercase tracking-wide">
-                                Total Score
+                            <div className="hidden sm:block">
+                              <p className="text-gray-300 text-xs font-medium uppercase tracking-wide whitespace-nowrap">
+                                Total Voting Power
                               </p>
-                              <p className="text-2xl font-bold text-white">
+                              <p className="text-lg font-bold text-white">
                                 {formatNumberUSStyle(totalScore, true)}
-                              </p>
-                            </div>
-
-                            <div className="text-center md:text-left">
-                              <p className="text-gray-300 text-sm font-medium uppercase tracking-wide">
-                                Your Voting Power
-                              </p>
-                              <p className="text-2xl font-bold text-blue-400">
-                                {formatNumberUSStyle(vp, true)} {symbol}
                               </p>
                             </div>
                           </div>
@@ -219,16 +220,16 @@ export default function VotingModal({
                       {/* Voting Section */}
                       <section
                         aria-labelledby="options-heading"
-                        className="space-y-6"
+                        className="space-y-4"
                       >
                         <h3 id="options-heading" className="sr-only">
                           Voting options
                         </h3>
 
-                        <form className="space-y-6">
+                        <form className="space-y-4">
                           {/* Option selector */}
                           <div>
-                            <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-4">
+                            <h4 className="text-gray-300 font-medium text-xs uppercase tracking-wide mb-3">
                               Select Your Choice
                             </h4>
                             {(proposal.type == 'single-choice' ||
@@ -261,22 +262,22 @@ export default function VotingModal({
                             <div>
                               <label
                                 htmlFor="comment"
-                                className="block text-gray-300 font-medium text-sm uppercase tracking-wide mb-3"
+                                className="block text-gray-300 font-medium text-xs uppercase tracking-wide mb-2"
                               >
                                 Reason (Optional)
                               </label>
                               <div>
                                 <textarea
-                                  rows={3}
+                                  rows={2}
                                   maxLength={140}
                                   name="reason"
                                   id="reason"
                                   placeholder="Share your reasoning for this vote..."
-                                  className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none"
+                                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none"
                                   value={reason}
                                   onChange={(e) => setReason(e.target.value)}
                                 />
-                                <div className="mt-2 text-right">
+                                <div className="mt-1 text-right">
                                   <span className="text-xs text-gray-400">
                                     {reason.length}/140 characters
                                   </span>
@@ -286,7 +287,7 @@ export default function VotingModal({
                           )}
 
                           {/* Vote button */}
-                          <div className="pt-4">{renderVoteButton()}</div>
+                          <div className="pt-2">{renderVoteButton()}</div>
                         </form>
                       </section>
                     </div>
@@ -310,7 +311,7 @@ interface SelectorProps {
 function BasicChoiceSelector({ value, setValue, choices }: SelectorProps) {
   return (
     <RadioGroup value={value} onChange={setValue}>
-      <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-3">
         {choices.map((choice, index) => (
           <RadioGroup.Option
             as="div"
@@ -318,7 +319,7 @@ function BasicChoiceSelector({ value, setValue, choices }: SelectorProps) {
             value={index + 1}
             className={({ active, checked }) =>
               classNames(
-                'relative block cursor-pointer rounded-lg p-4 transition-all duration-200',
+                'relative block cursor-pointer rounded-lg p-3 transition-all duration-200 text-center',
                 checked
                   ? 'bg-blue-500/20 border-2 border-blue-500/50 shadow-lg'
                   : 'bg-black/20 border border-white/10 hover:bg-black/30 hover:border-white/20',
@@ -328,18 +329,13 @@ function BasicChoiceSelector({ value, setValue, choices }: SelectorProps) {
           >
             {({ active, checked }) => (
               <>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-center">
                   <RadioGroup.Label
                     as="p"
-                    className="text-base font-medium text-white"
+                    className="text-sm font-medium text-white"
                   >
                     {choice}
                   </RadioGroup.Label>
-                  {checked && (
-                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                  )}
                 </div>
               </>
             )}
