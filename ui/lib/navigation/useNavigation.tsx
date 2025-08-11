@@ -22,10 +22,11 @@ export default function useNavigation(citizen: any) {
       },
       {
         name: 'Network',
-        href: '/network',
+        href: '/network-overview',
         icon: IconOrg,
         children: [
-          { name: 'Network Overview', href: '/network' },
+          { name: 'Network Overview', href: '/network-overview' },
+          { name: 'Explore Network', href: '/network' },
           { name: 'Become a Citizen', href: '/join' },
           { name: 'Create a Team', href: '/team' },
           {
