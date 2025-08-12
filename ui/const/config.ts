@@ -380,6 +380,41 @@ export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   ethereum: 30110, //arbitrum eid
 }
 
+export const XP_ORACLE_CHAIN =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arbitrum' : 'sepolia'
+
+export const XP_ORACLE_CHAIN_ID =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 42161 : 11155111
+
+export const XP_ORACLE_NAME = 'MoonDAO XP Oracle'
+export const XP_ORACLE_VERSION = '1.0.0'
+export const XP_ORACLE_SIGNER_PK = process.env.XP_ORACLE_SIGNER_PK
+
+export const XP_ORACLE_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x755D48e6C3744B723bd0326C57F99A92a3Ca3287',
+}
+
+export const XP_MANAGER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xa0D56Bb346618a06686775834614F73C1EBe6c31',
+}
+
+export const OWNS_CITIZEN_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x25B28E0Ab07c11C688053B6309950292d5D5ee96',
+}
+
+export const HAS_VOTING_POWER_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x43D9190fc65763A52859e1B34767fb0C8cfCF643',
+}
+
+export const HAS_VOTED_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x9A61e72B803b5ED5D8b7989B4354F806A03424c3',
+}
+
 export const DISCORD_GUILD_ID = '914720248140279868'
 export const GENERAL_CHANNEL_ID = '914720248140279871'
 export const TEST_CHANNEL_ID = '1308513773879033886'
