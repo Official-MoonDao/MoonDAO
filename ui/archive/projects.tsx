@@ -224,6 +224,7 @@ export default function Projects({
                         project={project}
                         projectContract={projectContract}
                         hatsContract={hatsContract}
+                        isVotingPeriod={false}
                       />
                     )
                   })

@@ -9,7 +9,6 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
-import CitizenABI from 'const/abis/Citizen.json'
 import { COIN_ICONS } from 'const/icons'
 import { ethers } from 'ethers'
 import Image from 'next/image'
@@ -20,10 +19,8 @@ import toast from 'react-hot-toast'
 import {
   getContract,
   prepareContractCall,
-  readContract,
   sendAndConfirmTransaction,
 } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
@@ -37,11 +34,9 @@ import {
   arbitrumSepolia,
   optimismSepolia,
 } from '@/lib/infura/infuraChains'
-import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
-import { CITIZEN_ADDRESSES } from '../../const/config'
 import Modal from '../layout/Modal'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import { LinkAccounts } from './LinkAccounts'
@@ -128,27 +123,6 @@ const selectedNativeToken: any = {
   polygon: 'MATIC',
 }
 
-const PATHS_WITH_NO_SIGNIN_REDIRECT = [
-  '/',
-  '/submit',
-  '/proposals',
-  '/contributions',
-  '/final-reports',
-  '/withdraw',
-  '/projects',
-  '/proposal/[proposal]',
-  '/lock',
-  '/join',
-  '/get-mooney',
-  '/bridge',
-  '/citizen',
-  '/citizen/[tokenId]',
-  '/team',
-  '/team/[tokenId]',
-  '/launch',
-  '/mission',
-  '/mission/[tokenId]',
-]
 function SendModal({
   account,
   selectedChain,
@@ -640,46 +614,7 @@ export function PrivyConnectWallet({
     optimismSepolia,
   ]
 
-  const { login } = useLogin({
-    onComplete: async (user, isNewUser, wasAlreadyAuthenticated) => {
-      //If the user signs in and wasn't already authenticated, check if they have a citizen NFT and redirect them to their profile or the guest page
-      if (
-        !wasAlreadyAuthenticated &&
-        !PATHS_WITH_NO_SIGNIN_REDIRECT.includes(router.pathname)
-      ) {
-        let citizen
-        try {
-          const citizenContract = getContract({
-            client,
-            address: CITIZEN_ADDRESSES[chainSlug],
-            chain: selectedChain,
-            abi: CitizenABI as any,
-          })
-          const ownedTokenId = await readContract({
-            contract: citizenContract,
-            method: 'getOwnedToken' as string,
-            params: [address],
-          })
-          citizen = await getNFT({
-            contract: citizenContract,
-            tokenId: BigInt(ownedTokenId),
-          })
-        } catch (err) {
-          citizen = undefined
-        }
-        if (citizen) {
-          router.push(
-            `/citizen/${generatePrettyLinkWithId(
-              citizen?.metadata?.name as string,
-              citizen?.metadata?.id as string
-            )}`
-          )
-        } else {
-          router.push('/citizen/guest')
-        }
-      }
-    },
-  })
+  const { login } = useLogin()
   const { wallets } = useWallets()
 
   const [enabled, setEnabled] = useState(false)
@@ -1009,7 +944,7 @@ export function PrivyConnectWallet({
         <div className="w-full">
           <div
             id="privy-connect-wallet"
-            className="cursor-pointer flex-wrap md:w-[175px] md:full relative flex flex-col items-right justify-center pl-5 pr-5 py-2 md:hover:pl-[25px] bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-lato z-[10] rounded-[2vmax] rounded-tl-[10px] duration-300 shadow-lg hover:shadow-xl transition-all"
+            className="cursor-pointer flex-wrap md:w-[175px] md:full relative flex flex-col items-right justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-lato z-[10] rounded-full duration-300 shadow-lg hover:shadow-xl transition-colors"
             onClick={(e: any) => {
               setEnabled(!enabled)
             }}
@@ -1447,16 +1382,16 @@ export function PrivyConnectWallet({
                 login()
               }
             }}
-            className="text-[12px] md:text-[18px] font-bold rounded-[40px] rounded-bl-[10px] p-5 py-2 md:hover:pl-[25px] gradient-2 transition-all duration-150"
+            className="text-[12px] md:text-[18px] rounded-full px-4 py-1 gradient-2 transition-colors duration-150"
           >
-            <div className="flex">
+            <div className="flex items-center justify-center">
               <Image
                 src="/assets/icon-user.svg"
                 alt="Sign in with your wallet"
                 width="20"
                 height="20"
               ></Image>
-              <p className="pl-2">Sign In</p>
+              <p className="pl-2">Sign in</p>
             </div>
           </button>
         </div>

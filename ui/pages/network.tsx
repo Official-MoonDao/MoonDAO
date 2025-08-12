@@ -1,20 +1,23 @@
 import { PlusCircleIcon } from '@heroicons/react/20/solid'
-import { GlobeAmericasIcon, ListBulletIcon } from '@heroicons/react/24/outline'
+import { GlobeAmericasIcon, ListBulletIcon, MoonIcon } from '@heroicons/react/24/outline'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
 import {
   CITIZEN_ADDRESSES,
   CITIZEN_TABLE_ADDRESSES,
   DEFAULT_CHAIN_V5,
+  JOBS_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
 } from 'const/config'
 import { blockedCitizens, blockedTeams, featuredTeams } from 'const/whitelist'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useContext } from 'react'
 import { getContract, NFT, readContract } from 'thirdweb'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import {
   generatePrettyLink,
   generatePrettyLinkWithId,
@@ -25,9 +28,9 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import { getAttribute } from '@/lib/utils/nft'
 import Card from '../components/layout/Card'
 import Container from '../components/layout/Container'
-import ContentLayout from '../components/layout/ContentLayout'
 import Frame from '../components/layout/Frame'
 import Head from '../components/layout/Head'
 import CardGridContainer from '@/components/layout/CardGridContainer'
@@ -38,20 +41,31 @@ import Search from '@/components/layout/Search'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import Tab from '@/components/layout/Tab'
+import Job, { Job as JobType } from '../components/jobs/Job'
 import CitizenABI from '../const/abis/Citizen.json'
 import TeamABI from '../const/abis/Team.json'
+import JobsABI from '../const/abis/JobBoardTable.json'
+
+// Dynamic imports for globe components
+const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
+const Moon = dynamic(() => import('@/components/globe/Moon'), { ssr: false })
 
 type NetworkProps = {
   filteredTeams: any[]
   filteredCitizens: any[]
+  jobs: JobType[]
+  citizensLocationData?: any[]
 }
 
 export default function Network({
   filteredTeams,
   filteredCitizens,
+  jobs,
+  citizensLocationData,
 }: NetworkProps) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
+  const { citizen } = useContext(CitizenContext)
 
   const [input, setInput] = useState('')
   function filterBySearch(nfts: any[]) {
@@ -64,6 +78,8 @@ export default function Network({
   }
 
   const [tab, setTab] = useState<string>('citizens')
+  const [mapView, setMapView] = useState<string>('earth') // For map sub-tabs
+  
   function loadByTab(tab: string) {
     if (tab === 'teams') {
       setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
@@ -71,6 +87,9 @@ export default function Network({
       setCachedNFTs(
         input != '' ? filterBySearch(filteredCitizens) : filteredCitizens
       )
+    } else if (tab === 'map') {
+      // For map tab, we don't need to set cachedNFTs as it shows the globe
+      setCachedNFTs([])
     } else {
       const nfts =
         filteredTeams?.[0] && filteredCitizens?.[0]
@@ -97,8 +116,16 @@ export default function Network({
     (newPage: number) => {
       setPageIdx(newPage)
       shallowQueryRoute({ tab, page: newPage.toString() })
+      
+      // Scroll to the controls section to keep the user focused on the network browsing area
+      setTimeout(() => {
+        const controls = document.getElementById('network-controls')
+        if (controls) {
+          controls.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 100)
     },
-    [shallowQueryRoute]
+    [shallowQueryRoute, tab]
   )
 
   const [maxPage, setMaxPage] = useState(1)
@@ -112,7 +139,8 @@ export default function Network({
         : filteredCitizens.length
 
     if (tab === 'teams') setMaxPage(Math.ceil(totalTeams / 10))
-    if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 10))
+    else if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 10))
+    else if (tab === 'map') setMaxPage(1) // Map doesn't need pagination
   }, [tab, input, filteredCitizens, filteredTeams])
 
   const [cachedNFTs, setCachedNFTs] = useState<any[]>([])
@@ -121,7 +149,7 @@ export default function Network({
 
   useEffect(() => {
     const { tab: urlTab, page: urlPage } = router.query
-    if (urlTab && (urlTab === 'teams' || urlTab === 'citizens')) {
+    if (urlTab && (urlTab === 'teams' || urlTab === 'citizens' || urlTab === 'map')) {
       setTab(urlTab as string)
     }
     if (urlPage && !isNaN(Number(urlPage))) {
@@ -135,36 +163,98 @@ export default function Network({
 
   useChainDefault()
 
-  const descriptionSection = (
-    <div className="pt-2">
-      <div className="mb-4">
-        The Space Acceleration Network is an onchain startup society focused on
-        building a permanent settlement on the Moon and beyond. Help build our
-        multiplanetary future and{' '}
-        <u>
-          <Link href="/join">join the network</Link>
-        </u>
-        .
-      </div>
-      <div className="relative w-full flex flex-col gap-3">
-        {/* Search Bar and Tabs - Same Row */}
-        <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
-          <div className="w-full flex flex-row min-[800px]:flex-row gap-4 items-center overflow-hidden">
-            {/* Search Bar */}
-            <div className="w-full min-w-0 max-w-[250px] sm:max-w-[280px] md:max-w-[320px] bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 px-3 py-1">
-              <Search
-                className="w-full flex-grow"
-                input={input}
-                setInput={setInput}
-                placeholder="Search..."
-              />
-            </div>
+  function renderNFTs() {
+    const nfts = cachedNFTs
 
-            <div
-              id="filter-container"
-              className="hidden min-[1150px]:block flex-shrink-0"
-            >
-              <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
+    // Show loading state if no NFTs and we're not on the map tab
+    if ((!nfts || nfts.length === 0) && tab !== 'map') {
+      return Array.from({ length: 4 }, (_, i) => <CardSkeleton key={i} />)
+    }
+
+    // Calculate pagination
+    const startIndex = (pageIdx - 1) * 10
+    const endIndex = startIndex + 10
+    const paginatedNFTs = nfts.slice(startIndex, endIndex)
+
+    if (paginatedNFTs.length === 0 && tab !== 'map') {
+      return (
+        <div className="col-span-full text-center py-12">
+          <div className="text-slate-400 mb-4">
+            <ListBulletIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
+          </div>
+          <h3 className="text-xl font-GoodTimes text-white mb-2">
+            No {tab} found
+          </h3>
+          <p className="text-slate-400">
+            {input ? `No results for "${input}"` : `No ${tab} available at the moment.`}
+          </p>
+        </div>
+      )
+    }
+
+    return paginatedNFTs.map((nft, i) => {
+      const teamTier = getAttribute(nft?.metadata?.attributes as any[], 'Team Tier')?.value
+      const isFeatured = featuredTeams.includes(nft.metadata.name)
+
+      const type = nft?.metadata?.attributes?.find((attr: any) => attr.trait_type === 'Type')?.value
+      const link = `/${type === 'team' ? 'team' : 'citizen'}/${
+        type === 'team'
+          ? generatePrettyLink(nft.metadata.name)
+          : generatePrettyLinkWithId(nft.metadata.name, nft.id.toString())
+      }`
+
+      return (
+        <div className="w-full h-full" key={`${nft.metadata.name}-${nft.id}-${i}`}>
+          <StandardDetailCard
+            title={nft.metadata.name}
+            paragraph={nft.metadata.description}
+            image={nft.metadata.image}
+            link={link}
+          />
+        </div>
+      )
+    })
+  }
+
+  return (
+    <div className="animate-fadeIn">
+      <Head
+        title="Explore the Network | MoonDAO"
+        description="Discover and connect with citizens and teams building the future of space exploration"
+        image="https://ipfs.io/ipfs/QmbbjvWBUAXPPibj4ZbzzErVaZBSD99r3dbt5CGQMd5Bkh"
+      />
+      
+      <Container>
+        <Frame noPadding>
+          {/* Compact Header Section */}
+          <div className="relative py-8 px-6">
+            <div className="max-w-6xl mx-auto text-center">
+              <h1 className="header font-GoodTimes text-white mb-3">
+                Explore the Network
+              </h1>
+              <p className="sub-header text-white/80 max-w-3xl mx-auto mb-6">
+                Discover and connect with citizens and teams building the future of space exploration
+              </p>
+            </div>
+          </div>
+
+          {/* Controls Section */}
+          <div id="network-controls" className="max-w-6xl mx-auto mb-8 px-6">
+            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+              {/* Search Bar - Hidden for map tab */}
+              {tab !== 'map' && (
+                <div className="w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3">
+                  <Search
+                    className="w-full"
+                    input={input}
+                    setInput={setInput}
+                    placeholder={tab === 'teams' ? 'Search teams' : tab === 'citizens' ? 'Search citizens' : 'Search network'}
+                  />
+                </div>
+              )}
+
+              {/* Tabs */}
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
                 <div className="flex text-sm gap-1">
                   <Tab
                     tab="citizens"
@@ -185,255 +275,160 @@ export default function Network({
                   <Tab
                     tab="map"
                     currentTab={tab}
-                    setTab={() => {
-                      router.push('/map')
-                    }}
+                    setTab={handleTabChange}
                     icon={<GlobeAmericasIcon width={20} height={20} />}
                   >
                     Map
                   </Tab>
                 </div>
               </div>
-            </div>
 
-            <div className="flex-shrink-0 flex justify-end md:justify-start">
+              {/* Join Button - Compact */}
               <StandardButton
-                className="gradient-2 rounded-2xl hover:scale-105 transition-transform"
+                className="gradient-2 rounded-xl hover:scale-105 transition-transform"
                 hoverEffect={false}
-                link="/join"
+                link="/network-overview"
               >
-                <div className="flex items-center justify-start gap-2">
-                  <PlusCircleIcon width={20} height={20} />
-                  {'Join'}
+                <div className="flex items-center justify-center gap-2">
+                  <PlusCircleIcon width={16} height={16} />
+                  <span className="text-sm">Join Network</span>
                 </div>
               </StandardButton>
             </div>
           </div>
-          <div
-            id="filter-container"
-            className="min-[1150px]:hidden mt-4 min-[900px]:mt-2"
-          >
-            <div className="w-fit max-w-[300px] sm:max-w-none h-fit bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-1.5 overflow-x-auto">
-              <div className="flex text-sm gap-1 min-w-fit">
-                <Tab
-                  tab="teams"
-                  currentTab={tab}
-                  setTab={handleTabChange}
-                  icon="/assets/icon-org.svg"
-                >
-                  Teams
-                </Tab>
-                <Tab
-                  tab="citizens"
-                  currentTab={tab}
-                  setTab={handleTabChange}
-                  icon="/assets/icon-passport.svg"
-                >
-                  Citizens
-                </Tab>
-                <Tab
-                  tab="map"
-                  currentTab={tab}
-                  setTab={() => {
-                    router.push('/map')
-                  }}
-                  icon={<GlobeAmericasIcon width={20} height={20} />}
-                >
-                  Map
-                </Tab>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 
-  const renderNFTs = () => {
-    if (!cachedNFTs?.[0]) {
-      return (
-        <>
-          {Array.from({ length: 10 }).map((_, i) => (
-            <CardSkeleton key={`card-skeleton-${i}`} />
-          ))}
-        </>
-      )
-    }
-
-    // Always try to show 10 items on each full page
-    const startIndex = (pageIdx - 1) * 10
-    let endIndex = pageIdx * 10
-
-    // On the last page, show all remaining items
-    if (pageIdx === maxPage) {
-      endIndex = cachedNFTs.length
-    }
-
-    const nftsToShow = cachedNFTs?.slice(startIndex, endIndex)
-
-    // Fill the last row with empty divs if needed on non-last pages
-    const itemsToRender = [...nftsToShow]
-    if (pageIdx !== maxPage && itemsToRender.length < 10) {
-      const emptyCount = 10 - itemsToRender.length
-      for (let i = 0; i < emptyCount; i++) {
-        itemsToRender.push({ empty: true })
-      }
-    }
-
-    return itemsToRender.map((nft: any, i: number) => {
-      if (nft.empty) {
-        return <div key={`empty-${i}`} className="invisible" />
-      }
-
-      if (nft.metadata.name === 'Failed to load NFT metadata') return null
-
-      const type = nft.metadata.attributes.find(
-        (attr: any) => attr.trait_type === 'communications'
-      )
-        ? 'team'
-        : 'citizen'
-
-      const link = `/${type === 'team' ? 'team' : 'citizen'}/${
-        type === 'team'
-          ? generatePrettyLink(nft.metadata.name)
-          : generatePrettyLinkWithId(nft.metadata.name, nft.id.toString())
-      }`
-
-      return (
-        <div className="w-full h-full" key={'team-citizen-' + i}>
-          <StandardDetailCard
-            title={nft.metadata.name}
-            paragraph={nft.metadata.description}
-            image={nft.metadata.image}
-            link={link}
-          />
-        </div>
-      )
-    })
-  }
-
-  return (
-    <section id="network-container" className="overflow-hidden">
-      <Head
-        title={'Space Acceleration Network'}
-        description={
-          'The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond.'
-        }
-        image="https://ipfs.io/ipfs/QmbExwDgVoDYpThFaVRRxUkusHnXxMj3Go8DdWrXg1phxi"
-      />
-      <Container>
-        <ContentLayout
-          logo={
-            <Image
-              src="/assets/san-logo.svg"
-              alt="SAN Logo"
-              width={275}
-              height={275}
-            />
-          }
-          header={
-            <div className="flex flex-row items-center">
-              <Image
-                src="/assets/network-title.svg"
-                alt="Org"
-                width={300}
-                height={300}
-              />
-            </div>
-          }
-          headerSize="max(20px, 3vw)"
-          description={descriptionSection}
-          preFooter={<NoticeFooter />}
-          mainPadding
-          mode="compact"
-          popOverEffect={false}
-          isProfile
-        >
-          <div className="flex flex-row w-full">
-            <div className="px-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 lg:p-8 rounded-[2vmax] shadow-2xl md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1400px]">
-              <CardGridContainer
-                xsCols={1}
-                smCols={1}
-                mdCols={1}
-                lgCols={2}
-                maxCols={2}
-                center
-              >
-                {renderNFTs()}
-              </CardGridContainer>
-
-              <div className="w-full rounded-[2vmax] bg-black/20 backdrop-blur-sm border border-white/10 p-6 mt-8">
-                <div
-                  id="pagination-container"
-                  className="w-full flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8"
-                >
-                  <button
-                    onClick={() => {
-                      if (pageIdx > 1) {
-                        handlePageChange(pageIdx - 1)
-                      }
-                    }}
-                    className={`pagination-button transition-opacity hover:scale-110 ${
-                      pageIdx === 1
-                        ? 'opacity-30'
-                        : 'cursor-pointer opacity-100'
-                    }`}
-                    disabled={pageIdx === 1}
-                  >
-                    <Image
-                      src="/../.././assets/icon-left.svg"
-                      alt="Left Arrow"
-                      width={35}
-                      height={35}
-                    />
-                  </button>
-                  <p id="page-number" className="px-5 font-bold text-white">
-                    Page {pageIdx} of {maxPage}
-                  </p>
-                  <button
-                    onClick={() => {
-                      if (pageIdx < maxPage) {
-                        handlePageChange(pageIdx + 1)
-                      }
-                    }}
-                    className={`pagination-button transition-opacity hover:scale-110 ${
-                      pageIdx === maxPage
-                        ? 'opacity-30'
-                        : 'cursor-pointer opacity-100'
-                    }`}
-                    disabled={pageIdx === maxPage}
-                  >
-                    <Image
-                      src="/../.././assets/icon-right.svg"
-                      alt="Right Arrow"
-                      width={35}
-                      height={35}
-                    />
-                  </button>
+          {/* Content Section - Either Grid or Map */}
+          <div id="network-content" className="max-w-6xl mx-auto px-6 pb-16">
+            {tab === 'map' ? (
+              /* Map View */
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
+                <div className="mb-6">
+                  <div className="flex justify-center">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
+                      <div className="flex text-sm gap-1">
+                        <Tab
+                          tab="earth"
+                          setTab={setMapView}
+                          currentTab={mapView}
+                          icon={<GlobeAmericasIcon width={20} height={20} />}
+                        >
+                          Earth
+                        </Tab>
+                        <Tab
+                          tab="moon"
+                          setTab={setMapView}
+                          currentTab={mapView}
+                          icon={<MoonIcon width={20} height={20} />}
+                        >
+                          Moon
+                        </Tab>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="w-full flex justify-center">
+                  <div className="w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
+                    <div className={`flex items-center justify-center ${mapView !== 'earth' && 'hidden'}`}>
+                      <Earth pointsData={citizensLocationData || []} />
+                    </div>
+                    <div className={`${mapView !== 'moon' && 'hidden'}`}>
+                      <Moon />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* Network Grid View */
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
+                <CardGridContainer
+                  xsCols={1}
+                  smCols={1}
+                  mdCols={2}
+                  lgCols={2}
+                  maxCols={2}
+                  center
+                >
+                  {renderNFTs()}
+                </CardGridContainer>
+
+                {/* Pagination - Only for non-map tabs */}
+                {tab !== 'map' && (
+                  <div className="w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mt-8">
+                    <div className="w-full flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8">
+                      <button
+                        onClick={() => {
+                          if (pageIdx > 1) {
+                            handlePageChange(pageIdx - 1)
+                          }
+                        }}
+                        className={`pagination-button transition-opacity hover:scale-110 ${
+                          pageIdx === 1
+                            ? 'opacity-30'
+                            : 'cursor-pointer opacity-100'
+                        }`}
+                        disabled={pageIdx === 1}
+                      >
+                        <Image
+                          src="/assets/icon-left.svg"
+                          alt="Left Arrow"
+                          width={35}
+                          height={35}
+                        />
+                      </button>
+                      <p id="page-number" className="px-5 font-bold text-white">
+                        Page {pageIdx} of {maxPage}
+                      </p>
+                      <button
+                        onClick={() => {
+                          if (pageIdx < maxPage) {
+                            handlePageChange(pageIdx + 1)
+                          }
+                        }}
+                        className={`pagination-button transition-opacity hover:scale-110 ${
+                          pageIdx === maxPage
+                            ? 'opacity-30'
+                            : 'cursor-pointer opacity-100'
+                        }`}
+                        disabled={pageIdx === maxPage}
+                      >
+                        <Image
+                          src="/assets/icon-right.svg"
+                          alt="Right Arrow"
+                          width={35}
+                          height={35}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </ContentLayout>
+        </Frame>
+
+        {/* Footer */}
+        <div className="flex justify-center w-full">
+          <NoticeFooter
+            defaultImage="../assets/MoonDAO-Logo-White.svg"
+            defaultTitle="Need Help?"
+            defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+            defaultButtonText="Submit a Ticket"
+            defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+            imageWidth={200}
+            imageHeight={200}
+          />
+        </div>
       </Container>
-    </section>
+    </div>
   )
 }
 
-export async function getStaticProps() {
+export async function getServerSideProps() {
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
+
   try {
-    const chain = DEFAULT_CHAIN_V5
-    const chainSlug = getChainSlug(chain)
-
-    const now = Math.floor(Date.now() / 1000)
-
-    const teamContract = getContract({
-      client: serverClient,
-      address: TEAM_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: TeamABI as any,
-    })
-
+    // Get team table name and query
     const teamTableContract = getContract({
       client: serverClient,
       address: TEAM_TABLE_ADDRESSES[chainSlug],
@@ -448,106 +443,111 @@ export async function getStaticProps() {
 
     const teamRows = await queryTable(chain, `SELECT * FROM ${teamTableName}`)
 
+    // Get citizen table name and query
     const citizenTableContract = getContract({
       client: serverClient,
       address: CITIZEN_TABLE_ADDRESSES[chainSlug],
       chain: chain,
       abi: CitizenTableABI as any,
     })
+    
     const citizenTableName = await readContract({
       contract: citizenTableContract,
       method: 'getTableName',
     })
+    
     const citizenRows: any = await queryTable(
       chain,
       `SELECT * FROM ${citizenTableName}`
     )
 
-    const teams: NFT[] = []
-    for (const row of teamRows) {
-      teams.push(teamRowToNFT(row))
-    }
-
-    const filteredPublicTeams: any = teams?.filter(
-      (nft: any) =>
-        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          .value === 'public' && !blockedTeams.includes(nft.metadata.id)
-    )
-
-    const filteredValidTeams: any = filteredPublicTeams?.filter(
-      async (nft: any) => {
-        const expiresAt = await readContract({
-          contract: teamContract,
-          method: 'expiresAt',
-          params: [nft?.metadata?.id],
-        })
-
-        return +expiresAt.toString() > now
-      }
-    )
-
-    const sortedValidTeams = filteredValidTeams
-      .reverse()
-      .sort((a: any, b: any) => {
-        const aIsFeatured = featuredTeams.includes(Number(a.metadata.id))
-        const bIsFeatured = featuredTeams.includes(Number(b.metadata.id))
-
-        if (aIsFeatured && bIsFeatured) {
-          return (
-            featuredTeams.indexOf(Number(a.metadata.id)) -
-            featuredTeams.indexOf(Number(b.metadata.id))
-          )
-        } else if (aIsFeatured) {
-          return -1
-        } else if (bIsFeatured) {
-          return 1
-        } else {
-          return 0
-        }
-      })
-
-    const citizenContract = getContract({
+    // Get jobs table name and query
+    const jobsTableContract = getContract({
       client: serverClient,
-      address: CITIZEN_ADDRESSES[chainSlug],
+      address: JOBS_TABLE_ADDRESSES[chainSlug],
       chain: chain,
-      abi: CitizenABI as any,
+      abi: JobsABI as any,
     })
 
-    const citizens: NFT[] = []
-    for (const row of citizenRows) {
-      citizens.push(citizenRowToNFT(row))
+    const jobsTableName = await readContract({
+      contract: jobsTableContract,
+      method: 'getTableName',
+    })
+
+    const jobs = await queryTable(chain, `SELECT * FROM ${jobsTableName}`)
+
+    // Convert team rows to NFTs
+    const teamNFTs: NFT[] = []
+    if (teamRows && teamRows.length > 0) {
+      for (const team of teamRows) {
+        try {
+          const teamNFT = teamRowToNFT(team)
+          teamNFTs.push(teamNFT)
+        } catch (error) {
+          console.error(`Error converting team ${team.id}:`, error)
+        }
+      }
     }
 
-    const filteredPublicCitizens: any = citizens?.filter(
-      (nft: any) =>
-        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          .value === 'public' && !blockedCitizens.includes(nft.metadata.id)
+    const filteredTeams = teamNFTs.filter(
+      (team) => !blockedTeams.includes(team.metadata.name)
     )
 
-    const filteredValidCitizens: any = filteredPublicCitizens?.filter(
-      async (nft: any) => {
-        const expiresAt = await readContract({
-          contract: citizenContract,
-          method: 'expiresAt',
-          params: [nft?.metadata?.id],
-        })
-
-        return +expiresAt.toString() > now
+    // Convert citizen rows to NFTs
+    const citizenNFTs: NFT[] = []
+    if (citizenRows && citizenRows.length > 0) {
+      for (const citizen of citizenRows) {
+        try {
+          const citizenNFT = citizenRowToNFT(citizen)
+          citizenNFTs.push(citizenNFT)
+        } catch (error) {
+          console.error(`Error converting citizen ${citizen.id}:`, error)
+        }
       }
+    }
+
+    const filteredCitizens = citizenNFTs.filter(
+      (citizen) => !blockedCitizens.includes(citizen.metadata.name)
     )
+
+    // Get citizens location data for the map
+    const citizensLocationData = filteredCitizens
+      .map((citizen) => {
+        const attributes = citizen?.metadata?.attributes as unknown as any[]
+        const location = getAttribute(attributes, 'Location')?.value
+        const latitude = getAttribute(attributes, 'Latitude')?.value
+        const longitude = getAttribute(attributes, 'Longitude')?.value
+        
+        if (location && latitude && longitude) {
+          return {
+            lat: parseFloat(latitude),
+            lng: parseFloat(longitude),
+            location: location,
+            name: citizen.metadata.name,
+            id: citizen.id,
+          }
+        }
+        return null
+      })
+      .filter(Boolean)
 
     return {
       props: {
-        filteredTeams: sortedValidTeams,
-        filteredCitizens: filteredValidCitizens.reverse(),
+        filteredTeams,
+        filteredCitizens,
+        jobs,
+        citizensLocationData,
       },
-      revalidate: 60,
     }
   } catch (error) {
-    console.error(error)
+    console.error('Error in getServerSideProps:', error)
     return {
-      props: { filteredTeams: [], filteredCitizens: [] },
-      revalidate: 60,
+      props: {
+        filteredTeams: [],
+        filteredCitizens: [],
+        jobs: [],
+        citizensLocationData: [],
+      },
     }
   }
 }

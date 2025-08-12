@@ -9,10 +9,20 @@ import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getContract, readContract } from 'thirdweb'
-import { assignDiscordRole } from '@/lib/discord/assignRole'
+import { assignDiscordRoleById } from '@/lib/discord/assignRole'
 import { getPrivyUserData } from '@/lib/privy'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
+
+const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+const citizenContractAddress = CITIZEN_ADDRESSES[chainSlug]
+
+const citizenContract = getContract({
+  client,
+  address: citizenContractAddress,
+  chain: DEFAULT_CHAIN_V5,
+  abi: CitizenABI as any,
+})
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -47,21 +57,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // Check if any of the wallet addresses own a Citizen NFT
-    const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
-    const citizenContractAddress = CITIZEN_ADDRESSES[chainSlug]
 
     if (!citizenContractAddress) {
       return res
         .status(500)
         .json({ error: 'Citizen contract not found for current chain' })
     }
-
-    const citizenContract = getContract({
-      client,
-      address: citizenContractAddress,
-      chain: DEFAULT_CHAIN_V5,
-      abi: CitizenABI as any,
-    })
 
     let hasCitizenNFT = false
     let citizenAddress = ''
@@ -95,8 +96,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // Assign Discord role using the extracted function
-    const roleResult = await assignDiscordRole({
-      discordUsername: discordAccount.username, // Discord user ID from linked account
+    const roleResult = await assignDiscordRoleById({
+      discordUserId: discordAccount.subject, // Discord user ID from linked account
       guildId: DISCORD_GUILD_ID,
       roleId: DISCORD_CITIZEN_ROLE_ID,
       botToken: process.env.DISCORD_BOT_TOKEN as string,
