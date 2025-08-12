@@ -3,16 +3,11 @@ import { gql, request as gqlRequest } from 'graphql-request'
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import {
-  signHasVotingPowerProof,
-  submitHasVotingPowerClaimFor,
-} from '../../../lib/oracle'
+import { Address } from 'thirdweb'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
+import { signHasVotingPowerProof, submitHasVotingPowerClaimFor } from '@/lib/xp'
 
 const MIN_VOTING_POWER = BigInt(1)
-const XP = BigInt(10)
-
-type Address = `0x${string}`
 
 async function fetchSnapshotVP(user: Address, space: string): Promise<bigint> {
   const endpoint = 'https://hub.snapshot.org/graphql'
@@ -37,8 +32,6 @@ async function fetchSnapshotVP(user: Address, space: string): Promise<bigint> {
   }
 }
 
-// Route uses shared oracle helper; no env handling here
-
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     if (req.method !== 'POST')
@@ -60,15 +53,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (vp < MIN_VOTING_POWER)
       return res.status(200).json({ eligible: false, vp: vp.toString() })
 
-    if (XP === BigInt(0))
-      return res.status(200).json({ eligible: false, vp: vp.toString() })
-
     // Sign/encode via shared oracle helper
     const { validAfter, validBefore, signature, context } =
       await signHasVotingPowerProof({
         user: user as Address,
         minVotingPower: MIN_VOTING_POWER,
-        xpAmount: XP,
       })
 
     // Relay the XP claim on behalf of the user so they don't need to send a tx
@@ -77,10 +66,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       context,
     })
 
+    // Decode xp from context for client convenience (index 1)
+    const [, xpAmount] = ethersUtils.defaultAbiCoder.decode(
+      ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+      context
+    ) as unknown[] as [any, bigint]
+
     return res.status(200).json({
       eligible: true,
       vp: vp.toString(),
-      xpAmount: XP.toString(),
+      xpAmount: (xpAmount as bigint).toString(),
       validAfter: Number(validAfter),
       validBefore: Number(validBefore),
       signature,

@@ -25,6 +25,8 @@ const onboardingQuests: QuestItem[] = [
     icon: BanknotesIcon,
     route: '/xp/owns-citizen-nft',
     actionText: 'Get Citizen',
+    xpReward: 100,
+    type: 'on-chain',
   },
   {
     id: 'has-voting-power',
@@ -34,6 +36,8 @@ const onboardingQuests: QuestItem[] = [
     icon: BoltIcon,
     route: '/xp/has-voting-power',
     actionText: 'Stake Now',
+    xpReward: 50,
+    type: 'off-chain',
   },
   {
     id: 'has-voted',
@@ -43,6 +47,8 @@ const onboardingQuests: QuestItem[] = [
     icon: CheckBadgeIcon,
     route: '/xp/has-voted',
     actionText: 'Vote Now',
+    xpReward: 75,
+    type: 'off-chain',
   },
 ]
 

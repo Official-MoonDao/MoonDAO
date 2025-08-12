@@ -3,13 +3,11 @@ import { gql, request as gqlRequest } from 'graphql-request'
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { signHasVotedProof, submitHasVotedClaimFor } from '../../../lib/oracle'
+import { Address } from 'thirdweb'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
+import { signHasVotedProof, submitHasVotedClaimFor } from '@/lib/xp'
 
 const MIN_VOTES = BigInt(1)
-const XP = BigInt(10)
-
-type Address = `0x${string}`
 
 async function fetchSnapshotVotesCount(
   user: Address,
@@ -67,14 +65,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (votesCount < Number(MIN_VOTES))
       return res.status(200).json({ eligible: false, votesCount })
 
-    if (XP === BigInt(0))
-      return res.status(200).json({ eligible: false, votesCount })
-
     const { validAfter, validBefore, signature, context } =
       await signHasVotedProof({
         user: user as Address,
         minVotes: MIN_VOTES,
-        xpAmount: XP,
       })
 
     const { txHash } = await submitHasVotedClaimFor({
@@ -82,10 +76,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       context,
     })
 
+    // Decode xp from context for client convenience (index 1)
+    const [, xpAmount] = ethersUtils.defaultAbiCoder.decode(
+      ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+      context
+    ) as unknown[] as [any, bigint]
+
     return res.status(200).json({
       eligible: true,
       votesCount,
-      xpAmount: XP.toString(),
+      xpAmount: (xpAmount as bigint).toString(),
       validAfter: Number(validAfter),
       validBefore: Number(validBefore),
       signature,

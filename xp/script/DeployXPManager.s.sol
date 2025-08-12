@@ -28,11 +28,11 @@ contract DeployXPManagerScript is Script {
         // Deploy XPManager (no constructor parameters needed)
         XPManager xpManager = new XPManager();
 
-        // Deploy verifiers
-        OwnsCitizenNFT citizenVerifier = new OwnsCitizenNFT(citizenNFTAddress);
-        HasVotingPower votingPowerVerifier = new HasVotingPower(oracleAddress);
-        HasVoted hasVotedVerifier = new HasVoted(oracleAddress);
-        
+        // Deploy verifiers with initial xpPerClaim values
+        OwnsCitizenNFT citizenVerifier = new OwnsCitizenNFT(citizenNFTAddress, 10);
+        HasVotingPower votingPowerVerifier = new HasVotingPower(oracleAddress, 5);
+        HasVoted hasVotedVerifier = new HasVoted(oracleAddress, 5);
+
         // Register verifiers
         xpManager.registerVerifier(1, address(citizenVerifier)); // Citizen NFT ownership
         xpManager.registerVerifier(2, address(votingPowerVerifier)); // Voting power

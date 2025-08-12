@@ -10,13 +10,15 @@ export type QuestItem = {
   title: string
   description: string
   icon: QuestIcon
+  type: 'on-chain' | 'off-chain'
   route?: string
   action?: string
   actionText?: string
   progress?: number
   target?: number
   verifierId?: bigint | number
-  context?: `0x${string}`
+  xpReward?: number
+  mooneyReward?: number
 }
 
 type QuestProps = {
@@ -35,10 +37,17 @@ export default function Quest({
     return quest.verifierId
   }, [quest.verifierId])
 
+  // For OwnsCitizenNFT (verifierId 1), we can use a simple context since the verifier ignores it
+  // For oracle-based verifiers, we'll skip the completion check for now since they require dynamic context
+  const shouldCheckCompletion =
+    quest.verifierId === 1 || quest.verifierId === BigInt(1)
+  const simpleContext =
+    '0x0000000000000000000000000000000000000000000000000000000000000001' as `0x${string}` // Simple context for OwnsCitizenNFT
+
   const { claimed } = useHasClaimedFromVerifier({
     user: userAddress,
-    context: quest.context,
     verifierId: verifierIdBigInt,
+    context: shouldCheckCompletion ? simpleContext : undefined,
   })
 
   const isCompleted = Boolean(claimed)
