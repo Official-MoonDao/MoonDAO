@@ -37,12 +37,9 @@ import {
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
-import viemChains from '@/lib/viem/viemChains'
 import Modal from '../layout/Modal'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
-import NetworkSelector from '../thirdweb/NetworkSelector'
 import { LinkAccounts } from './LinkAccounts'
-import { PrivyWeb3Button } from './PrivyWeb3Button'
 import WalletAction from './WalletAction'
 
 // Custom hook to fetch wallet tokens from our API
@@ -65,6 +62,8 @@ function useWalletTokens(address: string | undefined, chain: string) {
         `/api/etherscan/wallet-tokens?address=${address}&chain=${chain}&offset=50`
       )
       const data = await response.json()
+
+      console.log(data)
 
       if (data.error) {
         setError(data.error)
@@ -123,7 +122,6 @@ const selectedNativeToken: any = {
   'base-sepolia-testnet': 'ETH',
   polygon: 'MATIC',
 }
-
 
 function SendModal({
   account,

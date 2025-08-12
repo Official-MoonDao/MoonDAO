@@ -437,4 +437,8 @@ export const MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL =
     ? 'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-arb/version/latest'
     : 'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-sepolia/version/latest'
 
+export const MOONDAO_MISSIONS_SUBGRAPH_URL =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+    ? 'https://api.studio.thegraph.com/query/111994/moon-dao-missions-arb/version/latest'
+    : 'https://api.studio.thegraph.com/query/111994/moon-dao-missions-sepolia/version/latest'
 export const TICK_SPACING = 100
