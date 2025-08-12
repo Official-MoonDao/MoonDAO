@@ -16,6 +16,10 @@ contract XPManager is Ownable {
     mapping(uint256 => address) public verifiers;
     mapping(bytes32 => bool) public usedProofs;
     
+    // Track which verifiers each user has claimed XP from
+    mapping(address => mapping(uint256 => bool)) public userVerifierClaims; // user => verifierId => hasClaimed
+    mapping(address => uint256[]) public userClaimedVerifiers; // user => array of claimed verifier IDs
+    
     // ERC20 Rewards system (single token)
     struct RewardThreshold {
         uint256 xpThreshold;
@@ -41,6 +45,7 @@ contract XPManager is Ownable {
     event ERC20RewardConfigSet(address indexed tokenAddress, uint256[] thresholds, uint256[] rewardAmounts);
     event ERC20RewardClaimed(address indexed user, address indexed tokenAddress, uint256 amount);
     event ERC20RewardConfigDeactivated(address indexed tokenAddress);
+    event VerifierClaimed(address indexed user, uint256 indexed verifierId, uint256 xpAmount);
 
     constructor() Ownable(msg.sender) {
         // No constructor parameters needed for pure XP system
@@ -248,8 +253,13 @@ contract XPManager is Ownable {
         // Mark as used
         usedProofs[claimId] = true;
         
+        // Record verifier claim
+        _recordVerifierClaim(msg.sender, conditionId);
+        
         // Grant XP
         _grantXP(msg.sender, xpAmount);
+        
+        emit VerifierClaimed(msg.sender, conditionId, xpAmount);
     }
 
     /**
@@ -285,8 +295,13 @@ contract XPManager is Ownable {
         // Mark as used
         usedProofs[claimId] = true;
 
+        // Record verifier claim
+        _recordVerifierClaim(user, conditionId);
+
         // Grant XP to the target user
         _grantXP(user, xpAmount);
+        
+        emit VerifierClaimed(user, conditionId, xpAmount);
     }
 
     /**
@@ -296,6 +311,47 @@ contract XPManager is Ownable {
      */
     function getTotalXP(address user) external view returns (uint256) {
         return userXP[user];
+    }
+
+    /**
+     * @notice Check if a user has already claimed XP from a specific verifier
+     * @param user Address of the user
+     * @param verifierId ID of the verifier
+     * @return True if user has claimed from this verifier, false otherwise
+     */
+    function hasClaimedFromVerifier(address user, uint256 verifierId) external view returns (bool) {
+        return userVerifierClaims[user][verifierId];
+    }
+
+    /**
+     * @notice Get all verifier IDs that a user has claimed XP from
+     * @param user Address of the user
+     * @return Array of verifier IDs the user has claimed from
+     */
+    function getClaimedVerifiers(address user) external view returns (uint256[] memory) {
+        return userClaimedVerifiers[user];
+    }
+
+    /**
+     * @notice Get the number of unique verifiers a user has claimed from
+     * @param user Address of the user
+     * @return Number of unique verifiers claimed from
+     */
+    function getClaimedVerifierCount(address user) external view returns (uint256) {
+        return userClaimedVerifiers[user].length;
+    }
+
+    /**
+     * @dev Internal function to record that a user has claimed from a verifier
+     * @param user Address of the user
+     * @param verifierId ID of the verifier
+     */
+    function _recordVerifierClaim(address user, uint256 verifierId) internal {
+        // Only record if this is the first time claiming from this verifier
+        if (!userVerifierClaims[user][verifierId]) {
+            userVerifierClaims[user][verifierId] = true;
+            userClaimedVerifiers[user].push(verifierId);
+        }
     }
 
     /**

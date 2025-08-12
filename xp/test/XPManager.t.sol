@@ -787,4 +787,150 @@ contract XPManagerTest is Test {
         assertEq(rewardToken.balanceOf(user1), user1InitialBalance + 5 * 10**18);
         assertEq(rewardToken.balanceOf(user2), user2InitialBalance + 15 * 10**18);
     }
+
+    function testVerifierTracking() public {
+        // Register multiple verifiers for testing (as owner)
+        OwnsCitizenNFT verifier2 = new OwnsCitizenNFT(address(citizenNFT), 75);
+        OwnsCitizenNFT verifier3 = new OwnsCitizenNFT(address(citizenNFT), 100);
+        
+        // Make sure we're the owner when registering verifiers
+        address currentOwner = xpManager.owner();
+        vm.startPrank(currentOwner);
+        xpManager.registerVerifier(2, address(verifier2));
+        xpManager.registerVerifier(3, address(verifier3));
+        vm.stopPrank();
+        
+        // Initially, user1 has not claimed from any verifiers
+        assertFalse(xpManager.hasClaimedFromVerifier(user1, 1));
+        assertFalse(xpManager.hasClaimedFromVerifier(user1, 2));
+        assertFalse(xpManager.hasClaimedFromVerifier(user1, 3));
+        assertEq(xpManager.getClaimedVerifierCount(user1), 0);
+        
+        // User1 claims from verifier 1
+        vm.prank(user1);
+        xpManager.claimXP(1, "");
+        
+        // Check that verifier 1 is now tracked
+        assertTrue(xpManager.hasClaimedFromVerifier(user1, 1));
+        assertFalse(xpManager.hasClaimedFromVerifier(user1, 2));
+        assertFalse(xpManager.hasClaimedFromVerifier(user1, 3));
+        assertEq(xpManager.getClaimedVerifierCount(user1), 1);
+        
+        uint256[] memory claimedVerifiers = xpManager.getClaimedVerifiers(user1);
+        assertEq(claimedVerifiers.length, 1);
+        assertEq(claimedVerifiers[0], 1);
+        
+        // User1 claims from verifier 2
+        vm.prank(user1);
+        xpManager.claimXP(2, "");
+        
+        // Check that both verifiers are tracked
+        assertTrue(xpManager.hasClaimedFromVerifier(user1, 1));
+        assertTrue(xpManager.hasClaimedFromVerifier(user1, 2));
+        assertFalse(xpManager.hasClaimedFromVerifier(user1, 3));
+        assertEq(xpManager.getClaimedVerifierCount(user1), 2);
+        
+        claimedVerifiers = xpManager.getClaimedVerifiers(user1);
+        assertEq(claimedVerifiers.length, 2);
+        // Verifiers should be added in order of claiming
+        assertEq(claimedVerifiers[0], 1);
+        assertEq(claimedVerifiers[1], 2);
+        
+        // User2 claims from verifier 3 only
+        vm.prank(user2);
+        xpManager.claimXP(3, "");
+        
+        // Check that user2's tracking is independent
+        assertFalse(xpManager.hasClaimedFromVerifier(user2, 1));
+        assertFalse(xpManager.hasClaimedFromVerifier(user2, 2));
+        assertTrue(xpManager.hasClaimedFromVerifier(user2, 3));
+        assertEq(xpManager.getClaimedVerifierCount(user2), 1);
+        
+        uint256[] memory user2ClaimedVerifiers = xpManager.getClaimedVerifiers(user2);
+        assertEq(user2ClaimedVerifiers.length, 1);
+        assertEq(user2ClaimedVerifiers[0], 3);
+        
+        // User1's data should be unchanged
+        assertTrue(xpManager.hasClaimedFromVerifier(user1, 1));
+        assertTrue(xpManager.hasClaimedFromVerifier(user1, 2));
+        assertFalse(xpManager.hasClaimedFromVerifier(user1, 3));
+        assertEq(xpManager.getClaimedVerifierCount(user1), 2);
+    }
+
+    function testVerifierClaimedEvent() public {
+        // Expect the VerifierClaimed event when claiming XP
+        vm.expectEmit(true, true, false, true);
+        emit XPManager.VerifierClaimed(user1, 1, 25); // user, verifierId, xpAmount
+        
+        vm.prank(user1);
+        xpManager.claimXP(1, "");
+    }
+
+    function testVerifierTrackingWithClaimXPFor() public {
+        // Test that verifier tracking also works with claimXPFor
+        assertFalse(xpManager.hasClaimedFromVerifier(user1, 1));
+        
+        // Use claimXPFor instead of claimXP
+        xpManager.claimXPFor(user1, 1, "");
+        
+        // Check that verifier is still tracked correctly
+        assertTrue(xpManager.hasClaimedFromVerifier(user1, 1));
+        assertEq(xpManager.getClaimedVerifierCount(user1), 1);
+        
+        uint256[] memory claimedVerifiers = xpManager.getClaimedVerifiers(user1);
+        assertEq(claimedVerifiers.length, 1);
+        assertEq(claimedVerifiers[0], 1);
+    }
+
+    function testTrackVerifierClaimsButAllowMultipleClaims() public {
+        // User1 claims from verifier 1 successfully
+        vm.prank(user1);
+        xpManager.claimXP(1, abi.encode(25));
+        
+        // Verify the claim was recorded
+        assertTrue(xpManager.hasClaimedFromVerifier(user1, 1));
+        assertEq(xpManager.getTotalXP(user1), 25);
+        
+        // User should be able to claim from the same verifier with different context
+        vm.prank(user1);
+        xpManager.claimXP(1, abi.encode(50));
+        
+        // XP should increase, and verifier should still be marked as claimed from
+        assertEq(xpManager.getTotalXP(user1), 50);
+        assertTrue(xpManager.hasClaimedFromVerifier(user1, 1));
+        
+        // Attempting to claim with the same context should fail
+        vm.prank(user1);
+        vm.expectRevert("Already claimed");
+        xpManager.claimXP(1, abi.encode(25)); // Same context as first claim
+    }
+
+    function testVerifierTrackingRecordsFirstClaimOnly() public {
+        // Initially not claimed from any verifier
+        assertFalse(xpManager.hasClaimedFromVerifier(user1, 1));
+        assertEq(xpManager.getClaimedVerifierCount(user1), 0);
+        
+        // First claim should add verifier to the list
+        vm.prank(user1);
+        xpManager.claimXP(1, abi.encode(25));
+        
+        assertTrue(xpManager.hasClaimedFromVerifier(user1, 1));
+        assertEq(xpManager.getClaimedVerifierCount(user1), 1);
+        
+        uint256[] memory claimedVerifiers = xpManager.getClaimedVerifiers(user1);
+        assertEq(claimedVerifiers.length, 1);
+        assertEq(claimedVerifiers[0], 1);
+        
+        // Second claim from same verifier should not duplicate the record
+        vm.prank(user1);
+        xpManager.claimXP(1, abi.encode(50));
+        
+        // Still should only be counted once
+        assertTrue(xpManager.hasClaimedFromVerifier(user1, 1));
+        assertEq(xpManager.getClaimedVerifierCount(user1), 1);
+        
+        claimedVerifiers = xpManager.getClaimedVerifiers(user1);
+        assertEq(claimedVerifiers.length, 1);
+        assertEq(claimedVerifiers[0], 1);
+    }
 }
