@@ -59,6 +59,7 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import StandardButton from '@/components/layout/StandardButton'
 import Action from '@/components/subscription/Action'
 import Card from '@/components/subscription/Card'
+import RoleBasedStar from '@/components/discord/RoleBasedStar'
 import CitizenActions from '@/components/subscription/CitizenActions'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import GeneralActions from '@/components/subscription/GeneralActions'
@@ -188,19 +189,20 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                     id="star-asset-container"
                     className="absolute -bottom-2 -right-2"
                   >
-                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
-                      <Image
-                        src="/../.././assets/icon-star.svg"
-                        alt=""
-                        width={40}
-                        height={40}
-                      />
-                    </div>
+                    <RoleBasedStar userAddress={nft?.owner} size={48} />
                   </div>
                 </div>
               ) : (
-                <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex items-center justify-center flex-shrink-0">
-                  <div className="text-slate-400 text-6xl">👤</div>
+                <div className="relative flex-shrink-0">
+                  <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex items-center justify-center">
+                    <div className="text-slate-400 text-6xl">👤</div>
+                  </div>
+                  <div
+                    id="star-asset-container"
+                    className="absolute -bottom-2 -right-2"
+                  >
+                    <RoleBasedStar userAddress={nft?.owner} size={48} />
+                  </div>
                 </div>
               )}
               <div id="citizen-name-container" className="flex-1 min-w-0 flex flex-col justify-center min-h-[200px] lg:min-h-[250px]">

@@ -1,21 +1,35 @@
 type Dictionary = { [key: string]: string[] }
 
 export const discordRoleDictionary: Dictionary = {
-  '914973269709447238': ['text-yellow-500', 'Astronauts'],
-  '921183824614948874': ['text-rose-700', 'Multi-sig'],
-  '914997939905101874': ['text-emerald-400', 'Rocketeers'],
-  '915011037017817149': ['text-purple-500', 'Moon Settlers'],
+  // Core leadership roles
+  '914973269709447238': ['text-yellow-500', 'Astronaut'],
+  '1133787490180939817': ['text-rose-700', 'Executive'],
+  
+  // Governance roles (now with actual Discord role IDs)
+  '1075100215406764143': ['text-blue-500', 'Senator'],
+  '914997939905101874': ['text-emerald-400', 'Project Lead'],
+  
+  // Project and community roles
+  '915011037017817149': ['text-purple-500', 'Project Contributor'],
+  
+  // Voting and citizenship (actual role IDs from config)
+  '1075090331055435786': ['text-blue-600', 'Voter'],
+  '1293939046774739106': ['text-indigo-500', 'Citizen'],
+  '1331745916117323849': ['text-indigo-500', 'Citizen'], // testnet
+  
+  // Token holder roles
   '1000243495803555940': ['text-blue-700', '$MOONEY Whale'],
   '978030442781483038': ['text-rose-500', '$MOONEY Millionaire'],
   '1000242931254431844': ['text-orange-700', '$MOONEY Shark'],
   '945287897588846672': ['text-lime-500', '$MOONEY HODLER'],
+  
+  // Other community roles
   '983904866021802074': ['text-zinc-500', 'Ticket To Space Holder'],
-  '941227287007866883': ['text-sky-500', 'DAO Contributor'],
-  '914998572859142185': ['text-blue-500', 'Earthlings'],
+  '914998572859142185': ['text-blue-500', 'Alien'],
   '1096152084782522448': ['text-indigo-600', 'MoonDAOcrew'],
   '1044672824243138560': ['text-rose-600', 'CN Member'],
   '941227401290067998': ['text-emerald-500', 'MoonDAO World'],
-  '1046539204018045099': ['text-yellow-500',"Member"],
+  '1046539204018045099': ['text-yellow-500', 'Member'],
 }
 
 /*
