@@ -1,0 +1,325 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./interfaces/IXPVerifier.sol";
+
+contract XPManager is Ownable {
+    using SafeERC20 for IERC20;
+
+    // User state
+    mapping(address => uint256) public userXP;
+    
+    // Verifier management
+    mapping(uint256 => address) public verifiers;
+    mapping(bytes32 => bool) public usedProofs;
+    
+    // ERC20 Rewards system (single token)
+    struct RewardThreshold {
+        uint256 xpThreshold;
+        uint256 rewardAmount;
+        bool active;
+    }
+    
+    struct ERC20RewardConfig {
+        address tokenAddress;
+        RewardThreshold[] thresholds;
+        bool active;
+    }
+    
+    // Single ERC20 reward configuration
+    ERC20RewardConfig private erc20RewardConfig;
+    
+    // Track highest XP threshold reached per user (for the single token)
+    mapping(address => uint256) public highestThresholdReached; // user => threshold
+    
+    // Events
+    event XPEarned(address indexed user, uint256 xpAmount, uint256 totalXP);
+    event VerifierRegistered(uint256 indexed id, address verifier);
+    event ERC20RewardConfigSet(address indexed tokenAddress, uint256[] thresholds, uint256[] rewardAmounts);
+    event ERC20RewardClaimed(address indexed user, address indexed tokenAddress, uint256 amount);
+    event ERC20RewardConfigDeactivated(address indexed tokenAddress);
+
+    constructor() Ownable(msg.sender) {
+        // No constructor parameters needed for pure XP system
+    }
+
+    /**
+     * @notice Register a new verifier
+     * @param id Unique identifier for the verifier
+     * @param verifier Address of the verifier contract
+     */
+    function registerVerifier(uint256 id, address verifier) external onlyOwner {
+        require(verifier != address(0), "Invalid verifier address");
+        verifiers[id] = verifier;
+        emit VerifierRegistered(id, verifier);
+    }
+
+    /**
+     * @notice Set ERC20 reward configuration with thresholds (single token)
+     * @param tokenAddress Address of the ERC20 token
+     * @param thresholds Array of XP thresholds
+     * @param rewardAmounts Array of reward amounts (must match thresholds length)
+     */
+    function setERC20RewardConfig(
+        address tokenAddress,
+        uint256[] calldata thresholds,
+        uint256[] calldata rewardAmounts
+    ) external onlyOwner {
+        require(tokenAddress != address(0), "Invalid token address");
+        require(thresholds.length == rewardAmounts.length, "Arrays length mismatch");
+        require(thresholds.length > 0, "No thresholds provided");
+        
+        // Validate thresholds are in ascending order
+        for (uint256 i = 1; i < thresholds.length; i++) {
+            require(thresholds[i] > thresholds[i - 1], "Thresholds must be ascending");
+        }
+        
+        // Clear existing thresholds for the single config
+        delete erc20RewardConfig.thresholds;
+        
+        // Set new configuration
+        erc20RewardConfig.tokenAddress = tokenAddress;
+        erc20RewardConfig.active = true;
+        
+        // Add thresholds
+        for (uint256 i = 0; i < thresholds.length; i++) {
+            erc20RewardConfig.thresholds.push(
+                RewardThreshold({
+                    xpThreshold: thresholds[i],
+                    rewardAmount: rewardAmounts[i],
+                    active: true
+                })
+            );
+        }
+        
+        emit ERC20RewardConfigSet(tokenAddress, thresholds, rewardAmounts);
+    }
+
+    /**
+     * @notice Deactivate ERC20 reward configuration (single token)
+     */
+    function deactivateERC20RewardConfig() external onlyOwner {
+        require(erc20RewardConfig.active, "Config not active");
+        erc20RewardConfig.active = false;
+        emit ERC20RewardConfigDeactivated(erc20RewardConfig.tokenAddress);
+    }
+
+    /**
+     * @notice Claim ERC20 rewards for the configured token
+     */
+    function claimERC20Rewards() external {
+        require(erc20RewardConfig.active, "Reward config not active");
+        
+        uint256 userTotalXP = userXP[msg.sender];
+        uint256 totalReward = 0;
+        uint256 newHighestThreshold = highestThresholdReached[msg.sender];
+        
+        RewardThreshold[] storage thresholds = erc20RewardConfig.thresholds;
+        
+        // Calculate rewards and update highest threshold reached
+        for (uint256 i = 0; i < thresholds.length; i++) {
+            RewardThreshold storage threshold = thresholds[i];
+            
+            if (threshold.active && 
+                userTotalXP >= threshold.xpThreshold && 
+                threshold.xpThreshold > highestThresholdReached[msg.sender]) {
+                totalReward += threshold.rewardAmount;
+                if (threshold.xpThreshold > newHighestThreshold) {
+                    newHighestThreshold = threshold.xpThreshold;
+                }
+            }
+        }
+        
+        require(totalReward > 0, "No rewards to claim");
+        
+        // Update highest threshold reached
+        highestThresholdReached[msg.sender] = newHighestThreshold;
+        
+        // Transfer tokens
+        IERC20(erc20RewardConfig.tokenAddress).safeTransfer(msg.sender, totalReward);
+        
+        emit ERC20RewardClaimed(msg.sender, erc20RewardConfig.tokenAddress, totalReward);
+    }
+
+    /**
+     * @notice Calculate total ERC20 reward for a user
+     * @param user Address of the user
+     * @return Total reward amount
+     */
+    function calculateERC20Reward(address user) public view returns (uint256) {
+        if (!erc20RewardConfig.active) {
+            return 0;
+        }
+        
+        uint256 userTotalXP = userXP[user];
+        uint256 totalReward = 0;
+        uint256 highestReached = highestThresholdReached[user];
+        
+        RewardThreshold[] storage thresholds = erc20RewardConfig.thresholds;
+        
+        for (uint256 i = 0; i < thresholds.length; i++) {
+            RewardThreshold storage threshold = thresholds[i];
+            
+            if (threshold.active && 
+                userTotalXP >= threshold.xpThreshold && 
+                threshold.xpThreshold > highestReached) {
+                totalReward += threshold.rewardAmount;
+            }
+        }
+        
+        return totalReward;
+    }
+
+    /**
+     * @notice Get available ERC20 rewards for a user
+     * @param user Address of the user
+     * @return Available reward amount
+     */
+    function getAvailableERC20Reward(address user) external view returns (uint256) {
+        return calculateERC20Reward(user);
+    }
+
+    /**
+     * @notice Get ERC20 reward configuration
+     * @return tokenAddress Token address
+     * @return thresholds Array of XP thresholds
+     * @return rewardAmounts Array of reward amounts
+     * @return active Whether the config is active
+     */
+    function getERC20RewardConfig() external view returns (
+        address,
+        uint256[] memory thresholds,
+        uint256[] memory rewardAmounts,
+        bool active
+    ) {
+        ERC20RewardConfig storage config = erc20RewardConfig;
+        thresholds = new uint256[](config.thresholds.length);
+        rewardAmounts = new uint256[](config.thresholds.length);
+        
+        for (uint256 i = 0; i < config.thresholds.length; i++) {
+            thresholds[i] = config.thresholds[i].xpThreshold;
+            rewardAmounts[i] = config.thresholds[i].rewardAmount;
+        }
+        
+        return (config.tokenAddress, thresholds, rewardAmounts, config.active);
+    }
+
+    /**
+    // getAllAvailableERC20Rewards removed in single-token configuration
+
+    /**
+     * @notice Emergency function to withdraw stuck ERC20 tokens
+     * @param tokenAddress Address of the ERC20 token
+     * @param amount Amount to withdraw
+     */
+    function emergencyWithdrawERC20(address tokenAddress, uint256 amount) external onlyOwner {
+        IERC20(tokenAddress).safeTransfer(owner(), amount);
+    }
+
+    /**
+     * @notice Claim XP from a verifier
+     * @param conditionId ID of the verifier condition
+     * @param context Context data for the verifier
+     */
+    function claimXP(
+        uint256 conditionId,
+        bytes calldata context
+    ) external {
+        require(verifiers[conditionId] != address(0), "Verifier not found");
+        
+        IXPVerifier verifier = IXPVerifier(verifiers[conditionId]);
+        
+        // Generate claim ID
+        bytes32 claimId = verifier.claimId(msg.sender, context);
+        require(!usedProofs[claimId], "Already claimed");
+        
+        // Check cooldown
+        uint256 validAfter = verifier.validAfter(msg.sender, context);
+        require(block.timestamp >= validAfter, "Cooldown not expired");
+        
+        // Check eligibility
+        (bool eligible, uint256 xpAmount) = verifier.isEligible(msg.sender, context);
+        require(eligible, "Not eligible");
+        require(xpAmount > 0, "No XP to claim");
+        
+        // Mark as used
+        usedProofs[claimId] = true;
+        
+        // Grant XP
+        _grantXP(msg.sender, xpAmount);
+    }
+
+    /**
+     * @notice Claim XP on behalf of a user (server-relayed flow)
+     * @dev Uses oracle proof bound to the provided user. Anyone can call this; oracle proof prevents abuse.
+     * @param user Address to credit XP to
+     * @param conditionId ID of the verifier condition
+     * @param context Context data for the verifier
+     */
+    function claimXPFor(
+        address user,
+        uint256 conditionId,
+        bytes calldata context
+    ) external {
+        require(user != address(0), "Invalid user");
+        require(verifiers[conditionId] != address(0), "Verifier not found");
+
+        IXPVerifier verifier = IXPVerifier(verifiers[conditionId]);
+
+        // Generate claim ID bound to the target user
+        bytes32 claimId = verifier.claimId(user, context);
+        require(!usedProofs[claimId], "Already claimed");
+
+        // Check cooldown for the target user
+        uint256 validAfter = verifier.validAfter(user, context);
+        require(block.timestamp >= validAfter, "Cooldown not expired");
+
+        // Check eligibility for the target user
+        (bool eligible, uint256 xpAmount) = verifier.isEligible(user, context);
+        require(eligible, "Not eligible");
+        require(xpAmount > 0, "No XP to claim");
+
+        // Mark as used
+        usedProofs[claimId] = true;
+
+        // Grant XP to the target user
+        _grantXP(user, xpAmount);
+    }
+
+    /**
+     * @notice Get total XP for a user
+     * @param user Address of the user
+     * @return Total XP amount
+     */
+    function getTotalXP(address user) external view returns (uint256) {
+        return userXP[user];
+    }
+
+    /**
+     * @dev Internal function to grant XP
+     * @param user Address of the user
+     * @param amount XP to grant
+     */
+    function _grantXP(address user, uint256 amount) internal {
+        uint256 oldXP = userXP[user];
+        userXP[user] += amount;
+        
+        // Update highest threshold reached for all active ERC20 reward configs
+        _updateHighestThresholdReached(user, oldXP, userXP[user]);
+        
+        emit XPEarned(user, amount, userXP[user]);
+    }
+
+    /**
+     * @dev Internal function to update highest threshold reached
+     * @param user Address of the user
+     * @param oldXP Previous XP amount
+     * @param newXP New XP amount
+     */
+    function _updateHighestThresholdReached(address user, uint256 oldXP, uint256 newXP) internal {
+        // In single-token mode, we update thresholds when rewards are calculated.
+    }
+}

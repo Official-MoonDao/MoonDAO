@@ -1,4 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import { CITIZEN_TABLE_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
@@ -8,7 +9,7 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
-import { unpin } from '@/lib/ipfs/unpin'
+import { unpinCitizenImage } from '@/lib/ipfs/unpin'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -148,12 +149,16 @@ export default function CitizenMetadataModal({
 
         await waitForResponse(formId, responseId)
 
-        const res = await fetch(
-          `/api/typeform/response?formId=${formId}&responseId=${responseId}`,
-          {
-            method: 'POST',
-          }
-        )
+        const accessToken = await getAccessToken()
+
+        const res = await fetch(`/api/typeform/response`, {
+          method: 'POST',
+          body: JSON.stringify({
+            accessToken: accessToken,
+            responseId: responseId,
+            formId: formId,
+          }),
+        })
 
         if (res.ok) {
           setFormResponseId(responseId)
@@ -253,7 +258,8 @@ export default function CitizenMetadataModal({
               <Widget
                 className="w-full"
                 id={
-                  process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string
+                  process.env
+                    .NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string
                 }
                 onSubmit={submitTypeform}
                 height={500}
@@ -313,7 +319,7 @@ export default function CitizenMetadataModal({
                     )
 
                     //unpin old image
-                    await unpin(currCitizenImage.split('ipfs://')[1])
+                    await unpinCitizenImage(nft.metadata.id)
 
                     imageIpfsLink = `ipfs://${newImageIpfsHash}`
                   }

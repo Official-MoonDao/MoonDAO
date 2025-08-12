@@ -4,13 +4,21 @@ import Link from 'next/link'
 import React from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
-import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import Tooltip from '../layout/Tooltip'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionFundingProgressBar from './MissionFundingProgressBar'
+
+// Loading skeleton components
+const TextSkeleton = ({
+  width,
+  height = 'h-4',
+}: {
+  width: string
+  height?: string
+}) => <div className={`animate-pulse bg-gray-300 rounded ${height} ${width}`} />
 
 interface MissionProfileHeaderProps {
   mission: any
@@ -30,6 +38,9 @@ interface MissionProfileHeaderProps {
   sendReservedTokens: () => void
   sendPayouts: () => void
   deployLiquidityPool: () => void
+  // Direct props for total funding instead of callback
+  totalFunding: bigint
+  isLoadingTotalFunding: boolean
 }
 
 const MissionProfileHeader = React.memo(
@@ -51,10 +62,16 @@ const MissionProfileHeader = React.memo(
     sendReservedTokens,
     sendPayouts,
     deployLiquidityPool,
+    totalFunding,
+    isLoadingTotalFunding,
   }: MissionProfileHeaderProps) => {
     const account = useActiveAccount()
-    const { data: ethPrice } = useETHPrice(1, 'ETH_TO_USD')
-    const totalFunding = useTotalFunding(mission?.projectId)
+    const { data: ethPrice, isLoading: isLoadingEthPrice } = useETHPrice(
+      1,
+      'ETH_TO_USD'
+    )
+
+    // Total funding is now passed as props from MissionProfile component
 
     return (
       <div className="w-full bg-gradient-to-br from-dark-cool via-darkest-cool to-dark-cool relative overflow-hidden">
@@ -161,7 +178,7 @@ const MissionProfileHeader = React.memo(
               {/* Enhanced Funding Stats Card */}
               <div className="bg-gradient-to-br from-dark-cool to-darkest-cool backdrop-blur-lg rounded-xl p-4 lg:p-5 border border-white/10 shadow-xl w-full max-w-2xl">
                 {/* Raised Amount Badge */}
-                <div className="mb-3">
+                <div className="mb-2">
                   <div className="inline-flex items-center bg-gradient-to-r from-blue-500 to-purple-600 text-white font-GoodTimes py-2 px-4 rounded-full shadow-lg">
                     <Image
                       src="/assets/icon-raised-tokens.svg"
@@ -170,40 +187,39 @@ const MissionProfileHeader = React.memo(
                       height={20}
                       className="mr-2"
                     />
-                    <span className="text-base lg:text-lg mr-2">
-                      {truncateTokenValue(
-                        Number(totalFunding || 0) / 1e18,
-                        'ETH'
-                      )}
-                    </span>
-                    <span className="text-xs opacity-90">ETH RAISED</span>
+                    {isLoadingTotalFunding ? (
+                      <div className="flex items-center">
+                        <TextSkeleton width="w-16" height="h-5" />
+                        <span className="text-xs opacity-90 ml-2">
+                          ETH RAISED
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-base lg:text-lg mr-2">
+                          {truncateTokenValue(
+                            Number(totalFunding || 0) / 1e18,
+                            'ETH'
+                          )}
+                        </span>
+                        <span className="text-xs opacity-90">ETH RAISED</span>
+                      </>
+                    )}
                   </div>
-                  <p className="text-gray-400 text-xs mt-1 ml-4">
-                    ≈ $
-                    {Math.round(
-                      (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
-                    ).toLocaleString()}{' '}
-                    USD
+                  <p className="text-gray-400 text-xs mt-2 ml-4">
+                    {isLoadingTotalFunding || isLoadingEthPrice ? (
+                      <TextSkeleton width="w-16" height="h-4" />
+                    ) : (
+                      <>
+                        ≈ $
+                        {Math.round(
+                          (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
+                        ).toLocaleString()}{' '}
+                        USD
+                      </>
+                    )}
                   </p>
                 </div>
-                  <div className="flex items-center">
-                    <Image
-                      src="/assets/launchpad/clock.svg"
-                      alt="Deadline"
-                      width={24}
-                      height={24}
-                    />
-                    <div className="ml-2">
-                      <p className="text-gray-400 text-sm">DEADLINE</p>
-                      <p className="text-white font-GoodTimes min-w-[250px]">
-                        {refundPeriodPassed || stage === 4
-                          ? 'PASSED'
-                          : stage === 3
-                          ? 'REFUND'
-                          : duration}
-                      </p>
-                    </div>
-                  </div>
                 {/* Progress Bar */}
                 <div className="mb-3">
                   <MissionFundingProgressBar
@@ -254,11 +270,17 @@ const MissionProfileHeader = React.memo(
                         className="mr-1"
                       />
                       <span className="text-gray-400 text-xs uppercase tracking-wide">
-                        Deadline
+                        {refundPeriodPassed || stage === 4 || stage === 3
+                          ? 'Status'
+                          : 'Deadline'}
                       </span>
                     </div>
                     <p className="text-white font-GoodTimes text-xs lg:text-sm">
-                      {duration}
+                      {refundPeriodPassed || stage === 4
+                        ? 'PASSED'
+                        : stage === 3
+                        ? 'REFUND'
+                        : duration}
                     </p>
                   </div>
 

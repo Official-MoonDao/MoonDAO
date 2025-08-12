@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { wadToFloat } from '../utils/numbers'
-import { daysToMS, minutesToMS } from '../utils/timestamp'
+import { minutesToMS } from '../utils/timestamp'
 import { projectQuery, suckerGroupMomentsQuery } from './subgraph'
 import { useJBProjectTimelineRange } from './useJBProjectTimelineRange'
 
@@ -10,43 +10,99 @@ export default function useJBProjectTimeline(
   suckerGroupId?: string,
   projectId?: number
 ) {
-  const [suckerGroupTimelinePoints, setSuckerGroupTimelinePoints] =
-    useState<any[]>()
+  const [suckerGroupTimelineData, setSuckerGroupTimelineData] = useState<{
+    previous: { items: any[] }
+    range: { items: any[] }
+  }>()
   const [isLoading, setIsLoading] = useState(false)
 
   const [range, setRange] = useJBProjectTimelineRange({
     createdAt: projectCreatedAt,
   })
 
+  // Match official Juicebox timestamp calculation
   const { startTimestamp, endTimestamp } = useMemo(() => {
     if (!range) return { startTimestamp: 0, endTimestamp: 0 }
 
-    const now = Date.now().valueOf() - minutesToMS(5)
-    const startMS = now - daysToMS(range)
+    // Use official Juicebox pattern: Date.now() - minutesToMS(5)
+    const daysToMS = (days: number) => days * 24 * 60 * 60 * 1000
+    const nowMs = Date.now().valueOf() - minutesToMS(5)
+    const startMs = nowMs - daysToMS(range)
 
     return {
-      startTimestamp: Math.floor(startMS / 1000), // Convert to seconds
-      endTimestamp: Math.floor(now / 1000), // Convert to seconds
+      startTimestamp: Math.floor(startMs / 1000),
+      endTimestamp: Math.floor(nowMs / 1000),
     }
   }, [range])
 
   const points = useMemo(() => {
-    // Map sucker group moments to timeline points
-    const suckerGroupPoints =
-      suckerGroupTimelinePoints?.map((item: any) => ({
-        timestamp: item.timestamp, // Remove the * 1000 since API returns seconds and chart expects seconds
-        volume: wadToFloat(item.volume),
-        balance: wadToFloat(item.balance || 0),
-        trendingScore: wadToFloat(item.trendingScore || 0),
-      })) || []
+    if (!suckerGroupTimelineData || !startTimestamp || !endTimestamp) {
+      return []
+    }
+
+    // Generate points based on range - one point per day for shorter ranges
+    const COUNT = Math.min(+range, 30) // Use range for short periods, max 30 for long periods
+    const timestamps: number[] = []
+
+    // Generate evenly spaced timestamps from start to end
+    for (let i = 0; i < COUNT; i++) {
+      const coeff = i / (COUNT - 1)
+      const timestamp = Math.round(
+        (endTimestamp - startTimestamp) * coeff + startTimestamp
+      )
+      timestamps.push(timestamp)
+    }
+
+    // Extract previous and range data
+    const previous = suckerGroupTimelineData.previous.items.length
+      ? suckerGroupTimelineData.previous.items[0]
+      : undefined
+
+    // Sort range items by timestamp to ensure proper order
+    const rangeItems = [...suckerGroupTimelineData.range.items].sort(
+      (a, b) => a.timestamp - b.timestamp
+    )
+
+    // Create data points for ALL 30 timestamps (official Juicebox pattern)
+    const points = timestamps.map((timestamp) => {
+      // Default values (before project creation or if no data)
+      let volume = 0
+      let balance = 0
+      let trendingScore = 0
+
+      // If project was created before this timestamp, use baseline from previous data
+      if (projectCreatedAt <= timestamp && previous) {
+        volume = wadToFloat(previous.volume)
+        balance = wadToFloat(previous.balance)
+        trendingScore = wadToFloat(previous.trendingScore)
+      }
+
+      // Update with any actual data changes at or before this timestamp
+      for (const item of rangeItems) {
+        if (item.timestamp <= timestamp) {
+          volume = wadToFloat(item.volume)
+          balance = wadToFloat(item.balance)
+          trendingScore = wadToFloat(item.trendingScore)
+        } else {
+          break // Items are sorted by timestamp
+        }
+      }
+
+      return {
+        timestamp,
+        volume,
+        balance,
+        trendingScore,
+      }
+    })
 
     setIsLoading(false)
-    return suckerGroupPoints
-  }, [suckerGroupTimelinePoints])
+    return points
+  }, [suckerGroupTimelineData, startTimestamp, endTimestamp, projectCreatedAt])
 
   useEffect(() => {
     async function getTimelinePoints() {
-      if (!suckerGroupTimelinePoints) setIsLoading(true)
+      if (!suckerGroupTimelineData) setIsLoading(true)
       if (
         !startTimestamp ||
         !endTimestamp ||
@@ -94,8 +150,13 @@ export default function useJBProjectTimeline(
 
         if (res.ok) {
           const data = await res.json()
-          const items = data?.suckerGroupMoments?.items || []
-          setSuckerGroupTimelinePoints(items)
+
+          setSuckerGroupTimelineData({
+            previous: data?.previous || { items: [] },
+            range: data?.range || { items: [] },
+          })
+        } else {
+          console.error('API request failed:', res.status, res.statusText)
         }
       } catch (error) {
         console.error('Error fetching timeline data:', error)
@@ -112,5 +173,5 @@ export default function useJBProjectTimeline(
     }
   }, [suckerGroupId, startTimestamp, endTimestamp, selectedChain, projectId])
 
-  return { points, isLoading }
+  return { points, isLoading, range, setRange }
 }

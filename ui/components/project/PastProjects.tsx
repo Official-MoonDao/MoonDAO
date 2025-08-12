@@ -140,6 +140,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
                     project={project}
                     projectContract={projectContract}
                     hatsContract={hatsContract}
+                    isVotingPeriod={false}
                   />
                 </div>
               )

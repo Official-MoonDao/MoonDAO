@@ -112,8 +112,14 @@ export default function Launch({ missions }: any) {
     abi: HatsABI as any,
   })
 
-  const userTeams = useTeamWearer(teamContract, selectedChain, address)
+  const { userTeams, isLoading: userTeamsLoading } = useTeamWearer(
+    teamContract,
+    selectedChain,
+    address
+  )
   const [userTeamsAsManager, setUserTeamsAsManager] = useState<any>()
+  const [userTeamsAsManagerLoading, setUserTeamsAsManagerLoading] =
+    useState(false)
 
   const {
     token: featuredMissionToken,
@@ -137,6 +143,7 @@ export default function Launch({ missions }: any) {
 
   useEffect(() => {
     async function getUserTeamsAsManager() {
+      setUserTeamsAsManagerLoading(true)
       setUserTeamsAsManager(undefined)
       const teamsAsManager = userTeams?.filter(async (team: any) => {
         if (!team?.teamId) return false
@@ -148,10 +155,15 @@ export default function Launch({ missions }: any) {
         return isManager
       })
       setUserTeamsAsManager(teamsAsManager)
+      setUserTeamsAsManagerLoading(false)
     }
-    if (teamContract && userTeams && address) getUserTeamsAsManager()
-    else setUserTeamsAsManager(undefined)
-  }, [teamContract, userTeams, address])
+    if (teamContract && userTeams && address && !userTeamsLoading) {
+      getUserTeamsAsManager()
+    } else {
+      setUserTeamsAsManager(undefined)
+      setUserTeamsAsManagerLoading(false)
+    }
+  }, [teamContract, userTeams, address, userTeamsLoading])
 
   async function handleCreateMission() {
     if (!user) {
@@ -214,6 +226,9 @@ export default function Launch({ missions }: any) {
         setStatus={setStatus}
         userTeams={userTeams}
         userTeamsAsManager={userTeamsAsManager}
+        userTeamsAsManagerLoading={
+          userTeamsLoading || userTeamsAsManagerLoading
+        }
       />
     )
   }

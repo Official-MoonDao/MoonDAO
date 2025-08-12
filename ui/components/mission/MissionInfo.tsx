@@ -56,15 +56,16 @@ export default function MissionInfo({
   teamNFT,
   subgraphData,
   token,
-  fundingGoal,
-  ruleset,
   jbTokensContract,
   jbControllerContract,
   points,
   isLoadingPoints,
-  userMissionTokenBalance,
+  range,
+  setRange,
   primaryTerminalAddress,
   stage,
+  refreshBackers,
+  refreshTotalFunding,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -154,11 +155,25 @@ export default function MissionInfo({
   }, [router])
 
   useEffect(() => {
-    shallowQueryRoute({
+    if (!router.isReady || !mission?.id) return
+
+    const queryParams: any = {
       tokenId: mission?.id,
       tab: tab,
+    }
+
+    // Only preserve query parameters that have meaningful values
+    Object.keys(router.query).forEach((key) => {
+      if (key !== 'tokenId' && key !== 'tab') {
+        const value = router.query[key]
+        // Only preserve if value exists and is not empty
+        if (value && value !== '' && value !== 'undefined') {
+          queryParams[key] = value
+        }
+      }
     })
-  }, [tab])
+    shallowQueryRoute(queryParams)
+  }, [tab, router.isReady, mission?.id])
 
   return (
     <div className="w-full">
@@ -253,6 +268,8 @@ export default function MissionInfo({
                 isLoadingPoints={isLoadingPoints}
                 height={500}
                 createdAt={subgraphData?.createdAt}
+                range={range}
+                setRange={setRange}
               />
               <MissionActivityList
                 selectedChain={selectedChain}
@@ -281,6 +298,8 @@ export default function MissionInfo({
               primaryTerminalAddress={primaryTerminalAddress}
               jbTokensContract={jbTokensContract}
               jbControllerContract={jbControllerContract}
+              refreshBackers={refreshBackers}
+              refreshTotalFunding={refreshTotalFunding}
             />
           </div>
         </div>

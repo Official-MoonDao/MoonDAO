@@ -1,6 +1,6 @@
 //This component dipslays a project card using project data directly from tableland
 import Link from 'next/link'
-import React, { useContext, memo, useState, useMemo } from 'react'
+import React, { useContext, memo, useState, useMemo, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
@@ -21,6 +21,7 @@ type ProjectCardProps = {
   distribution?: Record<string, number>
   handleDistributionChange?: (projectId: string, value: number) => void
   userHasVotingPower?: any
+  isVotingPeriod?: boolean
 }
 
 const ProjectCardContent = memo(
@@ -33,18 +34,41 @@ const ProjectCardContent = memo(
     userContributed,
     userHasVotingPower,
     isMembershipDataLoading,
+    isVotingPeriod,
   }: any) => {
     const [isExpanded, setIsExpanded] = useState(false)
     const description = project && project.MDP < 13
       ? project.description
       : proposalJSON?.abstract || project?.description || ''
-    const isLongText = description.length > 200
+    
+    // Set character limits that better match the compact card height
+    const [characterLimit, setCharacterLimit] = useState(400)
+    
+    useEffect(() => {
+      const handleResize = () => {
+        if (typeof window !== 'undefined') {
+          // Adjust limits for the more compact 240px height
+          setCharacterLimit(window.innerWidth >= 1024 ? 450 : 400)
+        }
+      }
+      
+      if (typeof window !== 'undefined') {
+        handleResize()
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+      }
+    }, [])
+    
+    const isLongText = description.length > characterLimit
     const shouldTruncate = isLongText && !isExpanded
+    const truncatedDescription = shouldTruncate 
+      ? description.slice(0, characterLimit) + '...'
+      : description
 
     return (
       <div
         id="card-container"
-        className="p-4 pb-10 flex flex-col gap-2 relative w-full h-full flex-1"
+        className="p-4 pb-6 flex flex-col gap-2 relative w-full h-[260px] min-h-[260px] max-h-[260px] overflow-hidden"
       >
         <div className="flex justify-between">
           <div className="w-full flex flex-col gap-2">
@@ -97,26 +121,27 @@ const ProjectCardContent = memo(
                 isDisabled={!userHasVotingPower}
               />
             ))}
+          {!distribute && isVotingPeriod && (
+            <div className="flex flex-col items-end">
+              <p className="text-gray-400 text-sm">Not Eligible</p>
+            </div>
+          )}
         </div>
         <div className="flex gap-2"></div>
-        <div className="flex-1">
-          <div className="pr-4 break-words">
-            <div
-              className={`md:max-h-none ${
-                shouldTruncate ? 'max-h-24 overflow-hidden relative' : ''
-              }`}
-            >
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="pr-4 break-words flex-1 flex flex-col justify-between">
+            <div className="description-container flex-1 overflow-hidden min-h-[60px] max-h-[140px]">
               <ReactMarkdown
                 components={{
                   p: ({ node, ...props }) => (
                     <p
-                      className="font-Lato text-[16px] break-words m-0"
+                      className="font-Lato text-[16px] break-words m-0 leading-snug mb-1"
                       {...props}
                     />
                   ),
                   a: ({ node, ...props }) => (
                     <a
-                      className="font-Lato text-[16px] text-moon-blue hover:text-moon-gold underline"
+                      className="font-Lato text-[14px] text-moon-blue hover:text-moon-gold underline"
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
@@ -125,23 +150,22 @@ const ProjectCardContent = memo(
                   ),
                 }}
               >
-                {description}
+                {shouldTruncate ? truncatedDescription : description}
               </ReactMarkdown>
-              {shouldTruncate && (
-                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-900 to-transparent md:hidden"></div>
+            </div>
+            <div className="flex-shrink-0 mt-2 min-h-[28px] pb-1">
+              {isLongText && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsExpanded(!isExpanded)
+                  }}
+                  className="text-blue-400 hover:text-blue-300 text-sm underline transition-colors"
+                >
+                  {isExpanded ? 'Read less' : 'Read more'}
+                </button>
               )}
             </div>
-            {isLongText && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setIsExpanded(!isExpanded)
-                }}
-                className="text-blue-400 hover:text-blue-300 text-sm mt-2 underline md:hidden transition-colors"
-              >
-                {isExpanded ? 'Read less' : 'Read more'}
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -158,6 +182,7 @@ export default function ProjectCard({
   distribution,
   handleDistributionChange,
   userHasVotingPower,
+  isVotingPeriod,
 }: ProjectCardProps) {
   const account = useActiveAccount()
   const address = account?.address
@@ -234,6 +259,7 @@ export default function ProjectCard({
           proposalJSON={proposalJSON}
           userHasVotingPower={userHasVotingPower}
           isMembershipDataLoading={isMembershipDataLoading}
+          isVotingPeriod={isVotingPeriod}
         />
       ) : (
         <Link href={`/project/${project?.id}`} passHref>
@@ -241,6 +267,7 @@ export default function ProjectCard({
             project={project}
             proposalJSON={proposalJSON}
             userHasVotingPower={userHasVotingPower}
+            isVotingPeriod={isVotingPeriod}
           />
         </Link>
       )}

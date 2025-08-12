@@ -6,6 +6,7 @@ import {
   MapPinIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
+import { getAccessToken } from '@privy-io/react-auth'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
@@ -44,6 +45,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
+import { getAttribute } from '@/lib/utils/nft'
 import { DiscordIcon, TwitterIcon } from '@/components/assets'
 import { Hat } from '@/components/hats/Hat'
 import Address from '@/components/layout/Address'

@@ -1,12 +1,9 @@
 import { usePrivy } from '@privy-io/react-auth'
-import CitizenABI from 'const/abis/Citizen.json'
-import { CITIZEN_ADDRESSES } from 'const/config'
+import { CITIZEN_TABLE_NAMES } from 'const/config'
 import { useEffect, useState } from 'react'
-import { getContract, readContract } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
+import { citizenRowToNFT } from '../tableland/convertRow'
 import { getChainSlug } from '../thirdweb/chain'
-import client from '../thirdweb/client'
 import CitizenContext from './citizen-context'
 
 // Cache configuration
@@ -120,7 +117,8 @@ const setCachedCitizen = (address: string, chainId: number, data: any) => {
     }
 
     localStorage.setItem(cacheKey, JSON.stringify(cacheData))
-    console.log('Cached citizen data with key:', cacheKey)
+    console.log('Cached citizen data with key:', cacheKey, 'data:', data)
+    console.log('localStorage now contains:', localStorage.getItem(cacheKey))
   } catch (error) {
     console.warn('Failed to cache citizen data:', error)
   }
@@ -186,56 +184,62 @@ export default function CitizenProvider({
     clearExpiredCache()
 
     // Try to load from cache immediately
+    console.log(
+      'Loading cached citizen data for:',
+      address,
+      'on chain:',
+      chainId
+    )
     const cachedData = getCachedCitizen(address, chainId)
     if (cachedData) {
+      console.log('Found cached data, setting citizen state:', cachedData)
       setCitizen(cachedData)
     } else {
       // If no cached data and we have auth, we'll need to fetch
       if (authenticated && user) {
         setIsLoading(true)
       }
+      console.log('No cached data found')
     }
   }, [address, chainId, mock])
 
-  // Fetch fresh data only when we don't have cached data
+  // Always fetch fresh data when authenticated and address/chain are available
   useEffect(() => {
     if (mock) return
     if (!authenticated || !user || !address || !chainId) return
 
-    // Check if we already have valid cached data for this address/chain
-    const hasValidCachedData = !!(
-      citizen && citizen.owner?.toLowerCase() === address.toLowerCase()
-    )
-
-    if (hasValidCachedData) {
-      return
-    }
-
     async function fetchCitizenData() {
+      console.log(
+        'Fetching fresh citizen data for:',
+        address,
+        'on chain:',
+        chainId
+      )
       try {
-        setIsLoading(true)
-        const contract = getContract({
-          client,
-          address: CITIZEN_ADDRESSES[chainSlug],
-          chain: selectedChain,
-          abi: CitizenABI as any,
-        })
+        const statement = `SELECT * FROM ${
+          CITIZEN_TABLE_NAMES[chainSlug]
+        } WHERE owner = '${address?.toLocaleLowerCase()}'`
+        const citizenRes = await fetch(
+          `/api/tableland/query?statement=${statement}`
+        )
+        const citizen = await citizenRes.json()
 
-        const ownedTokenId: any = await readContract({
-          contract: contract,
-          method: 'getOwnedToken' as string,
-          params: [address],
-        })
+        if (!citizen || citizen.length === 0) {
+          setCitizen(undefined)
+          setCachedCitizen(address || '', chainId, undefined)
+          return
+        }
 
-        const nft = await getNFT({
-          contract: contract,
-          tokenId: BigInt(ownedTokenId),
-        })
+        const nft = citizenRowToNFT(citizen?.[0])
 
+        console.log('Fresh citizen data fetched:', nft)
         setCitizen(nft)
         setCachedCitizen(address || '', chainId, nft)
+        console.log('Updated citizen state and cache')
       } catch (err: any) {
+        console.log('Error fetching citizen:', err)
         if (err.reason === 'No token owned') {
+          console.log('No token owned, setting citizen to undefined')
           setCitizen(undefined)
           setCachedCitizen(address || '', chainId, undefined)
         }
@@ -245,16 +249,7 @@ export default function CitizenProvider({
     }
 
     fetchCitizenData()
-  }, [
-    authenticated,
-    user,
-    address,
-    chainId,
-    chainSlug,
-    selectedChain,
-    citizen,
-    mock,
-  ])
+  }, [authenticated, user, address, chainId, chainSlug, selectedChain, mock])
 
   useEffect(() => {
     if (mock) return

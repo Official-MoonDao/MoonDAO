@@ -23,6 +23,47 @@ type Wearer = {
   hatIds: string[]
 }
 
+function TeamMemberSkeleton() {
+  return (
+    <div className="w-[350px]">
+      <div className="animate-pulse bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-full h-full min-h-[500px]">
+        <div className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between">
+          <div className="flex flex-col">
+            {/* Image skeleton */}
+            <div className="w-full h-[275px] bg-gray-700/50 mb-4 animate-pulse rounded-2xl rounded-tr-[5vmax] rounded-bl-[5vmax] rounded-br-[5vmax]" />
+
+            {/* Title section skeleton */}
+            <div className="flex pb-5 flex-row items-center pr-5 justify-start">
+              {/* Icon skeleton */}
+              <div className="pt-[20px] w-[50px] h-[50px] bg-gray-700/50 rounded-full animate-pulse" />
+              {/* Name skeleton */}
+              <div className="pt-[20px] ml-4 flex-1">
+                <div className="h-6 bg-gray-700/50 rounded animate-pulse w-3/4" />
+              </div>
+            </div>
+
+            {/* Description skeleton */}
+            <div className="mt-4 space-y-2">
+              <div className="h-4 bg-gray-700/50 rounded animate-pulse w-full" />
+              <div className="h-4 bg-gray-700/50 rounded animate-pulse w-3/4" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TeamMembersLoadingSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <TeamMemberSkeleton key={`skeleton-${i}`} />
+      ))}
+    </>
+  )
+}
+
 function TeamMember({
   address,
   hatIds,
@@ -95,6 +136,11 @@ function TeamMember({
     }
   }, [nft, isLoadingNFT])
 
+  // Show skeleton while loading NFT data
+  if (isLoadingNFT) {
+    return <TeamMemberSkeleton />
+  }
+
   return (
     <div className="w-[350px]">
       <ProfileCard
@@ -107,7 +153,7 @@ function TeamMember({
         subheader={
           <div className="flex flex-col h-[50px] overflow-auto">
             {hatNames?.map((hatName: any, i: number) => (
-              <p key={`${address}-hat-name-${i}`}>{hatName.name}</p>
+              <p key={`${address}-hat-name-${i}`}>{hatName.name || '...'}</p>
             ))}
           </div>
         }
@@ -123,18 +169,23 @@ export default function TeamMembers({
   hats,
 }: TeamMembersProps) {
   const wearers = useUniqueHatWearers(hats)
+
+  // Show loading skeletons while wearers data is loading
+  if (!wearers || !wearers?.[0]?.address) {
+    return <TeamMembersLoadingSkeleton count={hats?.length || 3} />
+  }
+
   return (
     <>
-      {wearers?.[0].address &&
-        wearers.map((w: Wearer, i: number) => (
-          <TeamMember
-            key={`${w.address}-wearer-${i}`}
-            hatIds={w.hatIds}
-            address={w.address}
-            citizenContract={citizenContract}
-            hatsContract={hatsContract}
-          />
-        ))}
+      {wearers.map((w: Wearer, i: number) => (
+        <TeamMember
+          key={`${w.address}-wearer-${i}`}
+          hatIds={w.hatIds}
+          address={w.address}
+          citizenContract={citizenContract}
+          hatsContract={hatsContract}
+        />
+      ))}
     </>
   )
 }
