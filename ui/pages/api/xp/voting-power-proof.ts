@@ -35,13 +35,9 @@ async function fetchSnapshotVP(user: Address, space: string): Promise<bigint> {
   }
 }
 
-function chooseXpAmount(vp: bigint): bigint {
-  if (vp >= BigInt('100000')) return BigInt('200')
-  if (vp >= BigInt('50000')) return BigInt('100')
-  if (vp >= BigInt('10000')) return BigInt('50')
-  if (vp >= BigInt('5000')) return BigInt('25')
-  if (vp >= BigInt('0')) return BigInt('10')
-  return BigInt(0)
+function chooseXpAmount(_: bigint): bigint {
+  // No longer used. XP is now configured on-chain per verifier.
+  return BigInt(1)
 }
 
 // Route uses shared oracle helper; no env handling here
@@ -61,17 +57,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (vp < MIN_VOTING_POWER)
       return res.status(200).json({ eligible: false, vp: vp.toString() })
 
-    // Choose XP amount locally (your current tiering)
-    const xpAmount = chooseXpAmount(vp)
-    if (xpAmount === BigInt(0))
-      return res.status(200).json({ eligible: false, vp: vp.toString() })
-
     // Sign/encode via shared oracle helper
     const { validAfter, validBefore, signature, context } =
       await signHasVotingPowerProof({
         user: user as Address,
         minVotingPower: MIN_VOTING_POWER,
-        xpAmount,
       })
 
     // Relay the XP claim on behalf of the user so they don't need to send a tx
@@ -80,10 +70,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       context,
     })
 
+    // Decode xp from context for client convenience (index 1)
+    const [, xpAmount] = ethersUtils.defaultAbiCoder.decode(
+      ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+      context
+    ) as unknown[] as [any, bigint]
+
     return res.status(200).json({
       eligible: true,
       vp: vp.toString(),
-      xpAmount: xpAmount.toString(),
+      xpAmount: (xpAmount as bigint).toString(),
       validAfter: Number(validAfter),
       validBefore: Number(validBefore),
       signature,

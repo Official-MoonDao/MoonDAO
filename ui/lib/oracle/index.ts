@@ -29,9 +29,35 @@ function normalizePk(pk?: string): `0x${string}` {
 }
 
 const { keccak256, defaultAbiCoder } = ethersUtils
+// Minimal ABI for verifiers to read xpPerClaim
+const VERIFIER_ABI = [
+  {
+    type: 'function',
+    name: 'xpPerClaim',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'uint256' }],
+  },
+]
+
+async function fetchVerifierXp(verifierAddress: Address): Promise<bigint> {
+  const twChain =
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
+  const contract = getContract({
+    client: serverClient,
+    chain: twChain,
+    address: verifierAddress,
+    abi: VERIFIER_ABI as any,
+  })
+  const value = (await readContract({
+    contract,
+    method: 'xpPerClaim',
+    params: [],
+  })) as string | bigint
+  return BigInt(value as any)
+}
 
 export type SignedProofResult = {
-  xpAmount: bigint
   validAfter: bigint
   validBefore: bigint
   signature: Hex
@@ -81,7 +107,7 @@ export async function signOracleProof(params: {
   user: Address
   verifier: Address
   contextHash: Hex
-  xpAmount: bigint
+  xpAmount: bigint // still required by oracle proof
   validitySeconds?: number
 }): Promise<{ validAfter: bigint; validBefore: bigint; signature: Hex }> {
   if (!XP_ORACLE_NAME || !XP_ORACLE_VERSION) {
@@ -176,7 +202,7 @@ export async function signOracleProof(params: {
 export async function signHasVotingPowerProof(params: {
   user: Address
   minVotingPower: bigint
-  xpAmount: bigint
+  // xpAmount removed from caller API; fetched from chain per verifier
   validitySeconds?: number
 }): Promise<SignedProofResult> {
   if (
@@ -191,11 +217,17 @@ export async function signHasVotingPowerProof(params: {
     defaultAbiCoder.encode(['uint256'], [params.minVotingPower.toString()])
   ) as Hex
 
+  // Fetch current xp from the verifier on-chain
+  const verifierAddress = HAS_VOTING_POWER_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+  const xpAmount = await fetchVerifierXp(verifierAddress)
+
   const { validAfter, validBefore, signature } = await signOracleProof({
     user: params.user,
-    verifier: HAS_VOTING_POWER_VERIFIER_ADDRESSES[XP_ORACLE_CHAIN] as Address,
+    verifier: verifierAddress,
     contextHash,
-    xpAmount: params.xpAmount,
+    xpAmount,
     validitySeconds: params.validitySeconds,
   })
 
@@ -203,7 +235,7 @@ export async function signHasVotingPowerProof(params: {
     ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
     [
       params.minVotingPower.toString(),
-      params.xpAmount.toString(),
+      xpAmount.toString(), // preserved for backward compatibility; ignored by verifier now
       validAfter.toString(),
       validBefore.toString(),
       signature,
@@ -211,7 +243,6 @@ export async function signHasVotingPowerProof(params: {
   ) as Hex
 
   return {
-    xpAmount: params.xpAmount,
     validAfter,
     validBefore,
     signature,
@@ -222,7 +253,7 @@ export async function signHasVotingPowerProof(params: {
 export async function signHasVotedProof(params: {
   user: Address
   minVotes: bigint
-  xpAmount: bigint
+  // xpAmount removed from caller API; fetched from chain per verifier
   validitySeconds?: number
 }): Promise<SignedProofResult> {
   if (
@@ -237,11 +268,17 @@ export async function signHasVotedProof(params: {
     defaultAbiCoder.encode(['uint256'], [params.minVotes.toString()])
   ) as Hex
 
+  // Fetch current xp from the verifier on-chain
+  const verifierAddress = HAS_VOTED_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+  const xpAmount = await fetchVerifierXp(verifierAddress)
+
   const { validAfter, validBefore, signature } = await signOracleProof({
     user: params.user,
-    verifier: HAS_VOTED_VERIFIER_ADDRESSES[XP_ORACLE_CHAIN] as Address,
+    verifier: verifierAddress,
     contextHash,
-    xpAmount: params.xpAmount,
+    xpAmount,
     validitySeconds: params.validitySeconds,
   })
 
@@ -249,7 +286,7 @@ export async function signHasVotedProof(params: {
     ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
     [
       params.minVotes.toString(),
-      params.xpAmount.toString(),
+      xpAmount.toString(), // preserved for backward compatibility; ignored by verifier now
       validAfter.toString(),
       validBefore.toString(),
       signature,
@@ -257,7 +294,6 @@ export async function signHasVotedProof(params: {
   ) as Hex
 
   return {
-    xpAmount: params.xpAmount,
     validAfter,
     validBefore,
     signature,
@@ -519,4 +555,3 @@ export async function submitHasVotedClaimFor(params: {
 
   return { txHash: transactionHash as Hex }
 }
-

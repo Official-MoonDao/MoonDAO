@@ -13,15 +13,21 @@ interface IERC5643Like {
 /// @dev Context should be abi.encode(uint256 xpAmount)
 contract OwnsCitizenNFT is IXPVerifier, Ownable {
     IERC5643Like public citizenNFT;
+    uint256 public xpPerClaim;
 
-    constructor(address citizenNFTAddress) Ownable(msg.sender) {
+    constructor(address citizenNFTAddress, uint256 _xpPerClaim) Ownable(msg.sender) {
         require(citizenNFTAddress != address(0), "Invalid Citizen address");
         citizenNFT = IERC5643Like(citizenNFTAddress);
+        xpPerClaim = _xpPerClaim;
     }
 
     function setCitizenNFTAddress(address newAddress) external onlyOwner {
         require(newAddress != address(0), "Invalid Citizen address");
         citizenNFT = IERC5643Like(newAddress);
+    }
+
+    function setXpPerClaim(uint256 newAmount) external onlyOwner {
+        xpPerClaim = newAmount;
     }
     
     /// @notice Human-readable identifier for this verifier
@@ -31,7 +37,7 @@ contract OwnsCitizenNFT is IXPVerifier, Ownable {
 
     /// @notice Check if user owns a MoonDAO Citizen NFT
     /// @param user The claimant
-    /// @param context ABI-encoded parameters: (uint256 xpAmount)
+    /// @param context ABI-encoded parameters: (uint256 /*xpAmount (ignored)*/)
     /// @return eligible True if user owns a Citizen NFT
     /// @return xpAmount The amount of XP to grant
     function isEligible(address user, bytes calldata context) 
@@ -39,10 +45,9 @@ contract OwnsCitizenNFT is IXPVerifier, Ownable {
         view 
         returns (bool eligible, uint256 xpAmount) 
     {
-        uint256 amount = abi.decode(context, (uint256));
         // Check if user owns at least one Citizen NFT
         eligible = citizenNFT.balanceOf(user) > 0;
-        xpAmount = eligible ? amount : 0;
+        xpAmount = eligible ? xpPerClaim : 0;
     }
 
     /// @notice Generate a unique claim ID for this verifier

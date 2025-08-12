@@ -8,7 +8,15 @@ import "./XPOracleVerifier.sol";
 /// @dev Context should be abi.encode(uint256 minVotingPower, uint256 xpAmount, uint256 validAfter, uint256 validBefore, bytes signature)
 /// @dev The signature is created off-chain by a trusted oracle over EIP-712 typed data
 contract HasVotingPower is XPOracleVerifier {
-    constructor(address _oracle) XPOracleVerifier(_oracle) {}
+    uint256 public xpPerClaim;
+
+    constructor(address _oracle, uint256 _xpPerClaim) XPOracleVerifier(_oracle) {
+        xpPerClaim = _xpPerClaim;
+    }
+
+    function setXpPerClaim(uint256 newAmount) external onlyOwner {
+        xpPerClaim = newAmount;
+    }
     
     /// @notice Human-readable identifier for this verifier
     function name() external pure returns (string memory) {
@@ -17,7 +25,7 @@ contract HasVotingPower is XPOracleVerifier {
 
     /// @notice Check if user has sufficient voting power across chains
     /// @param user The claimant
-    /// @param context ABI-encoded parameters: (uint256 minVotingPower, uint256 xpAmount, uint256 validAfter, uint256 validBefore, bytes signature)
+    /// @param context ABI-encoded parameters: (uint256 minVotingPower, uint256 /*xpAmount (ignored)*/, uint256 validAfter, uint256 validBefore, bytes signature)
     /// @return eligible True if user has sufficient voting power
     /// @return xpAmount The amount of XP to grant
     function isEligible(address user, bytes calldata context)
@@ -25,7 +33,7 @@ contract HasVotingPower is XPOracleVerifier {
         view
         returns (bool eligible, uint256 xpAmount)
     {
-        (uint256 minVotingPower, uint256 amount, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+        (uint256 minVotingPower, , uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
         // Build oracle proof tying to this verifier and user
@@ -33,7 +41,7 @@ contract HasVotingPower is XPOracleVerifier {
         _verifyOracleProof(
             user,
             keccak256(abi.encode(minVotingPower)),
-            amount,
+            xpPerClaim,
             validAfterTs,
             validBefore,
             signature
@@ -41,7 +49,7 @@ contract HasVotingPower is XPOracleVerifier {
 
         // Off-chain oracle ensures min voting power constraint
         eligible = true;
-        xpAmount = amount;
+        xpAmount = xpPerClaim;
     }
 
     /// @notice Generate a unique claim ID for this verifier
@@ -56,6 +64,7 @@ contract HasVotingPower is XPOracleVerifier {
         // Exclude the signature bytes from the claim ID so the same claim cannot be replayed with a different signature
         (uint256 minVotingPower, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
+        // Keep amount in the claimId for backwards compatibility even if ignored
         bytes32 contextHash = keccak256(abi.encode(minVotingPower, amount, validAfterTs, validBefore));
         return keccak256(abi.encodePacked(address(this), user, contextHash));
     }

@@ -43,8 +43,8 @@ async function fetchSnapshotVotesCount(
 }
 
 function chooseXpAmount(_: number): bigint {
-  // Flat reward for at-least-one vote
-  return BigInt('10')
+  // No longer used. XP is now configured on-chain per verifier.
+  return BigInt(1)
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -64,15 +64,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (votesCount < Number(MIN_VOTES))
       return res.status(200).json({ eligible: false, votesCount })
 
-    const xpAmount = chooseXpAmount(votesCount)
-    if (xpAmount === BigInt(0))
-      return res.status(200).json({ eligible: false, votesCount })
-
     const { validAfter, validBefore, signature, context } =
       await signHasVotedProof({
         user: user as Address,
         minVotes: MIN_VOTES,
-        xpAmount,
       })
 
     const { txHash } = await submitHasVotedClaimFor({
@@ -80,10 +75,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       context,
     })
 
+    // Decode xp from context for client convenience (index 1)
+    const [, xpAmount] = ethersUtils.defaultAbiCoder.decode(
+      ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+      context
+    ) as unknown[] as [any, bigint]
+
     return res.status(200).json({
       eligible: true,
       votesCount,
-      xpAmount: xpAmount.toString(),
+      xpAmount: (xpAmount as bigint).toString(),
       validAfter: Number(validAfter),
       validBefore: Number(validBefore),
       signature,
