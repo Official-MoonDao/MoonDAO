@@ -99,6 +99,7 @@ export default function useNavigation(citizen: any) {
           { name: 'About', href: '/about' },
           { name: 'Events', href: '/events' },
           { name: 'Analytics', href: '/analytics' },
+          { name: 'Resources', href: '/resources' },
           { name: 'FAQ', href: '/faq' },
         ],
       },
