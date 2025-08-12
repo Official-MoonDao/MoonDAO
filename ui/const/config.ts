@@ -397,22 +397,22 @@ export const XP_ORACLE_ADDRESSES: Index = {
 
 export const XP_MANAGER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x6AB99518F8F0f6bA7845965b341659ef50527d30',
+  sepolia: '0x23948d92D1ef4F4651f4388Cc46b4fb14b944c5B',
 }
 
 export const OWNS_CITIZEN_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xa9923A7caE4775640D90fe764BCc58fffD5Bf14c',
+  sepolia: '0x182eCFCC5927161292Ea029B7626ea2CF3d49045',
 }
 
 export const HAS_VOTING_POWER_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x3b015A05AB5ABf2d17A0b2b0cEFDDecEAd4F8f4e',
+  sepolia: '0x3A36A3e10Cf708587Ea98768BfD884ca4384fAa8',
 }
 
 export const HAS_VOTED_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xC82011dEA097e1fB5870DDA401De05D5F87C09eE',
+  sepolia: '0x044d51a81a22521c657c5963f303aab2c6F2ad41',
 }
 
 export const DISCORD_GUILD_ID = '914720248140279868'
