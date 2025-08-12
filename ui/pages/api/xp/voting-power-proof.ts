@@ -7,8 +7,10 @@ import {
   signHasVotingPowerProof,
   submitHasVotingPowerClaimFor,
 } from '../../../lib/oracle'
+import { addressBelongsToPrivyUser } from '@/lib/privy'
 
 const MIN_VOTING_POWER = BigInt(1)
+const XP = BigInt(10)
 
 type Address = `0x${string}`
 
@@ -35,15 +37,6 @@ async function fetchSnapshotVP(user: Address, space: string): Promise<bigint> {
   }
 }
 
-function chooseXpAmount(vp: bigint): bigint {
-  if (vp >= BigInt('100000')) return BigInt('200')
-  if (vp >= BigInt('50000')) return BigInt('100')
-  if (vp >= BigInt('10000')) return BigInt('50')
-  if (vp >= BigInt('5000')) return BigInt('25')
-  if (vp >= BigInt('0')) return BigInt('10')
-  return BigInt(0)
-}
-
 // Route uses shared oracle helper; no env handling here
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -51,9 +44,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'POST')
       return res.status(405).json({ error: 'Method not allowed' })
 
-    const { user } = JSON.parse(req.body) as { user?: string }
+    const { user, accessToken } = JSON.parse(req.body) as {
+      user?: string
+      accessToken?: string
+    }
     if (!user || !ethersUtils.isAddress(user))
       return res.status(400).json({ error: 'Invalid user address' })
+
+    if (!addressBelongsToPrivyUser(accessToken as string, user))
+      return res.status(400).json({ error: 'User not found' })
 
     // Compute VP locally (Snapshot logic kept here)
     const SNAPSHOT_SPACE = process.env.SNAPSHOT_SPACE || 'tomoondao.eth'
@@ -61,9 +60,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (vp < MIN_VOTING_POWER)
       return res.status(200).json({ eligible: false, vp: vp.toString() })
 
-    // Choose XP amount locally (your current tiering)
-    const xpAmount = chooseXpAmount(vp)
-    if (xpAmount === BigInt(0))
+    if (XP === BigInt(0))
       return res.status(200).json({ eligible: false, vp: vp.toString() })
 
     // Sign/encode via shared oracle helper
@@ -71,7 +68,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       await signHasVotingPowerProof({
         user: user as Address,
         minVotingPower: MIN_VOTING_POWER,
-        xpAmount,
+        xpAmount: XP,
       })
 
     // Relay the XP claim on behalf of the user so they don't need to send a tx
@@ -83,7 +80,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(200).json({
       eligible: true,
       vp: vp.toString(),
-      xpAmount: xpAmount.toString(),
+      xpAmount: XP.toString(),
       validAfter: Number(validAfter),
       validBefore: Number(validBefore),
       signature,

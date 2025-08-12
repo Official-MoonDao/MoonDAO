@@ -1,3 +1,19 @@
+import {
+  RocketLaunchIcon,
+  BanknotesIcon,
+  CheckBadgeIcon,
+  UserGroupIcon,
+  ShoppingBagIcon,
+  NewspaperIcon,
+  GlobeAmericasIcon,
+  ChartBarIcon,
+  BoltIcon,
+  TrophyIcon,
+  StarIcon,
+  FireIcon,
+  GiftIcon,
+} from '@heroicons/react/24/outline'
+import { Action, RequestBudget } from '@nance/nance-sdk'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
@@ -27,30 +43,15 @@ import Link from 'next/link'
 import { useContext, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
-import {
-  RocketLaunchIcon,
-  BanknotesIcon,
-  CheckBadgeIcon,
-  UserGroupIcon,
-  ShoppingBagIcon,
-  NewspaperIcon,
-  GlobeAmericasIcon,
-  ChartBarIcon,
-  BoltIcon,
-  TrophyIcon,
-  StarIcon,
-  FireIcon,
-  GiftIcon
-} from '@heroicons/react/24/outline'
-import { Action, RequestBudget } from '@nance/nance-sdk'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import { formatNumberUSStyle } from '@/lib/nance'
 import { getAUMHistory } from '@/lib/coinstats'
 import { getMooneyPrice } from '@/lib/coinstats'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { formatNumberUSStyle } from '@/lib/nance'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
+import { Project } from '@/lib/project/useProjectData'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { teamRowToNFT } from '@/lib/tableland/convertRow'
@@ -65,8 +66,6 @@ import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget } from '@/lib/utils/rewards'
-import { Project } from '@/lib/project/useProjectData'
-import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
 import { NewsletterSubModal } from '../components/newsletter/NewsletterSubModal'
 import { ARRChart } from '@/components/dashboard/treasury/ARRChart'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
@@ -78,15 +77,17 @@ import Frame from '@/components/layout/Frame'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
+import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
+import Quests from '@/components/xp/Quests'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
 // Function to extract ETH amount from proposal actions
 function getEthAmountFromProposal(actions: Action[] | undefined): number {
   if (!actions) return 0
-  
+
   let ethAmount = 0
   actions
     .filter((action) => action.type === 'Request Budget')
@@ -96,7 +97,7 @@ function getEthAmountFromProposal(actions: Action[] | undefined): number {
         ethAmount += Number(transfer.amount)
       }
     })
-  
+
   return ethAmount
 }
 
@@ -216,100 +217,13 @@ export default function Home({
     chain: selectedChain,
   })
 
-  const teamHats = useTeamWearer(teamContract, selectedChain, address)
+  const { userTeams: teamHats } = useTeamWearer(
+    teamContract,
+    selectedChain,
+    address
+  )
 
   const withdrawable = useWithdrawAmount(votingEscrowDepositorContract, address)
-
-  // Quest System - Mock data for now (would come from backend/contracts in production)
-  const userLevel = 1 // Current user level
-  const currentXP = 150 // Current XP
-  const xpForNextLevel = 300 // XP needed for next level
-  const xpProgress = (currentXP / xpForNextLevel) * 100
-
-  // Calculate level rewards - exponential scaling
-  const getLevelReward = (level: number) => {
-    return Math.floor(1000 * Math.pow(1.5, level - 1))
-  }
-
-  // Quest definitions
-  const onboardingQuests = [
-    {
-      id: 'claim-mooney',
-      title: 'Claim Your First MOONEY',
-      description: 'Get your first MOONEY tokens from the faucet or purchase',
-      xpReward: 50,
-      mooneyReward: 0,
-      completed: MOONEYBalance > 0,
-      icon: BanknotesIcon,
-      action: '/get-mooney',
-      actionText: 'Get MOONEY'
-    },
-    {
-      id: 'lock-mooney',
-      title: 'Lock Your First MOONEY',
-      description: 'Stake MOONEY to get vMOONEY and voting power',
-      xpReward: 75,
-      mooneyReward: 0,
-      completed: walletVP > 0,
-      icon: BoltIcon,
-      action: '/lock',
-      actionText: 'Stake Now'
-    },
-    {
-      id: 'first-vote',
-      title: 'Cast Your First Vote',
-      description: 'Participate in governance by voting on a proposal',
-      xpReward: 100,
-      mooneyReward: 0,
-      completed: (voteCount || 0) > 0,
-      icon: CheckBadgeIcon,
-      action: '/governance',
-      actionText: 'Vote Now'
-    }
-  ]
-
-  const weeklyQuests = [
-    {
-      id: 'weekly-vote',
-      title: 'Weekly Voter',
-      description: 'Vote on at least 3 proposals this week',
-      xpReward: 25,
-      mooneyReward: 50,
-      completed: false,
-      icon: CheckBadgeIcon,
-      progress: 1,
-      target: 3,
-      action: '/governance',
-      actionText: 'Vote'
-    },
-    {
-      id: 'team-join',
-      title: 'Join a Team',
-      description: 'Become a member of a MoonDAO team',
-      xpReward: 50,
-      mooneyReward: 100,
-      completed: (teamHats?.length || 0) > 0,
-      icon: UserGroupIcon,
-      action: '/network',
-      actionText: 'Browse Teams'
-    },
-    {
-      id: 'marketplace-visit',
-      title: 'Explore Marketplace',
-      description: 'Check out items in the MoonDAO marketplace',
-      xpReward: 15,
-      mooneyReward: 25,
-      completed: false,
-      icon: ShoppingBagIcon,
-      action: '/marketplace',
-      actionText: 'Explore'
-    }
-  ]
-
-  // Calculate completion stats
-  const onboardingCompleted = onboardingQuests.filter(q => q.completed).length
-  const onboardingTotal = onboardingQuests.length
-  const isOnboardingComplete = onboardingCompleted === onboardingTotal
 
   return (
     <Container>
@@ -317,7 +231,7 @@ export default function Home({
         {/* Compact All-in-One Header */}
         <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-6 mb-6 overflow-hidden">
           <div className="absolute inset-0 bg-black/20 rounded-2xl"></div>
-          
+
           <div className="relative z-10 flex items-center justify-between">
             {/* Left Side - Profile & Title */}
             <div className="flex items-center gap-4">
@@ -340,7 +254,7 @@ export default function Home({
                 {/* Online status indicator */}
                 <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
               </div>
-              
+
               {/* Title & Subtitle */}
               <div>
                 <h1 className="text-2xl font-bold text-white mb-1 drop-shadow-lg">
@@ -366,7 +280,13 @@ export default function Home({
               <div className="flex items-center gap-6">
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    <Image src="/coins/MOONEY.png" width={16} height={16} alt="MOONEY" className="rounded-full" />
+                    <Image
+                      src="/coins/MOONEY.png"
+                      width={16}
+                      height={16}
+                      alt="MOONEY"
+                      className="rounded-full"
+                    />
                   </div>
                   {MOONEYBalance === undefined || MOONEYBalance === null ? (
                     <div className="animate-pulse bg-white/20 rounded w-12 h-4 mx-auto mb-1"></div>
@@ -396,7 +316,9 @@ export default function Home({
                   <div className="text-sm mb-1 flex items-center justify-center">
                     <CheckBadgeIcon className="w-4 h-4" />
                   </div>
-                  <div className="text-lg font-bold text-green-300">{voteCount}</div>
+                  <div className="text-lg font-bold text-green-300">
+                    {voteCount}
+                  </div>
                   <div className="text-xs text-white/70">Votes</div>
                 </div>
 
@@ -404,7 +326,9 @@ export default function Home({
                   <div className="text-sm mb-1 flex items-center justify-center">
                     <UserGroupIcon className="w-4 h-4" />
                   </div>
-                  <div className="text-lg font-bold text-orange-300">{teamHats?.length || 0}</div>
+                  <div className="text-lg font-bold text-orange-300">
+                    {teamHats?.length || 0}
+                  </div>
                   <div className="text-xs text-white/70">Teams</div>
                 </div>
 
@@ -412,7 +336,9 @@ export default function Home({
                   <div className="text-sm mb-1 flex items-center justify-center">
                     <TrophyIcon className="w-4 h-4 text-yellow-400" />
                   </div>
-                  <div className="text-lg font-bold text-yellow-300">{userLevel}</div>
+                  <div className="text-lg font-bold text-yellow-300">
+                    {/* {userLevel} */}
+                  </div>
                   <div className="text-xs text-white/70">Level</div>
                 </div>
               </div>
@@ -420,15 +346,24 @@ export default function Home({
 
             {/* Right Side - Action Buttons */}
             <div className="flex gap-2">
-              <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2" link="/get-mooney">
+              <StandardButton
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"
+                link="/get-mooney"
+              >
                 <BanknotesIcon className="w-4 h-4" />
                 Buy
               </StandardButton>
-              <StandardButton className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2" link="/lock">
+              <StandardButton
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"
+                link="/lock"
+              >
                 <BoltIcon className="w-4 h-4" />
                 Stake
               </StandardButton>
-              <StandardButton className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2" link="/governance">
+              <StandardButton
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"
+                link="/governance"
+              >
                 <CheckBadgeIcon className="w-4 h-4" />
                 Vote
               </StandardButton>
@@ -437,192 +372,7 @@ export default function Home({
         </div>
 
         {/* Quest System - Horizontal Section */}
-        {address && (
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <h3 className="font-semibold text-white text-lg flex items-center gap-2">
-                  <TrophyIcon className="w-5 h-5 text-yellow-400" />
-                  Quest Progress
-                </h3>
-                <div className="flex items-center gap-1 text-yellow-400 text-xs font-medium bg-yellow-400/20 px-2 py-1 rounded-full">
-                  <StarIcon className="w-3 h-3" />
-                  Level {userLevel}
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                {/* View All Quests Button */}
-                <StandardButton className="text-purple-300 text-sm hover:text-purple-200 transition-all bg-purple-600/20 hover:bg-purple-600/30 px-3 py-1 rounded-lg">
-                  View All Quests
-                </StandardButton>
-                
-                {/* XP Progress Bar - Horizontal */}
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="text-white text-xs font-medium">{currentXP} / {xpForNextLevel} XP</div>
-                    <div className="text-xs text-gray-400">
-                      Next: <span className="text-yellow-400 font-medium">{getLevelReward(userLevel + 1).toLocaleString()} MOONEY</span>
-                    </div>
-                  </div>
-                  <div className="w-32">
-                    <div className="w-full bg-gray-700 rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${xpProgress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Onboarding Quests */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-white flex items-center gap-2 text-sm">
-                    <FireIcon className="w-4 h-4 text-orange-400" />
-                    Onboarding ({onboardingCompleted}/{onboardingTotal})
-                  </h4>
-                  {isOnboardingComplete && (
-                    <div className="flex items-center gap-1 text-green-400 text-xs font-medium bg-green-500/20 px-2 py-1 rounded-full">
-                      <GiftIcon className="w-3 h-3" />
-                      1000 MOONEY!
-                    </div>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  {onboardingQuests.map((quest) => (
-                    <div 
-                      key={quest.id} 
-                      className={`p-3 rounded-lg border transition-all h-24 flex items-center ${
-                        quest.completed 
-                          ? 'bg-green-500/10 border-green-500/30' 
-                          : 'bg-white/5 border-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <div className={`p-2 rounded-lg flex-shrink-0 ${
-                          quest.completed ? 'bg-green-500/20' : 'bg-blue-500/20'
-                        }`}>
-                          <quest.icon className={`w-4 h-4 ${
-                            quest.completed ? 'text-green-400' : 'text-blue-400'
-                          }`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h5 className={`font-medium text-sm ${
-                              quest.completed ? 'text-green-300' : 'text-white'
-                            }`}>
-                              {quest.title}
-                            </h5>
-                            {quest.completed && (
-                              <CheckBadgeIcon className="w-4 h-4 text-green-400 flex-shrink-0" />
-                            )}
-                          </div>
-                          <p className="text-gray-400 text-xs mb-2 line-clamp-1">{quest.description}</p>
-                          <div className="flex items-center gap-3">
-                            <span className="text-yellow-400 text-xs font-medium">+{quest.xpReward} XP</span>
-                            {!quest.completed && (
-                              <StandardButton 
-                                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-lg transition-all"
-                                link={quest.action}
-                              >
-                                {quest.actionText}
-                              </StandardButton>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Weekly Quests */}
-              <div>
-                <h4 className="font-medium text-white mb-3 flex items-center gap-2 text-sm">
-                  <StarIcon className="w-4 h-4 text-purple-400" />
-                  Weekly Quests
-                </h4>
-                
-                <div className="space-y-2">
-                  {weeklyQuests.slice(0, 2).map((quest) => (
-                    <div 
-                      key={quest.id} 
-                      className={`p-3 rounded-lg border transition-all h-24 flex items-center ${
-                        quest.completed 
-                          ? 'bg-green-500/10 border-green-500/30' 
-                          : 'bg-white/5 border-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <div className={`p-2 rounded-lg flex-shrink-0 ${
-                          quest.completed ? 'bg-green-500/20' : 'bg-purple-500/20'
-                        }`}>
-                          <quest.icon className={`w-4 h-4 ${
-                            quest.completed ? 'text-green-400' : 'text-purple-400'
-                          }`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h5 className={`font-medium text-sm ${
-                              quest.completed ? 'text-green-300' : 'text-white'
-                            }`}>
-                              {quest.title}
-                            </h5>
-                            {quest.completed && (
-                              <CheckBadgeIcon className="w-4 h-4 text-green-400 flex-shrink-0" />
-                            )}
-                          </div>
-                          <p className="text-gray-400 text-xs mb-2 line-clamp-1">{quest.description}</p>
-                          <div className="flex items-center gap-3">
-                            <span className="text-yellow-400 text-xs font-medium">+{quest.xpReward} XP</span>
-                            <span className="text-blue-400 text-xs font-medium">+{quest.mooneyReward} MOONEY</span>
-                            {!quest.completed && (
-                              <StandardButton 
-                                className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 rounded-lg transition-all"
-                                link={quest.action}
-                              >
-                                {quest.actionText}
-                              </StandardButton>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Show one more quest in condensed form */}
-                  <div className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-all h-24 flex items-center">
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 rounded bg-purple-500/20 flex-shrink-0">
-                          <ShoppingBagIcon className="w-4 h-4 text-purple-400" />
-                        </div>
-                        <div className="min-w-0">
-                          <h6 className="text-white text-sm font-medium truncate">Explore Marketplace</h6>
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className="text-yellow-400">+15 XP</span>
-                            <span className="text-blue-400">+25 MOONEY</span>
-                          </div>
-                        </div>
-                      </div>
-                      <StandardButton 
-                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 rounded-lg transition-all flex-shrink-0"
-                        link="/marketplace"
-                      >
-                        Explore
-                      </StandardButton>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {address && <Quests />}
 
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:grid-rows-1 lg:min-h-[800px]">
@@ -633,9 +383,11 @@ export default function Home({
 
             {/* Key Metrics Card */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <h3 className="font-semibold text-white mb-8 text-lg">DAO Metrics</h3>
+              <h3 className="font-semibold text-white mb-8 text-lg">
+                DAO Metrics
+              </h3>
               <div className="space-y-8">
-                <div 
+                <div
                   className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
                   onClick={openCitizensChart}
                   title="Click to view full chart"
@@ -658,7 +410,7 @@ export default function Home({
                 </div>
 
                 {aumData && (
-                  <div 
+                  <div
                     className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
                     onClick={openAUMChart}
                     title="Click to view full chart"
@@ -681,7 +433,7 @@ export default function Home({
                 )}
 
                 {arrData && (
-                  <div 
+                  <div
                     className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
                     onClick={openARRChart}
                     title="Click to view full chart"
@@ -726,24 +478,40 @@ export default function Home({
                   )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-1">Quick Actions</h3>
-                  <p className="text-white/70 text-sm">What would you like to do today?</p>
+                  <h3 className="text-lg font-semibold text-white mb-1">
+                    Quick Actions
+                  </h3>
+                  <p className="text-white/70 text-sm">
+                    What would you like to do today?
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-3">
-                <StandardButton className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1" link="/governance">
+                <StandardButton
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1"
+                  link="/governance"
+                >
                   <CheckBadgeIcon className="w-4 h-4" />
                   Propose
                 </StandardButton>
-                <StandardButton className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1" link="/launchpad">
+                <StandardButton
+                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1"
+                  link="/launchpad"
+                >
                   <RocketLaunchIcon className="w-4 h-4" />
                   Launch
                 </StandardButton>
-                <StandardButton className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1" link="/network">
+                <StandardButton
+                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1"
+                  link="/network"
+                >
                   <UserGroupIcon className="w-4 h-4" />
                   Join Team
                 </StandardButton>
-                <StandardButton className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1" link="/marketplace">
+                <StandardButton
+                  className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1"
+                  link="/marketplace"
+                >
                   <ShoppingBagIcon className="w-4 h-4" />
                   Shop
                 </StandardButton>
@@ -753,12 +521,17 @@ export default function Home({
             {/* Activity Feed */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">Recent Activity</h3>
+                <h3 className="text-xl font-bold text-white">
+                  Recent Activity
+                </h3>
                 <div className="flex gap-2">
-                  <StandardButton className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all" link="/news">
+                  <StandardButton
+                    className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
+                    link="/news"
+                  >
                     View All
                   </StandardButton>
-                  <StandardButton 
+                  <StandardButton
                     className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 text-sm px-4 py-2 rounded-lg transition-all"
                     onClick={() => setNewsletterModalOpen(true)}
                   >
@@ -769,42 +542,63 @@ export default function Home({
 
               <div className="space-y-4">
                 {newestNewsletters && newestNewsletters.length > 0 ? (
-                  newestNewsletters.slice(0, 4).map((newsletter: any, index: number) => (
-                    <div key={newsletter.id || index} className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5">
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-blue-600">
-                          {newsletter.image ? (
-                            <MediaRenderer
-                              client={client}
-                              src={newsletter.image}
-                              alt={newsletter.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <NewspaperIcon className="w-6 h-6 text-white" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-white font-medium mb-1">{newsletter.title || 'Newsletter Update'}</p>
-                          <div className="flex items-center gap-4 text-sm text-gray-400">
-                            <span>{newsletter.publishedAt ? new Date(newsletter.publishedAt).toLocaleDateString() : 'Recently'}</span>
-                            <span>•</span>
-                            <span>{newsletter.views || 0} views</span>
+                  newestNewsletters
+                    .slice(0, 4)
+                    .map((newsletter: any, index: number) => (
+                      <div
+                        key={newsletter.id || index}
+                        className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-blue-600">
+                            {newsletter.image ? (
+                              <MediaRenderer
+                                client={client}
+                                src={newsletter.image}
+                                alt={newsletter.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <NewspaperIcon className="w-6 h-6 text-white" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-white font-medium mb-1">
+                              {newsletter.title || 'Newsletter Update'}
+                            </p>
+                            <div className="flex items-center gap-4 text-sm text-gray-400">
+                              <span>
+                                {newsletter.publishedAt
+                                  ? new Date(
+                                      newsletter.publishedAt
+                                    ).toLocaleDateString()
+                                  : 'Recently'}
+                              </span>
+                              <span>•</span>
+                              <span>{newsletter.views || 0} views</span>
+                            </div>
+                          </div>
+                          <div className="text-gray-400 hover:text-white">
+                            <svg
+                              className="w-5 h-5"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                            </svg>
                           </div>
                         </div>
-                        <div className="text-gray-400 hover:text-white">
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                          </svg>
-                        </div>
                       </div>
-                    </div>
-                  ))
+                    ))
                 ) : (
                   <div className="text-center py-8">
                     <NewspaperIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-                    <p className="text-gray-400 text-sm">No newsletters available</p>
-                    <p className="text-gray-500 text-xs mt-1">Check back soon for updates</p>
+                    <p className="text-gray-400 text-sm">
+                      No newsletters available
+                    </p>
+                    <p className="text-gray-500 text-xs mt-1">
+                      Check back soon for updates
+                    </p>
                   </div>
                 )}
               </div>
@@ -813,47 +607,63 @@ export default function Home({
             {/* Active Proposals Card */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">Active Proposals</h3>
-                <StandardButton className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all" link="/governance">
+                <h3 className="text-xl font-bold text-white">
+                  Active Proposals
+                </h3>
+                <StandardButton
+                  className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
+                  link="/governance"
+                >
                   View All
                 </StandardButton>
               </div>
-              
+
               <div className="space-y-4">
-                {proposals && proposals.slice(0, 3).map((proposal: any, i: number) => {
-                  const ethAmount = getEthAmountFromProposal(proposal.actions)
-                  
-                  return (
-                    <div key={proposal.proposalId || i} className="bg-white/5 rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all">
-                      <div className="flex justify-between items-start mb-3">
-                        <h4 className="text-white font-semibold">
-                          {proposal.title || `MDP-${179 - i}: Study on Lunar Surface Selection For Settlement`}
-                        </h4>
-                        {i === 0 && (
-                          <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
-                            Active
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-4 text-sm text-gray-300">
-                          <span className="flex items-center gap-1">
-                            <span className="font-medium">
-                              {ethAmount > 0 ? `${formatNumberUSStyle(ethAmount)} ETH` : 'No funding'}
-                            </span> requested
-                          </span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <span className="font-medium">{3 + i} days</span> left
-                          </span>
+                {proposals &&
+                  proposals.slice(0, 3).map((proposal: any, i: number) => {
+                    const ethAmount = getEthAmountFromProposal(proposal.actions)
+
+                    return (
+                      <div
+                        key={proposal.proposalId || i}
+                        className="bg-white/5 rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <h4 className="text-white font-semibold">
+                            {proposal.title ||
+                              `MDP-${
+                                179 - i
+                              }: Study on Lunar Surface Selection For Settlement`}
+                          </h4>
+                          {i === 0 && (
+                            <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
+                              Active
+                            </span>
+                          )}
                         </div>
-                        <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition-all">
-                          Vote
-                        </StandardButton>
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-4 text-sm text-gray-300">
+                            <span className="flex items-center gap-1">
+                              <span className="font-medium">
+                                {ethAmount > 0
+                                  ? `${formatNumberUSStyle(ethAmount)} ETH`
+                                  : 'No funding'}
+                              </span>{' '}
+                              requested
+                            </span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <span className="font-medium">{3 + i} days</span>{' '}
+                              left
+                            </span>
+                          </div>
+                          <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition-all">
+                            Vote
+                          </StandardButton>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
               </div>
             </div>
           </div>
@@ -863,16 +673,24 @@ export default function Home({
             {/* Recent Citizens */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">New Citizens</h3>
-                <StandardButton className="text-blue-300 text-sm hover:text-blue-200 transition-all" link="/network?tab=citizens">
+                <h3 className="font-semibold text-white text-lg">
+                  New Citizens
+                </h3>
+                <StandardButton
+                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                  link="/network?tab=citizens"
+                >
                   See all
                 </StandardButton>
               </div>
-              
+
               <div className="space-y-3">
                 {newestCitizens && newestCitizens.length > 0 ? (
                   newestCitizens.slice(0, 5).map((citizen: any) => (
-                    <div key={citizen.id} className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                    <div
+                      key={citizen.id}
+                      className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer"
+                    >
                       <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
                         {citizen.image ? (
                           <MediaRenderer
@@ -888,12 +706,18 @@ export default function Home({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-sm truncate">{citizen.name || 'Anonymous'}</h4>
+                        <h4 className="text-white font-medium text-sm truncate">
+                          {citizen.name || 'Anonymous'}
+                        </h4>
                         <p className="text-gray-400 text-xs">New citizen</p>
                       </div>
-                      <StandardButton 
+                      <StandardButton
                         className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-lg transition-all"
-                        link={`/citizen/${citizen.name && citizen.id ? generatePrettyLinkWithId(citizen.name, citizen.id) : citizen.id || 'anonymous'}`}
+                        link={`/citizen/${
+                          citizen.name && citizen.id
+                            ? generatePrettyLinkWithId(citizen.name, citizen.id)
+                            : citizen.id || 'anonymous'
+                        }`}
                       >
                         Connect
                       </StandardButton>
@@ -910,16 +734,24 @@ export default function Home({
             {/* Featured Teams */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">Featured Teams</h3>
-                <StandardButton className="text-blue-300 text-sm hover:text-blue-200 transition-all" link="/network?tab=teams">
+                <h3 className="font-semibold text-white text-lg">
+                  Featured Teams
+                </h3>
+                <StandardButton
+                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                  link="/network?tab=teams"
+                >
                   See all
                 </StandardButton>
               </div>
-              
+
               <div className="space-y-3">
                 {filteredTeams && filteredTeams.length > 0 ? (
                   filteredTeams.slice(0, 5).map((team: any, index: number) => (
-                    <div key={team.id || index} className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                    <div
+                      key={team.id || index}
+                      className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer"
+                    >
                       <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
                         {team.image ? (
                           <MediaRenderer
@@ -935,16 +767,24 @@ export default function Home({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-sm truncate">{team.name || 'Team'}</h4>
-                        <p className="text-gray-400 text-xs">{team.memberCount || '8'} members</p>
+                        <h4 className="text-white font-medium text-sm truncate">
+                          {team.name || 'Team'}
+                        </h4>
+                        <p className="text-gray-400 text-xs">
+                          {team.memberCount || '8'} members
+                        </p>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">M</div>
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">
+                      M
+                    </div>
                     <div className="flex-1">
-                      <h4 className="text-white font-medium text-sm">Mission Control</h4>
+                      <h4 className="text-white font-medium text-sm">
+                        Mission Control
+                      </h4>
                       <p className="text-gray-400 text-xs">12 members</p>
                     </div>
                   </div>
@@ -955,36 +795,52 @@ export default function Home({
             {/* Marketplace */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">Marketplace</h3>
-                <StandardButton className="text-blue-300 text-sm hover:text-blue-200 transition-all" link="/marketplace">
+                <h3 className="font-semibold text-white text-lg">
+                  Marketplace
+                </h3>
+                <StandardButton
+                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                  link="/marketplace"
+                >
                   See all
                 </StandardButton>
               </div>
-              
+
               <div className="space-y-3">
                 {newestListings && newestListings.length > 0 ? (
-                  newestListings.slice(0, 3).map((listing: any, index: number) => (
-                    <div key={listing.id || index} className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                        {listing.image ? (
-                          <MediaRenderer
-                            client={client}
-                            src={listing.image}
-                            alt={listing.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                            <ShoppingBagIcon className="w-5 h-5" />
-                          </div>
-                        )}
+                  newestListings
+                    .slice(0, 3)
+                    .map((listing: any, index: number) => (
+                      <div
+                        key={listing.id || index}
+                        className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer"
+                      >
+                        <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                          {listing.image ? (
+                            <MediaRenderer
+                              client={client}
+                              src={listing.image}
+                              alt={listing.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                              <ShoppingBagIcon className="w-5 h-5" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-white font-medium text-sm truncate">
+                            {listing.title || 'Marketplace Item'}
+                          </h4>
+                          <p className="text-gray-400 text-xs">
+                            {listing.price
+                              ? `${listing.price} ETH`
+                              : 'View details'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-sm truncate">{listing.title || 'Marketplace Item'}</h4>
-                        <p className="text-gray-400 text-xs">{listing.price ? `${listing.price} ETH` : 'View details'}</p>
-                      </div>
-                    </div>
-                  ))
+                    ))
                 ) : (
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
@@ -992,7 +848,9 @@ export default function Home({
                         <ShoppingBagIcon className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm">Moon Rock Sample</h4>
+                        <h4 className="text-white font-medium text-sm">
+                          Moon Rock Sample
+                        </h4>
                         <p className="text-gray-400 text-xs">2.5 ETH</p>
                       </div>
                     </div>
@@ -1001,7 +859,9 @@ export default function Home({
                         <ShoppingBagIcon className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm">Space Suit NFT</h4>
+                        <h4 className="text-white font-medium text-sm">
+                          Space Suit NFT
+                        </h4>
                         <p className="text-gray-400 text-xs">1.8 ETH</p>
                       </div>
                     </div>
@@ -1010,7 +870,9 @@ export default function Home({
                         <ShoppingBagIcon className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm">Lunar Map Print</h4>
+                        <h4 className="text-white font-medium text-sm">
+                          Lunar Map Print
+                        </h4>
                         <p className="text-gray-400 text-xs">0.5 ETH</p>
                       </div>
                     </div>
@@ -1033,17 +895,24 @@ export default function Home({
                 </h3>
                 <p className="text-blue-200">Fund your next mission to space</p>
               </div>
-              <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all" link="/launchpad">
+              <StandardButton
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all"
+                link="/launchpad"
+              >
                 Launch Project
               </StandardButton>
             </div>
-            
+
             <div className="bg-black/20 rounded-xl p-6 border border-blue-500/20">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">F</div>
+                  <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                    F
+                  </div>
                   <div>
-                    <h4 className="font-bold text-white text-lg">Frank to Space</h4>
+                    <h4 className="font-bold text-white text-lg">
+                      Frank to Space
+                    </h4>
                     <div className="flex items-center gap-2 text-sm">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                       <span className="text-blue-200">Active Funding</span>
@@ -1056,9 +925,15 @@ export default function Home({
                 </div>
               </div>
               <div className="w-full bg-gray-700 rounded-full h-3 mb-4">
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all" style={{ width: '4%' }}></div>
+                <div
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all"
+                  style={{ width: '4%' }}
+                ></div>
               </div>
-              <p className="text-blue-100 text-sm">Send Frank Miller to space as MoonDAO's first citizen astronaut mission.</p>
+              <p className="text-blue-100 text-sm">
+                Send Frank Miller to space as MoonDAO's first citizen astronaut
+                mission.
+              </p>
             </div>
           </div>
 
@@ -1070,43 +945,66 @@ export default function Home({
                   <RocketLaunchIcon className="w-7 h-7" />
                   Active Projects
                 </h3>
-                <p className="text-green-200">Contribute to space exploration initiatives</p>
+                <p className="text-green-200">
+                  Contribute to space exploration initiatives
+                </p>
               </div>
-              <StandardButton className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all" link="/projects">
+              <StandardButton
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all"
+                link="/projects"
+              >
                 View All Projects
               </StandardButton>
             </div>
-            
+
             <div className="bg-black/20 rounded-xl p-6 border border-green-500/20">
               <div className="grid grid-cols-2 gap-6 mb-4">
                 <div>
-                  <div className="text-2xl font-bold text-white">{Math.round(ethBudget)} ETH</div>
-                  <div className="text-green-200 text-sm">Quarterly Rewards Budget</div>
+                  <div className="text-2xl font-bold text-white">
+                    {Math.round(ethBudget)} ETH
+                  </div>
+                  <div className="text-green-200 text-sm">
+                    Quarterly Rewards Budget
+                  </div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white">{currentProjects?.length || 0}</div>
+                  <div className="text-2xl font-bold text-white">
+                    {currentProjects?.length || 0}
+                  </div>
                   <div className="text-green-200 text-sm">Active Projects</div>
                 </div>
               </div>
-              
+
               {currentProjects && currentProjects.length > 0 && (
                 <div className="pt-4 border-t border-green-500/20">
                   <div className="text-sm mb-3">
-                    <span className="font-medium text-white">Featured Project:</span>
+                    <span className="font-medium text-white">
+                      Featured Project:
+                    </span>
                   </div>
                   <div className="bg-black/30 rounded-lg p-4 border border-green-500/10">
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-semibold text-white text-sm">{currentProjects[0].name}</h4>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        currentProjects[0].active ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-300'
-                      }`}>
+                      <h4 className="font-semibold text-white text-sm">
+                        {currentProjects[0].name}
+                      </h4>
+                      <span
+                        className={`px-2 py-1 rounded text-xs ${
+                          currentProjects[0].active
+                            ? 'bg-green-500/20 text-green-300'
+                            : 'bg-gray-500/20 text-gray-300'
+                        }`}
+                      >
                         {currentProjects[0].active ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                     <p className="text-green-100 text-xs leading-relaxed">
-                      {currentProjects[0].description?.length > 120 
-                        ? `${currentProjects[0].description.substring(0, 120)}...` 
-                        : currentProjects[0].description || 'No description available'}
+                      {currentProjects[0].description?.length > 120
+                        ? `${currentProjects[0].description.substring(
+                            0,
+                            120
+                          )}...`
+                        : currentProjects[0].description ||
+                          'No description available'}
                     </p>
                     {currentProjects.length > 1 && (
                       <p className="text-green-300 text-xs mt-2">
@@ -1130,15 +1028,25 @@ export default function Home({
               </h3>
               <p className="text-gray-300">MoonDAO citizens around the world</p>
             </div>
-            <StandardButton className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl font-semibold transition-all" link="/map">
+            <StandardButton
+              className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl font-semibold transition-all"
+              link="/map"
+            >
               Explore Map
             </StandardButton>
           </div>
 
           <div className="relative w-full h-[500px] bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-2xl overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="flex items-center justify-center" style={{ width: '500px', height: '500px' }}>
-                <Earth pointsData={citizensLocationData || []} width={500} height={500} />
+              <div
+                className="flex items-center justify-center"
+                style={{ width: '500px', height: '500px' }}
+              >
+                <Earth
+                  pointsData={citizensLocationData || []}
+                  width={500}
+                  height={500}
+                />
               </div>
             </div>
 
@@ -1292,7 +1200,10 @@ export async function getStaticProps() {
         }),
         readContract({ contract: jobTableContract, method: 'getTableName' }),
         readContract({ contract: teamTableContract, method: 'getTableName' }),
-        readContract({ contract: projectTableContract, method: 'getTableName' }),
+        readContract({
+          contract: projectTableContract,
+          method: 'getTableName',
+        }),
       ])
 
       // Batch all table queries
@@ -1307,7 +1218,9 @@ export async function getStaticProps() {
         ),
         queryTable(
           chain,
-          `SELECT * FROM ${jobTableName} WHERE (endTime = 0 OR endTime >= ${Math.floor(Date.now() / 1000)}) ORDER BY id DESC LIMIT 10`
+          `SELECT * FROM ${jobTableName} WHERE (endTime = 0 OR endTime >= ${Math.floor(
+            Date.now() / 1000
+          )}) ORDER BY id DESC LIMIT 10`
         ),
         queryTable(
           chain,
@@ -1395,8 +1308,9 @@ export async function getStaticProps() {
 
     // Process projects data for home page display
     if (projects) {
-      currentProjects = projects.filter((project: any) => 
-        project.active && !blockedProjects.includes(project.id)
+      currentProjects = projects.filter(
+        (project: any) =>
+          project.active && !blockedProjects.includes(project.id)
       ) as Project[]
     }
 
