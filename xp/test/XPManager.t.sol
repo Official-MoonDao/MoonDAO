@@ -23,7 +23,7 @@ contract XPManagerTest is Test {
         xpManager = new XPManager();
         
         // Deploy verifier
-        citizenVerifier = new OwnsCitizenNFT();
+        citizenVerifier = new OwnsCitizenNFT(address(citizenNFT));
         
         // Register verifier
         xpManager.registerVerifier(1, address(citizenVerifier));
@@ -44,8 +44,8 @@ contract XPManagerTest is Test {
     function testClaimXP() public {
         vm.startPrank(user1);
         
-        // Context: Citizen NFT address + 25 XP
-        bytes memory context = abi.encode(address(citizenNFT), 25);
+        // Context: 25 XP
+        bytes memory context = abi.encode(25);
         
         // Claim XP
         xpManager.claimXP(1, context);
@@ -60,17 +60,17 @@ contract XPManagerTest is Test {
         vm.startPrank(user1);
         
         // First claim: 15 XP
-        bytes memory context1 = abi.encode(address(citizenNFT), 15);
+        bytes memory context1 = abi.encode(15);
         xpManager.claimXP(1, context1);
         assertEq(xpManager.userXP(user1), 15);
         
         // Second claim: 40 XP
-        bytes memory context2 = abi.encode(address(citizenNFT), 40);
+        bytes memory context2 = abi.encode(40);
         xpManager.claimXP(1, context2);
         assertEq(xpManager.userXP(user1), 55);
         
         // Third claim: 50 XP
-        bytes memory context3 = abi.encode(address(citizenNFT), 50);
+        bytes memory context3 = abi.encode(50);
         xpManager.claimXP(1, context3);
         assertEq(xpManager.userXP(user1), 105);
         
@@ -80,7 +80,7 @@ contract XPManagerTest is Test {
     function testGetTotalXP() public {
         vm.startPrank(user1);
         
-        bytes memory context = abi.encode(address(citizenNFT), 100);
+        bytes memory context = abi.encode(100);
         xpManager.claimXP(1, context);
         
         assertEq(xpManager.getTotalXP(user1), 100);
@@ -91,7 +91,7 @@ contract XPManagerTest is Test {
     function testCannotClaimTwice() public {
         vm.startPrank(user1);
         
-        bytes memory context = abi.encode(address(citizenNFT), 25);
+        bytes memory context = abi.encode(25);
         xpManager.claimXP(1, context);
         
         // Try to claim again with same context
@@ -105,7 +105,7 @@ contract XPManagerTest is Test {
         vm.startPrank(user1);
         
         // Context with 0 XP
-        bytes memory context = abi.encode(address(citizenNFT), 0);
+        bytes memory context = abi.encode(0);
         
         vm.expectRevert("No XP to claim");
         xpManager.claimXP(1, context);
@@ -117,7 +117,7 @@ contract XPManagerTest is Test {
         address userWithoutNFT = address(0x4);
         vm.startPrank(userWithoutNFT);
         
-        bytes memory context = abi.encode(address(citizenNFT), 25);
+        bytes memory context = abi.encode(25);
         
         vm.expectRevert("Not eligible");
         xpManager.claimXP(1, context);
@@ -137,7 +137,7 @@ contract XPManagerTest is Test {
     function testEvents() public {
         vm.startPrank(user1);
         
-        bytes memory context = abi.encode(address(citizenNFT), 25);
+        bytes memory context = abi.encode(25);
         
         // Expect event for XP earned
         vm.expectEmit(true, false, false, true);
@@ -151,14 +151,14 @@ contract XPManagerTest is Test {
     function testMultipleUsers() public {
         // User 1 claims XP
         vm.startPrank(user1);
-        bytes memory context1 = abi.encode(address(citizenNFT), 30);
+        bytes memory context1 = abi.encode(30);
         xpManager.claimXP(1, context1);
         assertEq(xpManager.userXP(user1), 30);
         vm.stopPrank();
         
         // User 2 claims XP
         vm.startPrank(user2);
-        bytes memory context2 = abi.encode(address(citizenNFT), 45);
+        bytes memory context2 = abi.encode(45);
         xpManager.claimXP(1, context2);
         assertEq(xpManager.userXP(user2), 45);
         vm.stopPrank();
@@ -190,7 +190,7 @@ contract XPManagerTest is Test {
     function testVerifierNotFound() public {
         vm.startPrank(user1);
         
-        bytes memory context = abi.encode(address(citizenNFT), 25);
+        bytes memory context = abi.encode(25);
         
         vm.expectRevert("Verifier not found");
         xpManager.claimXP(999, context); // Non-existent verifier ID

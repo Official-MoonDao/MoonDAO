@@ -1,13 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IXPVerifier.sol";
-import "../mocks/MockERC5643Citizen.sol";
+
+interface IERC5643Like {
+    function balanceOf(address owner) external view returns (uint256);
+}
 
 /// @title OwnsCitizenNFT
 /// @notice Verifier that checks if a user owns a MoonDAO Citizen NFT
-/// @dev Context should be abi.encode(address citizenNFTAddress, uint256 xpAmount)
-contract OwnsCitizenNFT is IXPVerifier {
+/// @dev Context should be abi.encode(uint256 xpAmount)
+contract OwnsCitizenNFT is IXPVerifier, Ownable {
+    IERC5643Like public citizenNFT;
+
+    constructor(address citizenNFTAddress) Ownable(msg.sender) {
+        require(citizenNFTAddress != address(0), "Invalid Citizen address");
+        citizenNFT = IERC5643Like(citizenNFTAddress);
+    }
+
+    function setCitizenNFTAddress(address newAddress) external onlyOwner {
+        require(newAddress != address(0), "Invalid Citizen address");
+        citizenNFT = IERC5643Like(newAddress);
+    }
     
     /// @notice Human-readable identifier for this verifier
     function name() external pure returns (string memory) {
@@ -16,7 +31,7 @@ contract OwnsCitizenNFT is IXPVerifier {
 
     /// @notice Check if user owns a MoonDAO Citizen NFT
     /// @param user The claimant
-    /// @param context ABI-encoded parameters: (address citizenNFTAddress, uint256 xpAmount)
+    /// @param context ABI-encoded parameters: (uint256 xpAmount)
     /// @return eligible True if user owns a Citizen NFT
     /// @return xpAmount The amount of XP to grant
     function isEligible(address user, bytes calldata context) 
@@ -24,10 +39,7 @@ contract OwnsCitizenNFT is IXPVerifier {
         view 
         returns (bool eligible, uint256 xpAmount) 
     {
-        (address citizenNFTAddress, uint256 amount) = abi.decode(context, (address, uint256));
-        
-        MockERC5643Citizen citizenNFT = MockERC5643Citizen(citizenNFTAddress);
-        
+        uint256 amount = abi.decode(context, (uint256));
         // Check if user owns at least one Citizen NFT
         eligible = citizenNFT.balanceOf(user) > 0;
         xpAmount = eligible ? amount : 0;
@@ -45,15 +57,6 @@ contract OwnsCitizenNFT is IXPVerifier {
         return keccak256(abi.encodePacked(address(this), user, context));
     }
 
-    /// @notice No cooldown for this verifier
-    /// @param user The claimant
-    /// @param context Same bytes passed to isEligible
-    /// @return validAfter Always returns 0 (no cooldown)
-    function validAfter(address user, bytes calldata context) 
-        external 
-        pure 
-        returns (uint256) 
-    {
-        return 0; // No cooldown
-    }
+    /// @notice No cooldown for this verifier. Always returns 0 (no cooldown)
+    function validAfter(address, bytes calldata) external pure returns (uint256) { return 0; }
 }

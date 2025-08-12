@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract MockERC5643Citizen is Ownable {
-    mapping(uint256 => address) private _owners;
-    mapping(address => uint256) private _balances;
-    uint256 private _tokenIdCounter;
+contract MockERC5643Citizen is ERC721, Ownable {
+    mapping(uint256 => uint64) private _expirations;
+    uint256 private _totalMinted;
     
     constructor(
         string memory name_,
@@ -15,21 +15,23 @@ contract MockERC5643Citizen is Ownable {
         address _table,
         address _whitelist,
         address _discountList
-    ) Ownable(msg.sender) {
+    ) ERC721(name_, symbol_) Ownable(msg.sender) {
         // Mock constructor - parameters not used in this mock
     }
     
     function mintTo(address to) external onlyOwner {
-        _tokenIdCounter++;
-        _owners[_tokenIdCounter] = to;
-        _balances[to]++;
+        _totalMinted += 1;
+        uint256 tokenId = _totalMinted;
+        _safeMint(to, tokenId);
     }
     
-    function balanceOf(address owner) public view returns (uint256) {
-        return _balances[owner];
+    function balanceOf(address owner) public view override returns (uint256) {
+        return super.balanceOf(owner);
     }
     
     function totalSupply() public view returns (uint256) {
-        return _tokenIdCounter;
+        return _totalMinted;
     }
 }
+
+
