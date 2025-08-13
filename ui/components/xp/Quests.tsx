@@ -9,10 +9,9 @@ import {
   BanknotesIcon,
   BoltIcon,
 } from '@heroicons/react/24/outline'
-import { usePrivy } from '@privy-io/react-auth'
 import XPManagerABI from 'const/abis/XPManager.json'
 import { XP_MANAGER_ADDRESSES, XP_VERIFIERS } from 'const/config'
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import {
   Address,
@@ -24,13 +23,13 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import {
-  getCompleteUserInfo,
+  getCompleteUserXPInfo,
   formatXP,
-  formatReward,
-  type CompleteUserInfo,
+  type CompleteUserXPInfo,
 } from '@/lib/xp/user-info'
 import StandardButton from '@/components/layout/StandardButton'
 import Quest, { type QuestItem } from '@/components/xp/Quest'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type QuestsProps = {}
@@ -109,7 +108,7 @@ export default function Quests({}: QuestsProps) {
   const chainSlug = getChainSlug(selectedChain)
   const account = useActiveAccount()
   const userAddress = account?.address as Address
-  const [userInfo, setUserInfo] = useState<CompleteUserInfo | null>(null)
+  const [userInfo, setUserInfo] = useState<CompleteUserXPInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [onboardingCompleted, setOnboardingCompleted] = useState(0)
   const [onboardingTotal, setOnboardingTotal] = useState(0)
@@ -121,26 +120,33 @@ export default function Quests({}: QuestsProps) {
     chain: selectedChain,
   })
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!userAddress || !xpManagerContract) return
+  const fetchUserData = useCallback(async () => {
+    if (!userAddress || !xpManagerContract) return
 
-      setIsLoading(true)
-      try {
-        const completeInfo = await getCompleteUserInfo(
-          xpManagerContract,
-          userAddress
-        )
-        setUserInfo(completeInfo)
-      } catch (error) {
-        console.error('Error fetching user XP info:', error)
-      } finally {
-        setIsLoading(false)
-      }
+    setIsLoading(true)
+    try {
+      const completeInfo = await getCompleteUserXPInfo(
+        xpManagerContract,
+        userAddress
+      )
+      setUserInfo(completeInfo)
+    } catch (error) {
+      console.error('Error fetching user XP info:', error)
+    } finally {
+      setIsLoading(false)
     }
-
-    fetchData()
   }, [userAddress, xpManagerContract])
+
+  useEffect(() => {
+    fetchUserData()
+  }, [fetchUserData])
+
+  // Callback to refresh user data when a quest is claimed
+  const handleQuestClaimConfirmed = useCallback(() => {
+    console.log('Quest claim confirmed, refreshing user data...')
+    fetchUserData()
+  }, [fetchUserData])
+
   // Computed values from userInfo
   const currentXP = userInfo ? Number(userInfo.xpInfo.totalXP) : 0
   const availableRewards = userInfo
@@ -178,6 +184,8 @@ export default function Quests({}: QuestsProps) {
 
       if (receipt) {
         toast.success('Rewards claimed successfully!')
+        // Refresh user data to update available rewards and next rewards
+        fetchUserData()
       } else {
         toast.error('Failed to claim rewards.')
       }
@@ -185,7 +193,7 @@ export default function Quests({}: QuestsProps) {
       console.error('Error claiming rewards:', error)
       toast.error('Failed to claim rewards.')
     }
-  }, [account, userAddress, xpManagerContract])
+  }, [account, userAddress, xpManagerContract, fetchUserData])
 
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 mb-6">
@@ -201,7 +209,7 @@ export default function Quests({}: QuestsProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center flex-col md:flex-row gap-2">
           <StandardButton
             className="text-purple-300 text-sm hover:text-purple-200 transition-all bg-purple-600/20 hover:bg-purple-600/30 px-3 py-1 rounded-lg"
             link={'/home'}
@@ -209,15 +217,27 @@ export default function Quests({}: QuestsProps) {
             View All Quests
           </StandardButton>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-col md:flex-row">
             <div className="text-right">
               <div className="text-white text-xs font-medium">
-                {formatXP(BigInt(currentXP))} XP
-                {nextThresholdXP > 0 &&
-                  ` / ${formatXP(BigInt(nextThresholdXP))}`}
+                {isLoading ? (
+                  <div className="flex items-center gap-2 text-right">
+                    Loading XP...
+                  </div>
+                ) : (
+                  <>
+                    {formatXP(BigInt(currentXP))} XP
+                    {nextThresholdXP > 0 &&
+                      ` / ${formatXP(BigInt(nextThresholdXP))}`}
+                  </>
+                )}
               </div>
               <div className="text-xs text-gray-400 flex items-center gap-2">
-                {availableRewards > 0 ? (
+                {isLoading ? (
+                  <div className="flex items-center gap-2 text-right">
+                    Loading rewards...
+                  </div>
+                ) : availableRewards > 0 ? (
                   <span className="text-green-400 font-medium">
                     {availableRewards / 1e18} MOONEY Available!
                   </span>
@@ -231,13 +251,6 @@ export default function Quests({}: QuestsProps) {
                 ) : (
                   <span className="text-gray-500">Max threshold reached</span>
                 )}
-                <PrivyWeb3Button
-                  label="Claim MOONEY"
-                  action={claimRewards}
-                  isDisabled={availableRewards === 0}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs"
-                  noPadding
-                />
               </div>
             </div>
             <div className="w-32">
@@ -248,6 +261,13 @@ export default function Quests({}: QuestsProps) {
                 ></div>
               </div>
             </div>
+            <PrivyWeb3Button
+              label="Claim MOONEY"
+              action={claimRewards}
+              isDisabled={availableRewards === 0 || isLoading}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+              noPadding
+            />
           </div>
         </div>
       </div>
@@ -276,6 +296,7 @@ export default function Quests({}: QuestsProps) {
                 variant="onboarding"
                 userAddress={userAddress}
                 xpManagerContract={xpManagerContract}
+                onClaimConfirmed={handleQuestClaimConfirmed}
               />
             ))}
           </div>
@@ -296,6 +317,7 @@ export default function Quests({}: QuestsProps) {
                 variant="weekly"
                 userAddress={userAddress}
                 xpManagerContract={xpManagerContract}
+                onClaimConfirmed={handleQuestClaimConfirmed}
               />
             ))}
           </div>

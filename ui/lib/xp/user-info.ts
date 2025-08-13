@@ -26,7 +26,7 @@ export type UserThresholdStatus = {
   nextRewardAmount: bigint // Reward amount for next threshold
 }
 
-export type CompleteUserInfo = {
+export type CompleteUserXPInfo = {
   xpInfo: UserXPInfo
   thresholdConfig: ThresholdInfo
   thresholdStatus: UserThresholdStatus
@@ -180,10 +180,10 @@ export function calculateThresholdStatus(
 /**
  * Get complete user information including XP, thresholds, and status
  */
-export async function getCompleteUserInfo(
+export async function getCompleteUserXPInfo(
   xpManagerContract: ThirdwebContract,
   userAddress: Address
-): Promise<CompleteUserInfo> {
+): Promise<CompleteUserXPInfo> {
   const [xpInfo, thresholdConfig] = await Promise.all([
     getUserXPInfo(xpManagerContract, userAddress),
     getThresholdConfig(xpManagerContract),
