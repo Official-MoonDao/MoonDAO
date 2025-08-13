@@ -511,25 +511,103 @@ export async function getServerSideProps() {
     )
 
     // Get citizens location data for the map
-    const citizensLocationData = filteredCitizens
-      .map((citizen) => {
-        const attributes = citizen?.metadata?.attributes as unknown as any[]
-        const location = getAttribute(attributes, 'Location')?.value
-        const latitude = getAttribute(attributes, 'Latitude')?.value
-        const longitude = getAttribute(attributes, 'Longitude')?.value
-        
-        if (location && latitude && longitude) {
-          return {
-            lat: parseFloat(latitude),
-            lng: parseFloat(longitude),
-            location: location,
-            name: citizen.metadata.name,
-            id: citizen.id,
-          }
+    let citizensLocationData: any[] = []
+    
+    // Get location data for each citizen
+    for (const citizen of filteredCitizens) {
+      const citizenLocation = getAttribute(
+        citizen?.metadata?.attributes as unknown as any[],
+        'Location'
+      )?.value
+
+      let locationData
+
+      if (
+        citizenLocation &&
+        citizenLocation !== '' &&
+        !citizenLocation?.startsWith('{')
+      ) {
+        locationData = {
+          results: [
+            {
+              formatted_address: citizenLocation,
+            },
+          ],
         }
-        return null
+      } else if (citizenLocation?.startsWith('{')) {
+        const parsedLocationData = JSON.parse(citizenLocation)
+        locationData = {
+          results: [
+            {
+              formatted_address: parsedLocationData.name,
+              geometry: {
+                location: {
+                  lat: parsedLocationData.lat,
+                  lng: parsedLocationData.lng,
+                },
+              },
+            },
+          ],
+        }
+      } else {
+        locationData = {
+          results: [
+            {
+              formatted_address: 'Antarctica',
+              geometry: { location: { lat: -90, lng: 0 } },
+            },
+          ],
+        }
+      }
+
+      citizensLocationData.push({
+        id: citizen.metadata.id || citizen.id,
+        name: citizen.metadata.name,
+        location: citizenLocation,
+        formattedAddress:
+          locationData.results?.[0]?.formatted_address || 'Antarctica',
+        image: citizen.metadata.image,
+        lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
+        lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
       })
-      .filter(Boolean)
+    }
+
+    // Group citizens by lat and lng
+    const locationMap = new Map()
+
+    for (const citizen of citizensLocationData) {
+      const key = `${citizen.lat},${citizen.lng}`
+      if (!locationMap.has(key)) {
+        locationMap.set(key, {
+          citizens: [citizen],
+          names: [citizen.name],
+          formattedAddress: citizen.formattedAddress,
+          lat: citizen.lat,
+          lng: citizen.lng,
+        })
+      } else {
+        const existing = locationMap.get(key)
+        existing.names.push(citizen.name)
+        existing.citizens.push(citizen)
+      }
+    }
+
+    // Convert the map back to an array with proper styling
+    citizensLocationData = Array.from(locationMap.values()).map(
+      (entry: any) => ({
+        ...entry,
+        color:
+          entry.citizens.length > 3
+            ? '#6a3d79'
+            : entry.citizens.length > 1
+            ? '#5e4dbf'
+            : '#5556eb',
+        size:
+          entry.citizens.length > 1
+            ? Math.min(entry.citizens.length * 0.01, 0.4)
+            : 0.01,
+      })
+    )
 
     return {
       props: {
