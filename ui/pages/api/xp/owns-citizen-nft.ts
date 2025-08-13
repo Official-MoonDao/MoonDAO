@@ -10,7 +10,6 @@ import { addressBelongsToPrivyUser } from '@/lib/privy'
 import { serverClient } from '@/lib/thirdweb/client'
 import { signOwnsCitizenProof, submitOwnsCitizenClaimFor } from '@/lib/xp'
 
-// Minimal ABI for OwnsCitizenNFT.isEligible(address,bytes)
 const OWNS_CITIZEN_ABI = [
   {
     type: 'function',
@@ -110,4 +109,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default withMiddleware(handler, authMiddleware)
+export default withMiddleware(handler as any, authMiddleware)

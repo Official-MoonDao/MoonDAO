@@ -7,7 +7,7 @@ import { Address } from 'thirdweb'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
 import { signHasVotedProof, submitHasVotedClaimFor } from '@/lib/xp'
 
-const MIN_VOTES = BigInt(1)
+const MIN_VOTES = 1 //changing this while using the same verifier will allow users to claim xp again
 
 async function fetchSnapshotVotesCount(
   user: Address,
@@ -15,24 +15,25 @@ async function fetchSnapshotVotesCount(
 ): Promise<number> {
   const endpoint = 'https://hub.snapshot.org/graphql'
   const query = gql`
-    votes(
-      first: 1000
-      skip: 0
-      where: { voter: ${user}, space: "tomoondao.eth" }
-    ) {
-      id
-      voter
-      choice
-      created
-      space {
+    query Votes($address: String!) {
+      votes(
+        first: 1000
+        skip: 0
+        where: { voter: $address, space: "tomoondao.eth" }
+      ) {
         id
+        voter
+        choice
+        created
+        space {
+          id
+        }
       }
     }
   `
   try {
     const data = (await gqlRequest(endpoint, query, {
-      voter: user,
-      spaces: [space],
+      address: user,
     })) as any
     const count = Array.isArray(data?.votes) ? data.votes.length : 0
     return count
@@ -62,13 +63,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       user as Address,
       SNAPSHOT_SPACE
     )
-    if (votesCount < Number(MIN_VOTES))
+
+    if (votesCount < MIN_VOTES)
       return res.status(200).json({ eligible: false, votesCount })
 
     const { validAfter, validBefore, signature, context } =
       await signHasVotedProof({
         user: user as Address,
-        minVotes: MIN_VOTES,
+        minVotes: BigInt(MIN_VOTES),
       })
 
     const { txHash } = await submitHasVotedClaimFor({

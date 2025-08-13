@@ -1,4 +1,5 @@
 import { arbitrum, sepolia, arbitrumSepolia } from '../lib/infura/infuraChains'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -52,6 +53,8 @@ export const TEST_CHAIN =
     : sepolia
 export const DEFAULT_CHAIN_V5 =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : TEST_CHAIN
+
+export const DEFAULT_CHAIN_V5_SLUG = getChainSlug(DEFAULT_CHAIN_V5)
 
 export const MOONEY_ADDRESSES: Index = {
   ethereum: ethConfig.MOONEYToken,
@@ -400,8 +403,6 @@ export const XP_MANAGER_ADDRESSES: Index = {
   sepolia: '0x23948d92D1ef4F4651f4388Cc46b4fb14b944c5B',
 }
 
-export const XP_VERIFIERS = [1, 2, 3] as const
-
 export const OWNS_CITIZEN_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0x182eCFCC5927161292Ea029B7626ea2CF3d49045',
@@ -416,6 +417,27 @@ export const HAS_VOTED_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0x044d51a81a22521c657c5963f303aab2c6F2ad41',
 }
+
+export const XP_VERIFIERS: any = [
+  {
+    verifierId: 1,
+    verifierAddress: OWNS_CITIZEN_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/owns-citizen-nft',
+    xpPerClaim: 10,
+  },
+  {
+    verifierId: 2,
+    verifierAddress: HAS_VOTING_POWER_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/voting-power-proof',
+    xpPerClaim: 5,
+  },
+  {
+    verifierId: 3,
+    verifierAddress: HAS_VOTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/has-voted-proof',
+    xpPerClaim: 5,
+  },
+]
 
 export const DISCORD_GUILD_ID = '914720248140279868'
 export const GENERAL_CHANNEL_ID = '914720248140279871'

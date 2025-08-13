@@ -7,7 +7,7 @@ import { Address } from 'thirdweb'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
 import { signHasVotingPowerProof, submitHasVotingPowerClaimFor } from '@/lib/xp'
 
-const MIN_VOTING_POWER = BigInt(1)
+const MIN_VOTING_POWER = BigInt(1) //changing this while using the same verifier will allow users to claim xp again
 
 async function fetchSnapshotVP(user: Address, space: string): Promise<bigint> {
   const endpoint = 'https://hub.snapshot.org/graphql'
