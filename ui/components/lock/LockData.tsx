@@ -36,7 +36,7 @@ export function LockData({
           <h3 className="text-lg font-bold text-white mb-4">
             Your Lock Overview
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* vMOONEY Balance */}
             <div className="bg-black/20 rounded-xl p-4 border border-white/5">
@@ -54,14 +54,12 @@ export function LockData({
                 <span className="text-blue-400 text-2xl font-RobotoMono font-semibold flex items-center">
                   <Balance
                     id="lock-data-vmooney-balance"
-                    balance={VMOONEYBalance?.toString() / 10 ** 18}
+                    balance={(VMOONEYBalance?.toString() / 10 ** 18).toFixed(0)}
                     loading={VMOONEYBalanceLoading}
                     decimals={2}
                     token=""
                   />
-                  <span className="ml-2 text-base md:text-lg">
-                    vMOONEY
-                  </span>
+                  <span className="ml-2 text-base md:text-lg">vMOONEY</span>
                 </span>
               </div>
             </div>
@@ -74,7 +72,9 @@ export function LockData({
                     <LockClosedIcon className="h-4 w-4 text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-white text-sm font-medium">Locked MOONEY</p>
+                    <p className="text-white text-sm font-medium">
+                      Locked MOONEY
+                    </p>
                   </div>
                 </div>
               </div>
