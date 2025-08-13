@@ -365,9 +365,12 @@ export default function GlobalSearch() {
       {/* Collapsed state - just a search icon */}
       {!isExpanded && (
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-white whitespace-nowrap bg-black/70 backdrop-blur-md border border-white/20 rounded-full px-3 py-2">
+          <button
+            onClick={toggleExpanded}
+            className="text-sm font-medium text-white whitespace-nowrap bg-black/70 backdrop-blur-md border border-white/20 rounded-full px-3 py-2 hover:bg-black/80 transition-all cursor-pointer"
+          >
             Quick Search
-          </span>
+          </button>
           <button
             onClick={toggleExpanded}
             className="bg-black/70 backdrop-blur-md border border-white/20 rounded-full p-3 text-white hover:bg-black/80 transition-all shadow-lg"

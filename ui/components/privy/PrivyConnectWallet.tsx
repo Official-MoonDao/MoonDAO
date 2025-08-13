@@ -37,12 +37,9 @@ import {
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
-import viemChains from '@/lib/viem/viemChains'
 import Modal from '../layout/Modal'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
-import NetworkSelector from '../thirdweb/NetworkSelector'
 import { LinkAccounts } from './LinkAccounts'
-import { PrivyWeb3Button } from './PrivyWeb3Button'
 import WalletAction from './WalletAction'
 
 // Custom hook to fetch wallet tokens from our API
@@ -65,6 +62,8 @@ function useWalletTokens(address: string | undefined, chain: string) {
         `/api/etherscan/wallet-tokens?address=${address}&chain=${chain}&offset=50`
       )
       const data = await response.json()
+
+      console.log(data)
 
       if (data.error) {
         setError(data.error)
@@ -123,7 +122,6 @@ const selectedNativeToken: any = {
   'base-sepolia-testnet': 'ETH',
   polygon: 'MATIC',
 }
-
 
 function SendModal({
   account,
@@ -946,7 +944,7 @@ export function PrivyConnectWallet({
         <div className="w-full">
           <div
             id="privy-connect-wallet"
-            className="cursor-pointer flex-wrap md:w-[175px] md:full relative flex flex-col items-right justify-center pl-5 pr-5 py-2 md:hover:pl-[25px] bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-lato z-[10] rounded-[2vmax] rounded-tl-[10px] duration-300 shadow-lg hover:shadow-xl transition-all"
+            className="cursor-pointer flex-wrap md:w-[175px] md:full relative flex flex-col items-right justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-lato z-[10] rounded-full duration-300 shadow-lg hover:shadow-xl transition-colors"
             onClick={(e: any) => {
               setEnabled(!enabled)
             }}
@@ -1384,16 +1382,16 @@ export function PrivyConnectWallet({
                 login()
               }
             }}
-            className="text-[12px] md:text-[18px] font-bold rounded-[40px] rounded-bl-[10px] p-5 py-2 md:hover:pl-[25px] gradient-2 transition-all duration-150"
+            className="text-[12px] md:text-[18px] rounded-full px-4 py-1 gradient-2 transition-colors duration-150"
           >
-            <div className="flex">
+            <div className="flex items-center justify-center">
               <Image
                 src="/assets/icon-user.svg"
                 alt="Sign in with your wallet"
                 width="20"
                 height="20"
               ></Image>
-              <p className="pl-2">Sign In</p>
+              <p className="pl-2">Sign in</p>
             </div>
           </button>
         </div>

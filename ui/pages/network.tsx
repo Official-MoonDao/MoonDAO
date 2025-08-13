@@ -41,11 +41,6 @@ import Search from '@/components/layout/Search'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import Tab from '@/components/layout/Tab'
-import NetworkSection from '@/components/home/NetworkSection'
-import CreateCitizen from '@/components/onboarding/CreateCitizen'
-import CreateTeam from '@/components/onboarding/CreateTeam'
-import CitizenTier from '@/components/onboarding/CitizenTier'
-import TeamTier from '@/components/onboarding/TeamTier'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import CitizenABI from '../const/abis/Citizen.json'
 import TeamABI from '../const/abis/Team.json'
@@ -168,36 +163,96 @@ export default function Network({
 
   useChainDefault()
 
-  const descriptionSection = (
-    <div className="pt-2">
-      <div className="mb-4">
-        The Space Acceleration Network is an onchain startup society focused on
-        building a permanent settlement on the Moon and beyond. Help build our
-        multiplanetary future and{' '}
-        <u>
-          <Link href="/join">join the network</Link>
-        </u>
-        .
-      </div>
-      <div className="relative w-full flex flex-col gap-3">
-        {/* Search Bar and Tabs - Same Row */}
-        <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
-          <div className="w-full flex flex-row min-[800px]:flex-row gap-4 items-center overflow-hidden">
-            {/* Search Bar */}
-            <div className="w-full min-w-0 max-w-[250px] sm:max-w-[280px] md:max-w-[320px] bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 px-3 py-1">
-              <Search
-                className="w-full flex-grow"
-                input={input}
-                setInput={setInput}
-                placeholder={tab === 'teams' ? 'Search teams' : tab === 'citizens' ? 'Search citizens' : 'Search network'}
-              />
-            </div>
+  function renderNFTs() {
+    const nfts = cachedNFTs
 
-            <div
-              id="filter-container"
-              className="hidden min-[1150px]:block flex-shrink-0"
-            >
-              <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
+    // Show loading state if no NFTs and we're not on the map tab
+    if ((!nfts || nfts.length === 0) && tab !== 'map') {
+      return Array.from({ length: 4 }, (_, i) => <CardSkeleton key={i} />)
+    }
+
+    // Calculate pagination
+    const startIndex = (pageIdx - 1) * 10
+    const endIndex = startIndex + 10
+    const paginatedNFTs = nfts.slice(startIndex, endIndex)
+
+    if (paginatedNFTs.length === 0 && tab !== 'map') {
+      return (
+        <div className="col-span-full text-center py-12">
+          <div className="text-slate-400 mb-4">
+            <ListBulletIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
+          </div>
+          <h3 className="text-xl font-GoodTimes text-white mb-2">
+            No {tab} found
+          </h3>
+          <p className="text-slate-400">
+            {input ? `No results for "${input}"` : `No ${tab} available at the moment.`}
+          </p>
+        </div>
+      )
+    }
+
+    return paginatedNFTs.map((nft, i) => {
+      const teamTier = getAttribute(nft?.metadata?.attributes as any[], 'Team Tier')?.value
+      const isFeatured = featuredTeams.includes(nft.metadata.name)
+
+      const type = nft?.metadata?.attributes?.find((attr: any) => attr.trait_type === 'Type')?.value
+      const link = `/${type === 'team' ? 'team' : 'citizen'}/${
+        type === 'team'
+          ? generatePrettyLink(nft.metadata.name)
+          : generatePrettyLinkWithId(nft.metadata.name, nft.id.toString())
+      }`
+
+      return (
+        <div className="w-full h-full" key={`${nft.metadata.name}-${nft.id}-${i}`}>
+          <StandardDetailCard
+            title={nft.metadata.name}
+            paragraph={nft.metadata.description}
+            image={nft.metadata.image}
+            link={link}
+          />
+        </div>
+      )
+    })
+  }
+
+  return (
+    <div className="animate-fadeIn">
+      <Head
+        title="Explore the Network | MoonDAO"
+        description="Discover and connect with citizens and teams building the future of space exploration"
+        image="https://ipfs.io/ipfs/QmbbjvWBUAXPPibj4ZbzzErVaZBSD99r3dbt5CGQMd5Bkh"
+      />
+      
+      <Container>
+        <Frame noPadding>
+          {/* Compact Header Section */}
+          <div className="relative py-8 px-6">
+            <div className="max-w-6xl mx-auto text-center">
+              <h1 className="header font-GoodTimes text-white mb-3">
+                Explore the Network
+              </h1>
+              <p className="sub-header text-white/80 max-w-3xl mx-auto mb-6">
+                Discover and connect with citizens and teams building the future of space exploration
+              </p>
+            </div>
+          </div>
+
+          {/* Controls Section */}
+          <div id="network-controls" className="max-w-6xl mx-auto mb-8 px-6">
+            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+              {/* Search Bar - Always present but invisible for map tab */}
+              <div className={`w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3 ${tab === 'map' ? 'invisible' : ''}`}>
+                <Search
+                  className="w-full"
+                  input={input}
+                  setInput={setInput}
+                  placeholder={tab === 'teams' ? 'Search teams' : tab === 'citizens' ? 'Search citizens' : 'Search network'}
+                />
+              </div>
+
+              {/* Tabs - Always centered */}
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
                 <div className="flex text-sm gap-1">
                   <Tab
                     tab="citizens"
@@ -225,553 +280,155 @@ export default function Network({
                   </Tab>
                 </div>
               </div>
-            </div>
 
-            <div className="flex-shrink-0 flex justify-end md:justify-start">
-              <StandardButton
-                className="gradient-2 rounded-2xl hover:scale-105 transition-transform"
-                hoverEffect={false}
-                link="/join"
-              >
-                <div className="flex items-center justify-start gap-2">
-                  <PlusCircleIcon width={20} height={20} />
-                  {'Join'}
-                </div>
-              </StandardButton>
-            </div>
-          </div>
-          <div
-            id="filter-container"
-            className="min-[1150px]:hidden mt-4 min-[900px]:mt-2"
-          >
-            <div className="w-fit max-w-[300px] sm:max-w-none h-fit bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-1.5 overflow-x-auto">
-              <div className="flex text-sm gap-1 min-w-fit">
-                <Tab
-                  tab="teams"
-                  currentTab={tab}
-                  setTab={handleTabChange}
-                  icon="/assets/icon-org.svg"
+              {/* Join Button - Compact */}
+              <div className="w-full lg:w-auto min-w-0 max-w-[320px] flex justify-end">
+                <StandardButton
+                  className="gradient-2 rounded-xl hover:scale-105 transition-transform"
+                  hoverEffect={false}
+                  link="/network-overview"
                 >
-                  Teams
-                </Tab>
-                <Tab
-                  tab="citizens"
-                  currentTab={tab}
-                  setTab={handleTabChange}
-                  icon="/assets/icon-passport.svg"
-                >
-                  Citizens
-                </Tab>
-                <Tab
-                  tab="map"
-                  currentTab={tab}
-                  setTab={handleTabChange}
-                  icon={<GlobeAmericasIcon width={20} height={20} />}
-                >
-                  Map
-                </Tab>
+                  <div className="flex items-center justify-center gap-2">
+                    <PlusCircleIcon width={16} height={16} />
+                    <span className="text-sm">Join Network</span>
+                  </div>
+                </StandardButton>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  )
 
-  const renderNFTs = () => {
-    if (!cachedNFTs?.[0]) {
-      return (
-        <>
-          {Array.from({ length: 10 }).map((_, i) => (
-            <CardSkeleton key={`card-skeleton-${i}`} />
-          ))}
-        </>
-      )
-    }
-
-    // Always try to show 10 items on each full page
-    const startIndex = (pageIdx - 1) * 10
-    let endIndex = pageIdx * 10
-
-    // On the last page, show all remaining items
-    if (pageIdx === maxPage) {
-      endIndex = cachedNFTs.length
-    }
-
-    const nftsToShow = cachedNFTs?.slice(startIndex, endIndex)
-
-    // Fill the last row with empty divs if needed on non-last pages
-    const itemsToRender = [...nftsToShow]
-    if (pageIdx !== maxPage && itemsToRender.length < 10) {
-      const emptyCount = 10 - itemsToRender.length
-      for (let i = 0; i < emptyCount; i++) {
-        itemsToRender.push({ empty: true })
-      }
-    }
-
-    return itemsToRender.map((nft: any, i: number) => {
-      if (nft.empty) {
-        return <div key={`empty-${i}`} className="invisible" />
-      }
-
-      if (nft.metadata.name === 'Failed to load NFT metadata') return null
-
-      const type = nft.metadata.attributes.find(
-        (attr: any) => attr.trait_type === 'communications'
-      )
-        ? 'team'
-        : 'citizen'
-
-      const link = `/${type === 'team' ? 'team' : 'citizen'}/${
-        type === 'team'
-          ? generatePrettyLink(nft.metadata.name)
-          : generatePrettyLinkWithId(nft.metadata.name, nft.id.toString())
-      }`
-
-      return (
-        <div className="w-full h-full" key={'team-citizen-' + i}>
-          <StandardDetailCard
-            title={nft.metadata.name}
-            paragraph={nft.metadata.description}
-            image={nft.metadata.image}
-            link={link}
-          />
-        </div>
-      )
-    })
-  }
-
-  return (
-    <section id="network-container" className="overflow-hidden">
-      <Head
-        title={'Space Acceleration Network'}
-        description={
-          'The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond.'
-        }
-        image="https://ipfs.io/ipfs/QmbExwDgVoDYpThFaVRRxUkusHnXxMj3Go8DdWrXg1phxi"
-      />
-      <Container>
-        {/* Hero Section */}
-        <div className="relative w-full h-screen rounded-3xl overflow-hidden">
-          <Image
-            src="/assets/NetworkHero.png"
-            alt="Space Acceleration Network"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center max-w-4xl px-8">
-              <h1 className="header font-GoodTimes text-white drop-shadow-lg mb-4">
-                Space Acceleration Network
-              </h1>
-              <p className="sub-header text-white/90 drop-shadow-lg">
-                The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond
-              </p>
-              <StandardButton
-                className="gradient-2 hover:opacity-90 transition-opacity"
-                textColor="text-white"
-                borderRadius="rounded-xl"
-                hoverEffect={false}
-                link="/join"
-              >
-                Join the Network
-              </StandardButton>
-            </div>
-          </div>
-        </div>
-      </Container>
-
-      <Container>
-      {/* Join MoonDAO Section */}
-      <div id="join-moondao" className="relative w-full py-12 md:py-14 lg:py-20 xl:py-24 2xl:py-32">
-        <div className="absolute inset-0">
-          <Image
-            src="/assets/JoinImage.png"
-            alt="Join MoonDAO"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        </div>
-        
-        <div className="relative z-10 max-w-6xl mx-auto px-6">
-          <div className="text-center mb-8">
-            <h2 className="header font-GoodTimes text-white mb-4 drop-shadow-lg">
-              Join MoonDAO
-            </h2>
-            <p className="sub-header text-white/90 max-w-3xl mx-auto drop-shadow-lg">
-              Join our decentralized space collective and help accelerate humanity's expansion to the Moon and beyond
-            </p>
-          </div>
-          
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="flex-1">
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 h-full">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
-                    <Image
-                      src="/assets/citizen-default.png"
-                      width={96}
-                      height={96}
-                      alt="Become a Citizen"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-2xl font-GoodTimes text-white mb-4">Become a Citizen</h3>
-                  <p className="text-slate-300 mb-6 leading-relaxed">
-                    Citizens are the trailblazers supporting the creation of off-world settlements. Whether you're already part of a team or seeking to join one, everyone has a crucial role to play in this mission.
-                  </p>
-                  <div className="flex flex-col items-center mb-6">
-                    <div className="text-2xl font-semibold text-white">~$41 / Year</div>
-                    <div className="text-sm text-slate-400">(0.0111 Arbitrum ETH)</div>
-                    <div className="text-green-400 text-sm font-medium mt-2">✓ 12 Month Passport</div>
-                  </div>
-                  <StandardButton
-                    className="gradient-2 hover:opacity-90 transition-opacity"
-                    textColor="text-white"
-                    borderRadius="rounded-xl"
-                    hoverEffect={false}
-                    link="/join"
-                  >
-                    Become a Citizen
-                  </StandardButton>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex-1">
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 h-full">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
-                    <Image
-                      src="/assets/team_image.png"
-                      width={96}
-                      height={96}
-                      alt="Create a Team"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-2xl font-GoodTimes text-white mb-4">Create a Team</h3>
-                  <p className="text-slate-300 mb-6 leading-relaxed">
-                    Teams are driving innovation and tackling ambitious space challenges together. From non-profits to startups and university teams, every group has something to contribute to our multiplanetary future.
-                  </p>
-                  <div className="flex flex-col items-center mb-6">
-                    <div className="text-2xl font-semibold text-white">~$122 / Year</div>
-                    <div className="text-sm text-slate-400">(0.0333 Arbitrum ETH)</div>
-                    <div className="text-green-400 text-sm font-medium mt-2">✓ 12 Month Passport</div>
-                  </div>
-                  <StandardButton
-                    className="gradient-2 hover:opacity-90 transition-opacity"
-                    textColor="text-white"
-                    borderRadius="rounded-xl"
-                    hoverEffect={false}
-                    link="/team"
-                  >
-                    Create a Team
-                  </StandardButton>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-        {/* Network Explainer Section */}
-        <NetworkSection />
-
-        {/* Explore the Network Header */}
-        <div id="explore-network-header" className="max-w-6xl mx-auto mb-8 px-6 pt-12">
-          <h2 className="header font-GoodTimes text-white text-center mb-4">
-            Explore the Network
-          </h2>
-          <p className="sub-header text-white/80 text-center mb-8 max-w-3xl mx-auto">
-            Discover and connect with citizens and teams building the future of space exploration
-          </p>
-        </div>
-
-        {/* Controls Section */}
-        <div id="network-controls" className="max-w-6xl mx-auto mb-8 px-6">
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            {/* Search Bar - Hidden for map tab */}
-            {tab !== 'map' && (
-              <div className="w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3">
-                <Search
-                  className="w-full"
-                  input={input}
-                  setInput={setInput}
-                  placeholder={tab === 'teams' ? 'Search teams' : tab === 'citizens' ? 'Search citizens' : 'Search network'}
-                />
-              </div>
-            )}
-
-            {/* Tabs */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
-              <div className="flex text-sm gap-1">
-                <Tab
-                  tab="citizens"
-                  currentTab={tab}
-                  setTab={handleTabChange}
-                  icon="/assets/icon-passport.svg"
-                >
-                  Citizens
-                </Tab>
-                <Tab
-                  tab="teams"
-                  currentTab={tab}
-                  setTab={handleTabChange}
-                  icon="/assets/icon-org.svg"
-                >
-                  Teams
-                </Tab>
-                <Tab
-                  tab="map"
-                  currentTab={tab}
-                  setTab={handleTabChange}
-                  icon={<GlobeAmericasIcon width={20} height={20} />}
-                >
-                  Map
-                </Tab>
-              </div>
-            </div>
-
-            {/* Join Button */}
-            <StandardButton
-              className="gradient-2 rounded-2xl hover:scale-105 transition-transform"
-              hoverEffect={false}
-              link="/join"
-            >
-              <div className="flex items-center justify-start gap-2">
-                <PlusCircleIcon width={20} height={20} />
-                Join Network
-              </div>
-            </StandardButton>
-          </div>
-        </div>
-
-        {/* Content Section - Either Grid or Map */}
-        <div id="network-content" className="max-w-6xl mx-auto px-6">
-          {tab === 'map' ? (
-            /* Map View */
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
-              <div className="mb-6">
-                <div className="flex justify-center">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
-                    <div className="flex text-sm gap-1">
-                      <Tab
-                        tab="earth"
-                        setTab={setMapView}
-                        currentTab={mapView}
-                        icon={<GlobeAmericasIcon width={20} height={20} />}
-                      >
-                        Earth
-                      </Tab>
-                      <Tab
-                        tab="moon"
-                        setTab={setMapView}
-                        currentTab={mapView}
-                        icon={<MoonIcon width={20} height={20} />}
-                      >
-                        Moon
-                      </Tab>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="w-full flex justify-center">
-                <div className="w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
-                  <div className={`flex items-center justify-center ${mapView !== 'earth' && 'hidden'}`}>
-                    <Earth pointsData={citizensLocationData || []} />
-                  </div>
-                  <div className={`${mapView !== 'moon' && 'hidden'}`}>
-                    <Moon />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Network Grid View */
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
-              <CardGridContainer
-                xsCols={1}
-                smCols={1}
-                mdCols={2}
-                lgCols={2}
-                maxCols={2}
-                center
-              >
-                {renderNFTs()}
-              </CardGridContainer>
-
-              {/* Pagination - Only for non-map tabs */}
-              {tab !== 'map' && (
-                <div className="w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mt-8">
-                  <div className="w-full flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8">
-                <button
-                  onClick={() => {
-                    if (pageIdx > 1) {
-                      handlePageChange(pageIdx - 1)
-                    }
-                  }}
-                  className={`pagination-button transition-opacity hover:scale-110 ${
-                    pageIdx === 1
-                      ? 'opacity-30'
-                      : 'cursor-pointer opacity-100'
-                  }`}
-                  disabled={pageIdx === 1}
-                >
-                  <Image
-                    src="/assets/icon-left.svg"
-                    alt="Left Arrow"
-                    width={35}
-                    height={35}
-                  />
-                </button>
-                <p id="page-number" className="px-5 font-bold text-white">
-                  Page {pageIdx} of {maxPage}
-                </p>
-                <button
-                  onClick={() => {
-                    if (pageIdx < maxPage) {
-                      handlePageChange(pageIdx + 1)
-                    }
-                  }}
-                  className={`pagination-button transition-opacity hover:scale-110 ${
-                    pageIdx === maxPage
-                      ? 'opacity-30'
-                      : 'cursor-pointer opacity-100'
-                  }`}
-                  disabled={pageIdx === maxPage}
-                >
-                  <Image
-                    src="/assets/icon-right.svg"
-                    alt="Right Arrow"
-                    width={35}
-                    height={35}
-                  />
-                </button>
-              </div>
-            </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Jobs Section */}
-        <div id="space-careers" className="max-w-6xl mx-auto mb-16 px-6 pt-16">
-          <div className="text-center mb-8">
-            <h2 className="header font-GoodTimes text-white mb-4">
-              Jobs Board
-            </h2>
-            <p className="sub-header text-white/80 max-w-3xl mx-auto mb-8">
-              Join the mission to expand humanity to the Moon and beyond. Explore opportunities with teams in the Space Acceleration Network.
-            </p>
-          </div>
-
-          <div className={`bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8 relative ${!citizen ? 'overflow-hidden' : ''}`}>
-            {!citizen && (
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-10 flex items-center justify-center">
-                <div className="text-center max-w-md mx-auto p-8">
-                  <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-GoodTimes text-white mb-3">Citizen Access Required</h3>
-                  <p className="text-slate-300 mb-6 leading-relaxed">
-                    You must be a Citizen of the Space Acceleration Network to view the jobs board and explore career opportunities.
-                  </p>
-                  <StandardButton
-                    className="gradient-2 hover:opacity-90 transition-opacity"
-                    textColor="text-white"
-                    borderRadius="rounded-xl"
-                    hoverEffect={false}
-                    link="/join"
-                  >
-                    Become a Citizen
-                  </StandardButton>
-                </div>
-              </div>
-            )}
-            
-            <div className={!citizen ? 'blur-sm pointer-events-none' : ''}>
-              {jobs && jobs.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {jobs.slice(0, 6).map((job: JobType, index: number) => (
-                    <div key={`job-${job.id}`} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                          </svg>
-                        </div>
-                        <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">
-                          {job.tag || 'Open'}
-                        </span>
-                      </div>
-                      <h3 className="text-lg font-GoodTimes text-white mb-2 line-clamp-1">
-                        {job.title}
-                      </h3>
-                      <p className="text-slate-300 text-sm mb-4 line-clamp-3">
-                        {job.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-400">Team #{job.teamId}</span>
-                        <StandardButton
-                          backgroundColor="bg-blue-600 hover:bg-blue-700"
-                          textColor="text-white"
-                          borderRadius="rounded-lg"
-                          hoverEffect={false}
-                          link="/jobs"
-                          className="text-sm py-2 px-4"
+          {/* Content Section - Either Grid or Map */}
+          <div id="network-content" className="max-w-6xl mx-auto px-6 pb-16">
+            {tab === 'map' ? (
+              /* Map View */
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
+                <div className="mb-6">
+                  <div className="flex justify-center">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
+                      <div className="flex text-sm gap-1">
+                        <Tab
+                          tab="earth"
+                          setTab={setMapView}
+                          currentTab={mapView}
+                          icon={<GlobeAmericasIcon width={20} height={20} />}
                         >
-                          View Job
-                        </StandardButton>
+                          Earth
+                        </Tab>
+                        <Tab
+                          tab="moon"
+                          setTab={setMapView}
+                          currentTab={mapView}
+                          icon={<MoonIcon width={20} height={20} />}
+                        >
+                          Moon
+                        </Tab>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-slate-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
                   </div>
-                  <h3 className="text-xl font-GoodTimes text-white mb-2">No Jobs Available</h3>
-                  <p className="text-slate-400 max-w-md mx-auto">
-                    There are currently no open positions. Check back soon for new opportunities to join the space mission!
-                  </p>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
+                <div className="w-full flex justify-center">
+                  <div className="w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
+                    <div className={`flex items-center justify-center ${mapView !== 'earth' && 'hidden'}`}>
+                      <Earth pointsData={citizensLocationData || []} />
+                    </div>
+                    <div className={`${mapView !== 'moon' && 'hidden'}`}>
+                      <Moon />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Network Grid View */
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
+                <CardGridContainer
+                  xsCols={1}
+                  smCols={1}
+                  mdCols={2}
+                  lgCols={2}
+                  maxCols={2}
+                  center
+                >
+                  {renderNFTs()}
+                </CardGridContainer>
 
+                {/* Pagination - Only for non-map tabs */}
+                {tab !== 'map' && (
+                  <div className="w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mt-8">
+                    <div className="w-full flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8">
+                      <button
+                        onClick={() => {
+                          if (pageIdx > 1) {
+                            handlePageChange(pageIdx - 1)
+                          }
+                        }}
+                        className={`pagination-button transition-opacity hover:scale-110 ${
+                          pageIdx === 1
+                            ? 'opacity-30'
+                            : 'cursor-pointer opacity-100'
+                        }`}
+                        disabled={pageIdx === 1}
+                      >
+                        <Image
+                          src="/assets/icon-left.svg"
+                          alt="Left Arrow"
+                          width={35}
+                          height={35}
+                        />
+                      </button>
+                      <p id="page-number" className="px-5 font-bold text-white">
+                        Page {pageIdx} of {maxPage}
+                      </p>
+                      <button
+                        onClick={() => {
+                          if (pageIdx < maxPage) {
+                            handlePageChange(pageIdx + 1)
+                          }
+                        }}
+                        className={`pagination-button transition-opacity hover:scale-110 ${
+                          pageIdx === maxPage
+                            ? 'opacity-30'
+                            : 'cursor-pointer opacity-100'
+                        }`}
+                        disabled={pageIdx === maxPage}
+                      >
+                        <Image
+                          src="/assets/icon-right.svg"
+                          alt="Right Arrow"
+                          width={35}
+                          height={35}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </Frame>
+
+        {/* Footer */}
         <div className="flex justify-center w-full">
-          <NoticeFooter />
+          <NoticeFooter
+            defaultImage="../assets/MoonDAO-Logo-White.svg"
+            defaultTitle="Need Help?"
+            defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
+            defaultButtonText="Submit a Ticket"
+            defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+            imageWidth={200}
+            imageHeight={200}
+          />
         </div>
       </Container>
-    </section>
+    </div>
   )
 }
 
-export async function getStaticProps() {
+export async function getServerSideProps() {
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
+
   try {
-    const chain = DEFAULT_CHAIN_V5
-    const chainSlug = getChainSlug(chain)
-
-    const now = Math.floor(Date.now() / 1000)
-
-    const teamContract = getContract({
-      client: serverClient,
-      address: TEAM_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: TeamABI as any,
-    })
-
+    // Get team table name and query
     const teamTableContract = getContract({
       client: serverClient,
       address: TEAM_TABLE_ADDRESSES[chainSlug],
@@ -786,45 +443,58 @@ export async function getStaticProps() {
 
     const teamRows = await queryTable(chain, `SELECT * FROM ${teamTableName}`)
 
+    // Get citizen table name and query
     const citizenTableContract = getContract({
       client: serverClient,
       address: CITIZEN_TABLE_ADDRESSES[chainSlug],
       chain: chain,
       abi: CitizenTableABI as any,
     })
+    
     const citizenTableName = await readContract({
       contract: citizenTableContract,
       method: 'getTableName',
     })
+    
     const citizenRows: any = await queryTable(
       chain,
       `SELECT * FROM ${citizenTableName}`
     )
 
-    const teams: NFT[] = []
-    for (const row of teamRows) {
-      teams.push(teamRowToNFT(row))
+    // Get jobs table name and query
+    const jobsTableContract = getContract({
+      client: serverClient,
+      address: JOBS_TABLE_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: JobsABI as any,
+    })
+
+    const jobsTableName = await readContract({
+      contract: jobsTableContract,
+      method: 'getTableName',
+    })
+
+    const jobs = await queryTable(chain, `SELECT * FROM ${jobsTableName}`)
+
+    // Convert team rows to NFTs
+    const teamNFTs: NFT[] = []
+    if (teamRows && teamRows.length > 0) {
+      for (const team of teamRows) {
+        try {
+          const teamNFT = teamRowToNFT(team)
+          teamNFTs.push(teamNFT)
+        } catch (error) {
+          console.error(`Error converting team ${team.id}:`, error)
+        }
+      }
     }
 
-    const filteredPublicTeams: any = teams?.filter(
-      (nft: any) =>
-        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          .value === 'public' && !blockedTeams.includes(nft.metadata.id)
+    const filteredTeamsUnsorted = teamNFTs.filter(
+      (team) => !blockedTeams.includes(team.metadata.name)
     )
 
-    const filteredValidTeams: any = filteredPublicTeams?.filter(
-      async (nft: any) => {
-        const expiresAt = await readContract({
-          contract: teamContract,
-          method: 'expiresAt',
-          params: [nft?.metadata?.id],
-        })
-
-        return +expiresAt.toString() > now
-      }
-    )
-
-    const sortedValidTeams = filteredValidTeams
+    // Sort teams with newest first and featured teams prioritized
+    const filteredTeams = filteredTeamsUnsorted
       .reverse()
       .sort((a: any, b: any) => {
         const aIsFeatured = featuredTeams.includes(Number(a.metadata.id))
@@ -844,167 +514,143 @@ export async function getStaticProps() {
         }
       })
 
-    const citizenContract = getContract({
-      client: serverClient,
-      address: CITIZEN_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: CitizenABI as any,
-    })
-
-    // Fetch jobs data
-    const jobTableContract = getContract({
-      client: serverClient,
-      address: JOBS_TABLE_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: JobsABI as any,
-    })
-
-    const jobBoardTableName = await readContract({
-      contract: jobTableContract,
-      method: 'getTableName',
-    })
-
-    const jobStatement = `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 6`
-    const jobs = await queryTable(chain, jobStatement)
-
-    const citizens: NFT[] = []
-    for (const row of citizenRows) {
-      citizens.push(citizenRowToNFT(row))
+    // Convert citizen rows to NFTs
+    const citizenNFTs: NFT[] = []
+    if (citizenRows && citizenRows.length > 0) {
+      for (const citizen of citizenRows) {
+        try {
+          const citizenNFT = citizenRowToNFT(citizen)
+          citizenNFTs.push(citizenNFT)
+        } catch (error) {
+          console.error(`Error converting citizen ${citizen.id}:`, error)
+        }
+      }
     }
 
-    const filteredPublicCitizens: any = citizens?.filter(
-      (nft: any) =>
-        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          .value === 'public' && !blockedCitizens.includes(nft.metadata.id)
-    )
+    const filteredCitizens = citizenNFTs
+      .filter((citizen) => !blockedCitizens.includes(citizen.metadata.name))
+      .reverse() // Show newest citizens first
 
-    const filteredValidCitizens: any = filteredPublicCitizens?.filter(
-      async (nft: any) => {
-        const expiresAt = await readContract({
-          contract: citizenContract,
-          method: 'expiresAt',
-          params: [nft?.metadata?.id],
-        })
-
-        return +expiresAt.toString() > now
-      }
-    )
-
-    // Generate location data for map
+    // Get citizens location data for the map
     let citizensLocationData: any[] = []
     
-    if (process.env.NEXT_PUBLIC_ENV === 'prod' || process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
-      // Get location data for each citizen
-      for (const citizen of filteredValidCitizens) {
-        const citizenLocation = getAttribute(
-          citizen?.metadata?.attributes as unknown as any[],
-          'location'
-        )?.value
+    // Get location data for each citizen
+    for (const citizen of filteredCitizens) {
+      const citizenLocation = getAttribute(
+        citizen?.metadata?.attributes as unknown as any[],
+        'Location'
+      )?.value
 
-        let locationData
+      let locationData
 
-        if (
-          citizenLocation &&
-          citizenLocation !== '' &&
-          !citizenLocation?.startsWith('{')
-        ) {
-          locationData = {
-            results: [
-              {
-                formatted_address: citizenLocation,
-              },
-            ],
-          }
-        } else if (citizenLocation?.startsWith('{')) {
-          const parsedLocationData = JSON.parse(citizenLocation)
-          locationData = {
-            results: [
-              {
-                formatted_address: parsedLocationData.name,
-                geometry: {
-                  location: {
-                    lat: parsedLocationData.lat,
-                    lng: parsedLocationData.lng,
-                  },
+      if (
+        citizenLocation &&
+        citizenLocation !== '' &&
+        !citizenLocation?.startsWith('{')
+      ) {
+        locationData = {
+          results: [
+            {
+              formatted_address: citizenLocation,
+            },
+          ],
+        }
+      } else if (citizenLocation?.startsWith('{')) {
+        const parsedLocationData = JSON.parse(citizenLocation)
+        locationData = {
+          results: [
+            {
+              formatted_address: parsedLocationData.name,
+              geometry: {
+                location: {
+                  lat: parsedLocationData.lat,
+                  lng: parsedLocationData.lng,
                 },
               },
-            ],
-          }
-        } else {
-          locationData = {
-            results: [
-              {
-                formatted_address: 'Antarctica',
-                geometry: { location: { lat: -90, lng: 0 } },
-              },
-            ],
-          }
+            },
+          ],
         }
-
-        citizensLocationData.push({
-          id: citizen.metadata.id,
-          name: citizen.metadata.name,
-          location: citizenLocation,
-          formattedAddress:
-            locationData.results?.[0]?.formatted_address || 'Antarctica',
-          image: citizen.metadata.image,
-          lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
-          lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
-        })
-      }
-
-      // Group citizens by lat and lng
-      const locationMap = new Map()
-
-      for (const citizen of citizensLocationData) {
-        const key = `${citizen.lat},${citizen.lng}`
-        if (!locationMap.has(key)) {
-          locationMap.set(key, {
-            citizens: [citizen],
-            names: [citizen.name],
-            formattedAddress: citizen.formattedAddress,
-            lat: citizen.lat,
-            lng: citizen.lng,
-          })
-        } else {
-          const existing = locationMap.get(key)
-          existing.names.push(citizen.name)
-          existing.citizens.push(citizen)
+      } else {
+        locationData = {
+          results: [
+            {
+              formatted_address: 'Antarctica',
+              geometry: { location: { lat: -90, lng: 0 } },
+            },
+          ],
         }
       }
 
-      // Convert the map back to an array
-      citizensLocationData = Array.from(locationMap.values()).map(
-        (entry: any) => ({
-          ...entry,
-          color:
-            entry.citizens.length > 3
-              ? '#6a3d79'
-              : entry.citizens.length > 1
-              ? '#5e4dbf'
-              : '#5556eb',
-          size:
-            entry.citizens.length > 1
-              ? Math.min(entry.citizens.length * 0.01, 0.4)
-              : 0.01,
-        })
-      )
+      citizensLocationData.push({
+        id: citizen.metadata.id || citizen.id,
+        name: citizen.metadata.name || '',
+        location: citizenLocation || null,
+        formattedAddress:
+          locationData.results?.[0]?.formatted_address || 'Antarctica',
+        image: citizen.metadata.image || null,
+        lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
+        lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
+      })
     }
+
+    // Group citizens by lat and lng
+    const locationMap = new Map()
+
+    for (const citizen of citizensLocationData) {
+      const key = `${citizen.lat},${citizen.lng}`
+      if (!locationMap.has(key)) {
+        locationMap.set(key, {
+          citizens: [citizen],
+          names: [citizen.name || ''],
+          formattedAddress: citizen.formattedAddress || 'Antarctica',
+          lat: citizen.lat,
+          lng: citizen.lng,
+        })
+      } else {
+        const existing = locationMap.get(key)
+        existing.names.push(citizen.name || '')
+        existing.citizens.push(citizen)
+      }
+    }
+
+    // Convert the map back to an array with proper styling
+    citizensLocationData = Array.from(locationMap.values()).map(
+      (entry: any) => ({
+        citizens: entry.citizens || [],
+        names: entry.names || [],
+        formattedAddress: entry.formattedAddress || 'Antarctica',
+        lat: entry.lat || -90,
+        lng: entry.lng || 0,
+        color:
+          entry.citizens.length > 3
+            ? '#6a3d79'
+            : entry.citizens.length > 1
+            ? '#5e4dbf'
+            : '#5556eb',
+        size:
+          entry.citizens.length > 1
+            ? Math.min(entry.citizens.length * 0.01, 0.4)
+            : 0.01,
+      })
+    )
 
     return {
       props: {
-        filteredTeams: sortedValidTeams,
-        filteredCitizens: filteredValidCitizens.reverse(),
-        jobs: jobs || [],
-        citizensLocationData: citizensLocationData,
+        filteredTeams,
+        filteredCitizens,
+        jobs,
+        citizensLocationData,
       },
-      revalidate: 60,
     }
   } catch (error) {
-    console.error(error)
+    console.error('Error in getServerSideProps:', error)
     return {
-      props: { filteredTeams: [], filteredCitizens: [], jobs: [], citizensLocationData: [] },
-      revalidate: 60,
+      props: {
+        filteredTeams: [],
+        filteredCitizens: [],
+        jobs: [],
+        citizensLocationData: [],
+      },
     }
   }
 }

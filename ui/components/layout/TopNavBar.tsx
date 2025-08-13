@@ -126,7 +126,7 @@ const TopNavBar = ({
                         href={item.href}
                         className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg ${
                           isActive
-                            ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-400/30'
+                            ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
                             : 'text-gray-300 hover:text-white hover:bg-white/10'
                         }`}
                       >
@@ -139,7 +139,7 @@ const TopNavBar = ({
                       <button
                         className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg ${
                           isActive
-                            ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-400/30'
+                            ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
                             : 'text-gray-300 hover:text-white hover:bg-white/10'
                         }`}
                       >
@@ -153,7 +153,7 @@ const TopNavBar = ({
                       href={item.href}
                       className={`flex items-center px-2 lg:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg ${
                         isActive
-                          ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-400/30'
+                          ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
                           : 'text-gray-300 hover:text-white hover:bg-white/10'
                       }`}
                     >
@@ -189,7 +189,7 @@ const TopNavBar = ({
                             href={child.href}
                             className={`block px-4 py-2 text-sm transition-all duration-200 mx-2 rounded-lg ${
                               isChildActive
-                                ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-l-2 border-blue-400'
+                                ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
                                 : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
                             }`}
                           >
