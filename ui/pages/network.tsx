@@ -241,19 +241,17 @@ export default function Network({
           {/* Controls Section */}
           <div id="network-controls" className="max-w-6xl mx-auto mb-8 px-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-              {/* Search Bar - Hidden for map tab */}
-              {tab !== 'map' && (
-                <div className="w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3">
-                  <Search
-                    className="w-full"
-                    input={input}
-                    setInput={setInput}
-                    placeholder={tab === 'teams' ? 'Search teams' : tab === 'citizens' ? 'Search citizens' : 'Search network'}
-                  />
-                </div>
-              )}
+              {/* Search Bar - Always present but invisible for map tab */}
+              <div className={`w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3 ${tab === 'map' ? 'invisible' : ''}`}>
+                <Search
+                  className="w-full"
+                  input={input}
+                  setInput={setInput}
+                  placeholder={tab === 'teams' ? 'Search teams' : tab === 'citizens' ? 'Search citizens' : 'Search network'}
+                />
+              </div>
 
-              {/* Tabs */}
+              {/* Tabs - Always centered */}
               <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
                 <div className="flex text-sm gap-1">
                   <Tab
@@ -284,16 +282,18 @@ export default function Network({
               </div>
 
               {/* Join Button - Compact */}
-              <StandardButton
-                className="gradient-2 rounded-xl hover:scale-105 transition-transform"
-                hoverEffect={false}
-                link="/network-overview"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <PlusCircleIcon width={16} height={16} />
-                  <span className="text-sm">Join Network</span>
-                </div>
-              </StandardButton>
+              <div className="w-full lg:w-auto min-w-0 max-w-[320px] flex justify-end">
+                <StandardButton
+                  className="gradient-2 rounded-xl hover:scale-105 transition-transform"
+                  hoverEffect={false}
+                  link="/network-overview"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <PlusCircleIcon width={16} height={16} />
+                    <span className="text-sm">Join Network</span>
+                  </div>
+                </StandardButton>
+              </div>
             </div>
           </div>
 
@@ -489,9 +489,30 @@ export async function getServerSideProps() {
       }
     }
 
-    const filteredTeams = teamNFTs.filter(
+    const filteredTeamsUnsorted = teamNFTs.filter(
       (team) => !blockedTeams.includes(team.metadata.name)
     )
+
+    // Sort teams with newest first and featured teams prioritized
+    const filteredTeams = filteredTeamsUnsorted
+      .reverse()
+      .sort((a: any, b: any) => {
+        const aIsFeatured = featuredTeams.includes(Number(a.metadata.id))
+        const bIsFeatured = featuredTeams.includes(Number(b.metadata.id))
+
+        if (aIsFeatured && bIsFeatured) {
+          return (
+            featuredTeams.indexOf(Number(a.metadata.id)) -
+            featuredTeams.indexOf(Number(b.metadata.id))
+          )
+        } else if (aIsFeatured) {
+          return -1
+        } else if (bIsFeatured) {
+          return 1
+        } else {
+          return 0
+        }
+      })
 
     // Convert citizen rows to NFTs
     const citizenNFTs: NFT[] = []
@@ -506,30 +527,112 @@ export async function getServerSideProps() {
       }
     }
 
-    const filteredCitizens = citizenNFTs.filter(
-      (citizen) => !blockedCitizens.includes(citizen.metadata.name)
-    )
+    const filteredCitizens = citizenNFTs
+      .filter((citizen) => !blockedCitizens.includes(citizen.metadata.name))
+      .reverse() // Show newest citizens first
 
     // Get citizens location data for the map
-    const citizensLocationData = filteredCitizens
-      .map((citizen) => {
-        const attributes = citizen?.metadata?.attributes as unknown as any[]
-        const location = getAttribute(attributes, 'Location')?.value
-        const latitude = getAttribute(attributes, 'Latitude')?.value
-        const longitude = getAttribute(attributes, 'Longitude')?.value
-        
-        if (location && latitude && longitude) {
-          return {
-            lat: parseFloat(latitude),
-            lng: parseFloat(longitude),
-            location: location,
-            name: citizen.metadata.name,
-            id: citizen.id,
-          }
+    let citizensLocationData: any[] = []
+    
+    // Get location data for each citizen
+    for (const citizen of filteredCitizens) {
+      const citizenLocation = getAttribute(
+        citizen?.metadata?.attributes as unknown as any[],
+        'Location'
+      )?.value
+
+      let locationData
+
+      if (
+        citizenLocation &&
+        citizenLocation !== '' &&
+        !citizenLocation?.startsWith('{')
+      ) {
+        locationData = {
+          results: [
+            {
+              formatted_address: citizenLocation,
+            },
+          ],
         }
-        return null
+      } else if (citizenLocation?.startsWith('{')) {
+        const parsedLocationData = JSON.parse(citizenLocation)
+        locationData = {
+          results: [
+            {
+              formatted_address: parsedLocationData.name,
+              geometry: {
+                location: {
+                  lat: parsedLocationData.lat,
+                  lng: parsedLocationData.lng,
+                },
+              },
+            },
+          ],
+        }
+      } else {
+        locationData = {
+          results: [
+            {
+              formatted_address: 'Antarctica',
+              geometry: { location: { lat: -90, lng: 0 } },
+            },
+          ],
+        }
+      }
+
+      citizensLocationData.push({
+        id: citizen.metadata.id || citizen.id,
+        name: citizen.metadata.name || '',
+        location: citizenLocation || null,
+        formattedAddress:
+          locationData.results?.[0]?.formatted_address || 'Antarctica',
+        image: citizen.metadata.image || null,
+        lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
+        lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
       })
-      .filter(Boolean)
+    }
+
+    // Group citizens by lat and lng
+    const locationMap = new Map()
+
+    for (const citizen of citizensLocationData) {
+      const key = `${citizen.lat},${citizen.lng}`
+      if (!locationMap.has(key)) {
+        locationMap.set(key, {
+          citizens: [citizen],
+          names: [citizen.name || ''],
+          formattedAddress: citizen.formattedAddress || 'Antarctica',
+          lat: citizen.lat,
+          lng: citizen.lng,
+        })
+      } else {
+        const existing = locationMap.get(key)
+        existing.names.push(citizen.name || '')
+        existing.citizens.push(citizen)
+      }
+    }
+
+    // Convert the map back to an array with proper styling
+    citizensLocationData = Array.from(locationMap.values()).map(
+      (entry: any) => ({
+        citizens: entry.citizens || [],
+        names: entry.names || [],
+        formattedAddress: entry.formattedAddress || 'Antarctica',
+        lat: entry.lat || -90,
+        lng: entry.lng || 0,
+        color:
+          entry.citizens.length > 3
+            ? '#6a3d79'
+            : entry.citizens.length > 1
+            ? '#5e4dbf'
+            : '#5556eb',
+        size:
+          entry.citizens.length > 1
+            ? Math.min(entry.citizens.length * 0.01, 0.4)
+            : 0.01,
+      })
+    )
 
     return {
       props: {
