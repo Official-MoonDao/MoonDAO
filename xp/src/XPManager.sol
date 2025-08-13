@@ -46,6 +46,7 @@ contract XPManager is Ownable {
     event ERC20RewardClaimed(address indexed user, address indexed tokenAddress, uint256 amount);
     event ERC20RewardConfigDeactivated(address indexed tokenAddress);
     event VerifierClaimed(address indexed user, uint256 indexed verifierId, uint256 xpAmount);
+    event UserReset(address indexed user, uint256 previousXP, uint256 claimedVerifiersCount);
 
     constructor() Ownable(msg.sender) {
         // No constructor parameters needed for pure XP system
@@ -377,5 +378,38 @@ contract XPManager is Ownable {
      */
     function _updateHighestThresholdReached(address user, uint256 oldXP, uint256 newXP) internal {
         // In single-token mode, we update thresholds when rewards are calculated.
+    }
+
+    /**
+     * @notice Reset all data for a user (onlyOwner)
+     * @dev Completely resets a user's XP, verifier claims, and reward thresholds
+     * @param user Address of the user to reset
+     */
+    function resetUser(address user) external onlyOwner {
+        require(user != address(0), "Invalid user address");
+        
+        // Store old values for event
+        uint256 oldXP = userXP[user];
+        uint256 claimedVerifiersCount = userClaimedVerifiers[user].length;
+        
+        // Reset user XP
+        userXP[user] = 0;
+        
+        // Reset highest threshold reached
+        highestThresholdReached[user] = 0;
+        
+        // Get all claimed verifiers and reset them
+        uint256[] memory claimedVerifiers = userClaimedVerifiers[user];
+        for (uint256 i = 0; i < claimedVerifiers.length; i++) {
+            userVerifierClaims[user][claimedVerifiers[i]] = false;
+        }
+        
+        // Clear the claimed verifiers array
+        delete userClaimedVerifiers[user];
+        
+        // Note: usedProofs cannot be easily reset without knowing the specific claimIds
+        // This would require additional tracking or manual intervention for each proof
+        
+        emit UserReset(user, oldXP, claimedVerifiersCount);
     }
 }
