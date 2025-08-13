@@ -506,19 +506,17 @@ export default function Network({
         {/* Controls Section */}
         <div id="network-controls" className="max-w-6xl mx-auto mb-8 px-6">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            {/* Search Bar - Hidden for map tab */}
-            {tab !== 'map' && (
-              <div className="w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3">
-                <Search
-                  className="w-full"
-                  input={input}
-                  setInput={setInput}
-                  placeholder={tab === 'teams' ? 'Search teams' : tab === 'citizens' ? 'Search citizens' : 'Search network'}
-                />
-              </div>
-            )}
+            {/* Search Bar - Always present but invisible for map tab */}
+            <div className={`w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3 ${tab === 'map' ? 'invisible' : ''}`}>
+              <Search
+                className="w-full"
+                input={input}
+                setInput={setInput}
+                placeholder={tab === 'teams' ? 'Search teams' : tab === 'citizens' ? 'Search citizens' : 'Search network'}
+              />
+            </div>
 
-            {/* Tabs */}
+            {/* Tabs - Always centered */}
             <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
               <div className="flex text-sm gap-1">
                 <Tab
@@ -549,16 +547,18 @@ export default function Network({
             </div>
 
             {/* Join Button */}
-            <StandardButton
-              className="gradient-2 rounded-2xl hover:scale-105 transition-transform"
-              hoverEffect={false}
-              link="/join"
-            >
-              <div className="flex items-center justify-start gap-2">
-                <PlusCircleIcon width={20} height={20} />
-                Join Network
-              </div>
-            </StandardButton>
+            <div className="w-full lg:w-auto min-w-0 max-w-[320px] flex justify-end">
+              <StandardButton
+                className="gradient-2 rounded-2xl hover:scale-105 transition-transform"
+                hoverEffect={false}
+                link="/join"
+              >
+                <div className="flex items-center justify-start gap-2">
+                  <PlusCircleIcon width={20} height={20} />
+                  Join Network
+                </div>
+              </StandardButton>
+            </div>
           </div>
         </div>
 
