@@ -10,6 +10,6 @@ describe('<PrivyConnectWallet />', () => {
       </TestnetProviders>
     )
 
-    cy.get('button').should('have.text', 'Sign In')
+    cy.get('#sign-in-button').should('exist')
   })
 })

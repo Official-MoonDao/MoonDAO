@@ -37,7 +37,7 @@ export function LockData({
             <MoonIcon className="h-5 w-5 text-blue-400" />
             Your Lock Overview
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* vMOONEY Balance */}
             <div className="bg-black/20 rounded-xl p-4 border border-white/5">
@@ -48,7 +48,9 @@ export function LockData({
                   </div>
                   <div>
                     <p className="text-gray-400 text-xs">vMOONEY Balance</p>
-                    <p className="text-white text-sm font-medium">Voting Power</p>
+                    <p className="text-white text-sm font-medium">
+                      Voting Power
+                    </p>
                   </div>
                 </div>
               </div>
@@ -56,7 +58,7 @@ export function LockData({
                 <span className="text-blue-400 text-2xl font-RobotoMono font-semibold flex items-center">
                   <Balance
                     id="lock-data-vmooney-balance"
-                    balance={VMOONEYBalance?.toString() / 10 ** 18}
+                    balance={(VMOONEYBalance?.toString() / 10 ** 18).toFixed(0)}
                     loading={VMOONEYBalanceLoading}
                     decimals={
                       VMOONEYBalance &&
@@ -82,7 +84,9 @@ export function LockData({
                   </div>
                   <div>
                     <p className="text-gray-400 text-xs">Locked Amount</p>
-                    <p className="text-white text-sm font-medium">MOONEY Tokens</p>
+                    <p className="text-white text-sm font-medium">
+                      MOONEY Tokens
+                    </p>
                   </div>
                 </div>
               </div>
