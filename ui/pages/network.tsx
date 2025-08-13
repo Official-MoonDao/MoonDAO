@@ -489,9 +489,30 @@ export async function getServerSideProps() {
       }
     }
 
-    const filteredTeams = teamNFTs.filter(
+    const filteredTeamsUnsorted = teamNFTs.filter(
       (team) => !blockedTeams.includes(team.metadata.name)
     )
+
+    // Sort teams with newest first and featured teams prioritized
+    const filteredTeams = filteredTeamsUnsorted
+      .reverse()
+      .sort((a: any, b: any) => {
+        const aIsFeatured = featuredTeams.includes(Number(a.metadata.id))
+        const bIsFeatured = featuredTeams.includes(Number(b.metadata.id))
+
+        if (aIsFeatured && bIsFeatured) {
+          return (
+            featuredTeams.indexOf(Number(a.metadata.id)) -
+            featuredTeams.indexOf(Number(b.metadata.id))
+          )
+        } else if (aIsFeatured) {
+          return -1
+        } else if (bIsFeatured) {
+          return 1
+        } else {
+          return 0
+        }
+      })
 
     // Convert citizen rows to NFTs
     const citizenNFTs: NFT[] = []
@@ -506,9 +527,9 @@ export async function getServerSideProps() {
       }
     }
 
-    const filteredCitizens = citizenNFTs.filter(
-      (citizen) => !blockedCitizens.includes(citizen.metadata.name)
-    )
+    const filteredCitizens = citizenNFTs
+      .filter((citizen) => !blockedCitizens.includes(citizen.metadata.name))
+      .reverse() // Show newest citizens first
 
     // Get citizens location data for the map
     let citizensLocationData: any[] = []
@@ -562,11 +583,11 @@ export async function getServerSideProps() {
 
       citizensLocationData.push({
         id: citizen.metadata.id || citizen.id,
-        name: citizen.metadata.name,
-        location: citizenLocation,
+        name: citizen.metadata.name || '',
+        location: citizenLocation || null,
         formattedAddress:
           locationData.results?.[0]?.formatted_address || 'Antarctica',
-        image: citizen.metadata.image,
+        image: citizen.metadata.image || null,
         lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
         lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
       })
@@ -580,14 +601,14 @@ export async function getServerSideProps() {
       if (!locationMap.has(key)) {
         locationMap.set(key, {
           citizens: [citizen],
-          names: [citizen.name],
-          formattedAddress: citizen.formattedAddress,
+          names: [citizen.name || ''],
+          formattedAddress: citizen.formattedAddress || 'Antarctica',
           lat: citizen.lat,
           lng: citizen.lng,
         })
       } else {
         const existing = locationMap.get(key)
-        existing.names.push(citizen.name)
+        existing.names.push(citizen.name || '')
         existing.citizens.push(citizen)
       }
     }
@@ -595,7 +616,11 @@ export async function getServerSideProps() {
     // Convert the map back to an array with proper styling
     citizensLocationData = Array.from(locationMap.values()).map(
       (entry: any) => ({
-        ...entry,
+        citizens: entry.citizens || [],
+        names: entry.names || [],
+        formattedAddress: entry.formattedAddress || 'Antarctica',
+        lat: entry.lat || -90,
+        lng: entry.lng || 0,
         color:
           entry.citizens.length > 3
             ? '#6a3d79'
