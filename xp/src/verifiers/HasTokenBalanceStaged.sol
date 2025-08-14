@@ -118,4 +118,30 @@ contract HasTokenBalanceStaged is StagedXPVerifier, Ownable {
         
         return (false, 0, 0);
     }
+
+    /**
+     * @dev Implementation of the abstract _checkBulkEligibility function for on-chain token balance
+     * @param user Address of the user
+     * @param context Not used in this implementation since we check on-chain balance directly
+     * @return eligible Whether the user's balance is valid
+     * @return userMetric The user's current token balance
+     */
+    function _checkBulkEligibility(
+        address user,
+        bytes calldata context
+    ) internal view override returns (bool eligible, uint256 userMetric) {
+        // For token balance, we always return the actual balance since it's verifiable on-chain
+        uint256 actualBalance = IERC20(tokenContract).balanceOf(user);
+        return (true, actualBalance);
+    }
+
+    /**
+     * @notice Set the XPManager address (only callable by owner)
+     * @param _xpManager Address of the XPManager contract
+     */
+    function setXPManager(address _xpManager) external override onlyOwner {
+        require(_xpManager != address(0), "Invalid XPManager address");
+        xpManager = _xpManager;
+        emit XPManagerSet(_xpManager);
+    }
 }

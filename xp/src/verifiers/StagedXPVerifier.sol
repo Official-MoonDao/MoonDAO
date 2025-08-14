@@ -17,16 +17,38 @@ abstract contract StagedXPVerifier is IXPVerifier {
     Stage[] public stages;
     
     // Track highest stage claimed by each user
+    // Note: 0 means no stages claimed yet (can claim stage 0)
+    // 1 means stage 0 claimed (can claim stage 1), etc.
     mapping(address => uint256) public userHighestClaimedStage;
+    
+    // XPManager address for access control
+    address public xpManager;
     
     event StageAdded(uint256 indexed stageIndex, uint256 threshold, uint256 xpAmount);
     event StageUpdated(uint256 indexed stageIndex, uint256 threshold, uint256 xpAmount, bool active);
     event StageConfigSet(uint256[] thresholds, uint256[] xpAmounts);
     event AllStagesDeactivated();
     event UserStageProgressed(address indexed user, uint256 previousStage, uint256 newStage, uint256 xpAwarded);
+    event XPManagerSet(address indexed xpManager);
+
+    modifier onlyXPManager() {
+        require(msg.sender == xpManager, "Only XPManager can call this function");
+        _;
+    }
 
     constructor() {
         // Stages must be initialized by the concrete implementation
+    }
+
+    /**
+     * @notice Set the XPManager address (only callable by contract owner)
+     * @param _xpManager Address of the XPManager contract
+     */
+    function setXPManager(address _xpManager) external virtual {
+        // This function should be overridden by concrete implementations with proper access control
+        require(_xpManager != address(0), "Invalid XPManager address");
+        xpManager = _xpManager;
+        emit XPManagerSet(_xpManager);
     }
 
     /**
@@ -53,12 +75,13 @@ abstract contract StagedXPVerifier is IXPVerifier {
         require(stages[stageIndex].active, "Stage not active");
         
         // Check if user has already claimed this stage or higher
-        if (userHighestClaimedStage[user] >= stageIndex) {
+        // userHighestClaimedStage[user] represents the next stage they can claim
+        if (userHighestClaimedStage[user] > stageIndex) {
             return (false, 0);
         }
         
-        // If this isn't the next sequential stage, check if user has claimed all previous stages
-        if (stageIndex > 0 && userHighestClaimedStage[user] < stageIndex - 1) {
+        // Check if this is the exact next stage they can claim
+        if (userHighestClaimedStage[user] != stageIndex) {
             return (false, 0); // Must claim stages sequentially
         }
 
@@ -146,7 +169,8 @@ abstract contract StagedXPVerifier is IXPVerifier {
         uint256 currentHighest = userHighestClaimedStage[user];
         
         // Check if user can claim the next sequential stage
-        uint256 targetStage = currentHighest + 1;
+        // currentHighest represents the next stage they can claim
+        uint256 targetStage = currentHighest;
         
         if (targetStage >= stages.length) {
             return type(uint256).max; // No more stages available
@@ -172,13 +196,68 @@ abstract contract StagedXPVerifier is IXPVerifier {
     function calculateTotalClaimableXP(address user, uint256 userMetric) external view returns (uint256 totalXP) {
         uint256 currentHighest = userHighestClaimedStage[user];
         
-        for (uint256 i = currentHighest + 1; i < stages.length; i++) {
+        for (uint256 i = currentHighest; i < stages.length; i++) {
             if (!stages[i].active) break;
             if (userMetric < stages[i].threshold) break;
             totalXP += stages[i].xpAmount;
         }
         
         return totalXP;
+    }
+
+    /**
+     * @notice Check bulk eligibility for all claimable stages at once
+     * @param user Address of the user
+     * @param context Encoded context data
+     * @return eligible Whether the user is eligible for any stages
+     * @return totalXP Total XP amount for all eligible stages
+     * @return highestStage Highest stage the user can claim up to
+     */
+    function isBulkEligible(address user, bytes calldata context)
+        external
+        view
+        returns (bool eligible, uint256 totalXP, uint256 highestStage)
+    {
+        // Delegate to concrete implementation for context parsing and verification
+        (bool stageEligible, uint256 userMetric) = _checkBulkEligibility(user, context);
+        
+        if (!stageEligible) {
+            return (false, 0, 0);
+        }
+
+        uint256 currentHighest = userHighestClaimedStage[user];
+        uint256 targetStage = 0;
+        totalXP = 0;
+        
+        // Find all sequential stages the user can claim
+        // If currentHighest is 0, user hasn't claimed any stages yet (can start from stage 0)
+        // If currentHighest is 1, user has claimed stage 0 (can start from stage 1), etc.
+        uint256 startStage = currentHighest;
+        for (uint256 i = startStage; i < stages.length; i++) {
+            if (!stages[i].active) break;
+            if (userMetric < stages[i].threshold) break;
+            
+            totalXP += stages[i].xpAmount;
+            targetStage = i;
+        }
+        
+        if (totalXP > 0) {
+            return (true, totalXP, targetStage);
+        }
+        
+        return (false, 0, 0);
+    }
+
+    /**
+     * @notice Generate a bulk claim ID for claiming multiple stages at once
+     * @param user Address of the user
+     * @param context Encoded context data
+     * @return Unique bulk claim identifier
+     */
+    function bulkClaimId(address user, bytes calldata context) external view returns (bytes32) {
+        // Include current highest stage to make bulk claims unique per progression
+        uint256 currentHighest = userHighestClaimedStage[user];
+        return keccak256(abi.encodePacked(address(this), user, context, currentHighest, "bulk"));
     }
 
     /**
@@ -194,6 +273,51 @@ abstract contract StagedXPVerifier is IXPVerifier {
         address user,
         bytes calldata context
     ) internal view virtual returns (bool eligible, uint256 stageIndex, uint256 xpAmount);
+
+    /**
+     * @notice Abstract function for bulk eligibility checking
+     * @dev This function should parse the context and return the user's current metric value
+     * @param user Address of the user
+     * @param context Raw context data to be parsed by the concrete implementation
+     * @return eligible Whether the user's proof is valid
+     * @return userMetric The user's current metric value (voting power, etc.)
+     */
+    function _checkBulkEligibility(
+        address user,
+        bytes calldata context
+    ) internal view virtual returns (bool eligible, uint256 userMetric);
+
+    /**
+     * @notice Update user's highest claimed stage (only callable by XPManager)
+     * @param user Address of the user
+     * @param newHighestStage New highest stage index
+     */
+    function updateUserStage(address user, uint256 newHighestStage) external onlyXPManager {
+        require(newHighestStage < stages.length, "Invalid stage index");
+        require(newHighestStage >= userHighestClaimedStage[user], "Stage must be higher than or equal to current");
+        
+        _updateUserStage(user, newHighestStage);
+    }
+
+    /**
+     * @notice Internal function to update user's highest claimed stage (for bulk claims)
+     * @dev Should only be called by XPManager after successful bulk claim
+     * @param user Address of the user
+     * @param newHighestStage New highest stage index
+     */
+    function _updateUserStage(address user, uint256 newHighestStage) internal {
+        uint256 previousStage = userHighestClaimedStage[user];
+        // Set to next stage they can claim (newHighestStage + 1)
+        userHighestClaimedStage[user] = newHighestStage + 1;
+        
+        // Calculate total XP awarded in this bulk claim
+        uint256 totalXPAwarded = 0;
+        for (uint256 i = previousStage; i <= newHighestStage; i++) {
+            totalXPAwarded += stages[i].xpAmount;
+        }
+        
+        emit UserStageProgressed(user, previousStage, newHighestStage, totalXPAwarded);
+    }
 
     /**
      * @dev Internal function to add a new stage
