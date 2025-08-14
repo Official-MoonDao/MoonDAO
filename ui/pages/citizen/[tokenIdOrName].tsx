@@ -368,7 +368,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
           />
         )}
 
-        {!isGuest && !citizen && (
+        {!isGuest && !citizen && !isOwner && subIsValid && !isDeleted && (
           <Action
             title="Unlock Full Profile"
             description="Become a Citizen of the Space Acceleration Network to view the full profile. Citizenship also unlocks access to the jobs board, marketplace discounts, and more benefits."
