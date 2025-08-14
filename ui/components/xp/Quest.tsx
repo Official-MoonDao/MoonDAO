@@ -1,5 +1,6 @@
-import { CheckBadgeIcon } from '@heroicons/react/24/outline'
+import { CheckBadgeIcon, StarIcon } from '@heroicons/react/24/outline'
 import { getAccessToken } from '@privy-io/react-auth'
+import StagedXPVerifierABI from 'const/abis/StagedXPVerifier.json'
 import XPVerifierABI from 'const/abis/XPVerifier.json'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { ComponentType, useCallback, useEffect, useRef, useState } from 'react'
@@ -7,6 +8,13 @@ import toast from 'react-hot-toast'
 import { Chain, readContract } from 'thirdweb'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import {
+  getStagedQuestProgress,
+  formatStageDisplay,
+  getCurrentLevel,
+  getProgressSummary,
+  type StagedQuestProgress,
+} from '@/lib/xp/staged-quest-info'
 import StandardButton from '@/components/layout/StandardButton'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -18,9 +26,9 @@ export type QuestItem = {
   title: string
   description: string
   icon: QuestIcon
-  type: 'on-chain' | 'off-chain'
   link?: string
   linkText?: string
+  type: 'staged' | 'single'
 }
 
 type QuestProps = {
@@ -42,12 +50,18 @@ export default function Quest({
 }: QuestProps) {
   const verifierContract = useContract({
     address: quest.verifier.verifierAddress,
-    abi: XPVerifierABI,
+    abi: quest.type === 'staged' ? StagedXPVerifierABI : XPVerifierABI,
     chain: selectedChain,
   })
 
   const [xpAmount, setXpAmount] = useState(0)
   const [isLoadingXpAmount, setIsLoadingXpAmount] = useState(false)
+
+  // Staged quest state
+  const [stagedProgress, setStagedProgress] =
+    useState<StagedQuestProgress | null>(null)
+  const [isLoadingStagedProgress, setIsLoadingStagedProgress] = useState(false)
+  const [userMetric, setUserMetric] = useState(0)
 
   const [hasClaimed, setHasClaimed] = useState(false)
   const [isLoadingClaim, setIsLoadingClaim] = useState(false)
@@ -81,7 +95,7 @@ export default function Quest({
         return false
       }
     },
-    [xpManagerContract, userAddress, quest.verifier.verifierId, isPollingClaim]
+    [xpManagerContract, userAddress, quest.verifier.verifierId]
   )
 
   const pollForClaimConfirmation = useCallback(async () => {
@@ -184,14 +198,64 @@ export default function Quest({
     }
   }, [quest.verifier, userAddress, pollForClaimConfirmation])
 
+  // Simplified staged progress fetching - just get stages and user's highest claimed stage
+  const fetchStagedProgress = useCallback(async () => {
+    if (quest.type !== 'staged' || !verifierContract || !userAddress) return
+
+    setIsLoadingStagedProgress(true)
+    try {
+      // Just fetch the basic data we need
+      const [allStages, userHighestStage] = await Promise.all([
+        readContract({
+          contract: verifierContract,
+          method: 'getAllStages' as any,
+          params: [],
+        }),
+        readContract({
+          contract: verifierContract,
+          method: 'getUserHighestStage' as any,
+          params: [userAddress],
+        }),
+      ])
+
+      const stages = (allStages as any[]).map((stage) => ({
+        threshold: stage.threshold as bigint,
+        xpAmount: stage.xpAmount as bigint,
+        active: stage.active as boolean,
+      }))
+
+      const userHighestStageNum = Number(userHighestStage)
+
+      // Set a simplified progress object
+      setStagedProgress({
+        stages,
+        userHighestStage: userHighestStageNum,
+        // Remove all the complex calculated fields
+      })
+    } catch (error) {
+      console.error('Error fetching staged progress:', error)
+    } finally {
+      setIsLoadingStagedProgress(false)
+    }
+  }, [verifierContract, userAddress, quest.type])
+
   useEffect(() => {
     async function fetchXpAmount() {
       setIsLoadingXpAmount(true)
+
+      if (quest.type === 'staged') {
+        // For staged quests, show total claimable XP instead of fixed amount
+        await fetchStagedProgress()
+        setIsLoadingXpAmount(false)
+        return
+      }
+
       if (quest.verifier.xpPerClaim) {
         setXpAmount(quest.verifier.xpPerClaim)
         setIsLoadingXpAmount(false)
         return
       }
+
       if (verifierContract && userAddress) {
         const xpAmount = await readContract({
           contract: verifierContract,
@@ -205,7 +269,13 @@ export default function Quest({
     }
 
     fetchXpAmount()
-  }, [verifierContract, userAddress, quest.verifier.xpPerClaim])
+  }, [
+    verifierContract,
+    userAddress,
+    quest.verifier.xpPerClaim,
+    quest.type,
+    fetchStagedProgress,
+  ])
 
   useEffect(() => {
     fetchHasClaimed()
@@ -289,18 +359,57 @@ export default function Quest({
           </p>
 
           <div className="flex items-center gap-3">
-            <span className="text-yellow-400 text-xs font-medium flex items-center gap-2">
-              +
-              {isLoadingXpAmount ? (
-                <div className="flex items-center gap-1">
-                  <LoadingSpinner height="h-4" width="w-4" />
-                  <span className="text-gray-400">...</span>
-                </div>
-              ) : (
-                xpAmount
-              )}{' '}
-              XP
-            </span>
+            {quest.type === 'staged' ? (
+              // Staged quest progress display
+              <div className="flex items-center gap-3 flex-1">
+                {isLoadingStagedProgress ? (
+                  <div className="flex items-center gap-2 text-gray-400 text-xs">
+                    <LoadingSpinner height="h-4" width="w-4" />
+                    Loading progress...
+                  </div>
+                ) : stagedProgress ? (
+                  <>
+                    <div className="flex items-center gap-1 text-yellow-400 text-xs font-medium bg-yellow-400/20 px-2 py-1 rounded-full">
+                      <StarIcon className="w-3 h-3" />
+                      Stage {getCurrentLevel(stagedProgress.userHighestStage)}
+                    </div>
+
+                    <div className="text-xs text-white">
+                      {/* No longer displaying currentUserMetric or nextStageThreshold */}
+                    </div>
+
+                    <div className="w-16">
+                      <div className="w-full bg-gray-700 rounded-full h-1.5">
+                        <div
+                          className="bg-gradient-to-r from-yellow-400 to-orange-500 h-1.5 rounded-full transition-all duration-500"
+                          style={{ width: `100%` }} // Always 100% for simplified progress
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* No longer displaying totalClaimableXP or nextStageXP */}
+                  </>
+                ) : (
+                  <span className="text-gray-400 text-xs">
+                    No progress data
+                  </span>
+                )}
+              </div>
+            ) : (
+              // Single quest XP display
+              <span className="text-yellow-400 text-xs font-medium flex items-center gap-2">
+                +
+                {isLoadingXpAmount ? (
+                  <div className="flex items-center gap-1">
+                    <LoadingSpinner height="h-4" width="w-4" />
+                    <span className="text-gray-400">...</span>
+                  </div>
+                ) : (
+                  xpAmount
+                )}{' '}
+                XP
+              </span>
+            )}
 
             {isCheckingClaimed ? (
               <div className="flex items-center gap-2 text-gray-400 text-xs">
@@ -325,13 +434,22 @@ export default function Quest({
 
                 {!hasClaimed && (
                   <PrivyWeb3Button
-                    label="Claim"
+                    label={
+                      quest.type === 'staged' &&
+                      stagedProgress?.userHighestStage // Use userHighestStage directly
+                        ? `Claim ${stagedProgress.userHighestStage} XP` // Display user's highest claimed stage
+                        : 'Claim'
+                    }
                     action={async () => {
                       await claimQuest()
                     }}
-                    isDisabled={isLoadingClaim}
+                    isDisabled={
+                      isLoadingClaim ||
+                      (quest.type === 'staged' &&
+                        stagedProgress?.userHighestStage === 0) // Check if user is at stage 0
+                    }
                     requiredChain={DEFAULT_CHAIN_V5}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                     noPadding
                   />
                 )}

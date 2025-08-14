@@ -445,22 +445,58 @@ export const HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES: Index = {
 
 export const XP_VERIFIERS: any = [
   {
+    verifierId: 0,
+    verifierAddress: HAS_VOTING_POWER_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/voting-power-proof',
+    type: 'staged',
+  },
+  {
     verifierId: 1,
-    verifierAddress: OWNS_CITIZEN_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/owns-citizen-nft',
-    xpPerClaim: 10,
+    verifierAddress: HAS_VOTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/has-voted-proof',
+    type: 'staged',
   },
   {
     verifierId: 2,
-    verifierAddress: HAS_VOTING_POWER_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/voting-power-proof',
-    xpPerClaim: 5,
+    verifierAddress:
+      HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/has-token-balance-proof',
+    type: 'staged',
   },
   {
     verifierId: 3,
-    verifierAddress: HAS_VOTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-voted-proof',
-    xpPerClaim: 5,
+    verifierAddress:
+      HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/has-created-a-team-proof',
+    type: 'staged',
+  },
+  {
+    verifierId: 4,
+    verifierAddress: HAS_CONTRIBUTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/has-contributed-proof',
+    type: 'staged',
+  },
+  {
+    verifierId: 5,
+    verifierAddress:
+      HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/has-completed-citizen-profile-proof',
+  },
+  {
+    verifierId: 6,
+    verifierAddress:
+      HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES[
+        DEFAULT_CHAIN_V5_SLUG
+      ],
+    route: '/api/xp/has-bought-a-marketplace-listing-proof',
+    type: 'staged',
+  },
+  {
+    verifierId: 7,
+    verifierAddress:
+      HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/has-joined-a-team-proof',
+    type: 'staged',
   },
 ]
 

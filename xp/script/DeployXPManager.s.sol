@@ -49,7 +49,6 @@ contract DeployXPManagerScript is Script {
         xpManager.registerVerifier(5, address(hasCompletedCitizenProfileVerifier));
         xpManager.registerVerifier(6, address(hasBoughtAMarketplaceListingVerifier));
         xpManager.registerVerifier(7, address(hasJoinedATeamVerifier));
-        xpManager.registerVerifier(8, address(hasCreatedTeamVerifier));
 
         uint256[] memory thresholds = new uint256[](4);
         thresholds[0] = 100;

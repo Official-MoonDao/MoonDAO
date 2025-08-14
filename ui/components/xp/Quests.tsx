@@ -29,78 +29,83 @@ import {
 } from '@/lib/xp/user-info'
 import StandardButton from '@/components/layout/StandardButton'
 import Quest, { type QuestItem } from '@/components/xp/Quest'
-import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type QuestsProps = {}
 
-const onboardingQuests: QuestItem[] = [
-  {
-    title: 'Own a Citizen NFT',
-    description: 'Own a Citizen NFT to get XP',
-    verifier: XP_VERIFIERS[0],
-    icon: BanknotesIcon,
-    link: '/citizen',
-    linkText: 'Get Citizen',
-    type: 'on-chain',
-  },
+const questItems: QuestItem[] = [
   {
     title: 'Has Voting Power',
     description: 'Stake MOONEY to get vMOONEY and voting power',
-    verifier: XP_VERIFIERS[1],
-    icon: BoltIcon,
+    verifier: XP_VERIFIERS[0],
+    icon: BanknotesIcon,
     link: '/lock',
     linkText: 'Stake Now',
-    type: 'off-chain',
+    type: 'staged',
   },
   {
     title: 'Has Voted',
     description: 'Participate in governance by voting on a proposal',
-    verifier: XP_VERIFIERS[2],
+    verifier: XP_VERIFIERS[1],
     icon: CheckBadgeIcon,
     link: '/vote',
     linkText: 'Vote Now',
-    type: 'off-chain',
+    type: 'staged',
   },
-]
-
-const weeklyQuests: QuestItem[] = [
-  //   {
-  //     id: 'weekly-vote',
-  //     title: 'Weekly Voter',
-  //     description: 'Vote on at least 3 proposals this week',
-  //     xpReward: 25,
-  //     mooneyReward: 50,
-  //     completed: false,
-  //     icon: CheckBadgeIcon,
-  //     progress: 1,
-  //     target: 3,
-  //     action: '/governance',
-  //     actionText: 'Vote',
-  //   },
-  //   {
-  //     id: 'team-join',
-  //     title: 'Join a Team',
-  //     description: 'Become a member of a MoonDAO team',
-  //     xpReward: 50,
-  //     mooneyReward: 100,
-  //     completed: false,
-  //     verifierId: 5, // example placeholder if a verifier exists
-  //     icon: UserGroupIcon,
-  //     action: '/network',
-  //     actionText: 'Browse Teams',
-  //   },
-  //   {
-  //     id: 'marketplace-visit',
-  //     title: 'Explore Marketplace',
-  //     description: 'Check out items in the MoonDAO marketplace',
-  //     xpReward: 15,
-  //     mooneyReward: 25,
-  //     completed: false,
-  //     icon: ShoppingBagIcon,
-  //     action: '/marketplace',
-  //     actionText: 'Explore',
-  //   },
+  {
+    title: 'Has MOONEY',
+    description: 'Hold MOONEY in your wallet',
+    verifier: XP_VERIFIERS[2],
+    icon: BanknotesIcon,
+    link: '/wallet',
+    linkText: 'View Wallet',
+    type: 'staged',
+  },
+  {
+    title: 'Has Created a Team',
+    description: 'Create a team to get XP',
+    verifier: XP_VERIFIERS[3],
+    icon: UserGroupIcon,
+    link: '/team',
+    linkText: 'Create Team',
+    type: 'single',
+  },
+  {
+    title: 'Has Contributed',
+    description: 'Contribute to a team to get XP',
+    verifier: XP_VERIFIERS[4],
+    icon: UserGroupIcon,
+    link: '/team',
+    linkText: 'Contribute',
+    type: 'staged',
+  },
+  {
+    title: 'Has Completed Citizen Profile',
+    description: 'Complete your citizen profile to get XP',
+    verifier: XP_VERIFIERS[5],
+    icon: UserGroupIcon,
+    link: '/profile',
+    linkText: 'Complete Profile',
+    type: 'single',
+  },
+  {
+    title: 'Has Bought a Marketplace Listing',
+    description: 'Buy a listing in the MoonDAO marketplace',
+    verifier: XP_VERIFIERS[6],
+    icon: ShoppingBagIcon,
+    link: '/marketplace',
+    linkText: 'Buy Listing',
+    type: 'staged',
+  },
+  {
+    title: 'Has Joined a Team',
+    description: 'Join a team to get XP',
+    verifier: XP_VERIFIERS[7],
+    icon: UserGroupIcon,
+    link: '/team',
+    linkText: 'Join Team',
+    type: 'staged',
+  },
 ]
 
 export default function Quests({}: QuestsProps) {
@@ -272,9 +277,9 @@ export default function Quests({}: QuestsProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <div className="flex items-center justify-between mb-3">
+          {/* <div className="flex items-center justify-between mb-3">
             <h4 className="font-medium text-white flex items-center gap-2 text-sm">
               <FireIcon className="w-4 h-4 text-orange-400" />
               Onboarding ({onboardingCompleted}/{onboardingTotal})
@@ -285,36 +290,15 @@ export default function Quests({}: QuestsProps) {
                 1000 MOONEY!
               </div>
             )}
-          </div>
+          </div> */}
 
           <div className="space-y-2">
-            {onboardingQuests.map((quest) => (
+            {questItems.map((quest) => (
               <Quest
                 key={quest.verifier.verifierId}
                 selectedChain={selectedChain}
                 quest={quest}
                 variant="onboarding"
-                userAddress={userAddress}
-                xpManagerContract={xpManagerContract}
-                onClaimConfirmed={handleQuestClaimConfirmed}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h4 className="font-medium text-white mb-3 flex items-center gap-2 text-sm">
-            <StarIcon className="w-4 h-4 text-purple-400" />
-            Weekly Quests
-          </h4>
-
-          <div className="space-y-2">
-            {weeklyQuests.slice(0, 2).map((quest) => (
-              <Quest
-                key={quest.verifier.verifierId}
-                selectedChain={selectedChain}
-                quest={quest}
-                variant="weekly"
                 userAddress={userAddress}
                 xpManagerContract={xpManagerContract}
                 onClaimConfirmed={handleQuestClaimConfirmed}
