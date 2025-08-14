@@ -66,6 +66,14 @@ contract DeployXPManagerScript is Script {
             thresholds,
             rewards
         );
+
+        // CRITICAL: Set XPManager address on all staged verifiers
+        // This allows XPManager to call updateUserStage() and other protected functions
+        votingPowerVerifier.setXPManager(address(xpManager));
+        hasVotedVerifier.setXPManager(address(xpManager));
+        hasTokenBalanceVerifier.setXPManager(address(xpManager));
+        hasContributedVerifier.setXPManager(address(xpManager));
+        hasBoughtAMarketplaceListingVerifier.setXPManager(address(xpManager));
         
         vm.stopBroadcast();
     }
