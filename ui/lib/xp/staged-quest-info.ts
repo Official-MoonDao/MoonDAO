@@ -138,3 +138,41 @@ export function getProgressSummary(progress: StagedQuestProgress): string {
 
   return 'No progress available'
 }
+
+export function getHighestQualifyingStage(
+  progress: StagedQuestProgress
+): number {
+  const { stages, currentUserMetric } = progress
+
+  // Find the highest stage threshold that the user's metric exceeds
+  let highestQualifyingStage = 0
+  for (let i = 0; i < stages.length; i++) {
+    if (currentUserMetric >= Number(stages[i].threshold)) {
+      highestQualifyingStage = i + 1 // +1 for display (1-indexed)
+    } else {
+      break
+    }
+  }
+
+  // If they don't qualify for any stage yet, show stage 1 (working toward stage 0)
+  return Math.max(1, highestQualifyingStage)
+}
+
+/**
+ * Get the threshold for the next unclaimed/unachieved stage
+ */
+export function getNextUnclamedThreshold(
+  progress: StagedQuestProgress
+): number {
+  const { stages, currentUserMetric } = progress
+
+  // Find the first stage threshold that the user hasn't reached yet
+  for (let i = 0; i < stages.length; i++) {
+    if (currentUserMetric < Number(stages[i].threshold)) {
+      return Number(stages[i].threshold)
+    }
+  }
+
+  // If they qualify for all stages, return the highest threshold
+  return stages.length > 0 ? Number(stages[stages.length - 1].threshold) : 0
+}

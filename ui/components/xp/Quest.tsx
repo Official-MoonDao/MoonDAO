@@ -13,6 +13,8 @@ import {
   formatStageDisplay,
   getCurrentLevel,
   getProgressSummary,
+  getHighestQualifyingStage,
+  getNextUnclamedThreshold,
   type StagedQuestProgress,
 } from '@/lib/xp/staged-quest-info'
 import StandardButton from '@/components/layout/StandardButton'
@@ -75,11 +77,19 @@ export default function Quest({
         if (!polling) {
           setIsCheckingClaimed(true)
         }
+
+        console.log(
+          `Checking hasClaimedFromVerifier for user: ${userAddress}, verifierId: ${quest.verifier.verifierId}`
+        )
+
         const claimed = await readContract({
           contract: xpManagerContract,
           method: 'hasClaimedFromVerifier' as string,
           params: [userAddress, quest.verifier.verifierId],
         })
+
+        console.log(`hasClaimedFromVerifier result: ${claimed}`)
+
         setHasClaimed(Boolean(claimed))
         // Always clear checking status when not polling, regardless of result
         if (!polling) {
@@ -87,6 +97,7 @@ export default function Quest({
         }
         return Boolean(claimed)
       } else {
+        console.log('Missing xpManagerContract or userAddress')
         // Always clear checking status when not polling
         if (!polling) {
           setIsCheckingClaimed(false)
@@ -97,105 +108,7 @@ export default function Quest({
     [xpManagerContract, userAddress, quest.verifier.verifierId]
   )
 
-  const pollForClaimConfirmation = useCallback(async () => {
-    if (isPollingClaim) return // Prevent multiple polling instances
-
-    // Clear any existing timeout
-    if (pollingTimeoutRef.current) {
-      clearTimeout(pollingTimeoutRef.current)
-    }
-
-    // Clear checking status before starting polling
-    setIsCheckingClaimed(false)
-    setIsPollingClaim(true)
-    const maxAttempts = 30 // Poll for up to 30 attempts (30 seconds with 1s intervals)
-    let attempts = 0
-
-    const poll = async () => {
-      try {
-        const claimed = await fetchHasClaimed(true)
-        if (claimed) {
-          setIsPollingClaim(false)
-          pollingTimeoutRef.current = null
-          toast.success('Quest claim confirmed on blockchain!', {
-            duration: 3000,
-            style: toastStyle,
-          })
-          // Notify parent component to refresh user data
-          if (onClaimConfirmed) {
-            onClaimConfirmed()
-          }
-          return
-        }
-
-        attempts++
-        if (attempts < maxAttempts) {
-          pollingTimeoutRef.current = setTimeout(poll, 1000) // Check again in 1 second
-        } else {
-          setIsPollingClaim(false)
-          pollingTimeoutRef.current = null
-          toast.error(
-            'Claim confirmation timed out. Please refresh to check status.',
-            {
-              duration: 5000,
-              style: toastStyle,
-            }
-          )
-        }
-      } catch (error) {
-        console.error('Error polling for claim confirmation:', error)
-        setIsPollingClaim(false)
-        pollingTimeoutRef.current = null
-      }
-    }
-
-    // Start polling after initial delay
-    pollingTimeoutRef.current = setTimeout(poll, 2000) // Start checking after 2 seconds
-  }, [fetchHasClaimed, isPollingClaim, onClaimConfirmed])
-
-  const claimQuest = useCallback(async () => {
-    if (!quest.verifier.route || !userAddress) return
-    setIsLoadingClaim(true)
-    try {
-      const accessToken = await getAccessToken()
-      const response = await fetch(quest.verifier.route, {
-        method: 'POST',
-        body: JSON.stringify({ user: userAddress, accessToken }),
-      })
-      const { eligible, error } = await response.json()
-
-      if (eligible) {
-        toast.success(
-          'Quest claimed successfully! Waiting for blockchain confirmation...',
-          {
-            duration: 3000,
-            style: toastStyle,
-          }
-        )
-        pollForClaimConfirmation()
-      } else {
-        if (error) {
-          toast.error(error, {
-            duration: 3000,
-            style: toastStyle,
-          })
-        } else {
-          toast.error(
-            'You are not eligible for this quest, please meet the requirements and try again.',
-            {
-              duration: 3000,
-              style: toastStyle,
-            }
-          )
-        }
-      }
-    } catch (error) {
-      console.error(error)
-      toast.error('Something went wrong, please contact support.')
-    } finally {
-      setIsLoadingClaim(false)
-    }
-  }, [quest.verifier, userAddress, pollForClaimConfirmation])
+  // claimQuest will be defined after pollForClaimConfirmation
 
   // Function to fetch user metric from the quest's API endpoint
   const fetchUserMetric = useCallback(async (): Promise<number> => {
@@ -270,7 +183,182 @@ export default function Quest({
     } finally {
       setIsLoadingStagedProgress(false)
     }
-  }, [verifierContract, userAddress, quest.type, fetchUserMetric])
+  }, [verifierContract, userAddress, quest.verifier.type, fetchUserMetric])
+
+  // Define pollForClaimConfirmation after fetchStagedProgress
+  const pollForClaimConfirmation = useCallback(async () => {
+    if (isPollingClaim) return // Prevent multiple polling instances
+
+    // Clear any existing timeout
+    if (pollingTimeoutRef.current) {
+      clearTimeout(pollingTimeoutRef.current)
+    }
+
+    // Clear checking status before starting polling
+    setIsCheckingClaimed(false)
+    setIsPollingClaim(true)
+    const maxAttempts = 60 // Poll for up to 60 attempts (increased for blockchain delays)
+    let attempts = 0
+
+    const poll = async () => {
+      try {
+        console.log(
+          `Polling attempt ${
+            attempts + 1
+          }/${maxAttempts} for quest claim confirmation...`
+        )
+        const claimed = await fetchHasClaimed(true)
+        console.log(`Poll result: claimed = ${claimed}`)
+
+        if (claimed) {
+          setIsPollingClaim(false)
+          pollingTimeoutRef.current = null
+          console.log('Quest claim confirmed on blockchain!')
+          toast.success('Quest claim confirmed on blockchain!', {
+            duration: 3000,
+            style: toastStyle,
+          })
+
+          // Refresh staged quest data for staged quests
+          if (quest.verifier.type === 'staged') {
+            await fetchStagedProgress()
+          }
+
+          // Notify parent component to refresh user data
+          if (onClaimConfirmed) {
+            onClaimConfirmed()
+          }
+          return
+        }
+
+        attempts++
+        if (attempts < maxAttempts) {
+          // Use longer intervals for better blockchain state consistency
+          const delay = attempts < 5 ? 2000 + attempts * 1000 : 2000
+          pollingTimeoutRef.current = setTimeout(poll, delay)
+        } else {
+          setIsPollingClaim(false)
+          pollingTimeoutRef.current = null
+          console.error(`Polling timed out after ${maxAttempts} attempts`)
+
+          // Final check with a fresh contract read to be sure
+          try {
+            console.log('Performing final hasClaimedFromVerifier check...')
+            const finalCheck = await fetchHasClaimed(true)
+            if (finalCheck) {
+              console.log('Final check confirmed claim!')
+              toast.success('Quest claim confirmed on blockchain!', {
+                duration: 3000,
+                style: toastStyle,
+              })
+              if (quest.verifier.type === 'staged') {
+                await fetchStagedProgress()
+              }
+              if (onClaimConfirmed) {
+                onClaimConfirmed()
+              }
+              return
+            }
+          } catch (finalError) {
+            console.error('Final check failed:', finalError)
+          }
+
+          toast.error(
+            'Claim confirmation timed out. The transaction may have succeeded - please refresh to check your XP.',
+            {
+              duration: 8000,
+              style: toastStyle,
+            }
+          )
+        }
+      } catch (error) {
+        console.error('Error polling for claim confirmation:', error)
+        setIsPollingClaim(false)
+        pollingTimeoutRef.current = null
+        toast.error(
+          'Error checking claim status. Please refresh and try again.',
+          {
+            duration: 5000,
+            style: toastStyle,
+          }
+        )
+      }
+    }
+
+    // Start polling after initial delay - give blockchain more time
+    pollingTimeoutRef.current = setTimeout(poll, 3000) // Start checking after 3 seconds
+  }, [
+    fetchHasClaimed,
+    isPollingClaim,
+    onClaimConfirmed,
+    quest.verifier.type,
+    fetchStagedProgress,
+  ])
+
+  const claimQuest = useCallback(async () => {
+    if (!quest.verifier.route || !userAddress) return
+    setIsLoadingClaim(true)
+    try {
+      const accessToken = await getAccessToken()
+      const response = await fetch(quest.verifier.route, {
+        method: 'POST',
+        body: JSON.stringify({ user: userAddress, accessToken }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      const { eligible, error, txHash } = data
+
+      console.log('Quest claim response:', data)
+
+      if (eligible) {
+        if (txHash) {
+          console.log(`Transaction hash: ${txHash}`)
+          toast.success(
+            'Quest claimed successfully! Waiting for blockchain confirmation...',
+            {
+              duration: 3000,
+              style: toastStyle,
+            }
+          )
+          pollForClaimConfirmation()
+        } else {
+          console.warn(
+            'Quest claim was eligible but no transaction hash returned'
+          )
+          toast.error('Claim failed: No transaction hash returned')
+        }
+      } else {
+        if (error) {
+          console.error('Quest claim error:', error)
+          toast.error(error, {
+            duration: 3000,
+            style: toastStyle,
+          })
+        } else {
+          toast.error(
+            'You are not eligible for this quest, please meet the requirements and try again.',
+            {
+              duration: 3000,
+              style: toastStyle,
+            }
+          )
+        }
+      }
+    } catch (error) {
+      console.error('Quest claim error:', error)
+      toast.error(
+        `Claim failed: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      )
+    } finally {
+      setIsLoadingClaim(false)
+    }
+  }, [quest.verifier, userAddress, pollForClaimConfirmation])
 
   useEffect(() => {
     async function fetchXpAmount() {
@@ -403,15 +491,13 @@ export default function Quest({
                   <>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1 text-yellow-400 text-xs font-medium bg-yellow-400/20 px-2 py-1 rounded-full">
-                        <StarIcon className="w-3 h-3" />
-                        Stage {getCurrentLevel(stagedProgress.userHighestStage)}
+                        Stage {getHighestQualifyingStage(stagedProgress)}
                       </div>
                     </div>
 
                     <div className="text-xs text-white">
-                      {stagedProgress.currentUserMetric}
-                      {stagedProgress.nextStageThreshold !== null &&
-                        ` / ${stagedProgress.nextStageThreshold}`}
+                      {stagedProgress.currentUserMetric} /{' '}
+                      {getNextUnclamedThreshold(stagedProgress)}
                     </div>
 
                     <div className="w-16">
@@ -424,9 +510,11 @@ export default function Quest({
                     </div>
 
                     <div className="text-yellow-400 text-xs font-medium">
-                      {stagedProgress.nextStageXP !== null
-                        ? `+${stagedProgress.nextStageXP} XP`
-                        : 'Max reached'}
+                      {stagedProgress.totalClaimableXP > 0
+                        ? `+${stagedProgress.totalClaimableXP} XP`
+                        : stagedProgress.isMaxStageReached
+                        ? 'Max reached'
+                        : 'Complete stages'}
                     </div>
                   </>
                 ) : (
@@ -457,9 +545,34 @@ export default function Quest({
                 Checking status...
               </div>
             ) : isPollingClaim ? (
-              <div className="flex items-center gap-2 text-yellow-400 text-xs">
-                <LoadingSpinner height="h-4" width="w-4" />
-                Waiting for blockchain confirmation...
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-yellow-400 text-xs">
+                  <LoadingSpinner height="h-4" width="w-4" />
+                  Waiting for blockchain confirmation...
+                </div>
+                <button
+                  onClick={async () => {
+                    console.log('Manual refresh triggered')
+                    const claimed = await fetchHasClaimed(false)
+                    if (claimed) {
+                      setIsPollingClaim(false)
+                      if (pollingTimeoutRef.current) {
+                        clearTimeout(pollingTimeoutRef.current)
+                        pollingTimeoutRef.current = null
+                      }
+                      toast.success('Quest claim confirmed!', {
+                        duration: 3000,
+                        style: toastStyle,
+                      })
+                      if (onClaimConfirmed) {
+                        onClaimConfirmed()
+                      }
+                    }
+                  }}
+                  className="text-blue-400 hover:text-blue-300 text-xs underline"
+                >
+                  Refresh Status
+                </button>
               </div>
             ) : (
               <>
@@ -476,8 +589,9 @@ export default function Quest({
                   <PrivyWeb3Button
                     label={
                       quest.verifier.type === 'staged' &&
-                      stagedProgress?.userHighestStage // Use userHighestStage directly
-                        ? `Claim ${stagedProgress.userHighestStage} XP` // Display user's highest claimed stage
+                      stagedProgress?.totalClaimableXP &&
+                      stagedProgress.totalClaimableXP > 0
+                        ? `Claim ${stagedProgress.totalClaimableXP} XP`
                         : 'Claim'
                     }
                     action={async () => {
@@ -486,7 +600,7 @@ export default function Quest({
                     isDisabled={
                       isLoadingClaim ||
                       (quest.verifier.type === 'staged' &&
-                        stagedProgress?.userHighestStage === 0) // Check if user is at stage 0
+                        stagedProgress?.totalClaimableXP === 0) // Check if no XP available to claim
                     }
                     requiredChain={DEFAULT_CHAIN_V5}
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs disabled:opacity-50 disabled:cursor-not-allowed"

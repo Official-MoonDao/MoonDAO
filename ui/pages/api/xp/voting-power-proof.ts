@@ -5,7 +5,10 @@ import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Address } from 'thirdweb'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
-import { signHasVotingPowerProof, submitHasVotingPowerClaimFor } from '@/lib/xp'
+import {
+  signHasVotingPowerProof,
+  submitHasVotingPowerBulkClaimFor,
+} from '@/lib/xp'
 
 const MIN_VOTING_POWER = BigInt(1) //changing this while using the same verifier will allow users to claim xp again
 
@@ -64,6 +67,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Compute VP locally (Snapshot logic kept here)
     const SNAPSHOT_SPACE = process.env.SNAPSHOT_SPACE || 'tomoondao.eth'
     const vp = await fetchSnapshotVP(user as Address, SNAPSHOT_SPACE)
+    console.log('User voting power:', vp)
     if (vp < MIN_VOTING_POWER)
       return res.status(200).json({ eligible: false, vp: vp.toString() })
 
@@ -77,29 +81,22 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // For POST requests, proceed with claiming
-    // Sign/encode via shared oracle helper
+    // Sign/encode via shared oracle helper using actual voting power for bulk claiming
     const { validAfter, validBefore, signature, context } =
       await signHasVotingPowerProof({
         user: user as Address,
-        minVotingPower: MIN_VOTING_POWER,
+        actualVotingPower: vp, // Use actual voting power for staged bulk claiming
       })
 
-    // Relay the XP claim on behalf of the user so they don't need to send a tx
-    const { txHash } = await submitHasVotingPowerClaimFor({
+    // Relay the bulk XP claim on behalf of the user so they don't need to send a tx
+    const { txHash } = await submitHasVotingPowerBulkClaimFor({
       user: user as Address,
       context,
     })
 
-    // Decode xp from context for client convenience (index 1)
-    const [, xpAmount] = ethersUtils.defaultAbiCoder.decode(
-      ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
-      context
-    ) as unknown[] as [any, bigint]
-
     return res.status(200).json({
       eligible: true,
       vp: vp.toString(),
-      xpAmount: (xpAmount as bigint).toString(),
       validAfter: Number(validAfter),
       validBefore: Number(validBefore),
       signature,
@@ -107,6 +104,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       txHash,
     })
   } catch (err: any) {
+    console.log(err)
     return res.status(500).json({ error: err?.message || 'Internal error' })
   }
 }
