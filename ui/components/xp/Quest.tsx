@@ -28,7 +28,6 @@ export type QuestItem = {
   icon: QuestIcon
   link?: string
   linkText?: string
-  type: 'staged' | 'single'
 }
 
 type QuestProps = {
@@ -50,7 +49,7 @@ export default function Quest({
 }: QuestProps) {
   const verifierContract = useContract({
     address: quest.verifier.verifierAddress,
-    abi: quest.type === 'staged' ? StagedXPVerifierABI : XPVerifierABI,
+    abi: quest.verifier.type === 'staged' ? StagedXPVerifierABI : XPVerifierABI,
     chain: selectedChain,
   })
 
@@ -198,52 +197,86 @@ export default function Quest({
     }
   }, [quest.verifier, userAddress, pollForClaimConfirmation])
 
+  // Function to fetch user metric from the quest's API endpoint
+  const fetchUserMetric = useCallback(async (): Promise<number> => {
+    if (!quest.verifier.route || !userAddress || !quest.verifier.metricKey) {
+      return 0
+    }
+
+    try {
+      const accessToken = await getAccessToken()
+      if (!accessToken) {
+        throw new Error('No access token available')
+      }
+
+      const response = await fetch(
+        `${quest.verifier.route}?user=${userAddress}&accessToken=${accessToken}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user metric: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+
+      // Extract the metric using the configured metricKey
+      const metricValue = data[quest.verifier.metricKey]
+
+      // Handle different data types
+      if (typeof metricValue === 'string') {
+        return parseInt(metricValue) || 0
+      } else if (typeof metricValue === 'number') {
+        return metricValue
+      } else if (typeof metricValue === 'boolean') {
+        return metricValue ? 1 : 0
+      }
+
+      return 0
+    } catch (error) {
+      console.error('Error fetching user metric:', error)
+      return 0
+    }
+  }, [quest.verifier.route, quest.verifier.metricKey, userAddress])
+
   // Simplified staged progress fetching - just get stages and user's highest claimed stage
   const fetchStagedProgress = useCallback(async () => {
-    if (quest.type !== 'staged' || !verifierContract || !userAddress) return
+    if (quest.verifier.type !== 'staged' || !verifierContract || !userAddress)
+      return
 
     setIsLoadingStagedProgress(true)
     try {
-      // Just fetch the basic data we need
-      const [allStages, userHighestStage] = await Promise.all([
-        readContract({
-          contract: verifierContract,
-          method: 'getAllStages' as any,
-          params: [],
-        }),
-        readContract({
-          contract: verifierContract,
-          method: 'getUserHighestStage' as any,
-          params: [userAddress],
-        }),
-      ])
+      // Get user metric from quest's backend/oracle
+      const metric = await fetchUserMetric()
+      setUserMetric(metric)
 
-      const stages = (allStages as any[]).map((stage) => ({
-        threshold: stage.threshold as bigint,
-        xpAmount: stage.xpAmount as bigint,
-        active: stage.active as boolean,
-      }))
+      // Get progress with real user metric
+      const progress = await getStagedQuestProgress(
+        verifierContract,
+        userAddress,
+        metric
+      )
 
-      const userHighestStageNum = Number(userHighestStage)
+      console.log('PROGRESS', progress)
 
-      // Set a simplified progress object
-      setStagedProgress({
-        stages,
-        userHighestStage: userHighestStageNum,
-        // Remove all the complex calculated fields
-      })
+      setStagedProgress(progress)
     } catch (error) {
       console.error('Error fetching staged progress:', error)
     } finally {
       setIsLoadingStagedProgress(false)
     }
-  }, [verifierContract, userAddress, quest.type])
+  }, [verifierContract, userAddress, quest.type, fetchUserMetric])
 
   useEffect(() => {
     async function fetchXpAmount() {
       setIsLoadingXpAmount(true)
 
-      if (quest.type === 'staged') {
+      if (quest.verifier.type === 'staged') {
         // For staged quests, show total claimable XP instead of fixed amount
         await fetchStagedProgress()
         setIsLoadingXpAmount(false)
@@ -262,7 +295,6 @@ export default function Quest({
           method: 'xpPerClaim' as string,
           params: [],
         })
-        console.log('xpAmount', xpAmount)
         setXpAmount(Number(xpAmount))
       }
       setIsLoadingXpAmount(false)
@@ -273,7 +305,7 @@ export default function Quest({
     verifierContract,
     userAddress,
     quest.verifier.xpPerClaim,
-    quest.type,
+    quest.verifier.type,
     fetchStagedProgress,
   ])
 
@@ -359,7 +391,7 @@ export default function Quest({
           </p>
 
           <div className="flex items-center gap-3">
-            {quest.type === 'staged' ? (
+            {quest.verifier.type === 'staged' ? (
               // Staged quest progress display
               <div className="flex items-center gap-3 flex-1">
                 {isLoadingStagedProgress ? (
@@ -369,25 +401,33 @@ export default function Quest({
                   </div>
                 ) : stagedProgress ? (
                   <>
-                    <div className="flex items-center gap-1 text-yellow-400 text-xs font-medium bg-yellow-400/20 px-2 py-1 rounded-full">
-                      <StarIcon className="w-3 h-3" />
-                      Stage {getCurrentLevel(stagedProgress.userHighestStage)}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 text-yellow-400 text-xs font-medium bg-yellow-400/20 px-2 py-1 rounded-full">
+                        <StarIcon className="w-3 h-3" />
+                        Stage {getCurrentLevel(stagedProgress.userHighestStage)}
+                      </div>
                     </div>
 
                     <div className="text-xs text-white">
-                      {/* No longer displaying currentUserMetric or nextStageThreshold */}
+                      {stagedProgress.currentUserMetric}
+                      {stagedProgress.nextStageThreshold !== null &&
+                        ` / ${stagedProgress.nextStageThreshold}`}
                     </div>
 
                     <div className="w-16">
                       <div className="w-full bg-gray-700 rounded-full h-1.5">
                         <div
                           className="bg-gradient-to-r from-yellow-400 to-orange-500 h-1.5 rounded-full transition-all duration-500"
-                          style={{ width: `100%` }} // Always 100% for simplified progress
+                          style={{ width: `${stagedProgress.progressToNext}%` }}
                         ></div>
                       </div>
                     </div>
 
-                    {/* No longer displaying totalClaimableXP or nextStageXP */}
+                    <div className="text-yellow-400 text-xs font-medium">
+                      {stagedProgress.nextStageXP !== null
+                        ? `+${stagedProgress.nextStageXP} XP`
+                        : 'Max reached'}
+                    </div>
                   </>
                 ) : (
                   <span className="text-gray-400 text-xs">
@@ -435,7 +475,7 @@ export default function Quest({
                 {!hasClaimed && (
                   <PrivyWeb3Button
                     label={
-                      quest.type === 'staged' &&
+                      quest.verifier.type === 'staged' &&
                       stagedProgress?.userHighestStage // Use userHighestStage directly
                         ? `Claim ${stagedProgress.userHighestStage} XP` // Display user's highest claimed stage
                         : 'Claim'
@@ -445,7 +485,7 @@ export default function Quest({
                     }}
                     isDisabled={
                       isLoadingClaim ||
-                      (quest.type === 'staged' &&
+                      (quest.verifier.type === 'staged' &&
                         stagedProgress?.userHighestStage === 0) // Check if user is at stage 0
                     }
                     requiredChain={DEFAULT_CHAIN_V5}

@@ -51,6 +51,11 @@ export async function getStagedQuestProgress(
       }),
     ])
 
+  console.log('ALL STAGES', allStages)
+  console.log('USER HIGHEST STAGE', userHighestStage)
+  console.log('NEXT CLAIMABLE STAGE', nextClaimableStage)
+  console.log('TOTAL CLAIMABLE XP', totalClaimableXP)
+
   const stages = (allStages as any[]).map((stage) => ({
     threshold: stage.threshold as bigint,
     xpAmount: stage.xpAmount as bigint,

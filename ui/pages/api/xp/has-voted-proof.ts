@@ -43,15 +43,29 @@ async function fetchSnapshotVotesCount(
   }
 }
 
-async function handler(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    if (req.method !== 'POST')
-      return res.status(405).json({ error: 'Method not allowed' })
-
+function getUserAndAccessToken(req: NextApiRequest) {
+  if (req.method === 'GET') {
+    const { user, accessToken } = req.query as {
+      user?: string
+      accessToken?: string
+    }
+    return { user, accessToken }
+  } else {
     const { user, accessToken } = JSON.parse(req.body) as {
       user?: string
       accessToken?: string
     }
+    return { user, accessToken }
+  }
+}
+
+async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    if (req.method !== 'GET' && req.method !== 'POST')
+      return res.status(405).json({ error: 'Method not allowed' })
+
+    const { user, accessToken } = getUserAndAccessToken(req)
+
     if (!user || !ethersUtils.isAddress(user))
       return res.status(400).json({ error: 'Invalid user address' })
 
@@ -67,6 +81,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (votesCount < MIN_VOTES)
       return res.status(200).json({ eligible: false, votesCount })
 
+    // For GET requests, just return eligibility
+    if (req.method === 'GET') {
+      return res.status(200).json({
+        eligible: true,
+        votesCount,
+        minVotes: MIN_VOTES,
+      })
+    }
+
+    // For POST requests, proceed with claiming
     const { validAfter, validBefore, signature, context } =
       await signHasVotedProof({
         user: user as Address,

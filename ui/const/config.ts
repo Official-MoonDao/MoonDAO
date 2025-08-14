@@ -449,12 +449,14 @@ export const XP_VERIFIERS: any = [
     verifierAddress: HAS_VOTING_POWER_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/voting-power-proof',
     type: 'staged',
+    metricKey: 'vp', // The key in the API response that contains the user metric
   },
   {
     verifierId: 1,
     verifierAddress: HAS_VOTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/has-voted-proof',
     type: 'staged',
+    metricKey: 'votesCount', // The key in the API response that contains the user metric
   },
   {
     verifierId: 2,
@@ -462,6 +464,7 @@ export const XP_VERIFIERS: any = [
       HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/has-token-balance-proof',
     type: 'staged',
+    metricKey: 'tokenBalance', // Placeholder - update when this API is implemented
   },
   {
     verifierId: 3,
@@ -469,18 +472,21 @@ export const XP_VERIFIERS: any = [
       HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/has-created-a-team-proof',
     type: 'staged',
+    metricKey: 'teamsCreated', // Placeholder - update when this API is implemented
   },
   {
     verifierId: 4,
     verifierAddress: HAS_CONTRIBUTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/has-contributed-proof',
     type: 'staged',
+    metricKey: 'contributionCount', // Placeholder - update when this API is implemented
   },
   {
     verifierId: 5,
     verifierAddress:
       HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/has-completed-citizen-profile-proof',
+    metricKey: 'profileCompleted', // Placeholder - likely boolean or completion percentage
   },
   {
     verifierId: 6,
@@ -488,8 +494,9 @@ export const XP_VERIFIERS: any = [
       HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES[
         DEFAULT_CHAIN_V5_SLUG
       ],
-    route: '/api/xp/has-bought-a-marketplace-listing-proof',
+    route: '/api/xp/has-bought-marketplace-listings-proof',
     type: 'staged',
+    metricKey: 'purchaseCount', // Placeholder - update when this API is implemented
   },
   {
     verifierId: 7,
@@ -497,6 +504,7 @@ export const XP_VERIFIERS: any = [
       HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/has-joined-a-team-proof',
     type: 'staged',
+    metricKey: 'teamsJoined', // Placeholder - update when this API is implemented
   },
 ]
 

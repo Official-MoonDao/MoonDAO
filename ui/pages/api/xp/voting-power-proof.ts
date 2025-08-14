@@ -32,15 +32,29 @@ async function fetchSnapshotVP(user: Address, space: string): Promise<bigint> {
   }
 }
 
-async function handler(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    if (req.method !== 'POST')
-      return res.status(405).json({ error: 'Method not allowed' })
-
+function getUserAndAccessToken(req: NextApiRequest) {
+  if (req.method === 'GET') {
+    const { user, accessToken } = req.query as {
+      user?: string
+      accessToken?: string
+    }
+    return { user, accessToken }
+  } else {
     const { user, accessToken } = JSON.parse(req.body) as {
       user?: string
       accessToken?: string
     }
+    return { user, accessToken }
+  }
+}
+
+async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    if (req.method !== 'GET' && req.method !== 'POST')
+      return res.status(405).json({ error: 'Method not allowed' })
+
+    const { user, accessToken } = getUserAndAccessToken(req)
+
     if (!user || !ethersUtils.isAddress(user))
       return res.status(400).json({ error: 'Invalid user address' })
 
@@ -53,6 +67,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (vp < MIN_VOTING_POWER)
       return res.status(200).json({ eligible: false, vp: vp.toString() })
 
+    // For GET requests, just return eligibility
+    if (req.method === 'GET') {
+      return res.status(200).json({
+        eligible: true,
+        vp: vp.toString(),
+        minVotingPower: MIN_VOTING_POWER.toString(),
+      })
+    }
+
+    // For POST requests, proceed with claiming
     // Sign/encode via shared oracle helper
     const { validAfter, validBefore, signature, context } =
       await signHasVotingPowerProof({
