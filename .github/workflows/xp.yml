@@ -2,7 +2,13 @@ name: XPContracts
 
 on:
   push:
+    paths:
+      - "xp/**"
+      - ".github/workflows/xp.yml"
   pull_request:
+    paths:
+      - "xp/**"
+      - ".github/workflows/xp.yml"
   workflow_dispatch:
 
 env:
@@ -32,14 +38,17 @@ jobs:
       - name: Run Forge fmt
         run: |
           forge fmt --check
+        working-directory: xp
         id: fmt
 
       - name: Run Forge build
         run: |
           forge build --sizes
+        working-directory: xp
         id: build
 
       - name: Run Forge tests
         run: |
           forge test -vvv
+        working-directory: xp
         id: test
