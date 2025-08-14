@@ -3,12 +3,17 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "src/XPManager.sol";
-import "src/ERC20RewardsExample.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract MockRewardToken is ERC20 {
+    constructor() ERC20("Mock Reward Token", "MRT") {
+        _mint(msg.sender, 1000000e18);
+    }
+}
 
 contract ERC20RewardsTest is Test {
     XPManager public xpManager;
-    ExampleRewardToken public rewardToken;
-    ERC20RewardsExample public example;
+    MockRewardToken public rewardToken;
 
     address public owner = address(1);
     address public user = address(2);
@@ -19,8 +24,7 @@ contract ERC20RewardsTest is Test {
 
         // Deploy contracts
         xpManager = new XPManager();
-        rewardToken = new ExampleRewardToken();
-        example = new ERC20RewardsExample(address(xpManager), address(rewardToken));
+        rewardToken = new MockRewardToken();
 
         // Transfer tokens to XPManager for rewards
         rewardToken.transfer(address(xpManager), 1000000e18);
