@@ -132,6 +132,44 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
     }
 
     /**
+     * @dev Implementation of the abstract _checkBulkEligibility function
+     * @param user Address of the user
+     * @param context Raw context data from your existing backend
+     * @return eligible Whether the user's proof is valid
+     * @return userMetric The user's current contribution count
+     */
+    function _checkBulkEligibility(
+        address user,
+        bytes calldata context
+    ) internal view override returns (bool eligible, uint256 userMetric) {
+        (uint256 minContributions, , uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+            abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
+
+        // For bulk claims, the minContributions in context represents the user's actual contribution count
+        // Verify oracle proof using your existing backend format
+        _verifyOracleProof(
+            user,
+            keccak256(abi.encode(minContributions)),
+            0, // XP amount not used in verification, will be calculated during bulk claim
+            validAfterTs,
+            validBefore,
+            signature
+        );
+
+        return (true, minContributions);
+    }
+
+    /**
+     * @notice Set the XPManager address (only callable by owner)
+     * @param _xpManager Address of the XPManager contract
+     */
+    function setXPManager(address _xpManager) external override onlyOwner {
+        require(_xpManager != address(0), "Invalid XPManager address");
+        xpManager = _xpManager;
+        emit XPManagerSet(_xpManager);
+    }
+
+    /**
      * @dev Find the stage index that matches the given threshold
      * @param threshold The threshold to find
      * @return stageIndex The stage index, or type(uint256).max if not found

@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IXPVerifier.sol";
+import "./interfaces/IStagedXPVerifier.sol";
 
 contract XPManager is Ownable {
     using SafeERC20 for IERC20;
@@ -303,6 +304,93 @@ contract XPManager is Ownable {
         _grantXP(user, xpAmount);
         
         emit VerifierClaimed(user, conditionId, xpAmount);
+    }
+
+    /**
+     * @notice Bulk claim XP from a staged verifier (claims all eligible stages at once)
+     * @param conditionId ID of the staged verifier condition
+     * @param context Context data for the verifier
+     */
+    function claimBulkXP(
+        uint256 conditionId,
+        bytes calldata context
+    ) external {
+        require(verifiers[conditionId] != address(0), "Verifier not found");
+        
+        // Check if verifier supports bulk claiming
+        IStagedXPVerifier stagedVerifier = IStagedXPVerifier(verifiers[conditionId]);
+        
+        // Generate bulk claim ID
+        bytes32 claimId = stagedVerifier.bulkClaimId(msg.sender, context);
+        require(!usedProofs[claimId], "Already claimed");
+        
+        // Check cooldown
+        uint256 validAfter = stagedVerifier.validAfter(msg.sender, context);
+        require(block.timestamp >= validAfter, "Cooldown not expired");
+        
+        // Check bulk eligibility
+        (bool eligible, uint256 totalXP, uint256 highestStage) = stagedVerifier.isBulkEligible(msg.sender, context);
+        require(eligible, "Not eligible");
+        require(totalXP > 0, "No XP to claim");
+        
+        // Mark as used
+        usedProofs[claimId] = true;
+        
+        // Record verifier claim
+        _recordVerifierClaim(msg.sender, conditionId);
+        
+        // Update user stage in the verifier
+        stagedVerifier.updateUserStage(msg.sender, highestStage);
+        
+        // Grant XP
+        _grantXP(msg.sender, totalXP);
+        
+        emit VerifierClaimed(msg.sender, conditionId, totalXP);
+    }
+
+    /**
+     * @notice Bulk claim XP on behalf of a user from a staged verifier
+     * @param user Address to credit XP to
+     * @param conditionId ID of the staged verifier condition
+     * @param context Context data for the verifier
+     */
+    function claimBulkXPFor(
+        address user,
+        uint256 conditionId,
+        bytes calldata context
+    ) external {
+        require(user != address(0), "Invalid user");
+        require(verifiers[conditionId] != address(0), "Verifier not found");
+
+        // Check if verifier supports bulk claiming
+        IStagedXPVerifier stagedVerifier = IStagedXPVerifier(verifiers[conditionId]);
+
+        // Generate bulk claim ID bound to the target user
+        bytes32 claimId = stagedVerifier.bulkClaimId(user, context);
+        require(!usedProofs[claimId], "Already claimed");
+
+        // Check cooldown for the target user
+        uint256 validAfter = stagedVerifier.validAfter(user, context);
+        require(block.timestamp >= validAfter, "Cooldown not expired");
+
+        // Check bulk eligibility for the target user
+        (bool eligible, uint256 totalXP, uint256 highestStage) = stagedVerifier.isBulkEligible(user, context);
+        require(eligible, "Not eligible");
+        require(totalXP > 0, "No XP to claim");
+
+        // Mark as used
+        usedProofs[claimId] = true;
+
+        // Record verifier claim
+        _recordVerifierClaim(user, conditionId);
+
+        // Update user stage in the verifier
+        stagedVerifier.updateUserStage(user, highestStage);
+
+        // Grant XP to the target user
+        _grantXP(user, totalXP);
+        
+        emit VerifierClaimed(user, conditionId, totalXP);
     }
 
     /**
