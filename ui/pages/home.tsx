@@ -41,7 +41,7 @@ import { blockedProjects } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useContext, useState } from 'react'
+import { useContext, useState, useEffect } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -129,6 +129,30 @@ export default function Home({
 
   // Newsletter modal state
   const [newsletterModalOpen, setNewsletterModalOpen] = useState(false)
+  
+  // Client-side newsletter state
+  const [clientNewsletters, setClientNewsletters] = useState<any[]>(newestNewsletters || [])
+  const [newslettersLoading, setNewslettersLoading] = useState(false)
+  
+  // Fetch newsletters on client-side to get real ConvertKit data
+  useEffect(() => {
+    const fetchNewsletters = async () => {
+      setNewslettersLoading(true)
+      try {
+        const response = await fetch('/api/newsletters')
+        if (response.ok) {
+          const data = await response.json()
+          setClientNewsletters(data.newsletters || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch newsletters:', error)
+      } finally {
+        setNewslettersLoading(false)
+      }
+    }
+    
+    fetchNewsletters()
+  }, [])
 
   // Chart modal handlers
   const openCitizensChart = () => {
@@ -536,13 +560,22 @@ export default function Home({
               </div>
 
               <div className="space-y-4">
-                {newestNewsletters && newestNewsletters.length > 0 ? (
-                  newestNewsletters
+                {newslettersLoading ? (
+                  <div className="text-center py-8">
+                    <div className="text-white/60">Loading newsletters...</div>
+                  </div>
+                ) : clientNewsletters && clientNewsletters.length > 0 ? (
+                  clientNewsletters
                     .slice(0, 4)
                     .map((newsletter: any, index: number) => (
                       <div
                         key={newsletter.id || index}
                         className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5"
+                        onClick={() => {
+                          if (newsletter.url) {
+                            window.open(newsletter.url, '_blank')
+                          }
+                        }}
                       >
                         <div className="flex items-start gap-4">
                           <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-blue-600">
@@ -561,6 +594,11 @@ export default function Home({
                             <p className="text-white font-medium mb-1">
                               {newsletter.title || 'Newsletter Update'}
                             </p>
+                            {newsletter.description && (
+                              <p className="text-gray-300 text-sm mb-2 line-clamp-2">
+                                {newsletter.description}
+                              </p>
+                            )}
                             <div className="flex items-center gap-4 text-sm text-gray-400">
                               <span>
                                 {newsletter.publishedAt
@@ -571,6 +609,18 @@ export default function Home({
                               </span>
                               <span>•</span>
                               <span>{newsletter.views || 0} views</span>
+                              {newsletter.readTime && (
+                                <>
+                                  <span>•</span>
+                                  <span>{newsletter.readTime} min read</span>
+                                </>
+                              )}
+                              {newsletter.isArchived && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-orange-400">Archive</span>
+                                </>
+                              )}
                             </div>
                           </div>
                           <div className="text-gray-400 hover:text-white">
@@ -1345,20 +1395,8 @@ export async function getStaticProps() {
     mooneyPrice = mooneyPriceResult.value
   }
 
-  // Get newsletter data
-  const getNewsletterData = async () => {
-    try {
-      // This would be replaced with actual newsletter API call
-      // For now, returning empty array since no API endpoint exists
-      // You would implement: const response = await fetch('/api/newsletters')
-      return []
-    } catch (error) {
-      console.error('Newsletter data fetch failed:', error)
-      return []
-    }
-  }
-
-  const newestNewsletters: any = await getNewsletterData()
+  // Get newsletter data (will be fetched client-side)
+  const newestNewsletters: any = []
 
   return {
     props: {
