@@ -80,7 +80,8 @@ import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
-import Quests from '@/components/xp/Quests'
+
+// import Quests from '@/components/xp/Quests'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
@@ -372,7 +373,7 @@ export default function Home({
         </div>
 
         {/* Quest System - Horizontal Section */}
-        {address && <Quests />}
+        {/* {address && <Quests />} */}
 
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:grid-rows-1 lg:min-h-[800px]">
