@@ -62,7 +62,10 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     router.pathname === '/mission/[tokenId]' || 
     router.pathname === '/dude-perfect' ||
     router.pathname === '/network' ||
+    router.pathname === '/network-overview' ||
     router.pathname === '/mooney' ||
+    router.pathname === '/governance' ||
+    router.pathname === '/projects-overview' ||
     router.pathname === '/get-mooney' ||
     router.pathname === '/lock' ||
     router.pathname === '/bridge'
@@ -108,7 +111,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         </div>
 
         {/* Main Content - Full width with top nav */}
-        <main className={`xl:pt-16 w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'flex justify-center'}`}>
+        <main className={`pt-16 w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'flex justify-center'}`}>
           <div className={`w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'max-w-7xl px-4 sm:px-6 lg:px-8'}`}>
             {children}
           </div>

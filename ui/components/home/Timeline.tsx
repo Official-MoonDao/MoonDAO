@@ -8,6 +8,7 @@ interface TimelineEvent {
   description: string
   icon?: string
   iconAlt?: string
+  iconSize?: number // Optional icon size, defaults to 24
 }
 
 const timelineEvents: TimelineEvent[] = [
@@ -89,8 +90,9 @@ const timelineEvents: TimelineEvent[] = [
     title: 'Starship Access',
     description:
       'Fundraise for ownership of a Starship or equivalent launch vehicle, and guaranteed refuel missions.',
-    icon: '/assets/icon-plane.svg',
+    icon: '/assets/launchpad/rocket.svg',
     iconAlt: 'Starship Ownership',
+    iconSize: 40, // Significantly larger size for the rocket icon
   },
   {
     date: '2026',
@@ -388,8 +390,8 @@ export default function Timeline() {
                             <Image
                               src={event.icon}
                               alt={event.iconAlt || event.title}
-                              width={32}
-                              height={32}
+                              width={event.iconSize || 32}
+                              height={event.iconSize || 32}
                               className={`transition-all duration-300 ${
                                 selectedEvent === index
                                   ? 'opacity-100 brightness-110'
@@ -470,8 +472,8 @@ export default function Timeline() {
                         timelineEvents[selectedEvent].iconAlt ||
                         timelineEvents[selectedEvent].title
                       }
-                      width={32}
-                      height={32}
+                      width={timelineEvents[selectedEvent].iconSize || 32}
+                      height={timelineEvents[selectedEvent].iconSize || 32}
                       className="opacity-90"
                     />
                   )}
@@ -515,8 +517,8 @@ export default function Timeline() {
                         <Image
                           src={event.icon}
                           alt={event.iconAlt || event.title}
-                          width={24}
-                          height={24}
+                          width={event.iconSize || 24}
+                          height={event.iconSize || 24}
                           className="opacity-90"
                         />
                       )}

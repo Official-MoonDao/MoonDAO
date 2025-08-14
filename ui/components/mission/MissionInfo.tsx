@@ -64,6 +64,7 @@ export default function MissionInfo({
   setRange,
   primaryTerminalAddress,
   stage,
+  deadline,
   refreshBackers,
   refreshTotalFunding,
 }: any) {
@@ -295,6 +296,7 @@ export default function MissionInfo({
               mission={mission}
               teamNFT={teamNFT}
               token={token}
+              deadline={deadline}
               primaryTerminalAddress={primaryTerminalAddress}
               jbTokensContract={jbTokensContract}
               jbControllerContract={jbControllerContract}

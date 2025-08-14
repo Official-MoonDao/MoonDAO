@@ -18,7 +18,7 @@ export default function PaginationButtons({
     <Frame noPadding marginBottom="0px">
       <div
         id="pagination-container"
-        className="w-full mb-5 flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8"
+        className="w-full mb-5 flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8 px-4"
       >
         <button
           onClick={() => {
@@ -26,7 +26,7 @@ export default function PaginationButtons({
               handlePageChange(pageIdx - 1)
             }
           }}
-          className={`pagination-button ${
+          className={`pagination-button transition-opacity hover:scale-110 flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full ${
             pageIdx === 1 ? 'opacity-10' : 'cursor-pointer opacity-100'
           }`}
           disabled={pageIdx === 1}
@@ -38,7 +38,7 @@ export default function PaginationButtons({
             height={35}
           />
         </button>
-        <p id="page-number" className="px-5 font-bold">
+        <p id="page-number" className="px-5 font-bold whitespace-nowrap">
           {label || 'Page'} {pageIdx} of {maxPage}
         </p>
         <button
@@ -47,7 +47,7 @@ export default function PaginationButtons({
               handlePageChange(pageIdx + 1)
             }
           }}
-          className={`pagination-button ${
+          className={`pagination-button transition-opacity hover:scale-110 flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full ${
             pageIdx === maxPage ? 'opacity-10' : 'cursor-pointer opacity-100'
           }`}
           disabled={pageIdx === maxPage}

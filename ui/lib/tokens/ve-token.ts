@@ -110,7 +110,7 @@ export function calculateVMOONEY({
   lockTime,
   max,
 }: any) {
-  if (!MOONEYAmount) return 0
+  if (!MOONEYAmount) return '0.00'
 
   const vestingStart = calculateVestingStart({
     MOONEYAmount,
@@ -119,7 +119,10 @@ export function calculateVMOONEY({
   })
   const percentage = (time - vestingStart) / (max - vestingStart)
   const finalVMOONEYAmount = MOONEYAmount * percentage || 0
-  return finalVMOONEYAmount.toFixed(
-    finalVMOONEYAmount > 1 || finalVMOONEYAmount === 0 ? 2 : 8
-  )
+  
+  // Format with commas and exactly 2 decimals
+  return finalVMOONEYAmount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }

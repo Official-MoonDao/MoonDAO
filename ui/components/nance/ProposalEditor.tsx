@@ -32,7 +32,6 @@ import { useSignProposal } from '@/lib/nance/useSignProposal'
 import { classNames } from '@/lib/utils/tailwind'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
-import Head from '@/components/layout/Head'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
 import EditorMarkdownUpload from './EditorMarkdownUpload'
@@ -328,8 +327,6 @@ export default function ProposalEditor() {
 
   return (
     <div className="flex flex-col justify-center items-start animate-fadeIn w-full md:w-full">
-      <Head title="Submissions Portal" />
-
       <div className="px-2 w-full md:max-w-[1200px]">
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="">
