@@ -12,11 +12,11 @@ contract HasVotedStaged is XPOracleVerifier, StagedXPVerifier {
     constructor(address _oracle) XPOracleVerifier(_oracle) {
         // Initialize default voting stages
         // Note: After deployment, you can use setStageConfig() for easy reconfiguration
-        _addStage(1, 5);     // 1 vote = 10 XP
-        _addStage(5, 10);     // 5 votes = 25 XP (total: 35 XP)
-        _addStage(10, 20);    // 10 votes = 50 XP (total: 85 XP)
-        _addStage(20, 50);   // 20 votes = 100 XP (total: 185 XP)
-        _addStage(100, 100);  // 100 votes = 500 XP (total: 685 XP)
+        _addStage(1, 5); // 1 vote = 10 XP
+        _addStage(5, 10); // 5 votes = 25 XP (total: 35 XP)
+        _addStage(10, 20); // 10 votes = 50 XP (total: 85 XP)
+        _addStage(20, 50); // 20 votes = 100 XP (total: 185 XP)
+        _addStage(100, 100); // 100 votes = 500 XP (total: 685 XP)
     }
 
     function name() external pure returns (string memory) {
@@ -30,40 +30,29 @@ contract HasVotedStaged is XPOracleVerifier, StagedXPVerifier {
 
     function updateStage(uint256 stageIndex, uint256 threshold, uint256 xpAmount, bool active) external onlyOwner {
         require(stageIndex < stages.length, "Stage does not exist");
-        
-        stages[stageIndex] = Stage({
-            threshold: threshold,
-            xpAmount: xpAmount,
-            active: active
-        });
-        
+
+        stages[stageIndex] = Stage({threshold: threshold, xpAmount: xpAmount, active: active});
+
         emit StageUpdated(stageIndex, threshold, xpAmount, active);
     }
 
-    function setStageConfig(
-        uint256[] calldata thresholds,
-        uint256[] calldata xpAmounts
-    ) external onlyOwner {
+    function setStageConfig(uint256[] calldata thresholds, uint256[] calldata xpAmounts) external onlyOwner {
         require(thresholds.length == xpAmounts.length, "Arrays length mismatch");
         require(thresholds.length > 0, "No stages provided");
-        
+
         // Validate thresholds are in ascending order
         for (uint256 i = 1; i < thresholds.length; i++) {
             require(thresholds[i] > thresholds[i - 1], "Thresholds must be ascending");
         }
-        
+
         // Clear existing stages
         delete stages;
-        
+
         // Add new stages
         for (uint256 i = 0; i < thresholds.length; i++) {
-            stages.push(Stage({
-                threshold: thresholds[i],
-                xpAmount: xpAmounts[i],
-                active: true
-            }));
+            stages.push(Stage({threshold: thresholds[i], xpAmount: xpAmounts[i], active: true}));
         }
-        
+
         emit StageConfigSet(thresholds, xpAmounts);
     }
 
@@ -89,11 +78,13 @@ contract HasVotedStaged is XPOracleVerifier, StagedXPVerifier {
      * @return stageIndex The stage index the user qualifies for
      * @return xpAmount The XP amount for that stage
      */
-    function _checkStageEligibility(
-        address user,
-        bytes calldata context
-    ) internal view override returns (bool eligible, uint256 stageIndex, uint256 xpAmount) {
-        (uint256 minVotes, , uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+    function _checkStageEligibility(address user, bytes calldata context)
+        internal
+        view
+        override
+        returns (bool eligible, uint256 stageIndex, uint256 xpAmount)
+    {
+        (uint256 minVotes,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
         // Find which stage this minVotes corresponds to
@@ -104,12 +95,7 @@ contract HasVotedStaged is XPOracleVerifier, StagedXPVerifier {
 
         // Verify oracle proof using your existing backend format
         _verifyOracleProof(
-            user,
-            keccak256(abi.encode(minVotes)),
-            stages[stageIndex].xpAmount,
-            validAfterTs,
-            validBefore,
-            signature
+            user, keccak256(abi.encode(minVotes)), stages[stageIndex].xpAmount, validAfterTs, validBefore, signature
         );
 
         return (true, stageIndex, stages[stageIndex].xpAmount);
@@ -121,10 +107,15 @@ contract HasVotedStaged is XPOracleVerifier, StagedXPVerifier {
      * @param context Raw context data from your existing backend
      * @return Unique claim identifier
      */
-    function claimId(address user, bytes calldata context) external view override(IXPVerifier, StagedXPVerifier) returns (bytes32) {
-        (uint256 minVotes, uint256 amount, uint256 validAfterTs, uint256 validBefore, ) =
+    function claimId(address user, bytes calldata context)
+        external
+        view
+        override(IXPVerifier, StagedXPVerifier)
+        returns (bytes32)
+    {
+        (uint256 minVotes, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
-        
+
         // Use your original claimId format for backwards compatibility
         bytes32 contextHash = keccak256(abi.encode(minVotes, amount, validAfterTs, validBefore));
         return keccak256(abi.encodePacked(address(this), user, contextHash));
@@ -137,11 +128,13 @@ contract HasVotedStaged is XPOracleVerifier, StagedXPVerifier {
      * @return eligible Whether the user's proof is valid
      * @return userMetric The user's current vote count
      */
-    function _checkBulkEligibility(
-        address user,
-        bytes calldata context
-    ) internal view override returns (bool eligible, uint256 userMetric) {
-        (uint256 minVotes, , uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+    function _checkBulkEligibility(address user, bytes calldata context)
+        internal
+        view
+        override
+        returns (bool eligible, uint256 userMetric)
+    {
+        (uint256 minVotes,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
         // For bulk claims, the minVotes in context represents the user's actual vote count

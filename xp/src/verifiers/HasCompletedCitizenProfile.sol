@@ -21,22 +21,13 @@ contract HasCompletedCitizenProfile is XPOracleVerifier {
         return "HasCompletedCitizenProfile:v1";
     }
 
-    function isEligible(address user, bytes calldata context)
-        external
-        view
-        returns (bool eligible, uint256 xpAmount)
-    {
-        (uint256 profileCompleteness, , uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+    function isEligible(address user, bytes calldata context) external view returns (bool eligible, uint256 xpAmount) {
+        (uint256 profileCompleteness,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
         // The oracle enforces that the given `user` has completed their profile to at least `profileCompleteness` level
         _verifyOracleProof(
-            user,
-            keccak256(abi.encode(profileCompleteness)),
-            xpPerClaim,
-            validAfterTs,
-            validBefore,
-            signature
+            user, keccak256(abi.encode(profileCompleteness)), xpPerClaim, validAfterTs, validBefore, signature
         );
 
         eligible = true;
@@ -44,7 +35,7 @@ contract HasCompletedCitizenProfile is XPOracleVerifier {
     }
 
     function claimId(address user, bytes calldata context) external view returns (bytes32) {
-        (uint256 profileCompleteness, uint256 amount, uint256 validAfterTs, uint256 validBefore, ) =
+        (uint256 profileCompleteness, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
         // Keep amount in the claimId for backwards compatibility even if ignored
         bytes32 contextHash = keccak256(abi.encode(profileCompleteness, amount, validAfterTs, validBefore));

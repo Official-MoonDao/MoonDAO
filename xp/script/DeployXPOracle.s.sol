@@ -5,7 +5,6 @@ import "forge-std/Script.sol";
 import "../src/XPOracle.sol";
 
 contract DeployXPOracleScript is Script {
-
     string public constant ORACLE_NAME = "MoonDAO XP Oracle";
     string public constant ORACLE_VERSION = "1.0.0";
 
@@ -34,5 +33,3 @@ contract DeployXPOracleScript is Script {
         }
     }
 }
-
-
