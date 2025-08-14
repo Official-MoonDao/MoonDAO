@@ -464,7 +464,7 @@ contract XPManagerTest is Test {
         assertEq(rewardToken.balanceOf(user1), initialBalance + 15 * 10**18);
         
         // Check highest threshold was updated
-        assertEq(xpManager.highestThresholdReached(user1), 50);
+        assertEq(xpManager.highestThresholdClaimed(user1), 50);
         
         vm.stopPrank();
     }

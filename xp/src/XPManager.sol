@@ -37,8 +37,8 @@ contract XPManager is Ownable {
     // Single ERC20 reward configuration
     ERC20RewardConfig private erc20RewardConfig;
     
-    // Track highest XP threshold reached per user (for the single token)
-    mapping(address => uint256) public highestThresholdReached; // user => threshold
+    // Track highest XP threshold claimed per user (for the single token)
+    mapping(address => uint256) public highestThresholdClaimed; // user => threshold
     
     // Events
     event XPEarned(address indexed user, uint256 xpAmount, uint256 totalXP);
@@ -48,6 +48,7 @@ contract XPManager is Ownable {
     event ERC20RewardConfigDeactivated(address indexed tokenAddress);
     event VerifierClaimed(address indexed user, uint256 indexed verifierId, uint256 xpAmount);
     event UserReset(address indexed user, uint256 previousXP, uint256 claimedVerifiersCount);
+    event VerifierUpdated(uint256 indexed id, address oldVerifier, address newVerifier);
 
     constructor() Ownable(msg.sender) {
         // No constructor parameters needed for pure XP system
@@ -60,8 +61,22 @@ contract XPManager is Ownable {
      */
     function registerVerifier(uint256 id, address verifier) external onlyOwner {
         require(verifier != address(0), "Invalid verifier address");
+        require(verifiers[id] == address(0), "Verifier ID already exists");
         verifiers[id] = verifier;
         emit VerifierRegistered(id, verifier);
+    }
+
+    /**
+     * @notice Update an existing verifier
+     * @param id Identifier of the verifier to update
+     * @param verifier New address of the verifier contract
+     */
+    function updateVerifier(uint256 id, address verifier) external onlyOwner {
+        require(verifier != address(0), "Invalid verifier address");
+        require(verifiers[id] != address(0), "Verifier ID does not exist");
+        address oldVerifier = verifiers[id];
+        verifiers[id] = verifier;
+        emit VerifierUpdated(id, oldVerifier, verifier);
     }
 
     /**
@@ -122,17 +137,17 @@ contract XPManager is Ownable {
         
         uint256 userTotalXP = userXP[msg.sender];
         uint256 totalReward = 0;
-        uint256 newHighestThreshold = highestThresholdReached[msg.sender];
+        uint256 newHighestThreshold = highestThresholdClaimed[msg.sender];
         
         RewardThreshold[] storage thresholds = erc20RewardConfig.thresholds;
         
-        // Calculate rewards and update highest threshold reached
+        // Calculate rewards and update highest threshold claimed
         for (uint256 i = 0; i < thresholds.length; i++) {
             RewardThreshold storage threshold = thresholds[i];
             
             if (threshold.active && 
                 userTotalXP >= threshold.xpThreshold && 
-                threshold.xpThreshold > highestThresholdReached[msg.sender]) {
+                threshold.xpThreshold > highestThresholdClaimed[msg.sender]) {
                 totalReward += threshold.rewardAmount;
                 if (threshold.xpThreshold > newHighestThreshold) {
                     newHighestThreshold = threshold.xpThreshold;
@@ -142,8 +157,8 @@ contract XPManager is Ownable {
         
         require(totalReward > 0, "No rewards to claim");
         
-        // Update highest threshold reached
-        highestThresholdReached[msg.sender] = newHighestThreshold;
+        // Update highest threshold claimed
+        highestThresholdClaimed[msg.sender] = newHighestThreshold;
         
         // Transfer tokens
         IERC20(erc20RewardConfig.tokenAddress).safeTransfer(msg.sender, totalReward);
@@ -163,7 +178,7 @@ contract XPManager is Ownable {
         
         uint256 userTotalXP = userXP[user];
         uint256 totalReward = 0;
-        uint256 highestReached = highestThresholdReached[user];
+        uint256 highestClaimed = highestThresholdClaimed[user];
         
         RewardThreshold[] storage thresholds = erc20RewardConfig.thresholds;
         
@@ -172,7 +187,7 @@ contract XPManager is Ownable {
             
             if (threshold.active && 
                 userTotalXP >= threshold.xpThreshold && 
-                threshold.xpThreshold > highestReached) {
+                threshold.xpThreshold > highestClaimed) {
                 totalReward += threshold.rewardAmount;
             }
         }
@@ -449,23 +464,9 @@ contract XPManager is Ownable {
      * @param amount XP to grant
      */
     function _grantXP(address user, uint256 amount) internal {
-        uint256 oldXP = userXP[user];
         userXP[user] += amount;
         
-        // Update highest threshold reached for all active ERC20 reward configs
-        _updateHighestThresholdReached(user, oldXP, userXP[user]);
-        
         emit XPEarned(user, amount, userXP[user]);
-    }
-
-    /**
-     * @dev Internal function to update highest threshold reached
-     * @param user Address of the user
-     * @param oldXP Previous XP amount
-     * @param newXP New XP amount
-     */
-    function _updateHighestThresholdReached(address user, uint256 oldXP, uint256 newXP) internal {
-        // In single-token mode, we update thresholds when rewards are calculated.
     }
 
     /**
@@ -483,8 +484,8 @@ contract XPManager is Ownable {
         // Reset user XP
         userXP[user] = 0;
         
-        // Reset highest threshold reached
-        highestThresholdReached[user] = 0;
+        // Reset highest threshold claimed
+        highestThresholdClaimed[user] = 0;
         
         // Get all claimed verifiers and reset them
         uint256[] memory claimedVerifiers = userClaimedVerifiers[user];
