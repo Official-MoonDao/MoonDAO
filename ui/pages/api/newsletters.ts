@@ -111,6 +111,8 @@ export default async function handler(
         web_url: broadcast.web_url,
         published_at: broadcast.published_at,
         status: broadcast.status,
+        total_recipients: broadcast.total_recipients,
+        stats: broadcast.stats,
         final_url: publicUrl
       })
       
@@ -123,7 +125,7 @@ export default async function handler(
                       broadcast.content.substring(0, 200).replace(/<[^>]*>/g, '') + '...' : 
                       'Newsletter content available'),
         publishedAt: broadcast.published_at || broadcast.created_at,
-        views: broadcast.total_recipients || Math.floor(Math.random() * 5000),
+        views: broadcast.total_recipients || null, // Use real recipient count or null if not available
         readTime: Math.ceil(((broadcast.content?.length || 1000) / 200)),
         image: null, // ConvertKit doesn't provide thumbnails in basic API
         url: publicUrl,

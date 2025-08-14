@@ -607,8 +607,12 @@ export default function Home({
                                     ).toLocaleDateString()
                                   : 'Recently'}
                               </span>
-                              <span>•</span>
-                              <span>{newsletter.views || 0} views</span>
+                              {newsletter.views && newsletter.views > 0 && (
+                                <>
+                                  <span>•</span>
+                                  <span>{newsletter.views} recipients</span>
+                                </>
+                              )}
                               {newsletter.readTime && (
                                 <>
                                   <span>•</span>
