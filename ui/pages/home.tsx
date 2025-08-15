@@ -14,6 +14,7 @@ import {
   GiftIcon,
 } from '@heroicons/react/24/outline'
 import { Action, RequestBudget } from '@nance/nance-sdk'
+import { BigNumber } from 'ethers'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
@@ -40,7 +41,7 @@ import { blockedProjects } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useContext, useState } from 'react'
+import { useContext, useState, useEffect } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -128,6 +129,30 @@ export default function Home({
 
   // Newsletter modal state
   const [newsletterModalOpen, setNewsletterModalOpen] = useState(false)
+  
+  // Client-side newsletter state
+  const [clientNewsletters, setClientNewsletters] = useState<any[]>(newestNewsletters || [])
+  const [newslettersLoading, setNewslettersLoading] = useState(false)
+  
+  // Fetch newsletters on client-side to get real ConvertKit data
+  useEffect(() => {
+    const fetchNewsletters = async () => {
+      setNewslettersLoading(true)
+      try {
+        const response = await fetch('/api/newsletters')
+        if (response.ok) {
+          const data = await response.json()
+          setClientNewsletters(data.newsletters || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch newsletters:', error)
+      } finally {
+        setNewslettersLoading(false)
+      }
+    }
+    
+    fetchNewsletters()
+  }, [])
 
   // Chart modal handlers
   const openCitizensChart = () => {
@@ -224,7 +249,10 @@ export default function Home({
     address
   )
 
-  const withdrawable = useWithdrawAmount(votingEscrowDepositorContract, address)
+  // Use withdraw amount hook with conditional check
+  const withdrawable = VOTING_ESCROW_DEPOSITOR_ADDRESSES[chainSlug] 
+    ? useWithdrawAmount(votingEscrowDepositorContract, address)
+    : BigNumber.from(0)
 
   return (
     <Container>
@@ -332,16 +360,6 @@ export default function Home({
                   </div>
                   <div className="text-xs text-white/70">Teams</div>
                 </div>
-
-                <div className="text-center">
-                  <div className="text-sm mb-1 flex items-center justify-center">
-                    <TrophyIcon className="w-4 h-4 text-yellow-400" />
-                  </div>
-                  <div className="text-lg font-bold text-yellow-300">
-                    {/* {userLevel} */}
-                  </div>
-                  <div className="text-xs text-white/70">Level</div>
-                </div>
               </div>
             )}
 
@@ -376,18 +394,18 @@ export default function Home({
         {/* {address && <Quests />} */}
 
         {/* Main Content - Facebook Style Three Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:grid-rows-1 lg:min-h-[800px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
           {/* Left Sidebar - Key Metrics & Quick Actions */}
-          <div className="lg:col-span-3 flex flex-col space-y-4">
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full">
             {/* Weekly Reward Pool - Enhanced UI */}
             <WeeklyRewardPool />
 
             {/* Key Metrics Card */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
               <h3 className="font-semibold text-white mb-8 text-lg">
                 DAO Metrics
               </h3>
-              <div className="space-y-8">
+              <div className="space-y-8 h-full">
                 <div
                   className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
                   onClick={openCitizensChart}
@@ -460,7 +478,7 @@ export default function Home({
           </div>
 
           {/* Center Column - Main Feed */}
-          <div className="lg:col-span-6 flex flex-col space-y-6">
+          <div className="lg:col-span-6 flex flex-col space-y-6 h-full min-h-[800px]">
             {/* Quick Actions */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center gap-4 mb-4">
@@ -542,13 +560,22 @@ export default function Home({
               </div>
 
               <div className="space-y-4">
-                {newestNewsletters && newestNewsletters.length > 0 ? (
-                  newestNewsletters
+                {newslettersLoading ? (
+                  <div className="text-center py-8">
+                    <div className="text-white/60">Loading newsletters...</div>
+                  </div>
+                ) : clientNewsletters && clientNewsletters.length > 0 ? (
+                  clientNewsletters
                     .slice(0, 4)
                     .map((newsletter: any, index: number) => (
                       <div
                         key={newsletter.id || index}
                         className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5"
+                        onClick={() => {
+                          if (newsletter.url) {
+                            window.open(newsletter.url, '_blank')
+                          }
+                        }}
                       >
                         <div className="flex items-start gap-4">
                           <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-blue-600">
@@ -567,6 +594,11 @@ export default function Home({
                             <p className="text-white font-medium mb-1">
                               {newsletter.title || 'Newsletter Update'}
                             </p>
+                            {newsletter.description && (
+                              <p className="text-gray-300 text-sm mb-2 line-clamp-2">
+                                {newsletter.description}
+                              </p>
+                            )}
                             <div className="flex items-center gap-4 text-sm text-gray-400">
                               <span>
                                 {newsletter.publishedAt
@@ -575,8 +607,24 @@ export default function Home({
                                     ).toLocaleDateString()
                                   : 'Recently'}
                               </span>
-                              <span>•</span>
-                              <span>{newsletter.views || 0} views</span>
+                              {newsletter.views && newsletter.views > 0 && (
+                                <>
+                                  <span>•</span>
+                                  <span>{newsletter.views} recipients</span>
+                                </>
+                              )}
+                              {newsletter.readTime && (
+                                <>
+                                  <span>•</span>
+                                  <span>{newsletter.readTime} min read</span>
+                                </>
+                              )}
+                              {newsletter.isArchived && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-orange-400">Archive</span>
+                                </>
+                              )}
                             </div>
                           </div>
                           <div className="text-gray-400 hover:text-white">
@@ -592,7 +640,7 @@ export default function Home({
                       </div>
                     ))
                 ) : (
-                  <div className="text-center py-8">
+                  <div className="text-center py-16 min-h-[300px] flex flex-col justify-center">
                     <NewspaperIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
                     <p className="text-gray-400 text-sm">
                       No newsletters available
@@ -606,7 +654,7 @@ export default function Home({
             </div>
 
             {/* Active Proposals Card */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-white">
                   Active Proposals
@@ -619,7 +667,7 @@ export default function Home({
                 </StandardButton>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 h-full overflow-y-auto">
                 {proposals &&
                   proposals.slice(0, 3).map((proposal: any, i: number) => {
                     const ethAmount = getEthAmountFromProposal(proposal.actions)
@@ -670,7 +718,7 @@ export default function Home({
           </div>
 
           {/* Right Sidebar - Community & Stats */}
-          <div className="lg:col-span-3 flex flex-col space-y-4">
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px]">
             {/* Recent Citizens */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
@@ -794,7 +842,7 @@ export default function Home({
             </div>
 
             {/* Marketplace */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-white text-lg">
                   Marketplace
@@ -807,7 +855,7 @@ export default function Home({
                 </StandardButton>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 h-full overflow-y-auto">
                 {newestListings && newestListings.length > 0 ? (
                   newestListings
                     .slice(0, 3)
@@ -894,47 +942,28 @@ export default function Home({
                   <RocketLaunchIcon className="w-7 h-7" />
                   Launchpad
                 </h3>
-                <p className="text-blue-200">Fund your next mission to space</p>
+                <p className="text-blue-200">Coming soon - Fund your next mission to space</p>
               </div>
-              <StandardButton
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all"
-                link="/launchpad"
-              >
-                Launch Project
-              </StandardButton>
+              <div className="bg-gray-600 text-gray-300 px-6 py-3 rounded-xl font-semibold shadow-lg cursor-not-allowed">
+                Coming Soon
+              </div>
             </div>
 
             <div className="bg-black/20 rounded-xl p-6 border border-blue-500/20">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                    F
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white text-lg">
-                      Frank to Space
-                    </h4>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-blue-200">Active Funding</span>
-                    </div>
-                  </div>
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 mx-auto mb-4">
+                  <RocketLaunchIcon className="w-8 h-8" />
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-white text-lg">1.2 / 31 ETH</p>
-                  <p className="text-blue-200 text-sm">3.9% funded</p>
+                <h4 className="font-bold text-white text-xl mb-2">
+                  Launchpad Coming Soon
+                </h4>
+                <p className="text-blue-200 text-sm mb-4">
+                  We're preparing an exciting new way to fund space missions through decentralized crowdfunding.
+                </p>
+                <div className="text-blue-300 text-xs">
+                  Stay tuned for launch updates!
                 </div>
               </div>
-              <div className="w-full bg-gray-700 rounded-full h-3 mb-4">
-                <div
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all"
-                  style={{ width: '4%' }}
-                ></div>
-              </div>
-              <p className="text-blue-100 text-sm">
-                Send Frank Miller to space as MoonDAO's first citizen astronaut
-                mission.
-              </p>
             </div>
           </div>
 
@@ -976,7 +1005,7 @@ export default function Home({
                 </div>
               </div>
 
-              {currentProjects && currentProjects.length > 0 && (
+              {currentProjects && currentProjects.length > 0 ? (
                 <div className="pt-4 border-t border-green-500/20">
                   <div className="text-sm mb-3">
                     <span className="font-medium text-white">
@@ -1012,6 +1041,24 @@ export default function Home({
                         +{currentProjects.length - 1} more projects available
                       </p>
                     )}
+                  </div>
+                </div>
+              ) : (
+                <div className="pt-4 border-t border-green-500/20">
+                  <div className="text-center py-8">
+                    <RocketLaunchIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+                    <p className="text-gray-400 text-sm mb-2">
+                      No active projects at the moment
+                    </p>
+                    <p className="text-gray-500 text-xs mb-4">
+                      Check back soon for new space exploration initiatives
+                    </p>
+                    <StandardButton
+                      className="bg-green-600/20 hover:bg-green-600/40 text-green-300 text-sm px-4 py-2 rounded-lg transition-all"
+                      link="/projects"
+                    >
+                      View All Projects
+                    </StandardButton>
                   </div>
                 </div>
               )}
@@ -1229,7 +1276,7 @@ export async function getStaticProps() {
         ),
         queryTable(
           chain,
-          `SELECT * FROM ${projectTableName} WHERE active = 1 ORDER BY id DESC LIMIT 10`
+          `SELECT * FROM ${projectTableName} ORDER BY id DESC`
         ),
       ])
 
@@ -1307,12 +1354,28 @@ export async function getStaticProps() {
     newestJobs = jobs
     newestTeams = teams
 
-    // Process projects data for home page display
-    if (projects) {
-      currentProjects = projects.filter(
-        (project: any) =>
-          project.active && !blockedProjects.includes(project.id)
-      ) as Project[]
+    // Process projects data for home page display - match projects-overview.tsx logic
+    if (projects && projects.length > 0) {
+      const activeProjects = []
+      for (let i = 0; i < projects.length; i++) {
+        if (projects[i]) {
+          const project = projects[i] as any
+          // Use the 'active' field to determine current projects, excluding blocked ones
+          if (project.active && !blockedProjects.includes(project.id)) {
+            activeProjects.push(project)
+          }
+        }
+      }
+      
+      // Sort projects by eligible status (same as projects-overview.tsx)
+      activeProjects.sort((a, b) => {
+        if (a.eligible === b.eligible) {
+          return 0
+        }
+        return a.eligible ? 1 : -1
+      })
+      
+      currentProjects = activeProjects.reverse() as Project[]
     }
 
     // Process teams data for home page display
@@ -1336,20 +1399,8 @@ export async function getStaticProps() {
     mooneyPrice = mooneyPriceResult.value
   }
 
-  // Get newsletter data
-  const getNewsletterData = async () => {
-    try {
-      // This would be replaced with actual newsletter API call
-      // For now, returning empty array since no API endpoint exists
-      // You would implement: const response = await fetch('/api/newsletters')
-      return []
-    } catch (error) {
-      console.error('Newsletter data fetch failed:', error)
-      return []
-    }
-  }
-
-  const newestNewsletters: any = await getNewsletterData()
+  // Get newsletter data (will be fetched client-side)
+  const newestNewsletters: any = []
 
   return {
     props: {
