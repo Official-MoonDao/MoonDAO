@@ -400,47 +400,47 @@ export const XP_ORACLE_ADDRESSES: Index = {
 
 export const XP_MANAGER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x633ec59624C71Fb730A6d3c67DC059b2b8ac4007',
+  sepolia: '0xAFd1D5CbfbeD00f96E1e69aA3c25A96FDc8FFe30',
 }
 
 export const HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x585A77B68099843249B4D4Ca2c713F24cF094F23',
+  sepolia: '0xC3c7a63FDE645F1bfc2D0D351a643C4469A5A03a',
 }
 
 export const HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x691E46C52B306E299641263aFC8bEC6a6C99c15c',
+  sepolia: '0x66F9798c0E4FAD20a799C866D1e76ad82E67319a',
 }
 
 export const HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x9af8fa61eF729D905A38f379749acbcABCDEBD2F',
+  sepolia: '0x7Cf90D0cA873cAa58f5485a178676eA340E7ca14',
 }
 
 export const HAS_VOTING_POWER_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x914F0eD946F921fd98F54b9e404054fA6D25d31d',
+  sepolia: '0x5A61C904D20187aD82E18787470cd9a92F5349c5',
 }
 
 export const HAS_VOTED_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x9eF5136564d3F7F45Cf7291b4BdDcE6D312936bA',
+  sepolia: '0x7d16aC04200f23d5E5aE5faAd32155089C87a948',
 }
 
 export const HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x60bb58Ec9bf969f9AF424f2B2C2b08C5d2Ab5721',
+  sepolia: '0x743821cD94fB32D637669e96984A7b7Ba235fEc2',
 }
 
 export const HAS_CONTRIBUTED_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x0DF9C916422a8d5D95501cdC8FD6C55feb34bdA5',
+  sepolia: '0xB3330c5451f0655d8ac3eA85025c6176c47661F9',
 }
 
 export const HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xf8e40AFBf5CE2d089C9543cD8DD135A3599427D6',
+  sepolia: '0x6979a7E362c6A098314764aD9d0F2C15442104af',
 }
 
 export const XP_VERIFIERS: any = [

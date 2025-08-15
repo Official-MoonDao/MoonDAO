@@ -22,7 +22,9 @@ contract TestOracleVerifier is XPOracleVerifier {
     }
 
     // Minimal IXPVerifier implementations to satisfy the interface
-    function name() external pure returns (string memory) { return "TestOracleVerifier"; }
+    function name() external pure returns (string memory) {
+        return "TestOracleVerifier";
+    }
 
     function isEligible(address, bytes calldata) external pure returns (bool, uint256) {
         return (false, 0);
@@ -32,7 +34,9 @@ contract TestOracleVerifier is XPOracleVerifier {
         return keccak256(abi.encodePacked(address(this), user, context));
     }
 
-    function validAfter(address, bytes calldata) external pure returns (uint256) { return 0; }
+    function validAfter(address, bytes calldata) external pure returns (uint256) {
+        return 0;
+    }
 }
 
 contract XPOracleVerifierTest is Test {
@@ -63,15 +67,7 @@ contract XPOracleVerifierTest is Test {
         uint256 _validBefore
     ) internal view returns (bytes memory) {
         bytes32 structHash = keccak256(
-            abi.encode(
-                oracle.PROOF_TYPEHASH(),
-                _user,
-                _verifier,
-                _contextHash,
-                _xpAmount,
-                _validAfter,
-                _validBefore
-            )
+            abi.encode(oracle.PROOF_TYPEHASH(), _user, _verifier, _contextHash, _xpAmount, _validAfter, _validBefore)
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", oracle.domainSeparator(), structHash));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(oraclePrivateKey, digest);
@@ -102,15 +98,7 @@ contract XPOracleVerifierTest is Test {
 
         // Sign with wrong key
         bytes32 structHash = keccak256(
-            abi.encode(
-                oracle.PROOF_TYPEHASH(),
-                user,
-                address(verifier),
-                contextHash,
-                xpAmount,
-                validAfter,
-                validBefore
-            )
+            abi.encode(oracle.PROOF_TYPEHASH(), user, address(verifier), contextHash, xpAmount, validAfter, validBefore)
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", oracle.domainSeparator(), structHash));
         uint256 wrongPrivateKey = 0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd;

@@ -10,7 +10,7 @@ contract MockXPOracle is IXPOracle {
     mapping(bytes32 => bool) public validProofs;
     mapping(address => bool) public signers;
     bytes32 public constant DOMAIN_SEPARATOR = keccak256("MockXPOracle");
-    
+
     function setValidProof(bytes32 proofHash, bool valid) external {
         validProofs[proofHash] = valid;
     }
@@ -42,10 +42,10 @@ contract BulkClaimTest is Test {
     XPManager public xpManager;
     HasVotingPowerStaged public votingVerifier;
     MockXPOracle public oracle;
-    
+
     address public user = address(0x123);
     address public owner = address(this);
-    
+
     uint256 public constant VERIFIER_ID = 1;
 
     function setUp() public {
@@ -53,10 +53,10 @@ contract BulkClaimTest is Test {
         oracle = new MockXPOracle();
         xpManager = new XPManager();
         votingVerifier = new HasVotingPowerStaged(address(oracle));
-        
+
         // Register verifier
         xpManager.registerVerifier(VERIFIER_ID, address(votingVerifier));
-        
+
         // Set XPManager in verifier
         votingVerifier.setXPManager(address(xpManager));
     }
@@ -66,7 +66,7 @@ contract BulkClaimTest is Test {
         uint256 votingPower = 10000;
         uint256 validAfter = block.timestamp;
         uint256 validBefore = block.timestamp + 1 hours;
-        
+
         // Create context data
         bytes memory context = abi.encode(
             votingPower,
@@ -75,7 +75,7 @@ contract BulkClaimTest is Test {
             validBefore,
             "" // Empty signature for testing
         );
-        
+
         // Create oracle proof
         IXPOracle.Proof memory proof = IXPOracle.Proof({
             user: user,
@@ -85,32 +85,30 @@ contract BulkClaimTest is Test {
             validAfter: validAfter,
             validBefore: validBefore
         });
-        
+
         // Set proof as valid in mock oracle
         bytes32 proofHash = keccak256(abi.encode(proof));
         oracle.setValidProof(proofHash, true);
-        
+
         // Check initial state
         assertEq(xpManager.getTotalXP(user), 0);
         assertEq(votingVerifier.getUserHighestStage(user), 0);
-        
+
         // Check bulk eligibility
         (bool eligible, uint256 totalXP, uint256 highestStage) = votingVerifier.isBulkEligible(user, context);
         assertTrue(eligible);
-        
 
-        
         assertEq(totalXP, 185); // 5 + 10 + 20 + 50 + 100 = 185
         assertEq(highestStage, 4); // Index of last stage
-        
+
         // Perform bulk claim
         vm.prank(user);
         xpManager.claimBulkXP(VERIFIER_ID, context);
-        
+
         // Verify results
         assertEq(xpManager.getTotalXP(user), 185);
         assertEq(votingVerifier.getUserHighestStage(user), 5); // Next stage they can claim (have claimed 0-4)
-        
+
         // Verify cannot claim again (no more stages available)
         vm.prank(user);
         vm.expectRevert("Not eligible");
@@ -122,16 +120,10 @@ contract BulkClaimTest is Test {
         uint256 votingPower = 100;
         uint256 validAfter = block.timestamp;
         uint256 validBefore = block.timestamp + 1 hours;
-        
+
         // Create context data
-        bytes memory context = abi.encode(
-            votingPower,
-            0,
-            validAfter,
-            validBefore,
-            ""
-        );
-        
+        bytes memory context = abi.encode(votingPower, 0, validAfter, validBefore, "");
+
         // Create oracle proof
         IXPOracle.Proof memory proof = IXPOracle.Proof({
             user: user,
@@ -141,20 +133,20 @@ contract BulkClaimTest is Test {
             validAfter: validAfter,
             validBefore: validBefore
         });
-        
+
         bytes32 proofHash = keccak256(abi.encode(proof));
         oracle.setValidProof(proofHash, true);
-        
+
         // Check bulk eligibility
         (bool eligible, uint256 totalXP, uint256 highestStage) = votingVerifier.isBulkEligible(user, context);
         assertTrue(eligible);
         assertEq(totalXP, 35); // 5 + 10 + 20 = 35 (first 3 stages)
         assertEq(highestStage, 2); // Index of third stage
-        
+
         // Perform bulk claim
         vm.prank(user);
         xpManager.claimBulkXP(VERIFIER_ID, context);
-        
+
         // Verify results
         assertEq(xpManager.getTotalXP(user), 35);
         assertEq(votingVerifier.getUserHighestStage(user), 3); // Next stage they can claim (have claimed 0-2)
@@ -165,9 +157,9 @@ contract BulkClaimTest is Test {
         uint256 votingPower1 = 100;
         uint256 validAfter1 = block.timestamp;
         uint256 validBefore1 = block.timestamp + 1 hours;
-        
+
         bytes memory context1 = abi.encode(votingPower1, 0, validAfter1, validBefore1, "");
-        
+
         IXPOracle.Proof memory proof1 = IXPOracle.Proof({
             user: user,
             verifier: address(votingVerifier),
@@ -176,22 +168,22 @@ contract BulkClaimTest is Test {
             validAfter: validAfter1,
             validBefore: validBefore1
         });
-        
+
         oracle.setValidProof(keccak256(abi.encode(proof1)), true);
-        
+
         vm.prank(user);
         xpManager.claimBulkXP(VERIFIER_ID, context1);
-        
+
         assertEq(xpManager.getTotalXP(user), 35);
         assertEq(votingVerifier.getUserHighestStage(user), 3);
-        
+
         // Second claim with 10,000 voting power (should claim remaining stages)
         uint256 votingPower2 = 10000;
         uint256 validAfter2 = block.timestamp + 2 hours;
         uint256 validBefore2 = block.timestamp + 3 hours;
-        
+
         bytes memory context2 = abi.encode(votingPower2, 0, validAfter2, validBefore2, "");
-        
+
         IXPOracle.Proof memory proof2 = IXPOracle.Proof({
             user: user,
             verifier: address(votingVerifier),
@@ -200,21 +192,21 @@ contract BulkClaimTest is Test {
             validAfter: validAfter2,
             validBefore: validBefore2
         });
-        
+
         oracle.setValidProof(keccak256(abi.encode(proof2)), true);
-        
+
         // Fast forward time
         vm.warp(block.timestamp + 2 hours + 1);
-        
+
         // Check eligibility for remaining stages
         (bool eligible, uint256 totalXP, uint256 highestStage) = votingVerifier.isBulkEligible(user, context2);
         assertTrue(eligible);
         assertEq(totalXP, 150); // 50 + 100 = 150 (stages 3 and 4)
         assertEq(highestStage, 4);
-        
+
         vm.prank(user);
         xpManager.claimBulkXP(VERIFIER_ID, context2);
-        
+
         // Verify final state
         assertEq(xpManager.getTotalXP(user), 185); // 35 + 150
         assertEq(votingVerifier.getUserHighestStage(user), 5);
@@ -226,9 +218,9 @@ contract BulkClaimTest is Test {
         uint256 votingPower = 1; // Only qualifies for stage 0
         uint256 validAfter = block.timestamp;
         uint256 validBefore = block.timestamp + 1 hours;
-        
+
         bytes memory context = abi.encode(votingPower, 0, validAfter, validBefore, "");
-        
+
         IXPOracle.Proof memory proof = IXPOracle.Proof({
             user: user,
             verifier: address(votingVerifier),
@@ -237,21 +229,21 @@ contract BulkClaimTest is Test {
             validAfter: validAfter,
             validBefore: validBefore
         });
-        
+
         oracle.setValidProof(keccak256(abi.encode(proof)), true);
-        
+
         // First claim
         vm.prank(user);
         xpManager.claimBulkXP(VERIFIER_ID, context);
-        
+
         assertEq(xpManager.getTotalXP(user), 5);
         assertEq(votingVerifier.getUserHighestStage(user), 1);
-        
+
         // Reset user stage back to 0 so they can theoretically claim stage 0 again
         // But the proof should be marked as already used
         votingVerifier.resetUserStage(user);
         assertEq(votingVerifier.getUserHighestStage(user), 0);
-        
+
         // Try to claim with the exact same context again - should get "Already claimed"
         vm.prank(user);
         vm.expectRevert("Already claimed");

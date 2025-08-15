@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @dev Holds shared oracle state/logic. Concrete verifiers implement IXPVerifier.
 abstract contract XPOracleVerifier is Ownable, IXPVerifier {
     IXPOracle public oracle;
+
     event OracleUpdated(address indexed oldOracle, address indexed newOracle);
 
     constructor(address _oracle) Ownable(msg.sender) {
@@ -48,5 +49,3 @@ abstract contract XPOracleVerifier is Ownable, IXPVerifier {
         return xpAmount;
     }
 }
-
-

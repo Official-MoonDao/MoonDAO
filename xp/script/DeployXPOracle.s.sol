@@ -5,7 +5,6 @@ import "forge-std/Script.sol";
 import "../src/XPOracle.sol";
 
 contract DeployXPOracleScript is Script {
-
     string public constant ORACLE_NAME = "MoonDAO XP Oracle";
     string public constant ORACLE_VERSION = "1.0.0";
 
@@ -23,16 +22,5 @@ contract DeployXPOracleScript is Script {
         }
 
         vm.stopBroadcast();
-
-        console.log("XPOracle deployed at:", address(oracle));
-        console.log("Domain name:", ORACLE_NAME);
-        console.log("Domain version:", ORACLE_VERSION);
-        if (oracleSigner != address(0)) {
-            console.log("Authorized signer:", oracleSigner);
-        } else {
-            console.log("No signer authorized (ORACLE_SIGNER was zero address)");
-        }
     }
 }
-
-

@@ -1,8 +1,14 @@
-name: CI
+name: XPContracts
 
 on:
   push:
+    paths:
+      - "xp/**"
+      - ".github/workflows/xp.yml"
   pull_request:
+    paths:
+      - "xp/**"
+      - ".github/workflows/xp.yml"
   workflow_dispatch:
 
 env:
@@ -13,7 +19,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Foundry project
+    name: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,17 +35,14 @@ jobs:
         run: |
           forge --version
 
-      - name: Run Forge fmt
-        run: |
-          forge fmt --check
-        id: fmt
-
       - name: Run Forge build
         run: |
           forge build --sizes
+        working-directory: xp
         id: build
 
       - name: Run Forge tests
         run: |
           forge test -vvv
+        working-directory: xp
         id: test

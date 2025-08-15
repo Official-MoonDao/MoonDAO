@@ -9,21 +9,21 @@ import "../interfaces/IXPVerifier.sol";
 /// @dev Admin functions are implemented in concrete contracts that have access control
 abstract contract StagedXPVerifier is IXPVerifier {
     struct Stage {
-        uint256 threshold;      // Minimum requirement for this stage (votes, contributions, etc.)
-        uint256 xpAmount;       // XP awarded for reaching this stage
-        bool active;            // Whether this stage is currently active
+        uint256 threshold; // Minimum requirement for this stage (votes, contributions, etc.)
+        uint256 xpAmount; // XP awarded for reaching this stage
+        bool active; // Whether this stage is currently active
     }
-    
+
     Stage[] public stages;
-    
+
     // Track highest stage claimed by each user
     // Note: 0 means no stages claimed yet (can claim stage 0)
     // 1 means stage 0 claimed (can claim stage 1), etc.
     mapping(address => uint256) public userHighestClaimedStage;
-    
+
     // XPManager address for access control
     address public xpManager;
-    
+
     event StageAdded(uint256 indexed stageIndex, uint256 threshold, uint256 xpAmount);
     event StageUpdated(uint256 indexed stageIndex, uint256 threshold, uint256 xpAmount, bool active);
     event StageConfigSet(uint256[] thresholds, uint256[] xpAmounts);
@@ -58,14 +58,10 @@ abstract contract StagedXPVerifier is IXPVerifier {
      * @return eligible Whether the user is eligible
      * @return xpAmount Amount of XP to award
      */
-    function isEligible(address user, bytes calldata context)
-        external
-        view
-        returns (bool eligible, uint256 xpAmount)
-    {
+    function isEligible(address user, bytes calldata context) external view returns (bool eligible, uint256 xpAmount) {
         // Delegate to concrete implementation for context parsing and verification
         (bool stageEligible, uint256 stageIndex, uint256 xpReward) = _checkStageEligibility(user, context);
-        
+
         if (!stageEligible) {
             return (false, 0);
         }
@@ -73,13 +69,13 @@ abstract contract StagedXPVerifier is IXPVerifier {
         // Validate target stage exists and is active
         require(stageIndex < stages.length, "Invalid stage");
         require(stages[stageIndex].active, "Stage not active");
-        
+
         // Check if user has already claimed this stage or higher
         // userHighestClaimedStage[user] represents the next stage they can claim
         if (userHighestClaimedStage[user] > stageIndex) {
             return (false, 0);
         }
-        
+
         // Check if this is the exact next stage they can claim
         if (userHighestClaimedStage[user] != stageIndex) {
             return (false, 0); // Must claim stages sequentially
@@ -114,21 +110,21 @@ abstract contract StagedXPVerifier is IXPVerifier {
      * @return xpAmounts Array of XP amounts
      * @return activeFlags Array of active status for each stage
      */
-    function getStageConfig() external view returns (
-        uint256[] memory thresholds,
-        uint256[] memory xpAmounts,
-        bool[] memory activeFlags
-    ) {
+    function getStageConfig()
+        external
+        view
+        returns (uint256[] memory thresholds, uint256[] memory xpAmounts, bool[] memory activeFlags)
+    {
         thresholds = new uint256[](stages.length);
         xpAmounts = new uint256[](stages.length);
         activeFlags = new bool[](stages.length);
-        
+
         for (uint256 i = 0; i < stages.length; i++) {
             thresholds[i] = stages[i].threshold;
             xpAmounts[i] = stages[i].xpAmount;
             activeFlags[i] = stages[i].active;
         }
-        
+
         return (thresholds, xpAmounts, activeFlags);
     }
 
@@ -167,23 +163,23 @@ abstract contract StagedXPVerifier is IXPVerifier {
      */
     function getNextClaimableStage(address user, uint256 userMetric) external view returns (uint256 nextStage) {
         uint256 currentHighest = userHighestClaimedStage[user];
-        
+
         // Check if user can claim the next sequential stage
         // currentHighest represents the next stage they can claim
         uint256 targetStage = currentHighest;
-        
+
         if (targetStage >= stages.length) {
             return type(uint256).max; // No more stages available
         }
-        
+
         if (!stages[targetStage].active) {
             return type(uint256).max; // Next stage is not active
         }
-        
+
         if (userMetric >= stages[targetStage].threshold) {
             return targetStage;
         }
-        
+
         return type(uint256).max; // User doesn't meet threshold yet
     }
 
@@ -195,13 +191,13 @@ abstract contract StagedXPVerifier is IXPVerifier {
      */
     function calculateTotalClaimableXP(address user, uint256 userMetric) external view returns (uint256 totalXP) {
         uint256 currentHighest = userHighestClaimedStage[user];
-        
+
         for (uint256 i = currentHighest; i < stages.length; i++) {
             if (!stages[i].active) break;
             if (userMetric < stages[i].threshold) break;
             totalXP += stages[i].xpAmount;
         }
-        
+
         return totalXP;
     }
 
@@ -220,7 +216,7 @@ abstract contract StagedXPVerifier is IXPVerifier {
     {
         // Delegate to concrete implementation for context parsing and verification
         (bool stageEligible, uint256 userMetric) = _checkBulkEligibility(user, context);
-        
+
         if (!stageEligible) {
             return (false, 0, 0);
         }
@@ -228,7 +224,7 @@ abstract contract StagedXPVerifier is IXPVerifier {
         uint256 currentHighest = userHighestClaimedStage[user];
         uint256 targetStage = 0;
         totalXP = 0;
-        
+
         // Find all sequential stages the user can claim
         // If currentHighest is 0, user hasn't claimed any stages yet (can start from stage 0)
         // If currentHighest is 1, user has claimed stage 0 (can start from stage 1), etc.
@@ -236,15 +232,15 @@ abstract contract StagedXPVerifier is IXPVerifier {
         for (uint256 i = startStage; i < stages.length; i++) {
             if (!stages[i].active) break;
             if (userMetric < stages[i].threshold) break;
-            
+
             totalXP += stages[i].xpAmount;
             targetStage = i;
         }
-        
+
         if (totalXP > 0) {
             return (true, totalXP, targetStage);
         }
-        
+
         return (false, 0, 0);
     }
 
@@ -269,10 +265,11 @@ abstract contract StagedXPVerifier is IXPVerifier {
      * @return stageIndex The stage index the user is eligible for
      * @return xpAmount The XP amount for that stage
      */
-    function _checkStageEligibility(
-        address user,
-        bytes calldata context
-    ) internal view virtual returns (bool eligible, uint256 stageIndex, uint256 xpAmount);
+    function _checkStageEligibility(address user, bytes calldata context)
+        internal
+        view
+        virtual
+        returns (bool eligible, uint256 stageIndex, uint256 xpAmount);
 
     /**
      * @notice Abstract function for bulk eligibility checking
@@ -282,10 +279,11 @@ abstract contract StagedXPVerifier is IXPVerifier {
      * @return eligible Whether the user's proof is valid
      * @return userMetric The user's current metric value (voting power, etc.)
      */
-    function _checkBulkEligibility(
-        address user,
-        bytes calldata context
-    ) internal view virtual returns (bool eligible, uint256 userMetric);
+    function _checkBulkEligibility(address user, bytes calldata context)
+        internal
+        view
+        virtual
+        returns (bool eligible, uint256 userMetric);
 
     /**
      * @notice Update user's highest claimed stage (only callable by XPManager)
@@ -295,7 +293,7 @@ abstract contract StagedXPVerifier is IXPVerifier {
     function updateUserStage(address user, uint256 newHighestStage) external onlyXPManager {
         require(newHighestStage < stages.length, "Invalid stage index");
         require(newHighestStage >= userHighestClaimedStage[user], "Stage must be higher than or equal to current");
-        
+
         _updateUserStage(user, newHighestStage);
     }
 
@@ -309,13 +307,13 @@ abstract contract StagedXPVerifier is IXPVerifier {
         uint256 previousStage = userHighestClaimedStage[user];
         // Set to next stage they can claim (newHighestStage + 1)
         userHighestClaimedStage[user] = newHighestStage + 1;
-        
+
         // Calculate total XP awarded in this bulk claim
         uint256 totalXPAwarded = 0;
         for (uint256 i = previousStage; i <= newHighestStage; i++) {
             totalXPAwarded += stages[i].xpAmount;
         }
-        
+
         emit UserStageProgressed(user, previousStage, newHighestStage, totalXPAwarded);
     }
 
@@ -325,12 +323,8 @@ abstract contract StagedXPVerifier is IXPVerifier {
      * @param xpAmount XP awarded for reaching this stage
      */
     function _addStage(uint256 threshold, uint256 xpAmount) internal {
-        stages.push(Stage({
-            threshold: threshold,
-            xpAmount: xpAmount,
-            active: true
-        }));
-        
+        stages.push(Stage({threshold: threshold, xpAmount: xpAmount, active: true}));
+
         emit StageAdded(stages.length - 1, threshold, xpAmount);
     }
 

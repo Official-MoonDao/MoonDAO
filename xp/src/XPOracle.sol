@@ -60,5 +60,3 @@ contract XPOracle is Ownable, EIP712, IXPOracle {
         return authorizedSigners[signer];
     }
 }
-
-

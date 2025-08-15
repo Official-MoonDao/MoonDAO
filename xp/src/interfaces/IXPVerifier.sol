@@ -18,10 +18,7 @@ interface IXPVerifier {
     ///          - abi.encode(address token, uint256 minAmount, uint256 blockNumber)
     /// @return eligible True if user currently satisfies the condition.
     /// @return xpAmount How much XP should be granted if eligible (0 allowed).
-    function isEligible(address user, bytes calldata context)
-        external
-        view
-        returns (bool eligible, uint256 xpAmount);
+    function isEligible(address user, bytes calldata context) external view returns (bool eligible, uint256 xpAmount);
 
     /// @notice Deterministic ID for this specific (user, context) claim.
     /// @dev XPManager should mark this as consumed to prevent re-claims.
