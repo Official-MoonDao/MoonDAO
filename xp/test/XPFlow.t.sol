@@ -22,7 +22,7 @@ contract XPFlowTest is Test {
     address public user = address(0x123);
     address public owner = address(0x456);
     address public treasury = address(0x789);
-    address public tablelandAddress = address(0xABC);
+    address public mockTableAddress = address(0xABC);
     address public whitelist = address(0xDEF);
     address public discountList = address(0x111);
 
@@ -33,7 +33,7 @@ contract XPFlowTest is Test {
         xpManager = new XPManager();
 
         // Deploy Citizen NFT (mock for testing)
-        citizenNFT = new MockERC5643Citizen("MoonDAO Citizen", "CITIZEN", treasury, tablelandAddress, whitelist, discountList);
+        citizenNFT = new MockERC5643Citizen("MoonDAO Citizen", "CITIZEN", treasury, mockTableAddress, whitelist, discountList);
 
         // Deploy reward token
         rewardToken = new MockERC20();
