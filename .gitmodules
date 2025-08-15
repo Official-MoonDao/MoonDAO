@@ -85,3 +85,12 @@
 [submodule "subscription-contracts/lib/v4-periphery"]
 	path = subscription-contracts/lib/v4-periphery
 	url = https://github.com/Uniswap/v4-periphery
+[submodule "xp/lib/forge-std"]
+	path = xp/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "xp/lib/openzeppelin-contracts"]
+	path = xp/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "xp/lib/contracts"]
+	path = xp/lib/contracts
+	url = https://github.com/thirdweb-dev/contracts

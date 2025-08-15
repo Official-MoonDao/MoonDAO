@@ -394,6 +394,66 @@ export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   ethereum: 30110, //arbitrum eid
 }
 
+export const XP_ORACLE_CHAIN =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arbitrum' : 'sepolia'
+
+export const XP_ORACLE_CHAIN_ID =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 42161 : 11155111
+
+export const XP_ORACLE_NAME = 'MoonDAO XP Oracle'
+export const XP_ORACLE_VERSION = '1.0.0'
+export const XP_ORACLE_SIGNER_PK = process.env.XP_ORACLE_SIGNER_PK
+
+export const XP_ORACLE_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x755D48e6C3744B723bd0326C57F99A92a3Ca3287',
+}
+
+export const XP_MANAGER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x012B0E5B762d2BeD298EE52eF6d16a413CC07cA6',
+}
+
+export const HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xEeaa3BfA8E4843b8538D57b5723C2267ecA2c16E',
+}
+
+export const HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xE0833a003B46765b93973c59994098AF1d786ef6',
+}
+
+export const HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xfe651aa5ab25b0137fd7d076f5bD48eb0008c97E',
+}
+
+export const HAS_VOTING_POWER_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x2D5378A9bbd752DB3F63094Be5339E1fE99F4d19',
+}
+
+export const HAS_VOTED_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x1D600eA840B51E0011fcDf924B5dEb0719Cb0F6a',
+}
+
+export const HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xE87607F4E3995835f8b2Ca1A48b1A1dEb4d48135',
+}
+
+export const HAS_CONTRIBUTED_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x4D121CB590545a18E6E5FF5F8B35F79745f97e6e',
+}
+
+export const HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xd06372548c66Cc88aB8f9454D78f179E290B6640',
+}
+
 export const DISCORD_GUILD_ID = '914720248140279868'
 export const GENERAL_CHANNEL_ID = '914720248140279871'
 export const TEST_CHANNEL_ID = '1308513773879033886'
