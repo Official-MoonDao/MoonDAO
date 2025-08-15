@@ -58,12 +58,12 @@ export default function Hero() {
 
           <div className="flex items-start justify-start min-h-[60px] mb-4 relative z-20">
             <StandardButton
-              backgroundColor="bg-white"
-              textColor="text-dark-cool"
-              hoverColor="bg-mid-cool"
-              borderRadius="rounded-tl-[10px] rounded-[2vmax]"
+              backgroundColor="bg-gradient-to-r from-white to-gray-100"
+              textColor="text-gray-900"
+              hoverColor="hover:from-gray-100 hover:to-gray-200"
+              borderRadius="rounded-lg"
               link="/join"
-              paddingOnHover="pl-5"
+              hoverEffect={false}
             >
               Join the Network
             </StandardButton>

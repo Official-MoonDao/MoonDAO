@@ -60,7 +60,7 @@ export function OnboardingStageManager({ usdQuotes }: any) {
   })
 
   const totalMooneyBalance = useTotalMooneyBalance(address)
-  const totalLocked = useTotalVP(address || '')
+  const { walletVP: totalLocked } = useTotalVP(address || '')
 
   const { MOONEY } = useUniswapTokens(selectedChain)
 

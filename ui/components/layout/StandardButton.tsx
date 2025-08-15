@@ -24,13 +24,13 @@ export default function StandardButton({
   children = 'ReactNode',
   onClick = () => {},
   disabled = false,
-  backgroundColor = 'dark-cool',
-  hoverColor = 'mid-cool',
-  hoverEffect = true,
-  borderRadius = 'rounded',
+  backgroundColor = 'bg-gradient-to-r from-blue-600 to-purple-600',
+  hoverColor = 'hover:from-blue-700 hover:to-purple-700',
+  hoverEffect = false, // Disabled by default to remove extension effect
+  borderRadius = 'rounded-lg',
   link = '#',
   target = '',
-  paddingOnHover = 'pl-5',
+  paddingOnHover = '',
   textColor = 'text-white',
   styleOnly = false,
   type = 'button',
@@ -39,31 +39,19 @@ export default function StandardButton({
     <button
       id={id}
       className={`
-        standardbutton transition-all duration-200       
+        px-4 py-2 font-medium transition-all duration-200 shadow-lg hover:shadow-xl
         ${backgroundColor} 
+        ${hoverColor}
         ${borderRadius} 
-        ${className} 
+        ${textColor}
+        ${className}
+        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
       `}
       onClick={onClick || null}
-      style={{ paddingLeft: '0' }}
-      onMouseEnter={(e) =>
-        hoverEffect && (e.currentTarget.style.paddingLeft = '10px')
-      }
-      onMouseLeave={(e) =>
-        hoverEffect && (e.currentTarget.style.paddingLeft = '0')
-      }
       type={type as any}
       disabled={disabled}
     >
-      <div
-        id="button-content"
-        className={` 
-          p-2 pb-2 pr-5 pl-5 
-          ${textColor}
-        `}
-      >
-        {children}
-      </div>
+      {children}
     </button>
   )
 
