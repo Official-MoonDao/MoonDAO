@@ -14,7 +14,6 @@ import {
   GiftIcon,
 } from '@heroicons/react/24/outline'
 import { Action, RequestBudget } from '@nance/nance-sdk'
-import { BigNumber } from 'ethers'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
@@ -38,6 +37,7 @@ import {
 } from 'const/config'
 import { blockedTeams, featuredTeams } from 'const/whitelist'
 import { blockedProjects } from 'const/whitelist'
+import { BigNumber } from 'ethers'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -67,7 +67,6 @@ import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget } from '@/lib/utils/rewards'
-import { NewsletterSubModal } from '../components/newsletter/NewsletterSubModal'
 import { ARRChart } from '@/components/dashboard/treasury/ARRChart'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { ProposalCard } from '@/components/home/ProposalCard'
@@ -79,6 +78,7 @@ import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
+import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 
@@ -103,7 +103,7 @@ function getEthAmountFromProposal(actions: Action[] | undefined): number {
   return ethAmount
 }
 
-export default function Home({
+export default function SingedInDashboard({
   newestNewsletters,
   newestCitizens,
   newestListings,
@@ -129,11 +129,13 @@ export default function Home({
 
   // Newsletter modal state
   const [newsletterModalOpen, setNewsletterModalOpen] = useState(false)
-  
+
   // Client-side newsletter state
-  const [clientNewsletters, setClientNewsletters] = useState<any[]>(newestNewsletters || [])
+  const [clientNewsletters, setClientNewsletters] = useState<any[]>(
+    newestNewsletters || []
+  )
   const [newslettersLoading, setNewslettersLoading] = useState(false)
-  
+
   // Fetch newsletters on client-side to get real ConvertKit data
   useEffect(() => {
     const fetchNewsletters = async () => {
@@ -150,7 +152,7 @@ export default function Home({
         setNewslettersLoading(false)
       }
     }
-    
+
     fetchNewsletters()
   }, [])
 
@@ -249,10 +251,10 @@ export default function Home({
     address
   )
 
-  // Use withdraw amount hook with conditional check
-  const withdrawable = VOTING_ESCROW_DEPOSITOR_ADDRESSES[chainSlug] 
-    ? useWithdrawAmount(votingEscrowDepositorContract, address)
-    : BigNumber.from(0)
+  //   // Use withdraw amount hook with conditional check
+  //   const withdrawable = VOTING_ESCROW_DEPOSITOR_ADDRESSES[chainSlug]
+  //     ? useWithdrawAmount(votingEscrowDepositorContract, address)
+  //     : BigNumber.from(0)
 
   return (
     <Container>
@@ -622,7 +624,9 @@ export default function Home({
                               {newsletter.isArchived && (
                                 <>
                                   <span>•</span>
-                                  <span className="text-orange-400">Archive</span>
+                                  <span className="text-orange-400">
+                                    Archive
+                                  </span>
                                 </>
                               )}
                             </div>
@@ -942,7 +946,9 @@ export default function Home({
                   <RocketLaunchIcon className="w-7 h-7" />
                   Launchpad
                 </h3>
-                <p className="text-blue-200">Coming soon - Fund your next mission to space</p>
+                <p className="text-blue-200">
+                  Coming soon - Fund your next mission to space
+                </p>
               </div>
               <div className="bg-gray-600 text-gray-300 px-6 py-3 rounded-xl font-semibold shadow-lg cursor-not-allowed">
                 Coming Soon
@@ -958,7 +964,8 @@ export default function Home({
                   Launchpad Coming Soon
                 </h4>
                 <p className="text-blue-200 text-sm mb-4">
-                  We're preparing an exciting new way to fund space missions through decentralized crowdfunding.
+                  We're preparing an exciting new way to fund space missions
+                  through decentralized crowdfunding.
                 </p>
                 <div className="text-blue-300 text-xs">
                   Stay tuned for launch updates!
@@ -1155,267 +1162,4 @@ export default function Home({
       />
     </Container>
   )
-}
-
-export async function getStaticProps() {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
-
-  // Initialize all data structures with proper types
-  let transferData: any = { citizenTransfers: [], teamTransfers: [] }
-  let arrData: any = {
-    arrHistory: [],
-    currentARR: 0,
-    citizenARR: 0,
-    teamARR: 0,
-  }
-  let citizenSubgraphData: any = { transfers: [], createdAt: Date.now() }
-  let aumData = null
-  let newestCitizens: any = []
-  let newestListings: any = []
-  let newestJobs: any = []
-  let mooneyPrice = 0.0003605 // Default fallback price
-
-  // Get MOONEY price data
-  const getMooneyPriceData = async () => {
-    try {
-      const priceData = await getMooneyPrice()
-      console.log('PRICE DATA', priceData)
-      return priceData?.price || 0
-    } catch (error) {
-      console.error('MOONEY price fetch failed:', error)
-      return 0
-    }
-  }
-  let newestTeams: any = []
-  let filteredTeams: any = []
-  let currentProjects: Project[] = []
-  let citizensLocationData: any = []
-
-  // Batch all contract operations to reduce API calls
-  const contractOperations = async () => {
-    try {
-      const citizenTableContract = getContract({
-        client: serverClient,
-        address: CITIZEN_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: CitizenTableABI as any,
-      })
-
-      const marketplaceTableContract = getContract({
-        client: serverClient,
-        address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: MarketplaceTableABI as any,
-      })
-
-      const jobTableContract = getContract({
-        client: serverClient,
-        address: JOBS_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: JobTableABI as any,
-      })
-
-      const teamTableContract = getContract({
-        client: serverClient,
-        address: TEAM_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: TeamTableABI as any,
-      })
-
-      const projectTableContract = getContract({
-        client: serverClient,
-        address: PROJECT_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: ProjectTableABI as any,
-      })
-
-      // Batch all table name reads
-      const [
-        citizenTableName,
-        marketplaceTableName,
-        jobTableName,
-        teamTableName,
-        projectTableName,
-      ] = await Promise.all([
-        readContract({
-          contract: citizenTableContract,
-          method: 'getTableName',
-        }),
-        readContract({
-          contract: marketplaceTableContract,
-          method: 'getTableName',
-        }),
-        readContract({ contract: jobTableContract, method: 'getTableName' }),
-        readContract({ contract: teamTableContract, method: 'getTableName' }),
-        readContract({
-          contract: projectTableContract,
-          method: 'getTableName',
-        }),
-      ])
-
-      // Batch all table queries
-      const [citizens, listings, jobs, teams, projects] = await Promise.all([
-        queryTable(
-          chain,
-          `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 10`
-        ),
-        queryTable(
-          chain,
-          `SELECT * FROM ${marketplaceTableName} ORDER BY id DESC LIMIT 10`
-        ),
-        queryTable(
-          chain,
-          `SELECT * FROM ${jobTableName} WHERE (endTime = 0 OR endTime >= ${Math.floor(
-            Date.now() / 1000
-          )}) ORDER BY id DESC LIMIT 10`
-        ),
-        queryTable(
-          chain,
-          `SELECT * FROM ${teamTableName} ORDER BY id DESC LIMIT 10`
-        ),
-        queryTable(
-          chain,
-          `SELECT * FROM ${projectTableName} ORDER BY id DESC`
-        ),
-      ])
-
-      return { citizens, listings, jobs, teams, projects }
-    } catch (error) {
-      console.error('Contract operations failed:', error)
-      return { citizens: [], listings: [], jobs: [], teams: [], projects: [] }
-    }
-  }
-
-  // Get all transfer data as requested
-  const allTransferData = async () => {
-    try {
-      console.log('Fetching all network transfers...')
-      const transfers = await getAllNetworkTransfers()
-      console.log(
-        `Fetched ${transfers.citizenTransfers.length} citizen transfers and ${transfers.teamTransfers.length} team transfers`
-      )
-      return transfers
-    } catch (error) {
-      console.error('Transfer data fetch failed:', error)
-      return { citizenTransfers: [], teamTransfers: [] }
-    }
-  }
-
-  // Get AUM data with proper error handling
-  const getAUMData = async () => {
-    try {
-      const aum = await getAUMHistory(365)
-      return aum
-    } catch (error) {
-      console.error('AUM data fetch failed:', error)
-      return null
-    }
-  }
-
-  // Use Promise.allSettled to run all operations in parallel with individual error handling
-  const [transferResult, contractResult, aumResult, mooneyPriceResult] =
-    await Promise.allSettled([
-      allTransferData(),
-      contractOperations(),
-      getAUMData(),
-      getMooneyPriceData(),
-    ])
-
-  // Extract results with fallbacks and proper type handling
-  if (transferResult.status === 'fulfilled') {
-    transferData = transferResult.value
-
-    // Calculate ARR from all transfer data
-    try {
-      arrData = await calculateARRFromTransfers(
-        transferData.citizenTransfers,
-        transferData.teamTransfers,
-        365
-      )
-    } catch (error) {
-      console.error('ARR calculation failed:', error)
-    }
-
-    citizenSubgraphData = {
-      transfers: transferData.citizenTransfers.map((transfer: any) => ({
-        id: transfer.id,
-        from: transfer.transactionHash,
-        blockTimestamp: transfer.blockTimestamp,
-      })),
-      createdAt: Date.now(),
-    }
-  }
-
-  if (contractResult.status === 'fulfilled') {
-    const { citizens, listings, jobs, teams, projects } = contractResult.value
-    newestCitizens = citizens
-    newestListings = listings
-    newestJobs = jobs
-    newestTeams = teams
-
-    // Process projects data for home page display - match projects-overview.tsx logic
-    if (projects && projects.length > 0) {
-      const activeProjects = []
-      for (let i = 0; i < projects.length; i++) {
-        if (projects[i]) {
-          const project = projects[i] as any
-          // Use the 'active' field to determine current projects, excluding blocked ones
-          if (project.active && !blockedProjects.includes(project.id)) {
-            activeProjects.push(project)
-          }
-        }
-      }
-      
-      // Sort projects by eligible status (same as projects-overview.tsx)
-      activeProjects.sort((a, b) => {
-        if (a.eligible === b.eligible) {
-          return 0
-        }
-        return a.eligible ? 1 : -1
-      })
-      
-      currentProjects = activeProjects.reverse() as Project[]
-    }
-
-    // Process teams data for home page display
-    filteredTeams = teams.filter((team: any) => team.id && team.name)
-
-    // Process citizens data for map display
-    citizensLocationData = citizens
-      .filter((citizen: any) => citizen.location)
-      .map((citizen: any) => ({
-        name: citizen.name || 'Anonymous',
-        location: citizen.location,
-        bio: citizen.bio || '',
-      }))
-  }
-
-  if (aumResult.status === 'fulfilled') {
-    aumData = aumResult.value
-  }
-
-  if (mooneyPriceResult.status === 'fulfilled') {
-    mooneyPrice = mooneyPriceResult.value
-  }
-
-  // Get newsletter data (will be fetched client-side)
-  const newestNewsletters: any = []
-
-  return {
-    props: {
-      newestNewsletters,
-      newestCitizens,
-      newestListings,
-      newestJobs,
-      citizenSubgraphData,
-      aumData,
-      arrData,
-      mooneyPrice,
-      filteredTeams,
-      citizensLocationData,
-      currentProjects,
-    },
-    revalidate: 300,
-  }
 }
