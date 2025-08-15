@@ -147,6 +147,11 @@ const resourceCategories = [
         description: 'NASA\'s official portal for open source software projects and developer resources.'
       },
       {
+        name: 'NASA Technical Standards',
+        url: 'https://standards.nasa.gov/',
+        description: 'NASA\'s official technical standards and requirements for space missions and aerospace systems.'
+      },
+      {
         name: 'ESA Open Source Resources',
         url: 'https://www.esa.int/Enabling_Support/Space_Engineering_Technology/Radio_Frequency_Systems/Open_Source_Software_Resources_for_Space_Downstream_Applications',
         description: 'ESA\'s collection of open source software resources for space downstream applications.'
@@ -197,6 +202,21 @@ const resourceCategories = [
         name: 'Space Stack Exchange',
         url: 'https://space.stackexchange.com/',
         description: 'Question and answer site for spacecraft operators, scientists, engineers, and enthusiasts.'
+      },
+      {
+        name: 'NASA Astronaut Appearances',
+        url: 'https://www.nasa.gov/humans-in-space/astronauts/request-astronaut-appearance/',
+        description: 'Request NASA astronaut appearances for educational and outreach events.'
+      },
+      {
+        name: 'Astronautics Institute',
+        url: 'https://astronauticsinstitute.org/',
+        description: 'Professional organization advancing astronautics and space technology education.'
+      },
+      {
+        name: 'B2 Science - Center for Human Space Exploration (CHASE)',
+        url: 'https://www.b2science.org/center-human-space-exploration-chase',
+        description: 'Research center focused on human space exploration science and technology development.'
       }
     ]
   },

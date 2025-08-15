@@ -1,0 +1,23 @@
+{
+  "name": "xp",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Foundry project for XP contracts",
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test",
+    "coverage": "forge coverage",
+    "clean": "forge clean",
+    "format": "forge fmt",
+    "format:check": "forge fmt --check",
+    "deploy:manager": "forge script script/DeployXPManager.s.sol --rpc-url $RPC_URL --broadcast",
+    "deploy:oracle": "forge script script/DeployXPOracle.s.sol --rpc-url $RPC_URL --broadcast"
+  },
+  "keywords": [
+    "foundry",
+    "solidity",
+    "xp"
+  ],
+  "author": "MoonDAO",
+  "license": "MIT"
+}
