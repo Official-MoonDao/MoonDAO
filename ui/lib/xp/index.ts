@@ -549,7 +549,7 @@ export async function submitHasVotingPowerClaimFor(params: {
     privateKey: relayerPk,
   })
 
-  const verifierId = params.verifierId ?? BigInt(2)
+  const verifierId = params.verifierId ?? BigInt(0)
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
   if (!contractAddress) throw new Error('XP Manager address missing for chain')
 
@@ -796,7 +796,7 @@ export async function submitHasVotedClaimFor(params: {
     privateKey: relayerPk,
   })
 
-  const verifierId = params.verifierId ?? BigInt(3)
+  const verifierId = params.verifierId ?? BigInt(1)
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
   if (!contractAddress) throw new Error('XP Manager address missing for chain')
 
@@ -915,7 +915,7 @@ export async function submitOwnsCitizenClaimFor(params: {
     privateKey: relayerPk,
   })
 
-  const verifierId = params.verifierId ?? BigInt(1)
+  const verifierId = params.verifierId ?? BigInt(5)
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
   if (!contractAddress) throw new Error('XP Manager address missing for chain')
 

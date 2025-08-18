@@ -91,10 +91,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // For POST requests, proceed with claiming
+    // Sign/encode via shared oracle helper using actual vote count for claiming
+
     const { validAfter, validBefore, signature, context } =
       await signHasVotedProof({
         user: user as Address,
-        minVotes: BigInt(MIN_VOTES),
+        actualVotes: BigInt(votesCount), // Use actual vote count
       })
 
     const { txHash } = await submitHasVotedClaimFor({
@@ -102,16 +104,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       context,
     })
 
-    // Decode xp from context for client convenience (index 1)
-    const [, xpAmount] = ethersUtils.defaultAbiCoder.decode(
-      ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
-      context
-    ) as unknown[] as [any, bigint]
-
     return res.status(200).json({
       eligible: true,
       votesCount,
-      xpAmount: (xpAmount as bigint).toString(),
       validAfter: Number(validAfter),
       validBefore: Number(validBefore),
       signature,
@@ -119,6 +114,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       txHash,
     })
   } catch (err: any) {
+    console.log(err)
     return res.status(500).json({ error: err?.message || 'Internal error' })
   }
 }

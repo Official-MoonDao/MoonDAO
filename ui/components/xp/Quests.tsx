@@ -42,14 +42,14 @@ const questItems: QuestItem[] = [
     link: '/lock',
     linkText: 'Stake Now',
   },
-  // {
-  //   title: 'Has Voted',
-  //   description: 'Participate in governance by voting on a proposal',
-  //   verifier: XP_VERIFIERS[1],
-  //   icon: CheckBadgeIcon,
-  //   link: '/vote',
-  //   linkText: 'Vote Now',
-  // },
+  {
+    title: 'Has Voted',
+    description: 'Participate in governance by voting on a proposal',
+    verifier: XP_VERIFIERS[1],
+    icon: CheckBadgeIcon,
+    link: '/vote',
+    linkText: 'Vote Now',
+  },
   // {
   //   title: 'Has MOONEY',
   //   description: 'Hold MOONEY in your wallet',
@@ -107,9 +107,6 @@ export default function Quests({}: QuestsProps) {
   const userAddress = account?.address as Address
   const [userInfo, setUserInfo] = useState<CompleteUserXPInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [onboardingCompleted, setOnboardingCompleted] = useState(0)
-  const [onboardingTotal, setOnboardingTotal] = useState(0)
-  const [isOnboardingComplete, setIsOnboardingComplete] = useState(false)
 
   const xpManagerContract = useContract({
     address: XP_MANAGER_ADDRESSES[chainSlug],
@@ -118,14 +115,22 @@ export default function Quests({}: QuestsProps) {
   })
 
   const fetchUserData = useCallback(async () => {
-    if (!userAddress || !xpManagerContract) return
+    if (!userAddress || !xpManagerContract) {
+      console.log('fetchUserData: missing required data', {
+        userAddress,
+        xpManagerContract: !!xpManagerContract,
+      })
+      return
+    }
 
     setIsLoading(true)
     try {
+      console.log('fetchUserData: calling getCompleteUserXPInfo')
       const completeInfo = await getCompleteUserXPInfo(
         xpManagerContract,
         userAddress
       )
+      console.log('fetchUserData: received completeInfo', completeInfo)
       setUserInfo(completeInfo)
     } catch (error) {
       console.error('Error fetching user XP info:', error)
@@ -136,7 +141,7 @@ export default function Quests({}: QuestsProps) {
 
   useEffect(() => {
     fetchUserData()
-  }, [fetchUserData])
+  }, [fetchUserData, xpManagerContract, userAddress])
 
   // Callback to refresh user data when a quest is claimed
   const handleQuestClaimConfirmed = useCallback(() => {

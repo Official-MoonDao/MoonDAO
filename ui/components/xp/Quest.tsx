@@ -451,7 +451,7 @@ export default function Quest({
 
   return (
     <div
-      className={`p-3 rounded-lg border transition-all h-24 flex items-center ${baseContainerClasses}`}
+      className={`p-3 rounded-lg border transition-all h-32 flex items-center ${baseContainerClasses}`}
     >
       <div className="flex items-center gap-3 w-full">
         <div className={`p-2 rounded-lg flex-shrink-0 ${iconWrapperClasses}`}>
@@ -478,7 +478,7 @@ export default function Quest({
             {quest.description}
           </p>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3 flex-col lg:flex-row">
             {quest.verifier.type === 'staged' ? (
               // Staged quest progress display
               <div className="flex items-center gap-3 flex-1">
@@ -575,7 +575,7 @@ export default function Quest({
                 </button>
               </div>
             ) : (
-              <>
+              <div className="flex items-center gap-3">
                 {!hasClaimed && quest.link && quest.linkText && (
                   <StandardButton
                     className={ctaButtonClasses}
@@ -607,7 +607,7 @@ export default function Quest({
                     noPadding
                   />
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>

@@ -4,7 +4,7 @@ import { ThirdwebContract } from 'thirdweb'
 
 export type UserXPInfo = {
   totalXP: bigint
-  highestThresholdReached: bigint
+  highestThresholdClaimed: bigint
   availableRewards: bigint
   claimedVerifierCount: bigint
   claimedVerifiers: bigint[]
@@ -39,9 +39,15 @@ export async function getUserXPInfo(
   xpManagerContract: ThirdwebContract,
   userAddress: Address
 ): Promise<UserXPInfo> {
+  console.log('getUserXPInfo called with:', {
+    contractAddress: xpManagerContract.address,
+    userAddress,
+    chainId: xpManagerContract.chain?.id,
+  })
+
   const [
     totalXP,
-    highestThresholdReached,
+    highestThresholdClaimed,
     availableRewards,
     claimedVerifierCount,
     claimedVerifiers,
@@ -54,7 +60,7 @@ export async function getUserXPInfo(
 
     readContract({
       contract: xpManagerContract,
-      method: 'highestThresholdReached' as any,
+      method: 'highestThresholdClaimed' as any,
       params: [userAddress],
     }),
 
@@ -79,7 +85,7 @@ export async function getUserXPInfo(
 
   return {
     totalXP: totalXP as bigint,
-    highestThresholdReached: highestThresholdReached as bigint,
+    highestThresholdClaimed: highestThresholdClaimed as bigint,
     availableRewards: availableRewards as bigint,
     claimedVerifierCount: claimedVerifierCount as bigint,
     claimedVerifiers: claimedVerifiers as bigint[],

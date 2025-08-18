@@ -78,13 +78,25 @@ export async function getStagedQuestProgress(
       nextStageIndex > 0 ? Number(stages[nextStageIndex - 1].threshold) : 0
     const nextStageThreshold = Number(nextStage.threshold)
 
-    if (userMetric >= nextStageThreshold) {
+    // Use the same logic as getNextUnclamedThreshold for consistency
+    const displayThreshold = getNextUnclamedThreshold({
+      stages,
+      currentUserMetric: userMetric,
+    } as StagedQuestProgress)
+
+    if (userMetric >= displayThreshold) {
       progressToNext = 100 // Ready to claim
-    } else if (nextStageThreshold > currentStageThreshold) {
-      const progress =
-        (userMetric - currentStageThreshold) /
-        (nextStageThreshold - currentStageThreshold)
+    } else {
+      // For voting power, show progress from 0 to target threshold
+      const progress = userMetric / displayThreshold
       progressToNext = Math.min(100, Math.max(0, progress * 100))
+
+      console.log('DEBUG - Progress details:', {
+        userMetric,
+        displayThreshold,
+        progress,
+        progressToNext,
+      })
     }
   } else if (stages.length > 0 && userHighestStageNum >= stages.length - 1) {
     progressToNext = 100 // Max stage reached
