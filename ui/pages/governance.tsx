@@ -45,7 +45,7 @@ const GovernanceCard = ({
   return (
     <button
       onClick={handleClick}
-      className="w-full h-full min-h-[140px] p-4 bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 hover:border-slate-500/50 transition-all duration-200 hover:scale-[1.02] group"
+      className="w-full h-full min-h-[140px] p-4 bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02] group"
     >
       <div className="flex flex-row items-start gap-4 w-full h-full">
         {icon && (
@@ -217,8 +217,7 @@ const Governance: React.FC = () => {
             
             {/* Glassmorphism container with cards */}
             <div className="relative mx-4">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-900/10 via-purple-900/10 to-teal-900/10 rounded-3xl" />
-              <div className="relative p-6 md:p-12 bg-gradient-to-br from-white/5 via-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl">
+              <div className="p-4 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                   {governanceCards.map((card, index) => (
                     <GovernanceCard
