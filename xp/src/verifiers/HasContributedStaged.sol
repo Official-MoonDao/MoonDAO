@@ -17,7 +17,6 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
         _addStage(10, 50); // 10 contributions = 75 XP (total: 120 XP)
         _addStage(25, 100); // 25 contributions = 150 XP (total: 270 XP)
         _addStage(50, 300); // 50 contributions = 300 XP (total: 570 XP)
-        _addStage(100, 500); // 100 contributions = 500 XP (total: 1070 XP)
     }
 
     // Admin functions - using inherited onlyOwner modifier from XPOracleVerifier -> Ownable
