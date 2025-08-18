@@ -462,7 +462,7 @@ export const XP_VERIFIERS: any = [
     verifierId: 2,
     verifierAddress:
       HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-token-balance-proof',
+    route: '/api/xp/mooney-balance',
     type: 'staged',
     metricKey: 'tokenBalance', // Placeholder - update when this API is implemented
   },
@@ -471,7 +471,7 @@ export const XP_VERIFIERS: any = [
     verifierAddress:
       HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/has-created-a-team-proof',
-    type: 'staged',
+    type: 'single',
     metricKey: 'teamsCreated', // Placeholder - update when this API is implemented
   },
   {

@@ -5,7 +5,7 @@ import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Address } from 'thirdweb'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
-import { signHasVotedProof, submitHasVotedClaimFor } from '@/lib/xp'
+import { signHasVotedProof, submitHasVotedBulkClaimFor } from '@/lib/xp'
 
 const MIN_VOTES = 1 //changing this while using the same verifier will allow users to claim xp again
 
@@ -99,7 +99,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         actualVotes: BigInt(votesCount), // Use actual vote count
       })
 
-    const { txHash } = await submitHasVotedClaimFor({
+    const { txHash } = await submitHasVotedBulkClaimFor({
       user: user as Address,
       context,
     })

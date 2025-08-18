@@ -4,9 +4,9 @@ import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Address } from 'thirdweb'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
-import { signHasCreatedTeamProof, submitHasCreatedTeamClaimFor } from '@/lib/xp'
+import { submitHasTokenBalanceBulkClaimFor } from '@/lib/xp'
 
-const MIN_TEAMS_CREATED = BigInt(1) // Minimum teams required to be eligible
+const MIN_TOKEN_BALANCE = BigInt(100 * 1e18) // 100 tokens minimum (18 decimals)
 
 function getUserAndAccessToken(req: NextApiRequest) {
   if (req.method === 'GET') {
@@ -37,47 +37,30 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (!addressBelongsToPrivyUser(accessToken as string, user))
       return res.status(400).json({ error: 'User not found' })
 
-    // TODO: You will implement the function that checks if the address has created a team
-    // For now, this is a placeholder that assumes the user has created at least 1 team
-    // Replace this with your actual team creation check function
-    const teamsCreated = BigInt(1) // This should come from your team creation check function
-
-    if (teamsCreated < MIN_TEAMS_CREATED)
-      return res
-        .status(200)
-        .json({ eligible: false, teamsCreated: teamsCreated.toString() })
-
-    // For GET requests, just return eligibility
+    // For GET requests, just return eligibility info
     if (req.method === 'GET') {
       return res.status(200).json({
-        eligible: true,
-        teamsCreated: teamsCreated.toString(),
-        minTeamsCreated: MIN_TEAMS_CREATED.toString(),
+        eligible: true, // Always eligible since verification happens on-chain
+        minTokenBalance: MIN_TOKEN_BALANCE.toString(),
+        note: 'Token balance verification happens on-chain during claim',
       })
     }
 
     // For POST requests, proceed with claiming
-    // Sign/encode via shared oracle helper using actual teams created for bulk claiming
-    const { validAfter, validBefore, signature, context } =
-      await signHasCreatedTeamProof({
-        user: user as Address,
-        actualTeamsCreated: teamsCreated, // Use actual teams created for staged bulk claiming
-      })
+    // Since HasTokenBalanceStaged doesn't require oracle signing, we can proceed directly
+    // The contract will verify the token balance on-chain during the claim
 
-    // Relay the XP claim on behalf of the user so they don't need to send a tx
-    const { txHash } = await submitHasCreatedTeamClaimFor({
+    // Submit the bulk claim - the contract will verify eligibility on-chain
+    const { txHash } = await submitHasTokenBalanceBulkClaimFor({
       user: user as Address,
-      context,
+      verifierId: BigInt(2), // Token balance verifier ID from config
     })
 
     return res.status(200).json({
       eligible: true,
-      teamsCreated: teamsCreated.toString(),
-      validAfter: Number(validAfter),
-      validBefore: Number(validBefore),
-      signature,
-      context,
+      minTokenBalance: MIN_TOKEN_BALANCE.toString(),
       txHash,
+      note: 'Token balance verified on-chain during claim',
     })
   } catch (err: any) {
     console.log(err)
