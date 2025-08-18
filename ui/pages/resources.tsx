@@ -217,6 +217,16 @@ const resourceCategories = [
         name: 'B2 Science - Center for Human Space Exploration (CHASE)',
         url: 'https://www.b2science.org/center-human-space-exploration-chase',
         description: 'Research center focused on human space exploration science and technology development.'
+      },
+      {
+        name: 'DeSci World',
+        url: 'https://desci.world/',
+        description: 'Decentralized science platform connecting researchers, funding, and collaboration in the web3 ecosystem.'
+      },
+      {
+        name: 'AuraSci',
+        url: 'https://aurasci.xyz/',
+        description: 'Platform for scientific research and collaboration in the decentralized science ecosystem.'
       }
     ]
   },
