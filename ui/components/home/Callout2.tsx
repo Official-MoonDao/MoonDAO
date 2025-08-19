@@ -8,14 +8,17 @@ import TeamTier from '../onboarding/TeamTier'
 
 export default function Callout2() {
   return (
-    <section
-      style={{
-        backgroundImage: 'url("/assets/mission-hero-bg.png")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    >
+    <section className="relative">
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/assets/mission-hero-bg.webp"
+          alt="Mission Hero Background"
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="100vw"
+        />
+      </div>
       <div
         id="callout2-container"
         className="z-10 relative flex flex-col-reverse lg:flex-row items-center justify-center lg:justify-between pt-5 p-5 pb-[120px] md:pr-10 md:pl-10 2xl:pr-20 2xl:pl-20 3xl:pr-32 3xl:pl-32 min-h-[800px] md:h-[80vh] md:min-h-[90vmin] lg:min-h-[800px] 2xl:min-h-[900px] 3xl:min-h-[1000px] bg-gradient-to-bl from-transparent via-[#090D21] via-10% to-transparent to-40% max-w-[2400px] mx-auto"
