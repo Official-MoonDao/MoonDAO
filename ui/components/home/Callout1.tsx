@@ -5,14 +5,17 @@ export default function Callout1() {
   return (
     <section 
       id="callout1-section" 
-      className="min-h-[800px] md:h-[80vh] md:min-h-[90vmin] lg:min-h-[800px] 2xl:min-h-[900px] 3xl:min-h-[1000px] flex items-end"
-      style={{
-        backgroundImage: 'url("/assets/Moon-Launch.png")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center bottom',
-        backgroundRepeat: 'no-repeat',
-      }}
+      className="min-h-[800px] md:h-[80vh] md:min-h-[90vmin] lg:min-h-[800px] 2xl:min-h-[900px] 3xl:min-h-[1000px] flex items-end relative"
     >
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/assets/Moon-Launch.webp"
+          alt="Moon Launch Background"
+          fill
+          className="object-cover object-center-bottom"
+          sizes="100vw"
+        />
+      </div>
       <div
         id="callout1-container"
         className="z-20 relative w-full h-full flex items-end pb-[20px] md:pb-[40px] lg:pb-[60px] xl:pb-[80px] 2xl:pb-[120px] 3xl:pb-[160px] max-w-[2400px] mx-auto"
