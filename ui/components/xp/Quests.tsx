@@ -83,7 +83,7 @@ export default function Quests({}: QuestsProps) {
     userInfo && userInfo.erc20Config.active
       ? calculateAvailableERC20Rewards(
           userInfo.xpInfo.totalXP,
-          userInfo.xpInfo.claimedERC20Rewards,
+          BigInt(0),
           userInfo.erc20Config.conversionRate
         )
       : BigInt(0)
