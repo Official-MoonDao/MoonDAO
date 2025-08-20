@@ -12,9 +12,18 @@ export default function Hero() {
       >
         <div
           id="background"
-          className="w-full h-full absolute top-0 right-0 overflow-hidden z-0 bg-cover bg-no-repeat pointer-events-none"
-          style={{backgroundImage: 'url("/assets/Lunar-Colony-Dark.png")', backgroundPosition: 'center 80%'}}
-        ></div>
+          className="w-full h-full absolute top-0 right-0 overflow-hidden z-0 pointer-events-none"
+        >
+          <Image
+            src="/assets/Lunar-Colony-Dark.webp"
+            alt="Lunar Colony Background"
+            fill
+            priority
+            className="object-cover object-center"
+            style={{objectPosition: 'center 80%'}}
+            sizes="100vw"
+          />
+        </div>
         <div
           id="tl-divider"
           className="absolute h-[90%] left-[-2px] top-0 w-[45%]"

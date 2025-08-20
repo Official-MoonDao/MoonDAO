@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import Image from 'next/image'
 import IndexCardGrid from '../layout/IndexCardGrid'
 
 const indexCardData = [
@@ -85,10 +86,13 @@ export default function Callout3() {
     <section className="relative overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0">
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: 'url("/assets/Rovers.png")' }}
-        ></div>
+        <Image
+          src="/assets/Rovers.webp"
+          alt="Rovers Background"
+          fill
+          className="object-cover object-center"
+          sizes="100vw"
+        />
       </div>
 
       <div className="relative z-10 container mx-auto px-5 py-20 md:py-28">

@@ -476,6 +476,9 @@ export async function getServerSideProps() {
 
     const jobs = await queryTable(chain, `SELECT * FROM ${jobsTableName}`)
 
+    // Get current timestamp for expiration checks
+    const now = Math.floor(Date.now() / 1000)
+
     // Convert team rows to NFTs
     const teamNFTs: NFT[] = []
     if (teamRows && teamRows.length > 0) {
@@ -489,12 +492,40 @@ export async function getServerSideProps() {
       }
     }
 
-    const filteredTeamsUnsorted = teamNFTs.filter(
-      (team) => !blockedTeams.includes(team.metadata.name)
+    // Get team contract for expiration checks
+    const teamContract = getContract({
+      client: serverClient,
+      address: TEAM_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: TeamABI as any,
+    })
+
+    // Filter for public teams
+    const filteredPublicTeams: any = teamNFTs?.filter(
+      (nft: any) =>
+        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
+          ?.value === 'public' && !blockedTeams.includes(nft.metadata.id)
+    )
+
+    // Filter for valid (non-expired) teams
+    const filteredValidTeams: any = filteredPublicTeams?.filter(
+      async (nft: any) => {
+        try {
+          const expiresAt = await readContract({
+            contract: teamContract,
+            method: 'expiresAt',
+            params: [nft?.metadata?.id],
+          })
+          return +expiresAt.toString() > now
+        } catch (error) {
+          console.error(`Error checking expiration for team ${nft?.metadata?.id}:`, error)
+          return false
+        }
+      }
     )
 
     // Sort teams with newest first and featured teams prioritized
-    const filteredTeams = filteredTeamsUnsorted
+    const filteredTeams = filteredValidTeams
       .reverse()
       .sort((a: any, b: any) => {
         const aIsFeatured = featuredTeams.includes(Number(a.metadata.id))
@@ -527,112 +558,140 @@ export async function getServerSideProps() {
       }
     }
 
-    const filteredCitizens = citizenNFTs
-      .filter((citizen) => !blockedCitizens.includes(citizen.metadata.name))
-      .reverse() // Show newest citizens first
+    // Get citizen contract for expiration checks
+    const citizenContract = getContract({
+      client: serverClient,
+      address: CITIZEN_ADDRESSES[chainSlug],
+      chain: chain,
+      abi: CitizenABI as any,
+    })
+
+    // Filter for public citizens
+    const filteredPublicCitizens: any = citizenNFTs?.filter(
+      (nft: any) =>
+        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
+          ?.value === 'public' && !blockedCitizens.includes(nft.metadata.id)
+    )
+
+    // Filter for valid (non-expired) citizens
+    const filteredValidCitizens: any = filteredPublicCitizens?.filter(
+      async (nft: any) => {
+        try {
+          const expiresAt = await readContract({
+            contract: citizenContract,
+            method: 'expiresAt',
+            params: [nft?.metadata?.id],
+          })
+          return +expiresAt.toString() > now
+        } catch (error) {
+          console.error(`Error checking expiration for citizen ${nft?.metadata?.id}:`, error)
+          return false
+        }
+      }
+    )
+
+    const filteredCitizens = filteredValidCitizens.reverse() // Show newest citizens first
 
     // Get citizens location data for the map
     let citizensLocationData: any[] = []
     
-    // Get location data for each citizen
-    for (const citizen of filteredCitizens) {
-      const citizenLocation = getAttribute(
-        citizen?.metadata?.attributes as unknown as any[],
-        'Location'
-      )?.value
+    if (process.env.NEXT_PUBLIC_ENV === 'prod' || process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
+      // Get location data for each citizen
+      for (const citizen of filteredCitizens) {
+        const citizenLocation = getAttribute(
+          citizen?.metadata?.attributes as unknown as any[],
+          'location'
+        )?.value
 
-      let locationData
+        let locationData
 
-      if (
-        citizenLocation &&
-        citizenLocation !== '' &&
-        !citizenLocation?.startsWith('{')
-      ) {
-        locationData = {
-          results: [
-            {
-              formatted_address: citizenLocation,
-            },
-          ],
-        }
-      } else if (citizenLocation?.startsWith('{')) {
-        const parsedLocationData = JSON.parse(citizenLocation)
-        locationData = {
-          results: [
-            {
-              formatted_address: parsedLocationData.name,
-              geometry: {
-                location: {
-                  lat: parsedLocationData.lat,
-                  lng: parsedLocationData.lng,
+        if (
+          citizenLocation &&
+          citizenLocation !== '' &&
+          !citizenLocation?.startsWith('{')
+        ) {
+          locationData = {
+            results: [
+              {
+                formatted_address: citizenLocation,
+              },
+            ],
+          }
+        } else if (citizenLocation?.startsWith('{')) {
+          const parsedLocationData = JSON.parse(citizenLocation)
+          locationData = {
+            results: [
+              {
+                formatted_address: parsedLocationData.name,
+                geometry: {
+                  location: {
+                    lat: parsedLocationData.lat,
+                    lng: parsedLocationData.lng,
+                  },
                 },
               },
-            },
-          ],
+            ],
+          }
+        } else {
+          locationData = {
+            results: [
+              {
+                formatted_address: 'Antarctica',
+                geometry: { location: { lat: -90, lng: 0 } },
+              },
+            ],
+          }
         }
-      } else {
-        locationData = {
-          results: [
-            {
-              formatted_address: 'Antarctica',
-              geometry: { location: { lat: -90, lng: 0 } },
-            },
-          ],
-        }
-      }
 
-      citizensLocationData.push({
-        id: citizen.metadata.id || citizen.id,
-        name: citizen.metadata.name || '',
-        location: citizenLocation || null,
-        formattedAddress:
-          locationData.results?.[0]?.formatted_address || 'Antarctica',
-        image: citizen.metadata.image || null,
-        lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
-        lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
-      })
-    }
-
-    // Group citizens by lat and lng
-    const locationMap = new Map()
-
-    for (const citizen of citizensLocationData) {
-      const key = `${citizen.lat},${citizen.lng}`
-      if (!locationMap.has(key)) {
-        locationMap.set(key, {
-          citizens: [citizen],
-          names: [citizen.name || ''],
-          formattedAddress: citizen.formattedAddress || 'Antarctica',
-          lat: citizen.lat,
-          lng: citizen.lng,
+        citizensLocationData.push({
+          id: citizen.metadata.id,
+          name: citizen.metadata.name,
+          location: citizenLocation,
+          formattedAddress:
+            locationData.results?.[0]?.formatted_address || 'Antarctica',
+          image: citizen.metadata.image,
+          lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
+          lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
         })
-      } else {
-        const existing = locationMap.get(key)
-        existing.names.push(citizen.name || '')
-        existing.citizens.push(citizen)
       }
-    }
 
-    // Convert the map back to an array with proper styling
-    citizensLocationData = Array.from(locationMap.values()).map(
-      (entry: any) => ({
-        citizens: entry.citizens || [],
-        names: entry.names || [],
-        formattedAddress: entry.formattedAddress || 'Antarctica',
-        lat: entry.lat || -90,
-        lng: entry.lng || 0,
-        color:
-          entry.citizens.length > 3
-            ? '#6a3d79'
-            : entry.citizens.length > 1
-            ? '#5e4dbf'
-            : '#5556eb',
-        size:
-          entry.citizens.length > 1
-            ? Math.min(entry.citizens.length * 0.01, 0.4)
-            : 0.01,
-      })
-    )
+      // Group citizens by lat and lng
+      const locationMap = new Map()
+
+      for (const citizen of citizensLocationData) {
+        const key = `${citizen.lat},${citizen.lng}`
+        if (!locationMap.has(key)) {
+          locationMap.set(key, {
+            citizens: [citizen],
+            names: [citizen.name],
+            formattedAddress: citizen.formattedAddress,
+            lat: citizen.lat,
+            lng: citizen.lng,
+          })
+        } else {
+          const existing = locationMap.get(key)
+          existing.names.push(citizen.name)
+          existing.citizens.push(citizen)
+        }
+      }
+
+      // Convert the map back to an array
+      citizensLocationData = Array.from(locationMap.values()).map(
+        (entry: any) => ({
+          ...entry,
+          color:
+            entry.citizens.length > 3
+              ? '#6a3d79'
+              : entry.citizens.length > 1
+              ? '#5e4dbf'
+              : '#5556eb',
+          size:
+            entry.citizens.length > 1
+              ? Math.min(entry.citizens.length * 0.01, 0.4)
+              : 0.01,
+        })
+      )
+    }
 
     return {
       props: {

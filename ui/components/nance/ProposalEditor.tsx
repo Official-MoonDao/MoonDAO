@@ -36,6 +36,7 @@ import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
 import EditorMarkdownUpload from './EditorMarkdownUpload'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
+import ProposalSubmissionCTA from './ProposalSubmissionCTA'
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -83,6 +84,8 @@ export default function ProposalEditor() {
   const [proposalStatus, setProposalStatus] =
     useState<ProposalStatus>('Discussion')
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false)
+  const [showSubmissionCTA, setShowSubmissionCTA] = useState<boolean>(false)
+  const [submittedProposalId, setSubmittedProposalId] = useState<string | undefined>()
 
   const { data: spaceInfoData } = useSpaceInfo({ space: NANCE_SPACE_NAME })
   const spaceInfo = spaceInfoData?.data
@@ -271,7 +274,9 @@ export default function ProposalEditor() {
               toast.success('Proposal submitted successfully!', {
                 style: toastStyle,
               })
-              router.push(`/proposal/${res.data.uuid}`)
+              // Show CTA instead of immediate redirect
+              setSubmittedProposalId(res.data.uuid)
+              setShowSubmissionCTA(true)
             } else {
               console.error('signAndSendProposal: Upload failed', res);
               setSigningStatus('error')
@@ -326,7 +331,8 @@ export default function ProposalEditor() {
   }, [watch])
 
   return (
-    <div className="flex flex-col justify-center items-start animate-fadeIn w-full md:w-full">
+    <>
+      <div className="flex flex-col justify-center items-start animate-fadeIn w-full md:w-full">
       <div className="px-2 w-full md:max-w-[1200px]">
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="">
@@ -515,6 +521,21 @@ export default function ProposalEditor() {
           </div>
         </form>
       </div>
-    </div>
+      </div>
+
+      {/* Proposal Submission CTA Modal */}
+      {showSubmissionCTA && (
+        <ProposalSubmissionCTA
+          proposalId={submittedProposalId}
+          onClose={() => {
+            setShowSubmissionCTA(false)
+            // Redirect to proposal page after closing CTA
+            if (submittedProposalId) {
+              router.push(`/proposal/${submittedProposalId}`)
+            }
+          }}
+        />
+      )}
+    </>
   )
 }

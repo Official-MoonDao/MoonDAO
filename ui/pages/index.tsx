@@ -9,6 +9,7 @@ import {
 import { blockedProjects } from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
+import Head from 'next/head'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { getAUMHistory, getMooneyPrice } from '@/lib/coinstats'
 import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
@@ -71,6 +72,11 @@ export default function Home({
 
   return (
     <Container>
+      <Head>
+        {/* Preload critical background images */}
+        <link rel="preload" as="image" href="/assets/Lunar-Colony-Dark.webp" />
+        <link rel="preload" as="image" href="/assets/mission-hero-bg.webp" />
+      </Head>
       <WebsiteHead
         title="Welcome"
         description="MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement."
