@@ -190,6 +190,22 @@ const resourceCategories = [
     ]
   },
   {
+    title: 'News & Media',
+    description: 'Leading space news sources and media platforms for staying updated on industry developments.',
+    resources: [
+      {
+        name: 'SpaceNews',
+        url: 'https://spacenews.com/',
+        description: 'Leading source for space industry news, analysis, and insights covering commercial, government, and international space activities.'
+      },
+      {
+        name: 'Space.com',
+        url: 'https://www.space.com/',
+        description: 'Comprehensive space news, exploration updates, and astronomy information for enthusiasts and professionals.'
+      }
+    ]
+  },
+  {
     title: 'Community & Learning',
     description: 'Educational platforms, communities, and initiatives for space technology and research collaboration.',
     resources: [
@@ -227,6 +243,93 @@ const resourceCategories = [
         name: 'AuraSci',
         url: 'https://aurasci.xyz/',
         description: 'Platform for scientific research and collaboration in the decentralized science ecosystem.'
+      },
+      {
+        name: 'Yuri\'s Night',
+        url: 'https://yurisnight.net/',
+        description: 'Global celebration of human space achievements and international space program outreach.'
+      },
+      {
+        name: 'Space for Humanity',
+        url: 'https://spaceforhumanity.org/',
+        description: 'Nonprofit expanding access to space for all of humanity through citizen astronaut programs.'
+      },
+      {
+        name: 'Space Talent',
+        url: 'https://www.spacetalent.org/',
+        description: 'Platform connecting space professionals and fostering career development in the space industry.'
+      },
+      {
+        name: 'The Planetary Society',
+        url: 'https://www.planetary.org/',
+        description: 'World\'s largest and most influential nonprofit space organization advocating for space exploration.'
+      },
+      {
+        name: 'National Test Pilot School',
+        url: 'https://ntps.edu/',
+        description: 'Leading institution for test pilot and flight test engineer training and education.'
+      },
+      {
+        name: 'International Test Pilots School Canada',
+        url: 'https://itpscanada.com/',
+        description: 'Professional flight test training and aerospace education programs in Canada.'
+      },
+      {
+        name: 'Karman Project',
+        url: 'https://www.karmanproject.org/',
+        description: 'Educational initiative promoting space exploration and STEM education through innovative programs.'
+      }
+    ]
+  },
+  {
+    title: 'Organizations & Foundations',
+    description: 'Professional organizations, foundations, and industry associations supporting space exploration and aerospace development.',
+    resources: [
+      {
+        name: 'International Astronautical Federation (IAF)',
+        url: 'https://www.iafastro.org/',
+        description: 'Global space advocacy organization connecting space professionals and promoting international cooperation.'
+      },
+      {
+        name: 'Space Foundation',
+        url: 'https://www.spacefoundation.org/',
+        description: 'Leading advocate for space exploration and STEM education through research and outreach programs.'
+      },
+      {
+        name: 'Space Angels',
+        url: 'https://www.spaceangels.com/',
+        description: 'Investment platform and community focused on space industry funding and market intelligence.'
+      }
+    ]
+  },
+  {
+    title: 'Industry Resources',
+    description: 'Specialized resources for space industry professionals, including technical standards and equipment suppliers.',
+    resources: [
+      {
+        name: 'NASA Electronic Parts and Packaging (NEPP)',
+        url: 'https://nepp.nasa.gov/npsl/Wire/stranded_wire.htm',
+        description: 'NASA\'s technical resource for electronic parts, packaging, and wire specifications for space applications.'
+      },
+      {
+        name: 'Survival Systems Inc.',
+        url: 'https://www.survivalsystemsinc.com/',
+        description: 'Specialized equipment and training for aerospace, defense, and survival applications.'
+      },
+      {
+        name: 'SpaceCrew Directory',
+        url: 'https://spacecrew.com/space-companies',
+        description: 'Comprehensive directory of space companies and organizations worldwide.'
+      },
+      {
+        name: 'Rocket Launch Directory',
+        url: 'https://rocketlaunch.org/launch-providers',
+        description: 'Database of rocket launch providers and launch services information.'
+      },
+      {
+        name: 'Space Bandits',
+        url: 'https://www.spacebandits.io/',
+        description: 'Community platform for space enthusiasts and professionals sharing industry insights.'
       }
     ]
   },
