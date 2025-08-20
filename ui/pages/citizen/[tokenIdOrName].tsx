@@ -252,7 +252,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                     (socials && (socials.twitter || socials.website)) ? (
                       <div
                         id="socials-container"
-                        className="flex items-center gap-3 bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-2"
+                        className="flex items-center gap-3 bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12"
                       >
                         {discordLink &&
                           !discordLink.includes('/users/undefined') && (
