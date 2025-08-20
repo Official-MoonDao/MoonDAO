@@ -60,19 +60,19 @@ export const XP_VERIFIERS: any = [
     link: '/wallet',
     linkText: 'View Wallet',
   },
-  {
-    verifierId: 3,
-    verifierAddress:
-      HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-created-a-team-proof',
-    type: 'single',
-    metricKey: 'teamsCreated',
-    title: 'Create a Team',
-    description: 'Create a team in the Space Acceleration Network.',
-    icon: UserGroupIcon,
-    link: '/team',
-    linkText: 'Create Team',
-  },
+  // {
+  //   verifierId: 3,
+  //   verifierAddress:
+  //     HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+  //   route: '/api/xp/has-created-a-team-proof',
+  //   type: 'single',
+  //   metricKey: 'teamsCreated',
+  //   title: 'Create a Team',
+  //   description: 'Create a team in the Space Acceleration Network.',
+  //   icon: UserGroupIcon,
+  //   link: '/team',
+  //   linkText: 'Create Team',
+  // },
   {
     verifierId: 4,
     verifierAddress: HAS_CONTRIBUTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
