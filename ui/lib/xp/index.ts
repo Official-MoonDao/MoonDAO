@@ -9,8 +9,14 @@ import {
   HAS_VOTED_VERIFIER_ADDRESSES,
   HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES,
   HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES,
+  HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES,
+  HAS_CONTRIBUTED_VERIFIER_ADDRESSES,
+  HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES,
+  HAS_SUBMITTED_PR_VERIFIER_ADDRESSES,
+  HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES,
 } from 'const/config'
 import { utils as ethersUtils } from 'ethers'
+import { NextApiRequest } from 'next'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   getContract,
@@ -20,13 +26,47 @@ import {
 } from 'thirdweb'
 import { Address, Hex } from 'thirdweb'
 import { privateKeyToAccount as twPrivateKeyToAccount } from 'thirdweb/wallets'
-import { arbitrum, sepolia } from '@/lib/infura/infuraChains'
+import {
+  arbitrum,
+  base,
+  ethereum,
+  polygon,
+  sepolia,
+} from '@/lib/infura/infuraChains'
 import { serverClient } from '@/lib/thirdweb/client'
+import { XP_VERIFIERS } from '@/lib/xp/config'
 import { signOracleProof } from '../oracle'
 
 function normalizePk(pk?: string): `0x${string}` {
   if (!pk) throw new Error('ORACLE_SIGNER_PK missing')
   return (pk.startsWith('0x') ? pk : `0x${pk}`) as `0x${string}`
+}
+
+function getVerifierId(verifierAddress: Address): bigint {
+  const verifier = XP_VERIFIERS.find(
+    (verifier: any) =>
+      verifier.verifierAddress.toLowerCase() === verifierAddress.toLowerCase()
+  )
+  if (verifier?.verifierId === undefined) {
+    throw new Error(`Verifier not found for address: ${verifierAddress}`)
+  }
+  return verifier.verifierId
+}
+
+export function getUserAndAccessToken(req: NextApiRequest) {
+  if (req.method === 'GET') {
+    const { user, accessToken } = req.query as {
+      user?: string
+      accessToken?: string
+    }
+    return { user, accessToken }
+  } else {
+    const { user, accessToken } = JSON.parse(req.body) as {
+      user?: string
+      accessToken?: string
+    }
+    return { user, accessToken }
+  }
 }
 
 const { keccak256, defaultAbiCoder } = ethersUtils
@@ -359,7 +399,7 @@ async function fetchVerifierXp(verifierAddress: Address): Promise<bigint> {
 
 export async function signHasVotingPowerProof(params: {
   user: Address
-  actualVotingPower: bigint // Changed from minVotingPower to actualVotingPower for clarity
+  votingPower: bigint // Changed from minVotingPower to votingPower for clarity
   validitySeconds?: number
 }): Promise<SignedProofResult> {
   if (
@@ -370,9 +410,9 @@ export async function signHasVotingPowerProof(params: {
     throw new Error('Oracle env not configured')
   }
 
-  // For bulk claims, the context hash is based on the user's actual voting power
+  // For bulk claims, the context hash is based on the user's voting power
   const contextHash = keccak256(
-    defaultAbiCoder.encode(['uint256'], [params.actualVotingPower.toString()])
+    defaultAbiCoder.encode(['uint256'], [params.votingPower.toString()])
   ) as Hex
 
   const verifierAddress = HAS_VOTING_POWER_VERIFIER_ADDRESSES[
@@ -388,12 +428,12 @@ export async function signHasVotingPowerProof(params: {
     validitySeconds: params.validitySeconds,
   })
 
-  // Context format for staged verifiers: (actualVotingPower, xpAmount, validAfter, validBefore, signature)
+  // Context format for staged verifiers: (votingPower, xpAmount, validAfter, validBefore, signature)
   // The xpAmount is set to 0 since the staged verifier will calculate it
   const context = defaultAbiCoder.encode(
     ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
     [
-      params.actualVotingPower.toString(), // User's actual voting power
+      params.votingPower.toString(), // User's voting power
       '0', // XP amount not used for staged verifiers
       validAfter.toString(),
       validBefore.toString(),
@@ -411,7 +451,7 @@ export async function signHasVotingPowerProof(params: {
 
 export async function signHasCreatedTeamProof(params: {
   user: Address
-  actualTeamsCreated: bigint
+  teamsCreated: bigint
   validitySeconds?: number
 }): Promise<SignedProofResult> {
   if (
@@ -422,9 +462,9 @@ export async function signHasCreatedTeamProof(params: {
     throw new Error('Oracle env not configured')
   }
 
-  // For bulk claims, the context hash is based on the user's actual teams created
+  // For bulk claims, the context hash is based on the user's teams created
   const contextHash = keccak256(
-    defaultAbiCoder.encode(['uint256'], [params.actualTeamsCreated.toString()])
+    defaultAbiCoder.encode(['uint256'], [params.teamsCreated.toString()])
   ) as Hex
 
   const verifierAddress = HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES[
@@ -440,12 +480,12 @@ export async function signHasCreatedTeamProof(params: {
     validitySeconds: params.validitySeconds,
   })
 
-  // Context format for staged verifiers: (actualTeamsCreated, xpAmount, validAfter, validBefore, signature)
+  // Context format for staged verifiers: (teamsCreated, xpAmount, validAfter, validBefore, signature)
   // The xpAmount is set to 0 since the staged verifier will calculate it
   const context = defaultAbiCoder.encode(
     ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
     [
-      params.actualTeamsCreated.toString(), // User's actual teams created
+      params.teamsCreated.toString(), // User's teams created
       '0', // XP amount not used for staged verifiers
       validAfter.toString(),
       validBefore.toString(),
@@ -463,7 +503,7 @@ export async function signHasCreatedTeamProof(params: {
 
 export async function signHasVotedProof(params: {
   user: Address
-  actualVotes: bigint // Changed from minVotes to actualVotes for clarity
+  votes: bigint // Changed from minVotes to votes for clarity
   validitySeconds?: number
 }): Promise<SignedProofResult> {
   if (
@@ -474,9 +514,9 @@ export async function signHasVotedProof(params: {
     throw new Error('Oracle env not configured')
   }
 
-  // For bulk claims, the context hash is based on the user's actual vote count
+  // For bulk claims, the context hash is based on the user's vote count
   const contextHash = keccak256(
-    defaultAbiCoder.encode(['uint256'], [params.actualVotes.toString()])
+    defaultAbiCoder.encode(['uint256'], [params.votes.toString()])
   ) as Hex
 
   const verifierAddress = HAS_VOTED_VERIFIER_ADDRESSES[
@@ -492,12 +532,12 @@ export async function signHasVotedProof(params: {
     validitySeconds: params.validitySeconds,
   })
 
-  // Context format for staged verifiers: (actualVotes, xpAmount, validAfter, validBefore, signature)
+  // Context format for staged verifiers: (votes, xpAmount, validAfter, validBefore, signature)
   // The xpAmount is set to 0 since the staged verifier will calculate it
   const context = defaultAbiCoder.encode(
     ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
     [
-      params.actualVotes.toString(), // User's actual vote count
+      params.votes.toString(), // User's vote count
       '0', // XP amount not used for staged verifiers
       validAfter.toString(),
       validBefore.toString(),
@@ -563,6 +603,152 @@ export async function signOwnsCitizenProof(params: {
   }
 }
 
+/**
+ * Sign a proof that a user has a certain token balance
+ * @param params User address, actual token balance, and validity period
+ * @returns Signed proof result with context
+ */
+export async function signHasTokenBalanceProof(params: {
+  user: Address
+  balance: bigint
+  validitySeconds?: number
+}): Promise<SignedProofResult> {
+  if (
+    !XP_ORACLE_NAME ||
+    !XP_ORACLE_VERSION ||
+    !XP_ORACLE_ADDRESSES[XP_ORACLE_CHAIN]
+  ) {
+    throw new Error('Oracle env not configured')
+  }
+
+  // For bulk claims, the context hash is based on the user's token balance
+  const contextHash = keccak256(
+    defaultAbiCoder.encode(['uint256'], [params.balance.toString()])
+  ) as Hex
+
+  const verifierAddress = HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+
+  // For staged verifiers, we use 0 as xpAmount since it will be calculated by the contract
+  const { validAfter, validBefore, signature } = await signOracleProof({
+    user: params.user,
+    verifier: verifierAddress,
+    contextHash,
+    xpAmount: BigInt(0), // XP amount not used in verification for staged verifiers
+    validitySeconds: params.validitySeconds,
+  })
+
+  // Context format for staged verifiers: (balance, xpAmount, validAfter, validBefore, signature)
+  // The xpAmount is set to 0 since the staged verifier will calculate it
+  const context = defaultAbiCoder.encode(
+    ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+    [
+      params.balance.toString(), // User's token balance
+      '0', // XP amount not used for staged verifiers
+      validAfter.toString(),
+      validBefore.toString(),
+      signature,
+    ]
+  ) as Hex
+
+  return {
+    validAfter,
+    validBefore,
+    signature,
+    context,
+  }
+}
+
+/**
+ * Fetch the user's total MOONEY token balance across all supported chains
+ * @param user User address
+ * @returns Total MOONEY balance across all chains
+ */
+export async function fetchUserMooneyBalance(user: Address): Promise<bigint> {
+  // Import MOONEY addresses for all chains
+  const { MOONEY_ADDRESSES } = await import('const/config')
+
+  // Simple ERC20 balanceOf ABI
+  const ERC20_ABI = [
+    {
+      type: 'function',
+      name: 'balanceOf',
+      stateMutability: 'view',
+      inputs: [{ name: 'account', type: 'address' }],
+      outputs: [{ name: '', type: 'uint256' }],
+    },
+  ] as const
+
+  // Get contracts for all supported chains
+  const ethMooneyContract = getContract({
+    client: serverClient,
+    chain: ethereum,
+    address: MOONEY_ADDRESSES['ethereum'] as Address,
+    abi: ERC20_ABI as any,
+  })
+
+  const polygonMooneyContract = getContract({
+    client: serverClient,
+    chain: polygon,
+    address: MOONEY_ADDRESSES['polygon'] as Address,
+    abi: ERC20_ABI as any,
+  })
+
+  const arbMooneyContract = getContract({
+    client: serverClient,
+    chain: arbitrum,
+    address: MOONEY_ADDRESSES['arbitrum'] as Address,
+    abi: ERC20_ABI as any,
+  })
+
+  const baseMooneyContract = getContract({
+    client: serverClient,
+    chain: base,
+    address: MOONEY_ADDRESSES['base'] as Address,
+    abi: ERC20_ABI as any,
+  })
+
+  try {
+    // Fetch balances from all chains in parallel
+    const results = await Promise.allSettled([
+      readContract({
+        contract: ethMooneyContract,
+        method: 'balanceOf',
+        params: [user],
+      }),
+      readContract({
+        contract: polygonMooneyContract,
+        method: 'balanceOf',
+        params: [user],
+      }),
+      readContract({
+        contract: arbMooneyContract,
+        method: 'balanceOf',
+        params: [user],
+      }),
+      readContract({
+        contract: baseMooneyContract,
+        method: 'balanceOf',
+        params: [user],
+      }),
+    ])
+
+    // Sum up all successful balance reads
+    const totalBalance = results.reduce((total, result) => {
+      if (result.status === 'fulfilled') {
+        return total + BigInt(result.value as any)
+      }
+      return total
+    }, BigInt(0))
+
+    return totalBalance
+  } catch (error) {
+    console.error('Error fetching MOONEY balance:', error)
+    return BigInt(0)
+  }
+}
+
 // Minimal ABI for XPManager.claimXPFor(address,uint256,bytes) and claimBulkXPFor
 const XP_MANAGER_ABI = [
   {
@@ -592,7 +778,6 @@ const XP_MANAGER_ABI = [
 export async function submitHasVotingPowerClaimFor(params: {
   user: Address
   context: Hex
-  verifierId?: bigint
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
@@ -602,8 +787,8 @@ export async function submitHasVotingPowerClaimFor(params: {
     privateKey: relayerPk,
   })
 
-  const verifierId = params.verifierId ?? BigInt(0)
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
+  const verifierId = getVerifierId(contractAddress)
   if (!contractAddress) throw new Error('XP Manager address missing for chain')
 
   const contract = getContract({
@@ -615,7 +800,7 @@ export async function submitHasVotingPowerClaimFor(params: {
 
   // Pre-validate the oracle proof to avoid on-chain revert
   try {
-    const [minVotingPower, xpAmount, validAfter, validBefore, signature] =
+    const [votingPower, xpAmount, validAfter, validBefore, signature] =
       defaultAbiCoder.decode(
         ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
         params.context
@@ -626,7 +811,7 @@ export async function submitHasVotingPowerClaimFor(params: {
       XP_ORACLE_CHAIN
     ] as Address
     const contextHash = keccak256(
-      defaultAbiCoder.encode(['uint256'], [minVotingPower])
+      defaultAbiCoder.encode(['uint256'], [votingPower])
     ) as Hex
 
     const oracleContract = getContract({
@@ -741,7 +926,7 @@ export async function submitBulkClaimFor(params: {
 
   // Pre-validate the oracle proof to avoid on-chain revert
   try {
-    const [actualValue, , validAfter, validBefore, signature] =
+    const [metricValue, , validAfter, validBefore, signature] =
       defaultAbiCoder.decode(
         ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
         params.context
@@ -749,7 +934,7 @@ export async function submitBulkClaimFor(params: {
 
     const oracleAddress = XP_ORACLE_ADDRESSES[XP_ORACLE_CHAIN] as Address
     const contextHash = keccak256(
-      defaultAbiCoder.encode(['uint256'], [actualValue])
+      defaultAbiCoder.encode(['uint256'], [metricValue])
     ) as Hex
 
     const oracleContract = getContract({
@@ -836,12 +1021,11 @@ export async function submitBulkClaimFor(params: {
 export async function submitHasVotingPowerBulkClaimFor(params: {
   user: Address
   context: Hex
-  verifierId?: bigint
 }): Promise<{ txHash: Hex }> {
-  const verifierId = params.verifierId ?? BigInt(0)
   const verifierAddress = HAS_VOTING_POWER_VERIFIER_ADDRESSES[
     XP_ORACLE_CHAIN
   ] as Address
+  const verifierId = getVerifierId(verifierAddress)
 
   return submitBulkClaimFor({
     user: params.user,
@@ -854,7 +1038,6 @@ export async function submitHasVotingPowerBulkClaimFor(params: {
 export async function submitHasCreatedTeamClaimFor(params: {
   user: Address
   context: Hex
-  verifierId?: bigint
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
@@ -864,8 +1047,8 @@ export async function submitHasCreatedTeamClaimFor(params: {
     privateKey: relayerPk,
   })
 
-  const verifierId = params.verifierId ?? BigInt(3)
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
+  const verifierId = getVerifierId(contractAddress)
   if (!contractAddress) throw new Error('XP Manager address missing for chain')
 
   const contract = getContract({
@@ -975,7 +1158,6 @@ export async function submitHasCreatedTeamClaimFor(params: {
 export async function submitHasVotedClaimFor(params: {
   user: Address
   context: Hex
-  verifierId?: bigint
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
@@ -985,8 +1167,8 @@ export async function submitHasVotedClaimFor(params: {
     privateKey: relayerPk,
   })
 
-  const verifierId = params.verifierId ?? BigInt(1)
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
+  const verifierId = getVerifierId(contractAddress)
   if (!contractAddress) throw new Error('XP Manager address missing for chain')
 
   const contract = getContract({
@@ -998,7 +1180,7 @@ export async function submitHasVotedClaimFor(params: {
 
   // Pre-validate the oracle proof to avoid on-chain revert
   try {
-    const [minVotes, xpAmount, validAfter, validBefore, signature] =
+    const [votes, xpAmount, validAfter, validBefore, signature] =
       defaultAbiCoder.decode(
         ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
         params.context
@@ -1009,7 +1191,7 @@ export async function submitHasVotedClaimFor(params: {
       XP_ORACLE_CHAIN
     ] as Address
     const contextHash = keccak256(
-      defaultAbiCoder.encode(['uint256'], [minVotes])
+      defaultAbiCoder.encode(['uint256'], [votes])
     ) as Hex
 
     const oracleContract = getContract({
@@ -1094,12 +1276,11 @@ export async function submitHasVotedClaimFor(params: {
 export async function submitHasVotedBulkClaimFor(params: {
   user: Address
   context: Hex
-  verifierId?: bigint
 }): Promise<{ txHash: Hex }> {
-  const verifierId = params.verifierId ?? BigInt(1)
   const verifierAddress = HAS_VOTED_VERIFIER_ADDRESSES[
     XP_ORACLE_CHAIN
   ] as Address
+  const verifierId = getVerifierId(verifierAddress)
 
   return submitBulkClaimFor({
     user: params.user,
@@ -1109,10 +1290,84 @@ export async function submitHasVotedBulkClaimFor(params: {
   })
 }
 
-export async function submitOwnsCitizenClaimFor(params: {
+export async function signHasContributedProof(params: {
+  user: Address
+  contributions: bigint
+  validitySeconds?: number
+}): Promise<SignedProofResult> {
+  if (
+    !XP_ORACLE_NAME ||
+    !XP_ORACLE_VERSION ||
+    !XP_ORACLE_ADDRESSES[XP_ORACLE_CHAIN]
+  ) {
+    throw new Error('Oracle env not configured')
+  }
+
+  // For bulk claims, the context hash is based on the user's contributions
+  const contextHash = keccak256(
+    defaultAbiCoder.encode(['uint256'], [params.contributions.toString()])
+  ) as Hex
+
+  const verifierAddress = HAS_CONTRIBUTED_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+  const verifierId = getVerifierId(verifierAddress)
+
+  // For staged verifiers, we use 0 as xpAmount since it will be calculated by the contract
+  const { validAfter, validBefore, signature } = await signOracleProof({
+    user: params.user,
+    verifier: verifierAddress,
+    contextHash,
+    xpAmount: BigInt(0), // XP amount not used in verification for staged verifiers
+    validitySeconds: params.validitySeconds,
+  })
+
+  // Context format for staged verifiers: (contributions, xpAmount, validAfter, validBefore, signature)
+  // The xpAmount is set to 0 since the staged verifier will calculate it
+  const context = defaultAbiCoder.encode(
+    ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+    [
+      params.contributions.toString(), // User's contributions
+      '0', // XP amount not used for staged verifiers
+      validAfter.toString(),
+      validBefore.toString(),
+      signature,
+    ]
+  ) as Hex
+
+  return {
+    validAfter,
+    validBefore,
+    signature,
+    context,
+  }
+}
+
+export async function submitHasContributedBulkClaimFor(params: {
   user: Address
   context: Hex
-  verifierId?: bigint
+}): Promise<{ txHash: Hex }> {
+  const verifierAddress = HAS_CONTRIBUTED_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+  const verifierId = getVerifierId(verifierAddress)
+
+  return submitBulkClaimFor({
+    user: params.user,
+    context: params.context,
+    verifierId,
+    verifierAddress,
+  })
+}
+
+/**
+ * Submit a claim for citizen profile completion XP
+ * @param params User address and context
+ * @returns Transaction hash
+ */
+export async function submitHasCompletedCitizenProfileClaimFor(params: {
+  user: Address
+  context: Hex
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
@@ -1122,8 +1377,11 @@ export async function submitOwnsCitizenClaimFor(params: {
     privateKey: relayerPk,
   })
 
-  const verifierId = params.verifierId ?? BigInt(5)
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
+  const verifierAddress = HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+  const verifierId = getVerifierId(verifierAddress)
   if (!contractAddress) throw new Error('XP Manager address missing for chain')
 
   const contract = getContract({
@@ -1135,18 +1393,15 @@ export async function submitOwnsCitizenClaimFor(params: {
 
   // Pre-validate the oracle proof to avoid on-chain revert
   try {
-    const [xpAmount, validAfter, validBefore, signature] =
+    const [profileCompleted, xpAmount, validAfter, validBefore, signature] =
       defaultAbiCoder.decode(
-        ['uint256', 'uint256', 'uint256', 'bytes'],
+        ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
         params.context
       ) as any
 
     const oracleAddress = XP_ORACLE_ADDRESSES[XP_ORACLE_CHAIN] as Address
-    const verifierAddress = HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES[
-      XP_ORACLE_CHAIN
-    ] as Address
     const contextHash = keccak256(
-      defaultAbiCoder.encode(['uint256'], [xpAmount])
+      defaultAbiCoder.encode(['uint256'], [profileCompleted])
     ) as Hex
 
     const oracleContract = getContract({
@@ -1173,6 +1428,7 @@ export async function submitOwnsCitizenClaimFor(params: {
     })) as boolean
 
     if (!ok) {
+      // Try to recover signer for additional context
       const proofForRecovery = {
         user: params.user,
         verifier: verifierAddress,
@@ -1211,6 +1467,7 @@ export async function submitOwnsCitizenClaimFor(params: {
       )
     }
   } catch (e) {
+    // Bubble up decode/verify errors to the API layer
     throw e as Error
   }
 
@@ -1229,13 +1486,13 @@ export async function submitOwnsCitizenClaimFor(params: {
 }
 
 /**
- * Submit a token balance claim for a user (no oracle required since verification is on-chain)
- * @param params User address and verifier ID
+ * Submit a token balance claim for a user (requires oracle-signed proof)
+ * @param params User address and context (signed proof)
  * @returns Transaction hash
  */
 export async function submitHasTokenBalanceBulkClaimFor(params: {
   user: Address
-  verifierId?: bigint
+  context: Hex
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
@@ -1245,7 +1502,10 @@ export async function submitHasTokenBalanceBulkClaimFor(params: {
     privateKey: relayerPk,
   })
 
-  const verifierId = params.verifierId ?? BigInt(2) // Token balance verifier ID
+  const verifierAddress = HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+  const verifierId = getVerifierId(verifierAddress)
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
   if (!contractAddress) throw new Error('XP Manager address missing for chain')
 
@@ -1256,14 +1516,10 @@ export async function submitHasTokenBalanceBulkClaimFor(params: {
     abi: XP_MANAGER_ABI as any,
   })
 
-  // For token balance, we don't need oracle verification since it's checked on-chain
-  // We can pass an empty context since the verifier contract handles the logic
-  const emptyContext = '0x' as Hex
-
   const transaction = prepareContractCall({
     contract,
     method: 'claimBulkXPFor' as string,
-    params: [params.user, verifierId, emptyContext],
+    params: [params.user, verifierId, params.context],
   })
 
   const { transactionHash } = await sendTransaction({
@@ -1272,4 +1528,317 @@ export async function submitHasTokenBalanceBulkClaimFor(params: {
   })
 
   return { txHash: transactionHash as Hex }
+}
+
+/**
+ * Sign a proof that a user has completed their citizen profile
+ * @param params User address and validity period
+ * @returns Signed proof result with context
+ */
+export async function signHasCompletedCitizenProfileProof(params: {
+  user: Address
+  validitySeconds?: number
+}): Promise<SignedProofResult> {
+  if (
+    !XP_ORACLE_NAME ||
+    !XP_ORACLE_VERSION ||
+    !XP_ORACLE_ADDRESSES[XP_ORACLE_CHAIN]
+  ) {
+    throw new Error('Oracle env not configured')
+  }
+
+  // For citizen profile completion, we use a simple boolean context (1 for completed)
+  const profileCompleted = BigInt(1)
+  const contextHash = keccak256(
+    defaultAbiCoder.encode(['uint256'], [profileCompleted.toString()])
+  ) as Hex
+
+  const verifierAddress = HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+
+  // For HasCompletedCitizenProfile, we need to use the actual XP amount (5) that the contract expects
+  const xpAmount = BigInt(5) // This should match xpPerClaim in the contract
+  const { validAfter, validBefore, signature } = await signOracleProof({
+    user: params.user,
+    verifier: verifierAddress,
+    contextHash,
+    xpAmount, // Use the actual XP amount, not 0
+    validitySeconds: params.validitySeconds,
+  })
+
+  // Context format: (profileCompleted, xpAmount, validAfter, validBefore, signature)
+  const context = defaultAbiCoder.encode(
+    ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+    [
+      profileCompleted.toString(), // 1 indicates profile is completed
+      xpAmount.toString(), // Use the actual XP amount (5)
+      validAfter.toString(),
+      validBefore.toString(),
+      signature,
+    ]
+  ) as Hex
+
+  return {
+    validAfter,
+    validBefore,
+    signature,
+    context,
+  }
+}
+
+/**
+ * Submit a bulk claim for citizen profile completion XP
+ * @param params User address and context
+ * @returns Transaction hash
+ */
+export async function submitHasCompletedCitizenProfileBulkClaimFor(params: {
+  user: Address
+  context: Hex
+}): Promise<{ txHash: Hex }> {
+  const verifierAddress = HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+  const verifierId = getVerifierId(verifierAddress)
+
+  return submitBulkClaimFor({
+    user: params.user,
+    context: params.context,
+    verifierId,
+    verifierAddress,
+  })
+}
+
+export async function signHasJoinedTeamProof(params: {
+  user: Address
+  validitySeconds?: number
+}): Promise<SignedProofResult> {
+  if (
+    !XP_ORACLE_NAME ||
+    !XP_ORACLE_VERSION ||
+    !XP_ORACLE_ADDRESSES[XP_ORACLE_CHAIN]
+  ) {
+    throw new Error('Oracle env not configured')
+  }
+
+  // For team joining, we check if user has joined at least 1 team
+  const teamsJoined = BigInt(1)
+  const contextHash = keccak256(
+    defaultAbiCoder.encode(['uint256'], [teamsJoined.toString()])
+  ) as Hex
+
+  const verifierAddress = HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+
+  // For single verifiers, we need to use the actual XP amount from the contract
+  const xpAmount = await fetchVerifierXp(verifierAddress)
+
+  const { validAfter, validBefore, signature } = await signOracleProof({
+    user: params.user,
+    verifier: verifierAddress,
+    contextHash,
+    xpAmount, // Use actual XP amount for single verifiers
+    validitySeconds: params.validitySeconds,
+  })
+
+  // Context format for single verifiers: (teamsJoined, xpAmount, validAfter, validBefore, signature)
+  const context = defaultAbiCoder.encode(
+    ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+    [
+      teamsJoined.toString(), // User has joined at least 1 team
+      xpAmount.toString(), // Use actual XP amount
+      validAfter.toString(),
+      validBefore.toString(),
+      signature,
+    ]
+  ) as Hex
+
+  return {
+    validAfter,
+    validBefore,
+    signature,
+    context,
+  }
+}
+
+export async function submitHasJoinedTeamClaimFor(params: {
+  user: Address
+  context: Hex
+}): Promise<{ txHash: Hex }> {
+  const twChain =
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
+  const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
+  const account = twPrivateKeyToAccount({
+    client: serverClient,
+    privateKey: relayerPk,
+  })
+
+  const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
+  const verifierAddress = HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+  const verifierId = getVerifierId(verifierAddress)
+
+  if (!contractAddress) throw new Error('XP Manager address missing for chain')
+  if (!verifierId)
+    throw new Error(`Verifier ID not found for address: ${verifierAddress}`)
+
+  const contract = getContract({
+    client: serverClient,
+    chain: twChain,
+    address: contractAddress,
+    abi: XP_MANAGER_ABI as any,
+  })
+
+  const transaction = prepareContractCall({
+    contract,
+    method: 'claimXPFor' as string,
+    params: [params.user, verifierId, params.context],
+  })
+
+  const { transactionHash } = await sendTransaction({
+    account,
+    transaction,
+  })
+
+  return { txHash: transactionHash as Hex }
+}
+
+export async function signHasSubmittedPRProof(params: {
+  user: Address
+  prCount: bigint
+  validitySeconds?: number
+}): Promise<SignedProofResult> {
+  if (
+    !XP_ORACLE_NAME ||
+    !XP_ORACLE_VERSION ||
+    !XP_ORACLE_ADDRESSES[XP_ORACLE_CHAIN]
+  ) {
+    throw new Error('Oracle env not configured')
+  }
+
+  // For bulk claims, the context hash is based on the user's PR count
+  const contextHash = keccak256(
+    defaultAbiCoder.encode(['uint256'], [params.prCount.toString()])
+  ) as Hex
+
+  const verifierAddress = HAS_SUBMITTED_PR_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+
+  // For staged verifiers, we use 0 as xpAmount since it will be calculated by the contract
+  const { validAfter, validBefore, signature } = await signOracleProof({
+    user: params.user,
+    verifier: verifierAddress,
+    contextHash,
+    xpAmount: BigInt(0), // XP amount not used in verification for staged verifiers
+    validitySeconds: params.validitySeconds,
+  })
+
+  // Context format for staged verifiers: (prCount, xpAmount, validAfter, validBefore, signature)
+  // The xpAmount is set to 0 since the staged verifier will calculate it
+  const context = defaultAbiCoder.encode(
+    ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+    [
+      params.prCount.toString(), // User's PR count
+      '0', // XP amount not used for staged verifiers
+      validAfter.toString(),
+      validBefore.toString(),
+      signature,
+    ]
+  ) as Hex
+
+  return {
+    validAfter,
+    validBefore,
+    signature,
+    context,
+  }
+}
+
+export async function submitHasSubmittedPRBulkClaimFor(params: {
+  user: Address
+  context: Hex
+}): Promise<{ txHash: Hex }> {
+  const verifierAddress = HAS_SUBMITTED_PR_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+  const verifierId = getVerifierId(verifierAddress)
+
+  return submitBulkClaimFor({
+    user: params.user,
+    context: params.context,
+    verifierId,
+    verifierAddress,
+  })
+}
+
+export async function signHasSubmittedIssueProof(params: {
+  user: Address
+  issueCount: bigint
+  validitySeconds?: number
+}): Promise<SignedProofResult> {
+  if (
+    !XP_ORACLE_NAME ||
+    !XP_ORACLE_VERSION ||
+    !XP_ORACLE_ADDRESSES[XP_ORACLE_CHAIN]
+  ) {
+    throw new Error('Oracle env not configured')
+  }
+
+  // For bulk claims, the context hash is based on the user's issue count
+  const contextHash = keccak256(
+    defaultAbiCoder.encode(['uint256'], [params.issueCount.toString()])
+  ) as Hex
+
+  const verifierAddress = HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+
+  // For staged verifiers, we use 0 as xpAmount since it will be calculated by the contract
+  const { validAfter, validBefore, signature } = await signOracleProof({
+    user: params.user,
+    verifier: verifierAddress,
+    contextHash,
+    xpAmount: BigInt(0), // XP amount not used in verification for staged verifiers
+    validitySeconds: params.validitySeconds,
+  })
+
+  // Context format for staged verifiers: (issueCount, xpAmount, validAfter, validBefore, signature)
+  // The xpAmount is set to 0 since the staged verifier will calculate it
+  const context = defaultAbiCoder.encode(
+    ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+    [
+      params.issueCount.toString(), // User's issue count
+      '0', // XP amount not used for staged verifiers
+      validAfter.toString(),
+      validBefore.toString(),
+      signature,
+    ]
+  ) as Hex
+
+  return {
+    validAfter,
+    validBefore,
+    signature,
+    context,
+  }
+}
+
+export async function submitHasSubmittedIssueClaimFor(params: {
+  user: Address
+  context: Hex
+}): Promise<{ txHash: Hex }> {
+  const verifierAddress = HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+  const verifierId = getVerifierId(verifierAddress)
+
+  return submitBulkClaimFor({
+    user: params.user,
+    context: params.context,
+    verifierId,
+    verifierAddress,
+  })
 }

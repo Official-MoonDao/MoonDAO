@@ -6,11 +6,12 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { Address } from 'thirdweb'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
 import {
+  getUserAndAccessToken,
   signHasVotingPowerProof,
   submitHasVotingPowerBulkClaimFor,
 } from '@/lib/xp'
 
-const MIN_VOTING_POWER = BigInt(1) //changing this while using the same verifier will allow users to claim xp again
+const VOTING_POWER_THRESHOLD = BigInt(1) //changing this while using the same verifier will allow users to claim xp again
 
 async function fetchSnapshotVP(user: Address, space: string): Promise<bigint> {
   const endpoint = 'https://hub.snapshot.org/graphql'
@@ -35,22 +36,6 @@ async function fetchSnapshotVP(user: Address, space: string): Promise<bigint> {
   }
 }
 
-function getUserAndAccessToken(req: NextApiRequest) {
-  if (req.method === 'GET') {
-    const { user, accessToken } = req.query as {
-      user?: string
-      accessToken?: string
-    }
-    return { user, accessToken }
-  } else {
-    const { user, accessToken } = JSON.parse(req.body) as {
-      user?: string
-      accessToken?: string
-    }
-    return { user, accessToken }
-  }
-}
-
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     if (req.method !== 'GET' && req.method !== 'POST')
@@ -67,8 +52,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Compute VP locally (Snapshot logic kept here)
     const SNAPSHOT_SPACE = process.env.SNAPSHOT_SPACE || 'tomoondao.eth'
     const vp = await fetchSnapshotVP(user as Address, SNAPSHOT_SPACE)
-    console.log('User voting power:', vp)
-    if (vp < MIN_VOTING_POWER)
+
+    if (vp < VOTING_POWER_THRESHOLD)
       return res.status(200).json({ eligible: false, vp: vp.toString() })
 
     // For GET requests, just return eligibility
@@ -76,7 +61,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({
         eligible: true,
         vp: vp.toString(),
-        minVotingPower: MIN_VOTING_POWER.toString(),
+        votingPowerThreshold: VOTING_POWER_THRESHOLD.toString(),
       })
     }
 
@@ -85,7 +70,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { validAfter, validBefore, signature, context } =
       await signHasVotingPowerProof({
         user: user as Address,
-        actualVotingPower: vp, // Use actual voting power for staged bulk claiming
+        votingPower: vp, // Use actual voting power for staged bulk claiming
       })
 
     // Relay the bulk XP claim on behalf of the user so they don't need to send a tx

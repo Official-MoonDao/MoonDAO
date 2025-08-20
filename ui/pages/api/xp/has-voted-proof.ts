@@ -5,9 +5,13 @@ import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Address } from 'thirdweb'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
-import { signHasVotedProof, submitHasVotedBulkClaimFor } from '@/lib/xp'
+import {
+  getUserAndAccessToken,
+  signHasVotedProof,
+  submitHasVotedBulkClaimFor,
+} from '@/lib/xp'
 
-const MIN_VOTES = 1 //changing this while using the same verifier will allow users to claim xp again
+const VOTES_THRESHOLD = 1 //changing this while using the same verifier will allow users to claim xp again
 
 async function fetchSnapshotVotesCount(
   user: Address,
@@ -43,22 +47,6 @@ async function fetchSnapshotVotesCount(
   }
 }
 
-function getUserAndAccessToken(req: NextApiRequest) {
-  if (req.method === 'GET') {
-    const { user, accessToken } = req.query as {
-      user?: string
-      accessToken?: string
-    }
-    return { user, accessToken }
-  } else {
-    const { user, accessToken } = JSON.parse(req.body) as {
-      user?: string
-      accessToken?: string
-    }
-    return { user, accessToken }
-  }
-}
-
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     if (req.method !== 'GET' && req.method !== 'POST')
@@ -78,7 +66,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       SNAPSHOT_SPACE
     )
 
-    if (votesCount < MIN_VOTES)
+    if (votesCount < VOTES_THRESHOLD)
       return res.status(200).json({ eligible: false, votesCount })
 
     // For GET requests, just return eligibility
@@ -86,7 +74,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({
         eligible: true,
         votesCount,
-        minVotes: MIN_VOTES,
+        votesThreshold: VOTES_THRESHOLD,
       })
     }
 
@@ -96,7 +84,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { validAfter, validBefore, signature, context } =
       await signHasVotedProof({
         user: user as Address,
-        actualVotes: BigInt(votesCount), // Use actual vote count
+        votes: BigInt(votesCount), // Use actual vote count
       })
 
     const { txHash } = await submitHasVotedBulkClaimFor({

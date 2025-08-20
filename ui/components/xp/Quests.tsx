@@ -1,104 +1,28 @@
 import {
   TrophyIcon,
   StarIcon,
-  FireIcon,
-  GiftIcon,
-  CheckBadgeIcon,
-  ShoppingBagIcon,
-  UserGroupIcon,
-  BanknotesIcon,
-  BoltIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from '@heroicons/react/24/outline'
 import XPManagerABI from 'const/abis/XPManager.json'
-import { XP_MANAGER_ADDRESSES, XP_VERIFIERS } from 'const/config'
+import { XP_MANAGER_ADDRESSES } from 'const/config'
 import { useCallback, useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import {
-  Address,
-  prepareContractCall,
-  sendAndConfirmTransaction,
-} from 'thirdweb'
+import { Address } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { XP_VERIFIERS } from '@/lib/xp/config'
 import {
   getCompleteUserXPInfo,
   formatXP,
+  calculateAvailableERC20Rewards,
   type CompleteUserXPInfo,
 } from '@/lib/xp/user-info'
-import StandardButton from '@/components/layout/StandardButton'
-import Quest, { type QuestItem } from '@/components/xp/Quest'
-import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import Quest from '@/components/xp/Quest'
 
 type QuestsProps = {}
-
-const questItems: QuestItem[] = [
-  {
-    title: 'Has Voting Power',
-    description: 'Stake MOONEY to get vMOONEY and voting power',
-    verifier: XP_VERIFIERS[0],
-    icon: BanknotesIcon,
-    link: '/lock',
-    linkText: 'Stake Now',
-  },
-  {
-    title: 'Has Voted',
-    description: 'Participate in governance by voting on a proposal',
-    verifier: XP_VERIFIERS[1],
-    icon: CheckBadgeIcon,
-    link: '/vote',
-    linkText: 'Vote Now',
-  },
-  // {
-  //   title: 'Has MOONEY',
-  //   description: 'Hold MOONEY in your wallet',
-  //   verifier: XP_VERIFIERS[2],
-  //   icon: BanknotesIcon,
-  //   link: '/wallet',
-  //   linkText: 'View Wallet',
-  // },
-  {
-    title: 'Has Created a Team',
-    description: 'Create a team to get XP',
-    verifier: XP_VERIFIERS[3],
-    icon: UserGroupIcon,
-    link: '/team',
-    linkText: 'Create Team',
-  },
-  {
-    title: 'Has Contributed',
-    description: 'Contribute to a team to get XP',
-    verifier: XP_VERIFIERS[4],
-    icon: UserGroupIcon,
-    link: '/team',
-    linkText: 'Contribute',
-  },
-  // {
-  //   title: 'Has Completed Citizen Profile',
-  //   description: 'Complete your citizen profile to get XP',
-  //   verifier: XP_VERIFIERS[5],
-  //   icon: UserGroupIcon,
-  //   link: '/profile',
-  //   linkText: 'Complete Profile',
-  // },
-  // {
-  //   title: 'Has Bought a Marketplace Listing',
-  //   description: 'Buy a listing in the MoonDAO marketplace',
-  //   verifier: XP_VERIFIERS[6],
-  //   icon: ShoppingBagIcon,
-  //   link: '/marketplace',
-  //   linkText: 'Buy Listing',
-  // },
-  // {
-  //   title: 'Has Joined a Team',
-  //   description: 'Join a team to get XP',
-  //   verifier: XP_VERIFIERS[7],
-  //   icon: UserGroupIcon,
-  //   link: '/team',
-  //   linkText: 'Join Team',
-  // },
-]
 
 export default function Quests({}: QuestsProps) {
   const { selectedChain } = useContext(ChainContextV5)
@@ -107,6 +31,7 @@ export default function Quests({}: QuestsProps) {
   const userAddress = account?.address as Address
   const [userInfo, setUserInfo] = useState<CompleteUserXPInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const xpManagerContract = useContract({
     address: XP_MANAGER_ADDRESSES[chainSlug],
@@ -125,12 +50,10 @@ export default function Quests({}: QuestsProps) {
 
     setIsLoading(true)
     try {
-      console.log('fetchUserData: calling getCompleteUserXPInfo')
       const completeInfo = await getCompleteUserXPInfo(
         xpManagerContract,
         userAddress
       )
-      console.log('fetchUserData: received completeInfo', completeInfo)
       setUserInfo(completeInfo)
     } catch (error) {
       console.error('Error fetching user XP info:', error)
@@ -145,57 +68,34 @@ export default function Quests({}: QuestsProps) {
 
   // Callback to refresh user data when a quest is claimed
   const handleQuestClaimConfirmed = useCallback(() => {
-    console.log('Quest claim confirmed, refreshing user data...')
     fetchUserData()
   }, [fetchUserData])
 
   // Computed values from userInfo
   const currentXP = userInfo ? Number(userInfo.xpInfo.totalXP) : 0
-  const availableRewards = userInfo
-    ? Number(userInfo.xpInfo.availableRewards)
+  const currentLevel = userInfo?.levelStatus.currentLevel || 0
+  const nextLevel = userInfo?.levelStatus.nextLevel
+  const progressToNext = userInfo?.levelStatus.progressToNext || 0
+  const nextLevelXP = userInfo?.levelStatus.nextLevelXP
+
+  // Calculate available ERC20 rewards
+  const availableRewards =
+    userInfo && userInfo.erc20Config.active
+      ? calculateAvailableERC20Rewards(
+          userInfo.xpInfo.totalXP,
+          userInfo.xpInfo.claimedERC20Rewards,
+          userInfo.erc20Config.conversionRate
+        )
+      : BigInt(0)
+
+  // Format conversion rate for display
+  const conversionRateDisplay = userInfo?.erc20Config.active
+    ? Number(userInfo.erc20Config.conversionRate) / 1e18
     : 0
 
-  const thresholdStatus = userInfo?.thresholdStatus
-  const currentThresholdLevel = thresholdStatus
-    ? thresholdStatus.currentThreshold >= 0
-      ? thresholdStatus.currentThreshold + 2 // Level 2+ when threshold reached
-      : 1 // Level 1 when below first threshold
-    : 1
-  const nextThresholdXP = thresholdStatus
-    ? Number(thresholdStatus.nextThresholdXP)
-    : 0
-  const progressToNext = thresholdStatus ? thresholdStatus.progressToNext : 0
-  const nextRewardAmount = thresholdStatus
-    ? Number(thresholdStatus.nextRewardAmount)
-    : 0
-
-  const claimRewards = useCallback(async () => {
-    if (!userAddress || !xpManagerContract || !account) return
-
-    try {
-      const transaction = prepareContractCall({
-        contract: xpManagerContract,
-        method: 'claimERC20Rewards' as string,
-        params: [],
-      })
-
-      const receipt = await sendAndConfirmTransaction({
-        transaction,
-        account,
-      })
-
-      if (receipt) {
-        toast.success('Rewards claimed successfully!')
-        // Refresh user data to update available rewards and next rewards
-        fetchUserData()
-      } else {
-        toast.error('Failed to claim rewards.')
-      }
-    } catch (error) {
-      console.error('Error claiming rewards:', error)
-      toast.error('Failed to claim rewards.')
-    }
-  }, [account, userAddress, xpManagerContract, fetchUserData])
+  // Get quests to display based on expanded state
+  const displayedQuests = isExpanded ? XP_VERIFIERS : XP_VERIFIERS.slice(0, 4)
+  const hasMoreQuests = XP_VERIFIERS.length > 4
 
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 mb-6">
@@ -207,18 +107,11 @@ export default function Quests({}: QuestsProps) {
           </h3>
           <div className="flex items-center gap-1 text-yellow-400 text-xs font-medium bg-yellow-400/20 px-2 py-1 rounded-full">
             <StarIcon className="w-3 h-3" />
-            Level {currentThresholdLevel}
+            Level {currentLevel}
           </div>
         </div>
 
         <div className="flex items-center flex-col md:flex-row gap-2">
-          <StandardButton
-            className="text-purple-300 text-sm hover:text-purple-200 transition-all bg-purple-600/20 hover:bg-purple-600/30 px-3 py-1 rounded-lg"
-            link={'/home'}
-          >
-            View All Quests
-          </StandardButton>
-
           <div className="flex items-center gap-3 flex-col md:flex-row">
             <div className="text-right">
               <div className="text-white text-xs font-medium">
@@ -229,8 +122,7 @@ export default function Quests({}: QuestsProps) {
                 ) : (
                   <>
                     {formatXP(BigInt(currentXP))} XP
-                    {nextThresholdXP > 0 &&
-                      ` / ${formatXP(BigInt(nextThresholdXP))}`}
+                    {nextLevelXP && ` / ${formatXP(nextLevelXP)}`}
                   </>
                 )}
               </div>
@@ -239,23 +131,27 @@ export default function Quests({}: QuestsProps) {
                   <div className="flex items-center gap-2 text-right">
                     Loading rewards...
                   </div>
-                ) : availableRewards > 0 ? (
-                  <span className="text-green-400 font-medium">
-                    {availableRewards / 1e18} MOONEY Available!
-                  </span>
-                ) : nextRewardAmount > 0 ? (
-                  <>
-                    Next:{' '}
-                    <span className="text-yellow-400 font-medium">
-                      {nextRewardAmount / 1e18} MOONEY
+                ) : userInfo?.erc20Config.active ? (
+                  availableRewards > 0 ? (
+                    <span className="text-green-400 font-medium">
+                      {Number(availableRewards) / 1e18} MOONEY Available!
                     </span>
-                  </>
+                  ) : nextLevel ? (
+                    <>
+                      Next Level:{' '}
+                      <span className="text-yellow-400 font-medium">
+                        Level {nextLevel}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-gray-500">Max level reached!</span>
+                  )
                 ) : (
-                  <span className="text-gray-500">Max threshold reached</span>
+                  <span className="text-gray-500">No rewards configured</span>
                 )}
               </div>
             </div>
-            <div className="w-32">
+            <div className="w-24">
               <div className="w-full bg-gray-700 rounded-full h-2">
                 <div
                   className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full transition-all duration-500"
@@ -263,45 +159,52 @@ export default function Quests({}: QuestsProps) {
                 ></div>
               </div>
             </div>
-            <PrivyWeb3Button
-              label="Claim MOONEY"
-              action={claimRewards}
-              isDisabled={availableRewards === 0 || isLoading}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-              noPadding
-            />
           </div>
         </div>
       </div>
 
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          {/* <div className="flex items-center justify-between mb-3">
-            <h4 className="font-medium text-white flex items-center gap-2 text-sm">
-              <FireIcon className="w-4 h-4 text-orange-400" />
-              Onboarding ({onboardingCompleted}/{onboardingTotal})
-            </h4>
-            {isOnboardingComplete && (
-              <div className="flex items-center gap-1 text-green-400 text-xs font-medium bg-green-500/20 px-2 py-1 rounded-full">
-                <GiftIcon className="w-3 h-3" />
-                1000 MOONEY!
-              </div>
+      {/* View All Button */}
+      {hasMoreQuests && (
+        <div className="flex justify-center mb-4">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600/20 to-purple-600/20 hover:from-blue-600/30 hover:to-purple-600/30 border border-blue-500/30 hover:border-blue-500/50 text-blue-300 hover:text-blue-200 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 backdrop-blur-sm"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUpIcon className="w-4 h-4" />
+                Show Less
+              </>
+            ) : (
+              <>
+                <ChevronDownIcon className="w-4 h-4" />
+                View All ({XP_VERIFIERS.length} Quests)
+              </>
             )}
-          </div> */}
+          </button>
+        </div>
+      )}
 
-          <div className="space-y-2">
-            {questItems.map((quest) => (
-              <Quest
-                key={quest.verifier.verifierId}
-                selectedChain={selectedChain}
-                quest={quest}
-                variant="onboarding"
-                userAddress={userAddress}
-                xpManagerContract={xpManagerContract}
-                onClaimConfirmed={handleQuestClaimConfirmed}
-              />
-            ))}
-          </div>
+      <div className="w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {displayedQuests.map((verifier: any) => (
+            <Quest
+              key={verifier.verifierId}
+              selectedChain={selectedChain}
+              quest={{
+                verifier,
+                title: verifier.title,
+                description: verifier.description,
+                icon: verifier.icon,
+                link: verifier.link,
+                linkText: verifier.linkText,
+              }}
+              variant="onboarding"
+              userAddress={userAddress}
+              xpManagerContract={xpManagerContract}
+              onClaimConfirmed={handleQuestClaimConfirmed}
+            />
+          ))}
         </div>
       </div>
     </div>

@@ -51,11 +51,6 @@ export async function getStagedQuestProgress(
       }),
     ])
 
-  console.log('ALL STAGES', allStages)
-  console.log('USER HIGHEST STAGE', userHighestStage)
-  console.log('NEXT CLAIMABLE STAGE', nextClaimableStage)
-  console.log('TOTAL CLAIMABLE XP', totalClaimableXP)
-
   const stages = (allStages as any[]).map((stage) => ({
     threshold: stage.threshold as bigint,
     xpAmount: stage.xpAmount as bigint,
@@ -74,32 +69,26 @@ export async function getStagedQuestProgress(
   // Calculate progress to next stage
   let progressToNext = 0
   if (nextStage && nextStageIndex !== null) {
-    const currentStageThreshold =
-      nextStageIndex > 0 ? Number(stages[nextStageIndex - 1].threshold) : 0
     const nextStageThreshold = Number(nextStage.threshold)
 
-    // Use the same logic as getNextUnclamedThreshold for consistency
-    const displayThreshold = getNextUnclamedThreshold({
-      stages,
-      currentUserMetric: userMetric,
-    } as StagedQuestProgress)
-
-    if (userMetric >= displayThreshold) {
+    // Calculate progress from 0 to the next stage threshold
+    if (userMetric >= nextStageThreshold) {
       progressToNext = 100 // Ready to claim
     } else {
-      // For voting power, show progress from 0 to target threshold
-      const progress = userMetric / displayThreshold
+      // Show progress from 0 to next stage threshold
+      const progress =
+        nextStageThreshold > 0 ? userMetric / nextStageThreshold : 0
       progressToNext = Math.min(100, Math.max(0, progress * 100))
-
-      console.log('DEBUG - Progress details:', {
-        userMetric,
-        displayThreshold,
-        progress,
-        progressToNext,
-      })
     }
   } else if (stages.length > 0 && userHighestStageNum >= stages.length - 1) {
     progressToNext = 100 // Max stage reached
+  } else if (stages.length > 0) {
+    // Fallback: calculate progress to the first stage threshold
+    const firstStageThreshold = Number(stages[0].threshold)
+    if (firstStageThreshold > 0) {
+      const progress = userMetric / firstStageThreshold
+      progressToNext = Math.min(100, Math.max(0, progress * 100))
+    }
   }
 
   const isMaxStageReached = userHighestStageNum >= stages.length - 1
@@ -152,8 +141,12 @@ export function getProgressSummary(progress: StagedQuestProgress): string {
 }
 
 export function getHighestQualifyingStage(
-  progress: StagedQuestProgress
+  progress: StagedQuestProgress | null
 ): number {
+  if (!progress || !progress.stages) {
+    return 1
+  }
+
   const { stages, currentUserMetric } = progress
 
   // Find the highest stage threshold that the user's metric exceeds
@@ -171,11 +164,15 @@ export function getHighestQualifyingStage(
 }
 
 /**
- * Get the threshold for the next unclaimed/unachieved stage
+ * Get the threshold for the current stage the user is working toward
  */
 export function getNextUnclamedThreshold(
-  progress: StagedQuestProgress
+  progress: StagedQuestProgress | null
 ): number {
+  if (!progress || !progress.stages) {
+    return 0
+  }
+
   const { stages, currentUserMetric } = progress
 
   // Find the first stage threshold that the user hasn't reached yet

@@ -4,32 +4,46 @@ import { ThirdwebContract } from 'thirdweb'
 
 export type UserXPInfo = {
   totalXP: bigint
-  highestThresholdClaimed: bigint
-  availableRewards: bigint
-  claimedVerifierCount: bigint
   claimedVerifiers: bigint[]
 }
 
-export type ThresholdInfo = {
-  tokenAddress: string
+export type XPLevelConfig = {
   thresholds: bigint[]
-  rewardAmounts: bigint[]
+  levels: bigint[]
   active: boolean
 }
 
-export type UserThresholdStatus = {
-  currentThreshold: number // Index of current threshold (-1 if below first threshold)
-  nextThreshold: number // Index of next threshold (-1 if at max)
-  currentThresholdXP: bigint // XP amount of current threshold (0 if below first)
-  nextThresholdXP: bigint // XP amount of next threshold (0 if at max)
-  progressToNext: number // Percentage progress to next threshold (0-100)
-  nextRewardAmount: bigint // Reward amount for next threshold
+export type ERC20RewardConfig = {
+  tokenAddress: string
+  conversionRate: bigint
+  active: boolean
+}
+
+export type UserLevelStatus = {
+  currentLevel: number
+  nextLevel: number | null
+  currentLevelXP: bigint
+  nextLevelXP: bigint | null
+  progressToNext: number
+  xpForCurrentLevel: bigint
+  xpForNextLevel: bigint | null
 }
 
 export type CompleteUserXPInfo = {
   xpInfo: UserXPInfo
-  thresholdConfig: ThresholdInfo
-  thresholdStatus: UserThresholdStatus
+  levelConfig: XPLevelConfig
+  erc20Config: ERC20RewardConfig
+  levelStatus: UserLevelStatus
+}
+
+export type AllLevelInfo = {
+  thresholds: bigint[]
+  levels: bigint[]
+  userLevel: bigint
+  currentUserXP: bigint
+  nextLevel: bigint
+  xpRequired: bigint
+  xpProgress: bigint
 }
 
 /**
@@ -39,40 +53,10 @@ export async function getUserXPInfo(
   xpManagerContract: ThirdwebContract,
   userAddress: Address
 ): Promise<UserXPInfo> {
-  console.log('getUserXPInfo called with:', {
-    contractAddress: xpManagerContract.address,
-    userAddress,
-    chainId: xpManagerContract.chain?.id,
-  })
-
-  const [
-    totalXP,
-    highestThresholdClaimed,
-    availableRewards,
-    claimedVerifierCount,
-    claimedVerifiers,
-  ] = await Promise.all([
+  const [totalXP, claimedVerifiers] = await Promise.all([
     readContract({
       contract: xpManagerContract,
       method: 'getTotalXP' as any,
-      params: [userAddress],
-    }),
-
-    readContract({
-      contract: xpManagerContract,
-      method: 'highestThresholdClaimed' as any,
-      params: [userAddress],
-    }),
-
-    readContract({
-      contract: xpManagerContract,
-      method: 'getAvailableERC20Reward' as any,
-      params: [userAddress],
-    }),
-
-    readContract({
-      contract: xpManagerContract,
-      method: 'getClaimedVerifierCount' as any,
       params: [userAddress],
     }),
 
@@ -85,127 +69,235 @@ export async function getUserXPInfo(
 
   return {
     totalXP: totalXP as bigint,
-    highestThresholdClaimed: highestThresholdClaimed as bigint,
-    availableRewards: availableRewards as bigint,
-    claimedVerifierCount: claimedVerifierCount as bigint,
     claimedVerifiers: claimedVerifiers as bigint[],
   }
 }
 
 /**
- * Get threshold configuration
+ * Get XP level configuration
  */
-export async function getThresholdConfig(
+export async function getXPLevelConfig(
   xpManagerContract: ThirdwebContract
-): Promise<ThresholdInfo> {
-  const [tokenAddress, thresholds, rewardAmounts, active] = (await readContract(
-    {
-      contract: xpManagerContract,
-      method: 'getERC20RewardConfig' as any,
-      params: [],
-    }
-  )) as [string, bigint[], bigint[], boolean]
+): Promise<XPLevelConfig> {
+  const [thresholds, levels, active] = (await readContract({
+    contract: xpManagerContract,
+    method: 'getXPLevels' as any,
+    params: [],
+  })) as [bigint[], bigint[], boolean]
 
   return {
-    tokenAddress,
     thresholds,
-    rewardAmounts,
+    levels,
     active,
   }
 }
 
 /**
- * Calculate user's threshold status
+ * Get ERC20 reward configuration
  */
-export function calculateThresholdStatus(
-  userXP: bigint,
-  thresholds: bigint[],
-  rewardAmounts: bigint[]
-): UserThresholdStatus {
-  if (thresholds.length === 0) {
-    return {
-      currentThreshold: -1,
-      nextThreshold: -1,
-      currentThresholdXP: BigInt(0),
-      nextThresholdXP: BigInt(0),
-      progressToNext: 0,
-      nextRewardAmount: BigInt(0),
-    }
-  }
-
-  // Find current threshold
-  let currentThreshold = -1
-  for (let i = thresholds.length - 1; i >= 0; i--) {
-    if (userXP >= thresholds[i]) {
-      currentThreshold = i
-      break
-    }
-  }
-
-  // Find next threshold
-  const nextThreshold =
-    currentThreshold + 1 < thresholds.length ? currentThreshold + 1 : -1
-
-  // Calculate values
-  const currentThresholdXP =
-    currentThreshold >= 0 ? thresholds[currentThreshold] : BigInt(0)
-  const nextThresholdXP =
-    nextThreshold >= 0 ? thresholds[nextThreshold] : BigInt(0)
-  const nextRewardAmount =
-    nextThreshold >= 0 ? rewardAmounts[nextThreshold] : BigInt(0)
-
-  // Calculate progress to next threshold
-  let progressToNext = 0
-  if (nextThreshold >= 0) {
-    const currentBase =
-      currentThreshold >= 0 ? thresholds[currentThreshold] : BigInt(0)
-    const nextTarget = thresholds[nextThreshold]
-    const userProgress = userXP - currentBase
-    const totalNeeded = nextTarget - currentBase
-
-    if (totalNeeded > BigInt(0)) {
-      progressToNext = Math.min(
-        100,
-        Number((userProgress * BigInt(100)) / totalNeeded)
-      )
-    }
-  } else if (currentThreshold >= 0) {
-    progressToNext = 100 // At max threshold
-  }
+export async function getERC20RewardConfig(
+  xpManagerContract: ThirdwebContract
+): Promise<ERC20RewardConfig> {
+  const [tokenAddress, conversionRate, active] = (await readContract({
+    contract: xpManagerContract,
+    method: 'getERC20RewardConfig' as any,
+    params: [],
+  })) as [string, bigint, boolean]
 
   return {
-    currentThreshold,
-    nextThreshold,
-    currentThresholdXP,
-    nextThresholdXP,
-    progressToNext,
-    nextRewardAmount,
+    tokenAddress,
+    conversionRate,
+    active,
   }
 }
 
 /**
- * Get complete user information including XP, thresholds, and status
+ * Get user's current level
+ */
+export async function getUserLevel(
+  xpManagerContract: ThirdwebContract,
+  userAddress: Address
+): Promise<bigint> {
+  return readContract({
+    contract: xpManagerContract,
+    method: 'getUserLevel' as any,
+    params: [userAddress],
+  }) as Promise<bigint>
+}
+
+/**
+ * Get level information for a specific XP amount
+ */
+export async function getLevelForXP(
+  xpManagerContract: ThirdwebContract,
+  xpAmount: bigint
+): Promise<bigint> {
+  return readContract({
+    contract: xpManagerContract,
+    method: 'getLevelForXP' as any,
+    params: [xpAmount],
+  }) as Promise<bigint>
+}
+
+/**
+ * Get next level information for a user
+ */
+export async function getNextLevelInfo(
+  xpManagerContract: ThirdwebContract,
+  userAddress: Address
+): Promise<{ nextLevel: bigint; xpRequired: bigint; xpProgress: bigint }> {
+  const [nextLevel, xpRequired, xpProgress] = (await readContract({
+    contract: xpManagerContract,
+    method: 'getNextLevelInfo' as any,
+    params: [userAddress],
+  })) as [bigint, bigint, bigint]
+
+  return {
+    nextLevel,
+    xpRequired,
+    xpProgress,
+  }
+}
+
+/**
+ * Get all level information for display purposes
+ */
+export async function getAllLevelInfo(
+  xpManagerContract: ThirdwebContract,
+  userAddress: Address
+): Promise<AllLevelInfo> {
+  const [
+    thresholds,
+    levels,
+    userLevel,
+    currentUserXP,
+    nextLevel,
+    xpRequired,
+    xpProgress,
+  ] = (await readContract({
+    contract: xpManagerContract,
+    method: 'getAllLevelInfo' as any,
+    params: [userAddress],
+  })) as [bigint[], bigint[], bigint, bigint, bigint, bigint, bigint]
+
+  return {
+    thresholds,
+    levels,
+    userLevel,
+    currentUserXP,
+    nextLevel,
+    xpProgress,
+    xpRequired,
+  }
+}
+
+/**
+ * Get available ERC20 rewards for a user
+ */
+export async function getAvailableERC20Reward(
+  xpManagerContract: ThirdwebContract,
+  userAddress: Address
+): Promise<bigint> {
+  return readContract({
+    contract: xpManagerContract,
+    method: 'getAvailableERC20Reward' as any,
+    params: [userAddress],
+  }) as Promise<bigint>
+}
+
+/**
+ * Calculate user's level status using the new contract methods
+ */
+export async function calculateLevelStatus(
+  xpManagerContract: ThirdwebContract,
+  userAddress: Address
+): Promise<UserLevelStatus> {
+  const [userLevel, nextLevelInfo] = await Promise.all([
+    getUserLevel(xpManagerContract, userAddress),
+    getNextLevelInfo(xpManagerContract, userAddress),
+  ])
+
+  const currentLevel = Number(userLevel)
+  const nextLevel =
+    nextLevelInfo.nextLevel > 0 ? Number(nextLevelInfo.nextLevel) : null
+  const currentLevelXP = nextLevelInfo.xpProgress
+  const nextLevelXP =
+    nextLevelInfo.xpRequired > 0 ? nextLevelInfo.xpRequired : null
+
+  // Calculate progress to next level
+  let progressToNext = 0
+  if (
+    nextLevel !== null &&
+    nextLevelXP !== null &&
+    nextLevelXP > currentLevelXP
+  ) {
+    // Find the current level's XP threshold (0 for level 1, or get from levelConfig)
+    let currentLevelThreshold = BigInt(0) // Default for level 1
+
+    // Calculate progress: (currentXP - currentLevelThreshold) / (nextLevelThreshold - currentLevelThreshold)
+    const xpSinceCurrentLevel = currentLevelXP - currentLevelThreshold
+    const xpNeededForNextLevel = nextLevelXP - currentLevelThreshold
+
+    if (xpNeededForNextLevel > BigInt(0)) {
+      progressToNext = Math.min(
+        100,
+        Math.max(
+          0,
+          Number((xpSinceCurrentLevel * BigInt(100)) / xpNeededForNextLevel)
+        )
+      )
+    }
+  } else if (currentLevel > 0 && nextLevel === null) {
+    progressToNext = 100 // At max level
+    console.log('DEBUG: User at max level, setting progress to 100%')
+  }
+
+  return {
+    currentLevel,
+    nextLevel,
+    currentLevelXP,
+    nextLevelXP,
+    progressToNext,
+    xpForCurrentLevel: currentLevelXP,
+    xpForNextLevel: nextLevelXP,
+  }
+}
+
+/**
+ * Get complete user information including XP, levels, and ERC20 rewards
  */
 export async function getCompleteUserXPInfo(
   xpManagerContract: ThirdwebContract,
   userAddress: Address
 ): Promise<CompleteUserXPInfo> {
-  const [xpInfo, thresholdConfig] = await Promise.all([
+  const [xpInfo, levelConfig, erc20Config, levelStatus] = await Promise.all([
     getUserXPInfo(xpManagerContract, userAddress),
-    getThresholdConfig(xpManagerContract),
+    getXPLevelConfig(xpManagerContract),
+    getERC20RewardConfig(xpManagerContract),
+    calculateLevelStatus(xpManagerContract, userAddress),
   ])
-
-  const thresholdStatus = calculateThresholdStatus(
-    xpInfo.totalXP,
-    thresholdConfig.thresholds,
-    thresholdConfig.rewardAmounts
-  )
 
   return {
     xpInfo,
-    thresholdConfig,
-    thresholdStatus,
+    levelConfig,
+    erc20Config,
+    levelStatus,
   }
+}
+
+/**
+ * Calculate available ERC20 rewards based on conversion rate
+ */
+export function calculateAvailableERC20Rewards(
+  totalXP: bigint,
+  claimedRewards: bigint,
+  conversionRate: bigint
+): bigint {
+  const totalEarned = totalXP * conversionRate
+  if (totalEarned > claimedRewards) {
+    return totalEarned - claimedRewards
+  }
+  return BigInt(0)
 }
 
 /**

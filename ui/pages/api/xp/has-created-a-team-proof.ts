@@ -4,25 +4,13 @@ import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Address } from 'thirdweb'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
-import { signHasCreatedTeamProof, submitHasCreatedTeamClaimFor } from '@/lib/xp'
+import {
+  getUserAndAccessToken,
+  signHasCreatedTeamProof,
+  submitHasCreatedTeamClaimFor,
+} from '@/lib/xp'
 
-const MIN_TEAMS_CREATED = BigInt(1) // Minimum teams required to be eligible
-
-function getUserAndAccessToken(req: NextApiRequest) {
-  if (req.method === 'GET') {
-    const { user, accessToken } = req.query as {
-      user?: string
-      accessToken?: string
-    }
-    return { user, accessToken }
-  } else {
-    const { user, accessToken } = JSON.parse(req.body) as {
-      user?: string
-      accessToken?: string
-    }
-    return { user, accessToken }
-  }
-}
+const TEAMS_CREATED_THRESHOLD = BigInt(1) // Teams required to be eligible
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -42,7 +30,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Replace this with your actual team creation check function
     const teamsCreated = BigInt(1) // This should come from your team creation check function
 
-    if (teamsCreated < MIN_TEAMS_CREATED)
+    if (teamsCreated < TEAMS_CREATED_THRESHOLD)
       return res
         .status(200)
         .json({ eligible: false, teamsCreated: teamsCreated.toString() })
@@ -52,7 +40,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({
         eligible: true,
         teamsCreated: teamsCreated.toString(),
-        minTeamsCreated: MIN_TEAMS_CREATED.toString(),
+        teamsCreatedThreshold: TEAMS_CREATED_THRESHOLD.toString(),
       })
     }
 
@@ -61,7 +49,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { validAfter, validBefore, signature, context } =
       await signHasCreatedTeamProof({
         user: user as Address,
-        actualTeamsCreated: teamsCreated, // Use actual teams created for staged bulk claiming
+        teamsCreated: teamsCreated, // Use actual teams created for staged bulk claiming
       })
 
     // Relay the XP claim on behalf of the user so they don't need to send a tx

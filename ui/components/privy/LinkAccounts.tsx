@@ -11,11 +11,13 @@ export function LinkAccounts({ user }: any) {
     linkPhone,
     linkGoogle,
     linkDiscord,
+    linkGithub,
     unlinkWallet,
     unlinkPhone,
     unlinkGoogle,
     unlinkEmail,
     unlinkDiscord,
+    unlinkGithub,
   } = usePrivy()
 
   function LinkAcctBtn({ link, unlink, linked, children, accountType }: any) {
@@ -86,6 +88,17 @@ export function LinkAccounts({ user }: any) {
             console.error('Google account subject not found', googleAccount)
             await unlink()
           }
+        } else if (accountType === 'github_oauth') {
+          const githubAccount = user.linkedAccounts.find(
+            (acc: any) => acc.type === 'github_oauth' || acc.type === 'github'
+          )
+          if (githubAccount?.subject) {
+            await unlink(githubAccount.subject)
+          } else {
+            console.error('GitHub account subject not found', githubAccount)
+            console.log('Attempting to unlink without subject...')
+            await unlink()
+          }
         } else {
           // Fallback for other account types
           await unlink()
@@ -150,9 +163,23 @@ export function LinkAccounts({ user }: any) {
       let linkedAccounts: any = {}
       user.linkedAccounts.forEach((acc: any) => {
         if (acc.walletClientType !== 'privy') {
-          linkedAccounts[acc.type] = true
+          // Handle different GitHub account type variations
+          if (acc.type === 'github_oauth' || acc.type === 'github') {
+            linkedAccounts.github_oauth = true
+          } else {
+            linkedAccounts[acc.type] = true
+          }
+          console.log(
+            'Processing account:',
+            acc.type,
+            '->',
+            acc.type === 'github_oauth' || acc.type === 'github'
+              ? 'github_oauth'
+              : acc.type
+          )
         }
       })
+      console.log('Processed linked accounts:', linkedAccounts)
       setLinkedAccounts(linkedAccounts)
     }
   }, [user.linkedAccounts])
@@ -203,6 +230,14 @@ export function LinkAccounts({ user }: any) {
             accountType="google"
           >
             Google:
+          </LinkAcctBtn>
+          <LinkAcctBtn
+            link={linkGithub}
+            unlink={unlinkGithub}
+            linked={linkedAccounts?.github_oauth}
+            accountType="github_oauth"
+          >
+            GitHub:
           </LinkAcctBtn>
           <div />
         </div>

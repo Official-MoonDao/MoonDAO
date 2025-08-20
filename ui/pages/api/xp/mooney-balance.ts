@@ -4,25 +4,14 @@ import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Address } from 'thirdweb'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
-import { submitHasTokenBalanceBulkClaimFor } from '@/lib/xp'
+import {
+  submitHasTokenBalanceBulkClaimFor,
+  signHasTokenBalanceProof,
+  fetchUserMooneyBalance,
+  getUserAndAccessToken,
+} from '@/lib/xp'
 
-const MIN_TOKEN_BALANCE = BigInt(100 * 1e18) // 100 tokens minimum (18 decimals)
-
-function getUserAndAccessToken(req: NextApiRequest) {
-  if (req.method === 'GET') {
-    const { user, accessToken } = req.query as {
-      user?: string
-      accessToken?: string
-    }
-    return { user, accessToken }
-  } else {
-    const { user, accessToken } = JSON.parse(req.body) as {
-      user?: string
-      accessToken?: string
-    }
-    return { user, accessToken }
-  }
-}
+const TOKEN_BALANCE_THRESHOLD = BigInt(100 * 1e18) // 100 tokens threshold (18 decimals)
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -37,30 +26,52 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (!addressBelongsToPrivyUser(accessToken as string, user))
       return res.status(400).json({ error: 'User not found' })
 
+    // Fetch user's MOONEY token balance
+    const tokenBalance = await fetchUserMooneyBalance(user as Address)
+
+    if (tokenBalance < TOKEN_BALANCE_THRESHOLD) {
+      return res.status(200).json({
+        eligible: false,
+        tokenBalance: tokenBalance.toString(),
+        tokenBalanceThreshold: TOKEN_BALANCE_THRESHOLD.toString(),
+        note: 'Insufficient MOONEY balance for XP claim',
+      })
+    }
+
     // For GET requests, just return eligibility info
     if (req.method === 'GET') {
       return res.status(200).json({
-        eligible: true, // Always eligible since verification happens on-chain
-        minTokenBalance: MIN_TOKEN_BALANCE.toString(),
-        note: 'Token balance verification happens on-chain during claim',
+        eligible: true,
+        tokenBalance: tokenBalance.toString(),
+        tokenBalanceThreshold: TOKEN_BALANCE_THRESHOLD.toString(),
+        note: 'Token balance verification requires oracle signing during claim',
       })
     }
 
     // For POST requests, proceed with claiming
-    // Since HasTokenBalanceStaged doesn't require oracle signing, we can proceed directly
-    // The contract will verify the token balance on-chain during the claim
+    // Sign the proof with the oracle using the user's actual token balance
+    const { validAfter, validBefore, signature, context } =
+      await signHasTokenBalanceProof({
+        user: user as Address,
+        balance: tokenBalance,
+      })
 
-    // Submit the bulk claim - the contract will verify eligibility on-chain
+    // Submit the bulk claim with the signed oracle proof
     const { txHash } = await submitHasTokenBalanceBulkClaimFor({
       user: user as Address,
-      verifierId: BigInt(2), // Token balance verifier ID from config
+      context,
     })
 
     return res.status(200).json({
       eligible: true,
-      minTokenBalance: MIN_TOKEN_BALANCE.toString(),
+      tokenBalance: tokenBalance.toString(),
+      tokenBalanceThreshold: TOKEN_BALANCE_THRESHOLD.toString(),
+      validAfter: Number(validAfter),
+      validBefore: Number(validBefore),
+      signature,
+      context,
       txHash,
-      note: 'Token balance verified on-chain during claim',
+      note: 'Token balance verified via oracle signing',
     })
   } catch (err: any) {
     console.log(err)

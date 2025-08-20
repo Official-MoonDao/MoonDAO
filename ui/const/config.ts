@@ -400,113 +400,58 @@ export const XP_ORACLE_ADDRESSES: Index = {
 
 export const XP_MANAGER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xAFd1D5CbfbeD00f96E1e69aA3c25A96FDc8FFe30',
+  sepolia: '0xcfCE44C0fedC6DE6Db983582fF4d1EF3ae6A5EBf',
 }
 
 export const HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xC3c7a63FDE645F1bfc2D0D351a643C4469A5A03a',
+  sepolia: '0x7cDd9227ADA5B9BbD43D444408d33e44E1062083',
 }
 
 export const HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x66F9798c0E4FAD20a799C866D1e76ad82E67319a',
+  sepolia: '0x8885a7FD4b1fCb14bbe902862b626eC5592B5FeD',
 }
 
 export const HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x7Cf90D0cA873cAa58f5485a178676eA340E7ca14',
+  sepolia: '0x726dCdeDA69D7048994F6E3c583b6AdF6C6608a1',
+}
+
+export const HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x5f3f8853261B4Fa866e0083f0a610EE6fa5230e7',
 }
 
 export const HAS_VOTING_POWER_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x5A61C904D20187aD82E18787470cd9a92F5349c5',
+  sepolia: '0x66eCe5DC19103DAffb39243b5f848B979b9f3CA7',
 }
 
 export const HAS_VOTED_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x7d16aC04200f23d5E5aE5faAd32155089C87a948',
+  sepolia: '0xF581C210556f4a97d4458c0629521D7a425C20B2',
 }
 
 export const HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x743821cD94fB32D637669e96984A7b7Ba235fEc2',
+  sepolia: '0xdAb0A8286D527E08De496c727f3ae610eB8B4cFe',
 }
 
 export const HAS_CONTRIBUTED_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xB3330c5451f0655d8ac3eA85025c6176c47661F9',
+  sepolia: '0xF2cCcB63BF134EE5007D6498B7d593795FCb8bD1',
 }
 
 export const HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x6979a7E362c6A098314764aD9d0F2C15442104af',
+  sepolia: '0x3Dcf847352CAd1eB66Cc2CAb41AB1C317A2b0409',
 }
 
-export const XP_VERIFIERS: any = [
-  {
-    verifierId: 0,
-    verifierAddress: HAS_VOTING_POWER_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/voting-power-proof',
-    type: 'staged',
-    metricKey: 'vp', // The key in the API response that contains the user metric
-  },
-  {
-    verifierId: 1,
-    verifierAddress: HAS_VOTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-voted-proof',
-    type: 'staged',
-    metricKey: 'votesCount', // The key in the API response that contains the user metric
-  },
-  {
-    verifierId: 2,
-    verifierAddress:
-      HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/mooney-balance',
-    type: 'staged',
-    metricKey: 'tokenBalance', // Placeholder - update when this API is implemented
-  },
-  {
-    verifierId: 3,
-    verifierAddress:
-      HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-created-a-team-proof',
-    type: 'single',
-    metricKey: 'teamsCreated', // Placeholder - update when this API is implemented
-  },
-  {
-    verifierId: 4,
-    verifierAddress: HAS_CONTRIBUTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-contributed-proof',
-    type: 'staged',
-    metricKey: 'contributionCount', // Placeholder - update when this API is implemented
-  },
-  {
-    verifierId: 5,
-    verifierAddress:
-      HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-completed-citizen-profile-proof',
-    metricKey: 'profileCompleted', // Placeholder - likely boolean or completion percentage
-  },
-  {
-    verifierId: 6,
-    verifierAddress:
-      HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES[
-        DEFAULT_CHAIN_V5_SLUG
-      ],
-    route: '/api/xp/has-bought-marketplace-listings-proof',
-    type: 'staged',
-    metricKey: 'purchaseCount', // Placeholder - update when this API is implemented
-  },
-  {
-    verifierId: 7,
-    verifierAddress:
-      HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-joined-a-team-proof',
-    type: 'staged',
-    metricKey: 'teamsJoined', // Placeholder - update when this API is implemented
-  },
-]
+export const HAS_SUBMITTED_PR_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x7b640D62d0C565d0128Fd8e092661681765Bc4EE',
+}
 
 export const DISCORD_GUILD_ID = '914720248140279868'
 export const GENERAL_CHANNEL_ID = '914720248140279871'

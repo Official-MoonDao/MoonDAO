@@ -70,18 +70,37 @@
       },
       {
         "indexed": false,
-        "internalType": "uint256[]",
-        "name": "thresholds",
-        "type": "uint256[]"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256[]",
-        "name": "rewardAmounts",
-        "type": "uint256[]"
+        "internalType": "uint256",
+        "name": "conversionRate",
+        "type": "uint256"
       }
     ],
     "name": "ERC20RewardConfigSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newLevel",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalXP",
+        "type": "uint256"
+      }
+    ],
+    "name": "LevelUp",
     "type": "event"
   },
   {
@@ -223,10 +242,29 @@
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "thresholds",
+        "type": "uint256[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "levels",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "XPLevelsSet",
+    "type": "event"
+  },
+  {
     "inputs": [
       { "internalType": "address", "name": "user", "type": "address" }
     ],
-    "name": "calculateERC20Reward",
+    "name": "calculateAvailableERC20Reward",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
@@ -253,13 +291,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "claimERC20Rewards",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [
       { "internalType": "uint256", "name": "conditionId", "type": "uint256" },
       { "internalType": "bytes", "name": "context", "type": "bytes" }
@@ -281,6 +312,13 @@
     "type": "function"
   },
   {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "claimedERC20Rewards",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "deactivateERC20RewardConfig",
     "outputs": [],
@@ -295,6 +333,27 @@
     "name": "emergencyWithdrawERC20",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" }
+    ],
+    "name": "getAllLevelInfo",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "thresholds",
+        "type": "uint256[]"
+      },
+      { "internalType": "uint256[]", "name": "levels", "type": "uint256[]" },
+      { "internalType": "uint256", "name": "userLevel", "type": "uint256" },
+      { "internalType": "uint256", "name": "currentUserXP", "type": "uint256" },
+      { "internalType": "uint256", "name": "nextLevel", "type": "uint256" },
+      { "internalType": "uint256", "name": "xpRequired", "type": "uint256" },
+      { "internalType": "uint256", "name": "xpProgress", "type": "uint256" }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -330,18 +389,35 @@
     "inputs": [],
     "name": "getERC20RewardConfig",
     "outputs": [
-      { "internalType": "address", "name": "", "type": "address" },
+      { "internalType": "address", "name": "tokenAddress", "type": "address" },
       {
-        "internalType": "uint256[]",
-        "name": "thresholds",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "rewardAmounts",
-        "type": "uint256[]"
+        "internalType": "uint256",
+        "name": "conversionRate",
+        "type": "uint256"
       },
       { "internalType": "bool", "name": "active", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "xpAmount", "type": "uint256" }
+    ],
+    "name": "getLevelForXP",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" }
+    ],
+    "name": "getNextLevelInfo",
+    "outputs": [
+      { "internalType": "uint256", "name": "nextLevel", "type": "uint256" },
+      { "internalType": "uint256", "name": "xpRequired", "type": "uint256" },
+      { "internalType": "uint256", "name": "xpProgress", "type": "uint256" }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -357,18 +433,35 @@
   },
   {
     "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" }
+    ],
+    "name": "getUserLevel",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getXPLevels",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "thresholds",
+        "type": "uint256[]"
+      },
+      { "internalType": "uint256[]", "name": "levels", "type": "uint256[]" },
+      { "internalType": "bool", "name": "active", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
       { "internalType": "address", "name": "user", "type": "address" },
       { "internalType": "uint256", "name": "verifierId", "type": "uint256" }
     ],
     "name": "hasClaimedFromVerifier",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
-    "name": "highestThresholdClaimed",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -427,18 +520,23 @@
   {
     "inputs": [
       { "internalType": "address", "name": "tokenAddress", "type": "address" },
+      { "internalType": "uint256", "name": "conversionRate", "type": "uint256" }
+    ],
+    "name": "setERC20RewardConfig",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
       {
         "internalType": "uint256[]",
         "name": "thresholds",
         "type": "uint256[]"
       },
-      {
-        "internalType": "uint256[]",
-        "name": "rewardAmounts",
-        "type": "uint256[]"
-      }
+      { "internalType": "uint256[]", "name": "levels", "type": "uint256[]" }
     ],
-    "name": "setERC20RewardConfig",
+    "name": "setXPLevels",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

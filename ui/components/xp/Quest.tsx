@@ -1,5 +1,5 @@
-import { CheckBadgeIcon, StarIcon } from '@heroicons/react/24/outline'
-import { getAccessToken } from '@privy-io/react-auth'
+import { CheckBadgeIcon } from '@heroicons/react/24/outline'
+import { getAccessToken, usePrivy } from '@privy-io/react-auth'
 import StagedXPVerifierABI from 'const/abis/StagedXPVerifier.json'
 import XPVerifierABI from 'const/abis/XPVerifier.json'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
@@ -10,9 +10,6 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import {
   getStagedQuestProgress,
-  formatStageDisplay,
-  getCurrentLevel,
-  getProgressSummary,
   getHighestQualifyingStage,
   getNextUnclamedThreshold,
   type StagedQuestProgress,
@@ -49,6 +46,7 @@ export default function Quest({
   xpManagerContract,
   onClaimConfirmed,
 }: QuestProps) {
+  const { linkGithub } = usePrivy()
   const verifierContract = useContract({
     address: quest.verifier.verifierAddress,
     abi: quest.verifier.type === 'staged' ? StagedXPVerifierABI : XPVerifierABI,
@@ -68,7 +66,21 @@ export default function Quest({
   const [isLoadingClaim, setIsLoadingClaim] = useState(false)
   const [isCheckingClaimed, setIsCheckingClaimed] = useState(true)
   const [isPollingClaim, setIsPollingClaim] = useState(false)
+  const [needsGitHubLink, setNeedsGitHubLink] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const formattedUserMetric = quest.verifier.metricFormatting
+    ? quest.verifier.metricFormatting(userMetric).toLocaleString()
+    : userMetric.toLocaleString()
+
+  const formattedNextUnclamedThreshold = quest.verifier.metricFormatting
+    ? quest.verifier
+        .metricFormatting(getNextUnclamedThreshold(stagedProgress))
+        .toLocaleString()
+    : stagedProgress
+    ? getNextUnclamedThreshold(stagedProgress).toLocaleString()
+    : 0
 
   const fetchHasClaimed = useCallback(
     async (polling = false) => {
@@ -78,17 +90,11 @@ export default function Quest({
           setIsCheckingClaimed(true)
         }
 
-        console.log(
-          `Checking hasClaimedFromVerifier for user: ${userAddress}, verifierId: ${quest.verifier.verifierId}`
-        )
-
         const claimed = await readContract({
           contract: xpManagerContract,
           method: 'hasClaimedFromVerifier' as string,
           params: [userAddress, quest.verifier.verifierId],
         })
-
-        console.log(`hasClaimedFromVerifier result: ${claimed}`)
 
         setHasClaimed(Boolean(claimed))
         // Always clear checking status when not polling, regardless of result
@@ -138,6 +144,14 @@ export default function Quest({
 
       const data = await response.json()
 
+      // Check if this is a GitHub linking error
+      if (data.error && data.error.includes('No GitHub account linked')) {
+        setNeedsGitHubLink(true)
+        return 0
+      } else {
+        setNeedsGitHubLink(false)
+      }
+
       // Extract the metric using the configured metricKey
       const metricValue = data[quest.verifier.metricKey]
 
@@ -175,8 +189,6 @@ export default function Quest({
         metric
       )
 
-      console.log('PROGRESS', progress)
-
       setStagedProgress(progress)
     } catch (error) {
       console.error('Error fetching staged progress:', error)
@@ -202,18 +214,11 @@ export default function Quest({
 
     const poll = async () => {
       try {
-        console.log(
-          `Polling attempt ${
-            attempts + 1
-          }/${maxAttempts} for quest claim confirmation...`
-        )
         const claimed = await fetchHasClaimed(true)
-        console.log(`Poll result: claimed = ${claimed}`)
 
         if (claimed) {
           setIsPollingClaim(false)
           pollingTimeoutRef.current = null
-          console.log('Quest claim confirmed on blockchain!')
           toast.success('Quest claim confirmed on blockchain!', {
             duration: 3000,
             style: toastStyle,
@@ -243,7 +248,6 @@ export default function Quest({
 
           // Final check with a fresh contract read to be sure
           try {
-            console.log('Performing final hasClaimedFromVerifier check...')
             const finalCheck = await fetchHasClaimed(true)
             if (finalCheck) {
               console.log('Final check confirmed claim!')
@@ -298,6 +302,7 @@ export default function Quest({
   const claimQuest = useCallback(async () => {
     if (!quest.verifier.route || !userAddress) return
     setIsLoadingClaim(true)
+    setError(null) // Clear any previous errors when starting a new claim
     try {
       const accessToken = await getAccessToken()
       const response = await fetch(quest.verifier.route, {
@@ -312,11 +317,20 @@ export default function Quest({
       const data = await response.json()
       const { eligible, error, txHash } = data
 
-      console.log('Quest claim response:', data)
+      // Check if this is a GitHub linking error
+      if (error && error.includes('No GitHub account linked')) {
+        setNeedsGitHubLink(true)
+        toast.error(error, {
+          duration: 5000,
+          style: toastStyle,
+        })
+        return
+      }
 
       if (eligible) {
         if (txHash) {
           console.log(`Transaction hash: ${txHash}`)
+          setError(null) // Clear any previous errors
           toast.success(
             'Quest claimed successfully! Waiting for blockchain confirmation...',
             {
@@ -334,10 +348,26 @@ export default function Quest({
       } else {
         if (error) {
           console.error('Quest claim error:', error)
-          toast.error(error, {
-            duration: 3000,
-            style: toastStyle,
-          })
+
+          // Handle specific ERC20 balance error
+          if (error.includes('ERC20: transfer amount exceeds balance')) {
+            setError(error) // Store the error for UI display
+            toast.error(
+              'Insufficient token balance to process claim. Please ensure you have enough tokens and try again.',
+              {
+                duration: 5000,
+                style: toastStyle,
+              }
+            )
+            // Set a flag to show helpful guidance
+            setNeedsGitHubLink(false) // Reset this flag
+          } else {
+            setError(error) // Store the error for UI display
+            toast.error(error, {
+              duration: 3000,
+              style: toastStyle,
+            })
+          }
         } else {
           toast.error(
             'You are not eligible for this quest, please meet the requirements and try again.',
@@ -350,11 +380,26 @@ export default function Quest({
       }
     } catch (error) {
       console.error('Quest claim error:', error)
-      toast.error(
-        `Claim failed: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+
+      // Handle specific ERC20 balance error in catch block as well
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error'
+      if (errorMessage.includes('ERC20: transfer amount exceeds balance')) {
+        setError(errorMessage) // Store the error for UI display
+        toast.error(
+          'Insufficient token balance to process claim. Please ensure you have enough tokens and try again.',
+          {
+            duration: 5000,
+            style: toastStyle,
+          }
+        )
+      } else {
+        setError(errorMessage) // Store the error for UI display
+        toast.error(`Claim failed: ${errorMessage}`, {
+          duration: 3000,
+          style: toastStyle,
+        })
+      }
     } finally {
       setIsLoadingClaim(false)
     }
@@ -399,6 +444,8 @@ export default function Quest({
 
   useEffect(() => {
     fetchHasClaimed()
+    // Clear any previous errors when the component mounts or quest changes
+    setError(null)
   }, [fetchHasClaimed])
 
   // Cleanup polling timeout on unmount
@@ -411,142 +458,485 @@ export default function Quest({
     }
   }, [])
 
-  const isCompleted = Boolean(hasClaimed)
+  const isCompleted =
+    quest.verifier.type === 'staged'
+      ? stagedProgress?.currentUserMetric &&
+        stagedProgress?.currentUserMetric >=
+          stagedProgress?.stages[stagedProgress.stages.length - 1]?.threshold &&
+        stagedProgress?.totalClaimableXP === 0
+      : Boolean(hasClaimed)
 
-  const baseContainerClasses =
-    isCheckingClaimed || isPollingClaim
-      ? 'bg-white/5 border-white/10 animate-pulse'
-      : isCompleted
-      ? 'bg-green-500/10 border-green-500/30'
-      : 'bg-white/5 border-white/10 hover:border-white/20'
+  // Streamlined styling with better visual hierarchy
+  const getContainerClasses = () => {
+    if (isCheckingClaimed || isPollingClaim) {
+      return 'bg-white/5 border-white/10 animate-pulse backdrop-blur-sm'
+    }
+    if (isCompleted) {
+      return 'bg-gradient-to-br from-green-500/10 via-green-500/5 to-emerald-500/10 border-green-500/30 shadow-lg shadow-green-500/20'
+    }
+    return 'bg-gradient-to-br from-white/5 via-white/3 to-white/5 border-white/20 hover:bg-gradient-to-br hover:from-white/10 hover:via-white/5 hover:to-white/10 hover:border-white/30 hover:shadow-2xl hover:shadow-white/20 transition-all duration-500 backdrop-blur-sm hover:scale-[1.02]'
+  }
 
-  const variantColor = variant === 'weekly' ? 'purple' : 'blue'
+  const getIconClasses = () => {
+    if (isCheckingClaimed || isPollingClaim) {
+      return variant === 'weekly'
+        ? 'bg-gradient-to-br from-purple-500/30 to-purple-600/20 text-purple-300 shadow-lg shadow-purple-500/20'
+        : 'bg-gradient-to-br from-blue-500/30 to-blue-600/20 text-blue-300 shadow-lg shadow-blue-500/20'
+    }
+    if (isCompleted) {
+      return 'bg-gradient-to-br from-green-500/30 to-emerald-500/20 text-green-300 shadow-lg shadow-green-500/20 animate-pulse'
+    }
+    return variant === 'weekly'
+      ? 'bg-gradient-to-br from-purple-500/30 to-purple-600/20 text-purple-300 shadow-lg shadow-purple-500/20 hover:scale-110 transition-transform duration-300'
+      : 'bg-gradient-to-br from-blue-500/30 to-blue-600/20 text-blue-300 shadow-lg shadow-blue-500/20 hover:scale-110 transition-transform duration-300'
+  }
 
-  const iconWrapperClasses =
-    isCheckingClaimed || isPollingClaim
-      ? variantColor === 'purple'
-        ? 'bg-purple-500/20'
-        : 'bg-blue-500/20'
-      : isCompleted
-      ? 'bg-green-500/20'
-      : variantColor === 'purple'
-      ? 'bg-purple-500/20'
-      : 'bg-blue-500/20'
+  const getButtonClasses = () => {
+    const baseClasses =
+      'px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95'
+    if (variant === 'weekly') {
+      return `${baseClasses} bg-gradient-to-r from-purple-600 via-purple-500 to-purple-600 hover:from-purple-700 hover:via-purple-600 hover:to-purple-700 text-white`
+    }
+    return `${baseClasses} bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 text-white`
+  }
 
-  const iconColorClasses =
-    isCheckingClaimed || isPollingClaim
-      ? variantColor === 'purple'
-        ? 'text-purple-400'
-        : 'text-blue-400'
-      : isCompleted
-      ? 'text-green-400'
-      : variantColor === 'purple'
-      ? 'text-purple-400'
-      : 'text-blue-400'
+  // Base classes for different error button types
+  const getBaseErrorButtonClasses = useCallback((type: string) => {
+    const baseClasses =
+      'bg-gradient-to-r text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm transform hover:scale-105 active:scale-95'
 
-  const ctaButtonClasses =
-    variantColor === 'purple'
-      ? 'bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 rounded-lg transition-all'
-      : 'bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-lg transition-all'
+    switch (type) {
+      case 'github_link':
+        return `${baseClasses} from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700`
+      case 'info':
+        return `${baseClasses} from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700`
+      case 'warning':
+        return `${baseClasses} from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700`
+      case 'error':
+        return `${baseClasses} from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700`
+      default:
+        return `${baseClasses} from-gray-600 to-slate-600 hover:from-gray-700 hover:to-slate-700`
+    }
+  }, [])
+
+  // Function to get error button based on error message
+  const getErrorButton = useCallback(
+    (errorMessage: string) => {
+      if (!quest.verifier.errorButtons) return null
+
+      // Find the first error button that matches the error message
+      const errorButtonConfig = Object.entries(
+        quest.verifier.errorButtons
+      ).find(([errorPattern]) => errorMessage.includes(errorPattern))
+
+      if (!errorButtonConfig) return null
+
+      const [pattern, config]: any = errorButtonConfig
+
+      // Merge base classes with custom classes if provided
+      const buttonClasses = config.className
+        ? `${getBaseErrorButtonClasses(config.type)} ${config.className}`
+        : getBaseErrorButtonClasses(config.type)
+
+      switch (config.type) {
+        case 'github_link':
+          return (
+            <button
+              onClick={async () => {
+                try {
+                  await linkGithub()
+                  // After linking, refresh the quest data
+                  if (quest.verifier.type === 'staged') {
+                    await fetchStagedProgress()
+                  } else {
+                    await fetchUserMetric()
+                  }
+                  setNeedsGitHubLink(false)
+                  setError(null) // Clear any errors after successful GitHub linking
+                } catch (error) {
+                  console.error('Error linking GitHub:', error)
+                  toast.error(
+                    'Failed to link GitHub account. Please try again.'
+                  )
+                }
+              }}
+              className={buttonClasses}
+            >
+              {config.text}
+            </button>
+          )
+
+        default:
+          return (
+            <button
+              onClick={() => {
+                // Default action
+                console.log('Default error button clicked')
+              }}
+              className={buttonClasses}
+            >
+              {config.text}
+            </button>
+          )
+      }
+    },
+    [
+      quest.verifier.errorButtons,
+      getBaseErrorButtonClasses,
+      linkGithub,
+      quest.verifier.type,
+      fetchStagedProgress,
+      fetchUserMetric,
+    ]
+  )
+
+  const handleLinkGitHub = useCallback(async () => {
+    try {
+      await linkGithub()
+      // After linking, refresh the quest data
+      if (quest.verifier.type === 'staged') {
+        await fetchStagedProgress()
+      } else {
+        await fetchUserMetric()
+      }
+      setNeedsGitHubLink(false)
+      setError(null) // Clear any errors after successful GitHub linking
+    } catch (error) {
+      console.error('Error linking GitHub:', error)
+      toast.error('Failed to link GitHub account. Please try again.')
+    }
+  }, [linkGithub, quest.verifier.type, fetchStagedProgress, fetchUserMetric])
 
   return (
     <div
-      className={`p-3 rounded-lg border transition-all h-32 flex items-center ${baseContainerClasses}`}
+      className={`px-4 py-6 rounded-xl border transition-all duration-500 group relative overflow-hidden ${getContainerClasses()}`}
     >
-      <div className="flex items-center gap-3 w-full">
-        <div className={`p-2 rounded-lg flex-shrink-0 ${iconWrapperClasses}`}>
-          <quest.icon className={`w-4 h-4 ${iconColorClasses}`} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h5
-              className={`font-medium text-sm ${
-                isCheckingClaimed || isPollingClaim
-                  ? 'text-white'
-                  : isCompleted
-                  ? 'text-green-300'
-                  : 'text-white'
-              }`}
+      {/* Progress Background - Makes the whole card act as a progress bar */}
+      {quest.verifier.type === 'staged' &&
+        stagedProgress &&
+        !isLoadingStagedProgress && (
+          <>
+            {/* Main Progress Gradient */}
+            <div
+              className="absolute inset-0 transition-all duration-1000 ease-out"
+              style={{
+                background: `linear-gradient(90deg, 
+                rgba(34, 197, 94, 0.15) 0%, 
+                rgba(34, 197, 94, 0.08) ${Math.min(
+                  100,
+                  (Number(userMetric) /
+                    Number(getNextUnclamedThreshold(stagedProgress))) *
+                    100
+                )}%, 
+                rgba(255, 255, 255, 0.02) ${Math.min(
+                  100,
+                  (Number(userMetric) /
+                    Number(getNextUnclamedThreshold(stagedProgress))) *
+                    100
+                )}%, 
+                rgba(255, 255, 255, 0.02) 100%)`,
+              }}
+            />
+
+            {/* Animated Shimmer Effect */}
+            <div
+              className="absolute inset-0 opacity-30"
+              style={{
+                background: `linear-gradient(90deg, 
+                  transparent 0%, 
+                  rgba(34, 197, 94, 0.3) 25%, 
+                  rgba(34, 197, 94, 0.6) 50%, 
+                  rgba(34, 197, 94, 0.3) 75%, 
+                  transparent 100%)`,
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 10s ease-in-out infinite',
+                width: `${Math.min(
+                  100,
+                  (Number(userMetric) /
+                    Number(getNextUnclamedThreshold(stagedProgress))) *
+                    100
+                )}%`,
+              }}
+            />
+
+            {/* Pulsing Progress Edge Glow */}
+            <div
+              className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-green-400 via-green-300 to-green-400 shadow-lg shadow-green-400/50 opacity-[0.35]"
+              style={{
+                left: `${Math.min(
+                  100,
+                  (Number(userMetric) /
+                    Number(getNextUnclamedThreshold(stagedProgress))) *
+                    100
+                )}%`,
+                transform: 'translateX(-50%)',
+                animation: 'pulse-glow 2s ease-in-out infinite',
+              }}
+            />
+
+            {/* CSS Animations */}
+            <style jsx>{`
+              @keyframes shimmer {
+                0% {
+                  background-position: -200% 0;
+                }
+                100% {
+                  background-position: 200% 0;
+                }
+              }
+
+              @keyframes pulse-glow {
+                0%,
+                100% {
+                  box-shadow: 0 0 20px rgba(34, 197, 94, 0.5),
+                    0 0 40px rgba(34, 197, 94, 0.3),
+                    0 0 60px rgba(34, 197, 94, 0.1);
+                }
+                50% {
+                  box-shadow: 0 0 30px rgba(34, 197, 94, 0.8),
+                    0 0 60px rgba(34, 197, 94, 0.5),
+                    0 0 90px rgba(34, 197, 94, 0.2);
+                }
+              }
+            `}</style>
+          </>
+        )}
+
+      <div className="flex flex-col items-start gap-3 w-full relative z-10">
+        <div className="flex items-center justify-between gap-3 w-full">
+          <div className="flex items-center gap-3">
+            {/* Icon Section */}
+            <div
+              className={`p-2.5 rounded-xl flex-shrink-0 transition-all duration-500 ${getIconClasses()} h-10 w-10`}
             >
-              {quest.title}
-            </h5>
-            {isCompleted && (
-              <CheckBadgeIcon className="w-4 h-4 text-green-400 flex-shrink-0" />
-            )}
+              <quest.icon className="w-5 h-5 group-hover:rotate-12 transition-transform duration-500" />
+            </div>
+            <div className="flex items-center gap-3">
+              <h3
+                className={`font-semibold text-base transition-all duration-300 ${
+                  isCheckingClaimed || isPollingClaim
+                    ? 'text-white'
+                    : isCompleted
+                    ? 'text-green-300 group-hover:from-green-400 group-hover:to-emerald-400'
+                    : variant === 'weekly'
+                    ? 'text-white group-hover:from-purple-400 group-hover:to-purple-300'
+                    : 'text-white group-hover:from-blue-400 group-hover:to-blue-300'
+                }`}
+              >
+                {quest.title}
+              </h3>
+              {isCompleted && (
+                <CheckBadgeIcon className="w-5 h-5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
+              )}
+            </div>
           </div>
-          <p className="text-gray-400 text-xs mb-2 line-clamp-1">
+
+          {/* Stage and Threshold Info - Moved to upper right */}
+          {quest.verifier.type === 'staged' &&
+            stagedProgress &&
+            !isLoadingStagedProgress && (
+              <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-yellow-300 text-sm font-medium bg-gradient-to-r from-yellow-500/30 to-orange-500/30 px-2.5 py-1 rounded-full border border-yellow-400/30 shadow-lg shadow-yellow-500/20 backdrop-blur-sm">
+                    Stage {getHighestQualifyingStage(stagedProgress)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-white">
+                  <span className="font-medium">{formattedUserMetric}</span>
+                  <span className="text-gray-400">/</span>
+                  <span className="font-medium">
+                    {formattedNextUnclamedThreshold}
+                  </span>
+                </div>
+              </div>
+            )}
+        </div>
+
+        {/* Content Section */}
+        <div className="flex-1 w-full space-y-3">
+          {/* Description */}
+          <p className="text-gray-300 text-sm leading-relaxed group-hover:text-gray-200 transition-colors duration-300">
             {quest.description}
           </p>
 
-          <div className="flex items-start gap-3 flex-col lg:flex-row">
+          {/* Progress Section */}
+          <div className="w-full space-y-3">
             {quest.verifier.type === 'staged' ? (
               // Staged quest progress display
-              <div className="flex items-center gap-3 flex-1">
+              <div className="w-full space-y-3">
                 {isLoadingStagedProgress ? (
-                  <div className="flex items-center gap-2 text-gray-400 text-xs">
+                  <div className="flex items-center gap-2 text-gray-400 text-sm">
                     <LoadingSpinner height="h-4" width="w-4" />
                     Loading progress...
                   </div>
                 ) : stagedProgress ? (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1 text-yellow-400 text-xs font-medium bg-yellow-400/20 px-2 py-1 rounded-full">
-                        Stage {getHighestQualifyingStage(stagedProgress)}
-                      </div>
+                  <div className="flex items-start justify-between gap-4 w-full">
+                    {/* XP Info Cards */}
+                    <div className="flex-1 min-w-0 space-y-2">
+                      {/* Ready to Claim Section */}
+                      {stagedProgress.totalClaimableXP > 0 && (
+                        <div className="text-green-300 text-sm font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-2.5 py-1.5 rounded-lg border border-green-400/20 backdrop-blur-sm shadow-lg shadow-green-500/20">
+                          Ready to Claim: +{stagedProgress.totalClaimableXP} XP
+                          / +{stagedProgress.totalClaimableXP} MOONEY
+                        </div>
+                      )}
+
+                      {/* Next Stage or Final Stage Section */}
+                      {(() => {
+                        if (
+                          stagedProgress.isMaxStageReached &&
+                          stagedProgress.currentUserMetric >=
+                            getNextUnclamedThreshold(stagedProgress)
+                        ) {
+                          // Max stage reached - Purple
+                          return (
+                            <div className="text-purple-300 text-sm font-medium bg-gradient-to-r from-purple-500/20 to-violet-500/20 px-2.5 py-1.5 rounded-lg border border-purple-400/20 backdrop-blur-sm shadow-lg shadow-purple-500/20">
+                              🏆 Max Stage Reached - Congratulations!
+                            </div>
+                          )
+                        } else if (stagedProgress.nextStageXP !== null) {
+                          // Next stage available - Blue
+                          return (
+                            <div className="text-blue-300 text-sm font-medium bg-gradient-to-r from-blue-500/20 to-cyan-500/20 px-2.5 py-1.5 rounded-lg border border-blue-400/20 backdrop-blur-sm shadow-lg shadow-blue-500/20">
+                              Next Stage: +{stagedProgress.nextStageXP} XP / +
+                              {stagedProgress.nextStageXP} MOONEY
+                            </div>
+                          )
+                        } else {
+                          // Final stage info - Orange
+                          return (
+                            <div className="text-orange-300 text-sm font-medium bg-gradient-to-r from-orange-500/20 to-amber-500/20 px-2.5 py-1.5 rounded-lg border border-orange-400/20 backdrop-blur-sm shadow-lg shadow-purple-500/20">
+                              🎯 Final Stage: +
+                              {getNextUnclamedThreshold(stagedProgress)} XP / +
+                              {getNextUnclamedThreshold(stagedProgress)} MOONEY
+                            </div>
+                          )
+                        }
+                      })()}
                     </div>
 
-                    <div className="text-xs text-white">
-                      {stagedProgress.currentUserMetric} /{' '}
-                      {getNextUnclamedThreshold(stagedProgress)}
-                    </div>
+                    {/* Action Buttons - Right side */}
+                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                      {!isCompleted && !needsGitHubLink && (
+                        <PrivyWeb3Button
+                          label="Claim"
+                          action={async () => {
+                            await claimQuest()
+                          }}
+                          isDisabled={
+                            isLoadingClaim ||
+                            (quest.verifier.type === 'staged' &&
+                              stagedProgress?.totalClaimableXP === 0)
+                          }
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
+                          noPadding
+                        />
+                      )}
 
-                    <div className="w-16">
-                      <div className="w-full bg-gray-700 rounded-full h-1.5">
-                        <div
-                          className="bg-gradient-to-r from-yellow-400 to-orange-500 h-1.5 rounded-full transition-all duration-500"
-                          style={{ width: `${stagedProgress.progressToNext}%` }}
-                        ></div>
-                      </div>
-                    </div>
+                      {needsGitHubLink && (
+                        <button
+                          onClick={handleLinkGitHub}
+                          className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm transform hover:scale-105 active:scale-95"
+                        >
+                          Link GitHub Account
+                        </button>
+                      )}
 
-                    <div className="text-yellow-400 text-xs font-medium">
-                      {stagedProgress.totalClaimableXP > 0
-                        ? `+${stagedProgress.totalClaimableXP} XP`
-                        : stagedProgress.isMaxStageReached
-                        ? 'Max reached'
-                        : 'Complete stages'}
+                      {!isCompleted &&
+                        quest.link &&
+                        quest.linkText &&
+                        !needsGitHubLink && (
+                          <StandardButton
+                            className={getButtonClasses()}
+                            link={quest.link}
+                            target="_blank"
+                          >
+                            {quest.linkText}
+                          </StandardButton>
+                        )}
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <span className="text-gray-400 text-xs">
-                    No progress data
+                  <span className="text-gray-400 text-sm">
+                    No progress data available
                   </span>
                 )}
               </div>
             ) : (
-              // Single quest XP display
-              <span className="text-yellow-400 text-xs font-medium flex items-center gap-2">
-                +
-                {isLoadingXpAmount ? (
-                  <div className="flex items-center gap-1">
-                    <LoadingSpinner height="h-4" width="w-4" />
-                    <span className="text-gray-400">...</span>
-                  </div>
-                ) : (
-                  xpAmount
-                )}{' '}
-                XP
-              </span>
-            )}
+              // Single quest XP display with buttons
+              <div className="flex items-center justify-between gap-4 w-full">
+                <span className="text-yellow-300 text-sm font-medium bg-gradient-to-r from-yellow-500/20 to-orange-500/20 px-2.5 py-1.5 rounded-lg border border-yellow-400/20 backdrop-blur-sm flex items-center justify-center">
+                  +
+                  {isLoadingXpAmount ? (
+                    <div className="inline-flex items-center gap-1">
+                      <LoadingSpinner height="h-4" width="w-4" />
+                    </div>
+                  ) : (
+                    xpAmount
+                  )}{' '}
+                  XP / +
+                  {isLoadingXpAmount ? (
+                    <div className="inline-flex items-center gap-1">
+                      <LoadingSpinner height="h-4" width="w-4" />
+                    </div>
+                  ) : (
+                    xpAmount
+                  )}{' '}
+                  MOONEY
+                </span>
 
+                {/* Action Buttons - Right side */}
+                <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                  {!isCompleted && !needsGitHubLink && (
+                    <PrivyWeb3Button
+                      label="Claim"
+                      action={async () => {
+                        await claimQuest()
+                      }}
+                      isDisabled={isLoadingClaim}
+                      requiredChain={DEFAULT_CHAIN_V5}
+                      className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
+                      noPadding
+                    />
+                  )}
+
+                  {needsGitHubLink && (
+                    <button
+                      onClick={handleLinkGitHub}
+                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm transform hover:scale-105 active:scale-95"
+                    >
+                      Link GitHub Account
+                    </button>
+                  )}
+
+                  {!isCompleted &&
+                    quest.link &&
+                    quest.linkText &&
+                    !needsGitHubLink && (
+                      <StandardButton
+                        className={getButtonClasses()}
+                        link={quest.link}
+                        target="_blank"
+                      >
+                        {quest.linkText}
+                      </StandardButton>
+                    )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Status and Actions */}
+          <div className="pt-2">
             {isCheckingClaimed ? (
-              <div className="flex items-center gap-2 text-gray-400 text-xs">
+              <div className="flex items-center gap-2 text-gray-400 text-sm">
                 <LoadingSpinner height="h-4" width="w-4" />
                 Checking status...
               </div>
             ) : isPollingClaim ? (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-yellow-400 text-xs">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-yellow-400 text-sm">
                   <LoadingSpinner height="h-4" width="w-4" />
                   Waiting for blockchain confirmation...
                 </div>
@@ -569,46 +959,67 @@ export default function Quest({
                       }
                     }
                   }}
-                  className="text-blue-400 hover:text-blue-300 text-xs underline"
+                  className="text-blue-400 hover:text-blue-300 text-sm underline transition-colors"
                 >
                   Refresh Status
                 </button>
               </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                {!hasClaimed && quest.link && quest.linkText && (
-                  <StandardButton
-                    className={ctaButtonClasses}
-                    link={quest.link}
-                  >
-                    {quest.linkText}
-                  </StandardButton>
-                )}
+            ) : null}
 
-                {!hasClaimed && (
-                  <PrivyWeb3Button
-                    label={
-                      quest.verifier.type === 'staged' &&
-                      stagedProgress?.totalClaimableXP &&
-                      stagedProgress.totalClaimableXP > 0
-                        ? `Claim ${stagedProgress.totalClaimableXP} XP`
-                        : 'Claim'
-                    }
-                    action={async () => {
-                      await claimQuest()
-                    }}
-                    isDisabled={
-                      isLoadingClaim ||
-                      (quest.verifier.type === 'staged' &&
-                        stagedProgress?.totalClaimableXP === 0) // Check if no XP available to claim
-                    }
-                    requiredChain={DEFAULT_CHAIN_V5}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                    noPadding
-                  />
-                )}
-              </div>
-            )}
+            {/* Show helpful guidance for ERC20 balance errors */}
+            {!isCompleted &&
+              !needsGitHubLink &&
+              error &&
+              error.includes('ERC20: transfer amount exceeds balance') && (
+                <div className="flex flex-col gap-2 w-full">
+                  <div className="bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-400/30 rounded-lg p-3 backdrop-blur-sm">
+                    <p className="text-red-300 text-sm mb-2">
+                      ⚠️ Insufficient token balance detected. This usually
+                      means:
+                    </p>
+                    <ul className="text-red-200 text-xs space-y-1 ml-4">
+                      <li>
+                        • The contract doesn't have enough tokens to distribute
+                      </li>
+                      <li>
+                        • There might be a temporary issue with the reward pool
+                      </li>
+                      <li>• The quest reward amount may need adjustment</li>
+                    </ul>
+                    <p className="text-red-200 text-xs mt-2">
+                      💡 Try refreshing the data or retrying. If the issue
+                      persists, please contact support.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        // Retry the claim
+                        setError(null) // Clear error before retry
+                        claimQuest()
+                      }}
+                      className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm transform hover:scale-105 active:scale-95"
+                    >
+                      🔄 Retry Claim
+                    </button>
+                    <button
+                      onClick={() => {
+                        // Refresh quest data
+                        setError(null) // Clear error before refresh
+                        if (quest.verifier.type === 'staged') {
+                          fetchStagedProgress()
+                        } else {
+                          fetchUserMetric()
+                        }
+                        fetchHasClaimed()
+                      }}
+                      className="bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-700 hover:to-gray-600 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm transform hover:scale-105 active:scale-95"
+                    >
+                      🔄 Refresh Data
+                    </button>
+                  </div>
+                </div>
+              )}
           </div>
         </div>
       </div>
