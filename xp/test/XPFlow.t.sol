@@ -46,18 +46,9 @@ contract XPFlowTest is Test {
         // Transfer tokens to XPManager for rewards
         rewardToken.transfer(address(xpManager), 1000000e18);
 
-        // Set up ERC20 reward configuration
-        uint256[] memory thresholds = new uint256[](4);
-        thresholds[0] = 100;
-        thresholds[1] = 500;
-        thresholds[2] = 1000;
-        thresholds[3] = 5000;
-        uint256[] memory rewards = new uint256[](4);
-        rewards[0] = 10e18;
-        rewards[1] = 50e18;
-        rewards[2] = 100e18;
-        rewards[3] = 500e18;
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewards);
+        // Set up ERC20 reward configuration with conversion rate
+        uint256 conversionRate = 1e16; // 0.01 tokens per XP
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
         vm.stopPrank();
     }
@@ -66,55 +57,40 @@ contract XPFlowTest is Test {
         // Step 1: User gets a Citizen NFT
         vm.startPrank(user);
 
-        // Mock the minting process (in real scenario, user would call mintTo)
-        // For testing, we'll just simulate ownership
+        // Mock the minting process
         vm.mockCall(address(citizenNFT), abi.encodeWithSelector(citizenNFT.balanceOf.selector, user), abi.encode(1));
 
-        uint256 balance = citizenNFT.balanceOf(user);
-        assertEq(balance, 1);
-
-        // Step 2: Create context for XP claim
-        bytes memory context = abi.encode(
-            100 // xpAmount
-        );
-
-        // Step 3: Check eligibility
-        (bool eligible, uint256 xpAmount) = citizenVerifier.isEligible(user, context);
-        assertTrue(eligible);
-        assertEq(xpAmount, 100);
-
-        // Step 4: Generate claim ID
-        bytes32 claimId = citizenVerifier.claimId(user, context);
-
-        // Step 5: Check if already claimed
-        bool alreadyClaimed = xpManager.usedProofs(claimId);
-        assertFalse(alreadyClaimed);
-
-        // Step 6: Claim XP
-        uint256 xpBefore = xpManager.userXP(user);
+        // Step 2: User claims XP from citizen verifier and gets automatic ERC20 rewards
+        bytes memory context = abi.encode(100);
+        
+        uint256 tokenBalanceBefore = rewardToken.balanceOf(user);
+        console.log("Token balance before:", tokenBalanceBefore);
+        
+        // Expect automatic ERC20 reward event
+        vm.expectEmit(true, true, false, true);
+        emit XPManager.ERC20RewardClaimed(user, address(rewardToken), 100 * 1e16); // 100 XP * 0.01
 
         xpManager.claimXP(1, context);
 
-        uint256 xpAfter = xpManager.userXP(user);
-        assertEq(xpAfter, xpBefore + 100);
+        // Step 3: Verify XP was awarded
+        uint256 xpBalance = xpManager.getTotalXP(user);
+        assertEq(xpBalance, 100, "User should have 100 XP");
 
-        // Step 7: Check available ERC20 rewards
-        uint256 availableRewards = xpManager.getAvailableERC20Reward(user);
-        assertEq(availableRewards, 10e18, "Should have 10 tokens for 100 XP threshold");
-
-        // Step 8: Claim ERC20 rewards
-        uint256 tokenBalanceBefore = rewardToken.balanceOf(user);
-
-        xpManager.claimERC20Rewards();
-
+        // Step 4: Verify ERC20 rewards were automatically distributed
         uint256 tokenBalanceAfter = rewardToken.balanceOf(user);
-        assertEq(tokenBalanceAfter, tokenBalanceBefore + 10e18, "Should receive 10 tokens");
+        uint256 expectedReward = 100 * 1e16; // 100 XP * 0.01 tokens per XP
+        assertEq(tokenBalanceAfter, tokenBalanceBefore + expectedReward, "Should automatically receive ERC20 tokens");
 
-        // Step 9: Verify claim is marked as used
+        // Step 5: Verify no pending rewards (all claimed automatically)
+        uint256 availableRewards = xpManager.getAvailableERC20Reward(user);
+        assertEq(availableRewards, 0, "No pending rewards should remain");
+
+        // Step 6: Verify claim is marked as used
+        bytes32 claimId = citizenVerifier.claimId(user, context);
         bool claimedAfter = xpManager.usedProofs(claimId);
         assertTrue(claimedAfter);
 
-        // Step 10: Try to claim again (should fail)
+        // Step 7: Try to claim again (should fail)
         vm.expectRevert("Already claimed");
         xpManager.claimXP(1, context);
 
@@ -122,190 +98,106 @@ contract XPFlowTest is Test {
     }
 
     function testProgressiveRewards() public {
-
         vm.startPrank(user);
 
         // Mock user has NFT
         vm.mockCall(address(citizenNFT), abi.encodeWithSelector(citizenNFT.balanceOf.selector, user), abi.encode(1));
 
-        // Step 1: Earn 100 XP and claim reward
+        uint256 initialBalance = rewardToken.balanceOf(user);
+
+        // Step 1: Earn 100 XP - automatic rewards
         bytes memory context1 = abi.encode(100);
         xpManager.claimXP(1, context1);
+        
+        uint256 expectedAfter1 = initialBalance + (100 * 1e16); // 100 XP * 0.01
+        assertEq(rewardToken.balanceOf(user), expectedAfter1, "Should have automatic rewards for 100 XP");
 
-        uint256 available1 = xpManager.getAvailableERC20Reward(user);
-        assertEq(available1, 10e18, "Should have 10 tokens for 100 XP");
-
-        xpManager.claimERC20Rewards();
-
-        // Step 2: Earn 100 more XP (total 200) - need to reach 500 threshold
-        bytes memory context2 = abi.encode(200); // Different context for unique claimId
+        // Step 2: Earn 100 more XP (total 200) - more automatic rewards
+        bytes memory context2 = abi.encode(200);
         xpManager.claimXP(1, context2);
+        
+        uint256 expectedAfter2 = initialBalance + (200 * 1e16); // 200 XP * 0.01
+        assertEq(rewardToken.balanceOf(user), expectedAfter2, "Should have automatic rewards for 200 XP total");
 
         // Step 3: Earn 100 more XP (total 300)
-        bytes memory context3 = abi.encode(300); // Different context for unique claimId
+        bytes memory context3 = abi.encode(300);
         xpManager.claimXP(1, context3);
+        
+        uint256 expectedAfter3 = initialBalance + (300 * 1e16); // 300 XP * 0.01
+        assertEq(rewardToken.balanceOf(user), expectedAfter3, "Should have automatic rewards for 300 XP total");
 
-        // Step 4: Earn 100 more XP (total 400)
-        bytes memory context4 = abi.encode(400); // Different context for unique claimId
+        // Step 4: Earn 200 more XP (total 500)
+        bytes memory context4 = abi.encode(400);
         xpManager.claimXP(1, context4);
-
-        // Step 5: Earn 100 more XP (total 500) and claim reward
-        bytes memory context5 = abi.encode(500); // Different context for unique claimId
+        bytes memory context5 = abi.encode(500);
         xpManager.claimXP(1, context5);
+        
+        uint256 expectedAfter5 = initialBalance + (500 * 1e16); // 500 XP * 0.01
+        assertEq(rewardToken.balanceOf(user), expectedAfter5, "Should have automatic rewards for 500 XP total");
 
-        uint256 available2 = xpManager.getAvailableERC20Reward(user);
-        assertEq(available2, 50e18, "Should have 50 tokens for 500 XP threshold");
+        // Verify total XP
+        assertEq(xpManager.getTotalXP(user), 500, "Should have 500 XP total");
 
-        xpManager.claimERC20Rewards();
-
-        // Step 6: Earn enough more XP to reach 1000 (need 5 more claims)
-        for (uint256 i = 6; i <= 10; i++) {
-            bytes memory contextN = abi.encode(i * 100);
-            xpManager.claimXP(1, contextN);
-        }
-
-        uint256 available3 = xpManager.getAvailableERC20Reward(user);
-        assertEq(available3, 100e18, "Should have 100 tokens for 1000 XP threshold");
-
-        xpManager.claimERC20Rewards();
-
-        // Step 7: Check total tokens received
-        uint256 totalTokens = rewardToken.balanceOf(user);
-        assertEq(totalTokens, 160e18, "Should have received 10 + 50 + 100 = 160 tokens");
+        // Verify no pending rewards
+        assertEq(xpManager.getAvailableERC20Reward(user), 0, "No pending rewards should remain");
 
         vm.stopPrank();
     }
 
-    function testMultipleVerifiersWorkflow() public {
+    function testMultipleUsers() public {
+        address user2 = address(0x321);
 
-        vm.startPrank(owner);
-
-        // Register a second verifier with different XP amount
-        OwnsCitizenNFT secondVerifier = new OwnsCitizenNFT(address(citizenNFT), 50);
-        xpManager.registerVerifier(2, address(secondVerifier));
-
-        vm.stopPrank();
-
-        vm.startPrank(user);
-
-        // Mock user has NFT
+        // Both users have NFTs
         vm.mockCall(address(citizenNFT), abi.encodeWithSelector(citizenNFT.balanceOf.selector, user), abi.encode(1));
+        vm.mockCall(address(citizenNFT), abi.encodeWithSelector(citizenNFT.balanceOf.selector, user2), abi.encode(1));
 
-        // Claim from first verifier (100 XP)
+        // User 1 claims 100 XP
+        vm.startPrank(user);
+        uint256 user1InitialBalance = rewardToken.balanceOf(user);
+        
         bytes memory context1 = abi.encode(100);
         xpManager.claimXP(1, context1);
-
-        // Claim from second verifier (50 XP)
-        bytes memory context2 = abi.encode(200);
-        xpManager.claimXP(2, context2);
-
-        uint256 totalXP = xpManager.getTotalXP(user);
-        assertEq(totalXP, 150, "Should have 100 + 50 = 150 XP");
-
+        
+        uint256 user1ExpectedBalance = user1InitialBalance + (100 * 1e16);
+        assertEq(rewardToken.balanceOf(user), user1ExpectedBalance, "User 1 should have automatic rewards");
         vm.stopPrank();
+
+        // User 2 claims 200 XP (two separate claims)
+        vm.startPrank(user2);
+        uint256 user2InitialBalance = rewardToken.balanceOf(user2);
+        
+        bytes memory context2a = abi.encode(200);
+        xpManager.claimXP(1, context2a);
+        bytes memory context2b = abi.encode(300);
+        xpManager.claimXP(1, context2b);
+        
+        uint256 user2ExpectedBalance = user2InitialBalance + (200 * 1e16);
+        assertEq(rewardToken.balanceOf(user2), user2ExpectedBalance, "User 2 should have automatic rewards");
+        vm.stopPrank();
+
+        // Verify independent totals
+        assertEq(xpManager.getTotalXP(user), 100, "User 1 should have 100 XP");
+        assertEq(xpManager.getTotalXP(user2), 200, "User 2 should have 200 XP");
     }
 
-    function testNoRewardsForInsufficientXP() public {
-
-        vm.startPrank(user);
+    function testNoERC20WhenConfigInactive() public {
+        // Deactivate rewards
+        vm.prank(owner);
+        xpManager.deactivateERC20RewardConfig();
 
         // Mock user has NFT
         vm.mockCall(address(citizenNFT), abi.encodeWithSelector(citizenNFT.balanceOf.selector, user), abi.encode(1));
 
-        // Verifier gives 100 XP regardless of context, so user will always reach 100 threshold
-        // To test insufficient XP, we need to set thresholds higher
-        vm.stopPrank();
-        vm.startPrank(owner);
-
-        // Set higher thresholds so 100 XP won't be enough
-        uint256[] memory newThresholds = new uint256[](1);
-        newThresholds[0] = 200; // Higher than the 100 XP the verifier gives
-        uint256[] memory newRewards = new uint256[](1);
-        newRewards[0] = 10e18;
-        xpManager.setERC20RewardConfig(address(rewardToken), newThresholds, newRewards);
-
-        vm.stopPrank();
         vm.startPrank(user);
-
-        // Now earn 100 XP (from verifier) which is below 200 threshold
-        bytes memory context = abi.encode(50);
-        xpManager.claimXP(1, context);
-
-        uint256 available = xpManager.getAvailableERC20Reward(user);
-        assertEq(available, 0, "Should have no rewards for insufficient XP");
-
-        // Try to claim rewards (should fail)
-        vm.expectRevert("No rewards to claim");
-        xpManager.claimERC20Rewards();
-
-        vm.stopPrank();
-    }
-
-    function testClaimXPForWorkflow() public {
-
-        address server = address(0x777);
-
-        // Mock user has NFT but doesn't claim directly
-        vm.mockCall(address(citizenNFT), abi.encodeWithSelector(citizenNFT.balanceOf.selector, user), abi.encode(1));
-
-        // Server claims XP on behalf of user
-        vm.startPrank(server);
-
+        uint256 initialBalance = rewardToken.balanceOf(user);
+        
         bytes memory context = abi.encode(100);
-        xpManager.claimXPFor(user, 1, context);
-
+        xpManager.claimXP(1, context);
+        
+        // Should get XP but no ERC20 rewards
+        assertEq(xpManager.getTotalXP(user), 100, "Should have XP");
+        assertEq(rewardToken.balanceOf(user), initialBalance, "Should not have ERC20 rewards");
+        
         vm.stopPrank();
-
-        // Verify user received XP
-        uint256 userXP = xpManager.getTotalXP(user);
-        assertEq(userXP, 100, "User should have received 100 XP via server");
-
-        // User can now claim rewards
-        vm.startPrank(user);
-        uint256 availableRewards = xpManager.getAvailableERC20Reward(user);
-        assertEq(availableRewards, 10e18, "Should have 10 tokens available");
-
-        xpManager.claimERC20Rewards();
-
-        uint256 tokenBalance = rewardToken.balanceOf(user);
-        assertEq(tokenBalance, 10e18, "User should have received 10 tokens");
-
-        vm.stopPrank();
-    }
-
-    // Multiple token rewards test removed for single-token config
-
-    function testRewardConfigurationChange() public {
-        vm.startPrank(user);
-
-        // Mock user has NFT
-        vm.mockCall(address(citizenNFT), abi.encodeWithSelector(citizenNFT.balanceOf.selector, user), abi.encode(1));
-
-        // User earns 100 XP under original config
-        bytes memory context1 = abi.encode(100);
-        xpManager.claimXP(1, context1);
-
-        uint256 availableBefore = xpManager.getAvailableERC20Reward(user);
-        assertEq(availableBefore, 10e18, "Should have 10 tokens under original config");
-
-        vm.stopPrank();
-
-        // Owner changes reward configuration
-        vm.startPrank(owner);
-
-        uint256[] memory newThresholds = new uint256[](2);
-        newThresholds[0] = 100;
-        newThresholds[1] = 200;
-        uint256[] memory newRewards = new uint256[](2);
-        newRewards[0] = 20e18; // Increased reward
-        newRewards[1] = 40e18;
-
-        xpManager.setERC20RewardConfig(address(rewardToken), newThresholds, newRewards);
-
-        vm.stopPrank();
-
-        // Check how this affects existing user
-        uint256 availableAfter = xpManager.getAvailableERC20Reward(user);
-        assertEq(availableAfter, 20e18, "Should have 20 tokens under new config");
     }
 }

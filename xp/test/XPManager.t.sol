@@ -224,33 +224,18 @@ contract XPManagerTest is Test {
     function testSetERC20RewardConfig() public {
         vm.startPrank(owner);
 
-        uint256[] memory thresholds = new uint256[](3);
-        thresholds[0] = 100;
-        thresholds[1] = 500;
-        thresholds[2] = 1000;
-
-        uint256[] memory rewardAmounts = new uint256[](3);
-        rewardAmounts[0] = 10 * 10 ** 18;
-        rewardAmounts[1] = 50 * 10 ** 18;
-        rewardAmounts[2] = 100 * 10 ** 18;
+        uint256 conversionRate = 1e15; // 0.001 tokens per XP
 
         // Expect event
         vm.expectEmit(true, false, false, true);
-        emit XPManager.ERC20RewardConfigSet(address(rewardToken), thresholds, rewardAmounts);
+        emit XPManager.ERC20RewardConfigSet(address(rewardToken), conversionRate);
 
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewardAmounts);
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
         // Verify configuration
-        (address tokenAddress, uint256[] memory returnedThresholds, uint256[] memory returnedRewards, bool active) =
-            xpManager.getERC20RewardConfig();
+        (address tokenAddress, uint256 returnedRate, bool active) = xpManager.getERC20RewardConfig();
         assertEq(tokenAddress, address(rewardToken));
-        assertEq(returnedThresholds.length, 3);
-        assertEq(returnedThresholds[0], 100);
-        assertEq(returnedThresholds[1], 500);
-        assertEq(returnedThresholds[2], 1000);
-        assertEq(returnedRewards[0], 10 * 10 ** 18);
-        assertEq(returnedRewards[1], 50 * 10 ** 18);
-        assertEq(returnedRewards[2], 100 * 10 ** 18);
+        assertEq(returnedRate, conversionRate);
         assertTrue(active);
 
         vm.stopPrank();
@@ -259,61 +244,19 @@ contract XPManagerTest is Test {
     function testSetERC20RewardConfigInvalidToken() public {
         vm.startPrank(owner);
 
-        uint256[] memory thresholds = new uint256[](1);
-        thresholds[0] = 100;
-
-        uint256[] memory rewardAmounts = new uint256[](1);
-        rewardAmounts[0] = 10 * 10 ** 18;
+        uint256 conversionRate = 1e15;
 
         vm.expectRevert("Invalid token address");
-        xpManager.setERC20RewardConfig(address(0), thresholds, rewardAmounts);
+        xpManager.setERC20RewardConfig(address(0), conversionRate);
 
         vm.stopPrank();
     }
 
-    function testSetERC20RewardConfigArrayMismatch() public {
+    function testSetERC20RewardConfigInvalidRate() public {
         vm.startPrank(owner);
 
-        uint256[] memory thresholds = new uint256[](2);
-        thresholds[0] = 100;
-        thresholds[1] = 500;
-
-        uint256[] memory rewardAmounts = new uint256[](1);
-        rewardAmounts[0] = 10 * 10 ** 18;
-
-        vm.expectRevert("Arrays length mismatch");
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewardAmounts);
-
-        vm.stopPrank();
-    }
-
-    function testSetERC20RewardConfigEmptyThresholds() public {
-        vm.startPrank(owner);
-
-        uint256[] memory thresholds = new uint256[](0);
-        uint256[] memory rewardAmounts = new uint256[](0);
-
-        vm.expectRevert("No thresholds provided");
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewardAmounts);
-
-        vm.stopPrank();
-    }
-
-    function testSetERC20RewardConfigNonAscendingThresholds() public {
-        vm.startPrank(owner);
-
-        uint256[] memory thresholds = new uint256[](3);
-        thresholds[0] = 100;
-        thresholds[1] = 500;
-        thresholds[2] = 300; // Not ascending
-
-        uint256[] memory rewardAmounts = new uint256[](3);
-        rewardAmounts[0] = 10 * 10 ** 18;
-        rewardAmounts[1] = 50 * 10 ** 18;
-        rewardAmounts[2] = 100 * 10 ** 18;
-
-        vm.expectRevert("Thresholds must be ascending");
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewardAmounts);
+        vm.expectRevert("Conversion rate must be greater than 0");
+        xpManager.setERC20RewardConfig(address(rewardToken), 0);
 
         vm.stopPrank();
     }
@@ -321,32 +264,25 @@ contract XPManagerTest is Test {
     function testOnlyOwnerCanSetERC20RewardConfig() public {
         vm.startPrank(user1);
 
-        uint256[] memory thresholds = new uint256[](1);
-        thresholds[0] = 100;
-
-        uint256[] memory rewardAmounts = new uint256[](1);
-        rewardAmounts[0] = 10 * 10 ** 18;
+        uint256 conversionRate = 1e15;
 
         vm.expectRevert();
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewardAmounts);
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
         vm.stopPrank();
     }
+
+
 
     function testDeactivateERC20RewardConfig() public {
         // First set up rewards
         vm.startPrank(owner);
 
-        uint256[] memory thresholds = new uint256[](1);
-        thresholds[0] = 100;
-
-        uint256[] memory rewardAmounts = new uint256[](1);
-        rewardAmounts[0] = 10 * 10 ** 18;
-
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewardAmounts);
+        uint256 conversionRate = 1e15;
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
         // Verify it's active
-        (,,, bool active) = xpManager.getERC20RewardConfig();
+        (,, bool active) = xpManager.getERC20RewardConfig();
         assertTrue(active);
 
         // Expect event
@@ -357,7 +293,7 @@ contract XPManagerTest is Test {
         xpManager.deactivateERC20RewardConfig();
 
         // Verify it's inactive
-        (,,, bool activeAfter) = xpManager.getERC20RewardConfig();
+        (,, bool activeAfter) = xpManager.getERC20RewardConfig();
         assertFalse(activeAfter);
 
         vm.stopPrank();
@@ -372,26 +308,17 @@ contract XPManagerTest is Test {
         vm.stopPrank();
     }
 
-    function testCalculateERC20Reward() public {
+    function testCalculateAvailableERC20Reward() public {
         // Set up rewards
         vm.startPrank(owner);
 
-        uint256[] memory thresholds = new uint256[](3);
-        thresholds[0] = 25; // First claim
-        thresholds[1] = 50; // Second claim
-        thresholds[2] = 75; // Third claim
-
-        uint256[] memory rewardAmounts = new uint256[](3);
-        rewardAmounts[0] = 5 * 10 ** 18;
-        rewardAmounts[1] = 10 * 10 ** 18;
-        rewardAmounts[2] = 20 * 10 ** 18;
-
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewardAmounts);
+        uint256 conversionRate = 1e16; // 0.01 tokens per XP
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
         vm.stopPrank();
 
         // User has no XP initially
-        assertEq(xpManager.calculateERC20Reward(user1), 0);
+        assertEq(xpManager.calculateAvailableERC20Reward(user1), 0);
 
         // Give user1 25 XP (one claim)
         vm.startPrank(user1);
@@ -399,8 +326,12 @@ contract XPManagerTest is Test {
         xpManager.claimXP(1, context);
         vm.stopPrank();
 
-        // Should be eligible for first threshold only
-        assertEq(xpManager.calculateERC20Reward(user1), 5 * 10 ** 18);
+        // Should calculate: 25 XP * 0.01 = 0.25 tokens, but user already claimed automatically
+        // So available should be 0 since automatic claiming happened
+        assertEq(xpManager.calculateAvailableERC20Reward(user1), 0);
+        
+        // Check user received tokens automatically
+        assertEq(rewardToken.balanceOf(user1), 25 * 1e16); // 25 * 0.01 = 0.25 tokens
 
         // Give user1 more XP to reach 50 total (second claim)
         vm.startPrank(user1);
@@ -408,128 +339,64 @@ contract XPManagerTest is Test {
         xpManager.claimXP(1, context2);
         vm.stopPrank();
 
-        // Should be eligible for first two thresholds
-        assertEq(xpManager.calculateERC20Reward(user1), 15 * 10 ** 18); // 5 + 10
-
-        // Give user1 more XP to reach 75 total (third claim)
-        vm.startPrank(user1);
-        bytes memory context3 = abi.encode(300); // Different context for unique claimId
-        xpManager.claimXP(1, context3);
-        vm.stopPrank();
-
-        // Should be eligible for all thresholds
-        assertEq(xpManager.calculateERC20Reward(user1), 35 * 10 ** 18); // 5 + 10 + 20
+        // Should have 50 * 0.01 = 0.5 tokens total
+        assertEq(rewardToken.balanceOf(user1), 50 * 1e16);
     }
 
-    function testCalculateERC20RewardInactiveConfig() public {
+    function testCalculateAvailableERC20RewardInactiveConfig() public {
         // No config set - should return 0
-        assertEq(xpManager.calculateERC20Reward(user1), 0);
+        assertEq(xpManager.calculateAvailableERC20Reward(user1), 0);
     }
 
-    function testClaimERC20Rewards() public {
+    function testAutomaticERC20Rewards() public {
         // Set up rewards
         vm.startPrank(owner);
 
-        uint256[] memory thresholds = new uint256[](2);
-        thresholds[0] = 25; // First claim
-        thresholds[1] = 50; // Second claim
-
-        uint256[] memory rewardAmounts = new uint256[](2);
-        rewardAmounts[0] = 5 * 10 ** 18;
-        rewardAmounts[1] = 10 * 10 ** 18;
-
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewardAmounts);
+        uint256 conversionRate = 2e17; // 0.2 tokens per XP
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
         vm.stopPrank();
 
-        // Give user1 50 XP (two claims)
+        // Give user1 50 XP (two claims) - rewards should be automatic
         vm.startPrank(user1);
+        
+        uint256 initialBalance = rewardToken.balanceOf(user1);
+        
+        // Expect event for automatic ERC20 reward claiming
+        vm.expectEmit(true, true, false, true);
+        emit XPManager.ERC20RewardClaimed(user1, address(rewardToken), 25 * conversionRate);
+
         bytes memory context = abi.encode(100);
         xpManager.claimXP(1, context); // 25 XP
+
+        // Check balance increased automatically
+        assertEq(rewardToken.balanceOf(user1), initialBalance + 25 * conversionRate);
+
+        // Expect event for second claim
+        vm.expectEmit(true, true, false, true);
+        emit XPManager.ERC20RewardClaimed(user1, address(rewardToken), 25 * conversionRate);
+        
         bytes memory context2 = abi.encode(200); // Different context for unique claimId
         xpManager.claimXP(1, context2); // 50 XP total
-        vm.stopPrank();
 
-        // Check initial balance
+        // Check total balance: 50 XP * 0.2 = 10 tokens
+        assertEq(rewardToken.balanceOf(user1), initialBalance + 50 * conversionRate);
+
+        vm.stopPrank();
+    }
+
+    function testNoRewardsWhenConfigInactive() public {
+        // User has no rewards when config is inactive
+        vm.startPrank(user1);
+        
         uint256 initialBalance = rewardToken.balanceOf(user1);
-
-        // Claim rewards
-        vm.startPrank(user1);
-
-        // Expect event
-        vm.expectEmit(true, true, false, true);
-        emit XPManager.ERC20RewardClaimed(user1, address(rewardToken), 15 * 10 ** 18);
-
-        xpManager.claimERC20Rewards();
-
-        // Check balance increased
-        assertEq(rewardToken.balanceOf(user1), initialBalance + 15 * 10 ** 18);
-
-        // Check highest threshold was updated
-        assertEq(xpManager.highestThresholdClaimed(user1), 50);
-
-        vm.stopPrank();
-    }
-
-    function testClaimERC20RewardsNoRewards() public {
-        // Set up rewards
-        vm.startPrank(owner);
-
-        uint256[] memory thresholds = new uint256[](1);
-        thresholds[0] = 100;
-
-        uint256[] memory rewardAmounts = new uint256[](1);
-        rewardAmounts[0] = 10 * 10 ** 18;
-
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewardAmounts);
-
-        vm.stopPrank();
-
-        // User has no XP
-        vm.startPrank(user1);
-
-        vm.expectRevert("No rewards to claim");
-        xpManager.claimERC20Rewards();
-
-        vm.stopPrank();
-    }
-
-    function testClaimERC20RewardsInactiveConfig() public {
-        vm.startPrank(user1);
-
-        vm.expectRevert("Reward config not active");
-        xpManager.claimERC20Rewards();
-
-        vm.stopPrank();
-    }
-
-    function testClaimERC20RewardsOnlyOnce() public {
-        // Set up rewards
-        vm.startPrank(owner);
-
-        uint256[] memory thresholds = new uint256[](1);
-        thresholds[0] = 25; // First claim threshold
-
-        uint256[] memory rewardAmounts = new uint256[](1);
-        rewardAmounts[0] = 5 * 10 ** 18;
-
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewardAmounts);
-
-        vm.stopPrank();
-
-        // Give user1 25 XP
-        vm.startPrank(user1);
+        
         bytes memory context = abi.encode(100);
-        xpManager.claimXP(1, context);
-        vm.stopPrank();
+        xpManager.claimXP(1, context); // 25 XP
 
-        // Claim rewards first time
-        vm.startPrank(user1);
-        xpManager.claimERC20Rewards();
-
-        // Try to claim again - should fail
-        vm.expectRevert("No rewards to claim");
-        xpManager.claimERC20Rewards();
+        // No tokens should be received since no config is set
+        assertEq(rewardToken.balanceOf(user1), initialBalance);
+        assertEq(xpManager.calculateAvailableERC20Reward(user1), 0);
 
         vm.stopPrank();
     }
@@ -538,32 +405,25 @@ contract XPManagerTest is Test {
         // Set up rewards
         vm.startPrank(owner);
 
-        uint256[] memory thresholds = new uint256[](1);
-        thresholds[0] = 25; // First claim threshold
-
-        uint256[] memory rewardAmounts = new uint256[](1);
-        rewardAmounts[0] = 5 * 10 ** 18;
-
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewardAmounts);
+        uint256 conversionRate = 2e17; // 0.2 tokens per XP
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
         vm.stopPrank();
 
-        // Give user1 25 XP
+        // User has no available rewards initially
+        assertEq(xpManager.getAvailableERC20Reward(user1), 0);
+
+        // Give user1 25 XP - rewards should be claimed automatically
         vm.startPrank(user1);
         bytes memory context = abi.encode(100);
         xpManager.claimXP(1, context);
         vm.stopPrank();
 
-        // Check available reward
-        assertEq(xpManager.getAvailableERC20Reward(user1), 5 * 10 ** 18);
-
-        // Claim rewards
-        vm.startPrank(user1);
-        xpManager.claimERC20Rewards();
-        vm.stopPrank();
-
-        // Available reward should now be 0
+        // Available reward should be 0 since it was claimed automatically
         assertEq(xpManager.getAvailableERC20Reward(user1), 0);
+        
+        // But user should have received tokens
+        assertEq(rewardToken.balanceOf(user1), 25 * conversionRate);
     }
 
     function testEmergencyWithdrawERC20() public {
@@ -674,120 +534,88 @@ contract XPManagerTest is Test {
         // Set up rewards
         vm.startPrank(owner);
 
-        uint256[] memory thresholds = new uint256[](3);
-        thresholds[0] = 25; // First claim
-        thresholds[1] = 50; // Second claim
-        thresholds[2] = 75; // Third claim
-
-        uint256[] memory rewardAmounts = new uint256[](3);
-        rewardAmounts[0] = 5 * 10 ** 18;
-        rewardAmounts[1] = 10 * 10 ** 18;
-        rewardAmounts[2] = 20 * 10 ** 18;
-
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewardAmounts);
+        uint256 conversionRate = 2e17; // 0.2 tokens per XP
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
         vm.stopPrank();
 
-        // User1 claims 25 XP (first claim)
-        vm.startPrank(user1);
-        bytes memory context1 = abi.encode(100);
-        xpManager.claimXP(1, context1);
-        vm.stopPrank();
-
-        // Should be eligible for first threshold
-        assertEq(xpManager.getAvailableERC20Reward(user1), 5 * 10 ** 18);
-
-        // Claim rewards
+        // User1 claims 25 XP (first claim) - rewards should be automatic
         vm.startPrank(user1);
         uint256 initialBalance = rewardToken.balanceOf(user1);
-        xpManager.claimERC20Rewards();
-        assertEq(rewardToken.balanceOf(user1), initialBalance + 5 * 10 ** 18);
+        
+        bytes memory context1 = abi.encode(100);
+        xpManager.claimXP(1, context1);
+        
+        // Should receive tokens automatically: 25 XP * 0.2 = 5 tokens
+        assertEq(rewardToken.balanceOf(user1), initialBalance + 25 * conversionRate);
+        assertEq(xpManager.getAvailableERC20Reward(user1), 0); // No pending rewards
         vm.stopPrank();
 
         // User1 claims more XP to reach 50 total
         vm.startPrank(user1);
         bytes memory context2 = abi.encode(200); // Different context for unique claimId
         xpManager.claimXP(1, context2);
-        vm.stopPrank();
-
-        // Should be eligible for second threshold only (first already claimed)
-        assertEq(xpManager.getAvailableERC20Reward(user1), 10 * 10 ** 18);
-
-        // Claim rewards again
-        vm.startPrank(user1);
-        uint256 balanceBeforeSecond = rewardToken.balanceOf(user1);
-        xpManager.claimERC20Rewards();
-        assertEq(rewardToken.balanceOf(user1), balanceBeforeSecond + 10 * 10 ** 18);
+        
+        // Should now have tokens for 50 XP total: 50 * 0.2 = 10 tokens
+        assertEq(rewardToken.balanceOf(user1), initialBalance + 50 * conversionRate);
+        assertEq(xpManager.getAvailableERC20Reward(user1), 0); // Still no pending rewards
         vm.stopPrank();
 
         // User1 claims more XP to reach 75 total
         vm.startPrank(user1);
         bytes memory context3 = abi.encode(300); // Different context for unique claimId
         xpManager.claimXP(1, context3);
+        
+        // Should now have tokens for 75 XP total: 75 * 0.2 = 15 tokens
+        assertEq(rewardToken.balanceOf(user1), initialBalance + 75 * conversionRate);
+        assertEq(xpManager.getAvailableERC20Reward(user1), 0); // Still no pending rewards
         vm.stopPrank();
 
-        // Should be eligible for third threshold only
-        assertEq(xpManager.getAvailableERC20Reward(user1), 20 * 10 ** 18);
-
-        // Final claim
-        vm.startPrank(user1);
-        uint256 balanceBeforeThird = rewardToken.balanceOf(user1);
-        xpManager.claimERC20Rewards();
-        assertEq(rewardToken.balanceOf(user1), balanceBeforeThird + 20 * 10 ** 18);
-        vm.stopPrank();
-
-        // No more rewards available
-        assertEq(xpManager.getAvailableERC20Reward(user1), 0);
+        // Verify XP total
+        assertEq(xpManager.getTotalXP(user1), 75);
     }
 
     function testMultipleUsersRewards() public {
         // Set up rewards
         vm.startPrank(owner);
 
-        uint256[] memory thresholds = new uint256[](2);
-        thresholds[0] = 25; // First claim
-        thresholds[1] = 50; // Second claim
-
-        uint256[] memory rewardAmounts = new uint256[](2);
-        rewardAmounts[0] = 5 * 10 ** 18;
-        rewardAmounts[1] = 10 * 10 ** 18;
-
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewardAmounts);
+        uint256 conversionRate = 2e17; // 0.2 tokens per XP
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
         vm.stopPrank();
 
-        // User1 gets 25 XP (one claim)
+        // User1 gets 25 XP (one claim) - rewards should be automatic
         vm.startPrank(user1);
+        uint256 user1InitialBalance = rewardToken.balanceOf(user1);
+        
         bytes memory context1 = abi.encode(100);
         xpManager.claimXP(1, context1);
+        
+        // User1 should have: 25 XP * 0.2 = 5 tokens
+        assertEq(rewardToken.balanceOf(user1), user1InitialBalance + 25 * conversionRate);
         vm.stopPrank();
 
-        // User2 gets 50 XP (two claims)
+        // User2 gets 50 XP (two claims) - rewards should be automatic
         vm.startPrank(user2);
-        bytes memory context2a = abi.encode(100);
-        xpManager.claimXP(1, context2a);
-        bytes memory context2b = abi.encode(200); // Different context for unique claimId
-        xpManager.claimXP(1, context2b);
-        vm.stopPrank();
-
-        // Check available rewards
-        assertEq(xpManager.getAvailableERC20Reward(user1), 5 * 10 ** 18); // First threshold only
-        assertEq(xpManager.getAvailableERC20Reward(user2), 15 * 10 ** 18); // Both thresholds
-
-        // Both users claim
-        uint256 user1InitialBalance = rewardToken.balanceOf(user1);
         uint256 user2InitialBalance = rewardToken.balanceOf(user2);
-
-        vm.startPrank(user1);
-        xpManager.claimERC20Rewards();
+        
+        bytes memory context2a = abi.encode(100);
+        xpManager.claimXP(1, context2a); // 25 XP
+        
+        bytes memory context2b = abi.encode(200); // Different context for unique claimId
+        xpManager.claimXP(1, context2b); // 50 XP total
+        
+        // User2 should have: 50 XP * 0.2 = 10 tokens
+        assertEq(rewardToken.balanceOf(user2), user2InitialBalance + 50 * conversionRate);
         vm.stopPrank();
 
-        vm.startPrank(user2);
-        xpManager.claimERC20Rewards();
-        vm.stopPrank();
-
-        assertEq(rewardToken.balanceOf(user1), user1InitialBalance + 5 * 10 ** 18);
-        assertEq(rewardToken.balanceOf(user2), user2InitialBalance + 15 * 10 ** 18);
+        // Both users should have no available rewards (all claimed automatically)
+        assertEq(xpManager.getAvailableERC20Reward(user1), 0);
+        assertEq(xpManager.getAvailableERC20Reward(user2), 0);
+        
+        // Verify XP totals
+        assertEq(xpManager.getTotalXP(user1), 25);
+        assertEq(xpManager.getTotalXP(user2), 50);
     }
 
     function testVerifierTracking() public {
@@ -905,6 +733,148 @@ contract XPManagerTest is Test {
         vm.prank(user1);
         vm.expectRevert("Already claimed");
         xpManager.claimXP(1, abi.encode(25)); // Same context as first claim
+    }
+
+    // ===== XP LEVELS TESTS =====
+
+    function testSetXPLevels() public {
+        vm.startPrank(owner);
+
+        uint256[] memory thresholds = new uint256[](3);
+        uint256[] memory levels = new uint256[](3);
+        
+        thresholds[0] = 50;   // 50 XP = Level 1
+        thresholds[1] = 150;  // 150 XP = Level 2
+        thresholds[2] = 300;  // 300 XP = Level 3
+        
+        levels[0] = 1;
+        levels[1] = 2;
+        levels[2] = 3;
+
+        // Expect event
+        vm.expectEmit(false, false, false, true);
+        emit XPManager.XPLevelsSet(thresholds, levels);
+
+        xpManager.setXPLevels(thresholds, levels);
+
+        // Verify configuration
+        (uint256[] memory returnedThresholds, uint256[] memory returnedLevels, bool active) = xpManager.getXPLevels();
+        assertTrue(active);
+        assertEq(returnedThresholds.length, 3);
+        assertEq(returnedThresholds[0], 50);
+        assertEq(returnedThresholds[1], 150);
+        assertEq(returnedThresholds[2], 300);
+        assertEq(returnedLevels[0], 1);
+        assertEq(returnedLevels[1], 2);
+        assertEq(returnedLevels[2], 3);
+
+        vm.stopPrank();
+    }
+
+    function testGetUserLevel() public {
+        // Set up levels
+        vm.startPrank(owner);
+        uint256[] memory thresholds = new uint256[](3);
+        uint256[] memory levels = new uint256[](3);
+        thresholds[0] = 50;
+        thresholds[1] = 150;
+        thresholds[2] = 300;
+        levels[0] = 1;
+        levels[1] = 2;
+        levels[2] = 3;
+        xpManager.setXPLevels(thresholds, levels);
+        vm.stopPrank();
+
+        // User starts at level 0
+        assertEq(xpManager.getUserLevel(user1), 0);
+
+        // Give user1 25 XP - still level 0
+        vm.prank(user1);
+        xpManager.claimXP(1, abi.encode(100));
+        assertEq(xpManager.getUserLevel(user1), 0);
+
+        // Give user1 more XP to reach 50 - now level 1
+        vm.prank(user1);
+        xpManager.claimXP(1, abi.encode(200));
+        assertEq(xpManager.getUserLevel(user1), 1);
+
+        // Give user1 more XP to reach 150 - now level 2
+        vm.prank(user1);
+        xpManager.claimXP(1, abi.encode(300));
+        assertEq(xpManager.getUserLevel(user1), 1); // Still level 1 at 75 XP
+
+        // More XP to reach level 2
+        vm.prank(user1);
+        xpManager.claimXP(1, abi.encode(400));
+        assertEq(xpManager.getUserLevel(user1), 1); // 100 XP
+        
+        vm.prank(user1);
+        xpManager.claimXP(1, abi.encode(500));
+        assertEq(xpManager.getUserLevel(user1), 1); // 125 XP
+        
+        vm.prank(user1);
+        xpManager.claimXP(1, abi.encode(600));
+        assertEq(xpManager.getUserLevel(user1), 2); // 150 XP - level 2
+    }
+
+    function testLevelUpEvent() public {
+        // Set up levels
+        vm.startPrank(owner);
+        uint256[] memory thresholds = new uint256[](2);
+        uint256[] memory levels = new uint256[](2);
+        thresholds[0] = 50;
+        thresholds[1] = 100;
+        levels[0] = 1;
+        levels[1] = 2;
+        xpManager.setXPLevels(thresholds, levels);
+        vm.stopPrank();
+
+        // Expect level up event when reaching level 1
+        vm.expectEmit(true, false, false, true);
+        emit XPManager.LevelUp(user1, 1, 50);
+
+        // Give user1 enough XP to reach level 1 (need 50 XP, verifier gives 25 each)
+        vm.startPrank(user1);
+        xpManager.claimXP(1, abi.encode(100)); // 25 XP
+        xpManager.claimXP(1, abi.encode(200)); // 50 XP total - should trigger level up
+        vm.stopPrank();
+    }
+
+    function testGetNextLevelInfo() public {
+        // Set up levels
+        vm.startPrank(owner);
+        uint256[] memory thresholds = new uint256[](2);
+        uint256[] memory levels = new uint256[](2);
+        thresholds[0] = 50;
+        thresholds[1] = 150;
+        levels[0] = 1;
+        levels[1] = 2;
+        xpManager.setXPLevels(thresholds, levels);
+        vm.stopPrank();
+
+        // User with 0 XP
+        (uint256 nextLevel, uint256 xpRequired, uint256 xpProgress) = xpManager.getNextLevelInfo(user1);
+        assertEq(nextLevel, 1);
+        assertEq(xpRequired, 50);
+        assertEq(xpProgress, 0);
+
+        // Give user some XP
+        vm.prank(user1);
+        xpManager.claimXP(1, abi.encode(100)); // 25 XP
+
+        (nextLevel, xpRequired, xpProgress) = xpManager.getNextLevelInfo(user1);
+        assertEq(nextLevel, 1);
+        assertEq(xpRequired, 50);
+        assertEq(xpProgress, 25);
+
+        // Reach level 1
+        vm.prank(user1);
+        xpManager.claimXP(1, abi.encode(200)); // 50 XP total
+
+        (nextLevel, xpRequired, xpProgress) = xpManager.getNextLevelInfo(user1);
+        assertEq(nextLevel, 2);
+        assertEq(xpRequired, 150);
+        assertEq(xpProgress, 50);
     }
 
     function testVerifierTrackingRecordsFirstClaimOnly() public {

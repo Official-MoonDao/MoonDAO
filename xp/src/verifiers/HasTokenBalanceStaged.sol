@@ -1,37 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "./XPOracleVerifier.sol";
 import "./StagedXPVerifier.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "../interfaces/IXPVerifier.sol";
 
 /// @title HasTokenBalanceStaged
-/// @notice Verifier that awards staged XP based on ERC20 token balance (non-oracle, on-chain verification)
-/// @dev Context: abi.encode(uint256 targetStage)
-contract HasTokenBalanceStaged is StagedXPVerifier, Ownable {
-    address public tokenContract;
-
-    constructor(address _tokenContract) Ownable(msg.sender) {
-        require(_tokenContract != address(0), "Invalid token contract");
-        tokenContract = _tokenContract;
-
+/// @notice Verifier that awards staged XP based on ERC20 token balance (oracle-based, cross-chain verification)
+/// @dev Context: abi.encode(uint256 balance, uint256 xpAmount, uint256 validAfter, uint256 validBefore, bytes signature)
+contract HasTokenBalanceStaged is XPOracleVerifier, StagedXPVerifier {
+    constructor(address _oracle) XPOracleVerifier(_oracle) {
         // Initialize default token balance stages (assuming 18 decimals)
-        _addStage(100 * 1e18, 25); // 100 tokens = 25 XP
-        _addStage(500 * 1e18, 50); // 500 tokens = 50 XP (total: 75 XP)
-        _addStage(1000 * 1e18, 100); // 1000 tokens = 100 XP (total: 175 XP)
-        _addStage(5000 * 1e18, 250); // 5000 tokens = 250 XP (total: 425 XP)
+        _addStage(1000 * 1e18, 25); // 1000 tokens = 25 XP
+        _addStage(20000 * 1e18, 50); // 20000 tokens = 50 XP (total: 75 XP)
+        _addStage(50000 * 1e18, 100); // 50000 tokens = 100 XP (total: 175 XP)
+        _addStage(100000 * 1e18, 250); // 100000 tokens = 250 XP (total: 425 XP)
+        _addStage(500000 * 1e18, 500); // 500000 tokens = 500 XP (total: 925 XP)
+        _addStage(1000000 * 1e18, 1000); // 1000000 tokens = 1000 XP (total: 1925 XP)
     }
 
     function name() external pure returns (string memory) {
-        return "HasTokenBalanceStaged:v1";
+        return "HasTokenBalanceStaged:v2";
     }
 
-    function setTokenContract(address _tokenContract) external onlyOwner {
-        require(_tokenContract != address(0), "Invalid token contract");
-        tokenContract = _tokenContract;
-    }
-
-    // Admin functions - using inherited onlyOwner modifier
+    // Admin functions - using inherited onlyOwner modifier from XPOracleVerifier -> Ownable
     function addStage(uint256 threshold, uint256 xpAmount) external onlyOwner {
         _addStage(threshold, xpAmount);
     }
@@ -78,9 +70,10 @@ contract HasTokenBalanceStaged is StagedXPVerifier, Ownable {
     }
 
     /**
-     * @dev Implementation of the abstract _checkStageEligibility function using on-chain token balance check
+     * @dev Implementation of the abstract _checkStageEligibility function
+     * @dev Uses oracle backend format with balance for cross-chain verification
      * @param user Address of the user
-     * @param context Encoded context data containing target stage
+     * @param context Raw context data from your existing backend
      * @return eligible Whether the user is eligible
      * @return stageIndex The stage index the user qualifies for
      * @return xpAmount The XP amount for that stage
@@ -91,30 +84,48 @@ contract HasTokenBalanceStaged is StagedXPVerifier, Ownable {
         override
         returns (bool eligible, uint256 stageIndex, uint256 xpAmount)
     {
-        // Decode the context to get the target stage
-        uint256 targetStage = abi.decode(context, (uint256));
+        (uint256 balance,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+            abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // Validate stage index
-        if (targetStage >= stages.length || !stages[targetStage].active) {
-            return (false, 0, 0);
+        // Find which stage this balance corresponds to
+        stageIndex = _findStageByThreshold(balance);
+        if (stageIndex == type(uint256).max) {
+            return (false, 0, 0); // No stage matches this threshold
         }
 
-        // Get actual token balance from the contract
-        uint256 actualBalance = IERC20(tokenContract).balanceOf(user);
+        // Verify oracle proof using your existing backend format
+        _verifyOracleProof(
+            user, keccak256(abi.encode(balance)), stages[stageIndex].xpAmount, validAfterTs, validBefore, signature
+        );
 
-        // Check if user has enough tokens for this stage
-        if (actualBalance >= stages[targetStage].threshold) {
-            return (true, targetStage, stages[targetStage].xpAmount);
-        }
-
-        return (false, 0, 0);
+        return (true, stageIndex, stages[stageIndex].xpAmount);
     }
 
     /**
-     * @dev Implementation of the abstract _checkBulkEligibility function for on-chain token balance
+     * @dev Override claimId to match your existing backend format
      * @param user Address of the user
-     * @param context Not used in this implementation since we check on-chain balance directly
-     * @return eligible Whether the user's balance is valid
+     * @param context Raw context data from your existing backend
+     * @return Unique claim identifier
+     */
+    function claimId(address user, bytes calldata context)
+        external
+        view
+        override(IXPVerifier, StagedXPVerifier)
+        returns (bytes32)
+    {
+        (uint256 balance, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
+            abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
+
+        // Use your original claimId format for backwards compatibility
+        bytes32 contextHash = keccak256(abi.encode(balance, amount, validAfterTs, validBefore));
+        return keccak256(abi.encodePacked(address(this), user, contextHash));
+    }
+
+    /**
+     * @dev Implementation of the abstract _checkBulkEligibility function
+     * @param user Address of the user
+     * @param context Raw context data from your existing backend
+     * @return eligible Whether the user's proof is valid
      * @return userMetric The user's current token balance
      */
     function _checkBulkEligibility(address user, bytes calldata context)
@@ -123,9 +134,21 @@ contract HasTokenBalanceStaged is StagedXPVerifier, Ownable {
         override
         returns (bool eligible, uint256 userMetric)
     {
-        // For token balance, we always return the actual balance since it's verifiable on-chain
-        uint256 actualBalance = IERC20(tokenContract).balanceOf(user);
-        return (true, actualBalance);
+        (uint256 balance,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+            abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
+
+        // For bulk claims, the balance in context represents the user's actual token balance
+        // Verify oracle proof using your existing backend format
+        _verifyOracleProof(
+            user,
+            keccak256(abi.encode(balance)),
+            0, // XP amount not used in verification, will be calculated during bulk claim
+            validAfterTs,
+            validBefore,
+            signature
+        );
+
+        return (true, balance);
     }
 
     /**
@@ -136,5 +159,19 @@ contract HasTokenBalanceStaged is StagedXPVerifier, Ownable {
         require(_xpManager != address(0), "Invalid XPManager address");
         xpManager = _xpManager;
         emit XPManagerSet(_xpManager);
+    }
+
+    /**
+     * @dev Find the stage index that matches the given threshold
+     * @param threshold The threshold to find
+     * @return stageIndex The stage index, or type(uint256).max if not found
+     */
+    function _findStageByThreshold(uint256 threshold) internal view returns (uint256) {
+        for (uint256 i = 0; i < stages.length; i++) {
+            if (stages[i].threshold == threshold && stages[i].active) {
+                return i;
+            }
+        }
+        return type(uint256).max;
     }
 }

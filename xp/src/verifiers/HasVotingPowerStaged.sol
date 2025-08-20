@@ -82,7 +82,7 @@ contract HasVotingPowerStaged is XPOracleVerifier, StagedXPVerifier {
 
     /**
      * @dev Implementation of the abstract _checkStageEligibility function
-     * @dev Uses your existing oracle backend format with minVotingPower
+     * @dev Uses your existing oracle backend format with votingPower
      * @param user Address of the user
      * @param context Raw context data from your existing backend
      * @return eligible Whether the user is eligible
@@ -95,11 +95,11 @@ contract HasVotingPowerStaged is XPOracleVerifier, StagedXPVerifier {
         override
         returns (bool eligible, uint256 stageIndex, uint256 xpAmount)
     {
-        (uint256 minVotingPower,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+        (uint256 votingPower,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // Find which stage this minVotingPower corresponds to
-        stageIndex = _findStageByThreshold(minVotingPower);
+        // Find which stage this votingPower corresponds to
+        stageIndex = _findStageByThreshold(votingPower);
         if (stageIndex == type(uint256).max) {
             return (false, 0, 0); // No stage matches this threshold
         }
@@ -107,7 +107,7 @@ contract HasVotingPowerStaged is XPOracleVerifier, StagedXPVerifier {
         // Verify oracle proof using your existing backend format
         _verifyOracleProof(
             user,
-            keccak256(abi.encode(minVotingPower)),
+            keccak256(abi.encode(votingPower)),
             stages[stageIndex].xpAmount,
             validAfterTs,
             validBefore,
@@ -129,11 +129,11 @@ contract HasVotingPowerStaged is XPOracleVerifier, StagedXPVerifier {
         override(IXPVerifier, StagedXPVerifier)
         returns (bytes32)
     {
-        (uint256 minVotingPower, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
+        (uint256 votingPower, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
         // Use your original claimId format for backwards compatibility
-        bytes32 contextHash = keccak256(abi.encode(minVotingPower, amount, validAfterTs, validBefore));
+        bytes32 contextHash = keccak256(abi.encode(votingPower, amount, validAfterTs, validBefore));
         return keccak256(abi.encodePacked(address(this), user, contextHash));
     }
 
@@ -150,21 +150,21 @@ contract HasVotingPowerStaged is XPOracleVerifier, StagedXPVerifier {
         override
         returns (bool eligible, uint256 userMetric)
     {
-        (uint256 minVotingPower,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+        (uint256 votingPower,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // For bulk claims, the minVotingPower in context represents the user's actual voting power
+        // For bulk claims, the votingPower in context represents the user's actual voting power
         // Verify oracle proof using your existing backend format
         _verifyOracleProof(
             user,
-            keccak256(abi.encode(minVotingPower)),
+            keccak256(abi.encode(votingPower)),
             0, // XP amount not used in verification, will be calculated during bulk claim
             validAfterTs,
             validBefore,
             signature
         );
 
-        return (true, minVotingPower);
+        return (true, votingPower);
     }
 
     /**

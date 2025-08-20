@@ -12,6 +12,8 @@ import "../src/verifiers/HasContributedStaged.sol";
 import "../src/verifiers/HasCompletedCitizenProfile.sol";
 import "../src/verifiers/HasBoughtAMarketplaceListingStaged.sol";
 import "../src/verifiers/HasJoinedATeam.sol";
+import "../src/verifiers/HasSubmittedPRStaged.sol";
+import "../src/verifiers/HasSubmittedIssue.sol";
 
 contract DeployXPManagerScript is Script {
     function run() external {
@@ -32,14 +34,16 @@ contract DeployXPManagerScript is Script {
         HasJoinedATeam hasJoinedATeamVerifier = new HasJoinedATeam(oracleAddress, 5);
         HasCreatedATeam hasCreatedTeamVerifier = new HasCreatedATeam(oracleAddress, 5);
         HasCompletedCitizenProfile hasCompletedCitizenProfileVerifier = new HasCompletedCitizenProfile(oracleAddress, 5);
+        HasSubmittedIssue hasSubmittedIssueVerifier = new HasSubmittedIssue(oracleAddress, 5);
 
         // Deploy staged verifiers
         HasVotingPowerStaged votingPowerVerifier = new HasVotingPowerStaged(oracleAddress);
         HasVotedStaged hasVotedVerifier = new HasVotedStaged(oracleAddress);
-        HasTokenBalanceStaged hasTokenBalanceVerifier = new HasTokenBalanceStaged(rewardToken);
+        HasTokenBalanceStaged hasTokenBalanceVerifier = new HasTokenBalanceStaged(oracleAddress);
         HasContributedStaged hasContributedVerifier = new HasContributedStaged(oracleAddress);
         HasBoughtAMarketplaceListingStaged hasBoughtAMarketplaceListingVerifier =
             new HasBoughtAMarketplaceListingStaged(oracleAddress);
+        HasSubmittedPRStaged hasSubmittedPRVerifier = new HasSubmittedPRStaged(oracleAddress);
 
         // Set XPManager for staged verifiers
         votingPowerVerifier.setXPManager(address(xpManager));
@@ -47,6 +51,7 @@ contract DeployXPManagerScript is Script {
         hasTokenBalanceVerifier.setXPManager(address(xpManager));
         hasContributedVerifier.setXPManager(address(xpManager));
         hasBoughtAMarketplaceListingVerifier.setXPManager(address(xpManager));
+        hasSubmittedPRVerifier.setXPManager(address(xpManager));
 
         // Register verifiers
         xpManager.registerVerifier(0, address(votingPowerVerifier));
@@ -57,23 +62,35 @@ contract DeployXPManagerScript is Script {
         xpManager.registerVerifier(5, address(hasCompletedCitizenProfileVerifier));
         xpManager.registerVerifier(6, address(hasBoughtAMarketplaceListingVerifier));
         xpManager.registerVerifier(7, address(hasJoinedATeamVerifier));
+        xpManager.registerVerifier(8, address(hasSubmittedIssueVerifier));
+        xpManager.registerVerifier(9, address(hasSubmittedPRVerifier));
 
-        uint256[] memory thresholds = new uint256[](4);
-        thresholds[0] = 100;
-        thresholds[1] = 500;
-        thresholds[2] = 1000;
-        thresholds[3] = 5000;
-        uint256[] memory rewards = new uint256[](4);
-        rewards[0] = 10e18;
-        rewards[1] = 50e18;
-        rewards[2] = 100e18;
-        rewards[3] = 500e18;
+        // Set up XP levels: More realistic progression based on actual verifier rewards
+        uint256[] memory thresholds = new uint256[](6);
+        uint256[] memory levels = new uint256[](6);
+        
+        thresholds[0] = 50;    // 50 XP = Level 1 (achievable with basic activities)
+        thresholds[1] = 150;   // 150 XP = Level 2 (moderate engagement)
+        thresholds[2] = 300;   // 300 XP = Level 3 (active user)
+        thresholds[3] = 600;   // 600 XP = Level 4 (very active user)
+        thresholds[4] = 1000;  // 1000 XP = Level 5 (power user)
+        thresholds[5] = 2000;  // 2000 XP = Level 6 (whale/elite user)
+        
+        levels[0] = 1;
+        levels[1] = 2;
+        levels[2] = 3;
+        levels[3] = 4;
+        levels[4] = 5;
+        levels[5] = 6;
 
-        xpManager.setERC20RewardConfig(
-            address(rewardToken),
-            thresholds,
-            rewards
-        );
+        // Set XP levels
+        xpManager.setXPLevels(thresholds, levels);
+
+        // Set ERC20 reward configuration with conversion rate
+        // Example: 1 XP = 1 ERC20 tokens (assuming 18 decimals)
+        uint256 conversionRate = 1e18; // 1 * 10^18
+        
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
         // CRITICAL: Set XPManager address on all staged verifiers
         // This allows XPManager to call updateUserStage() and other protected functions
@@ -82,6 +99,7 @@ contract DeployXPManagerScript is Script {
         hasTokenBalanceVerifier.setXPManager(address(xpManager));
         hasContributedVerifier.setXPManager(address(xpManager));
         hasBoughtAMarketplaceListingVerifier.setXPManager(address(xpManager));
+        hasSubmittedPRVerifier.setXPManager(address(xpManager));
         
         vm.stopBroadcast();
     }

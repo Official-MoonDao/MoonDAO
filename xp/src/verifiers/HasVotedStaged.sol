@@ -12,11 +12,11 @@ contract HasVotedStaged is XPOracleVerifier, StagedXPVerifier {
     constructor(address _oracle) XPOracleVerifier(_oracle) {
         // Initialize default voting stages
         // Note: After deployment, you can use setStageConfig() for easy reconfiguration
-        _addStage(1, 5); // 1 vote = 10 XP
-        _addStage(5, 10); // 5 votes = 25 XP (total: 35 XP)
-        _addStage(10, 20); // 10 votes = 50 XP (total: 85 XP)
-        _addStage(20, 50); // 20 votes = 100 XP (total: 185 XP)
-        _addStage(100, 100); // 100 votes = 500 XP (total: 685 XP)
+        _addStage(1, 5); // 1 vote = 5 XP
+        _addStage(5, 10); // 5 votes = 10 XP (total: 15 XP)
+        _addStage(10, 20); // 10 votes = 20 XP (total: 35 XP)
+        _addStage(20, 50); // 20 votes = 50 XP (total: 85 XP)
+        _addStage(100, 100); // 100 votes = 100 XP (total: 185 XP)
     }
 
     function name() external pure returns (string memory) {
@@ -71,7 +71,7 @@ contract HasVotedStaged is XPOracleVerifier, StagedXPVerifier {
 
     /**
      * @dev Implementation of the abstract _checkStageEligibility function
-     * @dev Uses your existing oracle backend format with minVotes
+     * @dev Uses your existing oracle backend format with votes
      * @param user Address of the user
      * @param context Raw context data from your existing backend
      * @return eligible Whether the user is eligible
@@ -84,18 +84,18 @@ contract HasVotedStaged is XPOracleVerifier, StagedXPVerifier {
         override
         returns (bool eligible, uint256 stageIndex, uint256 xpAmount)
     {
-        (uint256 minVotes,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+        (uint256 votes,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // Find which stage this minVotes corresponds to
-        stageIndex = _findStageByThreshold(minVotes);
+        // Find which stage this votes corresponds to
+        stageIndex = _findStageByThreshold(votes);
         if (stageIndex == type(uint256).max) {
             return (false, 0, 0); // No stage matches this threshold
         }
 
         // Verify oracle proof using your existing backend format
         _verifyOracleProof(
-            user, keccak256(abi.encode(minVotes)), stages[stageIndex].xpAmount, validAfterTs, validBefore, signature
+            user, keccak256(abi.encode(votes)), stages[stageIndex].xpAmount, validAfterTs, validBefore, signature
         );
 
         return (true, stageIndex, stages[stageIndex].xpAmount);
@@ -113,11 +113,11 @@ contract HasVotedStaged is XPOracleVerifier, StagedXPVerifier {
         override(IXPVerifier, StagedXPVerifier)
         returns (bytes32)
     {
-        (uint256 minVotes, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
+        (uint256 votes, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
         // Use your original claimId format for backwards compatibility
-        bytes32 contextHash = keccak256(abi.encode(minVotes, amount, validAfterTs, validBefore));
+        bytes32 contextHash = keccak256(abi.encode(votes, amount, validAfterTs, validBefore));
         return keccak256(abi.encodePacked(address(this), user, contextHash));
     }
 
@@ -134,21 +134,21 @@ contract HasVotedStaged is XPOracleVerifier, StagedXPVerifier {
         override
         returns (bool eligible, uint256 userMetric)
     {
-        (uint256 minVotes,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+        (uint256 votes,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // For bulk claims, the minVotes in context represents the user's actual vote count
+        // For bulk claims, the votes in context represents the user's actual vote count
         // Verify oracle proof using your existing backend format
         _verifyOracleProof(
             user,
-            keccak256(abi.encode(minVotes)),
+            keccak256(abi.encode(votes)),
             0, // XP amount not used in verification, will be calculated during bulk claim
             validAfterTs,
             validBefore,
             signature
         );
 
-        return (true, minVotes);
+        return (true, votes);
     }
 
     /**

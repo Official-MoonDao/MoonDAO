@@ -4,19 +4,24 @@ pragma solidity ^0.8.20;
 import "./XPOracleVerifier.sol";
 import "./StagedXPVerifier.sol";
 import "../interfaces/IXPVerifier.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title HasContributedStaged
-/// @notice Verifier that awards staged XP based on contribution milestones
-/// @dev Context: abi.encode(uint256 contributions, uint256 xpAmount, uint256 validAfter, uint256 validBefore, bytes signature)
-contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
+/// @title HasSubmittedPRStaged
+/// @notice Verifier that awards staged XP based on GitHub PR submission milestones
+/// @dev Context: abi.encode(uint256 prCount, uint256 xpAmount, uint256 validAfter, uint256 validBefore, bytes signature)
+contract HasSubmittedPRStaged is XPOracleVerifier, StagedXPVerifier {
     constructor(address _oracle) XPOracleVerifier(_oracle) {
-        // Initialize default contribution stages
-        _addStage(1, 10); // 1 contribution = 10 XP
-        _addStage(3, 20); // 3 contributions = 30 XP (total: 45 XP)
-        _addStage(10, 50); // 10 contributions = 75 XP (total: 120 XP)
-        _addStage(25, 100); // 25 contributions = 150 XP (total: 270 XP)
-        _addStage(50, 300); // 50 contributions = 300 XP (total: 570 XP)
+        // Initialize default PR submission stages
+        // Note: After deployment, you can use setStageConfig() for easy reconfiguration
+        _addStage(1, 10); // 1 PR = 10 XP
+        _addStage(5, 25); // 5 PRs = 25 XP (total: 35 XP)
+        _addStage(10, 50); // 10 PRs = 50 XP (total: 85 XP)
+        _addStage(25, 100); // 25 PRs = 100 XP (total: 185 XP)
+        _addStage(50, 200); // 50 PRs = 300 XP (total: 485 XP)
+        _addStage(100, 500); // 100 PRs = 500 XP (total: 985 XP)
+    }
+1
+    function name() external pure returns (string memory) {
+        return "HasSubmittedPR:v1";
     }
 
     // Admin functions - using inherited onlyOwner modifier from XPOracleVerifier -> Ownable
@@ -65,13 +70,9 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
         emit UserStageProgressed(user, previousStage, 0, 0);
     }
 
-    function name() external pure returns (string memory) {
-        return "HasContributedStaged:v1";
-    }
-
     /**
      * @dev Implementation of the abstract _checkStageEligibility function
-     * @dev Uses your existing oracle backend format with contributions
+     * @dev Uses your existing oracle backend format with PR counts
      * @param user Address of the user
      * @param context Raw context data from your existing backend
      * @return eligible Whether the user is eligible
@@ -84,23 +85,18 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
         override
         returns (bool eligible, uint256 stageIndex, uint256 xpAmount)
     {
-        (uint256 contributions,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+        (uint256 prCount,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // Find which stage this contributions corresponds to
-        stageIndex = _findStageByThreshold(contributions);
+        // Find which stage this PR count corresponds to
+        stageIndex = _findStageByThreshold(prCount);
         if (stageIndex == type(uint256).max) {
             return (false, 0, 0); // No stage matches this threshold
         }
 
         // Verify oracle proof using your existing backend format
         _verifyOracleProof(
-            user,
-            keccak256(abi.encode(contributions)),
-            stages[stageIndex].xpAmount,
-            validAfterTs,
-            validBefore,
-            signature
+            user, keccak256(abi.encode(prCount)), stages[stageIndex].xpAmount, validAfterTs, validBefore, signature
         );
 
         return (true, stageIndex, stages[stageIndex].xpAmount);
@@ -118,11 +114,11 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
         override(IXPVerifier, StagedXPVerifier)
         returns (bytes32)
     {
-        (uint256 contributions, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
+        (uint256 prCount, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
         // Use your original claimId format for backwards compatibility
-        bytes32 contextHash = keccak256(abi.encode(contributions, amount, validAfterTs, validBefore));
+        bytes32 contextHash = keccak256(abi.encode(prCount, amount, validAfterTs, validBefore));
         return keccak256(abi.encodePacked(address(this), user, contextHash));
     }
 
@@ -131,7 +127,7 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
      * @param user Address of the user
      * @param context Raw context data from your existing backend
      * @return eligible Whether the user's proof is valid
-     * @return userMetric The user's current contribution count
+     * @return userMetric The user's current PR count
      */
     function _checkBulkEligibility(address user, bytes calldata context)
         internal
@@ -139,21 +135,21 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
         override
         returns (bool eligible, uint256 userMetric)
     {
-        (uint256 contributions,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+        (uint256 prCount,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // For bulk claims, the contributions in context represents the user's actual contribution count
+        // For bulk claims, the PR count in context represents the user's actual PR count
         // Verify oracle proof using your existing backend format
         _verifyOracleProof(
             user,
-            keccak256(abi.encode(contributions)),
+            keccak256(abi.encode(prCount)),
             0, // XP amount not used in verification, will be calculated during bulk claim
             validAfterTs,
             validBefore,
             signature
         );
 
-        return (true, contributions);
+        return (true, prCount);
     }
 
     /**
