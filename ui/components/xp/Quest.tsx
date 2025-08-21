@@ -146,15 +146,17 @@ export default function Quest({
 
       if (data.error) {
         console.log('Error fetching user metric:', data.error)
-        return 0
-      }
 
-      // Check if this is a GitHub linking error
-      if (data.error && data.error.includes('No GitHub account linked')) {
-        setNeedsGitHubLink(true)
+        // Check if this is a GitHub linking error
+        if (data.error.includes('No GitHub account linked')) {
+          setNeedsGitHubLink(true)
+          setError(data.error) // Set the error so getErrorButton can use it
+        } else {
+          setNeedsGitHubLink(false)
+          setError(data.error) // Set other errors as well
+        }
+
         return 0
-      } else {
-        setNeedsGitHubLink(false)
       }
 
       // Extract the metric using the configured metricKey
@@ -325,6 +327,7 @@ export default function Quest({
       // Check if this is a GitHub linking error
       if (error && error.includes('No GitHub account linked')) {
         setNeedsGitHubLink(true)
+        setError(error) // Set the error so getErrorButton can use it
         toast.error(error, {
           duration: 5000,
           style: toastStyle,
@@ -525,15 +528,51 @@ export default function Quest({
   }, [])
 
   // Function to get error button based on error message
+  //
+  // Error button configuration example:
+  // quest.verifier.errorButtons = {
+  //   "No GitHub account linked": {
+  //     type: "github_link",
+  //     text: "Link GitHub Account",
+  //     className: "custom-classes"
+  //   },
+  //   "insufficient balance": {
+  //     type: "retry",
+  //     text: "Try Again",
+  //     className: "bg-red-500"
+  //   },
+  //   "network error": {
+  //     type: "refresh",
+  //     text: "Refresh",
+  //     className: "bg-blue-500"
+  //   },
+  //   "documentation": {
+  //     type: "external_link",
+  //     text: "View Docs",
+  //     url: "https://docs.example.com"
+  //   }
+  // }
   const getErrorButton = useCallback(
     (errorMessage: string) => {
+      console.log('getErrorButton called with:', errorMessage)
+      console.log('quest.verifier.errorButtons:', quest.verifier.errorButtons)
+
       if (!quest.verifier.errorButtons) return null
 
       // Find the first error button that matches the error message
       const errorButtonConfig = Object.entries(
         quest.verifier.errorButtons
-      ).find(([errorPattern]) => errorMessage.includes(errorPattern))
+      ).find(([errorPattern]) => {
+        console.log(
+          'Checking pattern:',
+          errorPattern,
+          'against message:',
+          errorMessage
+        )
+        return errorMessage.includes(errorPattern)
+      })
 
+      console.log('Found error button config:', errorButtonConfig)
       if (!errorButtonConfig) return null
 
       const [pattern, config]: any = errorButtonConfig
@@ -571,6 +610,63 @@ export default function Quest({
             </button>
           )
 
+        case 'retry':
+          return (
+            <button
+              onClick={() => {
+                setError(null) // Clear error before retry
+                claimQuest()
+              }}
+              className={buttonClasses}
+            >
+              {config.text}
+            </button>
+          )
+
+        case 'refresh':
+          return (
+            <button
+              onClick={() => {
+                setError(null) // Clear error before refresh
+                if (quest.verifier.type === 'staged') {
+                  fetchStagedProgress()
+                } else {
+                  fetchUserMetric()
+                }
+                fetchHasClaimed()
+              }}
+              className={buttonClasses}
+            >
+              {config.text}
+            </button>
+          )
+
+        case 'external_link':
+          return (
+            <a
+              href={config.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonClasses}
+            >
+              {config.text}
+            </a>
+          )
+
+        case 'custom_action':
+          return (
+            <button
+              onClick={() => {
+                if (config.onClick) {
+                  config.onClick(errorMessage)
+                }
+              }}
+              className={buttonClasses}
+            >
+              {config.text}
+            </button>
+          )
+
         default:
           return (
             <button
@@ -592,6 +688,8 @@ export default function Quest({
       quest.verifier.type,
       fetchStagedProgress,
       fetchUserMetric,
+      claimQuest,
+      fetchHasClaimed,
     ]
   )
 
@@ -839,13 +937,10 @@ export default function Quest({
                         />
                       )}
 
-                      {needsGitHubLink && (
-                        <button
-                          onClick={handleLinkGitHub}
-                          className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm transform hover:scale-105 active:scale-95"
-                        >
-                          Link GitHub Account
-                        </button>
+                      {getErrorButton(error || '') && (
+                        <div className="flex justify-center">
+                          {getErrorButton(error || '')}
+                        </div>
                       )}
 
                       {!isCompleted &&
@@ -906,15 +1001,6 @@ export default function Quest({
                     />
                   )}
 
-                  {needsGitHubLink && (
-                    <button
-                      onClick={handleLinkGitHub}
-                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm transform hover:scale-105 active:scale-95"
-                    >
-                      Link GitHub Account
-                    </button>
-                  )}
-
                   {!isCompleted &&
                     quest.link &&
                     quest.linkText &&
@@ -971,12 +1057,12 @@ export default function Quest({
               </div>
             ) : null}
 
-            {/* Show helpful guidance for ERC20 balance errors */}
-            {!isCompleted &&
-              !needsGitHubLink &&
-              error &&
-              error.includes('ERC20: transfer amount exceeds balance') && (
-                <div className="flex flex-col gap-2 w-full">
+            {/* Show error messages and dynamic error buttons */}
+            {!isCompleted && error && (
+              <div className="flex flex-col gap-2 w-full">
+                {/* Dynamic error button if configured */}
+                {/* Fallback error handling for specific error types */}
+                {error.includes('ERC20: transfer amount exceeds balance') && (
                   <div className="bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-400/30 rounded-lg p-3 backdrop-blur-sm">
                     <p className="text-red-300 text-sm mb-2">
                       ⚠️ Insufficient token balance detected. This usually
@@ -996,35 +1082,17 @@ export default function Quest({
                       persists, please contact support.
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        // Retry the claim
-                        setError(null) // Clear error before retry
-                        claimQuest()
-                      }}
-                      className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm transform hover:scale-105 active:scale-95"
-                    >
-                      🔄 Retry Claim
-                    </button>
-                    <button
-                      onClick={() => {
-                        // Refresh quest data
-                        setError(null) // Clear error before refresh
-                        if (quest.verifier.type === 'staged') {
-                          fetchStagedProgress()
-                        } else {
-                          fetchUserMetric()
-                        }
-                        fetchHasClaimed()
-                      }}
-                      className="bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-700 hover:to-gray-600 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm transform hover:scale-105 active:scale-95"
-                    >
-                      🔄 Refresh Data
-                    </button>
-                  </div>
-                </div>
-              )}
+                )}
+
+                {/* Generic error display if no specific handling and no dynamic error button */}
+                {!error.includes('ERC20: transfer amount exceeds balance') &&
+                  !getErrorButton(error) && (
+                    <div className="bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-400/30 rounded-lg p-3 backdrop-blur-sm">
+                      <p className="text-red-300 text-sm">⚠️ {error}</p>
+                    </div>
+                  )}
+              </div>
+            )}
           </div>
         </div>
       </div>

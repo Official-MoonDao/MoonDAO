@@ -139,7 +139,7 @@ export const XP_VERIFIERS: any = [
     link: 'https://github.com/Official-MoonDao/MoonDAO/issues',
     linkText: 'View Issues',
     errorButtons: {
-      'No GitHub account linked': {
+      'No GitHub account linked to your Privy account': {
         type: 'github_link',
         text: 'Link GitHub Account',
         className:
@@ -159,7 +159,7 @@ export const XP_VERIFIERS: any = [
     link: 'https://github.com/Official-MoonDao/MoonDAO/pulls',
     linkText: 'View PRs',
     errorButtons: {
-      'No GitHub account linked': {
+      'No GitHub account linked to your Privy account': {
         type: 'github_link',
         text: 'Link GitHub Account',
         className:
