@@ -19,8 +19,8 @@ import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Address } from 'thirdweb'
-import { fetchGitHubPRs, type GitHubAccount } from '@/lib/github'
-import { addressBelongsToPrivyUser, getPrivyUserData } from '@/lib/privy'
+import { fetchGitHubPRs } from '@/lib/github'
+import { getPrivyUserData } from '@/lib/privy'
 import {
   getUserAndAccessToken,
   signHasSubmittedPRProof,
@@ -38,14 +38,26 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     if (!user || !ethersUtils.isAddress(user))
       return res.status(400).json({ error: 'Invalid user address' })
-
-    if (!addressBelongsToPrivyUser(accessToken as string, user))
-      return res.status(400).json({ error: 'User not found' })
-
     // Get Privy user data to check for linked GitHub account
     const privyUserData = await getPrivyUserData(accessToken as string)
     if (!privyUserData) {
       return res.status(400).json({ error: 'Failed to fetch user data' })
+    }
+
+    if (privyUserData.walletAddresses.length === 0) {
+      return res.status(200).json({
+        eligible: false,
+        prCount: '0',
+        error: 'No wallet addresses found for this account',
+      })
+    }
+
+    if (!privyUserData.walletAddresses.includes(user)) {
+      return res.status(200).json({
+        eligible: false,
+        prCount: '0',
+        error: 'User not found',
+      })
     }
 
     // Check if user has a GitHub account linked
