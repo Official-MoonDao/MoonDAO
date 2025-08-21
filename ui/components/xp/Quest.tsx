@@ -693,23 +693,6 @@ export default function Quest({
     ]
   )
 
-  const handleLinkGitHub = useCallback(async () => {
-    try {
-      await linkGithub()
-      // After linking, refresh the quest data
-      if (quest.verifier.type === 'staged') {
-        await fetchStagedProgress()
-      } else {
-        await fetchUserMetric()
-      }
-      setNeedsGitHubLink(false)
-      setError(null) // Clear any errors after successful GitHub linking
-    } catch (error) {
-      console.error('Error linking GitHub:', error)
-      toast.error('Failed to link GitHub account. Please try again.')
-    }
-  }, [linkGithub, quest.verifier.type, fetchStagedProgress, fetchUserMetric])
-
   return (
     <div
       className={`px-4 py-6 rounded-xl border transition-all duration-500 group relative overflow-hidden ${getContainerClasses()}`}
