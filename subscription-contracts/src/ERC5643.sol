@@ -23,7 +23,7 @@ contract MoonDAOTeam is ERC721URIStorage, URITemplate, IERC5643Team, Ownable {
     // For example: targeted subscription = 0.5 eth / 365 days.
     // pricePerSecond = 5E17 wei / 31536000 (seconds in 365 days)
 
-    // Roughly calculates to 0.1 (1E17 wei) ether per 365 days.
+    // Roughly calculates to 0.5 (1E17 wei) ether per 365 days.
     uint256 public pricePerSecond = 15854895991;
 
     // Discount for renewal more than 12 dmonths. Denominator is 1000.

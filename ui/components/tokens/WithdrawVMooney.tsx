@@ -167,7 +167,7 @@ export default function WithdrawVMooney() {
         withdrawableBigNum &&
         mooneyAllowanceBigNum.lt(withdrawableBigNum)
       ) {
-        const allowance = withdrawableBigNum.sub(mooneyAllowanceBigNum)
+        const allowance = withdrawableBigNum
         const approveReceipt = await approveToken({
           account,
           tokenContract: mooneyContract,
