@@ -144,6 +144,11 @@ export default function Quest({
 
       const data = await response.json()
 
+      if (data.error) {
+        console.log('Error fetching user metric:', data.error)
+        return 0
+      }
+
       // Check if this is a GitHub linking error
       if (data.error && data.error.includes('No GitHub account linked')) {
         setNeedsGitHubLink(true)
