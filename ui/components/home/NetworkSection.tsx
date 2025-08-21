@@ -7,15 +7,25 @@ export default function NetworkSection() {
       {/* Background Image */}
       <div className="absolute inset-0">
         {/* Mobile background */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat md:hidden"
-          style={{ backgroundImage: 'url(/assets/NetworkLineless.png)' }}
-        ></div>
+        <div className="absolute inset-0 md:hidden">
+          <Image
+            src="/assets/NetworkLineless.webp"
+            alt="Network Background Mobile"
+            fill
+            className="object-cover object-center"
+            sizes="100vw"
+          />
+        </div>
         {/* Desktop background */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden md:block"
-          style={{ backgroundImage: 'url(/assets/Network-Section.png)' }}
-        ></div>
+        <div className="absolute inset-0 hidden md:block">
+          <Image
+            src="/assets/Network-Section.webp"
+            alt="Network Background Desktop"
+            fill
+            className="object-cover object-center"
+            sizes="100vw"
+          />
+        </div>
       </div>
 
       <div className="relative z-10 container mx-auto px-5 py-20 md:py-28">

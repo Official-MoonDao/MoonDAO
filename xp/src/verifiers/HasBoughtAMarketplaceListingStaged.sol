@@ -72,7 +72,11 @@ contract HasBoughtAMarketplaceListingStaged is XPOracleVerifier, StagedXPVerifie
 
     /**
      * @dev Implementation of the abstract _checkStageEligibility function
+<<<<<<< HEAD
      * @dev Uses your existing oracle backend format with purchases
+=======
+     * @dev Uses your existing oracle backend format with minPurchases
+>>>>>>> f3d3b8a39673fcbfce3392a257775bb1d7813512
      * @param user Address of the user
      * @param context Raw context data from your existing backend
      * @return eligible Whether the user is eligible
@@ -85,18 +89,30 @@ contract HasBoughtAMarketplaceListingStaged is XPOracleVerifier, StagedXPVerifie
         override
         returns (bool eligible, uint256 stageIndex, uint256 xpAmount)
     {
+<<<<<<< HEAD
         (uint256 purchases,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
         // Find which stage this purchases corresponds to
         stageIndex = _findStageByThreshold(purchases);
+=======
+        (uint256 minPurchases,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+            abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
+
+        // Find which stage this minPurchases corresponds to
+        stageIndex = _findStageByThreshold(minPurchases);
+>>>>>>> f3d3b8a39673fcbfce3392a257775bb1d7813512
         if (stageIndex == type(uint256).max) {
             return (false, 0, 0); // No stage matches this threshold
         }
 
         // Verify oracle proof using your existing backend format
         _verifyOracleProof(
+<<<<<<< HEAD
             user, keccak256(abi.encode(purchases)), stages[stageIndex].xpAmount, validAfterTs, validBefore, signature
+=======
+            user, keccak256(abi.encode(minPurchases)), stages[stageIndex].xpAmount, validAfterTs, validBefore, signature
+>>>>>>> f3d3b8a39673fcbfce3392a257775bb1d7813512
         );
 
         return (true, stageIndex, stages[stageIndex].xpAmount);

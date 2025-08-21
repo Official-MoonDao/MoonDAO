@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router'
 import { useContext, useEffect } from 'react'
+import Head from 'next/head'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import Callout1 from '../components/home/Callout1'
 import Callout2 from '../components/home/Callout2'
@@ -34,6 +35,11 @@ export default function Home({ linkSource }: any) {
 
   return (
     <Container>
+      <Head>
+        {/* Preload critical background images */}
+        <link rel="preload" as="image" href="/assets/Lunar-Colony-Dark.webp" />
+        <link rel="preload" as="image" href="/assets/mission-hero-bg.webp" />
+      </Head>
       <WebsiteHead
         title="Welcome"
         description="MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement."

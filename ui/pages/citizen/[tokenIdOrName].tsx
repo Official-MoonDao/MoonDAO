@@ -2,6 +2,7 @@
 import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import {
   GlobeAltIcon,
+  LockClosedIcon,
   LockOpenIcon,
   MapPinIcon,
   PencilIcon,
@@ -158,60 +159,62 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
   useChainDefault()
 
   const ProfileHeader = (
-    <div id="citizenheader-container">
-      <div className="z-50 rounded-tl-[20px] overflow-hidden">
-        <div id="frame-content-container" className="w-full">
-          <div
-            id="moon-asset-container"
-            className="bg-white rounded-[100%] w-[100px] h-[100px] absolute top-5 lg:left-[40px]"
-          ></div>
+    <div id="citizenheader-container" className="w-full">
+      <div className="w-full bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 overflow-hidden">
+        <div id="frame-content-container" className="w-full p-6 lg:p-8">
           <div
             id="frame-content"
-            className="w-full flex flex-col lg:flex-row items-start justify-between"
+            className="w-full flex flex-col lg:flex-row items-start justify-between gap-6"
           >
             <div
               id="profile-description-section"
-              className="flex w-full flex-col lg:flex-row items-start lg:items-center"
+              className="flex w-full flex-col lg:flex-row items-stretch gap-6"
             >
               {nft?.metadata?.image ? (
                 <div
                   id="citizen-image-container"
-                  className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
+                  className="relative flex-shrink-0"
                 >
-                  <IPFSRenderer
-                    src={nft?.metadata?.image}
-                    className="rounded-full"
-                    height={300}
-                    width={300}
-                    alt="Citizen Image"
-                  />
+                  <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
+                    <IPFSRenderer
+                      src={nft?.metadata?.image}
+                      className="w-full h-full object-cover rounded-2xl border-4 border-slate-500/50"
+                      height={250}
+                      width={250}
+                      alt="Citizen Image"
+                    />
+                  </div>
                   <div
                     id="star-asset-container"
-                    className="absolute bottom-0 lg:right-0"
+                    className="absolute -bottom-2 -right-2"
                   >
-                    <Image
-                      src="/../.././assets/icon-star.svg"
-                      alt=""
-                      width={80}
-                      height={80}
-                    ></Image>
+                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
+                      <Image
+                        src="/../.././assets/icon-star.svg"
+                        alt=""
+                        width={40}
+                        height={40}
+                      />
+                    </div>
                   </div>
                 </div>
               ) : (
-                <></>
+                <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex items-center justify-center flex-shrink-0">
+                  <div className="text-slate-400 text-6xl">👤</div>
+                </div>
               )}
-              <div id="citizen-name-container">
+              <div id="citizen-name-container" className="flex-1 min-w-0 flex flex-col justify-center min-h-[200px] lg:min-h-[250px]">
                 <div
                   id="team-name"
-                  className="flex mb-2 w-full flex-col justify-center gap-2 lg:ml-5"
+                  className="flex flex-col gap-4 w-full"
                 >
                   <div
                     id="team-name-container"
-                    className="mt-5 lg:mt-0 flex flex-col flex-col-reverse w-full items-start justify-start"
+                    className="flex flex-col w-full"
                   >
                     {subIsValid && isOwner && (
                       <button
-                        className={'absolute top-6 right-6'}
+                        className="absolute top-4 right-4 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
                         onClick={() => {
                           if (isOwner) setCitizenMetadataModalEnabled(true)
                           else
@@ -220,11 +223,11 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                             )
                         }}
                       >
-                        <PencilIcon width={35} height={35} />
+                        <PencilIcon width={24} height={24} className="text-white" />
                       </button>
                     )}
                     {nft ? (
-                      <h1 className="max-w-[450px] text-black opacity-[80%] order-2 lg:order-1 lg:block font-GoodTimes header dark:text-white text-3xl">
+                      <h1 className="font-GoodTimes text-white text-2xl lg:text-4xl font-bold mb-3 break-words">
                         {nft?.metadata?.name}
                       </h1>
                     ) : (
@@ -232,10 +235,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                     )}
                     <div id="profile-container">
                       {nft?.metadata?.description ? (
-                        <p
-                          id="profile-description-container"
-                          className="w-full pr-12"
-                        >
+                        <p className="text-slate-300 text-base leading-relaxed mb-4">
                           {nft?.metadata.description || ''}
                         </p>
                       ) : (
@@ -245,19 +245,19 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                   </div>
                   <div
                     id="interactions-container"
-                    className="flex flex-col md:flex-row items-start justify-start lg:pr-10"
+                    className="flex flex-col sm:flex-row items-start gap-4"
                   >
                     {(discordLink &&
                       !discordLink.includes('/users/undefined')) ||
                     (socials && (socials.twitter || socials.website)) ? (
                       <div
                         id="socials-container"
-                        className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] flex text-sm bg-filter"
+                        className="flex items-center gap-3 bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12"
                       >
                         {discordLink &&
                           !discordLink.includes('/users/undefined') && (
                             <Link
-                              className="flex gap-2"
+                              className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
                               href={discordLink}
                               target="_blank"
                               passHref
@@ -267,7 +267,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                           )}
                         {socials.twitter && (
                           <Link
-                            className="flex gap-2"
+                            className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
                             href={socials.twitter}
                             target="_blank"
                             passHref
@@ -277,80 +277,39 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                         )}
                         {socials.website && (
                           <Link
-                            className="flex gap-2"
+                            className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
                             href={socials.website}
                             target="_blank"
                             passHref
                           >
-                            <GlobeAltIcon height={25} width={25} />
+                            <GlobeAltIcon height={20} width={20} className="text-white" />
                           </Link>
                         )}
                       </div>
                     ) : null}
-                    {/* {isOwner ? (
-                      <div id="manager-container">
-                        {expiresAt && (
-                          <div
-                            id="expires-container"
-                            className="flex flex-col gap-4 items-start"
-                          >
-                            <div className="rounded-[2vmax] rounded-tl-[10px] md:rounded-tl-[2vmax] md:rounded-bl-[10px] overflow-hidden">
-                              <div
-                                id="extend-sub-button"
-                                className="gradient-2 text-sm"
-                              >
-                                <Button
-                                  onClick={() => {
-                                    if (isOwner)
-                                      setSubModalEnabled(true)
-                                    else
-                                      return toast.error(
-                                        `Connect the entity admin wallet or multisig to extend the subscription.`
-                                      )
-                                  }}
-                                >
-                                  {'Extend Plan'}
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+
+                    {citizen || isGuest ? (
+                      <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center">
+                        <Address address={isGuest ? address : nft.owner} />
                       </div>
                     ) : (
                       <></>
-                    )} */}
+                    )}
+
+                    {location !== '' && citizen && (
+                      <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center gap-2">
+                        <MapPinIcon
+                          width={20}
+                          height={20}
+                          className="flex-shrink-0 text-slate-300"
+                        />
+                        <Link className="font-GoodTimes text-white hover:text-slate-200 transition-colors" href="/map">
+                          {location.startsWith('[object') ? '' : location}
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </div>
-                {/* {isOwner ? (
-                  <p className="opacity-50 mt-2 lg:ml-5 text-sm">
-                    {'Exp: '}
-                    {new Date(expiresAt?.toString() * 1000).toLocaleString()}
-                  </p>
-                ) : (
-                  <></>
-                )} */}
-                {citizen || isGuest ? (
-                  <>
-                    <div className="mt-4 lg:ml-5">
-                      <Address address={isGuest ? address : nft.owner} />
-                    </div>
-                  </>
-                ) : (
-                  <></>
-                )}
-
-                {location !== '' && citizen && (
-                  <div className="mt-2 flex items-center gap-2 lg:ml-5">
-                    <MapPinIcon
-                      width={30}
-                      height={30}
-                      className="flex-shrink-0"
-                    />
-                    <Link className="font-GoodTimes" href="/map">
-                      {location.startsWith('[object') ? '' : location}
-                    </Link>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -409,7 +368,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
           />
         )}
 
-        {!isGuest && !citizen && (
+        {!isGuest && !citizen && !isOwner && subIsValid && !isDeleted && (
           <Action
             title="Unlock Full Profile"
             description="Become a Citizen of the Space Acceleration Network to view the full profile. Citizenship also unlocks access to the jobs board, marketplace discounts, and more benefits."
@@ -418,150 +377,105 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
           />
         )}
         {subIsValid && !isDeleted && !isGuest ? (
-          <div className="z-50 mb-10">
+          <div className="space-y-6 mb-10">
             {/* Mooney and Voting Power */}
             {citizen || isOwner ? (
-              <Frame
-                noPadding
-                bottomLeft="0px"
-                bottomRight="0px"
-                topRight="0px"
-                topLeft="0px"
-              >
-                <div className="z-50 w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                  <div id="vote-title-section" className="flex justify-between">
-                    <h2 className="header font-GoodTimes opacity-[50%]">
-                      Governance
-                    </h2>
-                  </div>
-                  <div className="mt-5 flex flex-col gap-5">
-                    <div>
-                      <p className="text-xl">{`$MOONEY`}</p>
-                      <p className="text-3xl">
-                        {MOONEYBalance
-                          ? Math.round(MOONEYBalance).toLocaleString()
-                          : 0}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xl">{`Voting Power`}</p>
-                      <p className="text-2xl">
-                        {VMOONEYBalance
-                          ? Math.round(VMOONEYBalance).toLocaleString()
-                          : 0}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xl">{`Votes`}</p>
-                      <p className="text-2xl">{votes?.length}</p>
-                    </div>
-                  </div>
-                  {isOwner && (
-                    <div className="flex flex-col md:flex-row mt-4 md:px-4 flex items-start xl:items-end gap-2">
-                      <StandardButton
-                        className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:rounded-tr-[10px] md:rounded-br-[10px] md:rounded-bl-[20px] md:hover:pl-5"
-                        onClick={() => router.push('/get-mooney')}
-                      >
-                        {'Get $MOONEY'}
-                      </StandardButton>
-                      <StandardButton
-                        className="w-full gradient-2 rounded-[10px] rounded-tr-[20px] rounded-br-[20px] md:hover:pl-5"
-                        onClick={() => router.push('/lock')}
-                      >
-                        {'Get Voting Power'}
-                      </StandardButton>
-                    </div>
-                  )}
+              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="font-GoodTimes text-2xl text-white">
+                    Governance
+                  </h2>
                 </div>
-              </Frame>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-slate-600/20 rounded-xl p-4">
+                    <p className="text-lg text-slate-300 mb-2">$MOONEY</p>
+                    <p className="text-3xl font-bold text-white">
+                      {MOONEYBalance
+                        ? Math.round(MOONEYBalance).toLocaleString()
+                        : 0}
+                    </p>
+                  </div>
+                  <div className="bg-slate-600/20 rounded-xl p-4">
+                    <p className="text-lg text-slate-300 mb-2">Voting Power</p>
+                    <p className="text-3xl font-bold text-white">
+                      {VMOONEYBalance
+                        ? Math.round(VMOONEYBalance).toLocaleString()
+                        : 0}
+                    </p>
+                  </div>
+                  <div className="bg-slate-600/20 rounded-xl p-4">
+                    <p className="text-lg text-slate-300 mb-2">Votes</p>
+                    <p className="text-3xl font-bold text-white">{votes?.length}</p>
+                  </div>
+                </div>
+                {isOwner && (
+                  <div className="flex flex-col sm:flex-row mt-6 gap-4">
+                    <StandardButton
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl py-3 px-6 font-semibold transition-all duration-200 hover:scale-105"
+                      onClick={() => router.push('/get-mooney')}
+                    >
+                      Get $MOONEY
+                    </StandardButton>
+                    <StandardButton
+                      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl py-3 px-6 font-semibold transition-all duration-200 hover:scale-105"
+                      onClick={() => router.push('/lock')}
+                    >
+                      Get Voting Power
+                    </StandardButton>
+                  </div>
+                )}
+              </div>
             ) : (
               <></>
             )}
             {isOwner && (
-              <div className="mt-4">
-                <Frame
-                  noPadding
-                  bottomLeft="0px"
-                  bottomRight="0px"
-                  topRight="0px"
-                  topLeft="0px"
-                >
-                  <OpenVotes
-                    proposals={proposals}
-                    packet={packet}
-                    votingInfoMap={votingInfoMap}
-                  />
-                </Frame>
+              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+                <OpenVotes
+                  proposals={proposals}
+                  packet={packet}
+                  votingInfoMap={votingInfoMap}
+                />
               </div>
             )}
             {hats && hats?.length > 0 && (
-              <Frame
-                noPadding
-                bottomLeft="0px"
-                bottomRight="0px"
-                topRight="0px"
-                topLeft="0px"
-              >
-                <div className="flex flex-col 2xl:flex-row">
-                  <div className=" w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-                    <p className="header font-GoodTimes opacity-[50%]">Teams</p>
-                    <div className="mt-5 py-5 flex flex-col gap-2 overflow-y-scroll">
-                      {hats?.map((hat: any) => (
-                        <div
-                          key={hat.id}
-                          className="py-3 gradient-16 rounded-[20px]"
-                        >
-                          <Hat
-                            selectedChain={selectedChain}
-                            hat={hat}
-                            hatsContract={hatsContract}
-                            teamImage
-                            teamContract={teamContract}
-                          />
-                        </div>
-                      ))}
+              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+                <h2 className="font-GoodTimes text-2xl text-white mb-6">Teams</h2>
+                <div className="space-y-4">
+                  {hats?.map((hat: any) => (
+                    <div
+                      key={hat.id}
+                      className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors"
+                    >
+                      <Hat
+                        selectedChain={selectedChain}
+                        hat={hat}
+                        hatsContract={hatsContract}
+                        teamImage
+                        teamContract={teamContract}
+                      />
                     </div>
-                  </div>
-                  {/* General Actions */}
+                  ))}
                 </div>
-              </Frame>
+              </div>
             )}
             {isOwner && (
               <>
-                <Frame
-                  noPadding
-                  bottomLeft="0px"
-                  bottomRight="0px"
-                  topRight="0px"
-                  topLeft="0px"
-                >
+                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
                   <NewMarketplaceListings
                     selectedChain={selectedChain}
                     teamContract={teamContract}
                     marketplaceTableContract={marketplaceTableContract}
                   />
-                </Frame>
-                <Frame
-                  noPadding
-                  bottomLeft="0px"
-                  bottomRight="0px"
-                  topRight="0px"
-                  topLeft="0px"
-                >
+                </div>
+                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
                   <LatestJobs
                     teamContract={teamContract}
                     jobTableContract={jobTableContract}
                   />
-                </Frame>
-                <Frame
-                  noPadding
-                  bottomLeft="0px"
-                  bottomRight="0px"
-                  topRight="0px"
-                  topLeft="0px"
-                >
+                </div>
+                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
                   <GeneralActions />
-                </Frame>
+                </div>
               </>
             )}
           </div>
@@ -575,13 +489,21 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
           </>
         ) : (
           // Subscription expired
-          <Card>
-            <p className="text-white">
-              {isDeleted
-                ? `This profile has been deleted, please connect the owner's wallet to submit new data.`
-                : `The profile has expired, please connect the owner's wallet to renew.`}
-            </p>
-          </Card>
+          <div className="bg-gradient-to-b from-red-900/20 to-red-800/30 rounded-2xl border border-red-600/30 p-6 mb-10">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+                <LockClosedIcon className="w-8 h-8 text-red-400" />
+              </div>
+              <h3 className="text-xl font-GoodTimes text-white mb-2">
+                {isDeleted ? 'Profile Deleted' : 'Subscription Expired'}
+              </h3>
+              <p className="text-slate-300">
+                {isDeleted
+                  ? `This profile has been deleted. Please connect the owner's wallet to submit new data.`
+                  : `The profile has expired. Please connect the owner's wallet to renew.`}
+              </p>
+            </div>
+          </div>
         )}
       </ContentLayout>
     </Container>

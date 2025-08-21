@@ -90,26 +90,28 @@ export function ExpandedFooter({
 
   // Navigation link groups - matching topnav organization exactly
   const networkLinks = [
-    { text: 'Explore Network', href: '/network#explore-network-header' },
-    { text: 'Become a Citizen', href: '/network#join-moondao' },
-    { text: 'Create a Team', href: '/network#join-moondao' },
+    { text: 'Network Overview', href: '/network-overview' },
+    { text: 'Explore Network', href: '/network' },
+    { text: 'Become a Citizen', href: '/join' },
+    { text: 'Create a Team', href: '/team' },
     { text: 'Submit Contribution', href: '/contributions' },
-    { text: 'Jobs', href: '/network#space-careers' },
+    { text: 'Jobs', href: '/jobs' },
   ]
 
   const governLinks = [
-    { text: 'Governance', href: '/governance' },
+    { text: 'Governance Overview', href: '/governance' },
     { text: 'Proposals', href: '/vote' },
     { text: 'Constitution', href: '/constitution' },
   ]
 
   const tokenLinks = [
-    { text: 'Buy', href: '/get-mooney' },
+    { text: 'Buy', href: '/mooney' },
     { text: 'Lock', href: '/lock' },
     { text: 'Bridge', href: '/bridge' },
   ]
 
   const projectLinks = [
+    { text: 'Projects Overview', href: '/projects-overview' },
     { text: 'Project Rewards', href: '/projects' },
     { text: 'Propose Project', href: '/proposals' },
   ]
@@ -119,6 +121,7 @@ export function ExpandedFooter({
     { text: 'About', href: '/about' },
     { text: 'Events', href: '/events' },
     { text: 'Analytics', href: '/analytics' },
+    { text: 'Resources', href: '/resources' },
     { text: 'FAQ', href: '/faq' },
   ]
 
@@ -171,7 +174,7 @@ export function ExpandedFooter({
                 <LinkList title="GOVERN" links={governLinks} />
               </div>
               
-              {/* Column 3: $MOONEY TOKEN */}
+              {/* Column 3: $MOONEY */}
               <div>
                 <LinkList title="$MOONEY TOKEN" links={tokenLinks} />
               </div>

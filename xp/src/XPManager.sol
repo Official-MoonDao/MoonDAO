@@ -274,7 +274,11 @@ contract XPManager is Ownable {
      * @return Available reward amount
      */
     function getAvailableERC20Reward(address user) external view returns (uint256) {
+<<<<<<< HEAD
         return calculateAvailableERC20Reward(user);
+=======
+        return calculateERC20Reward(user);
+>>>>>>> f3d3b8a39673fcbfce3392a257775bb1d7813512
     }
 
     /**
@@ -329,9 +333,12 @@ contract XPManager is Ownable {
         // Grant XP
         _grantXP(msg.sender, xpAmount);
 
+<<<<<<< HEAD
         // Automatically claim ERC20 rewards
         _claimERC20Rewards(msg.sender);
 
+=======
+>>>>>>> f3d3b8a39673fcbfce3392a257775bb1d7813512
         emit VerifierClaimed(msg.sender, conditionId, xpAmount);
     }
 

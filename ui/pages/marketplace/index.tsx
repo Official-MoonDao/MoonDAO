@@ -174,7 +174,10 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 
                     return paginatedListings.map(
                       (listing: MarketplaceListing, i: number) => (
-                        <div key={`marketplace-listing-${startIdx + i}`} className="h-full">
+                        <div
+                          key={`marketplace-listing-${startIdx + i}`}
+                          className="h-full"
+                        >
                           <StandardDetailCard
                             title={listing.title}
                             paragraph={listing.description}
@@ -269,6 +272,8 @@ export async function getStaticProps() {
       })
       return +teamExpiration.toString() > now
     })
+
+    console.log(validListings)
 
     return {
       props: {

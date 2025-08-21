@@ -19,7 +19,11 @@ describe('<LockData />', () => {
     cy.get('#lock-data').should('exist')
 
     //check lock data balances
-    cy.get('#lock-data').get('#lock-data-vmooney-balance').should('have.text', '1.00000000')
-    cy.get('#lock-data').get('#lock-data-locked-mooney').should('have.text', '1.00')
+    cy.get('#lock-data')
+      .get('#lock-data-vmooney-balance')
+      .should('have.text', '1')
+    cy.get('#lock-data')
+      .get('#lock-data-locked-mooney')
+      .should('have.text', '1.00')
   })
 })

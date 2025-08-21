@@ -3,6 +3,7 @@ import { gql, request as gqlRequest } from 'graphql-request'
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
+<<<<<<< HEAD
 import { Address } from 'thirdweb'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
 import {
@@ -12,6 +13,13 @@ import {
 } from '@/lib/xp'
 
 const VOTES_THRESHOLD = 1 //changing this while using the same verifier will allow users to claim xp again
+=======
+import { signHasVotedProof, submitHasVotedClaimFor } from '../../../lib/oracle'
+
+const MIN_VOTES = BigInt(1)
+
+type Address = `0x${string}`
+>>>>>>> f3d3b8a39673fcbfce3392a257775bb1d7813512
 
 async function fetchSnapshotVotesCount(
   user: Address,
