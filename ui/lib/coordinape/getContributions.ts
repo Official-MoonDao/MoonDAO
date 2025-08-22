@@ -31,20 +31,9 @@ export async function getContributions(): Promise<Contribution[]> {
   }
 
   try {
-    console.log(
-      'getContributions: Fetching contributions for circle:',
-      circleId
-    )
-
     const res = await graphQLClient.request<{ contributions: Contribution[] }>(
       getContributionsQuery,
       { circle_id: circleId }
-    )
-
-    console.log(
-      'getContributions: Found',
-      res.contributions.length,
-      'contributions'
     )
     return res.contributions
   } catch (error: any) {
