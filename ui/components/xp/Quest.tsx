@@ -16,6 +16,7 @@ import {
 } from '@/lib/xp/staged-quest-info'
 import StandardButton from '@/components/layout/StandardButton'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
+import Tooltip from '../layout/Tooltip'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export type QuestIcon = ComponentType<{ className?: string }>
@@ -36,6 +37,28 @@ type QuestProps = {
   variant?: 'onboarding' | 'weekly'
   userAddress?: `0x${string}`
   onClaimConfirmed?: () => void
+}
+
+// Helper function to get human-readable metric labels
+const getMetricLabel = (metricKey: string) => {
+  switch (metricKey) {
+    case 'vp':
+      return 'voting power'
+    case 'votesCount':
+      return 'votes'
+    case 'contributions':
+      return 'contributions'
+    case 'tokenBalance':
+      return 'MOONEY'
+    case 'purchaseCount':
+      return 'purchases'
+    case 'prCount':
+      return 'PRs'
+    case 'issueCount':
+      return 'issues'
+    default:
+      return 'points'
+  }
 }
 
 export default function Quest({
@@ -149,9 +172,11 @@ export default function Quest({
 
         // Check if this is a GitHub linking error
         if (data.error.includes('No GitHub account linked')) {
+          console.log('Setting GitHub linking error:', data.error)
           setNeedsGitHubLink(true)
           setError(data.error) // Set the error so getErrorButton can use it
         } else {
+          console.log('Setting other error:', data.error)
           setNeedsGitHubLink(false)
           setError(data.error) // Set other errors as well
         }
@@ -452,9 +477,28 @@ export default function Quest({
 
   useEffect(() => {
     fetchHasClaimed()
-    // Clear any previous errors when the component mounts or quest changes
-    setError(null)
-  }, [fetchHasClaimed])
+    // Only clear errors on quest change, not on every mount
+    if (quest.verifier.verifierId !== undefined) {
+      setError(null)
+    }
+
+    // For single quests with GitHub dependencies, fetch user metric to check for GitHub linking errors
+    if (
+      quest.verifier.type !== 'staged' &&
+      quest.verifier.errorButtons &&
+      quest.verifier.errorButtons[
+        'No GitHub account linked to your Privy account'
+      ]
+    ) {
+      fetchUserMetric()
+    }
+  }, [
+    fetchHasClaimed,
+    quest.verifier.verifierId,
+    quest.verifier.type,
+    quest.verifier.errorButtons,
+    fetchUserMetric,
+  ])
 
   // Cleanup polling timeout on unmount
   useEffect(() => {
@@ -492,7 +536,7 @@ export default function Quest({
         : 'bg-gradient-to-br from-blue-500/30 to-blue-600/20 text-blue-300 shadow-lg shadow-blue-500/20'
     }
     if (isCompleted) {
-      return 'bg-gradient-to-br from-green-500/30 to-emerald-500/20 text-green-300 shadow-lg shadow-green-500/20 animate-pulse'
+      return 'bg-gradient-to-br from-green-500/30 to-emerald-500/20 text-green-300 shadow-lg shadow-green-500/20'
     }
     return variant === 'weekly'
       ? 'bg-gradient-to-br from-purple-500/30 to-purple-600/20 text-purple-300 shadow-lg shadow-purple-500/20 hover:scale-110 transition-transform duration-300'
@@ -698,15 +742,16 @@ export default function Quest({
       className={`px-4 py-6 rounded-xl border transition-all duration-500 group relative overflow-hidden ${getContainerClasses()}`}
     >
       {/* Progress Background - Makes the whole card act as a progress bar */}
-      {quest.verifier.type === 'staged' &&
+      {(quest.verifier.type === 'staged' &&
         stagedProgress &&
-        !isLoadingStagedProgress && (
-          <>
-            {/* Main Progress Gradient */}
-            <div
-              className="absolute inset-0 transition-all duration-1000 ease-out"
-              style={{
-                background: `linear-gradient(90deg, 
+        !isLoadingStagedProgress) ||
+      isCompleted ? (
+        <>
+          {/* Main Progress Gradient */}
+          <div
+            className="absolute inset-0 transition-all duration-1000 ease-out"
+            style={{
+              background: `linear-gradient(90deg, 
                 rgba(34, 197, 94, 0.15) 0%, 
                 rgba(34, 197, 94, 0.08) ${Math.min(
                   100,
@@ -721,31 +766,32 @@ export default function Quest({
                     100
                 )}%, 
                 rgba(255, 255, 255, 0.02) 100%)`,
-              }}
-            />
+            }}
+          />
 
-            {/* Animated Shimmer Effect */}
-            <div
-              className="absolute inset-0 opacity-30"
-              style={{
-                background: `linear-gradient(90deg, 
+          {/* Animated Shimmer Effect */}
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              background: `linear-gradient(90deg, 
                   transparent 0%, 
                   rgba(34, 197, 94, 0.3) 25%, 
                   rgba(34, 197, 94, 0.6) 50%, 
                   rgba(34, 197, 94, 0.3) 75%, 
                   transparent 100%)`,
-                backgroundSize: '200% 100%',
-                animation: 'shimmer 10s ease-in-out infinite',
-                width: `${Math.min(
-                  100,
-                  (Number(userMetric) /
-                    Number(getNextUnclamedThreshold(stagedProgress))) *
-                    100
-                )}%`,
-              }}
-            />
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 10s ease-in-out infinite',
+              width: `${Math.min(
+                100,
+                (Number(userMetric) /
+                  Number(getNextUnclamedThreshold(stagedProgress))) *
+                  100
+              )}%`,
+            }}
+          />
 
-            {/* Pulsing Progress Edge Glow */}
+          {/* Pulsing Progress Edge Glow */}
+          {quest.verifier.type === 'staged' && !isCompleted && (
             <div
               className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-green-400 via-green-300 to-green-400 shadow-lg shadow-green-400/50 opacity-[0.35]"
               style={{
@@ -759,34 +805,37 @@ export default function Quest({
                 animation: 'pulse-glow 2s ease-in-out infinite',
               }}
             />
+          )}
 
-            {/* CSS Animations */}
-            <style jsx>{`
-              @keyframes shimmer {
-                0% {
-                  background-position: -200% 0;
-                }
-                100% {
-                  background-position: 200% 0;
-                }
+          {/* CSS Animations */}
+          <style jsx>{`
+            @keyframes shimmer {
+              0% {
+                background-position: -200% 0;
               }
+              100% {
+                background-position: 200% 0;
+              }
+            }
 
-              @keyframes pulse-glow {
-                0%,
-                100% {
-                  box-shadow: 0 0 20px rgba(34, 197, 94, 0.5),
-                    0 0 40px rgba(34, 197, 94, 0.3),
-                    0 0 60px rgba(34, 197, 94, 0.1);
-                }
-                50% {
-                  box-shadow: 0 0 30px rgba(34, 197, 94, 0.8),
-                    0 0 60px rgba(34, 197, 94, 0.5),
-                    0 0 90px rgba(34, 197, 94, 0.2);
-                }
+            @keyframes pulse-glow {
+              0%,
+              100% {
+                box-shadow: 0 0 20px rgba(34, 197, 94, 0.5),
+                  0 0 40px rgba(34, 197, 94, 0.3),
+                  0 0 60px rgba(34, 197, 94, 0.1);
               }
-            `}</style>
-          </>
-        )}
+              50% {
+                box-shadow: 0 0 30px rgba(34, 197, 94, 0.8),
+                  0 0 60px rgba(34, 197, 94, 0.5),
+                  0 0 90px rgba(34, 197, 94, 0.2);
+              }
+            }
+          `}</style>
+        </>
+      ) : (
+        <></>
+      )}
 
       <div className="flex flex-col items-start gap-3 w-full relative z-10">
         <div className="flex items-center justify-between gap-3 w-full">
@@ -817,23 +866,23 @@ export default function Quest({
             </div>
           </div>
 
-          {/* Stage and Threshold Info - Moved to upper right */}
+          {/* Compact Stage Info - Upper right */}
           {quest.verifier.type === 'staged' &&
             stagedProgress &&
             !isLoadingStagedProgress && (
               <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-yellow-300 text-sm font-medium bg-gradient-to-r from-yellow-500/30 to-orange-500/30 px-2.5 py-1 rounded-full border border-yellow-400/30 shadow-lg shadow-yellow-500/20 backdrop-blur-sm">
-                    Stage {getHighestQualifyingStage(stagedProgress)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-white">
-                  <span className="font-medium">{formattedUserMetric}</span>
-                  <span className="text-gray-400">/</span>
-                  <span className="font-medium">
-                    {formattedNextUnclamedThreshold}
-                  </span>
-                </div>
+                <span className="text-yellow-300 text-xs font-medium bg-gradient-to-r from-yellow-500/30 to-orange-500/30 px-2 py-0.5 rounded-full border border-yellow-400/30 shadow-lg shadow-yellow-500/20 backdrop-blur-sm">
+                  Stage {stagedProgress.userHighestStage + 1} of{' '}
+                  {stagedProgress.stages.length}
+                </span>
+                <span className="text-xs text-gray-400">
+                  {(
+                    (Number(userMetric) /
+                      Number(getNextUnclamedThreshold(stagedProgress))) *
+                    100
+                  ).toFixed(0)}
+                  % complete
+                </span>
               </div>
             )}
         </div>
@@ -844,6 +893,82 @@ export default function Quest({
           <p className="text-gray-300 text-sm leading-relaxed group-hover:text-gray-200 transition-colors duration-300">
             {quest.description}
           </p>
+
+          {/* Compact Staging Overview - New section */}
+          {quest.verifier.type === 'staged' &&
+            stagedProgress &&
+            !isLoadingStagedProgress && (
+              <div className="w-full">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs text-gray-400 font-medium">
+                    Quest Stages
+                  </span>
+                  <span className="text-xs text-yellow-300 font-medium">
+                    {stagedProgress.userHighestStage} of{' '}
+                    {stagedProgress.stages.length} completed
+                  </span>
+                  {/* Debug info - remove this after testing */}
+                  <span className="text-xs text-gray-500">
+                    (userHighestStage: {stagedProgress.userHighestStage},
+                    totalClaimable: {stagedProgress.totalClaimableXP})
+                  </span>
+                </div>
+                <div className="flex items-center gap-0.5 w-full">
+                  {stagedProgress.stages.map((stage, index) => {
+                    const isCompleted = index < stagedProgress.userHighestStage
+                    const isCurrent =
+                      index === stagedProgress.userHighestStage &&
+                      stagedProgress.currentUserMetric >= stage.threshold
+                    const isUpcoming = index >= stagedProgress.userHighestStage
+
+                    return (
+                      <div
+                        key={index}
+                        className={`flex-1 h-1.5 rounded-full transition-all duration-300 ${
+                          isCompleted
+                            ? 'bg-gradient-to-r from-green-400 to-emerald-400 shadow-lg shadow-green-400/30'
+                            : isCurrent
+                            ? 'bg-gradient-to-r from-blue-400 to-cyan-400 shadow-lg shadow-blue-400/30 animate-pulse'
+                            : 'bg-gray-600/30 border border-gray-500/30'
+                        }`}
+                        title={`Stage ${index + 1}: ${
+                          stage.threshold
+                        } ${getMetricLabel(quest.verifier.metricKey)} = ${
+                          stage.xpAmount
+                        } XP`}
+                      />
+                    )
+                  })}
+                </div>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs text-gray-500">
+                    {stagedProgress.stages[0]?.threshold}{' '}
+                    {getMetricLabel(quest.verifier.metricKey)}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {
+                      stagedProgress.stages[stagedProgress.stages.length - 1]
+                        ?.threshold
+                    }{' '}
+                    {getMetricLabel(quest.verifier.metricKey)}
+                  </span>
+                </div>
+                {/* Current threshold indicator */}
+                {stagedProgress.userHighestStage <
+                  stagedProgress.stages.length && (
+                  <div className="flex justify-center mt-1">
+                    <span className="text-xs text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded-full border border-blue-400/30">
+                      Next:{' '}
+                      {
+                        stagedProgress.stages[stagedProgress.userHighestStage]
+                          ?.threshold
+                      }{' '}
+                      {getMetricLabel(quest.verifier.metricKey)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
           {/* Progress Section */}
           <div className="w-full space-y-3">
@@ -880,7 +1005,11 @@ export default function Quest({
                               🏆 Max Stage Reached - Congratulations!
                             </div>
                           )
-                        } else if (stagedProgress.nextStageXP !== null) {
+                        } else if (
+                          stagedProgress.nextStageXP !== null &&
+                          stagedProgress.userHighestStage !==
+                            stagedProgress.stages.length - 1
+                        ) {
                           // Next stage available - Blue
                           return (
                             <div className="text-blue-300 text-sm font-medium bg-gradient-to-r from-blue-500/20 to-cyan-500/20 px-2.5 py-1.5 rounded-lg border border-blue-400/20 backdrop-blur-sm shadow-lg shadow-blue-500/20">
@@ -892,9 +1021,8 @@ export default function Quest({
                           // Final stage info - Orange
                           return (
                             <div className="text-orange-300 text-sm font-medium bg-gradient-to-r from-orange-500/20 to-amber-500/20 px-2.5 py-1.5 rounded-lg border border-orange-400/20 backdrop-blur-sm shadow-lg shadow-purple-500/20">
-                              🎯 Final Stage: +
-                              {getNextUnclamedThreshold(stagedProgress)} XP / +
-                              {getNextUnclamedThreshold(stagedProgress)} MOONEY
+                              🎯 Final Stage: +{stagedProgress.nextStageXP} XP /
+                              +{stagedProgress.nextStageXP} MOONEY
                             </div>
                           )
                         }
@@ -902,7 +1030,7 @@ export default function Quest({
                     </div>
 
                     {/* Action Buttons - Right side */}
-                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                    <div className="flex gap-2 flex-shrink-0">
                       {!isCompleted && !needsGitHubLink && (
                         <PrivyWeb3Button
                           label="Claim"
@@ -970,31 +1098,39 @@ export default function Quest({
                 </span>
 
                 {/* Action Buttons - Right side */}
-                <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                <div className="flex items-center flex-row gap-2 flex-nowrap">
                   {!isCompleted && !needsGitHubLink && (
-                    <PrivyWeb3Button
-                      label="Claim"
-                      action={async () => {
-                        await claimQuest()
-                      }}
-                      isDisabled={isLoadingClaim}
-                      requiredChain={DEFAULT_CHAIN_V5}
-                      className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
-                      noPadding
-                    />
+                    <div className="inline-block">
+                      <PrivyWeb3Button
+                        label="Claim"
+                        action={async () => {
+                          await claimQuest()
+                        }}
+                        isDisabled={isLoadingClaim}
+                        requiredChain={DEFAULT_CHAIN_V5}
+                        className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
+                        noPadding
+                      />
+                    </div>
                   )}
+
+                  <div className="inline-block">
+                    {getErrorButton(error || '')}
+                  </div>
 
                   {!isCompleted &&
                     quest.link &&
                     quest.linkText &&
                     !needsGitHubLink && (
-                      <StandardButton
-                        className={getButtonClasses()}
-                        link={quest.link}
-                        target="_blank"
-                      >
-                        {quest.linkText}
-                      </StandardButton>
+                      <div className="inline-block">
+                        <StandardButton
+                          className={getButtonClasses()}
+                          link={quest.link}
+                          target="_blank"
+                        >
+                          {quest.linkText}
+                        </StandardButton>
+                      </div>
                     )}
                 </div>
               </div>
@@ -1004,10 +1140,7 @@ export default function Quest({
           {/* Status and Actions */}
           <div className="pt-2">
             {isCheckingClaimed ? (
-              <div className="flex items-center gap-2 text-gray-400 text-sm">
-                <LoadingSpinner height="h-4" width="w-4" />
-                Checking status...
-              </div>
+              <></>
             ) : isPollingClaim ? (
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 text-yellow-400 text-sm">
