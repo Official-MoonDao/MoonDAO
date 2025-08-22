@@ -23,8 +23,8 @@ import { fetchGitHubIssues, type GitHubAccount } from '@/lib/github'
 import { addressBelongsToPrivyUser, getPrivyUserData } from '@/lib/privy'
 import {
   getUserAndAccessToken,
-  signHasSubmittedIssueProof,
-  submitHasSubmittedIssueClaimFor,
+  signHasSubmittedIssueProofSingle,
+  submitHasSubmittedIssueClaimForSingle,
 } from '@/lib/xp'
 
 const ISSUE_THRESHOLD = BigInt(1) // Minimum issues required to be eligible
@@ -39,13 +39,25 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (!user || !ethersUtils.isAddress(user))
       return res.status(400).json({ error: 'Invalid user address' })
 
-    if (!addressBelongsToPrivyUser(accessToken as string, user))
-      return res.status(400).json({ error: 'User not found' })
-
-    // Get Privy user data to check for linked GitHub account
     const privyUserData = await getPrivyUserData(accessToken as string)
     if (!privyUserData) {
       return res.status(400).json({ error: 'Failed to fetch user data' })
+    }
+
+    if (privyUserData.walletAddresses.length === 0) {
+      return res.status(200).json({
+        eligible: false,
+        issueCount: '0',
+        error: 'No wallet addresses found for this account',
+      })
+    }
+
+    if (!privyUserData.walletAddresses.includes(user)) {
+      return res.status(200).json({
+        eligible: false,
+        issueCount: '0',
+        error: 'User not found',
+      })
     }
 
     // Check if user has a GitHub account linked
@@ -57,8 +69,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({
         eligible: false,
         issueCount: '0',
-        error:
-          'No GitHub account linked to your Privy account. Please link your GitHub account first.',
+        error: 'No GitHub account linked to your Privy account',
       })
     }
 
@@ -83,15 +94,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // For POST requests, proceed with claiming
-    // Sign/encode via shared oracle helper using actual issue count for bulk claiming
+    // Sign/encode via shared oracle helper for regular claiming
     const { validAfter, validBefore, signature, context } =
-      await signHasSubmittedIssueProof({
+      await signHasSubmittedIssueProofSingle({
         user: user as Address,
-        issueCount: issueCount, // Use actual issue count for staged bulk claiming
       })
 
-    // Relay the bulk XP claim on behalf of the user so they don't need to send a tx
-    const { txHash } = await submitHasSubmittedIssueClaimFor({
+    // Relay the XP claim on behalf of the user so they don't need to send a tx
+    const { txHash } = await submitHasSubmittedIssueClaimForSingle({
       user: user as Address,
       context,
     })

@@ -44,8 +44,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'Failed to fetch user data' })
     }
 
-    console.log('privyUserData', privyUserData)
-
     if (privyUserData.walletAddresses.length === 0) {
       return res.status(200).json({
         eligible: false,
@@ -67,20 +65,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       (account: any) => account.type === 'github_oauth'
     )
 
-    console.log('githubAccount', githubAccount)
-
     if (!githubAccount) {
       return res.status(200).json({
         eligible: false,
         prCount: '0',
-        error:
-          'No GitHub account linked to your Privy account. Please link your GitHub account first.',
+        error: 'No GitHub account linked to your Privy account',
       })
     }
 
     // Fetch user's GitHub PR count from MoonDAO repositories
     const prCount = await fetchGitHubPRs(user as Address, githubAccount)
-    console.log('User PR count:', prCount)
 
     if (prCount < PR_THRESHOLD)
       return res.status(200).json({
