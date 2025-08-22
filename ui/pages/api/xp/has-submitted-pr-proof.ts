@@ -44,6 +44,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'Failed to fetch user data' })
     }
 
+    console.log('privyUserData', privyUserData)
+
     if (privyUserData.walletAddresses.length === 0) {
       return res.status(200).json({
         eligible: false,
@@ -64,6 +66,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const githubAccount = privyUserData.userData?.linked_accounts?.find(
       (account: any) => account.type === 'github_oauth'
     )
+
+    console.log('githubAccount', githubAccount)
 
     if (!githubAccount) {
       return res.status(200).json({
