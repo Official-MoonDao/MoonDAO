@@ -58,13 +58,24 @@ export async function getStagedQuestProgress(
   }))
 
   const userHighestStageNum = Number(userHighestStage)
-  const nextClaimableStageNum = Number(nextClaimableStage)
-  const isValidNextStage =
-    nextClaimableStageNum !== Number.MAX_SAFE_INTEGER &&
-    nextClaimableStageNum < stages.length
 
-  const nextStageIndex = isValidNextStage ? nextClaimableStageNum : null
-  const nextStage = nextStageIndex !== null ? stages[nextStageIndex] : null
+  // Calculate next stage directly instead of relying on getNextClaimableStage
+  let nextStageIndex = null
+  let nextStage = null
+
+  if (userHighestStageNum < stages.length - 1) {
+    // There's a next stage available
+    nextStageIndex = userHighestStageNum + 1
+    nextStage = stages[nextStageIndex]
+  } else if (userHighestStageNum === 0 && stages.length > 0) {
+    // User hasn't started yet, first stage is next
+    nextStageIndex = 0
+    nextStage = stages[0]
+  } else if (userHighestStageNum >= stages.length - 1 && stages.length > 0) {
+    // User is on the final stage, show the final stage info
+    nextStageIndex = stages.length - 1
+    nextStage = stages[nextStageIndex]
+  }
 
   // Calculate progress to next stage
   let progressToNext = 0
