@@ -1826,6 +1826,59 @@ export async function signHasSubmittedIssueProof(params: {
   }
 }
 
+export async function signHasSubmittedIssueProofSingle(params: {
+  user: Address
+  validitySeconds?: number
+}): Promise<SignedProofResult> {
+  if (
+    !XP_ORACLE_NAME ||
+    !XP_ORACLE_VERSION ||
+    !XP_ORACLE_ADDRESSES[XP_ORACLE_CHAIN]
+  ) {
+    throw new Error('Oracle env not configured')
+  }
+
+  // For single claims, we check if user has submitted at least 1 issue
+  const issueCount = BigInt(1)
+  const contextHash = keccak256(
+    defaultAbiCoder.encode(['uint256'], [issueCount.toString()])
+  ) as Hex
+
+  const verifierAddress = HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+
+  // For single verifiers, we need to use the actual XP amount from the contract
+  const xpAmount = await fetchVerifierXp(verifierAddress)
+
+  const { validAfter, validBefore, signature } = await signOracleProof({
+    user: params.user,
+    verifier: verifierAddress,
+    contextHash,
+    xpAmount, // Use actual XP amount for single verifiers
+    validitySeconds: params.validitySeconds,
+  })
+
+  // Context format for single verifiers: (issueCount, xpAmount, validAfter, validBefore, signature)
+  const context = defaultAbiCoder.encode(
+    ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+    [
+      issueCount.toString(), // User has submitted at least 1 issue
+      xpAmount.toString(), // Use actual XP amount
+      validAfter.toString(),
+      validBefore.toString(),
+      signature,
+    ]
+  ) as Hex
+
+  return {
+    validAfter,
+    validBefore,
+    signature,
+    context,
+  }
+}
+
 export async function submitHasSubmittedIssueClaimFor(params: {
   user: Address
   context: Hex
@@ -1841,4 +1894,128 @@ export async function submitHasSubmittedIssueClaimFor(params: {
     verifierId,
     verifierAddress,
   })
+}
+
+export async function submitHasSubmittedIssueClaimForSingle(params: {
+  user: Address
+  context: Hex
+}): Promise<{ txHash: Hex }> {
+  const twChain =
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
+  const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
+  const account = twPrivateKeyToAccount({
+    client: serverClient,
+    privateKey: relayerPk,
+  })
+
+  const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
+
+  const verifierAddress = HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+  const verifierId = getVerifierId(verifierAddress)
+  if (!contractAddress) throw new Error('XP Manager address missing for chain')
+
+  const contract = getContract({
+    client: serverClient,
+    chain: twChain,
+    address: contractAddress,
+    abi: XP_MANAGER_ABI as any,
+  })
+
+  // Pre-validate the oracle proof to avoid on-chain revert
+  try {
+    const [issueCount, xpAmount, validAfter, validBefore, signature] =
+      defaultAbiCoder.decode(
+        ['uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+        params.context
+      ) as any
+
+    const oracleAddress = XP_ORACLE_ADDRESSES[XP_ORACLE_CHAIN] as Address
+    const verifierAddress = HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES[
+      XP_ORACLE_CHAIN
+    ] as Address
+    const contextHash = keccak256(
+      defaultAbiCoder.encode(['uint256'], [issueCount])
+    ) as Hex
+
+    const oracleContract = getContract({
+      client: serverClient,
+      chain: twChain,
+      address: oracleAddress,
+      abi: XP_ORACLE_ABI as any,
+    })
+
+    const ok = (await readContract({
+      contract: oracleContract,
+      method: 'verifyProof',
+      params: [
+        {
+          user: params.user,
+          verifier: verifierAddress,
+          contextHash,
+          xpAmount: xpAmount.toString(),
+          validAfter: validAfter.toString(),
+          validBefore: validBefore.toString(),
+        },
+        signature,
+      ],
+    })) as boolean
+
+    if (!ok) {
+      // Try to recover signer for additional context
+      const proofForRecovery = {
+        user: params.user,
+        verifier: verifierAddress,
+        contextHash,
+        xpAmount: xpAmount.toString(),
+        validAfter: validAfter.toString(),
+        validBefore: validBefore.toString(),
+      }
+      let recovered: string | undefined
+      try {
+        recovered = ethersUtils.verifyTypedData(
+          {
+            name: XP_ORACLE_NAME,
+            version: XP_ORACLE_VERSION,
+            chainId: Number(XP_ORACLE_CHAIN_ID),
+            verifyingContract: oracleAddress,
+          } as any,
+          {
+            Proof: [
+              { name: 'user', type: 'address' },
+              { name: 'verifier', type: 'address' },
+              { name: 'contextHash', type: 'bytes32' },
+              { name: 'xpAmount', type: 'uint256' },
+              { name: 'validAfter', type: 'uint256' },
+              { name: 'validBefore', type: 'uint256' },
+            ],
+          } as any,
+          proofForRecovery as any,
+          signature as Hex
+        )
+      } catch {}
+
+      throw new Error(
+        `Error - Invalid oracle proof\n\ncontract: ${contractAddress}\nchainId: ${twChain.id}` +
+          (recovered ? `\nrecoveredSigner: ${recovered}` : '')
+      )
+    }
+  } catch (e) {
+    // Bubble up decode/verify errors to the API layer
+    throw e as Error
+  }
+
+  const transaction = prepareContractCall({
+    contract,
+    method: 'claimXPFor' as string,
+    params: [params.user, verifierId, params.context],
+  })
+
+  const { transactionHash } = await sendTransaction({
+    account,
+    transaction,
+  })
+
+  return { txHash: transactionHash as Hex }
 }
