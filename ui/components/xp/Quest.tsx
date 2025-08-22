@@ -39,28 +39,6 @@ type QuestProps = {
   onClaimConfirmed?: () => void
 }
 
-// Helper function to get human-readable metric labels
-const getMetricLabel = (metricKey: string) => {
-  switch (metricKey) {
-    case 'vp':
-      return 'voting power'
-    case 'votesCount':
-      return 'votes'
-    case 'contributions':
-      return 'contributions'
-    case 'tokenBalance':
-      return 'MOONEY'
-    case 'purchaseCount':
-      return 'purchases'
-    case 'prCount':
-      return 'PRs'
-    case 'issueCount':
-      return 'issues'
-    default:
-      return 'points'
-  }
-}
-
 export default function Quest({
   selectedChain,
   quest,
@@ -616,7 +594,6 @@ export default function Quest({
         return errorMessage.includes(errorPattern)
       })
 
-      console.log('Found error button config:', errorButtonConfig)
       if (!errorButtonConfig) return null
 
       const [pattern, config]: any = errorButtonConfig
@@ -866,23 +843,31 @@ export default function Quest({
             </div>
           </div>
 
-          {/* Compact Stage Info - Upper right */}
+          {/* Stage and Threshold Info - Moved to upper right */}
           {quest.verifier.type === 'staged' &&
             stagedProgress &&
             !isLoadingStagedProgress && (
               <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                <span className="text-yellow-300 text-xs font-medium bg-gradient-to-r from-yellow-500/30 to-orange-500/30 px-2 py-0.5 rounded-full border border-yellow-400/30 shadow-lg shadow-yellow-500/20 backdrop-blur-sm">
-                  Stage {stagedProgress.userHighestStage + 1} of{' '}
-                  {stagedProgress.stages.length}
-                </span>
-                <span className="text-xs text-gray-400">
-                  {(
-                    (Number(userMetric) /
-                      Number(getNextUnclamedThreshold(stagedProgress))) *
-                    100
-                  ).toFixed(0)}
-                  % complete
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-yellow-300 text-sm font-medium bg-gradient-to-r from-yellow-500/30 to-orange-500/30 px-2.5 py-1 rounded-full border border-yellow-400/30 shadow-lg shadow-yellow-500/20 backdrop-blur-sm">
+                    Stage {getHighestQualifyingStage(stagedProgress)} of{' '}
+                    {stagedProgress.stages.length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-white">
+                  <span className="font-medium">{formattedUserMetric}</span>
+                  <span className="text-gray-400">/</span>
+                  <span className="font-medium">
+                    {formattedNextUnclamedThreshold}
+                  </span>
+                  <span className="font-sm">
+                    {`(${(
+                      (Number(userMetric) /
+                        Number(getNextUnclamedThreshold(stagedProgress))) *
+                      100
+                    ).toFixed(0)}%)`}
+                  </span>
+                </div>
               </div>
             )}
         </div>
@@ -893,82 +878,6 @@ export default function Quest({
           <p className="text-gray-300 text-sm leading-relaxed group-hover:text-gray-200 transition-colors duration-300">
             {quest.description}
           </p>
-
-          {/* Compact Staging Overview - New section */}
-          {quest.verifier.type === 'staged' &&
-            stagedProgress &&
-            !isLoadingStagedProgress && (
-              <div className="w-full">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs text-gray-400 font-medium">
-                    Quest Stages
-                  </span>
-                  <span className="text-xs text-yellow-300 font-medium">
-                    {stagedProgress.userHighestStage} of{' '}
-                    {stagedProgress.stages.length} completed
-                  </span>
-                  {/* Debug info - remove this after testing */}
-                  <span className="text-xs text-gray-500">
-                    (userHighestStage: {stagedProgress.userHighestStage},
-                    totalClaimable: {stagedProgress.totalClaimableXP})
-                  </span>
-                </div>
-                <div className="flex items-center gap-0.5 w-full">
-                  {stagedProgress.stages.map((stage, index) => {
-                    const isCompleted = index < stagedProgress.userHighestStage
-                    const isCurrent =
-                      index === stagedProgress.userHighestStage &&
-                      stagedProgress.currentUserMetric >= stage.threshold
-                    const isUpcoming = index >= stagedProgress.userHighestStage
-
-                    return (
-                      <div
-                        key={index}
-                        className={`flex-1 h-1.5 rounded-full transition-all duration-300 ${
-                          isCompleted
-                            ? 'bg-gradient-to-r from-green-400 to-emerald-400 shadow-lg shadow-green-400/30'
-                            : isCurrent
-                            ? 'bg-gradient-to-r from-blue-400 to-cyan-400 shadow-lg shadow-blue-400/30 animate-pulse'
-                            : 'bg-gray-600/30 border border-gray-500/30'
-                        }`}
-                        title={`Stage ${index + 1}: ${
-                          stage.threshold
-                        } ${getMetricLabel(quest.verifier.metricKey)} = ${
-                          stage.xpAmount
-                        } XP`}
-                      />
-                    )
-                  })}
-                </div>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-xs text-gray-500">
-                    {stagedProgress.stages[0]?.threshold}{' '}
-                    {getMetricLabel(quest.verifier.metricKey)}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {
-                      stagedProgress.stages[stagedProgress.stages.length - 1]
-                        ?.threshold
-                    }{' '}
-                    {getMetricLabel(quest.verifier.metricKey)}
-                  </span>
-                </div>
-                {/* Current threshold indicator */}
-                {stagedProgress.userHighestStage <
-                  stagedProgress.stages.length && (
-                  <div className="flex justify-center mt-1">
-                    <span className="text-xs text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded-full border border-blue-400/30">
-                      Next:{' '}
-                      {
-                        stagedProgress.stages[stagedProgress.userHighestStage]
-                          ?.threshold
-                      }{' '}
-                      {getMetricLabel(quest.verifier.metricKey)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
 
           {/* Progress Section */}
           <div className="w-full space-y-3">
