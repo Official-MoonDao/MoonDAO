@@ -7,10 +7,13 @@ import CitizenPointModal from './CitizenPointModal'
 
 type EarthProps = {
   pointsData: any[]
+  width?: number
+  height?: number
 }
 
-export default function Earth({ pointsData }: EarthProps) {
-  const size = useGlobeSize()
+export default function Earth({ pointsData, width, height }: EarthProps) {
+  const defaultSize = useGlobeSize()
+  const size = width && height ? { width, height } : defaultSize
   const globeRef = useRef<GlobeMethods | undefined>()
   const [selectedPoint, setSelectedPoint] = useState(null)
   const [pointModalEnabled, setPointModalEnabled] = useState(false)

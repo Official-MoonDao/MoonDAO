@@ -8,7 +8,11 @@ import {
   WalletIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
+import {
+  useLogin,
+  usePrivy,
+  useWallets,
+} from '@privy-io/react-auth'
 import { COIN_ICONS } from 'const/icons'
 import { ethers } from 'ethers'
 import Image from 'next/image'
@@ -623,7 +627,6 @@ export function PrivyConnectWallet({
 
   const nativeBalance = useNativeBalance()
 
-  // Fetch wallet tokens using our new API
   const {
     tokens: walletTokens,
     loading: tokensLoading,

@@ -60,3 +60,17 @@ export async function getPrivyUserData(
     return null
   }
 }
+
+export async function addressBelongsToPrivyUser(
+  accessToken: string,
+  address: string
+): Promise<boolean> {
+  const privyUserData = await getPrivyUserData(accessToken)
+  if (!privyUserData) {
+    return false
+  }
+  if (privyUserData.walletAddresses.length === 0) {
+    return false
+  }
+  return privyUserData.walletAddresses.includes(address)
+}
