@@ -53,9 +53,7 @@ export default function FinalReportsPage({
                   For more information, check the{' '}
                   <Link
                     className="text-blue-400 hover:text-blue-300 underline"
-                    href="https://docs.moondao.com/Projects/Project-System"
-                    target="_blank"
-                    rel="noreferrer"
+                    href="/project-system-docs"
                   >
                     Project System
                   </Link>

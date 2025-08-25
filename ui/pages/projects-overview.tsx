@@ -378,7 +378,7 @@ const ProjectsOverview: React.FC<{
                   textColor="text-white"
                   borderRadius="rounded-full"
                   hoverEffect={false}
-                  link="https://docs.moondao.com/Projects/Project-System"
+                  link="/project-system-docs"
                 >
                   Read Full Documentation
                 </StandardButton>

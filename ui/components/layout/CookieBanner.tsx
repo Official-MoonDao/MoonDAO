@@ -43,7 +43,7 @@ export default function CookieBanner() {
             personalization, and marketing. Learn more in our `}
           <Link
             className="underline text-blue-400 hover:text-blue-300 transition-colors"
-            href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
+            href="/privacy-policy"
           >
             Privacy Policy
           </Link>
