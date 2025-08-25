@@ -75,10 +75,8 @@ export default function SubmissionPage() {
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <a
-                    href="https://docs.moondao.com/Projects/Project-System"
+                    href="/project-system-docs"
                     className="text-blue-400 hover:text-blue-300 underline"
-                    target="_blank"
-                    rel="noreferrer"
                   >
                     Project System Guide
                   </a>

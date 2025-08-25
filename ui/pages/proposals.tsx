@@ -92,10 +92,8 @@ export default function ProposalsPage() {
                     Submit a proposal to receive financing or special
                     permissions from the MoonDAO community. Please refer to{' '}
                     <a
-                      href="https://docs.moondao.com/Projects/Project-System"
+                      href="/project-system-docs"
                       className="text-blue-400 hover:text-blue-300 underline transition-colors"
-                      target="_blank"
-                      rel="noreferrer"
                     >
                       our documentation
                     </a>{' '}
