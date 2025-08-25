@@ -94,8 +94,8 @@ export default function NetworkSelector({
   const dropdownContent = dropdown && (
     <div
       id="network-selector-dropdown"
-      className={`absolute top-full mt-2 flex flex-col gap-2 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl z-[9999] animate-fadeIn w-[250px] ${
-        align === 'right' ? 'right-0' : 'left-0'
+      className={`absolute top-full mt-2 flex flex-col gap-2 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl z-[9999] animate-fadeIn w-full sm:w-[250px] max-w-[calc(100vw-2rem)] ${
+        align === 'right' ? 'left-0 sm:right-0 sm:left-auto' : 'left-0'
       }`}
     >
       <div className="px-1 pb-2 border-b border-white/10 mb-1">
@@ -139,7 +139,7 @@ export default function NetworkSelector({
   return (
     <div
       id="network-selector"
-      className={`${!compact && 'w-[250px]'} flex flex-col relative`}
+      className={`${!compact && 'w-full sm:w-[250px]'} flex flex-col relative`}
     >
       <div
         ref={triggerRef}
