@@ -7,6 +7,11 @@ import {
   TEAM_TABLE_ADDRESSES,
 } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
+import CitizenTableABI from 'const/abis/CitizenTable.json'
+import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
+import JobTableABI from 'const/abis/JobBoardTable.json'
+import TeamTableABI from 'const/abis/TeamTable.json'
+import ProjectTableABI from 'const/abis/ProjectTable.json'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import Head from 'next/head'
