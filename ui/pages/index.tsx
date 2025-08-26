@@ -128,7 +128,6 @@ export async function getStaticProps() {
   const getMooneyPriceData = async () => {
     try {
       const priceData = await getMooneyPrice()
-      console.log('PRICE DATA', priceData)
       return priceData?.price || 0
     } catch (error) {
       console.error('MOONEY price fetch failed:', error)
@@ -235,11 +234,7 @@ export async function getStaticProps() {
   // Get all transfer data as requested
   const allTransferData = async () => {
     try {
-      console.log('Fetching all network transfers...')
       const transfers = await getAllNetworkTransfers()
-      console.log(
-        `Fetched ${transfers.citizenTransfers.length} citizen transfers and ${transfers.teamTransfers.length} team transfers`
-      )
       return transfers
     } catch (error) {
       console.error('Transfer data fetch failed:', error)
