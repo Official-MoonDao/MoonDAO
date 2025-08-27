@@ -5,12 +5,14 @@ import client from 'lib/thirdweb/client'
 import { useState, useEffect } from 'react'
 import { readContract } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
+import { getRpcClient, eth_getBlockByNumber } from 'thirdweb/rpc'
 import { ethereum } from '@/lib/infura/infuraChains'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { keccak256 } from 'ethers/lib/utils'
 
 export default function useStakedEth() {
   const [stakedEth, setStakedEth] = useState<any>()
+  const [historicalData, setHistoricalData] = useState<any>()
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<any>(null)
   const contract = useContract({
@@ -22,6 +24,7 @@ export default function useStakedEth() {
     client,
     chain: ethereum,
   })
+  const rpcRequest = getRpcClient({ client, chain: ethereum })
   const ethersContract = new Contract(
     STAKED_ETH_ADDRESS,
     StakedEthABI, // include at least the Deposit event ABI
@@ -45,8 +48,20 @@ export default function useStakedEth() {
           initialStakeBlockNumber
         )
         const pubKeys = events.map((e) => e?.args?.publicKey)
+        const timeSeries = await Promise.all(
+          events.map(async (event) => {
+            const block = await eth_getBlockByNumber(rpcRequest, {
+              blockNumber: event.blockNumber,
+            })
+            return {
+              timestamp: block.timestamp,
+              value: 32,
+              date: new Date(Number(block.timestamp)).toISOString(),
+            }
+          })
+        )
 
-        // 1. Check if any deposits have been withdrawn
+        //1. Check if any deposits have been withdrawn
         const roots = pubKeys.map((pk) => keccak256(pk))
         const withdrawnFrom = await Promise.all(
           roots.map((root) =>
@@ -64,6 +79,7 @@ export default function useStakedEth() {
         // 2. each deposit = 32 ETH
         const totalStaked = stillStakedCount * 32
         setStakedEth(totalStaked)
+        setHistoricalData(timeSeries)
       } catch (error) {
         console.log('Error fetching staked ETH:', error)
         setError(error)
@@ -73,5 +89,5 @@ export default function useStakedEth() {
     }
     fetchStakedEth()
   }, [contract])
-  return { stakedEth, isLoading, error }
+  return { stakedEth, historicalData, isLoading, error }
 }
