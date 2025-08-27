@@ -499,7 +499,7 @@ export default function Mooney() {
               {/* Network Selection */}
               <div className="mb-8">
                 <div className="max-w-xl mx-auto bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-4 border border-white/10">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-semibold text-white mb-2">
                         Network Selection
@@ -508,7 +508,7 @@ export default function Mooney() {
                         Select a network to buy MOONEY on
                       </p>
                     </div>
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 w-full sm:w-auto">
                       <NetworkSelector />
                     </div>
                   </div>
