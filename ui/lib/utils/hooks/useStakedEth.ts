@@ -15,6 +15,7 @@ export default function useStakedEth() {
   const [historicalData, setHistoricalData] = useState<any>()
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<any>(null)
+  const ETH_PER_DEPOSIT = 32
   const contract = useContract({
     address: STAKED_ETH_ADDRESS,
     abi: StakedEthABI as any,
@@ -55,11 +56,22 @@ export default function useStakedEth() {
             })
             return {
               timestamp: block.timestamp,
-              value: 32,
+              value: ETH_PER_DEPOSIT,
               date: new Date(Number(block.timestamp)).toISOString(),
             }
           })
         )
+        // Group by timestamp
+        const timeSeriesReduced = timeSeries.reduce((acc, current) => {
+          if (!acc.length) {
+            acc.push(current)
+            return acc
+          }
+          if (acc.at(-1).timestamp == current.timestamp) {
+            acc.at(-1).value += current.value
+          }
+          return acc
+        }, [])
 
         //1. Check if any deposits have been withdrawn
         const roots = pubKeys.map((pk) => keccak256(pk))
@@ -76,10 +88,9 @@ export default function useStakedEth() {
           (_, i) => !withdrawnFrom[i]
         ).length
 
-        // 2. each deposit = 32 ETH
-        const totalStaked = stillStakedCount * 32
+        const totalStaked = stillStakedCount * ETH_PER_DEPOSIT
         setStakedEth(totalStaked)
-        setHistoricalData(timeSeries)
+        setHistoricalData(timeSeriesReduced)
       } catch (error) {
         console.log('Error fetching staked ETH:', error)
         setError(error)
