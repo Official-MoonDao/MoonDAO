@@ -8,7 +8,7 @@ import {
   HAS_VOTING_POWER_VERIFIER_ADDRESSES,
   HAS_VOTED_VERIFIER_ADDRESSES,
 } from 'const/config'
-import { Wallet, utils as ethersUtils } from 'ethers'
+import { Wallet, utils as ethersUtils, providers } from 'ethers'
 import {
   getContract,
   prepareContractCall,
@@ -115,9 +115,25 @@ export async function signOracleProof(params: {
 
   const wallet = new Wallet(normalizePk(process.env.XP_ORACLE_SIGNER_PK))
 
-  // Pre-flight: ensure signer is authorized on the oracle
+  // Pre-flight: check if signer has enough funds to complete transactions
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
+
+  // Check wallet balance using existing Infura chain configurations
+  const provider = new providers.JsonRpcProvider(twChain.rpc)
+  const balance = await provider.getBalance(wallet.address)
+
+  // Ensure minimum balance for gas fees (0.01 ETH equivalent)
+  const minBalance = BigInt(10_000_000_000_000_000) // 0.01 ETH in wei
+  if (balance.lt(minBalance)) {
+    throw new Error(
+      `Oracle signer has insufficient funds: ${ethersUtils.formatEther(
+        balance
+      )} ETH. Please contact support.`
+    )
+  }
+
+  // Pre-flight: ensure signer is authorized on the oracle
   const oracleAddress = XP_ORACLE_ADDRESSES[XP_ORACLE_CHAIN] as Address
   const oracleContract = getContract({
     client: serverClient,
