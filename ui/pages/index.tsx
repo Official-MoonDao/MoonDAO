@@ -22,6 +22,7 @@ import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
+import { getContract, readContract } from 'thirdweb'
 import { calculateARRFromTransfers } from '@/lib/treasury/arr'
 import Callout1 from '../components/home/Callout1'
 import Callout2 from '../components/home/Callout2'
@@ -111,9 +112,6 @@ export default function Home({
 }
 
 export async function getStaticProps() {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
-
   // Initialize all data structures with proper types
   let transferData: any = { citizenTransfers: [], teamTransfers: [] }
   let arrData: any = {
@@ -147,6 +145,9 @@ export async function getStaticProps() {
   // Batch all contract operations to reduce API calls
   const contractOperations = async () => {
     try {
+      const chain = DEFAULT_CHAIN_V5
+      const chainSlug = getChainSlug(chain)
+      
       const citizenTableContract = getContract({
         client: serverClient,
         address: CITIZEN_TABLE_ADDRESSES[chainSlug],
