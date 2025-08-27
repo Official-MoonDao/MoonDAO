@@ -540,19 +540,19 @@ export default function SingedInDashboard({
 
             {/* Activity Feed */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-white mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
+                <h3 className="text-xl font-bold text-white whitespace-nowrap">
                   Recent Activity
                 </h3>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                   <StandardButton
-                    className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all flex-1"
+                    className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
                     link="/news"
                   >
                     View All
                   </StandardButton>
                   <StandardButton
-                    className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 text-sm px-4 py-2 rounded-lg transition-all flex-1"
+                    className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
                     onClick={() => setNewsletterModalOpen(true)}
                   >
                     Subscribe
