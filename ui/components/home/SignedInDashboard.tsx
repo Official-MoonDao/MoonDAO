@@ -300,9 +300,6 @@ export default function SingedInDashboard({
                     'Welcome to MoonDAO'
                   )}
                 </h1>
-                <p className="text-white/90 text-xs sm:text-sm font-medium drop-shadow leading-tight">
-                  Building the future of space exploration together
-                </p>
               </div>
             </div>
 
@@ -397,12 +394,14 @@ export default function SingedInDashboard({
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
           {/* Left Sidebar - Key Metrics & Quick Actions */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full">
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-2 lg:order-1">
             {/* Weekly Reward Pool - Enhanced UI */}
-            <WeeklyRewardPool />
+            <div className="order-2">
+              <WeeklyRewardPool />
+            </div>
 
             {/* Key Metrics Card */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
               <h3 className="font-semibold text-white mb-8 text-lg">
                 DAO Metrics
               </h3>
@@ -479,9 +478,9 @@ export default function SingedInDashboard({
           </div>
 
           {/* Center Column - Main Feed */}
-          <div className="lg:col-span-6 flex flex-col space-y-6 h-full min-h-[800px]">
+          <div className="lg:col-span-6 flex flex-col space-y-6 h-full min-h-[800px] order-1 lg:order-2">
             {/* Quick Actions */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-full overflow-hidden">
                   {citizen?.metadata?.image ? (
@@ -539,7 +538,7 @@ export default function SingedInDashboard({
             </div>
 
             {/* Activity Feed */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
                 <h3 className="text-xl font-bold text-white whitespace-nowrap">
                   Recent Activity
@@ -657,7 +656,7 @@ export default function SingedInDashboard({
             </div>
 
             {/* Active Proposals Card */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-4">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-white">
                   Active Proposals
@@ -721,7 +720,7 @@ export default function SingedInDashboard({
           </div>
 
           {/* Right Sidebar - Community & Stats */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px]">
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3">
             {/* Recent Citizens */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
