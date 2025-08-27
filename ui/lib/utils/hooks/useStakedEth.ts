@@ -52,7 +52,7 @@ export default function useStakedEth() {
         const timeSeries = await Promise.all(
           events.map(async (event) => {
             const block = await eth_getBlockByNumber(rpcRequest, {
-              blockNumber: event.blockNumber,
+              blockNumber: BigInt(event.blockNumber),
             })
             return {
               timestamp: block.timestamp,
