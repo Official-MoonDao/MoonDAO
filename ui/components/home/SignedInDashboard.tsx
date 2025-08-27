@@ -260,14 +260,14 @@ export default function SingedInDashboard({
     <Container>
       <div className="max-w-7xl mx-auto px-4 py-4">
         {/* Compact All-in-One Header */}
-        <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-6 mb-6 overflow-hidden">
+        <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-4 sm:p-6 mb-6 overflow-hidden">
           <div className="absolute inset-0 bg-black/20 rounded-2xl"></div>
 
-          <div className="relative z-10 flex items-center justify-between">
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-0">
             {/* Left Side - Profile & Title */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               {/* Profile Picture */}
-              <div className="w-20 h-20 rounded-full overflow-hidden border-3 border-white shadow-xl bg-white relative">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-3 border-white shadow-xl bg-white relative flex-shrink-0">
                 {citizen?.metadata?.image ? (
                   <MediaRenderer
                     client={client}
@@ -277,18 +277,18 @@ export default function SingedInDashboard({
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">
+                    <span className="text-white font-bold text-base sm:text-lg">
                       {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
                     </span>
                   </div>
                 )}
                 {/* Online status indicator */}
-                <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 border-2 border-white rounded-full"></div>
               </div>
 
               {/* Title & Subtitle */}
-              <div>
-                <h1 className="text-2xl font-bold text-white mb-1 drop-shadow-lg">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-1 drop-shadow-lg leading-tight">
                   {isLoadingCitizen ? (
                     <span className="flex items-center gap-2">
                       Welcome...
@@ -300,15 +300,16 @@ export default function SingedInDashboard({
                     'Welcome to MoonDAO'
                   )}
                 </h1>
-                <p className="text-white/90 text-sm font-medium drop-shadow">
+                <p className="text-white/90 text-xs sm:text-sm font-medium drop-shadow leading-tight">
                   Building the future of space exploration together
                 </p>
               </div>
             </div>
 
             {/* Center - Stats */}
+            {/* Center - Stats */}
             {address && (
-              <div className="flex items-center gap-6">
+              <div className="flex items-center justify-center gap-4 sm:gap-6 order-3 lg:order-2">
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
                     <Image
@@ -322,7 +323,7 @@ export default function SingedInDashboard({
                   {MOONEYBalance === undefined || MOONEYBalance === null ? (
                     <div className="animate-pulse bg-white/20 rounded w-12 h-4 mx-auto mb-1"></div>
                   ) : (
-                    <div className="text-lg font-bold text-blue-300">
+                    <div className="text-base sm:text-lg font-bold text-blue-300">
                       {Math.round(MOONEYBalance).toLocaleString()}
                     </div>
                   )}
@@ -336,7 +337,7 @@ export default function SingedInDashboard({
                   {walletVP === undefined || walletVP === null ? (
                     <div className="animate-pulse bg-white/20 rounded w-12 h-4 mx-auto mb-1"></div>
                   ) : (
-                    <div className="text-lg font-bold text-purple-300">
+                    <div className="text-base sm:text-lg font-bold text-purple-300">
                       {Math.round(walletVP).toLocaleString()}
                     </div>
                   )}
@@ -347,8 +348,8 @@ export default function SingedInDashboard({
                   <div className="text-sm mb-1 flex items-center justify-center">
                     <CheckBadgeIcon className="w-4 h-4" />
                   </div>
-                  <div className="text-lg font-bold text-green-300">
-                    {voteCount}
+                  <div className="text-base sm:text-lg font-bold text-green-300">
+                    1
                   </div>
                   <div className="text-xs text-white/70">Votes</div>
                 </div>
@@ -357,36 +358,34 @@ export default function SingedInDashboard({
                   <div className="text-sm mb-1 flex items-center justify-center">
                     <UserGroupIcon className="w-4 h-4" />
                   </div>
-                  <div className="text-lg font-bold text-orange-300">
+                  <div className="text-base sm:text-lg font-bold text-orange-300">
                     {teamHats?.length || 0}
                   </div>
                   <div className="text-xs text-white/70">Teams</div>
                 </div>
               </div>
-            )}
-
-            {/* Right Side - Action Buttons */}
-            <div className="flex gap-2">
+            )}            {/* Right Side - Action Buttons */}
+            <div className="flex flex-wrap gap-2 justify-center lg:justify-end order-2 lg:order-3">
               <StandardButton
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all flex items-center gap-2"
                 link="/get-mooney"
               >
                 <BanknotesIcon className="w-4 h-4" />
-                Buy
+                <span className="hidden sm:inline">Buy</span>
               </StandardButton>
               <StandardButton
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all flex items-center gap-2"
                 link="/lock"
               >
                 <BoltIcon className="w-4 h-4" />
-                Stake
+                <span className="hidden sm:inline">Stake</span>
               </StandardButton>
               <StandardButton
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all flex items-center gap-2"
                 link="/governance"
               >
                 <CheckBadgeIcon className="w-4 h-4" />
-                Vote
+                <span className="hidden sm:inline">Vote</span>
               </StandardButton>
             </div>
           </div>
@@ -694,23 +693,23 @@ export default function SingedInDashboard({
                             </span>
                           )}
                         </div>
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-4 text-sm text-gray-300">
-                            <span className="flex items-center gap-1">
-                              <span className="font-medium">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-300">
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium text-white">
                                 {ethAmount > 0
                                   ? `${formatNumberUSStyle(ethAmount)} ETH`
                                   : 'No funding'}
-                              </span>{' '}
-                              requested
-                            </span>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
-                              <span className="font-medium">{3 + i} days</span>{' '}
-                              left
-                            </span>
+                              </span>
+                              <span>requested</span>
+                            </div>
+                            <span className="hidden sm:inline">•</span>
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium text-white">{3 + i} days</span>
+                              <span>left</span>
+                            </div>
                           </div>
-                          <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition-all">
+                          <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
                             Vote
                           </StandardButton>
                         </div>
@@ -939,18 +938,18 @@ export default function SingedInDashboard({
         {/* Featured Projects Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 mb-8">
           {/* Launchpad Feature */}
-          <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                  <RocketLaunchIcon className="w-7 h-7" />
-                  Launchpad
+          <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 sm:p-6 lg:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                  <RocketLaunchIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                  <span className="leading-tight">Launchpad</span>
                 </h3>
-                <p className="text-blue-200">
+                <p className="text-blue-200 text-sm sm:text-base leading-tight">
                   Coming soon - Fund your next mission to space
                 </p>
               </div>
-              <div className="bg-gray-600 text-gray-300 px-6 py-3 rounded-xl font-semibold shadow-lg cursor-not-allowed">
+              <div className="bg-gray-600 text-gray-300 px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold shadow-lg cursor-not-allowed text-sm sm:text-base whitespace-nowrap flex-shrink-0">
                 Coming Soon
               </div>
             </div>
@@ -975,19 +974,19 @@ export default function SingedInDashboard({
           </div>
 
           {/* Projects Feature */}
-          <div className="bg-gradient-to-br from-green-600/20 to-emerald-800/20 backdrop-blur-xl border border-green-500/20 rounded-2xl p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                  <RocketLaunchIcon className="w-7 h-7" />
-                  Active Projects
+          <div className="bg-gradient-to-br from-green-600/20 to-emerald-800/20 backdrop-blur-xl border border-green-500/20 rounded-2xl p-4 sm:p-6 lg:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                  <RocketLaunchIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                  <span className="leading-tight">Active Projects</span>
                 </h3>
-                <p className="text-green-200">
+                <p className="text-green-200 text-sm sm:text-base leading-tight">
                   Contribute to space exploration initiatives
                 </p>
               </div>
               <StandardButton
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold shadow-lg transition-all text-sm sm:text-base whitespace-nowrap flex-shrink-0"
                 link="/projects"
               >
                 View All Projects
@@ -1074,67 +1073,64 @@ export default function SingedInDashboard({
         </div>
 
         {/* Global Community Map - Enhanced */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                <GlobeAmericasIcon className="w-7 h-7" />
-                Global Community
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                <GlobeAmericasIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                <span className="leading-tight">Global Community</span>
               </h3>
-              <p className="text-gray-300">MoonDAO citizens around the world</p>
+              <p className="text-gray-300 text-sm sm:text-base leading-tight">MoonDAO citizens around the world</p>
             </div>
             <StandardButton
-              className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl font-semibold transition-all"
+              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold transition-all text-sm sm:text-base whitespace-nowrap flex-shrink-0"
               link="/map"
             >
               Explore Map
             </StandardButton>
           </div>
 
-          <div className="relative w-full h-[500px] bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-2xl overflow-hidden">
+          <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[650px] xl:h-[700px] bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-2xl overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center">
-              <div
-                className="flex items-center justify-center"
-                style={{ width: '500px', height: '500px' }}
-              >
+              <div className="flex items-center justify-center">
                 <Earth
                   pointsData={citizensLocationData || []}
-                  width={500}
-                  height={500}
+                  width={undefined}
+                  height={undefined}
                 />
               </div>
             </div>
 
             {/* Enhanced Stats overlay with glassmorphism */}
-            <div className="absolute top-6 left-6 bg-black/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 lg:top-6 lg:left-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
               <div className="text-white">
-                <div className="text-3xl font-bold mb-1">
-                  {citizenSubgraphData?.transfers?.length || '2,341'}
+                <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
+                  {citizenSubgraphData?.transfers?.length || '145'}
                 </div>
-                <div className="text-sm opacity-90">Global Citizens</div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">Global Citizens</div>
               </div>
             </div>
 
-            <div className="absolute top-6 right-6 bg-black/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 lg:top-6 lg:right-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
               <div className="text-white">
-                <div className="text-3xl font-bold mb-1">47</div>
-                <div className="text-sm opacity-90">Countries</div>
+                <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">47</div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">Countries</div>
               </div>
             </div>
 
-            <div className="absolute bottom-6 left-6 bg-black/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+            <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 lg:bottom-6 lg:left-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
               <div className="text-white">
-                <div className="text-3xl font-bold mb-1">24/7</div>
-                <div className="text-sm opacity-90">Active Community</div>
+                <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">24/7</div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">Active Commu</div>
               </div>
             </div>
 
-            <div className="absolute bottom-6 right-6 bg-black/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+            <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 lg:bottom-6 lg:right-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
               <div className="text-white">
-                <div className="text-3xl font-bold mb-1">
-                  {filteredTeams?.length || teamHats?.length || '12'}
+                <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
+                  {filteredTeams?.length || teamHats?.length || '9'}
                 </div>
-                <div className="text-sm opacity-90">Active Teams</div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">Active Teams</div>
               </div>
             </div>
           </div>

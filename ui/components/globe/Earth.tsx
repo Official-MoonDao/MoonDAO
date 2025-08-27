@@ -24,7 +24,7 @@ export default function Earth({ pointsData, width, height }: EarthProps) {
       globeRef.current.pointOfView({
         lat: 39.8283,
         lng: -98.5795,
-        altitude: 2,
+        altitude: 3.5,
       })
     }
   }, [globeRef])
