@@ -57,8 +57,6 @@ export const XP_VERIFIERS: any = [
     title: 'MOONEY',
     description: 'Hold MOONEY in your wallet.',
     icon: BanknotesIcon,
-    link: '/wallet',
-    linkText: 'View Wallet',
   },
   // {
   //   verifierId: 3,
@@ -82,7 +80,7 @@ export const XP_VERIFIERS: any = [
     title: 'Contributions',
     description: 'Contribute to the community circle.',
     icon: UserGroupIcon,
-    link: '/team',
+    link: '/contribute',
     linkText: 'Contribute',
   },
   {
@@ -95,7 +93,7 @@ export const XP_VERIFIERS: any = [
     description:
       'Complete your citizen profile: description + location or discord or twitter or website.',
     icon: UserGroupIcon,
-    link: '/profile',
+    link: 'citizenProfile',
     linkText: 'Complete Profile',
   },
   // {
@@ -123,7 +121,7 @@ export const XP_VERIFIERS: any = [
     title: 'Join a Team',
     description: 'Join a team in the Space Acceleration Network.',
     icon: UserGroupIcon,
-    link: '/team',
+    link: '/network',
     linkText: 'Join Team',
   },
   {

@@ -99,15 +99,15 @@ export default function Quests({}: QuestsProps) {
 
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 mb-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h3 className="font-semibold text-white text-lg flex items-center gap-2">
             <TrophyIcon className="w-5 h-5 text-yellow-400" />
-            Quest Progress
+            Quests
           </h3>
         </div>
 
-        <div className="flex items-center flex-col md:flex-row gap-2">
+        {/* <div className="flex items-center flex-col md:flex-row gap-2">
           <div className="flex items-center gap-3 flex-col md:flex-row">
             <div className="flex items-center gap-1 text-yellow-400 text-xs font-medium bg-yellow-400/20 px-2 py-1 rounded-full">
               <StarIcon className="w-3 h-3" />
@@ -136,7 +136,7 @@ export default function Quests({}: QuestsProps) {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* View All Button */}
@@ -165,7 +165,7 @@ export default function Quests({}: QuestsProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {displayedQuests.map((verifier: any) => (
             <Quest
-              key={verifier.verifierId}
+              key={`verifier-${verifier.verifierId}-${verifier.verifierAddress}`}
               selectedChain={selectedChain}
               quest={{
                 verifier,

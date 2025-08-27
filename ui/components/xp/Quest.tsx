@@ -1,12 +1,24 @@
 import { CheckBadgeIcon } from '@heroicons/react/24/outline'
 import { getAccessToken, usePrivy } from '@privy-io/react-auth'
+import ERC20ABI from 'const/abis/ERC20.json'
 import StagedXPVerifierABI from 'const/abis/StagedXPVerifier.json'
 import XPVerifierABI from 'const/abis/XPVerifier.json'
-import { DEFAULT_CHAIN_V5 } from 'const/config'
-import { ComponentType, useCallback, useEffect, useRef, useState } from 'react'
+import { DEFAULT_CHAIN_V5, MOONEY_ADDRESSES } from 'const/config'
+import {
+  ComponentType,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import toast from 'react-hot-toast'
-import { Chain, readContract } from 'thirdweb'
+import { Chain, getContract, readContract } from 'thirdweb'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import {
   getStagedQuestProgress,
@@ -16,7 +28,6 @@ import {
 } from '@/lib/xp/staged-quest-info'
 import StandardButton from '@/components/layout/StandardButton'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
-import Tooltip from '../layout/Tooltip'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export type QuestIcon = ComponentType<{ className?: string }>
@@ -47,6 +58,7 @@ export default function Quest({
   xpManagerContract,
   onClaimConfirmed,
 }: QuestProps) {
+  const { citizen } = useContext(CitizenContext)
   const { linkGithub } = usePrivy()
   const verifierContract = useContract({
     address: quest.verifier.verifierAddress,
@@ -314,6 +326,27 @@ export default function Quest({
     setIsLoadingClaim(true)
     setError(null) // Clear any previous errors when starting a new claim
     try {
+      const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+      const mooneyContract = getContract({
+        address: MOONEY_ADDRESSES[defaultChainSlug],
+        chain: DEFAULT_CHAIN_V5,
+        client: client,
+        abi: ERC20ABI as any,
+      })
+
+      const xpManagerMooneyBalance = await readContract({
+        contract: mooneyContract,
+        method: 'balanceOf' as string,
+        params: [xpManagerContract.address],
+      })
+
+      if (+xpManagerMooneyBalance.toString() / 1e18 < xpAmount) {
+        return toast.error('Insufficient rewards. Please contact support.', {
+          duration: 5000,
+          style: toastStyle,
+        })
+      }
+
       const accessToken = await getAccessToken()
       const response = await fetch(quest.verifier.route, {
         method: 'POST',
@@ -363,13 +396,10 @@ export default function Quest({
           // Handle specific ERC20 balance error
           if (error.includes('ERC20: transfer amount exceeds balance')) {
             setError(error) // Store the error for UI display
-            toast.error(
-              'Insufficient token balance to process claim. Please ensure you have enough tokens and try again.',
-              {
-                duration: 5000,
-                style: toastStyle,
-              }
-            )
+            toast.error('Insufficient rewards. Please contact support.', {
+              duration: 5000,
+              style: toastStyle,
+            })
             // Set a flag to show helpful guidance
             setNeedsGitHubLink(false) // Reset this flag
           } else {
@@ -576,21 +606,12 @@ export default function Quest({
   // }
   const getErrorButton = useCallback(
     (errorMessage: string) => {
-      console.log('getErrorButton called with:', errorMessage)
-      console.log('quest.verifier.errorButtons:', quest.verifier.errorButtons)
-
       if (!quest.verifier.errorButtons) return null
 
       // Find the first error button that matches the error message
       const errorButtonConfig = Object.entries(
         quest.verifier.errorButtons
       ).find(([errorPattern]) => {
-        console.log(
-          'Checking pattern:',
-          errorPattern,
-          'against message:',
-          errorMessage
-        )
         return errorMessage.includes(errorPattern)
       })
 
@@ -716,7 +737,7 @@ export default function Quest({
 
   return (
     <div
-      className={`px-4 py-6 rounded-xl border transition-all duration-500 group relative overflow-hidden ${getContainerClasses()}`}
+      className={`px-4 py-4 rounded-xl border transition-all duration-500 group relative overflow-hidden ${getContainerClasses()}`}
     >
       {/* Progress Background - Makes the whole card act as a progress bar */}
       {(quest.verifier.type === 'staged' &&
@@ -726,7 +747,7 @@ export default function Quest({
         <>
           {/* Main Progress Gradient */}
           <div
-            className="absolute inset-0 transition-all duration-1000 ease-out"
+            className="absolute inset-0 transition-all duration-1000 ease-out h-[85px]"
             style={{
               background: `linear-gradient(90deg, 
                 rgba(34, 197, 94, 0.15) 0%, 
@@ -748,7 +769,7 @@ export default function Quest({
 
           {/* Animated Shimmer Effect */}
           <div
-            className="absolute inset-0 opacity-30"
+            className="absolute inset-0 opacity-30 h-[85px]"
             style={{
               background: `linear-gradient(90deg, 
                   transparent 0%, 
@@ -770,7 +791,7 @@ export default function Quest({
           {/* Pulsing Progress Edge Glow */}
           {quest.verifier.type === 'staged' && !isCompleted && (
             <div
-              className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-green-400 via-green-300 to-green-400 shadow-lg shadow-green-400/50 opacity-[0.35]"
+              className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-green-400 via-green-300 to-green-400 shadow-lg shadow-green-400/50 opacity-[0.35] h-[85px]"
               style={{
                 left: `${Math.min(
                   100,
@@ -814,8 +835,10 @@ export default function Quest({
         <></>
       )}
 
-      <div className="flex flex-col items-start gap-3 w-full relative z-10">
-        <div className="flex items-center justify-between gap-3 w-full">
+      <hr className="absolute top-[85px] left-0 w-full border-white/10" />
+
+      <div className="flex flex-col items-center gap-3 w-full relative z-10">
+        <div className="flex items-center justify-between gap-3 w-full h-[55px]">
           <div className="flex items-center gap-3">
             {/* Icon Section */}
             <div
@@ -837,8 +860,10 @@ export default function Quest({
               >
                 {quest.title}
               </h3>
-              {isCompleted && (
+              {isCompleted ? (
                 <CheckBadgeIcon className="w-5 h-5 text-green-400 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
+              ) : (
+                <></>
               )}
             </div>
           </div>
@@ -875,7 +900,7 @@ export default function Quest({
         {/* Content Section */}
         <div className="flex-1 w-full space-y-3">
           {/* Description */}
-          <p className="text-gray-300 text-sm leading-relaxed group-hover:text-gray-200 transition-colors duration-300">
+          <p className="mt-4 text-gray-300 text-sm leading-relaxed group-hover:text-gray-200 transition-colors duration-300">
             {quest.description}
           </p>
 
@@ -896,8 +921,8 @@ export default function Quest({
                       {/* Ready to Claim Section */}
                       {stagedProgress.totalClaimableXP > 0 && (
                         <div className="text-green-300 text-sm font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-2.5 py-1.5 rounded-lg border border-green-400/20 backdrop-blur-sm shadow-lg shadow-green-500/20">
-                          Ready to Claim: +{stagedProgress.totalClaimableXP} XP
-                          / +{stagedProgress.totalClaimableXP} MOONEY
+                          Ready to Claim: +{stagedProgress.totalClaimableXP}{' '}
+                          MOONEY
                         </div>
                       )}
 
@@ -922,16 +947,15 @@ export default function Quest({
                           // Next stage available - Blue
                           return (
                             <div className="text-blue-300 text-sm font-medium bg-gradient-to-r from-blue-500/20 to-cyan-500/20 px-2.5 py-1.5 rounded-lg border border-blue-400/20 backdrop-blur-sm shadow-lg shadow-blue-500/20">
-                              Next Stage: +{stagedProgress.nextStageXP} XP / +
-                              {stagedProgress.nextStageXP} MOONEY
+                              Next Stage: +{stagedProgress.nextStageXP} MOONEY
                             </div>
                           )
                         } else {
                           // Final stage info - Orange
                           return (
                             <div className="text-orange-300 text-sm font-medium bg-gradient-to-r from-orange-500/20 to-amber-500/20 px-2.5 py-1.5 rounded-lg border border-orange-400/20 backdrop-blur-sm shadow-lg shadow-purple-500/20">
-                              🎯 Final Stage: +{stagedProgress.nextStageXP} XP /
-                              +{stagedProgress.nextStageXP} MOONEY
+                              🎯 Final Stage: +{stagedProgress.nextStageXP}{' '}
+                              MOONEY
                             </div>
                           )
                         }
@@ -969,8 +993,20 @@ export default function Quest({
                         !needsGitHubLink && (
                           <StandardButton
                             className={getButtonClasses()}
-                            link={quest.link}
-                            target="_blank"
+                            link={
+                              quest.link === 'citizenProfile'
+                                ? `/citizen/${generatePrettyLinkWithId(
+                                    citizen.name,
+                                    citizen.id
+                                  )}`
+                                : quest.link
+                            }
+                            target={
+                              quest.link.startsWith('/') ||
+                              quest.link === 'citizenProfile'
+                                ? '_self'
+                                : '_blank'
+                            }
                           >
                             {quest.linkText}
                           </StandardButton>
@@ -988,14 +1024,6 @@ export default function Quest({
               <div className="flex items-center justify-between gap-4 w-full">
                 <span className="text-yellow-300 text-sm font-medium bg-gradient-to-r from-yellow-500/20 to-orange-500/20 px-2.5 py-1.5 rounded-lg border border-yellow-400/20 backdrop-blur-sm flex items-center justify-center">
                   +
-                  {isLoadingXpAmount ? (
-                    <div className="inline-flex items-center gap-1">
-                      <LoadingSpinner height="h-4" width="w-4" />
-                    </div>
-                  ) : (
-                    xpAmount
-                  )}{' '}
-                  XP / +
                   {isLoadingXpAmount ? (
                     <div className="inline-flex items-center gap-1">
                       <LoadingSpinner height="h-4" width="w-4" />
@@ -1034,8 +1062,20 @@ export default function Quest({
                       <div className="inline-block">
                         <StandardButton
                           className={getButtonClasses()}
-                          link={quest.link}
-                          target="_blank"
+                          link={
+                            quest.link === 'citizenProfile'
+                              ? `/citizen/${generatePrettyLinkWithId(
+                                  citizen.metadata.name,
+                                  citizen.id
+                                )}`
+                              : quest.link
+                          }
+                          target={
+                            quest.link.startsWith('/') ||
+                            quest.link === 'citizenProfile'
+                              ? '_self'
+                              : '_blank'
+                          }
                         >
                           {quest.linkText}
                         </StandardButton>
