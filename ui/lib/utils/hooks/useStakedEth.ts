@@ -71,7 +71,7 @@ export default function useStakedEth() {
             acc.at(-1).value += current.value
           }
           return acc
-        }, [])
+        }, [] as any[])
 
         //1. Check if any deposits have been withdrawn
         const roots = pubKeys.map((pk) => keccak256(pk))
@@ -99,6 +99,6 @@ export default function useStakedEth() {
       }
     }
     fetchStakedEth()
-  }, [contract])
+  }, [contract, rpcRequest])
   return { stakedEth, historicalData, isLoading, error }
 }
