@@ -473,7 +473,7 @@ export default function Mooney() {
                     </div>
                     <div className="bg-green-500/10 rounded-lg p-3 border border-green-400/20 mt-4">
                       <p className="text-green-300 text-sm">
-                        📖 <a href="https://docs.moondao.com/Projects/Project-System" target="_blank" rel="noopener noreferrer" className="underline hover:text-green-200">
+                        📖 <a href="/project-system-docs" className="underline hover:text-green-200">
                           Learn more about the Projects System
                         </a>
                       </p>
