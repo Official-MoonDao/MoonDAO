@@ -10,7 +10,6 @@ import StandardButton from '../layout/StandardButton'
 
 type FinalistCardProps = {
   finalist: Finalist | undefined
-  distribute?: boolean
   distribution?: Record<string, number>
   handleDistributionChange?: (finalistId: string, value: number) => void
   userHasVotingPower?: any
@@ -22,7 +21,6 @@ const FinalistCardContent = memo(
     finalist,
     distribution,
     handleDistributionChange,
-    distribute,
     userHasVotingPower,
     isVotingPeriod,
     ineligible,
@@ -47,9 +45,7 @@ const FinalistCardContent = memo(
               </Link>
               <div className="flex flex-row">
                 <StandardButton
-                  className={`gradient-2 w-fit font-[14px] ${
-                    distribute && 'mr-4'
-                  }`}
+                  className={`gradient-2 w-fit font-[14px] mr-4`}
                   link={finalist?.videoUrl}
                   onClick={(e: any) => {
                     e.stopPropagation()
@@ -60,9 +56,7 @@ const FinalistCardContent = memo(
                   <p className="text-[14px]">Video Response</p>
                 </StandardButton>
                 <StandardButton
-                  className={`gradient-2 w-fit font-[14px] ${
-                    distribute && 'mr-4'
-                  }`}
+                  className={`gradient-2 w-fit font-[14px] mr-4`}
                   link={finalist?.writtenUrl}
                   onClick={(e: any) => {
                     e.stopPropagation()
@@ -75,7 +69,7 @@ const FinalistCardContent = memo(
               </div>
             </div>
           </div>
-          {distribute &&
+          {isVotingPeriod &&
             (ineligible ? (
               <div className="flex flex-col items-end">
                 <p className="text-gray-400">{'Ineligible'}</p>
@@ -94,11 +88,6 @@ const FinalistCardContent = memo(
                 isDisabled={!userHasVotingPower}
               />
             ))}
-          {!distribute && isVotingPeriod && (
-            <div className="flex flex-col items-end">
-              <p className="text-gray-400 text-sm">Not Eligible</p>
-            </div>
-          )}
         </div>
       </div>
     )
@@ -108,7 +97,6 @@ FinalistCardContent.displayName = 'FinalistCardContent'
 
 export default function FinalistCard({
   finalist,
-  distribute,
   distribution,
   handleDistributionChange,
   userHasVotingPower,
@@ -123,10 +111,9 @@ export default function FinalistCard({
 
   return (
     <>
-      {distribute ? (
+      {isVotingPeriod ? (
         <FinalistCardContent
           finalist={finalist}
-          distribute={distribute}
           ineligible={ineligible}
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}

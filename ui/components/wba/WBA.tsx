@@ -38,7 +38,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
   const account = useActiveAccount()
   const userAddress = account?.address
 
-  const active = true
+  const isVotingPeriod = true
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>(
@@ -89,12 +89,14 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
 
   // Map from address to percentage of commnity rewards
   const readyToRunVoting = distributions.length > 0
-  const SUM_TO_ONE_HUNDRED = 100
-  const outcome = runQuadraticVoting(
-    distributions,
-    addressToQuadraticVotingPower,
-    SUM_TO_ONE_HUNDRED
-  )
+  if (readyToRunVoting) {
+    const SUM_TO_ONE_HUNDRED = 100
+    const outcome = runQuadraticVoting(
+      distributions,
+      addressToQuadraticVotingPower,
+      SUM_TO_ONE_HUNDRED
+    )
+  }
 
   const handleSubmit = async () => {
     const totalPercentage = Object.values(distribution).reduce(
@@ -169,7 +171,6 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
                     <FinalistCard
                       key={`finalist-card-${i}`}
                       finalist={finalist}
-                      distribute={active}
                       distribution={
                         userHasVotingPower ? distribution : undefined
                       }
@@ -179,7 +180,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
                           : undefined
                       }
                       userHasVotingPower={userHasVotingPower}
-                      isVotingPeriod={active}
+                      isVotingPeriod={isVotingPeriod}
                     />
                   </div>
                 ))
@@ -189,7 +190,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
                 </div>
               )}
 
-              {active && finalists && finalists.length > 0 && (
+              {isVotingPeriod && finalists && finalists.length > 0 && (
                 <div className="mt-6 w-full flex justify-end">
                   {userHasVotingPower ? (
                     <span className="flex flex-col md:flex-row md:items-center gap-2">

@@ -5,5 +5,5 @@ export type Finalist = {
   videoUrl: string
   writtenUrl: string
   address: string
-    image: string
+  image: string
 }
