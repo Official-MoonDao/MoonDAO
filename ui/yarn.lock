@@ -1389,6 +1389,14 @@
   resolved "https://registry.npmjs.org/@corex/deepmerge/-/deepmerge-4.0.43.tgz"
   integrity sha512-N8uEMrMPL0cu/bdboEWpQYb/0i2K5Qn8eCsxzOmxSggJbbQte7ljMRoXm917AbntqTGOzdTu+vP3KOOzoC70HQ==
 
+"@covalenthq/client-sdk@^2.3.1":
+  version "2.3.1"
+  resolved "https://registry.yarnpkg.com/@covalenthq/client-sdk/-/client-sdk-2.3.1.tgz#e046d909f55a6fcf1ef1c92cffbf8afb566b87f4"
+  integrity sha512-IXex9C5T8Ic9D0Drl9fMMUIXan6qlzF0bFrVgzSOnaaM4u4ZCZ/nA1M74/xslj6CJ23VR7IGlOy9OCDRF+QgkA==
+  dependencies:
+    big.js "^6.2.1"
+    graphql-ws "^6.0.5"
+
 "@cypress/request@2.88.12":
   version "2.88.12"
   resolved "https://registry.npmjs.org/@cypress/request/-/request-2.88.12.tgz"
@@ -6755,9 +6763,9 @@ big.js@^5.2.2:
   resolved "https://registry.npmjs.org/big.js/-/big.js-5.2.2.tgz"
   integrity sha512-vyL2OymJxmarO8gxMr0mhChsO9QGwhynfuu4+MHTAW6czfq9humCB7rKpUjDd9YUiDPU4mzpyupFSvOClAwbmQ==
 
-big.js@6.2.2:
+big.js@6.2.2, big.js@^6.2.1:
   version "6.2.2"
-  resolved "https://registry.npmjs.org/big.js/-/big.js-6.2.2.tgz"
+  resolved "https://registry.yarnpkg.com/big.js/-/big.js-6.2.2.tgz#be3bb9ac834558b53b099deef2a1d06ac6368e1a"
   integrity sha512-y/ie+Faknx7sZA5MfGA2xKlu0GDv8RWrXGsmlteyJQ2lvoKv9GBK/fpRMc2qlSoBAgNxrixICFCBefIq8WCQpQ==
 
 bigint-buffer@^1.1.5:
@@ -10773,6 +10781,11 @@ graphql-request@^6.1.0:
   dependencies:
     "@graphql-typed-document-node/core" "^3.2.0"
     cross-fetch "^3.1.5"
+
+graphql-ws@^6.0.5:
+  version "6.0.6"
+  resolved "https://registry.yarnpkg.com/graphql-ws/-/graphql-ws-6.0.6.tgz#e9c9ff85f4ddb5bbe6faa2721c0d27e6c11746d2"
+  integrity sha512-zgfER9s+ftkGKUZgc0xbx8T7/HMO4AV5/YuYiFc+AtgcO5T0v8AxYYNQ+ltzuzDZgNkYJaFspm5MMYLjQzrkmw==
 
 graphql@^15.5.0:
   version "15.9.0"

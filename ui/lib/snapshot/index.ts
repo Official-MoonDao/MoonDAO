@@ -346,3 +346,24 @@ export function useVotesOfAddress(
     async (url) => getVotesOfAddress(address, first)
   )
 }
+
+export async function getVoteCountOfAddress(
+  address: string | undefined
+): Promise<number> {
+  if (!address) {
+    return 0
+  }
+
+  const votes = await getVotesOfAddress(address)
+  return votes.length
+}
+
+export function useVoteCountOfAddress(
+  address: string | undefined,
+  shouldFetch: boolean = true
+) {
+  return useSWR(
+    shouldFetch ? [endpoint, 'useVoteCountOfAddress', address] : null,
+    async (url) => getVoteCountOfAddress(address)
+  )
+}

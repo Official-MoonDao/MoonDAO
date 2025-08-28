@@ -160,6 +160,7 @@ export default function CitizenProvider({
   mock = false,
 }: any) {
   const [citizen, setCitizen] = useState<any>()
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const account = useActiveAccount()
   const { authenticated, user } = usePrivy()
 
@@ -194,6 +195,10 @@ export default function CitizenProvider({
       console.log('Found cached data, setting citizen state:', cachedData)
       setCitizen(cachedData)
     } else {
+      // If no cached data and we have auth, we'll need to fetch
+      if (authenticated && user) {
+        setIsLoading(true)
+      }
       console.log('No cached data found')
     }
   }, [address, chainId, mock])
@@ -238,6 +243,8 @@ export default function CitizenProvider({
           setCitizen(undefined)
           setCachedCitizen(address || '', chainId, undefined)
         }
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -249,11 +256,12 @@ export default function CitizenProvider({
 
     if (!authenticated) {
       setCitizen(undefined)
+      setIsLoading(false)
     }
   }, [authenticated, mock])
 
   return (
-    <CitizenContext.Provider value={{ citizen, setCitizen }}>
+    <CitizenContext.Provider value={{ citizen, setCitizen, isLoading }}>
       {children}
     </CitizenContext.Provider>
   )

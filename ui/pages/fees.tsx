@@ -64,7 +64,7 @@ export default function Fees() {
   const [feeData, setFeeData] = useState<any[]>([])
   const [weekEnd, setWeekEnd] = useState<number | null>(null)
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const VMOONEYBalance = useTotalVP(address || '')
+  const { walletVP: VMOONEYBalance } = useTotalVP(address || '')
 
   useEffect(() => {
     if (!address) return
