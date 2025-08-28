@@ -11,9 +11,11 @@ import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 contract Votes is ERC721Holder, Ownable {
-    // Table for storing WBA finalist votes.
+    // Table for storing votes.
     // vote is a json object with keys being outcome id
     // values percentage allocated to that outcome.
+    // voteId is a foreign key for representing which
+    // motion the vote is for.
     using ERC165Checker for address;
 
     uint256 private _tableId;

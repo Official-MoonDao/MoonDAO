@@ -8,7 +8,7 @@ contract MyScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        Votes wba = new Votes("Votes");
+        Votes votes = new Votes("Votes");
 
         vm.stopBroadcast();
     }
