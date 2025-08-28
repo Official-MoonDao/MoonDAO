@@ -1,15 +1,15 @@
 import Link from 'next/link'
 import React from 'react'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
-import Container from '../components/layout/Container'
-import WebsiteHead from '../components/layout/Head'
+import Container from '@/components/layout/Container'
+import WebsiteHead from '@/components/layout/Head'
 
 const ThankYou: React.FC = () => {
   return (
     <>
       <WebsiteHead
         title="Thank You"
-        description="Thank you for your submission. We've received your response and will be in touch soon."
+        description="Thank you for your submission."
       />
       <Container>
         <div className="min-h-screen flex items-center justify-center p-4">
@@ -25,8 +25,7 @@ const ThankYou: React.FC = () => {
                     Thank You!
                   </h1>
                   <p className="text-gray-300 text-sm leading-relaxed">
-                    We've received your response. Our team will review your
-                    submission and get back to you soon.
+                    We've received your response. Thank you for voting!
                   </p>
                 </div>
               </div>
@@ -40,10 +39,10 @@ const ThankYou: React.FC = () => {
                   <span>Go to Homepage</span>
                 </Link>
                 <Link
-                  href="/network"
+                  href="/wba"
                   className="w-full bg-transparent border border-white/20 hover:bg-white/10 text-white py-3 px-6 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2"
                 >
-                  <span>Explore the Network</span>
+                  <span>Back to Finalists</span>
                 </Link>
               </div>
             </div>

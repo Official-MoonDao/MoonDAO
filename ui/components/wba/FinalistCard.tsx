@@ -55,7 +55,7 @@ const FinalistCardContent = memo(
     return (
       <div
         id="card-container"
-        className="p-4 pb-6 flex flex-col gap-2 relative w-full overflow-hidden"
+        className="p-2 flex flex-col gap-2 relative  overflow-hidden"
       >
         <div className="flex justify-between">
           <div className="w-full flex flex-row gap-2">
@@ -63,8 +63,8 @@ const FinalistCardContent = memo(
               className="rounded-2xl border-4 border-slate-500/50"
               src={getIPFSGateway(finalist.image)}
               alt="Citizen Image"
-              height={75}
-              width={75}
+              height={66}
+              width={66}
             />
             <div className="flex flex-col">
               <Link href={`/citizen/${finalist?.id}`} passHref>

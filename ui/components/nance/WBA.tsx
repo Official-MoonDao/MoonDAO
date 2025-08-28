@@ -1,41 +1,20 @@
-import DistributionTableABI from 'const/abis/DistributionTable.json'
-import HatsABI from 'const/abis/Hats.json'
-import ProjectABI from 'const/abis/Project.json'
-import {
-  DEFAULT_CHAIN_V5,
-  DISTRIBUTION_TABLE_ADDRESSES,
-  HATS_ADDRESS,
-  PROJECT_ADDRESSES,
-  ARBITRUM_ASSETS_URL,
-  POLYGON_ASSETS_URL,
-  BASE_ASSETS_URL,
-} from 'const/config'
-import useStakedEth from 'lib/utils/hooks/useStakedEth'
+import WBATableABI from 'const/abis/WBA.json'
+import { runQuadraticVoting } from '@/lib/utils/rewards'
+import { DEFAULT_CHAIN_V5, WBA_TABLE_ADDRESSES } from 'const/config'
 import _ from 'lodash'
-import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useMemo } from 'react'
-import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import { useCitizens } from '@/lib/citizen/useCitizen'
-import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
-import { useAssets } from '@/lib/dashboard/hooks'
-import { ethereum } from '@/lib/infura/infuraChains'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
-import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
-import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { computeRewardPercentages } from '@/lib/utils/rewards'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import SectionCard from '@/components/layout/SectionCard'
-import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import Finalist from '@/components/wba/Finalist'
 import FinalistCard from '@/components/wba/FinalistCard'
@@ -50,8 +29,6 @@ export type WBAProps = {
   distributions: Distribution[]
   refresh: () => void
 }
-
-// Helper function to format large numbers for mobile display
 
 export function WBA({ finalists, distributions, refresh }: WBAProps) {
   const router = useRouter()
@@ -91,9 +68,9 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
 
   //Contracts
   const distributionTableContract = useContract({
-    address: DISTRIBUTION_TABLE_ADDRESSES[chainSlug],
+    address: WBA_TABLE_ADDRESSES[chainSlug],
     chain: chain,
-    abi: DistributionTableABI as any,
+    abi: WBATableABI.abi as any,
   })
   const addresses = useMemo(() => {
     return distributions ? distributions.map((d) => d.address) : []
@@ -110,24 +87,14 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
     return userAddress && userVotingPower > 0
   }, [userVotingPower, userAddress])
 
-  const isCitizenAddresses = useCitizens(chain, addresses)
-  const citizenVotingAddresses = [
-    '0x78176eaabcb3255e898079dc67428e15149cdc99', // payout for ryand2d.eth
-    '0x9fdf876a50ea8f95017dcfc7709356887025b5bb', // payout for mitchmcquinn.eth
-  ]
-  const isCitizenVotingAddresses = addresses.map((address) =>
-    citizenVotingAddresses.includes(address.toLowerCase())
-  )
-  const isCitizens = isCitizenAddresses.map(
-    (isCitizen, i) => isCitizen || isCitizenVotingAddresses[i]
-  )
-
-  let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
-  const nonCitizenDistributions = distributions?.filter(
-    (_, i) => !isCitizens[i]
-  )
   // Map from address to percentage of commnity rewards
   const readyToRunVoting = distributions.length > 0
+  const SUM_TO_ONE_HUNDRED = 100
+  const outcome = runQuadraticVoting(
+    distributions,
+    addressToQuadraticVotingPower,
+    SUM_TO_ONE_HUNDRED
+  )
 
   const handleSubmit = async () => {
     const totalPercentage = Object.values(distribution).reduce(
@@ -164,7 +131,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
           account,
         })
       }
-      if (receipt) setTimeout(() => router.push('/thank-you'), 5000)
+      if (receipt) setTimeout(() => router.push('/wba/thank-you'), 5000)
     } catch (error) {
       console.error('Error submitting distribution:', error)
       toast.error('Error submitting distribution. Please try again.', {
@@ -176,7 +143,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
     <section id="projects-container" className="overflow-hidden">
       <Head
         title="Projects"
-        description="View active projects and allocate retroactive rewards to completed projects and their contributors based on impact and results.'"
+        description="View World’s Biggest Analog Scholarship finalists and vote for the candidate or candidates you believe should receive the top scholarships."
       />
       <Container>
         <ContentLayout
@@ -191,18 +158,14 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
           popOverEffect={false}
           isProfile
         >
-          <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px]">
+          <div className="flex flex-col gap-6 p-6 px:40 md:p-8 md:px-40 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px]">
             {/* Condensed Top Section - Rewards + Create Button */}
-            <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
-              Finalists
-            </h1>
-
             <div>
               {finalists && finalists.length > 0 ? (
                 finalists.map((finalist: any, i) => (
                   <div
                     key={`finalist-card-${i}`}
-                    className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+                    className="m-2 bg-black/20 rounded-xl border border-white/10 overflow-hidden"
                   >
                     <FinalistCard
                       key={`finalist-card-${i}`}

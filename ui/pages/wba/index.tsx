@@ -1,7 +1,8 @@
+import { arbitrum } from '@/lib/infura/infuraChains'
 import {
   CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
-  DISTRIBUTION_TABLE_NAMES,
+  WBA_TABLE_NAMES,
 } from 'const/config'
 import { useRouter } from 'next/router'
 import queryTable from '@/lib/tableland/queryTable'
@@ -26,8 +27,10 @@ export async function getStaticProps() {
   try {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
+    const prodChain = arbitrum
+    const prodChainSlug = getChainSlug(prodChain)
 
-    const distributionStatement = `SELECT * FROM ${DISTRIBUTION_TABLE_NAMES[chainSlug]}`
+    const distributionStatement = `SELECT * FROM ${WBA_TABLE_NAMES[chainSlug]}`
     const distributions = await queryTable(chain, distributionStatement)
     let finalists: Finalist[] = [
       {
@@ -112,11 +115,11 @@ export async function getStaticProps() {
       },
     ]
     const statement = `SELECT * FROM ${
-      CITIZEN_TABLE_NAMES[chainSlug]
+      CITIZEN_TABLE_NAMES[prodChainSlug]
     } WHERE id IN (${finalists
       .map((finalist) => finalist.citizenId)
       .join(',')})`
-    const allCitizens = (await queryTable(chain, statement)) as any
+    const allCitizens = (await queryTable(prodChain, statement)) as any
 
     finalists.forEach((finalist) => {
       const citizen = allCitizens.find(

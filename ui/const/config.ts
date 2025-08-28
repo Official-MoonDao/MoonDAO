@@ -23,11 +23,13 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig =
-  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
+const ethConfig = require(
+  `../../contracts/deployments/ethereum`
+) as DeploymentConfig
 
-const polygonConfig =
-  require(`../../contracts/deployments/polygon`) as DeploymentConfig
+const polygonConfig = require(
+  `../../contracts/deployments/polygon`
+) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
@@ -35,11 +37,13 @@ const arbitrumConfig =
 const baseConfig =
   require('../../contracts/deployments/base') as DeploymentConfig
 
-const goerliConfig =
-  require(`../../contracts/deployments/goerli`) as DeploymentConfig
+const goerliConfig = require(
+  `../../contracts/deployments/goerli`
+) as DeploymentConfig
 
-const sepoliaConfig =
-  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
+const sepoliaConfig = require(
+  `../../contracts/deployments/sepolia`
+) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -166,6 +170,14 @@ export const DISTRIBUTION_TABLE_NAMES: Index = {
   arbitrum: 'DISTRIBUTION_42161_104',
   sepolia: 'DISTRIBUTION_11155111_1875',
   'arbitrum-sepolia': 'DISTRIBUTION_421614_1062',
+}
+export const WBA_TABLE_ADDRESSES: Index = {
+  arbitrum: '0x99eC7231087f7e25852D627A4f257EC6e3B16775',
+  sepolia: '0x63236A1b350a44aee064c18E0790d043EEB4d7f4',
+}
+export const WBA_TABLE_NAMES: Index = {
+  arbitrum: 'WBA_42161_145',
+  sepolia: 'WBA_11155111_1970',
 }
 export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.VotingEscrowDepositor,
