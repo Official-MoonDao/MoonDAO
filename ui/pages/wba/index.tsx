@@ -1,15 +1,16 @@
-import { arbitrum } from '@/lib/infura/infuraChains'
 import {
   CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
-  WBA_TABLE_NAMES,
+  VOTES_TABLE_NAMES,
+  WBA_VOTE_ID,
 } from 'const/config'
 import { useRouter } from 'next/router'
+import { arbitrum } from '@/lib/infura/infuraChains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { WBA, WBAProps } from '@/components/wba/WBA'
 import Finalist from '@/components/wba/Finalist'
+import { WBA, WBAProps } from '@/components/wba/WBA'
 
 export default function WBAPage({ distributions, finalists }: WBAProps) {
   const router = useRouter()
@@ -30,7 +31,7 @@ export async function getStaticProps() {
     const prodChain = arbitrum
     const prodChainSlug = getChainSlug(prodChain)
 
-    const distributionStatement = `SELECT * FROM ${WBA_TABLE_NAMES[chainSlug]}`
+    const distributionStatement = `SELECT * FROM ${VOTES_TABLE_NAMES[chainSlug]} WHERE voteId = ${WBA_VOTE_ID}`
     const distributions = await queryTable(chain, distributionStatement)
     let finalists: Finalist[] = [
       {

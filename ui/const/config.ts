@@ -167,14 +167,15 @@ export const DISTRIBUTION_TABLE_NAMES: Index = {
   sepolia: 'DISTRIBUTION_11155111_1875',
   'arbitrum-sepolia': 'DISTRIBUTION_421614_1062',
 }
-export const WBA_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x99eC7231087f7e25852D627A4f257EC6e3B16775',
-  sepolia: '0x63236A1b350a44aee064c18E0790d043EEB4d7f4',
+export const VOTES_TABLE_ADDRESSES: Index = {
+  arbitrum: '0xDDD7122193b1d79D95f4E321F2de22467C6cCDCf',
+  sepolia: '0x6D65b6FFeacE11c74c24490265bbB18832d62995',
 }
-export const WBA_TABLE_NAMES: Index = {
-  arbitrum: 'WBA_42161_145',
-  sepolia: 'WBA_11155111_1970',
+export const VOTES_TABLE_NAMES: Index = {
+  arbitrum: 'Votes_42161_146',
+  sepolia: 'Votes_11155111_1971',
 }
+export const WBA_VOTE_ID = 0
 export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.VotingEscrowDepositor,
   sepolia: sepoliaConfig.VotingEscrowDepositor,

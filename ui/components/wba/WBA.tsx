@@ -1,5 +1,9 @@
-import WBATableABI from 'const/abis/WBA.json'
-import { DEFAULT_CHAIN_V5, WBA_TABLE_ADDRESSES } from 'const/config'
+import VotesTableABI from 'const/abis/Votes.json'
+import {
+  DEFAULT_CHAIN_V5,
+  VOTES_TABLE_ADDRESSES,
+  WBA_VOTE_ID,
+} from 'const/config'
 import _ from 'lodash'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useMemo } from 'react'
@@ -50,7 +54,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
     if (distributions && userAddress) {
       for (const d of distributions) {
         if (d.address.toLowerCase() === userAddress.toLowerCase()) {
-          setDistribution(d.distribution)
+          setDistribution(d.vote)
           setEdit(true)
           break
         }
@@ -68,9 +72,9 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
 
   //Contracts
   const distributionTableContract = useContract({
-    address: WBA_TABLE_ADDRESSES[chainSlug],
+    address: VOTES_TABLE_ADDRESSES[chainSlug],
     chain: chain,
-    abi: WBATableABI.abi as any,
+    abi: VotesTableABI.abi as any,
   })
   const addresses = useMemo(() => {
     return distributions ? distributions.map((d) => d.address) : []
@@ -116,7 +120,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
         const transaction = prepareContractCall({
           contract: distributionTableContract,
           method: 'updateTableCol' as string,
-          params: [JSON.stringify(distribution)],
+          params: [WBA_VOTE_ID, JSON.stringify(distribution)],
         })
         receipt = await sendAndConfirmTransaction({
           transaction,
@@ -126,7 +130,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
         const transaction = prepareContractCall({
           contract: distributionTableContract,
           method: 'insertIntoTable' as string,
-          params: [JSON.stringify(distribution)],
+          params: [WBA_VOTE_ID, JSON.stringify(distribution)],
         })
         receipt = await sendAndConfirmTransaction({
           transaction,
