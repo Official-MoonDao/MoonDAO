@@ -10,46 +10,47 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
-contract WBA is ERC721Holder, Ownable {
+contract Votes is ERC721Holder, Ownable {
     // Table for storing WBA finalist votes.
-    // distribution is a json object with keys being finalist id
-    // from the ui/pages/wba/index.ts:finalists and values percentage
-    // allocated to that finalists.
+    // vote is a json object with keys being outcome id
+    // values percentage allocated to that outcome.
     using ERC165Checker for address;
 
     uint256 private _tableId;
     string private _TABLE_PREFIX;
-    string private constant DISTRIBUTIONS_SCHEMA =
-        "id integer primary key, address text, distribution text, unique(address)";
+    string private constant VOTE_SCHEMA =
+        "id integer primary key, voteId integer, address text, vote text, unique(address, voteId)";
 
     constructor(string memory _table_prefix) Ownable(msg.sender)  {
         _TABLE_PREFIX = _table_prefix;
         _tableId = TablelandDeployments.get().create(
             address(this),
-            SQLHelpers.toCreateFromSchema(DISTRIBUTIONS_SCHEMA, _TABLE_PREFIX)
+            SQLHelpers.toCreateFromSchema(VOTE_SCHEMA, _TABLE_PREFIX)
         );
     }
 
-    function insertIntoTable(string memory distribution) external {
+    function insertIntoTable(uint256 voteId, string memory vote) external {
         TablelandDeployments.get().mutate(
             address(this), // Table owner, i.e., this contract
             _tableId,
             SQLHelpers.toInsert(
                 _TABLE_PREFIX,
                 _tableId,
-                "address,distribution",
+                "voteId,address,vote",
                 string.concat(
+                    Strings.toString(voteId),
+                    ",",
                     SQLHelpers.quote(Strings.toHexString(msg.sender)),
                     ",",
                     "json(",
-                    SQLHelpers.quote(distribution),
+                    SQLHelpers.quote(vote),
                     ")"
                 )
             )
         );
     }
 
-    function updateTableCol(string memory distribution) external {
+    function updateTableCol(uint256 voteId, string memory vote) external {
         TablelandDeployments.get().mutate(
             address(this), // Table owner, i.e., this contract
             _tableId,
@@ -57,26 +58,30 @@ contract WBA is ERC721Holder, Ownable {
                 _TABLE_PREFIX,
                 _tableId,
                 string.concat(
-                "distribution=",
+                "vote=",
                     "json(",
-                    SQLHelpers.quote(distribution),
+                    SQLHelpers.quote(vote),
                     ")"
                 ),
                 string.concat(
-                    "address = ",
+                    "voteId = ",
+                    Strings.toString(voteId),
+                    " AND address = ",
                     SQLHelpers.quote(Strings.toHexString(msg.sender))
                 )
             )
         );
     }
 
-    function deleteFromTable() external {
+    function deleteFromTable(uint256 voteId) external {
         TablelandDeployments.get().mutate(
             address(this),
             _tableId,
             SQLHelpers.toDelete(_TABLE_PREFIX, _tableId,
                 string.concat(
-                    "address = ",
+                    "voteId = ",
+                    Strings.toString(voteId),
+                    " AND address = ",
                     SQLHelpers.quote(Strings.toHexString(msg.sender))
                 )
 )
