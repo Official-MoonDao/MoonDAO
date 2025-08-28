@@ -339,7 +339,7 @@ export default function WeeklyRewardPool() {
   }
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-blue-900/80 via-purple-900/60 to-gray-900/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+    <div className="relative overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
       {/* Content */}
       <div className="relative z-10">
         {/* Header */}
@@ -347,10 +347,6 @@ export default function WeeklyRewardPool() {
           <h3 className="text-lg font-bold text-transparent bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text">
             Weekly Reward Pool
           </h3>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-xs text-green-300 font-medium">Live</span>
-          </div>
         </div>
 
         {/* Pool Stats Cards */}

@@ -321,88 +321,99 @@ export default function SingedInDashboard({
               </div>
             </div>
 
-            {/* Center - Stats */}
-            {/* Center - Stats */}
+            {/* Center - Stats with Action Buttons */}
             {address && (
-              <div className="flex items-center justify-center gap-4 sm:gap-6 order-3 lg:order-2">
+              <div className="flex items-center justify-center gap-6 order-3 lg:order-2">
                 <div className="text-center">
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <Image
-                      src="/coins/MOONEY.png"
-                      width={16}
-                      height={16}
-                      alt="MOONEY"
-                      className="rounded-full"
-                    />
-                  </div>
                   {MOONEYBalance === undefined || MOONEYBalance === null ? (
-                    <div className="animate-pulse bg-white/20 rounded w-12 h-4 mx-auto mb-1"></div>
+                    <div className="animate-pulse bg-white/20 rounded w-16 h-6 mx-auto"></div>
                   ) : (
-                    <div className="text-base sm:text-lg font-bold text-blue-300">
+                    <div className="text-xl font-bold text-white">
                       {Math.round(MOONEYBalance).toLocaleString()}
                     </div>
                   )}
-                  <div className="text-xs text-white/70">MOONEY</div>
+                  <div className="text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
+                    <Image
+                      src="/coins/MOONEY.png"
+                      width={12}
+                      height={12}
+                      alt="MOONEY"
+                      className="rounded-full"
+                    />
+                    MOONEY
+                  </div>
+                  <StandardButton
+                    className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-3 py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-1 w-full"
+                    link="/get-mooney"
+                  >
+                    <BanknotesIcon className="w-3 h-3" />
+                    Buy
+                  </StandardButton>
                 </div>
 
+                <div className="w-px h-16 bg-white/20"></div>
+
                 <div className="text-center">
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <BoltIcon className="w-4 h-4" />
-                  </div>
                   {walletVP === undefined || walletVP === null ? (
-                    <div className="animate-pulse bg-white/20 rounded w-12 h-4 mx-auto mb-1"></div>
+                    <div className="animate-pulse bg-white/20 rounded w-16 h-6 mx-auto"></div>
                   ) : (
-                    <div className="text-base sm:text-lg font-bold text-purple-300">
+                    <div className="text-xl font-bold text-white">
                       {Math.round(walletVP).toLocaleString()}
                     </div>
                   )}
-                  <div className="text-xs text-white/70">vMOONEY</div>
+                  <div className="text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
+                    <BoltIcon className="w-3 h-3" />
+                    vMOONEY
+                  </div>
+                  <StandardButton
+                    className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-3 py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-1 w-full"
+                    link="/lock"
+                  >
+                    <BoltIcon className="w-3 h-3" />
+                    Stake
+                  </StandardButton>
                 </div>
 
-                <div className="text-center">
-                  <div className="text-sm mb-1 flex items-center justify-center">
-                    <CheckBadgeIcon className="w-4 h-4" />
-                  </div>
-                  <div className="text-base sm:text-lg font-bold text-green-300">
-                    1
-                  </div>
-                  <div className="text-xs text-white/70">Votes</div>
-                </div>
+                <div className="w-px h-16 bg-white/20"></div>
 
                 <div className="text-center">
-                  <div className="text-sm mb-1 flex items-center justify-center">
-                    <UserGroupIcon className="w-4 h-4" />
+                  <div className="text-xl font-bold text-white">1</div>
+                  <div className="text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
+                    <CheckBadgeIcon className="w-3 h-3" />
+                    Votes
                   </div>
-                  <div className="text-base sm:text-lg font-bold text-orange-300">
+                  <StandardButton
+                    className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-3 py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-1 w-full"
+                    link="/governance"
+                  >
+                    <CheckBadgeIcon className="w-3 h-3" />
+                    Vote
+                  </StandardButton>
+                </div>
+
+                <div className="w-px h-16 bg-white/20"></div>
+
+                <div className="text-center">
+                  <div className="text-xl font-bold text-white">
                     {teamHats?.length || 0}
                   </div>
-                  <div className="text-xs text-white/70">Teams</div>
+                  <div className="text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
+                    <UserGroupIcon className="w-3 h-3" />
+                    Teams
+                  </div>
+                  <StandardButton
+                    className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-3 py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-1 w-full"
+                    link="/network"
+                  >
+                    <UserGroupIcon className="w-3 h-3" />
+                    Join Team
+                  </StandardButton>
                 </div>
               </div>
-            )}            {/* Right Side - Action Buttons */}
-            <div className="flex flex-wrap gap-2 justify-center lg:justify-end order-2 lg:order-3">
-              <StandardButton
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all flex items-center gap-2"
-                link="/get-mooney"
-              >
-                <BanknotesIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">Buy</span>
-              </StandardButton>
-              <StandardButton
-                className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all flex items-center gap-2"
-                link="/lock"
-              >
-                <BoltIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">Stake</span>
-              </StandardButton>
-              <StandardButton
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all flex items-center gap-2"
-                link="/governance"
-              >
-                <CheckBadgeIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">Vote</span>
-              </StandardButton>
-            </div>
+            )}
+
+            {/* Right Side - Empty space for balance */}
+            <div className="order-2 lg:order-3"></div>
           </div>
         </div>
 
