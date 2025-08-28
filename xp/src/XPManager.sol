@@ -274,11 +274,7 @@ contract XPManager is Ownable {
      * @return Available reward amount
      */
     function getAvailableERC20Reward(address user) external view returns (uint256) {
-<<<<<<< HEAD
         return calculateAvailableERC20Reward(user);
-=======
-        return calculateERC20Reward(user);
->>>>>>> f3d3b8a39673fcbfce3392a257775bb1d7813512
     }
 
     /**
@@ -324,6 +320,17 @@ contract XPManager is Ownable {
         require(eligible, "Not eligible");
         require(xpAmount > 0, "No XP to claim");
 
+        // Ensure sufficient ERC20 balance to cover the payout that will be triggered by this claim
+        if (erc20RewardConfig.active) {
+            uint256 newTotalEarned = ((userXP[msg.sender] + xpAmount) * erc20RewardConfig.conversionRate);
+            uint256 alreadyClaimed = claimedERC20Rewards[msg.sender];
+            if (newTotalEarned > alreadyClaimed) {
+                uint256 projectedPayout = newTotalEarned - alreadyClaimed;
+                uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
+                require(bal >= projectedPayout, "Insufficient ERC20 balance");
+            }
+        }
+
         // Mark as used
         usedProofs[claimId] = true;
 
@@ -333,12 +340,9 @@ contract XPManager is Ownable {
         // Grant XP
         _grantXP(msg.sender, xpAmount);
 
-<<<<<<< HEAD
         // Automatically claim ERC20 rewards
         _claimERC20Rewards(msg.sender);
 
-=======
->>>>>>> f3d3b8a39673fcbfce3392a257775bb1d7813512
         emit VerifierClaimed(msg.sender, conditionId, xpAmount);
     }
 
@@ -367,6 +371,17 @@ contract XPManager is Ownable {
         (bool eligible, uint256 xpAmount) = verifier.isEligible(user, context);
         require(eligible, "Not eligible");
         require(xpAmount > 0, "No XP to claim");
+
+        // Ensure sufficient ERC20 balance to cover the payout that will be triggered by this claim
+        if (erc20RewardConfig.active) {
+            uint256 newTotalEarned = ((userXP[user] + xpAmount) * erc20RewardConfig.conversionRate);
+            uint256 alreadyClaimed = claimedERC20Rewards[user];
+            if (newTotalEarned > alreadyClaimed) {
+                uint256 projectedPayout = newTotalEarned - alreadyClaimed;
+                uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
+                require(bal >= projectedPayout, "Insufficient ERC20 balance");
+            }
+        }
 
         // Mark as used
         usedProofs[claimId] = true;
@@ -406,6 +421,17 @@ contract XPManager is Ownable {
         (bool eligible, uint256 totalXP, uint256 highestStage) = stagedVerifier.isBulkEligible(msg.sender, context);
         require(eligible, "Not eligible");
         require(totalXP > 0, "No XP to claim");
+
+        // Ensure sufficient ERC20 balance to cover the payout that will be triggered by this claim
+        if (erc20RewardConfig.active) {
+            uint256 newTotalEarned = ((userXP[msg.sender] + totalXP) * erc20RewardConfig.conversionRate);
+            uint256 alreadyClaimed = claimedERC20Rewards[msg.sender];
+            if (newTotalEarned > alreadyClaimed) {
+                uint256 projectedPayout = newTotalEarned - alreadyClaimed;
+                uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
+                require(bal >= projectedPayout, "Insufficient ERC20 balance");
+            }
+        }
 
         // Mark as used
         usedProofs[claimId] = true;
@@ -450,6 +476,17 @@ contract XPManager is Ownable {
         (bool eligible, uint256 totalXP, uint256 highestStage) = stagedVerifier.isBulkEligible(user, context);
         require(eligible, "Not eligible");
         require(totalXP > 0, "No XP to claim");
+
+        // Ensure sufficient ERC20 balance to cover the payout that will be triggered by this claim
+        if (erc20RewardConfig.active) {
+            uint256 newTotalEarned = ((userXP[user] + totalXP) * erc20RewardConfig.conversionRate);
+            uint256 alreadyClaimed = claimedERC20Rewards[user];
+            if (newTotalEarned > alreadyClaimed) {
+                uint256 projectedPayout = newTotalEarned - alreadyClaimed;
+                uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
+                require(bal >= projectedPayout, "Insufficient ERC20 balance");
+            }
+        }
 
         // Mark as used
         usedProofs[claimId] = true;
@@ -576,6 +613,8 @@ contract XPManager is Ownable {
 
         uint256 availableReward = calculateAvailableERC20Reward(user);
         if (availableReward > 0) {
+            uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
+            require(bal >= availableReward, "Insufficient ERC20 balance");
             // Update claimed amount
             claimedERC20Rewards[user] += availableReward;
             
