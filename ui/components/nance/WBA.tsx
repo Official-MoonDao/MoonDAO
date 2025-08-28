@@ -164,7 +164,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
           account,
         })
       }
-      if (receipt) setTimeout(() => router.push('/projects/thank-you'), 5000)
+      if (receipt) setTimeout(() => router.push('/thank-you'), 5000)
     } catch (error) {
       console.error('Error submitting distribution:', error)
       toast.error('Error submitting distribution. Please try again.', {

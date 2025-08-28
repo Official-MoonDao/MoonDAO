@@ -49,17 +49,17 @@ contract Project is TablelandController, Ownable {
     }
 
     // Let anyone insert into the table
-    function insertIntoTable(uint256 id, string memory name, string memory description, string memory image, uint256 quarter, uint256 year, uint256 MDP, string memory proposalIPFS, string memory proposalLink, string memory finalReportIPFS, string memory finalReportLink, string memory rewardDistribution, string memory upfrontPayments, uint256 active, uint256 eligible) external {
+    function insertIntoTable(uint256 id, uint256 quarter, uint256 year, uint256 MDP, string memory rewardDistribution, string memory upfrontPayments, uint256 active, uint256 eligible) external {
         //only let projectTeam.projectTeamCreator insert
         require(_projectTeam.projectTeamCreator() == msg.sender, "Only ProjectTeamCreator can insert");
         string memory setters = string.concat(
                 Strings.toString(id),
                 ",",
-                SQLHelpers.quote(name),
+                SQLHelpers.quote(""),
                 ",",
-                SQLHelpers.quote(description),
+                SQLHelpers.quote(""),
                 ",",
-                SQLHelpers.quote(image),
+                SQLHelpers.quote(""),
                 ",",
                 Strings.toString(quarter),
                 ",",
@@ -67,13 +67,13 @@ contract Project is TablelandController, Ownable {
                 ",",
                 Strings.toString(MDP),
                 ",",
-                SQLHelpers.quote(proposalIPFS),
+                SQLHelpers.quote(""),
                 ",",
-                SQLHelpers.quote(proposalLink),
+                SQLHelpers.quote(""),
                 ",",
-                SQLHelpers.quote(finalReportIPFS),
+                SQLHelpers.quote(""),
                 ",",
-                SQLHelpers.quote(finalReportLink),
+                SQLHelpers.quote(""),
                 ",",
                 SQLHelpers.quote(rewardDistribution),
                 ",",
