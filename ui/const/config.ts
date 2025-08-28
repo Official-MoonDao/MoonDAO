@@ -1,4 +1,5 @@
 import { arbitrum, sepolia, arbitrumSepolia } from '../lib/infura/infuraChains'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -53,6 +54,8 @@ export const TEST_CHAIN =
     : sepolia
 export const DEFAULT_CHAIN_V5 =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : TEST_CHAIN
+
+export const DEFAULT_CHAIN_V5_SLUG = getChainSlug(DEFAULT_CHAIN_V5)
 
 export const MOONEY_ADDRESSES: Index = {
   ethereum: ethConfig.MOONEYToken,
@@ -460,8 +463,65 @@ export const HAS_CONTRIBUTED_VERIFIER_ADDRESSES: Index = {
 
 export const HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xd06372548c66Cc88aB8f9454D78f179E290B6640',
+  sepolia: '0xD3E259E9900FFe46E2d2d47a70ABcBCF221Cf264',
 }
+
+export const XP_VERIFIERS: any = [
+  {
+    verifierId: 0,
+    verifierAddress: HAS_VOTING_POWER_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/voting-power-proof',
+    type: 'staged',
+  },
+  {
+    verifierId: 1,
+    verifierAddress: HAS_VOTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/has-voted-proof',
+    type: 'staged',
+  },
+  {
+    verifierId: 2,
+    verifierAddress:
+      HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/has-token-balance-proof',
+    type: 'staged',
+  },
+  {
+    verifierId: 3,
+    verifierAddress:
+      HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/has-created-a-team-proof',
+    type: 'staged',
+  },
+  {
+    verifierId: 4,
+    verifierAddress: HAS_CONTRIBUTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/has-contributed-proof',
+    type: 'staged',
+  },
+  {
+    verifierId: 5,
+    verifierAddress:
+      HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/has-completed-citizen-profile-proof',
+  },
+  {
+    verifierId: 6,
+    verifierAddress:
+      HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES[
+        DEFAULT_CHAIN_V5_SLUG
+      ],
+    route: '/api/xp/has-bought-a-marketplace-listing-proof',
+    type: 'staged',
+  },
+  {
+    verifierId: 7,
+    verifierAddress:
+      HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/has-joined-a-team-proof',
+    type: 'staged',
+  },
+]
 
 export const DISCORD_GUILD_ID = '914720248140279868'
 export const GENERAL_CHANNEL_ID = '914720248140279871'
@@ -506,6 +566,8 @@ export const MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL =
     ? 'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-arb/version/latest'
     : 'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-sepolia/version/latest'
 
+export const MOONDAO_NETWORK_SUBGRAPH_URL =
+  'https://api.studio.thegraph.com/query/84320/moon-dao-network/version/latest'
 export const MOONDAO_MISSIONS_SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? 'https://api.studio.thegraph.com/query/111994/moon-dao-missions-arb/version/latest'
