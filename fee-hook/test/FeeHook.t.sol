@@ -160,7 +160,7 @@ contract FeeHookTest is Test, Config, Constants {
         // transfer the position back to the deployer to allow closing the position
         feeHook.transferPosition(
             deployerAddress,
-            PoolId.unwrap(poolKey.toId())
+            tokenId
         );
 
         // burn the position

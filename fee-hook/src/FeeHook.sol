@@ -40,7 +40,7 @@ contract FeeHook is BaseHook, Ownable {
 
     event CheckedIn(address indexed user, uint256 weekStart);
     event FeesDistributed(uint256 amount);
-    event TransferredPosition(address indexed to, bytes32 poolId, uint256 tokenId);
+    event TransferredPosition(address indexed to, uint256 tokenId);
     event CreatedPosition(bytes32 poolId, uint256 tokenId);
 
     constructor(address owner, IPoolManager _poolManager, IPositionManager _posm, address _vMooneyAddress) BaseHook(_poolManager) Ownable(owner) {
@@ -124,13 +124,10 @@ contract FeeHook is BaseHook, Ownable {
     // in case any manual intervention is needed.
     function transferPosition(
         address to,
-        bytes32 poolId) external onlyOwner
+        uint256 tokenId) external onlyOwner
     {
-        PoolId id = PoolId.wrap(poolId);
-        uint256 tokenId = poolIdToTokenId[id];
-        require(tokenId != 0, "Token ID not found");
-        emit TransferredPosition(to, poolId, tokenId);
         PositionManager(payable(address(posm))).safeTransferFrom(address(this), to, tokenId, "");
+        emit TransferredPosition(to, tokenId);
     }
 
     /// @notice Mark the caller as participating in the current week
