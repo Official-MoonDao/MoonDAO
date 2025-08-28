@@ -7,9 +7,9 @@ import WebsiteHead from '../components/layout/Head'
 const ThankYou: React.FC = () => {
   return (
     <>
-      <WebsiteHead
-        title="Thank You"
-        description="Thank you for your submission. We've received your response and will be in touch soon."
+      <WebsiteHead 
+        title="Thank You" 
+        description="Thank you for your submission. We've received your response and will be in touch soon." 
       />
       <Container>
         <div className="min-h-screen flex items-center justify-center p-4">
@@ -25,8 +25,7 @@ const ThankYou: React.FC = () => {
                     Thank You!
                   </h1>
                   <p className="text-gray-300 text-sm leading-relaxed">
-                    We've received your response. Our team will review your
-                    submission and get back to you soon.
+                    We've received your response. Our team will review your submission and get back to you soon.
                   </p>
                 </div>
               </div>

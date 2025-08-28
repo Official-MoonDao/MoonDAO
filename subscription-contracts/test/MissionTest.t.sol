@@ -105,7 +105,7 @@ contract MissionTest is Test, Config {
 
     function _createTeam() internal {
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "view", "formId", new address[](0));
+        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
         vm.stopPrank();
     }
 

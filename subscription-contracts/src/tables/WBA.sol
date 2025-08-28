@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 contract WBA is ERC721Holder, Ownable {
-    // Table for storing retroactive rewards votes.
+    // Table for storing WBA finalist votes.
     // distribution is a json object with keys being project id
     // from the project table and values being the percent
     // allocated to that project.

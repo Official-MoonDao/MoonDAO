@@ -64,7 +64,7 @@ contract MoonDAOTeamCreator is Ownable {
         openAccess = _openAccess;
     }
 
-    function createMoonDAOTeam(string memory adminHatURI, string memory managerHatURI, string memory memberHatURI, string calldata name, string calldata bio, string calldata image, string calldata _view, string memory formId, address[] memory members) external payable returns (uint256 tokenId, uint256 childHatId) {
+    function createMoonDAOTeam(string memory adminHatURI, string memory managerHatURI, string memory memberHatURI, string calldata name, string calldata bio, string calldata image, string calldata twitter, string calldata communications, string calldata website, string calldata _view, string memory formId, address[] memory members) external payable returns (uint256 tokenId, uint256 childHatId) {
 
         require(whitelist.isWhitelisted(msg.sender) || openAccess, "Only whitelisted addresses can create a MoonDAO Team");
         
@@ -104,7 +104,7 @@ contract MoonDAOTeamCreator is Ownable {
         //mint
         tokenId = moonDAOTeam.mintTo{value: msg.value}(address(gnosisSafe), msg.sender, teamAdminHat, teamManagerHat, teamMemberHat, address(memberPassthroughModule), address(split));
 
-        table.insertIntoTable(tokenId, name, bio, image, "", "", "", _view, formId);
+        table.insertIntoTable(tokenId, name, bio, image, twitter, communications, website, _view, formId);
     }
 
     function constructSafeCallData(address caller, address[] memory members) internal returns (bytes memory) {

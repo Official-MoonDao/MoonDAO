@@ -46,14 +46,11 @@ contract ProjectTeamCreator is Ownable {
         projectTeamAdminHatId = _projectTeamAdminHatId;
     }
 
-    function createProjectTeam(uint256 quarter, uint256 year, uint256 MDP, string calldata proposalIPFS, string calldata proposalLink, string calldata upfrontPayments, address lead, address[] memory members, address[] memory signers) external onlyOwner() returns (uint256 tokenId, uint256 childHatId) {
+    function createProjectTeam(string memory adminHatURI, string memory managerHatURI, string memory memberHatURI, string calldata name, string calldata description, string calldata image, uint256 quarter, uint256 year, uint256 MDP, string calldata proposalIPFS, string calldata proposalLink, string calldata upfrontPayments, address lead, address[] memory members, address[] memory signers) external onlyOwner() returns (uint256 tokenId, uint256 childHatId) {
         bytes memory safeCallData = constructSafeCallData(signers);
         GnosisSafeProxy gnosisSafe = gnosisSafeProxyFactory.createProxy(gnosisSingleton, safeCallData);
 
         //admin hat
-        string memory adminHatURI = "";
-        string memory managerHatURI = "";
-        string memory memberHatURI = "";
         uint256 projectAdminHat = hats.createHat(projectTeamAdminHatId, adminHatURI, 1, address(gnosisSafe), address(gnosisSafe), true, "");
         hats.mintHat(projectAdminHat, address(this));
 
@@ -81,7 +78,7 @@ contract ProjectTeamCreator is Ownable {
         //mint
         tokenId = projectTeam.mintTo(address(gnosisSafe), lead, projectAdminHat, projectManagerHat, projectContributorHat, address(memberPassthroughModule));
 
-        table.insertIntoTable(tokenId, quarter, year, MDP, "", upfrontPayments, 1, 0);
+        table.insertIntoTable(tokenId, name, description, image, quarter, year, MDP, proposalIPFS, proposalLink, "", "", "", upfrontPayments, 1, 0);
     }
 
     function constructSafeCallData(address[] memory signers) internal returns (bytes memory) {

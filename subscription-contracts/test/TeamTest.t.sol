@@ -72,7 +72,7 @@ contract ERC5643Test is Test {
 
     function _createMoonDAOTeam() internal returns (uint256 topHatId, uint256 hatId) {
       vm.startPrank(user1);
-      (uint256 topHatId, uint256 hatId) = creator.createMoonDAOTeam{value: 0.555 ether}("", "", "", "name", "bio", "image", "view", "formId", new address[](0));
+      (uint256 topHatId, uint256 hatId) = creator.createMoonDAOTeam{value: 0.555 ether}("", "", "", "name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
       vm.stopPrank();
     }
 
