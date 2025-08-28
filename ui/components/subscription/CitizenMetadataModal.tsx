@@ -162,7 +162,7 @@ export default function CitizenMetadataModal({
 
         if (res.ok) {
           setFormResponseId(responseId)
-          setStage(3)
+          setStage(4)
         } else {
           toast.error('Error submitting typeform, please contact support.', {
             duration: 10000,
@@ -201,30 +201,50 @@ export default function CitizenMetadataModal({
 
   return (
     <Modal id="citizen-metadata-modal-backdrop" setEnabled={setEnabled}>
-      <div className="flex flex-col gap-2 items-start justify-start w-[100vw] md:w-[650px] p-5 bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto">
+      <div className="flex flex-col gap-6 items-start justify-start w-[100vw] md:w-[700px] p-6 md:p-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl h-screen md:h-auto md:max-h-[90vh] overflow-y-auto">
         <div className="w-full flex items-center justify-between">
-          <h1 className="text-2xl font-GoodTimes">Update Info</h1>
+          <h1 className="text-2xl font-bold text-white">Edit Profile</h1>
           <button
             id="close-modal"
             type="button"
-            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => setEnabled(false)}
           >
             <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
           </button>
         </div>
         {stage === 0 && (
+          <>
+            <div className="w-full">
+              <h2 className="text-lg font-semibold text-white mb-4">Basic Information</h2>
+              <CitizenMetadataForm
+                nft={nft}
+                citizenData={citizenData}
+                setCitizenData={setCitizenData}
+              />
+            </div>
+            <div className="flex gap-4 mt-6 w-full">
+              <button
+                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all duration-200 flex-1"
+                onClick={() => setStage(1)}
+              >
+                Next: Update Profile Picture
+              </button>
+            </div>
+          </>
+        )}
+        {stage === 1 && (
           <ImageGenerator
             image={newCitizenImage}
             setImage={setNewCitizenImage}
             inputImage={inputImage}
             setInputImage={setInputImage}
-            nextStage={() => setStage(1)}
+            nextStage={() => setStage(2)}
             stage={stage}
             currImage={currCitizenImage}
           />
         )}
-        {stage == 0 && (
+        {stage === 1 && (
           <DeleteProfileData
             nft={nft}
             setEnabled={setEnabled}
@@ -233,61 +253,72 @@ export default function CitizenMetadataModal({
             type="citizen"
           />
         )}
-        {stage === 1 && (
+        {stage === 2 && (
           <>
-            <p>Would you like to update your email?</p>
-            <div className="flex gap-4">
+            <div className="text-center mb-6 w-full">
+              <h3 className="text-xl font-semibold text-white mb-3">Almost Done!</h3>
+              <p className="text-white/70">Would you like to update your email for notifications?</p>
+            </div>
+            <div className="flex gap-4 w-full">
               <button
-                className="px-5 py-2 rounded-md gradient-2"
-                onClick={() => setStage(2)}
-              >
-                Yes
-              </button>
-              <button
-                className="px-5 py-2 rounded-md border-2 border-light-warm border-gradient-2"
+                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all duration-200 flex-1"
                 onClick={() => setStage(3)}
               >
-                No
+                Yes, Update Email
+              </button>
+              <button
+                className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition-all duration-200 flex-1 border border-white/20"
+                onClick={() => setStage(4)}
+              >
+                Skip for Now
               </button>
             </div>
           </>
         )}
-        {stage === 2 && (
-          <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 overflow-hidden relative">
-            <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
-              <Widget
-                className="w-full"
-                id={
-                  process.env
-                    .NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string
-                }
-                onSubmit={submitTypeform}
-                height={500}
-              />
-            </div>
-            {/* Visible indicator for scroll/navigation */}
-            <div className="absolute bottom-4 right-4 bg-blue-600/80 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm border border-blue-400/30 shadow-lg pointer-events-none opacity-75 scroll-indicator">
-              ↕️ Scroll for more
+        {stage === 3 && (
+          <div className="w-full">
+            <h3 className="text-lg font-semibold text-white mb-4">Update Email</h3>
+            <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden relative">
+              <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
+                <Widget
+                  className="w-full"
+                  id={
+                    process.env
+                      .NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string
+                  }
+                  onSubmit={submitTypeform}
+                  height={500}
+                />
+              </div>
+              {/* Visible indicator for scroll/navigation */}
+              <div className="absolute bottom-4 right-4 bg-blue-600/90 text-white text-xs px-3 py-2 rounded-lg backdrop-blur-sm border border-blue-400/30 shadow-lg pointer-events-none">
+                ↕️ Scroll for more
+              </div>
             </div>
           </div>
         )}
-        {stage === 3 && (
+        {stage === 4 && (
           <>
-            <CitizenMetadataForm
-              nft={nft}
-              citizenData={citizenData}
-              setCitizenData={setCitizenData}
-            />
-            <ConditionCheckbox
-              label="I acknowledge that this info will be stored permanently onchain."
-              agreedToCondition={agreedToOnChainData}
-              setAgreedToCondition={setAgreedToOnChainData}
-            />
+            <div className="w-full">
+              <h2 className="text-lg font-semibold text-white mb-4">Review & Submit</h2>
+              <CitizenMetadataForm
+                nft={nft}
+                citizenData={citizenData}
+                setCitizenData={setCitizenData}
+              />
+            </div>
+            <div className="w-full">
+              <ConditionCheckbox
+                label="I acknowledge that this info will be stored permanently onchain."
+                agreedToCondition={agreedToOnChainData}
+                setAgreedToCondition={setAgreedToOnChainData}
+              />
+            </div>
             <PrivyWeb3Button
               v5
-              className="mt-4 w-full gradient-2 rounded-[5vmax]"
+              className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               requiredChain={DEFAULT_CHAIN_V5}
-              label="Submit"
+              label="Update Profile"
               isDisabled={!agreedToOnChainData}
               action={async () => {
                 if (!account) return

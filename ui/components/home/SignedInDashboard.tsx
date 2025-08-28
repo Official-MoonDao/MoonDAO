@@ -12,6 +12,7 @@ import {
   StarIcon,
   FireIcon,
   GiftIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline'
 import { Action, RequestBudget } from '@nance/nance-sdk'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
@@ -80,6 +81,7 @@ import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
 import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import CitizensChart from '@/components/subscription/CitizensChart'
+import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 
 // import Quests from '@/components/xp/Quests'
@@ -129,6 +131,9 @@ export default function SingedInDashboard({
 
   // Newsletter modal state
   const [newsletterModalOpen, setNewsletterModalOpen] = useState(false)
+
+  // Citizen metadata modal state
+  const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
 
   // Client-side newsletter state
   const [clientNewsletters, setClientNewsletters] = useState<any[]>(
@@ -267,23 +272,36 @@ export default function SingedInDashboard({
             {/* Left Side - Profile & Title */}
             <div className="flex items-center gap-3 sm:gap-4">
               {/* Profile Picture */}
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-3 border-white shadow-xl bg-white relative flex-shrink-0">
-                {citizen?.metadata?.image ? (
-                  <MediaRenderer
-                    client={client}
-                    src={citizen.metadata.image}
-                    alt={citizen.metadata.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-base sm:text-lg">
-                      {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
-                    </span>
-                  </div>
+              <div className="relative">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-3 border-white shadow-xl bg-white relative flex-shrink-0">
+                  {citizen?.metadata?.image ? (
+                    <MediaRenderer
+                      client={client}
+                      src={citizen.metadata.image}
+                      alt={citizen.metadata.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                      <span className="text-white font-bold text-base sm:text-lg">
+                        {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
+                      </span>
+                    </div>
+                  )}
+                  {/* Online status indicator */}
+                  <div className="absolute bottom-0 right-0 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                </div>
+                
+                {/* Edit Profile Button */}
+                {citizen && (
+                  <button
+                    className="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-colors shadow-lg border-2 border-white"
+                    onClick={() => setCitizenMetadataModalEnabled(true)}
+                    title="Edit Profile"
+                  >
+                    <PencilIcon className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                  </button>
                 )}
-                {/* Online status indicator */}
-                <div className="absolute bottom-0 right-0 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 border-2 border-white rounded-full"></div>
               </div>
 
               {/* Title & Subtitle */}
@@ -295,7 +313,7 @@ export default function SingedInDashboard({
                       <LoadingSpinner width="w-4" height="h-4" />
                     </span>
                   ) : citizen ? (
-                    citizen.metadata.name
+                    `Welcome, ${citizen.metadata.name}`
                   ) : (
                     'Welcome to MoonDAO'
                   )}
@@ -1147,6 +1165,15 @@ export default function SingedInDashboard({
       {/* Newsletter Modal */}
       {newsletterModalOpen && (
         <NewsletterSubModal setEnabled={setNewsletterModalOpen} />
+      )}
+
+      {/* Citizen Metadata Modal */}
+      {citizenMetadataModalEnabled && citizen && (
+        <CitizenMetadataModal
+          nft={citizen}
+          selectedChain={selectedChain}
+          setEnabled={setCitizenMetadataModalEnabled}
+        />
       )}
 
       {/* Extended Footer */}
