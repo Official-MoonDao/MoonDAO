@@ -159,7 +159,6 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
           isProfile
         >
           <div className="flex flex-col gap-6 p-6 px:40 md:p-8 md:px-40 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px]">
-            {/* Condensed Top Section - Rewards + Create Button */}
             <div>
               {finalists && finalists.length > 0 ? (
                 finalists.map((finalist: any, i) => (

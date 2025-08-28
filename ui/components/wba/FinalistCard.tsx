@@ -1,16 +1,9 @@
-//This component dipslays a project card using project data directly from tableland
-import { usePrivy } from '@privy-io/react-auth'
 import Image from 'next/image'
 import Link from 'next/link'
-import React, { useContext, memo, useState, useMemo, useEffect } from 'react'
-import ReactMarkdown from 'react-markdown'
+import { useContext, memo, useState, useEffect } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
-import { useSubHats } from '@/lib/hats/useSubHats'
-import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { normalizeJsonString } from '@/lib/utils/rewards'
-import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import Finalist from '@/components/wba/Finalist'
 import NumberStepper from '../layout/NumberStepper'
 import StandardButton from '../layout/StandardButton'
@@ -34,24 +27,6 @@ const FinalistCardContent = memo(
     isVotingPeriod,
     ineligible,
   }: any) => {
-    const [isExpanded, setIsExpanded] = useState(false)
-    // Set character limits that better match the compact card height
-    const [characterLimit, setCharacterLimit] = useState(400)
-    useEffect(() => {
-      const handleResize = () => {
-        if (typeof window !== 'undefined') {
-          // Adjust limits for the more compact 240px height
-          setCharacterLimit(window.innerWidth >= 1024 ? 450 : 400)
-        }
-      }
-
-      if (typeof window !== 'undefined') {
-        handleResize()
-        window.addEventListener('resize', handleResize)
-        return () => window.removeEventListener('resize', handleResize)
-      }
-    }, [])
-
     return (
       <div
         id="card-container"
@@ -71,40 +46,32 @@ const FinalistCardContent = memo(
                 <h1 className="font-GoodTimes">{finalist?.name || ''}</h1>
               </Link>
               <div className="flex flex-row">
-                {finalist?.videoUrl ? (
-                  <StandardButton
-                    className={`gradient-2 w-fit font-[14px] ${
-                      distribute && 'mr-4'
-                    }`}
-                    link={finalist?.videoUrl}
-                    onClick={(e: any) => {
-                      e.stopPropagation()
-                    }}
-                    hoverEffect={false}
-                    target={'_blank'}
-                  >
-                    <p className="text-[14px]">Video Response</p>
-                  </StandardButton>
-                ) : (
-                  <></>
-                )}
-                {finalist?.writtenUrl ? (
-                  <StandardButton
-                    className={`gradient-2 w-fit font-[14px] ${
-                      distribute && 'mr-4'
-                    }`}
-                    link={finalist?.writtenUrl}
-                    onClick={(e: any) => {
-                      e.stopPropagation()
-                    }}
-                    hoverEffect={false}
-                    target={'_blank'}
-                  >
-                    <p className="text-[14px]">Written Response</p>
-                  </StandardButton>
-                ) : (
-                  <></>
-                )}
+                <StandardButton
+                  className={`gradient-2 w-fit font-[14px] ${
+                    distribute && 'mr-4'
+                  }`}
+                  link={finalist?.videoUrl}
+                  onClick={(e: any) => {
+                    e.stopPropagation()
+                  }}
+                  hoverEffect={false}
+                  target={'_blank'}
+                >
+                  <p className="text-[14px]">Video Response</p>
+                </StandardButton>
+                <StandardButton
+                  className={`gradient-2 w-fit font-[14px] ${
+                    distribute && 'mr-4'
+                  }`}
+                  link={finalist?.writtenUrl}
+                  onClick={(e: any) => {
+                    e.stopPropagation()
+                  }}
+                  hoverEffect={false}
+                  target={'_blank'}
+                >
+                  <p className="text-[14px]">Written Response</p>
+                </StandardButton>
               </div>
             </div>
           </div>
@@ -150,7 +117,6 @@ export default function FinalistCard({
   const account = useActiveAccount()
   const address = account?.address
 
-  const { authenticated } = usePrivy()
   const { selectedChain } = useContext(ChainContextV5)
   const ineligible =
     address && finalist.address.toLowerCase() == address.toLowerCase()

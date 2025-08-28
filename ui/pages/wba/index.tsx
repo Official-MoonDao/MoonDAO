@@ -8,7 +8,7 @@ import { useRouter } from 'next/router'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { WBA, WBAProps } from '@/components/nance/WBA'
+import { WBA, WBAProps } from '@/components/wba/WBA'
 import Finalist from '@/components/wba/Finalist'
 
 export default function WBAPage({ distributions, finalists }: WBAProps) {
