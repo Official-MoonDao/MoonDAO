@@ -256,11 +256,6 @@ export default function SingedInDashboard({
     address
   )
 
-  //   // Use withdraw amount hook with conditional check
-  //   const withdrawable = VOTING_ESCROW_DEPOSITOR_ADDRESSES[chainSlug]
-  //     ? useWithdrawAmount(votingEscrowDepositorContract, address)
-  //     : BigNumber.from(0)
-
   return (
     <Container>
       <div className="max-w-7xl mx-auto px-4 py-4">
