@@ -12,9 +12,9 @@ import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Hol
 
 contract WBA is ERC721Holder, Ownable {
     // Table for storing WBA finalist votes.
-    // distribution is a json object with keys being project id
-    // from the project table and values being the percent
-    // allocated to that project.
+    // distribution is a json object with keys being finalist id
+    // from the ui/pages/wba/index.ts:finalists and values percentage
+    // allocated to that finalists.
     using ERC165Checker for address;
 
     uint256 private _tableId;
