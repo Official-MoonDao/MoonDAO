@@ -41,6 +41,7 @@ import { ExpandedFooter } from '../components/layout/ExpandedFooter'
 import WebsiteHead from '../components/layout/Head'
 import PageEnder from '../components/layout/PreFooter'
 import SignedInDashboard from '@/components/home/SignedInDashboard'
+import { getCitizensLocationData } from '@/lib/map'
 
 export default function Home({
   newestNewsletters,
@@ -260,12 +261,13 @@ export async function getStaticProps() {
   }
 
   // Use Promise.allSettled to run all operations in parallel with individual error handling
-  const [transferResult, contractResult, aumResult, mooneyPriceResult] =
+  const [transferResult, contractResult, aumResult, mooneyPriceResult, citizensLocationResult] =
     await Promise.allSettled([
       allTransferData(),
       contractOperations(),
       getAUMData(),
       getMooneyPriceData(),
+      getCitizensLocationData(),
     ])
 
   // Extract results with fallbacks and proper type handling
@@ -326,15 +328,11 @@ export async function getStaticProps() {
 
     // Process teams data for home page display
     filteredTeams = teams.filter((team: any) => team.id && team.name)
+  }
 
-    // Process citizens data for map display
-    citizensLocationData = citizens
-      .filter((citizen: any) => citizen.location)
-      .map((citizen: any) => ({
-        name: citizen.name || 'Anonymous',
-        location: citizen.location,
-        bio: citizen.bio || '',
-      }))
+  // Get citizens location data from the refactored function
+  if (citizensLocationResult.status === 'fulfilled') {
+    citizensLocationData = citizensLocationResult.value
   }
 
   if (aumResult.status === 'fulfilled') {
