@@ -203,11 +203,11 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                   <div className="text-slate-400 text-6xl">👤</div>
                 </div>
               )}
-              <div id="citizen-name-container" className="flex-1 min-w-0 flex flex-col justify-center min-h-[200px] lg:min-h-[250px]">
-                <div
-                  id="team-name"
-                  className="flex flex-col gap-4 w-full"
-                >
+              <div
+                id="citizen-name-container"
+                className="flex-1 min-w-0 flex flex-col justify-center min-h-[200px] lg:min-h-[250px]"
+              >
+                <div id="team-name" className="flex flex-col gap-4 w-full">
                   <div
                     id="team-name-container"
                     className="flex flex-col w-full"
@@ -223,7 +223,11 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                             )
                         }}
                       >
-                        <PencilIcon width={24} height={24} className="text-white" />
+                        <PencilIcon
+                          width={24}
+                          height={24}
+                          className="text-white"
+                        />
                       </button>
                     )}
                     {nft ? (
@@ -282,7 +286,11 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                             target="_blank"
                             passHref
                           >
-                            <GlobeAltIcon height={20} width={20} className="text-white" />
+                            <GlobeAltIcon
+                              height={20}
+                              width={20}
+                              className="text-white"
+                            />
                           </Link>
                         )}
                       </div>
@@ -303,7 +311,10 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                           height={20}
                           className="flex-shrink-0 text-slate-300"
                         />
-                        <Link className="font-GoodTimes text-white hover:text-slate-200 transition-colors" href="/map">
+                        <Link
+                          className="font-GoodTimes text-white hover:text-slate-200 transition-colors"
+                          href="/map"
+                        >
                           {location.startsWith('[object') ? '' : location}
                         </Link>
                       </div>
@@ -405,7 +416,9 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                   </div>
                   <div className="bg-slate-600/20 rounded-xl p-4">
                     <p className="text-lg text-slate-300 mb-2">Votes</p>
-                    <p className="text-3xl font-bold text-white">{votes?.length}</p>
+                    <p className="text-3xl font-bold text-white">
+                      {votes?.length}
+                    </p>
                   </div>
                 </div>
                 {isOwner && (
@@ -439,7 +452,9 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
             )}
             {hats && hats?.length > 0 && (
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-                <h2 className="font-GoodTimes text-2xl text-white mb-6">Teams</h2>
+                <h2 className="font-GoodTimes text-2xl text-white mb-6">
+                  Teams
+                </h2>
                 <div className="space-y-4">
                   {hats?.map((hat: any) => (
                     <div
