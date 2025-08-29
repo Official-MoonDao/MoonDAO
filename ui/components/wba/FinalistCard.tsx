@@ -34,7 +34,7 @@ const FinalistCardContent = memo(
           <div className="w-full flex flex-row gap-2">
             <Image
               className="rounded-2xl border-4 border-slate-500/50"
-              src={getIPFSGateway(finalist.image)}
+              src={getIPFSGateway(finalist?.image)}
               alt="Citizen Image"
               height={66}
               width={66}
@@ -107,7 +107,9 @@ export default function FinalistCard({
 
   const { selectedChain } = useContext(ChainContextV5)
   const ineligible =
-    address && finalist && finalist.address.toLowerCase() == address.toLowerCase()
+    address &&
+    finalist &&
+    finalist.address.toLowerCase() == address.toLowerCase()
 
   return (
     <>
@@ -121,7 +123,7 @@ export default function FinalistCard({
           isVotingPeriod={isVotingPeriod}
         />
       ) : (
-        <Link href={`/citizen/${finalist.citizenId}`} passHref>
+        <Link href={`/citizen/${finalist?.citizenId}`} passHref>
           <FinalistCardContent
             finalist={finalist}
             userHasVotingPower={userHasVotingPower}
