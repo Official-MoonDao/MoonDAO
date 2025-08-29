@@ -12,11 +12,9 @@ import "../src/verifiers/HasContributedStaged.sol";
 import "../src/verifiers/HasCompletedCitizenProfile.sol";
 import "../src/verifiers/HasBoughtAMarketplaceListingStaged.sol";
 import "../src/verifiers/HasJoinedATeam.sol";
-<<<<<<< HEAD
 import "../src/verifiers/HasSubmittedPRStaged.sol";
 import "../src/verifiers/HasSubmittedIssue.sol";
-=======
->>>>>>> f3d3b8a39673fcbfce3392a257775bb1d7813512
+
 
 contract DeployXPManagerScript is Script {
     function run() external {

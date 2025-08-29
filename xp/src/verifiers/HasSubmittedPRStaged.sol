@@ -19,7 +19,7 @@ contract HasSubmittedPRStaged is XPOracleVerifier, StagedXPVerifier {
         _addStage(50, 200); // 50 PRs = 300 XP (total: 485 XP)
         _addStage(100, 500); // 100 PRs = 500 XP (total: 985 XP)
     }
-1
+
     function name() external pure returns (string memory) {
         return "HasSubmittedPR:v1";
     }
