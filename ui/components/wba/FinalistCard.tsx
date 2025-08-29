@@ -4,7 +4,7 @@ import { useContext, memo, useState, useEffect } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import Finalist from '@/components/wba/Finalist'
+import { Finalist } from '@/components/wba/Finalist'
 import NumberStepper from '../layout/NumberStepper'
 import StandardButton from '../layout/StandardButton'
 
