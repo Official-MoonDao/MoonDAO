@@ -59,6 +59,7 @@ export default function NumberStepper({
         step={0}
         disabled={isDisabled}
       />
+      <span>%</span>
       <div className="w-[45%] flex flex-col justify-center items-center">
         <button onClick={increase}>
           <ChevronUpIcon className="w-4 h-4" strokeWidth={2.5} stroke="black" />
