@@ -70,7 +70,6 @@ import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget } from '@/lib/utils/rewards'
 import { ARRChart } from '@/components/dashboard/treasury/ARRChart'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
-import { ProposalCard } from '@/components/home/ProposalCard'
 import ChartModal from '@/components/layout/ChartModal'
 import Container from '@/components/layout/Container'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
@@ -717,44 +716,47 @@ export default function SingedInDashboard({
                     const ethAmount = getEthAmountFromProposal(proposal.actions)
 
                     return (
-                      <div
-                        key={proposal.proposalId || i}
-                        className="bg-white/5 rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all"
+                      <Link
+                        key={proposal.uuid || i}
+                        href={`/proposal/${proposal.uuid}`}
+                        className="block"
                       >
-                        <div className="flex justify-between items-start mb-3">
-                          <h4 className="text-white font-semibold">
-                            {proposal.title ||
-                              `MDP-${
-                                179 - i
-                              }: Study on Lunar Surface Selection For Settlement`}
-                          </h4>
-                          {i === 0 && (
-                            <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
-                              Active
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-300">
-                            <div className="flex items-center gap-1">
-                              <span className="font-medium text-white">
-                                {ethAmount > 0
-                                  ? `${formatNumberUSStyle(ethAmount)} ETH`
-                                  : 'No funding'}
+                        <div className="bg-white/5 rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all cursor-pointer">
+                          <div className="flex justify-between items-start mb-3">
+                            <h4 className="text-white font-semibold">
+                              {proposal.title ||
+                                `MDP-${
+                                  179 - i
+                                }: Study on Lunar Surface Selection For Settlement`}
+                            </h4>
+                            {i === 0 && (
+                              <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
+                                Active
                               </span>
-                              <span>requested</span>
+                            )}
+                          </div>
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-300">
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium text-white">
+                                  {ethAmount > 0
+                                    ? `${formatNumberUSStyle(ethAmount)} ETH`
+                                    : 'No funding'}
+                                </span>
+                                <span>requested</span>
+                              </div>
+                              <span className="hidden sm:inline">•</span>
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium text-white">{3 + i} days</span>
+                                <span>left</span>
+                              </div>
                             </div>
-                            <span className="hidden sm:inline">•</span>
-                            <div className="flex items-center gap-1">
-                              <span className="font-medium text-white">{3 + i} days</span>
-                              <span>left</span>
+                            <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
+                              Vote
                             </div>
                           </div>
-                          <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
-                            Vote
-                          </StandardButton>
                         </div>
-                      </div>
+                      </Link>
                     )
                   })}
               </div>
