@@ -231,11 +231,12 @@ export default function SingedInDashboard({
     .concat(baseTokens)
     .concat([{ symbol: 'stETH', balance: stakedEth }])
 
-  const { ethBudget, usdBudget, mooneyBudget, ethPrice } = getBudget(
+  const { ethBudget: ethBudgetCurrent, usdBudget, mooneyBudget, ethPrice } = getBudget(
     tokens,
     year,
     quarter
   )
+  const ethBudget = 17.09
 
   const votingEscrowDepositorContract = useContract({
     address: VOTING_ESCROW_DEPOSITOR_ADDRESSES[chainSlug],
