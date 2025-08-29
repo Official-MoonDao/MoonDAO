@@ -605,8 +605,13 @@ export default function SingedInDashboard({
                         key={newsletter.id || index}
                         className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5"
                         onClick={() => {
-                          if (newsletter.url) {
+                          if (newsletter.url && 
+                              newsletter.url !== 'https://news.moondao.com/posts' && 
+                              newsletter.url !== 'https://moondao.kit.com/posts' && 
+                              newsletter.url.includes('http')) {
                             window.open(newsletter.url, '_blank')
+                          } else {
+                            window.open('https://news.moondao.com/posts', '_blank')
                           }
                         }}
                       >
@@ -662,13 +667,17 @@ export default function SingedInDashboard({
                               )}
                             </div>
                           </div>
-                          <div className="text-gray-400 hover:text-white">
+                          <div 
+                            className="text-gray-400 hover:text-white transition-colors" 
+                            title="Click to view newsletter"
+                          >
                             <svg
                               className="w-5 h-5"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
                             >
-                              <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                             </svg>
                           </div>
                         </div>
