@@ -107,7 +107,7 @@ export default function FinalistCard({
 
   const { selectedChain } = useContext(ChainContextV5)
   const ineligible =
-    address && finalist.address.toLowerCase() == address.toLowerCase()
+    address && finalist && finalist.address.toLowerCase() == address.toLowerCase()
 
   return (
     <>
