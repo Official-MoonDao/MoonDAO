@@ -26,7 +26,7 @@ export function ProposalCard({ proposal, index }: ProposalCardProps) {
   const votingInfo = votes?.proposal
 
   return (
-    <Link href={`/proposal/${proposal.proposalId}`} passHref>
+    <Link href={`/proposal/${proposal.uuid}`} passHref>
       <Frame
         key={index}
         noPadding

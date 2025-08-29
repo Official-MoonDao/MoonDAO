@@ -88,16 +88,48 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     // Transform ConvertKit data to our format
     const newsletters =
-      allBroadcasts.map((broadcast: any) => {
-        // For ConvertKit newsletters, link to the posts archive page
-        // since individual post URLs might not be accessible for older content
-        let publicUrl = 'https://moondao.kit.com/posts' // Link to newsletter archive
+      allBroadcasts.slice(0, 10).map((broadcast: any) => {
+        // Function to convert newsletter title to URL slug
+        const titleToSlug = (title: string): string => {
+          return title
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim()
+            .replace(/^-+|-+$/g, '')
+        }
 
-        // If there's a verified public_url or web_url available, prefer it
-        if (broadcast.public_url && broadcast.public_url.includes('kit.com')) {
-          publicUrl = broadcast.public_url
-        } else if (broadcast.web_url && broadcast.web_url.includes('kit.com')) {
-          publicUrl = broadcast.web_url
+        // Try multiple URL fields from ConvertKit
+        let publicUrl = null
+        const urlFields = [
+          'public_url',
+          'web_url', 
+          'preview_url',
+          'share_url',
+          'permalink',
+          'url',
+          'link'
+        ]
+
+        for (const field of urlFields) {
+          if (broadcast[field] && typeof broadcast[field] === 'string' && broadcast[field].includes('http')) {
+            publicUrl = broadcast[field]
+            break
+          }
+        }
+
+        // If no specific URL found, construct using news.moondao.com pattern
+        if (!publicUrl && broadcast.subject) {
+          const slug = titleToSlug(broadcast.subject)
+          if (slug) {
+            publicUrl = `https://news.moondao.com/posts/${slug}`
+          }
+        }
+
+        // Final fallback to newsletter archive
+        if (!publicUrl) {
+          publicUrl = 'https://news.moondao.com/posts'
         }
 
         return {
