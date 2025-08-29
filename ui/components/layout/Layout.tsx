@@ -53,8 +53,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   //Background is defined in this root div.
 
   const isFullscreen =
-    router.pathname === '/launch' || router.pathname === '/home'
-  router.pathname === '/launch' ||
+    router.pathname === '/launch' ||
+    router.pathname === '/home' ||
     router.pathname === '/about' ||
     router.pathname === '/faq' ||
     router.pathname === '/constitution' ||
