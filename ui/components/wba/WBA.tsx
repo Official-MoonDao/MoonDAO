@@ -88,7 +88,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
     _.sum(Object.values(addressToQuadraticVotingPower)) > 0
   const userVotingPower = useTotalVP(userAddress || '')
   const userHasVotingPower = useMemo(() => {
-    return userAddress && userVotingPower > 0
+    return userAddress && userVotingPower.walletVP > 0
   }, [userVotingPower, userAddress])
 
   // Map from address to percentage of commnity rewards
