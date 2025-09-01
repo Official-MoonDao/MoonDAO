@@ -48,6 +48,7 @@ import { getAUMHistory } from '@/lib/coinstats'
 import { getMooneyPrice } from '@/lib/coinstats'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { sepolia } from '@/lib/infura/infuraChains'
 import { formatNumberUSStyle } from '@/lib/nance'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
@@ -372,7 +373,7 @@ export default function Home({
         </div>
 
         {/* Quest System - Horizontal Section */}
-        {address && <Quests />}
+        {address && selectedChain === sepolia && <Quests />}
 
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:grid-rows-1 lg:min-h-[800px]">
