@@ -58,7 +58,7 @@ export default function GetMooney() {
                       Select which network you want to buy MOONEY on
                     </p>
                   </div>
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 w-full lg:w-auto">
                     <NetworkSelector />
                   </div>
                 </div>

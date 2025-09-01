@@ -12,6 +12,7 @@ import {
   StarIcon,
   FireIcon,
   GiftIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline'
 import { Action, RequestBudget } from '@nance/nance-sdk'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
@@ -37,10 +38,11 @@ import {
 } from 'const/config'
 import { blockedTeams, featuredTeams } from 'const/whitelist'
 import { blockedProjects } from 'const/whitelist'
+import { BigNumber } from 'ethers'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useContext, useState } from 'react'
+import { useContext, useState, useEffect } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -67,7 +69,6 @@ import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget } from '@/lib/utils/rewards'
-import { NewsletterSubModal } from '../components/newsletter/NewsletterSubModal'
 import { ARRChart } from '@/components/dashboard/treasury/ARRChart'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { ProposalCard } from '@/components/home/ProposalCard'
@@ -79,9 +80,13 @@ import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
+import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
+import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
-import Quests from '@/components/xp/Quests'
+import Quests from '../xp/Quests'
+
+// import Quests from '@/components/xp/Quests'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
@@ -102,7 +107,7 @@ function getEthAmountFromProposal(actions: Action[] | undefined): number {
   return ethAmount
 }
 
-export default function Home({
+export default function SingedInDashboard({
   newestNewsletters,
   newestCitizens,
   newestListings,
@@ -128,6 +133,36 @@ export default function Home({
 
   // Newsletter modal state
   const [newsletterModalOpen, setNewsletterModalOpen] = useState(false)
+
+  // Citizen metadata modal state
+  const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] =
+    useState(false)
+
+  // Client-side newsletter state
+  const [clientNewsletters, setClientNewsletters] = useState<any[]>(
+    newestNewsletters || []
+  )
+  const [newslettersLoading, setNewslettersLoading] = useState(false)
+
+  // Fetch newsletters on client-side to get real ConvertKit data
+  useEffect(() => {
+    const fetchNewsletters = async () => {
+      setNewslettersLoading(true)
+      try {
+        const response = await fetch('/api/newsletters')
+        if (response.ok) {
+          const data = await response.json()
+          setClientNewsletters(data.newsletters || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch newsletters:', error)
+      } finally {
+        setNewslettersLoading(false)
+      }
+    }
+
+    fetchNewsletters()
+  }, [])
 
   // Chart modal handlers
   const openCitizensChart = () => {
@@ -224,151 +259,170 @@ export default function Home({
     address
   )
 
-  const withdrawable = useWithdrawAmount(votingEscrowDepositorContract, address)
-
   return (
     <Container>
       <div className="max-w-7xl mx-auto px-4 py-4">
         {/* Compact All-in-One Header */}
-        <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-6 mb-6 overflow-hidden">
+        <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-4 sm:p-6 mb-6 overflow-hidden">
           <div className="absolute inset-0 bg-black/20 rounded-2xl"></div>
 
-          <div className="relative z-10 flex items-center justify-between">
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-0">
             {/* Left Side - Profile & Title */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               {/* Profile Picture */}
-              <div className="w-20 h-20 rounded-full overflow-hidden border-3 border-white shadow-xl bg-white relative">
-                {citizen?.metadata?.image ? (
-                  <MediaRenderer
-                    client={client}
-                    src={citizen.metadata.image}
-                    alt={citizen.metadata.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">
-                      {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
-                    </span>
-                  </div>
+              <div className="relative">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-3 border-white shadow-xl bg-white relative flex-shrink-0">
+                  {citizen?.metadata?.image ? (
+                    <MediaRenderer
+                      client={client}
+                      src={citizen.metadata.image}
+                      alt={citizen.metadata.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                      <span className="text-white font-bold text-base sm:text-lg">
+                        {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
+                      </span>
+                    </div>
+                  )}
+                  {/* Online status indicator */}
+                  <div className="absolute bottom-0 right-0 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                </div>
+
+                {/* Edit Profile Button */}
+                {citizen && (
+                  <button
+                    className="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-colors shadow-lg border-2 border-white"
+                    onClick={() => setCitizenMetadataModalEnabled(true)}
+                    title="Edit Profile"
+                  >
+                    <PencilIcon className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                  </button>
                 )}
-                {/* Online status indicator */}
-                <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
               </div>
 
               {/* Title & Subtitle */}
-              <div>
-                <h1 className="text-2xl font-bold text-white mb-1 drop-shadow-lg">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-1 drop-shadow-lg leading-tight">
                   {isLoadingCitizen ? (
                     <span className="flex items-center gap-2">
                       Welcome...
                       <LoadingSpinner width="w-4" height="h-4" />
                     </span>
                   ) : citizen ? (
-                    citizen.metadata.name
+                    `Welcome, ${citizen.metadata.name}`
                   ) : (
                     'Welcome to MoonDAO'
                   )}
                 </h1>
-                <p className="text-white/90 text-sm font-medium drop-shadow">
-                  Building the future of space exploration together
-                </p>
               </div>
             </div>
 
-            {/* Center - Stats */}
+            {/* Center - Stats with Action Buttons */}
             {address && (
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <Image
-                      src="/coins/MOONEY.png"
-                      width={16}
-                      height={16}
-                      alt="MOONEY"
-                      className="rounded-full"
-                    />
-                  </div>
+              <div className="flex items-center justify-center gap-2 sm:gap-4 lg:gap-6 order-3 lg:order-2 overflow-x-auto scrollbar-hide">
+                <div className="text-center flex-shrink-0">
                   {MOONEYBalance === undefined || MOONEYBalance === null ? (
-                    <div className="animate-pulse bg-white/20 rounded w-12 h-4 mx-auto mb-1"></div>
+                    <div className="animate-pulse bg-white/20 rounded w-12 sm:w-16 h-6 mx-auto"></div>
                   ) : (
-                    <div className="text-lg font-bold text-blue-300">
+                    <div className="text-lg sm:text-xl font-bold text-white">
                       {Math.round(MOONEYBalance).toLocaleString()}
                     </div>
                   )}
-                  <div className="text-xs text-white/70">MOONEY</div>
+                  <div className="text-xs sm:text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
+                    <Image
+                      src="/coins/MOONEY.png"
+                      width={12}
+                      height={12}
+                      alt="MOONEY"
+                      className="rounded-full"
+                    />
+                    MOONEY
+                  </div>
+                  <div className="flex justify-center">
+                    <StandardButton
+                      className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-1"
+                      link="/get-mooney"
+                    >
+                      <BanknotesIcon className="w-3 h-3" />
+                      Buy
+                    </StandardButton>
+                  </div>
                 </div>
 
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <BoltIcon className="w-4 h-4" />
-                  </div>
+                <div className="w-px h-12 sm:h-16 bg-white/20 hidden sm:block"></div>
+
+                <div className="text-center flex-shrink-0">
                   {walletVP === undefined || walletVP === null ? (
-                    <div className="animate-pulse bg-white/20 rounded w-12 h-4 mx-auto mb-1"></div>
+                    <div className="animate-pulse bg-white/20 rounded w-12 sm:w-16 h-6 mx-auto"></div>
                   ) : (
-                    <div className="text-lg font-bold text-purple-300">
+                    <div className="text-lg sm:text-xl font-bold text-white">
                       {Math.round(walletVP).toLocaleString()}
                     </div>
                   )}
-                  <div className="text-xs text-white/70">vMOONEY</div>
+                  <div className="text-xs sm:text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
+                    <BoltIcon className="w-3 h-3" />
+                    vMOONEY
+                  </div>
+                  <div className="flex justify-center">
+                    <StandardButton
+                      className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-1"
+                      link="/lock"
+                    >
+                      <BoltIcon className="w-3 h-3" />
+                      Stake
+                    </StandardButton>
+                  </div>
                 </div>
 
-                <div className="text-center">
-                  <div className="text-sm mb-1 flex items-center justify-center">
-                    <CheckBadgeIcon className="w-4 h-4" />
+                <div className="w-px h-12 sm:h-16 bg-white/20 hidden sm:block"></div>
+
+                <div className="text-center flex-shrink-0">
+                  <div className="text-lg sm:text-xl font-bold text-white">
+                    1
                   </div>
-                  <div className="text-lg font-bold text-green-300">
-                    {voteCount}
+                  <div className="text-xs sm:text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
+                    <CheckBadgeIcon className="w-3 h-3" />
+                    Votes
                   </div>
-                  <div className="text-xs text-white/70">Votes</div>
+                  <div className="flex justify-center">
+                    <StandardButton
+                      className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-1"
+                      link="/governance"
+                    >
+                      <CheckBadgeIcon className="w-3 h-3" />
+                      Vote
+                    </StandardButton>
+                  </div>
                 </div>
 
-                <div className="text-center">
-                  <div className="text-sm mb-1 flex items-center justify-center">
-                    <UserGroupIcon className="w-4 h-4" />
-                  </div>
-                  <div className="text-lg font-bold text-orange-300">
+                <div className="w-px h-12 sm:h-16 bg-white/20 hidden sm:block"></div>
+
+                <div className="text-center flex-shrink-0">
+                  <div className="text-lg sm:text-xl font-bold text-white">
                     {teamHats?.length || 0}
                   </div>
-                  <div className="text-xs text-white/70">Teams</div>
-                </div>
-
-                <div className="text-center">
-                  <div className="text-sm mb-1 flex items-center justify-center">
-                    <TrophyIcon className="w-4 h-4 text-yellow-400" />
+                  <div className="text-xs sm:text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
+                    <UserGroupIcon className="w-3 h-3" />
+                    Teams
                   </div>
-                  <div className="text-lg font-bold text-yellow-300">
-                    {/* {userLevel} */}
+                  <div className="flex justify-center">
+                    <StandardButton
+                      className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-1"
+                      link="/network"
+                    >
+                      <UserGroupIcon className="w-3 h-3" />
+                      <span className="hidden sm:inline">Join Team</span>
+                      <span className="sm:hidden">Join</span>
+                    </StandardButton>
                   </div>
-                  <div className="text-xs text-white/70">Level</div>
                 </div>
               </div>
             )}
 
-            {/* Right Side - Action Buttons */}
-            <div className="flex gap-2">
-              <StandardButton
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"
-                link="/get-mooney"
-              >
-                <BanknotesIcon className="w-4 h-4" />
-                Buy
-              </StandardButton>
-              <StandardButton
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"
-                link="/lock"
-              >
-                <BoltIcon className="w-4 h-4" />
-                Stake
-              </StandardButton>
-              <StandardButton
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2"
-                link="/governance"
-              >
-                <CheckBadgeIcon className="w-4 h-4" />
-                Vote
-              </StandardButton>
-            </div>
+            {/* Right Side - Empty space for balance */}
+            <div className="order-2 lg:order-3"></div>
           </div>
         </div>
 
@@ -376,18 +430,20 @@ export default function Home({
         {address && selectedChain === sepolia && <Quests />}
 
         {/* Main Content - Facebook Style Three Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:grid-rows-1 lg:min-h-[800px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
           {/* Left Sidebar - Key Metrics & Quick Actions */}
-          <div className="lg:col-span-3 flex flex-col space-y-4">
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-2 lg:order-1">
             {/* Weekly Reward Pool - Enhanced UI */}
-            <WeeklyRewardPool />
+            <div className="order-2">
+              <WeeklyRewardPool />
+            </div>
 
             {/* Key Metrics Card */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
               <h3 className="font-semibold text-white mb-8 text-lg">
                 DAO Metrics
               </h3>
-              <div className="space-y-8">
+              <div className="space-y-8 h-full">
                 <div
                   className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
                   onClick={openCitizensChart}
@@ -460,9 +516,9 @@ export default function Home({
           </div>
 
           {/* Center Column - Main Feed */}
-          <div className="lg:col-span-6 flex flex-col space-y-6">
+          <div className="lg:col-span-6 flex flex-col space-y-6 h-full min-h-[800px] order-1 lg:order-2">
             {/* Quick Actions */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-full overflow-hidden">
                   {citizen?.metadata?.image ? (
@@ -487,30 +543,30 @@ export default function Home({
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <StandardButton
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1"
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
                   link="/governance"
                 >
                   <CheckBadgeIcon className="w-4 h-4" />
                   Propose
                 </StandardButton>
                 <StandardButton
-                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1"
+                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
                   link="/launchpad"
                 >
                   <RocketLaunchIcon className="w-4 h-4" />
                   Launch
                 </StandardButton>
                 <StandardButton
-                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1"
+                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
                   link="/network"
                 >
                   <UserGroupIcon className="w-4 h-4" />
                   Join Team
                 </StandardButton>
                 <StandardButton
-                  className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1"
+                  className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
                   link="/marketplace"
                 >
                   <ShoppingBagIcon className="w-4 h-4" />
@@ -520,20 +576,20 @@ export default function Home({
             </div>
 
             {/* Activity Feed */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
+                <h3 className="text-xl font-bold text-white whitespace-nowrap">
                   Recent Activity
                 </h3>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                   <StandardButton
-                    className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
+                    className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
                     link="/news"
                   >
                     View All
                   </StandardButton>
                   <StandardButton
-                    className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 text-sm px-4 py-2 rounded-lg transition-all"
+                    className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
                     onClick={() => setNewsletterModalOpen(true)}
                   >
                     Subscribe
@@ -542,13 +598,22 @@ export default function Home({
               </div>
 
               <div className="space-y-4">
-                {newestNewsletters && newestNewsletters.length > 0 ? (
-                  newestNewsletters
+                {newslettersLoading ? (
+                  <div className="text-center py-8">
+                    <div className="text-white/60">Loading newsletters...</div>
+                  </div>
+                ) : clientNewsletters && clientNewsletters.length > 0 ? (
+                  clientNewsletters
                     .slice(0, 4)
                     .map((newsletter: any, index: number) => (
                       <div
                         key={newsletter.id || index}
                         className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5"
+                        onClick={() => {
+                          if (newsletter.url) {
+                            window.open(newsletter.url, '_blank')
+                          }
+                        }}
                       >
                         <div className="flex items-start gap-4">
                           <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-blue-600">
@@ -567,6 +632,11 @@ export default function Home({
                             <p className="text-white font-medium mb-1">
                               {newsletter.title || 'Newsletter Update'}
                             </p>
+                            {newsletter.description && (
+                              <p className="text-gray-300 text-sm mb-2 line-clamp-2">
+                                {newsletter.description}
+                              </p>
+                            )}
                             <div className="flex items-center gap-4 text-sm text-gray-400">
                               <span>
                                 {newsletter.publishedAt
@@ -575,8 +645,26 @@ export default function Home({
                                     ).toLocaleDateString()
                                   : 'Recently'}
                               </span>
-                              <span>•</span>
-                              <span>{newsletter.views || 0} views</span>
+                              {newsletter.views && newsletter.views > 0 && (
+                                <>
+                                  <span>•</span>
+                                  <span>{newsletter.views} recipients</span>
+                                </>
+                              )}
+                              {newsletter.readTime && (
+                                <>
+                                  <span>•</span>
+                                  <span>{newsletter.readTime} min read</span>
+                                </>
+                              )}
+                              {newsletter.isArchived && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-orange-400">
+                                    Archive
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </div>
                           <div className="text-gray-400 hover:text-white">
@@ -592,7 +680,7 @@ export default function Home({
                       </div>
                     ))
                 ) : (
-                  <div className="text-center py-8">
+                  <div className="text-center py-16 min-h-[300px] flex flex-col justify-center">
                     <NewspaperIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
                     <p className="text-gray-400 text-sm">
                       No newsletters available
@@ -606,7 +694,7 @@ export default function Home({
             </div>
 
             {/* Active Proposals Card */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-4">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-white">
                   Active Proposals
@@ -619,7 +707,7 @@ export default function Home({
                 </StandardButton>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 h-full overflow-y-auto">
                 {proposals &&
                   proposals.slice(0, 3).map((proposal: any, i: number) => {
                     const ethAmount = getEthAmountFromProposal(proposal.actions)
@@ -642,23 +730,25 @@ export default function Home({
                             </span>
                           )}
                         </div>
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-4 text-sm text-gray-300">
-                            <span className="flex items-center gap-1">
-                              <span className="font-medium">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-300">
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium text-white">
                                 {ethAmount > 0
                                   ? `${formatNumberUSStyle(ethAmount)} ETH`
                                   : 'No funding'}
-                              </span>{' '}
-                              requested
-                            </span>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
-                              <span className="font-medium">{3 + i} days</span>{' '}
-                              left
-                            </span>
+                              </span>
+                              <span>requested</span>
+                            </div>
+                            <span className="hidden sm:inline">•</span>
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium text-white">
+                                {3 + i} days
+                              </span>
+                              <span>left</span>
+                            </div>
                           </div>
-                          <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg transition-all">
+                          <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
                             Vote
                           </StandardButton>
                         </div>
@@ -670,7 +760,7 @@ export default function Home({
           </div>
 
           {/* Right Sidebar - Community & Stats */}
-          <div className="lg:col-span-3 flex flex-col space-y-4">
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3">
             {/* Recent Citizens */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
@@ -794,7 +884,7 @@ export default function Home({
             </div>
 
             {/* Marketplace */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-white text-lg">
                   Marketplace
@@ -807,7 +897,7 @@ export default function Home({
                 </StandardButton>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 h-full overflow-y-auto">
                 {newestListings && newestListings.length > 0 ? (
                   newestListings
                     .slice(0, 3)
@@ -887,71 +977,55 @@ export default function Home({
         {/* Featured Projects Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 mb-8">
           {/* Launchpad Feature */}
-          <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                  <RocketLaunchIcon className="w-7 h-7" />
-                  Launchpad
+          <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 sm:p-6 lg:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                  <RocketLaunchIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                  <span className="leading-tight">Launchpad</span>
                 </h3>
-                <p className="text-blue-200">Fund your next mission to space</p>
+                <p className="text-blue-200 text-sm sm:text-base leading-tight">
+                  Coming soon - Fund your next mission to space
+                </p>
               </div>
-              <StandardButton
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all"
-                link="/launchpad"
-              >
-                Launch Project
-              </StandardButton>
+              <div className="bg-gray-600 text-gray-300 px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold shadow-lg cursor-not-allowed text-sm sm:text-base whitespace-nowrap flex-shrink-0">
+                Coming Soon
+              </div>
             </div>
 
             <div className="bg-black/20 rounded-xl p-6 border border-blue-500/20">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                    F
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white text-lg">
-                      Frank to Space
-                    </h4>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-blue-200">Active Funding</span>
-                    </div>
-                  </div>
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 mx-auto mb-4">
+                  <RocketLaunchIcon className="w-8 h-8" />
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-white text-lg">1.2 / 31 ETH</p>
-                  <p className="text-blue-200 text-sm">3.9% funded</p>
+                <h4 className="font-bold text-white text-xl mb-2">
+                  Launchpad Coming Soon
+                </h4>
+                <p className="text-blue-200 text-sm mb-4">
+                  We're preparing an exciting new way to fund space missions
+                  through decentralized crowdfunding.
+                </p>
+                <div className="text-blue-300 text-xs">
+                  Stay tuned for launch updates!
                 </div>
               </div>
-              <div className="w-full bg-gray-700 rounded-full h-3 mb-4">
-                <div
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all"
-                  style={{ width: '4%' }}
-                ></div>
-              </div>
-              <p className="text-blue-100 text-sm">
-                Send Frank Miller to space as MoonDAO's first citizen astronaut
-                mission.
-              </p>
             </div>
           </div>
 
           {/* Projects Feature */}
-          <div className="bg-gradient-to-br from-green-600/20 to-emerald-800/20 backdrop-blur-xl border border-green-500/20 rounded-2xl p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                  <RocketLaunchIcon className="w-7 h-7" />
-                  Active Projects
+          <div className="bg-gradient-to-br from-green-600/20 to-emerald-800/20 backdrop-blur-xl border border-green-500/20 rounded-2xl p-4 sm:p-6 lg:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                  <RocketLaunchIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                  <span className="leading-tight">Active Projects</span>
                 </h3>
-                <p className="text-green-200">
+                <p className="text-green-200 text-sm sm:text-base leading-tight">
                   Contribute to space exploration initiatives
                 </p>
               </div>
               <StandardButton
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold shadow-lg transition-all text-sm sm:text-base whitespace-nowrap flex-shrink-0"
                 link="/projects"
               >
                 View All Projects
@@ -976,7 +1050,7 @@ export default function Home({
                 </div>
               </div>
 
-              {currentProjects && currentProjects.length > 0 && (
+              {currentProjects && currentProjects.length > 0 ? (
                 <div className="pt-4 border-t border-green-500/20">
                   <div className="text-sm mb-3">
                     <span className="font-medium text-white">
@@ -1014,73 +1088,102 @@ export default function Home({
                     )}
                   </div>
                 </div>
+              ) : (
+                <div className="pt-4 border-t border-green-500/20">
+                  <div className="text-center py-8">
+                    <RocketLaunchIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+                    <p className="text-gray-400 text-sm mb-2">
+                      No active projects at the moment
+                    </p>
+                    <p className="text-gray-500 text-xs mb-4">
+                      Check back soon for new space exploration initiatives
+                    </p>
+                    <StandardButton
+                      className="bg-green-600/20 hover:bg-green-600/40 text-green-300 text-sm px-4 py-2 rounded-lg transition-all"
+                      link="/projects"
+                    >
+                      View All Projects
+                    </StandardButton>
+                  </div>
+                </div>
               )}
             </div>
           </div>
         </div>
 
         {/* Global Community Map - Enhanced */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                <GlobeAmericasIcon className="w-7 h-7" />
-                Global Community
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                <GlobeAmericasIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                <span className="leading-tight">Global Community</span>
               </h3>
-              <p className="text-gray-300">MoonDAO citizens around the world</p>
+              <p className="text-gray-300 text-sm sm:text-base leading-tight">
+                MoonDAO citizens around the world
+              </p>
             </div>
             <StandardButton
-              className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl font-semibold transition-all"
+              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold transition-all text-sm sm:text-base whitespace-nowrap flex-shrink-0"
               link="/map"
             >
               Explore Map
             </StandardButton>
           </div>
 
-          <div className="relative w-full h-[500px] bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-2xl overflow-hidden">
+          <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[650px] xl:h-[700px] bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-2xl overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-center">
-              <div
-                className="flex items-center justify-center"
-                style={{ width: '500px', height: '500px' }}
-              >
+              <div className="flex items-center justify-center">
                 <Earth
                   pointsData={citizensLocationData || []}
-                  width={500}
-                  height={500}
+                  width={undefined}
+                  height={undefined}
                 />
               </div>
             </div>
 
             {/* Enhanced Stats overlay with glassmorphism */}
-            <div className="absolute top-6 left-6 bg-black/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 lg:top-6 lg:left-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
               <div className="text-white">
-                <div className="text-3xl font-bold mb-1">
-                  {citizenSubgraphData?.transfers?.length || '2,341'}
+                <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
+                  {citizenSubgraphData?.transfers?.length || '145'}
                 </div>
-                <div className="text-sm opacity-90">Global Citizens</div>
-              </div>
-            </div>
-
-            <div className="absolute top-6 right-6 bg-black/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-              <div className="text-white">
-                <div className="text-3xl font-bold mb-1">47</div>
-                <div className="text-sm opacity-90">Countries</div>
-              </div>
-            </div>
-
-            <div className="absolute bottom-6 left-6 bg-black/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-              <div className="text-white">
-                <div className="text-3xl font-bold mb-1">24/7</div>
-                <div className="text-sm opacity-90">Active Community</div>
-              </div>
-            </div>
-
-            <div className="absolute bottom-6 right-6 bg-black/40 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-              <div className="text-white">
-                <div className="text-3xl font-bold mb-1">
-                  {filteredTeams?.length || teamHats?.length || '12'}
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">
+                  Global Citizens
                 </div>
-                <div className="text-sm opacity-90">Active Teams</div>
+              </div>
+            </div>
+
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 lg:top-6 lg:right-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
+              <div className="text-white">
+                <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
+                  47
+                </div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">
+                  Countries
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 lg:bottom-6 lg:left-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
+              <div className="text-white">
+                <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
+                  24/7
+                </div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">
+                  Active Commu
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 lg:bottom-6 lg:right-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
+              <div className="text-white">
+                <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
+                  {filteredTeams?.length || teamHats?.length || '9'}
+                </div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">
+                  Active Teams
+                </div>
               </div>
             </div>
           </div>
@@ -1100,6 +1203,15 @@ export default function Home({
         <NewsletterSubModal setEnabled={setNewsletterModalOpen} />
       )}
 
+      {/* Citizen Metadata Modal */}
+      {citizenMetadataModalEnabled && citizen && (
+        <CitizenMetadataModal
+          nft={citizen}
+          selectedChain={selectedChain}
+          setEnabled={setCitizenMetadataModalEnabled}
+        />
+      )}
+
       {/* Extended Footer */}
       <ExpandedFooter
         hasCallToAction={false}
@@ -1108,263 +1220,4 @@ export default function Home({
       />
     </Container>
   )
-}
-
-export async function getStaticProps() {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
-
-  // Initialize all data structures with proper types
-  let transferData: any = { citizenTransfers: [], teamTransfers: [] }
-  let arrData: any = {
-    arrHistory: [],
-    currentARR: 0,
-    citizenARR: 0,
-    teamARR: 0,
-  }
-  let citizenSubgraphData: any = { transfers: [], createdAt: Date.now() }
-  let aumData = null
-  let newestCitizens: any = []
-  let newestListings: any = []
-  let newestJobs: any = []
-  let mooneyPrice = 0.0003605 // Default fallback price
-
-  // Get MOONEY price data
-  const getMooneyPriceData = async () => {
-    try {
-      const priceData = await getMooneyPrice()
-      console.log('PRICE DATA', priceData)
-      return priceData?.price || 0
-    } catch (error) {
-      console.error('MOONEY price fetch failed:', error)
-      return 0
-    }
-  }
-  let newestTeams: any = []
-  let filteredTeams: any = []
-  let currentProjects: Project[] = []
-  let citizensLocationData: any = []
-
-  // Batch all contract operations to reduce API calls
-  const contractOperations = async () => {
-    try {
-      const citizenTableContract = getContract({
-        client: serverClient,
-        address: CITIZEN_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: CitizenTableABI as any,
-      })
-
-      const marketplaceTableContract = getContract({
-        client: serverClient,
-        address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: MarketplaceTableABI as any,
-      })
-
-      const jobTableContract = getContract({
-        client: serverClient,
-        address: JOBS_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: JobTableABI as any,
-      })
-
-      const teamTableContract = getContract({
-        client: serverClient,
-        address: TEAM_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: TeamTableABI as any,
-      })
-
-      const projectTableContract = getContract({
-        client: serverClient,
-        address: PROJECT_TABLE_ADDRESSES[chainSlug],
-        chain: chain,
-        abi: ProjectTableABI as any,
-      })
-
-      // Batch all table name reads
-      const [
-        citizenTableName,
-        marketplaceTableName,
-        jobTableName,
-        teamTableName,
-        projectTableName,
-      ] = await Promise.all([
-        readContract({
-          contract: citizenTableContract,
-          method: 'getTableName',
-        }),
-        readContract({
-          contract: marketplaceTableContract,
-          method: 'getTableName',
-        }),
-        readContract({ contract: jobTableContract, method: 'getTableName' }),
-        readContract({ contract: teamTableContract, method: 'getTableName' }),
-        readContract({
-          contract: projectTableContract,
-          method: 'getTableName',
-        }),
-      ])
-
-      // Batch all table queries
-      const [citizens, listings, jobs, teams, projects] = await Promise.all([
-        queryTable(
-          chain,
-          `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 10`
-        ),
-        queryTable(
-          chain,
-          `SELECT * FROM ${marketplaceTableName} ORDER BY id DESC LIMIT 10`
-        ),
-        queryTable(
-          chain,
-          `SELECT * FROM ${jobTableName} WHERE (endTime = 0 OR endTime >= ${Math.floor(
-            Date.now() / 1000
-          )}) ORDER BY id DESC LIMIT 10`
-        ),
-        queryTable(
-          chain,
-          `SELECT * FROM ${teamTableName} ORDER BY id DESC LIMIT 10`
-        ),
-        queryTable(
-          chain,
-          `SELECT * FROM ${projectTableName} WHERE active = 1 ORDER BY id DESC LIMIT 10`
-        ),
-      ])
-
-      return { citizens, listings, jobs, teams, projects }
-    } catch (error) {
-      console.error('Contract operations failed:', error)
-      return { citizens: [], listings: [], jobs: [], teams: [], projects: [] }
-    }
-  }
-
-  // Get all transfer data as requested
-  const allTransferData = async () => {
-    try {
-      console.log('Fetching all network transfers...')
-      const transfers = await getAllNetworkTransfers()
-      console.log(
-        `Fetched ${transfers.citizenTransfers.length} citizen transfers and ${transfers.teamTransfers.length} team transfers`
-      )
-      return transfers
-    } catch (error) {
-      console.error('Transfer data fetch failed:', error)
-      return { citizenTransfers: [], teamTransfers: [] }
-    }
-  }
-
-  // Get AUM data with proper error handling
-  const getAUMData = async () => {
-    try {
-      const aum = await getAUMHistory(365)
-      return aum
-    } catch (error) {
-      console.error('AUM data fetch failed:', error)
-      return null
-    }
-  }
-
-  // Use Promise.allSettled to run all operations in parallel with individual error handling
-  const [transferResult, contractResult, aumResult, mooneyPriceResult] =
-    await Promise.allSettled([
-      allTransferData(),
-      contractOperations(),
-      getAUMData(),
-      getMooneyPriceData(),
-    ])
-
-  // Extract results with fallbacks and proper type handling
-  if (transferResult.status === 'fulfilled') {
-    transferData = transferResult.value
-
-    // Calculate ARR from all transfer data
-    try {
-      arrData = await calculateARRFromTransfers(
-        transferData.citizenTransfers,
-        transferData.teamTransfers,
-        365
-      )
-    } catch (error) {
-      console.error('ARR calculation failed:', error)
-    }
-
-    citizenSubgraphData = {
-      transfers: transferData.citizenTransfers.map((transfer: any) => ({
-        id: transfer.id,
-        from: transfer.transactionHash,
-        blockTimestamp: transfer.blockTimestamp,
-      })),
-      createdAt: Date.now(),
-    }
-  }
-
-  if (contractResult.status === 'fulfilled') {
-    const { citizens, listings, jobs, teams, projects } = contractResult.value
-    newestCitizens = citizens
-    newestListings = listings
-    newestJobs = jobs
-    newestTeams = teams
-
-    // Process projects data for home page display
-    if (projects) {
-      currentProjects = projects.filter(
-        (project: any) =>
-          project.active && !blockedProjects.includes(project.id)
-      ) as Project[]
-    }
-
-    // Process teams data for home page display
-    filteredTeams = teams.filter((team: any) => team.id && team.name)
-
-    // Process citizens data for map display
-    citizensLocationData = citizens
-      .filter((citizen: any) => citizen.location)
-      .map((citizen: any) => ({
-        name: citizen.name || 'Anonymous',
-        location: citizen.location,
-        bio: citizen.bio || '',
-      }))
-  }
-
-  if (aumResult.status === 'fulfilled') {
-    aumData = aumResult.value
-  }
-
-  if (mooneyPriceResult.status === 'fulfilled') {
-    mooneyPrice = mooneyPriceResult.value
-  }
-
-  // Get newsletter data
-  const getNewsletterData = async () => {
-    try {
-      // This would be replaced with actual newsletter API call
-      // For now, returning empty array since no API endpoint exists
-      // You would implement: const response = await fetch('/api/newsletters')
-      return []
-    } catch (error) {
-      console.error('Newsletter data fetch failed:', error)
-      return []
-    }
-  }
-
-  const newestNewsletters: any = await getNewsletterData()
-
-  return {
-    props: {
-      newestNewsletters,
-      newestCitizens,
-      newestListings,
-      newestJobs,
-      citizenSubgraphData,
-      aumData,
-      arrData,
-      mooneyPrice,
-      filteredTeams,
-      citizensLocationData,
-      currentProjects,
-    },
-    revalidate: 300,
-  }
 }

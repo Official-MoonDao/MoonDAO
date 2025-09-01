@@ -37,6 +37,8 @@ interface SubscriptionEvent {
   tokenId: string
 }
 
+const TEAM_DISCOUNT = 0.67
+
 // Helper function to get ETH price - server-side compatible
 async function getEthPrice(): Promise<number> {
   try {
@@ -85,12 +87,12 @@ async function getContractPrices() {
     ])
 
     const citizenPrice = Number(citizenPricePerSecond)
-    const teamPrice = Number(teamPricePerSecond) * (67 / 1000) // always apply discount to team price
+    const teamPrice = Number(teamPricePerSecond) * TEAM_DISCOUNT // always apply discount to team price
 
     return {
       citizenPricePerSecond: isNaN(citizenPrice) ? 351978691 : citizenPrice,
       teamPricePerSecond: isNaN(teamPrice)
-        ? 15854895991 * (67 / 1000)
+        ? 15854895991 * TEAM_DISCOUNT
         : teamPrice,
     }
   } catch (error) {
@@ -98,7 +100,7 @@ async function getContractPrices() {
     // Fallback prices with discount already applied for teams
     return {
       citizenPricePerSecond: 351978691, // ~0.0111 ETH / year
-      teamPricePerSecond: 15854895991 * (67 / 1000), // ~0.0333 ETH / year after discount
+      teamPricePerSecond: 15854895991 * TEAM_DISCOUNT, // ~0.0333 ETH / year after discount
     }
   }
 }
@@ -110,8 +112,6 @@ function convertTransfersToEvents(
   pricePerSecond: number,
   ethPrice: number
 ): SubscriptionEvent[] {
-  console.log(`\n=== Processing ${transfers.length} ${type} transfers ===`)
-
   const events: SubscriptionEvent[] = []
 
   transfers.forEach((transfer, index) => {
@@ -138,15 +138,6 @@ function convertTransfersToEvents(
       }
 
       events.push(event)
-
-      // Log first few for debugging
-      if (index < 3) {
-        console.log(`${type} subscription ${index}:`, {
-          tokenId: transfer.tokenId,
-          date: new Date(timestamp).toISOString().split('T')[0],
-          annualValueUSD: annualValueUSD.toFixed(2),
-        })
-      }
     } catch (error) {
       console.warn(
         `Error processing ${type} transfer ${index}:`,
@@ -156,7 +147,6 @@ function convertTransfersToEvents(
     }
   })
 
-  console.log(`Created ${events.length} ${type} subscription events`)
   return events
 }
 

@@ -87,9 +87,7 @@ export default function SpaceIndex() {
         to{' '}
         <u>
           <Link
-            href="https://docs.moondao.com/Projects/Project-System"
-            target="_blank"
-            rel="noreferrer"
+            href="/project-system-docs"
           >
             our documentation
           </Link>
