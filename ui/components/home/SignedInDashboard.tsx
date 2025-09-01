@@ -71,7 +71,6 @@ import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget } from '@/lib/utils/rewards'
 import { ARRChart } from '@/components/dashboard/treasury/ARRChart'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
-import { ProposalCard } from '@/components/home/ProposalCard'
 import ChartModal from '@/components/layout/ChartModal'
 import Container from '@/components/layout/Container'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
@@ -235,11 +234,12 @@ export default function SingedInDashboard({
     .concat(baseTokens)
     .concat([{ symbol: 'stETH', balance: stakedEth }])
 
-  const { ethBudget, usdBudget, mooneyBudget, ethPrice } = getBudget(
+  const { ethBudget: ethBudgetCurrent, usdBudget, mooneyBudget, ethPrice } = getBudget(
     tokens,
     year,
     quarter
   )
+  const ethBudget = 17.09
 
   const votingEscrowDepositorContract = useContract({
     address: VOTING_ESCROW_DEPOSITOR_ADDRESSES[chainSlug],
@@ -610,8 +610,13 @@ export default function SingedInDashboard({
                         key={newsletter.id || index}
                         className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5"
                         onClick={() => {
-                          if (newsletter.url) {
+                          if (newsletter.url && 
+                              newsletter.url !== 'https://news.moondao.com/posts' && 
+                              newsletter.url !== 'https://moondao.kit.com/posts' && 
+                              newsletter.url.includes('http')) {
                             window.open(newsletter.url, '_blank')
+                          } else {
+                            window.open('https://news.moondao.com/posts', '_blank')
                           }
                         }}
                       >
@@ -667,13 +672,17 @@ export default function SingedInDashboard({
                               )}
                             </div>
                           </div>
-                          <div className="text-gray-400 hover:text-white">
+                          <div 
+                            className="text-gray-400 hover:text-white transition-colors" 
+                            title="Click to view newsletter"
+                          >
                             <svg
                               className="w-5 h-5"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
                             >
-                              <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                             </svg>
                           </div>
                         </div>
@@ -713,32 +722,40 @@ export default function SingedInDashboard({
                     const ethAmount = getEthAmountFromProposal(proposal.actions)
 
                     return (
-                      <div
-                        key={proposal.proposalId || i}
-                        className="bg-white/5 rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all"
+                      <Link
+                        key={proposal.uuid || i}
+                        href={`/proposal/${proposal.uuid}`}
+                        className="block"
                       >
-                        <div className="flex justify-between items-start mb-3">
-                          <h4 className="text-white font-semibold">
-                            {proposal.title ||
-                              `MDP-${
-                                179 - i
-                              }: Study on Lunar Surface Selection For Settlement`}
-                          </h4>
-                          {i === 0 && (
-                            <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
-                              Active
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-300">
-                            <div className="flex items-center gap-1">
-                              <span className="font-medium text-white">
-                                {ethAmount > 0
-                                  ? `${formatNumberUSStyle(ethAmount)} ETH`
-                                  : 'No funding'}
+                        <div className="bg-white/5 rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all cursor-pointer">
+                          <div className="flex justify-between items-start mb-3">
+                            <h4 className="text-white font-semibold">
+                              {proposal.title ||
+                                `MDP-${
+                                  179 - i
+                                }: Study on Lunar Surface Selection For Settlement`}
+                            </h4>
+                            {i === 0 && (
+                              <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
+                                Active
                               </span>
-                              <span>requested</span>
+                            )}
+                          </div>
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-300">
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium text-white">
+                                  {ethAmount > 0
+                                    ? `${formatNumberUSStyle(ethAmount)} ETH`
+                                    : 'No funding'}
+                                </span>
+                                <span>requested</span>
+                              </div>
+                              <span className="hidden sm:inline">•</span>
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium text-white">{3 + i} days</span>
+                                <span>left</span>
+                              </div>
                             </div>
                             <span className="hidden sm:inline">•</span>
                             <div className="flex items-center gap-1">
@@ -746,13 +763,12 @@ export default function SingedInDashboard({
                                 {3 + i} days
                               </span>
                               <span>left</span>
+                            <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
+                              Vote
                             </div>
                           </div>
-                          <StandardButton className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
-                            Vote
-                          </StandardButton>
                         </div>
-                      </div>
+                      </Link>
                     )
                   })}
               </div>
