@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {BaseHook} from "v4-periphery/src/utils/BaseHook.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {Actions} from "v4-periphery/src/libraries/Actions.sol";
@@ -20,7 +21,7 @@ interface IERC20 {
     function totalSupply() external view returns (uint256);
 }
 
-contract FeeHook is BaseHook, Ownable {
+contract FeeHook is BaseHook, Ownable, IERC721Receiver  {
     using PoolIdLibrary for PoolKey;
     using StateLibrary for IPoolManager;
     using Strings for uint256;
@@ -203,6 +204,15 @@ contract FeeHook is BaseHook, Ownable {
     function transferETH(address to, uint256 amount) internal {
         (bool success, ) = to.call{value: amount}("");
         require(success, "ETH transfer failed");
+    }
+
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external override returns (bytes4){
+        return IERC721Receiver.onERC721Received.selector;
     }
 
     receive() external payable {
