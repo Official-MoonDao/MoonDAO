@@ -577,31 +577,6 @@ export default function Quest({
     }
   }, [])
 
-  // Function to get error button based on error message
-  //
-  // Error button configuration example:
-  // quest.verifier.errorButtons = {
-  //   "No GitHub account linked": {
-  //     type: "github_link",
-  //     text: "Link GitHub Account",
-  //     className: "custom-classes"
-  //   },
-  //   "insufficient balance": {
-  //     type: "retry",
-  //     text: "Try Again",
-  //     className: "bg-red-500"
-  //   },
-  //   "network error": {
-  //     type: "refresh",
-  //     text: "Refresh",
-  //     className: "bg-blue-500"
-  //   },
-  //   "documentation": {
-  //     type: "external_link",
-  //     text: "View Docs",
-  //     url: "https://docs.example.com"
-  //   }
-  // }
   const getErrorButton = useCallback(
     (errorMessage: string) => {
       if (!quest.verifier.errorButtons) return null
