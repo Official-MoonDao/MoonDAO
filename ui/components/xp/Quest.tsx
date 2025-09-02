@@ -39,6 +39,8 @@ export type QuestItem = {
   icon: QuestIcon
   link?: string
   linkText?: string
+  action?: () => void
+  actionText?: string
 }
 
 type QuestProps = {
@@ -1011,6 +1013,18 @@ export default function Quest({
                             {quest.linkText}
                           </StandardButton>
                         )}
+
+                      {!isCompleted &&
+                        quest.action &&
+                        quest.actionText &&
+                        !needsGitHubLink && (
+                          <button
+                            onClick={quest.action}
+                            className={getButtonClasses()}
+                          >
+                            {quest.actionText}
+                          </button>
+                        )}
                     </div>
                   </div>
                 ) : (
@@ -1079,6 +1093,20 @@ export default function Quest({
                         >
                           {quest.linkText}
                         </StandardButton>
+                      </div>
+                    )}
+
+                  {!isCompleted &&
+                    quest.action &&
+                    quest.actionText &&
+                    !needsGitHubLink && (
+                      <div className="inline-block">
+                        <button
+                          onClick={quest.action}
+                          className={getButtonClasses()}
+                        >
+                          {quest.actionText}
+                        </button>
                       </div>
                     )}
                 </div>
