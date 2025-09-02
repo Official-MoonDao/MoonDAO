@@ -71,16 +71,6 @@ contract HasVotingPowerStaged is XPOracleVerifier, StagedXPVerifier {
     }
 
     /**
-     * @notice Set the XPManager address (only callable by owner)
-     * @param _xpManager Address of the XPManager contract
-     */
-    function setXPManager(address _xpManager) external override onlyOwner {
-        require(_xpManager != address(0), "Invalid XPManager address");
-        xpManager = _xpManager;
-        emit XPManagerSet(_xpManager);
-    }
-
-    /**
      * @dev Implementation of the abstract _checkStageEligibility function
      * @dev Uses your existing oracle backend format with votingPower
      * @param user Address of the user
