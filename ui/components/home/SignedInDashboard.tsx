@@ -234,11 +234,12 @@ export default function SingedInDashboard({
     .concat(baseTokens)
     .concat([{ symbol: 'stETH', balance: stakedEth }])
 
-  const { ethBudget: ethBudgetCurrent, usdBudget, mooneyBudget, ethPrice } = getBudget(
-    tokens,
-    year,
-    quarter
-  )
+  const {
+    ethBudget: ethBudgetCurrent,
+    usdBudget,
+    mooneyBudget,
+    ethPrice,
+  } = getBudget(tokens, year, quarter)
   const ethBudget = 17.09
 
   const votingEscrowDepositorContract = useContract({
@@ -610,13 +611,20 @@ export default function SingedInDashboard({
                         key={newsletter.id || index}
                         className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5"
                         onClick={() => {
-                          if (newsletter.url && 
-                              newsletter.url !== 'https://news.moondao.com/posts' && 
-                              newsletter.url !== 'https://moondao.kit.com/posts' && 
-                              newsletter.url.includes('http')) {
+                          if (
+                            newsletter.url &&
+                            newsletter.url !==
+                              'https://news.moondao.com/posts' &&
+                            newsletter.url !==
+                              'https://moondao.kit.com/posts' &&
+                            newsletter.url.includes('http')
+                          ) {
                             window.open(newsletter.url, '_blank')
                           } else {
-                            window.open('https://news.moondao.com/posts', '_blank')
+                            window.open(
+                              'https://news.moondao.com/posts',
+                              '_blank'
+                            )
                           }
                         }}
                       >
@@ -672,8 +680,8 @@ export default function SingedInDashboard({
                               )}
                             </div>
                           </div>
-                          <div 
-                            className="text-gray-400 hover:text-white transition-colors" 
+                          <div
+                            className="text-gray-400 hover:text-white transition-colors"
                             title="Click to view newsletter"
                           >
                             <svg
@@ -682,7 +690,12 @@ export default function SingedInDashboard({
                               stroke="currentColor"
                               viewBox="0 0 24 24"
                             >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+                              />
                             </svg>
                           </div>
                         </div>
@@ -753,7 +766,9 @@ export default function SingedInDashboard({
                               </div>
                               <span className="hidden sm:inline">•</span>
                               <div className="flex items-center gap-1">
-                                <span className="font-medium text-white">{3 + i} days</span>
+                                <span className="font-medium text-white">
+                                  {3 + i} days
+                                </span>
                                 <span>left</span>
                               </div>
                             </div>
@@ -763,8 +778,9 @@ export default function SingedInDashboard({
                                 {3 + i} days
                               </span>
                               <span>left</span>
-                            <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
-                              Vote
+                              <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
+                                Vote
+                              </div>
                             </div>
                           </div>
                         </div>
