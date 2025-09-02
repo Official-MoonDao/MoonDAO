@@ -4,18 +4,9 @@ import {
   XP_ORACLE_CHAIN_ID,
   XP_ORACLE_CHAIN,
   XP_ORACLE_ADDRESSES,
-  XP_MANAGER_ADDRESSES,
-  HAS_VOTING_POWER_VERIFIER_ADDRESSES,
-  HAS_VOTED_VERIFIER_ADDRESSES,
 } from 'const/config'
 import { Wallet, utils as ethersUtils, providers } from 'ethers'
-import {
-  getContract,
-  prepareContractCall,
-  sendTransaction,
-  readContract,
-} from 'thirdweb'
-import { privateKeyToAccount as twPrivateKeyToAccount } from 'thirdweb/wallets'
+import { getContract, readContract } from 'thirdweb'
 import { arbitrum, sepolia } from '@/lib/infura/infuraChains'
 import { serverClient } from '@/lib/thirdweb/client'
 

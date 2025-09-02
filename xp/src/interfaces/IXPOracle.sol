@@ -29,8 +29,5 @@ interface IXPOracle {
     /// @notice Return the EIP-712 domain separator used by the oracle
     function domainSeparator() external view returns (bytes32);
 }
-<<<<<<< HEAD
 
 
-=======
->>>>>>> main

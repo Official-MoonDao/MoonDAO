@@ -272,7 +272,6 @@ export default function Quest({
           try {
             const finalCheck = await fetchHasClaimed(true)
             if (finalCheck) {
-              console.log('Final check confirmed claim!')
               toast.success('Quest claim confirmed on blockchain!', {
                 duration: 3000,
                 style: toastStyle,
@@ -373,7 +372,6 @@ export default function Quest({
 
       if (eligible) {
         if (txHash) {
-          console.log(`Transaction hash: ${txHash}`)
           setError(null) // Clear any previous errors
           toast.success(
             'Quest claimed successfully! Waiting for blockchain confirmation...',
@@ -1098,7 +1096,6 @@ export default function Quest({
                 </div>
                 <button
                   onClick={async () => {
-                    console.log('Manual refresh triggered')
                     const claimed = await fetchHasClaimed(false)
                     if (claimed) {
                       setIsPollingClaim(false)
