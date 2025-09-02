@@ -126,7 +126,7 @@ contract FeeHookTest is Test, Config, Constants {
         mintLiquidity(poolKey, tickLower, tickUpper, deployerAddress);
         // transfer the position to the fee hook
         uint256 tokenId = feeHook.poolIdToTokenId(poolKey.toId());
-        PositionManager(payable(posmAddress)).transferFrom(
+        PositionManager(payable(posmAddress)).safeTransferFrom(
             address(deployerAddress),
             address(feeHook),
             tokenId
@@ -160,7 +160,7 @@ contract FeeHookTest is Test, Config, Constants {
         // transfer the position back to the deployer to allow closing the position
         feeHook.transferPosition(
             deployerAddress,
-            PoolId.unwrap(poolKey.toId())
+            tokenId
         );
 
         // burn the position

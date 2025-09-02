@@ -465,11 +465,14 @@ export const HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES: Index = {
 export const HAS_SUBMITTED_PR_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0xf75aBC2612A10372B4c579294cEAB080B73e41C5',
+<<<<<<< HEAD
 }
 
 export const REFERRAL_VERIFIER_ADDRESSES: Index = {
   arbtirum: '',
   sepolia: '0x5D28E8C28C23284bF11B5e4e2D29d96eAb598BbF',
+=======
+>>>>>>> 4d967cba4cb863e1c2c4174c71479c3639c1060e
 }
 
 export const DISCORD_GUILD_ID = '914720248140279868'

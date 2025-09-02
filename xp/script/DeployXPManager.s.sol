@@ -17,6 +17,7 @@ import "../src/verifiers/HasSubmittedIssue.sol";
 import "../src/verifiers/SANReferralsStaged.sol";
 
 
+
 contract DeployXPManagerScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -48,13 +49,7 @@ contract DeployXPManagerScript is Script {
         HasSubmittedPRStaged hasSubmittedPRVerifier = new HasSubmittedPRStaged(oracleAddress);
         SANReferralsStaged sanReferralsVerifier = new SANReferralsStaged(oracleAddress);
 
-        // Set XPManager for staged verifiers
-        votingPowerVerifier.setXPManager(address(xpManager));
-        hasVotedVerifier.setXPManager(address(xpManager));
-        hasTokenBalanceVerifier.setXPManager(address(xpManager));
-        hasContributedVerifier.setXPManager(address(xpManager));
-        hasBoughtAMarketplaceListingVerifier.setXPManager(address(xpManager));
-        hasSubmittedPRVerifier.setXPManager(address(xpManager));
+
 
         // Register verifiers
         xpManager.registerVerifier(0, address(votingPowerVerifier));

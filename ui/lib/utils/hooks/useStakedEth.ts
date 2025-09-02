@@ -5,19 +5,32 @@ import client from 'lib/thirdweb/client'
 import { useState, useEffect } from 'react'
 import { readContract } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
+import { getRpcClient, eth_getBlockByNumber } from 'thirdweb/rpc'
 import { ethereum } from '@/lib/infura/infuraChains'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { keccak256 } from 'ethers/lib/utils'
 
 export default function useStakedEth() {
   const [stakedEth, setStakedEth] = useState<any>()
+  const [historicalData, setHistoricalData] = useState<any>()
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<any>(null)
+  const ETH_PER_DEPOSIT = 32
   const contract = useContract({
     address: STAKED_ETH_ADDRESS,
     abi: StakedEthABI as any,
     chain: ethereum,
   })
+  const provider = ethers5Adapter.provider.toEthers({
+    client,
+    chain: ethereum,
+  })
+  const rpcRequest = getRpcClient({ client, chain: ethereum })
+  const ethersContract = new Contract(
+    STAKED_ETH_ADDRESS,
+    StakedEthABI, // include at least the Deposit event ABI
+    provider
+  )
 
   useEffect(() => {
     async function fetchStakedEth() {
@@ -46,8 +59,31 @@ export default function useStakedEth() {
           initialStakeBlockNumber
         )
         const pubKeys = events.map((e) => e?.args?.publicKey)
+        const timeSeries = await Promise.all(
+          events.map(async (event) => {
+            const block = await eth_getBlockByNumber(rpcRequest, {
+              blockNumber: BigInt(event.blockNumber),
+            })
+            return {
+              timestamp: block.timestamp,
+              value: ETH_PER_DEPOSIT,
+              date: new Date(Number(block.timestamp)).toISOString(),
+            }
+          })
+        )
+        // Group by timestamp
+        const timeSeriesReduced = timeSeries.reduce((acc, current) => {
+          if (!acc.length) {
+            acc.push(current)
+            return acc
+          }
+          if (acc.at(-1).timestamp == current.timestamp) {
+            acc.at(-1).value += current.value
+          }
+          return acc
+        }, [] as any[])
 
-        // 1. Check if any deposits have been withdrawn
+        //1. Check if any deposits have been withdrawn
         const roots = pubKeys.map((pk) => keccak256(pk))
         const withdrawnFrom = await Promise.all(
           roots.map((root) =>
@@ -62,9 +98,9 @@ export default function useStakedEth() {
           (_, i) => !withdrawnFrom[i]
         ).length
 
-        // 2. each deposit = 32 ETH
-        const totalStaked = stillStakedCount * 32
+        const totalStaked = stillStakedCount * ETH_PER_DEPOSIT
         setStakedEth(totalStaked)
+        setHistoricalData(timeSeriesReduced)
       } catch (error) {
         console.log('Error fetching staked ETH:', error)
         setError(error)
@@ -73,6 +109,6 @@ export default function useStakedEth() {
       }
     }
     fetchStakedEth()
-  }, [contract])
-  return { stakedEth, isLoading, error }
+  }, [contract, rpcRequest])
+  return { stakedEth, historicalData, isLoading, error }
 }

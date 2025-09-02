@@ -622,8 +622,6 @@ export async function getAUMHistory(
     else if (days <= 90) timeRange = '3m'
     else if (days <= 365) timeRange = '1y'
 
-    console.log(`📊 Fetching portfolio chart data (${timeRange})...`)
-
     // Fetch both portfolio chart and DeFi data in parallel
     const [chartResponse, defiData] = await Promise.all([
       fetch(
@@ -641,7 +639,6 @@ export async function getAUMHistory(
 
     if (!chartResponse.ok) {
       const errorText = await chartResponse.text()
-      console.log('Portfolio API Error:', errorText)
 
       // Check if it's a subscription issue (Degen plan required)
       if (chartResponse.status === 403 || errorText.includes('subscription')) {
@@ -691,24 +688,6 @@ export async function getAUMHistory(
           value: point.value + defiValue, // Add DeFi only after creation date
         }
       })
-
-      console.log(
-        `📈 Processed ${enhancedChartData.length} portfolio data points`
-      )
-      console.log(
-        `💰 Current Portfolio Value: $${currentPortfolioValue.toFixed(2)}`
-      )
-      console.log(`🦄 Current DeFi Balance: $${defiData.balance.toFixed(2)}`)
-      console.log(
-        `💎 Total AUM (Portfolio + DeFi): $${totalCurrentValue.toFixed(2)}`
-      )
-      console.log(
-        `📊 Enhanced value range: $${Math.min(
-          ...enhancedChartData.map((d) => d.value)
-        ).toFixed(2)} - $${Math.max(
-          ...enhancedChartData.map((d) => d.value)
-        ).toFixed(2)}`
-      )
 
       return {
         aumHistory: enhancedChartData,

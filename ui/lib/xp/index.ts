@@ -35,8 +35,8 @@ import {
   sepolia,
 } from '@/lib/infura/infuraChains'
 import { serverClient } from '@/lib/thirdweb/client'
+import { XP_VERIFIERS } from '@/lib/xp/config'
 import { signOracleProof } from '../oracle'
-import { XP_VERIFIERS } from './config'
 
 function normalizePk(pk?: string): `0x${string}` {
   if (!pk) throw new Error('ORACLE_SIGNER_PK missing')

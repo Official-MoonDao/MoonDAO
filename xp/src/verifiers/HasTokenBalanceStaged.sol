@@ -152,16 +152,6 @@ contract HasTokenBalanceStaged is XPOracleVerifier, StagedXPVerifier {
     }
 
     /**
-     * @notice Set the XPManager address (only callable by owner)
-     * @param _xpManager Address of the XPManager contract
-     */
-    function setXPManager(address _xpManager) external override onlyOwner {
-        require(_xpManager != address(0), "Invalid XPManager address");
-        xpManager = _xpManager;
-        emit XPManagerSet(_xpManager);
-    }
-
-    /**
      * @dev Find the stage index that matches the given threshold
      * @param threshold The threshold to find
      * @return stageIndex The stage index, or type(uint256).max if not found

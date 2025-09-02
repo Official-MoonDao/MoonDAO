@@ -4,18 +4,9 @@ import {
   XP_ORACLE_CHAIN_ID,
   XP_ORACLE_CHAIN,
   XP_ORACLE_ADDRESSES,
-  XP_MANAGER_ADDRESSES,
-  HAS_VOTING_POWER_VERIFIER_ADDRESSES,
-  HAS_VOTED_VERIFIER_ADDRESSES,
 } from 'const/config'
 import { Wallet, utils as ethersUtils, providers } from 'ethers'
-import {
-  getContract,
-  prepareContractCall,
-  sendTransaction,
-  readContract,
-} from 'thirdweb'
-import { privateKeyToAccount as twPrivateKeyToAccount } from 'thirdweb/wallets'
+import { getContract, readContract } from 'thirdweb'
 import { arbitrum, sepolia } from '@/lib/infura/infuraChains'
 import { serverClient } from '@/lib/thirdweb/client'
 
@@ -25,35 +16,6 @@ type Hex = `0x${string}`
 function normalizePk(pk?: string): `0x${string}` {
   if (!pk) throw new Error('ORACLE_SIGNER_PK missing')
   return (pk.startsWith('0x') ? pk : `0x${pk}`) as `0x${string}`
-}
-
-const { keccak256, defaultAbiCoder } = ethersUtils
-// Minimal ABI for verifiers to read xpPerClaim
-const VERIFIER_ABI = [
-  {
-    type: 'function',
-    name: 'xpPerClaim',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ type: 'uint256' }],
-  },
-]
-
-async function fetchVerifierXp(verifierAddress: Address): Promise<bigint> {
-  const twChain =
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
-  const contract = getContract({
-    client: serverClient,
-    chain: twChain,
-    address: verifierAddress,
-    abi: VERIFIER_ABI as any,
-  })
-  const value = (await readContract({
-    contract,
-    method: 'xpPerClaim',
-    params: [],
-  })) as string | bigint
-  return BigInt(value as any)
 }
 
 export type SignedProofResult = {

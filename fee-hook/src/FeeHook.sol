@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {BaseHook} from "v4-periphery/src/utils/BaseHook.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {Actions} from "v4-periphery/src/libraries/Actions.sol";
@@ -20,7 +21,7 @@ interface IERC20 {
     function totalSupply() external view returns (uint256);
 }
 
-contract FeeHook is BaseHook, Ownable {
+contract FeeHook is BaseHook, Ownable, IERC721Receiver  {
     using PoolIdLibrary for PoolKey;
     using StateLibrary for IPoolManager;
     using Strings for uint256;
@@ -40,7 +41,7 @@ contract FeeHook is BaseHook, Ownable {
 
     event CheckedIn(address indexed user, uint256 weekStart);
     event FeesDistributed(uint256 amount);
-    event TransferredPosition(address indexed to, bytes32 poolId, uint256 tokenId);
+    event TransferredPosition(address indexed to, uint256 tokenId);
     event CreatedPosition(bytes32 poolId, uint256 tokenId);
 
     constructor(address owner, IPoolManager _poolManager, IPositionManager _posm, address _vMooneyAddress) BaseHook(_poolManager) Ownable(owner) {
@@ -124,13 +125,10 @@ contract FeeHook is BaseHook, Ownable {
     // in case any manual intervention is needed.
     function transferPosition(
         address to,
-        bytes32 poolId) external onlyOwner
+        uint256 tokenId) external onlyOwner
     {
-        PoolId id = PoolId.wrap(poolId);
-        uint256 tokenId = poolIdToTokenId[id];
-        require(tokenId != 0, "Token ID not found");
-        emit TransferredPosition(to, poolId, tokenId);
         PositionManager(payable(address(posm))).safeTransferFrom(address(this), to, tokenId, "");
+        emit TransferredPosition(to, tokenId);
     }
 
     /// @notice Mark the caller as participating in the current week
@@ -206,6 +204,15 @@ contract FeeHook is BaseHook, Ownable {
     function transferETH(address to, uint256 amount) internal {
         (bool success, ) = to.call{value: amount}("");
         require(success, "ETH transfer failed");
+    }
+
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external override returns (bytes4){
+        return IERC721Receiver.onERC721Received.selector;
     }
 
     receive() external payable {

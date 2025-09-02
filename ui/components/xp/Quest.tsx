@@ -274,7 +274,6 @@ export default function Quest({
           try {
             const finalCheck = await fetchHasClaimed(true)
             if (finalCheck) {
-              console.log('Final check confirmed claim!')
               toast.success('Quest claim confirmed on blockchain!', {
                 duration: 3000,
                 style: toastStyle,
@@ -375,7 +374,6 @@ export default function Quest({
 
       if (eligible) {
         if (txHash) {
-          console.log(`Transaction hash: ${txHash}`)
           setError(null) // Clear any previous errors
           toast.success(
             'Quest claimed successfully! Waiting for blockchain confirmation...',
@@ -581,31 +579,6 @@ export default function Quest({
     }
   }, [])
 
-  // Function to get error button based on error message
-  //
-  // Error button configuration example:
-  // quest.verifier.errorButtons = {
-  //   "No GitHub account linked": {
-  //     type: "github_link",
-  //     text: "Link GitHub Account",
-  //     className: "custom-classes"
-  //   },
-  //   "insufficient balance": {
-  //     type: "retry",
-  //     text: "Try Again",
-  //     className: "bg-red-500"
-  //   },
-  //   "network error": {
-  //     type: "refresh",
-  //     text: "Refresh",
-  //     className: "bg-blue-500"
-  //   },
-  //   "documentation": {
-  //     type: "external_link",
-  //     text: "View Docs",
-  //     url: "https://docs.example.com"
-  //   }
-  // }
   const getErrorButton = useCallback(
     (errorMessage: string) => {
       if (!quest.verifier.errorButtons) return null
@@ -1126,7 +1099,6 @@ export default function Quest({
                 </div>
                 <button
                   onClick={async () => {
-                    console.log('Manual refresh triggered')
                     const claimed = await fetchHasClaimed(false)
                     if (claimed) {
                       setIsPollingClaim(false)

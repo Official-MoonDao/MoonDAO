@@ -664,8 +664,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                       <Link
                         rel="noopener noreferrer"
                         className="text-sky-400 hover:text-sky-300 transition-colors"
-                        href="https://docs.moondao.com/Legal/Website-Terms-and-Conditions"
-                        target="_blank"
+                        href="/terms-of-service"
                       >
                         {' '}
                         Terms and Conditions{' '}
@@ -673,8 +672,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                       and the{' '}
                       <Link
                         className="text-sky-400 hover:text-sky-300 transition-colors"
-                        href="https://docs.moondao.com/Legal/Website-Privacy-Policy"
-                        target="_blank"
+                        href="/privacy-policy"
                         rel="noopener noreferrer"
                       >
                         Privacy Policy

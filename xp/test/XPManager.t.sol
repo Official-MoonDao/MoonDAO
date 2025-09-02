@@ -829,13 +829,17 @@ contract XPManagerTest is Test {
         xpManager.setXPLevels(thresholds, levels);
         vm.stopPrank();
 
-        // Expect level up event when reaching level 1
+        // Give user1 first claim (25 XP) - no level up yet
+        vm.startPrank(user1);
+        xpManager.claimXP(1, abi.encode(100)); // 25 XP
+        vm.stopPrank();
+
+        // Expect level up event when reaching level 1 (50 XP total)
         vm.expectEmit(true, false, false, true);
         emit XPManager.LevelUp(user1, 1, 50);
 
-        // Give user1 enough XP to reach level 1 (need 50 XP, verifier gives 25 each)
+        // Second claim should trigger level up
         vm.startPrank(user1);
-        xpManager.claimXP(1, abi.encode(100)); // 25 XP
         xpManager.claimXP(1, abi.encode(200)); // 50 XP total - should trigger level up
         vm.stopPrank();
     }
