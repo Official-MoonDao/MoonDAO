@@ -37,7 +37,7 @@ interface SubscriptionEvent {
   tokenId: string
 }
 
-const TEAM_DISCOUNT = 0.67
+const TEAM_DISCOUNT = 0.067
 
 // Helper function to get ETH price - server-side compatible
 async function getEthPrice(): Promise<number> {
