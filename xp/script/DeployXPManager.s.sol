@@ -45,6 +45,7 @@ contract DeployXPManagerScript is Script {
         HasBoughtAMarketplaceListingStaged hasBoughtAMarketplaceListingVerifier =
             new HasBoughtAMarketplaceListingStaged(oracleAddress);
         HasSubmittedPRStaged hasSubmittedPRVerifier = new HasSubmittedPRStaged(oracleAddress);
+        ReferralsStaged hasReferralsVerifier = new ReferralsStaged(oracleAddress);
 
         // Set XPManager for staged verifiers
         votingPowerVerifier.setXPManager(address(xpManager));
@@ -53,6 +54,7 @@ contract DeployXPManagerScript is Script {
         hasContributedVerifier.setXPManager(address(xpManager));
         hasBoughtAMarketplaceListingVerifier.setXPManager(address(xpManager));
         hasSubmittedPRVerifier.setXPManager(address(xpManager));
+        hasReferralsVerifier.setXPManager(address(xpManager));
 
         // Register verifiers
         xpManager.registerVerifier(0, address(votingPowerVerifier));
@@ -65,6 +67,7 @@ contract DeployXPManagerScript is Script {
         xpManager.registerVerifier(7, address(hasJoinedATeamVerifier));
         xpManager.registerVerifier(8, address(hasSubmittedIssueVerifier));
         xpManager.registerVerifier(9, address(hasSubmittedPRVerifier));
+        xpManager.registerVerifier(10, address(hasReferralsVerifier));
 
         // Set up XP levels: More realistic progression based on actual verifier rewards
         uint256[] memory thresholds = new uint256[](6);
@@ -92,15 +95,6 @@ contract DeployXPManagerScript is Script {
         uint256 conversionRate = 1e18; // 1 * 10^18
         
         xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
-
-        // CRITICAL: Set XPManager address on all staged verifiers
-        // This allows XPManager to call updateUserStage() and other protected functions
-        votingPowerVerifier.setXPManager(address(xpManager));
-        hasVotedVerifier.setXPManager(address(xpManager));
-        hasTokenBalanceVerifier.setXPManager(address(xpManager));
-        hasContributedVerifier.setXPManager(address(xpManager));
-        hasBoughtAMarketplaceListingVerifier.setXPManager(address(xpManager));
-        hasSubmittedPRVerifier.setXPManager(address(xpManager));
         
         vm.stopBroadcast();
     }

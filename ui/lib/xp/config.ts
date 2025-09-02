@@ -18,6 +18,7 @@ import {
   HAS_VOTING_POWER_VERIFIER_ADDRESSES,
   HAS_SUBMITTED_PR_VERIFIER_ADDRESSES,
   HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES,
+  REFERRAL_VERIFIER_ADDRESSES,
 } from 'const/config'
 
 export const XP_VERIFIERS: any = [
@@ -164,5 +165,17 @@ export const XP_VERIFIERS: any = [
           'from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700',
       },
     },
+  },
+  {
+    verifierId: 10,
+    verifierAddress: REFERRAL_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/referrals',
+    type: 'staged',
+    metricKey: 'referrals',
+    title: 'Referrals',
+    description: 'Refer a friend to the Space Acceleration Network.',
+    icon: UserGroupIcon,
+    link: 'referral',
+    linkText: 'Refer a Friend',
   },
 ]
