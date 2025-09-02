@@ -176,7 +176,7 @@ export function runIterativeNormalization(distributions: any, projects: any) {
 }
 
 export function runQuadraticVoting(
-  distributions: Distribution[],
+  distributions: any[],
   addressToQuadraticVotingPower: any,
   budgetPercentMinusCommunityFund = 90
 ) {
@@ -192,7 +192,7 @@ export function runQuadraticVoting(
       if (!projectIdToListOfPercentage[key]) {
         projectIdToListOfPercentage[key] = []
       }
-      projectIdToListOfPercentage[key].push(value)
+      projectIdToListOfPercentage[key].push(Number(value))
     }
   }
   const votingPowerSum = _.sum(Object.values(addressToQuadraticVotingPower))
@@ -396,10 +396,11 @@ export function getPayouts(
       if (
         upfrontPayments &&
         ((contributerAddress in upfrontPayments &&
-        upfrontPayments[contributerAddress] >
-          marginalPayoutProportion * ethBudget) ||
-        (utils.getAddress(contributerAddress) in upfrontPayments &&
-          upfrontPayments[utils.getAddress(contributerAddress)] > marginalPayoutProportion * ethBudget))
+          upfrontPayments[contributerAddress] >
+            marginalPayoutProportion * ethBudget) ||
+          (utils.getAddress(contributerAddress) in upfrontPayments &&
+            upfrontPayments[utils.getAddress(contributerAddress)] >
+              marginalPayoutProportion * ethBudget))
       ) {
         continue
       }

@@ -109,7 +109,7 @@ export default function FinalistCard({
   const ineligible =
     address &&
     finalist &&
-    finalist.address.toLowerCase() == address.toLowerCase()
+    finalist?.address?.toLowerCase() == address.toLowerCase()
 
   return (
     <>

@@ -7,6 +7,7 @@ import {
 import _ from 'lodash'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useMemo } from 'react'
+import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'

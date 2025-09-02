@@ -91,22 +91,22 @@ export default function ProposalsPage() {
                   <p className="text-gray-300 leading-relaxed">
                     Submit a proposal to receive financing or special
                     permissions from the MoonDAO community. Please refer to{' '}
-                    <a
+                    <Link
                       href="/project-system-docs"
                       className="text-blue-400 hover:text-blue-300 underline transition-colors"
                     >
                       our documentation
-                    </a>{' '}
+                    </Link>{' '}
                     for more details before getting started. We recommend
                     starting your draft with the{' '}
-                    <a
+                    <Link
                       href="https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit?usp=sharing"
                       className="text-blue-400 hover:text-blue-300 underline transition-colors"
                       target="_blank"
                       rel="noreferrer"
                     >
                       Google doc template
-                    </a>
+                    </Link>
                     .
                   </p>
                 </div>

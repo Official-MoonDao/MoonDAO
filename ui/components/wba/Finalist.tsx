@@ -4,6 +4,6 @@ export type Finalist = {
   citizenId: number
   videoUrl: string
   writtenUrl: string
-  address: string
-  image: string
+  address?: string
+  image?: string
 }

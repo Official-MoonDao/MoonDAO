@@ -9,7 +9,7 @@ import { arbitrum } from '@/lib/infura/infuraChains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import Finalist from '@/components/wba/Finalist'
+import { Finalist } from '@/components/wba/Finalist'
 import { WBA, WBAProps } from '@/components/wba/WBA'
 
 export default function WBAPage({ distributions, finalists }: WBAProps) {
