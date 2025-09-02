@@ -298,15 +298,6 @@ contract XPManager is Ownable {
     }
 
     /**
-     * @notice Claim XP from a verifier and automatically claim ERC20 rewards
-     * @param conditionId ID of the verifier condition
-     * @param context Context data for the verifier
-     */
-    function claimXP(uint256 conditionId, bytes calldata context) external {
-        claimXPFor(msg.sender, conditionId, context);
-    }
-
-    /**
      * @notice Claim XP on behalf of a user and automatically claim ERC20 rewards
      * @dev Uses oracle proof bound to the provided user. Anyone can call this; oracle proof prevents abuse.
      * @param user Address to credit XP to
@@ -359,12 +350,53 @@ contract XPManager is Ownable {
     }
 
     /**
-     * @notice Bulk claim XP from a staged verifier and automatically claim ERC20 rewards
-     * @param conditionId ID of the staged verifier condition
+     * @notice Claim XP from a verifier and automatically claim ERC20 rewards
+     * @param conditionId ID of the verifier condition
      * @param context Context data for the verifier
      */
-    function claimBulkXP(uint256 conditionId, bytes calldata context) external {
-        claimBulkXPFor(msg.sender, conditionId, context);
+    function claimXP(uint256 conditionId, bytes calldata context) external {
+        require(msg.sender != address(0), "Invalid user");
+        require(verifiers[conditionId] != address(0), "Verifier not found");
+
+        IXPVerifier verifier = IXPVerifier(verifiers[conditionId]);
+
+        // Generate claim ID bound to the target user
+        bytes32 claimId = verifier.claimId(msg.sender, context);
+        require(!usedProofs[claimId], "Already claimed");
+
+        // Check cooldown for the target user
+        uint256 validAfter = verifier.validAfter(msg.sender, context);
+        require(block.timestamp >= validAfter, "Cooldown not expired");
+
+        // Check eligibility for the target user
+        (bool eligible, uint256 xpAmount) = verifier.isEligible(msg.sender, context);
+        require(eligible, "Not eligible");
+        require(xpAmount > 0, "No XP to claim");
+
+        // Ensure sufficient ERC20 balance to cover the payout that will be triggered by this claim
+        if (erc20RewardConfig.active) {
+            uint256 newTotalEarned = ((userXP[msg.sender] + xpAmount) * erc20RewardConfig.conversionRate);
+            uint256 alreadyClaimed = claimedERC20Rewards[msg.sender];
+            if (newTotalEarned > alreadyClaimed) {
+                uint256 projectedPayout = newTotalEarned - alreadyClaimed;
+                uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
+                require(bal >= projectedPayout, "Insufficient ERC20 balance");
+            }
+        }
+
+        // Mark as used
+        usedProofs[claimId] = true;
+
+        // Record verifier claim
+        _recordVerifierClaim(msg.sender, conditionId);
+
+        // Grant XP to the target user
+        _grantXP(msg.sender, xpAmount);
+
+        // Automatically claim ERC20 rewards
+        _claimERC20Rewards(msg.sender);
+
+        emit VerifierClaimed(msg.sender, conditionId, xpAmount);
     }
 
     /**
@@ -421,6 +453,62 @@ contract XPManager is Ownable {
 
         emit VerifierClaimed(user, conditionId, totalXP);
     }
+
+    /**
+     * @notice Bulk claim XP from a staged verifier and automatically claim ERC20 rewards
+     * @param conditionId ID of the staged verifier condition
+     * @param context Context data for the verifier
+     */
+    function claimBulkXP(uint256 conditionId, bytes calldata context) external {
+        require(msg.sender != address(0), "Invalid user");
+        require(verifiers[conditionId] != address(0), "Verifier not found");
+
+        // Check if verifier supports bulk claiming
+        IStagedXPVerifier stagedVerifier = IStagedXPVerifier(verifiers[conditionId]);
+
+        // Generate bulk claim ID bound to the target user
+        bytes32 claimId = stagedVerifier.bulkClaimId(msg.sender, context);
+        require(!usedProofs[claimId], "Already claimed");
+
+        // Check cooldown for the target user
+        uint256 validAfter = stagedVerifier.validAfter(msg.sender, context);
+        require(block.timestamp >= validAfter, "Cooldown not expired");
+
+        // Check bulk eligibility for the target user
+        (bool eligible, uint256 totalXP, uint256 highestStage) = stagedVerifier.isBulkEligible(msg.sender, context);
+        require(eligible, "Not eligible");
+        require(totalXP > 0, "No XP to claim");
+
+        // Ensure sufficient ERC20 balance to cover the payout that will be triggered by this claim
+        if (erc20RewardConfig.active) {
+            uint256 newTotalEarned = ((userXP[msg.sender] + totalXP) * erc20RewardConfig.conversionRate);
+            uint256 alreadyClaimed = claimedERC20Rewards[msg.sender];
+            if (newTotalEarned > alreadyClaimed) {
+                uint256 projectedPayout = newTotalEarned - alreadyClaimed;
+                uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
+                require(bal >= projectedPayout, "Insufficient ERC20 balance");
+            }
+        }
+
+        // Mark as used
+        usedProofs[claimId] = true;
+
+        // Record verifier claim
+        _recordVerifierClaim(msg.sender, conditionId);
+
+        // Update user stage in the verifier
+        stagedVerifier.updateUserStage(msg.sender, highestStage);
+
+        // Grant XP to the target user
+        _grantXP(msg.sender, totalXP);
+
+        // Automatically claim ERC20 rewards
+        _claimERC20Rewards(msg.sender);
+
+        emit VerifierClaimed(msg.sender, conditionId, totalXP);
+    }
+
+
 
     /**
      * @notice Get total XP for a user
