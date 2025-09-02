@@ -43,6 +43,6 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          forge test -vvv --via-ir
         working-directory: xp
         id: test
