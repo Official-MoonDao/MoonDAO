@@ -305,6 +305,25 @@ contract XPManager is Ownable {
      * @param context Context data for the verifier
      */
     function claimXPFor(address user, uint256 conditionId, bytes calldata context) external {
+        _claimXPInternal(user, conditionId, context);
+    }
+
+    /**
+     * @notice Claim XP from a verifier and automatically claim ERC20 rewards
+     * @param conditionId ID of the verifier condition
+     * @param context Context data for the verifier
+     */
+    function claimXP(uint256 conditionId, bytes calldata context) external {
+        _claimXPInternal(msg.sender, conditionId, context);
+    }
+
+    /**
+     * @dev Internal function to handle XP claiming logic
+     * @param user Address to credit XP to
+     * @param conditionId ID of the verifier condition
+     * @param context Context data for the verifier
+     */
+    function _claimXPInternal(address user, uint256 conditionId, bytes calldata context) internal {
         require(user != address(0), "Invalid user");
         require(verifiers[conditionId] != address(0), "Verifier not found");
 
@@ -350,62 +369,31 @@ contract XPManager is Ownable {
     }
 
     /**
-     * @notice Claim XP from a verifier and automatically claim ERC20 rewards
-     * @param conditionId ID of the verifier condition
-     * @param context Context data for the verifier
-     */
-    function claimXP(uint256 conditionId, bytes calldata context) external {
-        require(msg.sender != address(0), "Invalid user");
-        require(verifiers[conditionId] != address(0), "Verifier not found");
-
-        IXPVerifier verifier = IXPVerifier(verifiers[conditionId]);
-
-        // Generate claim ID bound to the target user
-        bytes32 claimId = verifier.claimId(msg.sender, context);
-        require(!usedProofs[claimId], "Already claimed");
-
-        // Check cooldown for the target user
-        uint256 validAfter = verifier.validAfter(msg.sender, context);
-        require(block.timestamp >= validAfter, "Cooldown not expired");
-
-        // Check eligibility for the target user
-        (bool eligible, uint256 xpAmount) = verifier.isEligible(msg.sender, context);
-        require(eligible, "Not eligible");
-        require(xpAmount > 0, "No XP to claim");
-
-        // Ensure sufficient ERC20 balance to cover the payout that will be triggered by this claim
-        if (erc20RewardConfig.active) {
-            uint256 newTotalEarned = ((userXP[msg.sender] + xpAmount) * erc20RewardConfig.conversionRate);
-            uint256 alreadyClaimed = claimedERC20Rewards[msg.sender];
-            if (newTotalEarned > alreadyClaimed) {
-                uint256 projectedPayout = newTotalEarned - alreadyClaimed;
-                uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
-                require(bal >= projectedPayout, "Insufficient ERC20 balance");
-            }
-        }
-
-        // Mark as used
-        usedProofs[claimId] = true;
-
-        // Record verifier claim
-        _recordVerifierClaim(msg.sender, conditionId);
-
-        // Grant XP to the target user
-        _grantXP(msg.sender, xpAmount);
-
-        // Automatically claim ERC20 rewards
-        _claimERC20Rewards(msg.sender);
-
-        emit VerifierClaimed(msg.sender, conditionId, xpAmount);
-    }
-
-    /**
      * @notice Bulk claim XP on behalf of a user from a staged verifier and automatically claim ERC20 rewards
      * @param user Address to credit XP to
      * @param conditionId ID of the staged verifier condition
      * @param context Context data for the verifier
      */
     function claimBulkXPFor(address user, uint256 conditionId, bytes calldata context) external {
+        _claimBulkXPInternal(user, conditionId, context);
+    }
+
+    /**
+     * @notice Bulk claim XP from a staged verifier and automatically claim ERC20 rewards
+     * @param conditionId ID of the staged verifier condition
+     * @param context Context data for the verifier
+     */
+    function claimBulkXP(uint256 conditionId, bytes calldata context) external {
+        _claimBulkXPInternal(msg.sender, conditionId, context);
+    }
+
+    /**
+     * @dev Internal function to handle bulk XP claiming logic
+     * @param user Address to credit XP to
+     * @param conditionId ID of the staged verifier condition
+     * @param context Context data for the verifier
+     */
+    function _claimBulkXPInternal(address user, uint256 conditionId, bytes calldata context) internal {
         require(user != address(0), "Invalid user");
         require(verifiers[conditionId] != address(0), "Verifier not found");
 
@@ -452,60 +440,6 @@ contract XPManager is Ownable {
         _claimERC20Rewards(user);
 
         emit VerifierClaimed(user, conditionId, totalXP);
-    }
-
-    /**
-     * @notice Bulk claim XP from a staged verifier and automatically claim ERC20 rewards
-     * @param conditionId ID of the staged verifier condition
-     * @param context Context data for the verifier
-     */
-    function claimBulkXP(uint256 conditionId, bytes calldata context) external {
-        require(msg.sender != address(0), "Invalid user");
-        require(verifiers[conditionId] != address(0), "Verifier not found");
-
-        // Check if verifier supports bulk claiming
-        IStagedXPVerifier stagedVerifier = IStagedXPVerifier(verifiers[conditionId]);
-
-        // Generate bulk claim ID bound to the target user
-        bytes32 claimId = stagedVerifier.bulkClaimId(msg.sender, context);
-        require(!usedProofs[claimId], "Already claimed");
-
-        // Check cooldown for the target user
-        uint256 validAfter = stagedVerifier.validAfter(msg.sender, context);
-        require(block.timestamp >= validAfter, "Cooldown not expired");
-
-        // Check bulk eligibility for the target user
-        (bool eligible, uint256 totalXP, uint256 highestStage) = stagedVerifier.isBulkEligible(msg.sender, context);
-        require(eligible, "Not eligible");
-        require(totalXP > 0, "No XP to claim");
-
-        // Ensure sufficient ERC20 balance to cover the payout that will be triggered by this claim
-        if (erc20RewardConfig.active) {
-            uint256 newTotalEarned = ((userXP[msg.sender] + totalXP) * erc20RewardConfig.conversionRate);
-            uint256 alreadyClaimed = claimedERC20Rewards[msg.sender];
-            if (newTotalEarned > alreadyClaimed) {
-                uint256 projectedPayout = newTotalEarned - alreadyClaimed;
-                uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
-                require(bal >= projectedPayout, "Insufficient ERC20 balance");
-            }
-        }
-
-        // Mark as used
-        usedProofs[claimId] = true;
-
-        // Record verifier claim
-        _recordVerifierClaim(msg.sender, conditionId);
-
-        // Update user stage in the verifier
-        stagedVerifier.updateUserStage(msg.sender, highestStage);
-
-        // Grant XP to the target user
-        _grantXP(msg.sender, totalXP);
-
-        // Automatically claim ERC20 rewards
-        _claimERC20Rewards(msg.sender);
-
-        emit VerifierClaimed(msg.sender, conditionId, totalXP);
     }
 
 
@@ -566,7 +500,6 @@ contract XPManager is Ownable {
      * @param amount XP to grant
      */
     function _grantXP(address user, uint256 amount) internal {
-        uint256 oldXP = userXP[user];
         uint256 oldLevel = _getUserLevelInternal(user);
         
         userXP[user] += amount;
@@ -664,40 +597,24 @@ contract XPManager is Ownable {
 
     /**
      * @dev Internal function to reset ALL used proofs for a user
-     * @dev Uses a new epoch-based reset mechanism to avoid gas issues
+     * @dev Simplified approach to avoid gas issues
      * @param user Address of the user to reset all proofs for
      */
     function _resetAllUserProofs(address user) internal {
-        // Instead of trying to guess and reset specific proofs (which is gas-intensive
-        // and can cause overflows), we use an epoch-based approach.
-        
-        // For now, emit an event to indicate we should reset proofs for this user
-        // In a production system, this could increment a user epoch that gets checked
-        // during proof validation, or maintain a separate mapping of reset timestamps
-        
-        // Reset only the most common basic patterns to avoid gas issues
-        for (uint256 i = 1; i <= 10; i++) { // Limit to first 10 verifiers to avoid gas issues
+        // Reset only basic patterns to avoid gas issues
+        for (uint256 i = 1; i <= 5; i++) { // Limit to first 5 verifiers
             if (verifiers[i] != address(0)) {
-                // Reset basic zero-context claim pattern
                 bytes32 basicClaimId = keccak256(abi.encodePacked(verifiers[i], user, keccak256(abi.encode(uint256(0)))));
                 usedProofs[basicClaimId] = false;
-                
-                // Reset empty context pattern
                 bytes32 emptyClaimId = keccak256(abi.encodePacked(verifiers[i], user, bytes32(0)));
                 usedProofs[emptyClaimId] = false;
             }
         }
-        
-        // Note: This simplified approach may not reset all possible proofs.
-        // For complete reset functionality, consider:
-        // 1. Using resetVerifierProofsForUser() for specific verifier/user combinations
-        // 2. Implementing an epoch-based system where each user has a reset counter
-        // 3. Having verifiers track their own reset states
     }
 
     /**
      * @notice Reset all used proofs for a specific verifier (onlyOwner)
-     * @dev This is a limited reset that only clears common proof patterns to avoid gas issues
+     * @dev Simplified reset to avoid gas issues
      * @param verifierId ID of the verifier to reset proofs for
      */
     function resetVerifierProofs(uint256 verifierId) external onlyOwner {
@@ -705,43 +622,28 @@ contract XPManager is Ownable {
         
         address verifierAddress = verifiers[verifierId];
         
-        // Reset common context patterns for basic verifiers
-        bytes32[] memory commonContexts = new bytes32[](5);
-        commonContexts[0] = keccak256(abi.encode(uint256(0))); // Zero context
-        commonContexts[1] = keccak256(abi.encode(uint256(1))); // Min threshold
-        commonContexts[2] = keccak256(abi.encode(uint256(100))); 
-        commonContexts[3] = keccak256(abi.encode(uint256(1000)));
-        commonContexts[4] = bytes32(0); // Empty context
+        // Reset basic patterns only
+        bytes32[] memory contexts = new bytes32[](3);
+        contexts[0] = keccak256(abi.encode(uint256(0)));
+        contexts[1] = keccak256(abi.encode(uint256(100)));
+        contexts[2] = bytes32(0);
         
-        // Reset for common test addresses
-        address[] memory commonUsers = new address[](5);
-        commonUsers[0] = address(0x1);
-        commonUsers[1] = address(0x2);
-        commonUsers[2] = address(0x3);
-        commonUsers[3] = address(0x123);
-        commonUsers[4] = address(0x456);
+        address[] memory users = new address[](3);
+        users[0] = address(0x1);
+        users[1] = address(0x2);
+        users[2] = address(0x3);
         
-        for (uint256 c = 0; c < commonContexts.length; c++) {
-            for (uint256 u = 0; u < commonUsers.length; u++) {
-                // Basic claim patterns
-                bytes32 claimId = keccak256(abi.encodePacked(verifierAddress, commonUsers[u], commonContexts[c]));
+        for (uint256 c = 0; c < contexts.length; c++) {
+            for (uint256 u = 0; u < users.length; u++) {
+                bytes32 claimId = keccak256(abi.encodePacked(verifierAddress, users[u], contexts[c]));
                 usedProofs[claimId] = false;
-                
-                // Bulk claim patterns for staged verifiers
-                for (uint256 stage = 0; stage <= 5; stage++) {
-                    bytes32 bulkClaimId = keccak256(abi.encodePacked(verifierAddress, commonUsers[u], stage, commonContexts[c]));
-                    usedProofs[bulkClaimId] = false;
-                }
             }
         }
-        
-        // Note: This simplified approach may not reset all possible proofs.
-        // Use resetVerifierProofsForUser() for more targeted resets.
     }
 
     /**
      * @notice Reset all used proofs for a specific verifier and user combination (onlyOwner)
-     * @dev This is more targeted than resetVerifierProofs and focuses on one user
+     * @dev Simplified reset to avoid gas issues
      * @param verifierId ID of the verifier to reset proofs for
      * @param user Address of the specific user
      */
@@ -751,67 +653,21 @@ contract XPManager is Ownable {
         
         address verifierAddress = verifiers[verifierId];
         
-        // Reset common context patterns
-        bytes32[] memory commonContexts = new bytes32[](8);
-        commonContexts[0] = keccak256(abi.encode(uint256(0)));
-        commonContexts[1] = keccak256(abi.encode(uint256(1)));
-        commonContexts[2] = keccak256(abi.encode(uint256(100)));
-        commonContexts[3] = keccak256(abi.encode(uint256(1000)));
-        commonContexts[4] = keccak256(abi.encode(uint256(10000)));
-        commonContexts[5] = bytes32(0); // Empty context
-        commonContexts[6] = keccak256(abi.encode(uint256(50))); 
-        commonContexts[7] = keccak256(abi.encode(uint256(500)));
-        
         // Reset basic context patterns
-        for (uint256 c = 0; c < commonContexts.length; c++) {
-            bytes32 claimId = keccak256(abi.encodePacked(verifierAddress, user, commonContexts[c]));
+        bytes32[] memory contexts = new bytes32[](4);
+        contexts[0] = keccak256(abi.encode(uint256(0)));
+        contexts[1] = keccak256(abi.encode(uint256(100)));
+        contexts[2] = keccak256(abi.encode(uint256(1000)));
+        contexts[3] = bytes32(0);
+        
+        for (uint256 c = 0; c < contexts.length; c++) {
+            bytes32 claimId = keccak256(abi.encodePacked(verifierAddress, user, contexts[c]));
             usedProofs[claimId] = false;
             
-            // Bulk claim patterns for staged verifiers
-            for (uint256 stage = 0; stage <= 10; stage++) {
-                bytes32 bulkClaimId = keccak256(abi.encodePacked(verifierAddress, user, stage, commonContexts[c]));
+            // Reset bulk claim patterns for staged verifiers (limited stages)
+            for (uint256 stage = 0; stage <= 3; stage++) {
+                bytes32 bulkClaimId = keccak256(abi.encodePacked(verifierAddress, user, stage, contexts[c]));
                 usedProofs[bulkClaimId] = false;
-            }
-        }
-        
-        // Reset recent timestamp-based oracle proofs (last 24 hours)
-        uint256 currentTime = block.timestamp;
-        
-        // Limit to last 24 hours to avoid gas issues
-        for (uint256 h = 0; h < 24; h++) {
-            // Check if we can safely subtract to avoid underflow
-            if (currentTime >= h * 3600) {
-                uint256 timeWindow = currentTime - (h * 3600);
-                
-                // Try common validity durations
-                uint256[] memory validityDurations = new uint256[](3);
-                validityDurations[0] = 3600;  // 1 hour
-                validityDurations[1] = 7200;  // 2 hours
-                validityDurations[2] = 86400; // 24 hours
-                
-                for (uint256 d = 0; d < validityDurations.length; d++) {
-                    // Oracle context pattern for voting power values
-                    for (uint256 v = 0; v < 5; v++) { // Limit to 5 common values
-                        uint256[] memory commonValues = new uint256[](5);
-                        commonValues[0] = 0;
-                        commonValues[1] = 50;
-                        commonValues[2] = 100;
-                        commonValues[3] = 1000;
-                        commonValues[4] = 10000;
-                        
-                        bytes32 contextHash = keccak256(abi.encode(commonValues[v], uint256(0), timeWindow, timeWindow + validityDurations[d]));
-                        
-                        // Regular claim ID
-                        bytes32 claimId = keccak256(abi.encodePacked(verifierAddress, user, contextHash));
-                        usedProofs[claimId] = false;
-                        
-                        // Bulk claim patterns for staged verifiers (limited stages)
-                        for (uint256 stage = 0; stage <= 5; stage++) {
-                            bytes32 bulkClaimId = keccak256(abi.encodePacked(verifierAddress, user, stage, contextHash));
-                            usedProofs[bulkClaimId] = false;
-                        }
-                    }
-                }
             }
         }
     }
