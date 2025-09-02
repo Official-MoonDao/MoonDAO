@@ -41,7 +41,14 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
           <PrivyProvider
             appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}
             config={{
-              loginMethods: ['wallet', 'sms', 'google', 'twitter', 'discord'],
+              loginMethods: [
+                'wallet',
+                'sms',
+                'google',
+                'twitter',
+                'discord',
+                'github',
+              ],
               appearance: {
                 theme: '#252c4d',
                 showWalletLoginFirst: false,

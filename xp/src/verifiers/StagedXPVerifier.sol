@@ -250,7 +250,7 @@ abstract contract StagedXPVerifier is IXPVerifier {
      * @param context Encoded context data
      * @return Unique bulk claim identifier
      */
-    function bulkClaimId(address user, bytes calldata context) external view returns (bytes32) {
+    function bulkClaimId(address user, bytes calldata context) external view virtual returns (bytes32) {
         // Include current highest stage to make bulk claims unique per progression
         uint256 currentHighest = userHighestClaimedStage[user];
         return keccak256(abi.encodePacked(address(this), user, context, currentHighest, "bulk"));

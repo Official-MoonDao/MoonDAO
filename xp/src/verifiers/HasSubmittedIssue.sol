@@ -3,10 +3,10 @@ pragma solidity ^0.8.20;
 
 import "./XPOracleVerifier.sol";
 
-/// @title HasJoinedATeam
-/// @notice Verifier that checks if a user has joined at least one team on MoonDAO (off-chain via oracle)
-/// @dev Context: abi.encode(uint256 teamsJoined, uint256 xpAmount, uint256 validAfter, uint256 validBefore, bytes signature)
-contract HasJoinedATeam is XPOracleVerifier {
+/// @title HasSubmittedIssue
+/// @notice Verifier that checks if a user has submitted an issue to GitHub (off-chain via oracle)
+/// @dev Context: abi.encode(uint256 issueCount, uint256 xpAmount, uint256 validAfter, uint256 validBefore, bytes signature)
+contract HasSubmittedIssue is XPOracleVerifier {
     uint256 public xpPerClaim;
 
     constructor(address _oracle, uint256 _xpPerClaim) XPOracleVerifier(_oracle) {
@@ -18,25 +18,28 @@ contract HasJoinedATeam is XPOracleVerifier {
     }
 
     function name() external pure returns (string memory) {
-        return "HasJoinedATeam:v1";
+        return "HasSubmittedIssue:v1";
     }
 
     function isEligible(address user, bytes calldata context) external view returns (bool eligible, uint256 xpAmount) {
-        (uint256 teamsJoined,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+        (uint256 issueCount,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // The oracle enforces that the given `user` has joined at least `teamsJoined` teams
-        _verifyOracleProof(user, keccak256(abi.encode(teamsJoined)), xpPerClaim, validAfterTs, validBefore, signature);
+        // The oracle enforces that the given `user` has submitted at least `issueCount` issues
+        // We verify the proof and award XP based on the number of issues submitted
+        _verifyOracleProof(
+            user, keccak256(abi.encode(issueCount)), xpPerClaim * issueCount, validAfterTs, validBefore, signature
+        );
 
         eligible = true;
-        xpAmount = xpPerClaim;
+        xpAmount = xpPerClaim * issueCount;
     }
 
     function claimId(address user, bytes calldata context) external view returns (bytes32) {
-        (uint256 teamsJoined, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
+        (uint256 issueCount, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
         // Keep amount in the claimId for backwards compatibility even if ignored
-        bytes32 contextHash = keccak256(abi.encode(teamsJoined, amount, validAfterTs, validBefore));
+        bytes32 contextHash = keccak256(abi.encode(issueCount, amount, validAfterTs, validBefore));
         return keccak256(abi.encodePacked(address(this), user, contextHash));
     }
 

@@ -38,29 +38,16 @@ contract ERC20RewardsTest is Test {
     function testSetERC20RewardConfig() public {
         vm.startPrank(owner);
 
-        uint256[] memory thresholds = new uint256[](3);
-        thresholds[0] = 100;
-        thresholds[1] = 500;
-        thresholds[2] = 1000;
-        uint256[] memory rewards = new uint256[](3);
-        rewards[0] = 10e18;
-        rewards[1] = 50e18;
-        rewards[2] = 100e18;
+        uint256 conversionRate = 1e18; // 1 token per 1 XP
 
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewards);
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
         // Verify configuration
-        (address tokenAddr, uint256[] memory storedThresholds, uint256[] memory storedRewards, bool active) =
+        (address tokenAddr, uint256 storedConversionRate, bool active) =
             xpManager.getERC20RewardConfig();
 
         assertEq(tokenAddr, address(rewardToken));
-        assertEq(storedThresholds.length, 3);
-        assertEq(storedThresholds[0], 100);
-        assertEq(storedThresholds[1], 500);
-        assertEq(storedThresholds[2], 1000);
-        assertEq(storedRewards[0], 10e18);
-        assertEq(storedRewards[1], 50e18);
-        assertEq(storedRewards[2], 100e18);
+        assertEq(storedConversionRate, conversionRate);
         assertTrue(active);
 
         vm.stopPrank();
@@ -69,16 +56,9 @@ contract ERC20RewardsTest is Test {
     function testClaimRewards() public {
         vm.startPrank(owner);
 
-        // Set up rewards
-        uint256[] memory thresholds = new uint256[](3);
-        thresholds[0] = 100;
-        thresholds[1] = 500;
-        thresholds[2] = 1000;
-        uint256[] memory rewards = new uint256[](3);
-        rewards[0] = 10e18;
-        rewards[1] = 50e18;
-        rewards[2] = 100e18;
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewards);
+        // Set up rewards with conversion rate
+        uint256 conversionRate = 1e18; // 1 token per 1 XP
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
         vm.stopPrank();
 
@@ -88,7 +68,7 @@ contract ERC20RewardsTest is Test {
         // Note: In real implementation, XP would be earned through verifiers
         vm.stopPrank();
 
-        // User has 600 XP, should be able to claim 100 and 500 thresholds
+        // User has 600 XP, should be able to claim 600 tokens
         vm.startPrank(user);
 
         // Check available rewards
@@ -105,20 +85,15 @@ contract ERC20RewardsTest is Test {
     function testDeactivateRewardConfig() public {
         vm.startPrank(owner);
 
-        // Set up rewards
-        uint256[] memory thresholds = new uint256[](2);
-        thresholds[0] = 100;
-        thresholds[1] = 500;
-        uint256[] memory rewards = new uint256[](2);
-        rewards[0] = 10e18;
-        rewards[1] = 50e18;
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewards);
+        // Set up rewards with conversion rate
+        uint256 conversionRate = 1e18; // 1 token per 1 XP
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
         // Deactivate
         xpManager.deactivateERC20RewardConfig();
 
         // Verify deactivated
-        (,,, bool active) = xpManager.getERC20RewardConfig();
+        (,, bool active) = xpManager.getERC20RewardConfig();
         assertFalse(active);
 
         vm.stopPrank();
@@ -138,45 +113,42 @@ contract ERC20RewardsTest is Test {
         vm.stopPrank();
     }
 
-    function testInvalidThresholds() public {
+    function testInvalidConversionRate() public {
         vm.startPrank(owner);
 
-        uint256[] memory thresholds = new uint256[](2);
-        thresholds[0] = 500;
-        thresholds[1] = 100; // Not ascending
-        uint256[] memory rewards = new uint256[](2);
-        rewards[0] = 50e18;
-        rewards[1] = 10e18;
-
-        vm.expectRevert("Thresholds must be ascending");
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewards);
+        vm.expectRevert("Conversion rate must be greater than 0");
+        xpManager.setERC20RewardConfig(address(rewardToken), 0);
 
         vm.stopPrank();
     }
 
-    function testArrayLengthMismatch() public {
+    function testInvalidTokenAddress() public {
         vm.startPrank(owner);
 
-        uint256[] memory thresholds = new uint256[](2);
-        thresholds[0] = 100;
-        thresholds[1] = 500;
-        uint256[] memory rewards = new uint256[](1);
-        rewards[0] = 10e18; // Different length
-
-        vm.expectRevert("Arrays length mismatch");
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewards);
+        vm.expectRevert("Invalid token address");
+        xpManager.setERC20RewardConfig(address(0), 1e18);
 
         vm.stopPrank();
     }
 
-    function testEmptyThresholds() public {
+    function testCalculateAvailableReward() public {
         vm.startPrank(owner);
 
-        uint256[] memory thresholds = new uint256[](0);
-        uint256[] memory rewards = new uint256[](0);
+        uint256 conversionRate = 2e18; // 2 tokens per 1 XP
+        xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
 
-        vm.expectRevert("No thresholds provided");
-        xpManager.setERC20RewardConfig(address(rewardToken), thresholds, rewards);
+        vm.stopPrank();
+
+        // Simulate user having 100 XP
+        // This would normally be done through verifiers, but for testing we'll use a mock
+        vm.startPrank(owner);
+        // In a real test, you'd need to actually grant XP through the verifier system
+        vm.stopPrank();
+
+        // Check available rewards calculation
+        uint256 available = xpManager.calculateAvailableERC20Reward(user);
+        // This will be 0 since user has no XP yet
+        assertEq(available, 0);
 
         vm.stopPrank();
     }

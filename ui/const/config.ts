@@ -414,105 +414,58 @@ export const XP_ORACLE_ADDRESSES: Index = {
 
 export const XP_MANAGER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x012B0E5B762d2BeD298EE52eF6d16a413CC07cA6',
+  sepolia: '0xAD53584E58FaD67c48f96BA2e26FF489b3404d2C',
 }
 
 export const HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xEeaa3BfA8E4843b8538D57b5723C2267ecA2c16E',
+  sepolia: '0x570b7351d394AE72fA8727529127369aFB85dDc5',
 }
 
 export const HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xE0833a003B46765b93973c59994098AF1d786ef6',
+  sepolia: '0x10117473DE0F0e490ECcE94845BC4f336FB0F0f0',
 }
 
 export const HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xfe651aa5ab25b0137fd7d076f5bD48eb0008c97E',
+  sepolia: '0x9BE82EEbC4D21Bcef5d204B5A87d04dcA4ABFBea',
+}
+
+export const HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x4694629A92145D9013613f725B7482086FE38DeD',
 }
 
 export const HAS_VOTING_POWER_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x2D5378A9bbd752DB3F63094Be5339E1fE99F4d19',
+  sepolia: '0x8b024b98BaB56882a3Ebb220a654E70869c9403A',
 }
 
 export const HAS_VOTED_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x1D600eA840B51E0011fcDf924B5dEb0719Cb0F6a',
+  sepolia: '0x992C3466fBC33b4F944b96bc368C91eb7Aa6d6f8',
 }
 
 export const HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xE87607F4E3995835f8b2Ca1A48b1A1dEb4d48135',
+  sepolia: '0xBDb8D69F3604B27Ae040dFb3582FF6417c6C9783',
 }
 
 export const HAS_CONTRIBUTED_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x4D121CB590545a18E6E5FF5F8B35F79745f97e6e',
+  sepolia: '0x85D8e5b9DD69b0E35553C6e2B9e39181aaB79F64',
 }
 
 export const HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xD3E259E9900FFe46E2d2d47a70ABcBCF221Cf264',
+  sepolia: '0xc96806745e934c7b3E7e0e905c41de3E22f00EB2',
 }
 
-export const XP_VERIFIERS: any = [
-  {
-    verifierId: 0,
-    verifierAddress: HAS_VOTING_POWER_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/voting-power-proof',
-    type: 'staged',
-  },
-  {
-    verifierId: 1,
-    verifierAddress: HAS_VOTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-voted-proof',
-    type: 'staged',
-  },
-  {
-    verifierId: 2,
-    verifierAddress:
-      HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-token-balance-proof',
-    type: 'staged',
-  },
-  {
-    verifierId: 3,
-    verifierAddress:
-      HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-created-a-team-proof',
-    type: 'staged',
-  },
-  {
-    verifierId: 4,
-    verifierAddress: HAS_CONTRIBUTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-contributed-proof',
-    type: 'staged',
-  },
-  {
-    verifierId: 5,
-    verifierAddress:
-      HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-completed-citizen-profile-proof',
-  },
-  {
-    verifierId: 6,
-    verifierAddress:
-      HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES[
-        DEFAULT_CHAIN_V5_SLUG
-      ],
-    route: '/api/xp/has-bought-a-marketplace-listing-proof',
-    type: 'staged',
-  },
-  {
-    verifierId: 7,
-    verifierAddress:
-      HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/has-joined-a-team-proof',
-    type: 'staged',
-  },
-]
+export const HAS_SUBMITTED_PR_VERIFIER_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0xf75aBC2612A10372B4c579294cEAB080B73e41C5',
+}
 
 export const DISCORD_GUILD_ID = '914720248140279868'
 export const GENERAL_CHANNEL_ID = '914720248140279871'

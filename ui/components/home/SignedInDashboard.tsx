@@ -50,6 +50,7 @@ import { getAUMHistory } from '@/lib/coinstats'
 import { getMooneyPrice } from '@/lib/coinstats'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import { sepolia } from '@/lib/infura/infuraChains'
 import { formatNumberUSStyle } from '@/lib/nance'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
@@ -79,9 +80,10 @@ import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
 import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
-import CitizensChart from '@/components/subscription/CitizensChart'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
+import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
+import Quests from '../xp/Quests'
 
 // import Quests from '@/components/xp/Quests'
 
@@ -132,7 +134,8 @@ export default function SingedInDashboard({
   const [newsletterModalOpen, setNewsletterModalOpen] = useState(false)
 
   // Citizen metadata modal state
-  const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
+  const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] =
+    useState(false)
 
   // Client-side newsletter state
   const [clientNewsletters, setClientNewsletters] = useState<any[]>(
@@ -231,11 +234,12 @@ export default function SingedInDashboard({
     .concat(baseTokens)
     .concat([{ symbol: 'stETH', balance: stakedEth }])
 
-  const { ethBudget: ethBudgetCurrent, usdBudget, mooneyBudget, ethPrice } = getBudget(
-    tokens,
-    year,
-    quarter
-  )
+  const {
+    ethBudget: ethBudgetCurrent,
+    usdBudget,
+    mooneyBudget,
+    ethPrice,
+  } = getBudget(tokens, year, quarter)
   const ethBudget = 17.09
 
   const votingEscrowDepositorContract = useContract({
@@ -286,7 +290,7 @@ export default function SingedInDashboard({
                   {/* Online status indicator */}
                   <div className="absolute bottom-0 right-0 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 border-2 border-white rounded-full"></div>
                 </div>
-                
+
                 {/* Edit Profile Button */}
                 {citizen && (
                   <button
@@ -376,7 +380,9 @@ export default function SingedInDashboard({
                 <div className="w-px h-12 sm:h-16 bg-white/20 hidden sm:block"></div>
 
                 <div className="text-center flex-shrink-0">
-                  <div className="text-lg sm:text-xl font-bold text-white">1</div>
+                  <div className="text-lg sm:text-xl font-bold text-white">
+                    1
+                  </div>
                   <div className="text-xs sm:text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
                     <CheckBadgeIcon className="w-3 h-3" />
                     Votes
@@ -422,7 +428,7 @@ export default function SingedInDashboard({
         </div>
 
         {/* Quest System - Horizontal Section */}
-        {/* {address && <Quests />} */}
+        {address && selectedChain === sepolia && <Quests />}
 
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
@@ -605,13 +611,20 @@ export default function SingedInDashboard({
                         key={newsletter.id || index}
                         className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5"
                         onClick={() => {
-                          if (newsletter.url && 
-                              newsletter.url !== 'https://news.moondao.com/posts' && 
-                              newsletter.url !== 'https://moondao.kit.com/posts' && 
-                              newsletter.url.includes('http')) {
+                          if (
+                            newsletter.url &&
+                            newsletter.url !==
+                              'https://news.moondao.com/posts' &&
+                            newsletter.url !==
+                              'https://moondao.kit.com/posts' &&
+                            newsletter.url.includes('http')
+                          ) {
                             window.open(newsletter.url, '_blank')
                           } else {
-                            window.open('https://news.moondao.com/posts', '_blank')
+                            window.open(
+                              'https://news.moondao.com/posts',
+                              '_blank'
+                            )
                           }
                         }}
                       >
@@ -667,8 +680,8 @@ export default function SingedInDashboard({
                               )}
                             </div>
                           </div>
-                          <div 
-                            className="text-gray-400 hover:text-white transition-colors" 
+                          <div
+                            className="text-gray-400 hover:text-white transition-colors"
                             title="Click to view newsletter"
                           >
                             <svg
@@ -677,7 +690,12 @@ export default function SingedInDashboard({
                               stroke="currentColor"
                               viewBox="0 0 24 24"
                             >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+                              />
                             </svg>
                           </div>
                         </div>
@@ -748,12 +766,21 @@ export default function SingedInDashboard({
                               </div>
                               <span className="hidden sm:inline">•</span>
                               <div className="flex items-center gap-1">
-                                <span className="font-medium text-white">{3 + i} days</span>
+                                <span className="font-medium text-white">
+                                  {3 + i} days
+                                </span>
                                 <span>left</span>
                               </div>
                             </div>
-                            <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
-                              Vote
+                            <span className="hidden sm:inline">•</span>
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium text-white">
+                                {3 + i} days
+                              </span>
+                              <span>left</span>
+                              <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
+                                Vote
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1124,7 +1151,9 @@ export default function SingedInDashboard({
                 <GlobeAmericasIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
                 <span className="leading-tight">Global Community</span>
               </h3>
-              <p className="text-gray-300 text-sm sm:text-base leading-tight">MoonDAO citizens around the world</p>
+              <p className="text-gray-300 text-sm sm:text-base leading-tight">
+                MoonDAO citizens around the world
+              </p>
             </div>
             <StandardButton
               className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold transition-all text-sm sm:text-base whitespace-nowrap flex-shrink-0"
@@ -1151,21 +1180,31 @@ export default function SingedInDashboard({
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
                   {citizenSubgraphData?.transfers?.length || '145'}
                 </div>
-                <div className="text-xs sm:text-sm opacity-90 leading-tight">Global Citizens</div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">
+                  Global Citizens
+                </div>
               </div>
             </div>
 
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 lg:top-6 lg:right-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
               <div className="text-white">
-                <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">47</div>
-                <div className="text-xs sm:text-sm opacity-90 leading-tight">Countries</div>
+                <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
+                  47
+                </div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">
+                  Countries
+                </div>
               </div>
             </div>
 
             <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 lg:bottom-6 lg:left-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
               <div className="text-white">
-                <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">24/7</div>
-                <div className="text-xs sm:text-sm opacity-90 leading-tight">Active Commu</div>
+                <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
+                  24/7
+                </div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">
+                  Active Commu
+                </div>
               </div>
             </div>
 
@@ -1174,7 +1213,9 @@ export default function SingedInDashboard({
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
                   {filteredTeams?.length || teamHats?.length || '9'}
                 </div>
-                <div className="text-xs sm:text-sm opacity-90 leading-tight">Active Teams</div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">
+                  Active Teams
+                </div>
               </div>
             </div>
           </div>
