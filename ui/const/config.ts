@@ -469,7 +469,7 @@ export const HAS_SUBMITTED_PR_VERIFIER_ADDRESSES: Index = {
 
 export const REFERRAL_VERIFIER_ADDRESSES: Index = {
   arbtirum: '',
-  sepolia: '',
+  sepolia: '0x5D28E8C28C23284bF11B5e4e2D29d96eAb598BbF',
 }
 
 export const DISCORD_GUILD_ID = '914720248140279868'

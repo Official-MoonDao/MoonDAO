@@ -14,6 +14,7 @@ import {
   HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES,
   HAS_SUBMITTED_PR_VERIFIER_ADDRESSES,
   HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES,
+  REFERRAL_VERIFIER_ADDRESSES,
 } from 'const/config'
 import { utils as ethersUtils } from 'ethers'
 import { NextApiRequest } from 'next'
@@ -34,8 +35,8 @@ import {
   sepolia,
 } from '@/lib/infura/infuraChains'
 import { serverClient } from '@/lib/thirdweb/client'
-import { XP_VERIFIERS } from '@/lib/xp/config'
 import { signOracleProof } from '../oracle'
+import { XP_VERIFIERS } from './config'
 
 function normalizePk(pk?: string): `0x${string}` {
   if (!pk) throw new Error('ORACLE_SIGNER_PK missing')
@@ -50,7 +51,7 @@ function getVerifierId(verifierAddress: Address): bigint {
   if (verifier?.verifierId === undefined) {
     throw new Error(`Verifier not found for address: ${verifierAddress}`)
   }
-  return verifier.verifierId
+  return BigInt(verifier.verifierId)
 }
 
 export function getUserAndAccessToken(req: NextApiRequest) {
@@ -187,6 +188,13 @@ const STAGED_VERIFIER_ABI = [
   {
     type: 'function',
     name: 'getUserHighestStage',
+    stateMutability: 'view',
+    inputs: [{ name: 'user', type: 'address' }],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'referralCount',
     stateMutability: 'view',
     inputs: [{ name: 'user', type: 'address' }],
     outputs: [{ type: 'uint256' }],
@@ -2010,6 +2018,131 @@ export async function submitHasSubmittedIssueClaimForSingle(params: {
     contract,
     method: 'claimXPFor' as string,
     params: [params.user, verifierId, params.context],
+  })
+
+  const { transactionHash } = await sendTransaction({
+    account,
+    transaction,
+  })
+
+  return { txHash: transactionHash as Hex }
+}
+
+/**
+ * Check bulk eligibility for referral verifier (no oracle proof needed)
+ */
+export async function checkReferralBulkEligibility(params: {
+  user: Address
+}): Promise<{
+  eligible: boolean
+  totalXP: bigint
+  highestStage: bigint
+  alreadyClaimed: boolean
+  referralCount: bigint
+}> {
+  const twChain =
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
+
+  const verifierAddress = REFERRAL_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+  if (!verifierAddress) {
+    throw new Error('Referral verifier address not configured')
+  }
+
+  const verifierContract = getContract({
+    client: serverClient,
+    chain: twChain,
+    address: verifierAddress,
+    abi: STAGED_VERIFIER_ABI as any,
+  })
+
+  // For ReferralsStaged, context is not used, so we can pass empty bytes
+  const emptyContext = '0x' as Hex
+
+  // Check bulk eligibility
+  const [eligible, totalXP, highestStage] = (await readContract({
+    contract: verifierContract,
+    method: 'isBulkEligible',
+    params: [params.user, emptyContext],
+  })) as [boolean, bigint, bigint]
+
+  // Get referral count directly from the contract
+  const referralCount = (await readContract({
+    contract: verifierContract,
+    method: 'referralCount',
+    params: [params.user],
+  })) as bigint
+
+  // Check if already claimed using bulk claim ID
+  const bulkClaimId = (await readContract({
+    contract: verifierContract,
+    method: 'bulkClaimId',
+    params: [params.user, emptyContext],
+  })) as Hex
+
+  const xpManagerAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
+  const xpManagerContract = getContract({
+    client: serverClient,
+    chain: twChain,
+    address: xpManagerAddress,
+    abi: XP_MANAGER_READ_ABI as any,
+  })
+
+  const alreadyClaimed = (await readContract({
+    contract: xpManagerContract,
+    method: 'usedProofs',
+    params: [bulkClaimId],
+  })) as boolean
+
+  return {
+    eligible,
+    totalXP,
+    highestStage,
+    alreadyClaimed,
+    referralCount,
+  }
+}
+
+/**
+ * Submit bulk claim for referral verifier (no oracle proof needed)
+ */
+export async function submitReferralBulkClaimFor(params: {
+  user: Address
+}): Promise<{ txHash: Hex }> {
+  const twChain =
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
+  const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
+  const account = twPrivateKeyToAccount({
+    client: serverClient,
+    privateKey: relayerPk,
+  })
+
+  const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
+  const verifierAddress = REFERRAL_VERIFIER_ADDRESSES[
+    XP_ORACLE_CHAIN
+  ] as Address
+
+  if (!contractAddress) throw new Error('XP Manager address missing for chain')
+  if (!verifierAddress)
+    throw new Error('Referral verifier address not configured')
+
+  const verifierId = getVerifierId(verifierAddress)
+
+  const contract = getContract({
+    client: serverClient,
+    chain: twChain,
+    address: contractAddress,
+    abi: XP_MANAGER_ABI as any,
+  })
+
+  // For ReferralsStaged, context is not used, so we can pass empty bytes
+  const emptyContext = '0x' as Hex
+
+  const transaction = prepareContractCall({
+    contract,
+    method: 'claimBulkXPFor' as string,
+    params: [params.user, verifierId, emptyContext],
   })
 
   const { transactionHash } = await sendTransaction({

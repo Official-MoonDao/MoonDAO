@@ -319,6 +319,43 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           citizenName,
           mintedTokenId
         )
+
+        // Call the referral API to record the referral
+        try {
+          const accessToken = await getAccessToken()
+
+          // Check if there's a referral parameter in the URL
+          const urlParams = new URLSearchParams(window.location.search)
+          const referredBy = urlParams.get('referredBy')
+
+          if (referredBy && referredBy !== address) {
+            // Call the referral API
+            const referralResponse = await fetch('/api/xp/san-referred', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`,
+              },
+              body: JSON.stringify({
+                referrerAddress: referredBy,
+              }),
+            })
+
+            if (referralResponse.ok) {
+              const result = await referralResponse.json()
+              console.log('Referral recorded successfully:', result)
+              toast.success('Referral recorded successfully!')
+            } else {
+              const error = await referralResponse.json()
+              console.error('Failed to record referral:', error)
+              // Don't show error toast to user as this is not critical
+            }
+          }
+        } catch (error) {
+          console.error('Error recording referral:', error)
+          // Don't show error toast to user as this is not critical
+        }
+
         setTimeout(async () => {
           await sendDiscordMessage(
             'networkNotifications',

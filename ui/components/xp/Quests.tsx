@@ -13,7 +13,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import { XP_VERIFIERS } from '@/lib/xp/config'
+import { useXPVerifiers } from '@/lib/xp/config'
 import {
   getCompleteUserXPInfo,
   formatXP,
@@ -32,6 +32,8 @@ export default function Quests({}: QuestsProps) {
   const [userInfo, setUserInfo] = useState<CompleteUserXPInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+
+  const xpVerifiers = useXPVerifiers()
 
   const xpManagerContract = useContract({
     address: XP_MANAGER_ADDRESSES[chainSlug],
@@ -94,8 +96,8 @@ export default function Quests({}: QuestsProps) {
     : 0
 
   // Get quests to display based on expanded state
-  const displayedQuests = isExpanded ? XP_VERIFIERS : XP_VERIFIERS.slice(0, 4)
-  const hasMoreQuests = XP_VERIFIERS.length > 4
+  const displayedQuests = isExpanded ? xpVerifiers : xpVerifiers.slice(0, 4)
+  const hasMoreQuests = xpVerifiers.length > 4
 
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 mb-6">
@@ -154,7 +156,7 @@ export default function Quests({}: QuestsProps) {
             ) : (
               <>
                 <ChevronDownIcon className="w-4 h-4" />
-                View All ({XP_VERIFIERS.length} Quests)
+                View All ({xpVerifiers.length} Quests)
               </>
             )}
           </button>
@@ -174,6 +176,8 @@ export default function Quests({}: QuestsProps) {
                 icon: verifier.icon,
                 link: verifier.link,
                 linkText: verifier.linkText,
+                action: verifier.action,
+                actionText: verifier.actionText,
               }}
               variant="onboarding"
               userAddress={userAddress}

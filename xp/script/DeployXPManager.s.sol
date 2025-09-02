@@ -14,6 +14,7 @@ import "../src/verifiers/HasBoughtAMarketplaceListingStaged.sol";
 import "../src/verifiers/HasJoinedATeam.sol";
 import "../src/verifiers/HasSubmittedPRStaged.sol";
 import "../src/verifiers/HasSubmittedIssue.sol";
+import "../src/verifiers/SANReferralsStaged.sol";
 
 
 contract DeployXPManagerScript is Script {
@@ -45,7 +46,7 @@ contract DeployXPManagerScript is Script {
         HasBoughtAMarketplaceListingStaged hasBoughtAMarketplaceListingVerifier =
             new HasBoughtAMarketplaceListingStaged(oracleAddress);
         HasSubmittedPRStaged hasSubmittedPRVerifier = new HasSubmittedPRStaged(oracleAddress);
-        ReferralsStaged hasReferralsVerifier = new ReferralsStaged(oracleAddress);
+        SANReferralsStaged sanReferralsVerifier = new SANReferralsStaged(oracleAddress);
 
         // Set XPManager for staged verifiers
         votingPowerVerifier.setXPManager(address(xpManager));
@@ -54,7 +55,6 @@ contract DeployXPManagerScript is Script {
         hasContributedVerifier.setXPManager(address(xpManager));
         hasBoughtAMarketplaceListingVerifier.setXPManager(address(xpManager));
         hasSubmittedPRVerifier.setXPManager(address(xpManager));
-        hasReferralsVerifier.setXPManager(address(xpManager));
 
         // Register verifiers
         xpManager.registerVerifier(0, address(votingPowerVerifier));
@@ -67,7 +67,7 @@ contract DeployXPManagerScript is Script {
         xpManager.registerVerifier(7, address(hasJoinedATeamVerifier));
         xpManager.registerVerifier(8, address(hasSubmittedIssueVerifier));
         xpManager.registerVerifier(9, address(hasSubmittedPRVerifier));
-        xpManager.registerVerifier(10, address(hasReferralsVerifier));
+        xpManager.registerVerifier(10, address(sanReferralsVerifier));
 
         // Set up XP levels: More realistic progression based on actual verifier rewards
         uint256[] memory thresholds = new uint256[](6);
