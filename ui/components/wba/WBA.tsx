@@ -25,7 +25,7 @@ import FinalistCard from '@/components/wba/FinalistCard'
 
 export type Distribution = {
   address: string
-  distribution: { [key: string]: number }
+  vote: { [key: string]: number }
 }
 
 export type WBAProps = {
