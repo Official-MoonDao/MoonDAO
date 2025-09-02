@@ -46,14 +46,6 @@ contract DeployXPManagerScript is Script {
             new HasBoughtAMarketplaceListingStaged(oracleAddress);
         HasSubmittedPRStaged hasSubmittedPRVerifier = new HasSubmittedPRStaged(oracleAddress);
 
-        // Set XPManager for staged verifiers
-        votingPowerVerifier.setXPManager(address(xpManager));
-        hasVotedVerifier.setXPManager(address(xpManager));
-        hasTokenBalanceVerifier.setXPManager(address(xpManager));
-        hasContributedVerifier.setXPManager(address(xpManager));
-        hasBoughtAMarketplaceListingVerifier.setXPManager(address(xpManager));
-        hasSubmittedPRVerifier.setXPManager(address(xpManager));
-
         // Register verifiers
         xpManager.registerVerifier(0, address(votingPowerVerifier));
         xpManager.registerVerifier(1, address(hasVotedVerifier));
@@ -92,15 +84,6 @@ contract DeployXPManagerScript is Script {
         uint256 conversionRate = 1e18; // 1 * 10^18
         
         xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
-
-        // CRITICAL: Set XPManager address on all staged verifiers
-        // This allows XPManager to call updateUserStage() and other protected functions
-        votingPowerVerifier.setXPManager(address(xpManager));
-        hasVotedVerifier.setXPManager(address(xpManager));
-        hasTokenBalanceVerifier.setXPManager(address(xpManager));
-        hasContributedVerifier.setXPManager(address(xpManager));
-        hasBoughtAMarketplaceListingVerifier.setXPManager(address(xpManager));
-        hasSubmittedPRVerifier.setXPManager(address(xpManager));
         
         vm.stopBroadcast();
     }
