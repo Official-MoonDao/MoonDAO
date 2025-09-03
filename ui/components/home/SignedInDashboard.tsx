@@ -44,7 +44,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useState, useEffect } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import { MediaRenderer, useActiveAccount } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { getAUMHistory } from '@/lib/coinstats'
 import { getMooneyPrice } from '@/lib/coinstats'
@@ -83,6 +83,7 @@ import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
+import IPFSRenderer from '../layout/IPFSRenderer'
 import Quests from '../xp/Quests'
 
 // import Quests from '@/components/xp/Quests'
@@ -274,11 +275,12 @@ export default function SingedInDashboard({
               <div className="relative">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-3 border-white shadow-xl bg-white relative flex-shrink-0">
                   {citizen?.metadata?.image ? (
-                    <MediaRenderer
-                      client={client}
+                    <IPFSRenderer
                       src={citizen.metadata.image}
                       alt={citizen.metadata.name}
                       className="w-full h-full object-cover"
+                      width={100}
+                      height={100}
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
@@ -523,11 +525,12 @@ export default function SingedInDashboard({
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-full overflow-hidden">
                   {citizen?.metadata?.image ? (
-                    <MediaRenderer
-                      client={client}
+                    <IPFSRenderer
                       src={citizen.metadata.image}
                       alt={citizen.metadata.name}
                       className="w-full h-full object-cover"
+                      width={100}
+                      height={100}
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
@@ -631,11 +634,12 @@ export default function SingedInDashboard({
                         <div className="flex items-start gap-4">
                           <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-blue-600">
                             {newsletter.image ? (
-                              <MediaRenderer
-                                client={client}
+                              <IPFSRenderer
                                 src={newsletter.image}
                                 alt={newsletter.title}
                                 className="w-full h-full object-cover"
+                                width={100}
+                                height={100}
                               />
                             ) : (
                               <NewspaperIcon className="w-6 h-6 text-white" />
@@ -816,11 +820,12 @@ export default function SingedInDashboard({
                     >
                       <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
                         {citizen.image ? (
-                          <MediaRenderer
-                            client={client}
+                          <IPFSRenderer
                             src={citizen.image}
                             alt={citizen.name}
                             className="w-full h-full object-cover"
+                            width={100}
+                            height={100}
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
@@ -877,11 +882,12 @@ export default function SingedInDashboard({
                     >
                       <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
                         {team.image ? (
-                          <MediaRenderer
-                            client={client}
+                          <IPFSRenderer
                             src={team.image}
                             alt={team.name}
                             className="w-full h-full object-cover"
+                            width={100}
+                            height={100}
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
@@ -940,11 +946,12 @@ export default function SingedInDashboard({
                       >
                         <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
                           {listing.image ? (
-                            <MediaRenderer
-                              client={client}
+                            <IPFSRenderer
                               src={listing.image}
                               alt={listing.title}
                               className="w-full h-full object-cover"
+                              width={100}
+                              height={100}
                             />
                           ) : (
                             <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
@@ -1017,9 +1024,12 @@ export default function SingedInDashboard({
               View All Events
             </StandardButton>
           </div>
-          
+
           <div className="w-full relative">
-            <div id="luma-loading-dashboard" className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center min-h-[350px]">
+            <div
+              id="luma-loading-dashboard"
+              className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center min-h-[350px]"
+            >
               <div className="text-white text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
                 <p className="text-sm">Loading events...</p>
@@ -1039,26 +1049,38 @@ export default function SingedInDashboard({
               referrerPolicy="no-referrer-when-downgrade"
               title="MoonDAO Events Calendar"
               onLoad={(e) => {
-                const loadingDiv = document.getElementById('luma-loading-dashboard');
+                const loadingDiv = document.getElementById(
+                  'luma-loading-dashboard'
+                )
                 if (loadingDiv) {
-                  loadingDiv.style.display = 'none';
+                  loadingDiv.style.display = 'none'
                 }
               }}
             />
             {/* Fallback link */}
             <div className="mt-4 text-center">
               <p className="text-white/70 text-sm mb-2">
-                Can't see the calendar? 
+                Can't see the calendar?
               </p>
-              <a 
-                href="https://lu.ma/moondao" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href="https://lu.ma/moondao"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
               >
                 View events on lu.ma
-                <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                <svg
+                  className="ml-2 w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
                 </svg>
               </a>
             </div>
