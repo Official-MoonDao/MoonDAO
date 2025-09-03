@@ -947,8 +947,8 @@ export default function SingedInDashboard({
                             {listing.title || 'Marketplace Item'}
                           </h4>
                           <p className="text-gray-400 text-xs">
-                            {listing.price
-                              ? `${listing.price} ETH`
+                            {listing.price && listing.currency
+                              ? `${listing.price} ${listing.currency}`
                               : 'View details'}
                           </p>
                         </div>

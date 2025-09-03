@@ -216,7 +216,11 @@ export async function getStaticProps() {
         ),
         queryTable(
           chain,
-          `SELECT * FROM ${marketplaceTableName} ORDER BY id DESC LIMIT 10`
+          `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${Math.floor(
+            Date.now() / 1000
+          )}) AND (endTime = 0 OR endTime >= ${Math.floor(
+            Date.now() / 1000
+          )}) ORDER BY id DESC LIMIT 10`
         ),
         queryTable(
           chain,
