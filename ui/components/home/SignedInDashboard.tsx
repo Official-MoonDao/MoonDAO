@@ -115,6 +115,13 @@ function getDaysLeft(proposal: any): number {
   return 0
 }
 
+// Function to count unique countries from location data
+function countUniqueCountries(locations: any[]): number {
+  if (!locations) return 0
+  const countries = new Set(locations.map((loc) => loc.country))
+  return countries.size
+}
+
 export default function SingedInDashboard({
   newestNewsletters,
   newestCitizens,
@@ -1249,7 +1256,7 @@ export default function SingedInDashboard({
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 lg:top-6 lg:right-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
-                  47
+                  {countUniqueCountries(citizensLocationData)} {/* Unique countries */}
                 </div>
                 <div className="text-xs sm:text-sm opacity-90 leading-tight">
                   Countries
@@ -1263,7 +1270,7 @@ export default function SingedInDashboard({
                   24/7
                 </div>
                 <div className="text-xs sm:text-sm opacity-90 leading-tight">
-                  Active Commu
+                  Active Community
                 </div>
               </div>
             </div>
@@ -1271,10 +1278,10 @@ export default function SingedInDashboard({
             <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 lg:bottom-6 lg:right-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
-                  {filteredTeams?.length || teamHats?.length || '9'}
+                  {filteredTeams?.length || '0'}
                 </div>
                 <div className="text-xs sm:text-sm opacity-90 leading-tight">
-                  Active Teams
+                  Total Teams
                 </div>
               </div>
             </div>

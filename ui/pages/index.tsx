@@ -230,7 +230,7 @@ export async function getStaticProps() {
         ),
         queryTable(
           chain,
-          `SELECT * FROM ${teamTableName} ORDER BY id DESC LIMIT 10`
+          `SELECT * FROM ${teamTableName} ORDER BY id DESC`
         ),
         queryTable(chain, `SELECT * FROM ${projectTableName} ORDER BY id DESC`),
       ])
@@ -336,7 +336,7 @@ export async function getStaticProps() {
     }
 
     // Process teams data for home page display
-    filteredTeams = teams.filter((team: any) => team.id && team.name)
+    filteredTeams = teams || []
   }
 
   // Get citizens location data from the refactored function
