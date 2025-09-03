@@ -107,6 +107,22 @@ function getEthAmountFromProposal(actions: Action[] | undefined): number {
   return ethAmount
 }
 
+import { daysUntilTimestamp } from '@/lib/utils/timestamp'
+
+function getDaysLeft(proposal: any): number {
+  if (proposal?.end) {
+    return daysUntilTimestamp(proposal.end)
+  }
+  return 0
+}
+
+// Function to count unique countries from location data
+function countUniqueCountries(locations: any[]): number {
+  if (!locations) return 0
+  const countries = new Set(locations.map((loc) => loc.country))
+  return countries.size
+}
+
 export default function SingedInDashboard({
   newestNewsletters,
   newestCitizens,
@@ -383,7 +399,7 @@ export default function SingedInDashboard({
 
                 <div className="text-center flex-shrink-0">
                   <div className="text-lg sm:text-xl font-bold text-white">
-                    1
+                    {voteCount || 0}
                   </div>
                   <div className="text-xs sm:text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
                     <CheckBadgeIcon className="w-3 h-3" />
@@ -737,6 +753,7 @@ export default function SingedInDashboard({
                 {proposals &&
                   proposals.slice(0, 3).map((proposal: any, i: number) => {
                     const ethAmount = getEthAmountFromProposal(proposal.actions)
+                    const daysLeft = getDaysLeft(proposal)
 
                     return (
                       <Link
@@ -770,21 +787,22 @@ export default function SingedInDashboard({
                               </div>
                               <span className="hidden sm:inline">•</span>
                               <div className="flex items-center gap-1">
-                                <span className="font-medium text-white">
-                                  {3 + i} days
-                                </span>
-                                <span>left</span>
+                                {daysLeft > 0 ? (
+                                  <>
+                                    <span className="font-medium text-white">
+                                      {daysLeft} {daysLeft === 1 ? 'day' : 'days'}
+                                    </span>
+                                    <span>left</span>
+                                  </>
+                                ) : (
+                                  <span className="font-medium text-white">
+                                    Voting closed
+                                  </span>
+                                )}
                               </div>
                             </div>
-                            <span className="hidden sm:inline">•</span>
-                            <div className="flex items-center gap-1">
-                              <span className="font-medium text-white">
-                                {3 + i} days
-                              </span>
-                              <span>left</span>
-                              <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
-                                Vote
-                              </div>
+                            <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
+                              Vote
                             </div>
                           </div>
                         </div>
@@ -814,8 +832,13 @@ export default function SingedInDashboard({
               <div className="space-y-3">
                 {newestCitizens && newestCitizens.length > 0 ? (
                   newestCitizens.slice(0, 5).map((citizen: any) => (
-                    <div
+                    <Link
                       key={citizen.id}
+                      href={`/citizen/${
+                        citizen.name && citizen.id
+                          ? generatePrettyLinkWithId(citizen.name, citizen.id)
+                          : citizen.id || 'anonymous'
+                      }`}
                       className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer"
                     >
                       <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
@@ -837,19 +860,8 @@ export default function SingedInDashboard({
                         <h4 className="text-white font-medium text-sm truncate">
                           {citizen.name || 'Anonymous'}
                         </h4>
-                        <p className="text-gray-400 text-xs">New citizen</p>
                       </div>
-                      <StandardButton
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-lg transition-all"
-                        link={`/citizen/${
-                          citizen.name && citizen.id
-                            ? generatePrettyLinkWithId(citizen.name, citizen.id)
-                            : citizen.id || 'anonymous'
-                        }`}
-                      >
-                        Connect
-                      </StandardButton>
-                    </div>
+                    </Link>
                   ))
                 ) : (
                   <div className="text-gray-400 text-sm text-center py-4">
@@ -899,9 +911,6 @@ export default function SingedInDashboard({
                         <h4 className="text-white font-medium text-sm truncate">
                           {team.name || 'Team'}
                         </h4>
-                        <p className="text-gray-400 text-xs">
-                          {team.memberCount || '8'} members
-                        </p>
                       </div>
                     </div>
                   ))
@@ -914,7 +923,6 @@ export default function SingedInDashboard({
                       <h4 className="text-white font-medium text-sm">
                         Mission Control
                       </h4>
-                      <p className="text-gray-400 text-xs">12 members</p>
                     </div>
                   </div>
                 )}
@@ -964,8 +972,8 @@ export default function SingedInDashboard({
                             {listing.title || 'Marketplace Item'}
                           </h4>
                           <p className="text-gray-400 text-xs">
-                            {listing.price
-                              ? `${listing.price} ETH`
+                            {listing.price && listing.currency
+                              ? `${listing.price} ${listing.currency}`
                               : 'View details'}
                           </p>
                         </div>
@@ -1270,7 +1278,7 @@ export default function SingedInDashboard({
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 lg:top-6 lg:right-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
-                  47
+                  {countUniqueCountries(citizensLocationData)} {/* Unique countries */}
                 </div>
                 <div className="text-xs sm:text-sm opacity-90 leading-tight">
                   Countries
@@ -1284,7 +1292,7 @@ export default function SingedInDashboard({
                   24/7
                 </div>
                 <div className="text-xs sm:text-sm opacity-90 leading-tight">
-                  Active Commu
+                  Active Community
                 </div>
               </div>
             </div>
@@ -1292,10 +1300,10 @@ export default function SingedInDashboard({
             <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 lg:bottom-6 lg:right-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
-                  {filteredTeams?.length || teamHats?.length || '9'}
+                  {filteredTeams?.length || '0'}
                 </div>
                 <div className="text-xs sm:text-sm opacity-90 leading-tight">
-                  Active Teams
+                  Total Teams
                 </div>
               </div>
             </div>

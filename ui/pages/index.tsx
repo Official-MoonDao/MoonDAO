@@ -216,7 +216,11 @@ export async function getStaticProps() {
         ),
         queryTable(
           chain,
-          `SELECT * FROM ${marketplaceTableName} ORDER BY id DESC LIMIT 10`
+          `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${Math.floor(
+            Date.now() / 1000
+          )}) AND (endTime = 0 OR endTime >= ${Math.floor(
+            Date.now() / 1000
+          )}) ORDER BY id DESC LIMIT 10`
         ),
         queryTable(
           chain,
@@ -226,7 +230,7 @@ export async function getStaticProps() {
         ),
         queryTable(
           chain,
-          `SELECT * FROM ${teamTableName} ORDER BY id DESC LIMIT 10`
+          `SELECT * FROM ${teamTableName} ORDER BY id DESC`
         ),
         queryTable(chain, `SELECT * FROM ${projectTableName} ORDER BY id DESC`),
       ])
@@ -332,7 +336,7 @@ export async function getStaticProps() {
     }
 
     // Process teams data for home page display
-    filteredTeams = teams.filter((team: any) => team.id && team.name)
+    filteredTeams = teams || []
   }
 
   // Get citizens location data from the refactored function
