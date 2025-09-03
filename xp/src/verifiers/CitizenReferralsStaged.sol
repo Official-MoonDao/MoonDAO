@@ -4,10 +4,10 @@ pragma solidity ^0.8.20;
 import "./StagedXPVerifier.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title SANReferralsStaged
+/// @title CitizenReferralsStaged
 /// @notice Verifier that awards XP based on the number of referrals a user has made
 /// @dev Stages are based on referral thresholds (e.g., 1 referral = stage 0, 5 referrals = stage 1, etc.)
-contract SANReferralsStaged is StagedXPVerifier, Ownable {
+contract CitizenReferralsStaged is StagedXPVerifier, Ownable {
     // Mapping from referred citizen address to the citizen who referred them
     mapping(address => address) public referredBy;
     
