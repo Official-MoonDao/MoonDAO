@@ -149,14 +149,14 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
   return (
     <section id="projects-container" className="overflow-hidden">
       <Head
-        title="Projects"
+        title="WBA"
         description="View World’s Biggest Analog Scholarship finalists and vote for the candidate or candidates you believe should receive the top scholarships."
       />
       <Container>
         <ContentLayout
           header={'WBA Finalists'}
           description={
-            'View World’s Biggest Analog Scholarship finalists and vote for the candidate or candidates you believe should receive the top scholarships.'
+            'View World’s Biggest Analog Scholarship finalists and vote for the candidate or candidates you believe should receive the top scholarships. Distribute your voting power (square root of vMOONEY balance) as a percentage between the candidates. You can vote for multiple people. Votes are due by Monday, September 8th at midnight EST.'
           }
           headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
