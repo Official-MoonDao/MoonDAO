@@ -40,7 +40,7 @@ const FinalistCardContent = memo(
               width={66}
             />
             <div className="flex flex-col">
-              <Link href={`/citizen/${finalist?.id}`} passHref>
+              <Link href={`/citizen/${finalist?.citizenId}`} passHref>
                 <h1 className="font-GoodTimes">{finalist?.name || ''}</h1>
               </Link>
               <div className="flex flex-row">
