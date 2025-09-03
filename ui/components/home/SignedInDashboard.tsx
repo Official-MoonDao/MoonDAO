@@ -810,8 +810,13 @@ export default function SingedInDashboard({
               <div className="space-y-3">
                 {newestCitizens && newestCitizens.length > 0 ? (
                   newestCitizens.slice(0, 5).map((citizen: any) => (
-                    <div
+                    <Link
                       key={citizen.id}
+                      href={`/citizen/${
+                        citizen.name && citizen.id
+                          ? generatePrettyLinkWithId(citizen.name, citizen.id)
+                          : citizen.id || 'anonymous'
+                      }`}
                       className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer"
                     >
                       <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
@@ -832,19 +837,8 @@ export default function SingedInDashboard({
                         <h4 className="text-white font-medium text-sm truncate">
                           {citizen.name || 'Anonymous'}
                         </h4>
-                        <p className="text-gray-400 text-xs">New citizen</p>
                       </div>
-                      <StandardButton
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-lg transition-all"
-                        link={`/citizen/${
-                          citizen.name && citizen.id
-                            ? generatePrettyLinkWithId(citizen.name, citizen.id)
-                            : citizen.id || 'anonymous'
-                        }`}
-                      >
-                        Connect
-                      </StandardButton>
-                    </div>
+                    </Link>
                   ))
                 ) : (
                   <div className="text-gray-400 text-sm text-center py-4">
@@ -893,9 +887,6 @@ export default function SingedInDashboard({
                         <h4 className="text-white font-medium text-sm truncate">
                           {team.name || 'Team'}
                         </h4>
-                        <p className="text-gray-400 text-xs">
-                          {team.memberCount || '8'} members
-                        </p>
                       </div>
                     </div>
                   ))
@@ -908,7 +899,6 @@ export default function SingedInDashboard({
                       <h4 className="text-white font-medium text-sm">
                         Mission Control
                       </h4>
-                      <p className="text-gray-400 text-xs">12 members</p>
                     </div>
                   </div>
                 )}
