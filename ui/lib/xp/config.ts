@@ -18,8 +18,7 @@ import {
   HAS_VOTING_POWER_VERIFIER_ADDRESSES,
   HAS_SUBMITTED_PR_VERIFIER_ADDRESSES,
   HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES,
-  REFERRAL_VERIFIER_ADDRESSES,
-  DEPLOYED_ORIGIN,
+  CITIZEN_REFERRAL_VERIFIER_ADDRESSES,
 } from 'const/config'
 import { useContext, useMemo } from 'react'
 import toast from 'react-hot-toast'
@@ -174,11 +173,11 @@ export const XP_VERIFIERS = [
   },
   {
     verifierId: 10,
-    verifierAddress: REFERRAL_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/san-referrals',
+    verifierAddress: CITIZEN_REFERRAL_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/citizen-referrals',
     type: 'staged',
     metricKey: 'referralCount',
-    title: 'Referrals',
+    title: 'Citizen Referrals',
     description: 'Refer your friends to the Space Acceleration Network.',
     icon: UserGroupIcon,
     actionText: 'Copy Referral Link',
@@ -192,7 +191,7 @@ export function useXPVerifiers() {
     return XP_VERIFIERS.map((verifier) => {
       if (
         verifier.verifierAddress ===
-        REFERRAL_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG]
+        CITIZEN_REFERRAL_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG]
       ) {
         return {
           ...verifier,
