@@ -85,6 +85,36 @@ export default function Quest({
   const [error, setError] = useState<string | null>(null)
   const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Retry utility function with exponential backoff
+  const retryWithBackoff = useCallback(
+    async <T,>(
+      fn: () => Promise<T>,
+      maxRetries: number = 3,
+      baseDelay: number = 1000
+    ): Promise<T> => {
+      let lastError: Error
+
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          return await fn()
+        } catch (error) {
+          lastError = error as Error
+
+          if (attempt === maxRetries) {
+            throw lastError
+          }
+
+          // Exponential backoff with jitter
+          const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000
+          await new Promise((resolve) => setTimeout(resolve, delay))
+        }
+      }
+
+      throw lastError!
+    },
+    []
+  )
+
   const formattedUserMetric = quest.verifier.metricFormatting
     ? quest.verifier.metricFormatting(userMetric).toLocaleString()
     : userMetric.toLocaleString()
@@ -129,97 +159,120 @@ export default function Quest({
     [xpManagerContract, userAddress, quest.verifier.verifierId]
   )
 
-  // claimQuest will be defined after pollForClaimConfirmation
-
-  // Function to fetch user metric from the quest's API endpoint
+  // Function to fetch user metric from the quest's API endpoint with retry logic
   const fetchUserMetric = useCallback(async (): Promise<number> => {
     if (!quest.verifier.route || !userAddress || !quest.verifier.metricKey) {
       return 0
     }
 
     try {
-      const accessToken = await getAccessToken()
-      if (!accessToken) {
-        throw new Error('No access token available')
-      }
+      return await retryWithBackoff(
+        async () => {
+          const accessToken = await getAccessToken()
+          if (!accessToken) {
+            throw new Error('No access token available')
+          }
 
-      const response = await fetch(
-        `${quest.verifier.route}?user=${userAddress}&accessToken=${accessToken}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      )
+          const response = await fetch(
+            `${quest.verifier.route}?user=${userAddress}&accessToken=${accessToken}`,
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }
+          )
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch user metric: ${response.statusText}`)
-      }
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch user metric: ${response.statusText}`
+            )
+          }
 
-      const data = await response.json()
+          const data = await response.json()
 
-      if (data.error) {
-        console.log('Error fetching user metric:', data.error)
+          if (data.error) {
+            console.log('Error fetching user metric:', data.error)
 
-        // Check if this is a GitHub linking error
-        if (data.error.includes('No GitHub account linked')) {
-          console.log('Setting GitHub linking error:', data.error)
-          setNeedsGitHubLink(true)
-          setError(data.error) // Set the error so getErrorButton can use it
-        } else {
-          console.log('Setting other error:', data.error)
-          setNeedsGitHubLink(false)
-          setError(data.error) // Set other errors as well
-        }
+            // Check if this is a GitHub linking error
+            if (data.error.includes('No GitHub account linked')) {
+              console.log('Setting GitHub linking error:', data.error)
+              setNeedsGitHubLink(true)
+              setError(data.error) // Set the error so getErrorButton can use it
+            } else {
+              console.log('Setting other error:', data.error)
+              setNeedsGitHubLink(false)
+              setError(data.error) // Set other errors as well
+            }
 
-        return 0
-      }
+            return 0
+          }
 
-      // Extract the metric using the configured metricKey
-      const metricValue = data[quest.verifier.metricKey]
+          // Extract the metric using the configured metricKey
+          const metricValue = data[quest.verifier.metricKey]
 
-      // Handle different data types
-      if (typeof metricValue === 'string') {
-        return parseInt(metricValue) || 0
-      } else if (typeof metricValue === 'number') {
-        return metricValue
-      } else if (typeof metricValue === 'boolean') {
-        return metricValue ? 1 : 0
-      }
+          // Handle different data types
+          if (typeof metricValue === 'string') {
+            return parseInt(metricValue) || 0
+          } else if (typeof metricValue === 'number') {
+            return metricValue
+          } else if (typeof metricValue === 'boolean') {
+            return metricValue ? 1 : 0
+          }
 
-      return 0
+          return 0
+        },
+        3,
+        1000
+      ) // 3 retries with 1 second base delay
     } catch (error) {
-      console.error('Error fetching user metric:', error)
+      console.error('Error fetching user metric after retries:', error)
       return 0
     }
-  }, [quest.verifier.route, quest.verifier.metricKey, userAddress])
+  }, [
+    quest.verifier.route,
+    quest.verifier.metricKey,
+    userAddress,
+    retryWithBackoff,
+  ])
 
-  // Simplified staged progress fetching - just get stages and user's highest claimed stage
+  // Simplified staged progress fetching with retry logic
   const fetchStagedProgress = useCallback(async () => {
     if (quest.verifier.type !== 'staged' || !verifierContract || !userAddress)
       return
 
     setIsLoadingStagedProgress(true)
     try {
-      // Get user metric from quest's backend/oracle
+      // Get user metric from quest's backend/oracle with retry
       const metric = await fetchUserMetric()
       setUserMetric(metric)
 
-      // Get progress with real user metric
-      const progress = await getStagedQuestProgress(
-        verifierContract,
-        userAddress,
-        metric
+      // Get progress with real user metric, also with retry
+      const progress = await retryWithBackoff(
+        async () => {
+          return await getStagedQuestProgress(
+            verifierContract,
+            userAddress,
+            metric
+          )
+        },
+        3,
+        1000
       )
 
       setStagedProgress(progress)
     } catch (error) {
-      console.error('Error fetching staged progress:', error)
+      console.error('Error fetching staged progress after retries:', error)
     } finally {
       setIsLoadingStagedProgress(false)
     }
-  }, [verifierContract, userAddress, quest.verifier.type, fetchUserMetric])
+  }, [
+    verifierContract,
+    userAddress,
+    quest.verifier.type,
+    fetchUserMetric,
+    retryWithBackoff,
+  ])
 
   // Define pollForClaimConfirmation after fetchStagedProgress
   const pollForClaimConfirmation = useCallback(async () => {
