@@ -1,7 +1,7 @@
 /**
- * SAN Referred API Route
+ * Citizen Referred API Route
  *
- * This route allows any authenticated user to request that a referral be recorded in the SANReferralsStaged contract.
+ * This route allows any authenticated user to request that a referral be recorded in the CitizenReferralsStaged contract.
  * The authorized signer (server) performs the actual transaction, but any authenticated user can submit referral requests.
  *
  * SECURITY MEASURES:
@@ -19,7 +19,7 @@
  */
 import CitizenABI from 'const/abis/Citizen.json'
 import {
-  REFERRAL_VERIFIER_ADDRESSES,
+  CITIZEN_REFERRAL_VERIFIER_ADDRESSES,
   CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
 } from 'const/config'
@@ -45,7 +45,7 @@ function normalizePk(pk?: string): `0x${string}` {
   return (pk.startsWith('0x') ? pk : `0x${pk}`) as `0x${string}`
 }
 
-const SAN_REFERRALS_ABI = [
+const CITIZEN_REFERRALS_ABI = [
   {
     type: 'function',
     name: 'referred',
@@ -169,7 +169,9 @@ async function addReferral(
   citizenAddress: Address
 ): Promise<{ txHash: Hex }> {
   const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
-  const verifierAddress = REFERRAL_VERIFIER_ADDRESSES[chainSlug] as Address
+  const verifierAddress = CITIZEN_REFERRAL_VERIFIER_ADDRESSES[
+    chainSlug
+  ] as Address
 
   if (!verifierAddress) {
     throw new Error('Referral verifier address not configured')
@@ -190,7 +192,7 @@ async function addReferral(
     client: serverClient,
     chain: DEFAULT_CHAIN_V5,
     address: verifierAddress,
-    abi: SAN_REFERRALS_ABI as any,
+    abi: CITIZEN_REFERRALS_ABI as any,
   })
 
   // Check if the referred citizen is already referred
@@ -323,7 +325,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       referrerAddress: normalizedReferrerAddress,
     })
   } catch (err: any) {
-    console.error('Error in san-referred API:', err)
+    console.error('Error in citizen-referred API:', err)
 
     // Handle specific contract errors
     if (err.message?.includes('Citizen is already referred')) {

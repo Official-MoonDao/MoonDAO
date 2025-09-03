@@ -330,7 +330,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
           if (referredBy && referredBy !== address) {
             // Call the referral API
-            const referralResponse = await fetch('/api/xp/san-referred', {
+            const referralResponse = await fetch('/api/xp/citizen-referred', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
