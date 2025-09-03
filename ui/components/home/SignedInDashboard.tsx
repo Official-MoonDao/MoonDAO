@@ -397,7 +397,7 @@ export default function SingedInDashboard({
 
                 <div className="text-center flex-shrink-0">
                   <div className="text-lg sm:text-xl font-bold text-white">
-                    1
+                    {voteCount || 0}
                   </div>
                   <div className="text-xs sm:text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
                     <CheckBadgeIcon className="w-3 h-3" />
