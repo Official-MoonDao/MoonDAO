@@ -83,6 +83,7 @@ import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
+import SANReferral from '../subscription/SANReferral'
 import Quests from '../xp/Quests'
 
 // import Quests from '@/components/xp/Quests'
@@ -573,6 +574,7 @@ export default function SingedInDashboard({
                   <ShoppingBagIcon className="w-4 h-4" />
                   Shop
                 </StandardButton>
+                <SANReferral />
               </div>
             </div>
 

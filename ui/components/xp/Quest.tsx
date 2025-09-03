@@ -850,8 +850,12 @@ export default function Quest({
               <div className="flex flex-col items-end gap-1 flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <span className="text-yellow-300 text-sm font-medium bg-gradient-to-r from-yellow-500/30 to-orange-500/30 px-2.5 py-1 rounded-full border border-yellow-400/30 shadow-lg shadow-yellow-500/20 backdrop-blur-sm">
-                    Stage {getHighestQualifyingStage(stagedProgress)} of{' '}
-                    {stagedProgress.stages.length}
+                    Stage{' '}
+                    {Math.min(
+                      (stagedProgress.nextClaimableStage ?? -1) + 2,
+                      stagedProgress.stages.length
+                    )}{' '}
+                    of {stagedProgress.stages.length}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-white">

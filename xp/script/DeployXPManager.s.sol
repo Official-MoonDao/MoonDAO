@@ -49,6 +49,15 @@ contract DeployXPManagerScript is Script {
         HasSubmittedPRStaged hasSubmittedPRVerifier = new HasSubmittedPRStaged(oracleAddress);
         SANReferralsStaged sanReferralsVerifier = new SANReferralsStaged(oracleAddress);
 
+        // Set XPManager address
+        votingPowerVerifier.setXPManager(address(xpManager));
+        hasVotedVerifier.setXPManager(address(xpManager));
+        hasTokenBalanceVerifier.setXPManager(address(xpManager));
+        hasContributedVerifier.setXPManager(address(xpManager));
+        hasBoughtAMarketplaceListingVerifier.setXPManager(address(xpManager));
+        hasSubmittedPRVerifier.setXPManager(address(xpManager));
+        sanReferralsVerifier.setXPManager(address(xpManager));
+
 
 
         // Register verifiers

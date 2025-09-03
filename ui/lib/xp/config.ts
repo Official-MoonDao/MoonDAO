@@ -177,11 +177,11 @@ export const XP_VERIFIERS = [
     verifierAddress: REFERRAL_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/san-referrals',
     type: 'staged',
-    metricKey: 'referrals',
+    metricKey: 'referralCount',
     title: 'Referrals',
-    description: 'Refer a friend to the Space Acceleration Network.',
+    description: 'Refer your friends to the Space Acceleration Network.',
     icon: UserGroupIcon,
-    actionText: 'Refer a Friend',
+    actionText: 'Copy Referral Link',
   },
 ]
 

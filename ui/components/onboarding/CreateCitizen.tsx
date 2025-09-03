@@ -338,22 +338,20 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
               },
               body: JSON.stringify({
                 referrerAddress: referredBy,
+                accessToken: accessToken,
               }),
             })
 
             if (referralResponse.ok) {
               const result = await referralResponse.json()
-              console.log('Referral recorded successfully:', result)
               toast.success('Referral recorded successfully!')
             } else {
               const error = await referralResponse.json()
               console.error('Failed to record referral:', error)
-              // Don't show error toast to user as this is not critical
             }
           }
         } catch (error) {
           console.error('Error recording referral:', error)
-          // Don't show error toast to user as this is not critical
         }
 
         setTimeout(async () => {

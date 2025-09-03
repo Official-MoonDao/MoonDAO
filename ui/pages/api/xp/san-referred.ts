@@ -1,20 +1,20 @@
 /**
- * SAN Referrals API Route
+ * SAN Referred API Route
  *
  * This route allows any authenticated user to request that a referral be recorded in the SANReferralsStaged contract.
  * The authorized signer (server) performs the actual transaction, but any authenticated user can submit referral requests.
  *
  * SECURITY MEASURES:
- * - Requires valid session authentication via authMiddleware
+ * - Requires valid Privy access token authentication
  * - Validates that both addresses are valid citizens (own citizen NFTs)
  * - Validates that the API caller is the one who minted the citizen
  * - Prevents self-referrals and duplicate referrals
  *
  * USAGE:
  * POST /api/xp/san-referred
- * Headers: Authorization: Bearer <session_token>
  * Body: {
- *   "referrerAddress": "0x..."
+ *   "referrerAddress": "0x...",
+ *   "accessToken": "privy_access_token"
  * }
  */
 import CitizenABI from 'const/abis/Citizen.json'
@@ -36,6 +36,7 @@ import {
 } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { privateKeyToAccount as twPrivateKeyToAccount } from 'thirdweb/wallets'
+import { getPrivyUserData } from '@/lib/privy'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 
@@ -141,7 +142,7 @@ async function validateReferrerMintedCitizen(
 
     // Check if the referrer is the current owner (who minted it)
     // In most NFT contracts, the minter becomes the initial owner
-    if (nft.owner.toLowerCase() !== referrerAddress.toLowerCase()) {
+    if (nft.owner.toLowerCase() !== referredCitizenAddress.toLowerCase()) {
       return {
         isValid: false,
         error: 'Only the person who minted the citizen can assign the referral',
@@ -224,14 +225,28 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(405).json({ error: 'Method not allowed' })
     }
 
-    // Get session from request (added by authMiddleware)
-    const session = (req as any).session
-    if (!session?.user?.address) {
-      return res.status(401).json({ error: 'Unauthorized - No valid session' })
+    // Get access token from request body
+    const { referrerAddress, accessToken } = req.body
+
+    if (!accessToken) {
+      return res.status(401).json({ error: 'Missing access token' })
     }
 
-    // Validate request body - need referrerAddress now
-    const { referrerAddress } = req.body
+    // Get user data from Privy
+    const privyUserData = await getPrivyUserData(accessToken)
+
+    if (!privyUserData) {
+      return res.status(401).json({ error: 'Invalid access token' })
+    }
+
+    const { walletAddresses } = privyUserData
+
+    if (walletAddresses.length === 0) {
+      return res.status(401).json({ error: 'No wallet addresses found' })
+    }
+
+    // Use the first wallet address as the referred address
+    const referredAddress = walletAddresses[0]
 
     if (!referrerAddress) {
       return res.status(400).json({
@@ -251,7 +266,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       referrerAddress
     ) as Address
     const normalizedReferredAddress = ethersUtils.getAddress(
-      session.user.address
+      referredAddress
     ) as Address
 
     // Prevent self-referral
