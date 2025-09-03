@@ -74,20 +74,20 @@ export default function SubmissionPage() {
                   Check out our documentation to learn more about each submission type and find the best fit for your contribution.
                 </p>
                 <div className="flex flex-wrap gap-4">
-                  <a
+                  <Link
                     href="/project-system-docs"
                     className="text-blue-400 hover:text-blue-300 underline"
                   >
                     Project System Guide
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="https://docs.moondao.com/Reference/Nested-Docs/Community-Rewards"
                     className="text-blue-400 hover:text-blue-300 underline"
                     target="_blank"
                     rel="noreferrer"
                   >
                     Community Rewards Guide
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
