@@ -60,7 +60,7 @@ contract PoolDeployer is Ownable {
         token.approve(address(PERMIT2), type(uint256).max);
         PERMIT2.approve(address(token), address(posm), type(uint160).max, type(uint48).max);
 
-        int24 tickSpacing = 100;
+        int24 tickSpacing = 200;
         int24 tickLower = TickMath.minUsableTick(tickSpacing);
         int24 tickUpper = TickMath.maxUsableTick(tickSpacing);
         uint128 liquidity = LiquidityAmounts.getLiquidityForAmounts(

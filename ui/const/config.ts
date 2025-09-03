@@ -19,6 +19,7 @@ interface DeploymentConfig {
   FeeHook: string
   MissionCreator: string
   UniswapV4Router: string
+  PositionManager: string
 }
 
 type Index = { [key: string]: string }
@@ -66,6 +67,11 @@ export const MOONEY_ADDRESSES: Index = {
   base: baseConfig.MOONEYToken,
   'arbitrum-sepolia': arbitrumSepoliaConfig.MOONEYToken,
   'base-sepolia-testnet': baseSepoliaConfig.MOONEYToken,
+}
+export const POSITION_MANAGERS: Index = {
+    ethereum: ethConfig.PositionManager,
+    arbitrum: arbitrumConfig.PositionManager,
+    base: baseConfig.PositionManager,
 }
 
 export const DAI_ADDRESSES: Index = {
@@ -551,6 +557,7 @@ export const POLYGON_ASSETS_URL =
 export const BASE_ASSETS_URL =
   'https://safe-client.safe.global/v1/chains/8453/safes/0x871e232Eb935E54Eb90B812cf6fe0934D45e7354/balances/usd?trusted=true'
 export const STAKED_ETH_ADDRESS = '0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8'
+export const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3'
 
 export const MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
