@@ -6,6 +6,7 @@ import "../src/XPManager.sol";
 import "../src/verifiers/OwnsCitizenNFT.sol";
 import "../src/mocks/MockERC5643Citizen.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract MockERC20 is ERC20 {
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
@@ -33,8 +34,13 @@ contract XPManagerTest is Test {
         citizenNFT =
             new MockERC5643Citizen("MoonDAO Citizen", "CITIZEN", address(0), address(0), address(0), address(0));
 
-        // Deploy XPManager
-        xpManager = new XPManager();
+        // Deploy XPManager implementation
+        XPManager implementation = new XPManager();
+        
+        // Deploy proxy and initialize
+        bytes memory initData = abi.encodeWithSelector(XPManager.initialize.selector);
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
+        xpManager = XPManager(address(proxy));
 
         // Deploy reward token
         rewardToken = new MockERC20("Reward Token", "REWARD");
@@ -51,6 +57,11 @@ contract XPManagerTest is Test {
 
         // Transfer ownership from current owner (deployer)
         xpManager.transferOwnership(owner);
+
+        // Set citizen NFT address in XPManager (as owner)
+        vm.startPrank(owner);
+        xpManager.setCitizenNFTAddress(address(citizenNFT));
+        vm.stopPrank();
 
         // Fund XPManager with reward tokens for testing
         rewardToken.transfer(address(xpManager), 10000 * 10 ** 18);
@@ -128,7 +139,7 @@ contract XPManagerTest is Test {
         // Context - verifier will return 0 XP since user has no NFT
         bytes memory context = abi.encode(25);
 
-        vm.expectRevert("Not eligible");
+        vm.expectRevert("Only citizens can claim XP");
         xpManager.claimXP(1, context);
 
         vm.stopPrank();
@@ -140,8 +151,61 @@ contract XPManagerTest is Test {
 
         bytes memory context = abi.encode(25);
 
-        vm.expectRevert("Not eligible");
+        vm.expectRevert("Only citizens can claim XP");
         xpManager.claimXP(1, context);
+
+        vm.stopPrank();
+    }
+
+    function testCitizenCheck() public {
+        // Set citizen NFT address in XPManager
+        vm.startPrank(owner);
+        xpManager.setCitizenNFTAddress(address(citizenNFT));
+        vm.stopPrank();
+
+        // Test that user1 is recognized as a citizen
+        assertTrue(xpManager.isCitizen(user1));
+        
+        // Test that user2 is recognized as a citizen
+        assertTrue(xpManager.isCitizen(user2));
+        
+        // Test that a user without NFT is not a citizen
+        address userWithoutNFT = address(0x5);
+        assertFalse(xpManager.isCitizen(userWithoutNFT));
+    }
+
+    function testCannotClaimXPWithoutCitizenNFT() public {
+        // Set citizen NFT address in XPManager
+        vm.startPrank(owner);
+        xpManager.setCitizenNFTAddress(address(citizenNFT));
+        vm.stopPrank();
+
+        address userWithoutNFT = address(0x5);
+        vm.startPrank(userWithoutNFT);
+
+        bytes memory context = abi.encode(25);
+
+        // Should revert with "Only citizens can claim XP" instead of "Not eligible"
+        vm.expectRevert("Only citizens can claim XP");
+        xpManager.claimXP(1, context);
+
+        vm.stopPrank();
+    }
+
+    function testCannotClaimXPForWithoutCitizenNFT() public {
+        // Set citizen NFT address in XPManager
+        vm.startPrank(owner);
+        xpManager.setCitizenNFTAddress(address(citizenNFT));
+        vm.stopPrank();
+
+        address userWithoutNFT = address(0x5);
+        vm.startPrank(relayer); // Anyone can call claimXPFor
+
+        bytes memory context = abi.encode(25);
+
+        // Should revert with "Only citizens can claim XP"
+        vm.expectRevert("Only citizens can claim XP");
+        xpManager.claimXPFor(userWithoutNFT, 1, context);
 
         vm.stopPrank();
     }
@@ -510,7 +574,7 @@ contract XPManagerTest is Test {
 
         bytes memory context = abi.encode(50);
 
-        vm.expectRevert("Not eligible");
+        vm.expectRevert("Only citizens can claim XP");
         xpManager.claimXPFor(userWithoutNFT, 1, context);
 
         vm.stopPrank();
@@ -522,7 +586,7 @@ contract XPManagerTest is Test {
 
         bytes memory context = abi.encode(100);
 
-        vm.expectRevert("Not eligible");
+        vm.expectRevert("Only citizens can claim XP");
         xpManager.claimXPFor(userWithoutNFT, 1, context);
 
         vm.stopPrank();

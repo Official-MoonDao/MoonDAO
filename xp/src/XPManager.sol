@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IXPVerifier.sol";
 import "./interfaces/IStagedXPVerifier.sol";
+import "./interfaces/IERC5643Like.sol";
 
-contract XPManager is Ownable {
+contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     // User state
@@ -44,6 +47,9 @@ contract XPManager is Ownable {
     // Track claimed ERC20 rewards per user
     mapping(address => uint256) public claimedERC20Rewards; // user => total claimed amount
 
+    // Citizen NFT contract for citizenship verification
+    IERC5643Like public citizenNFT;
+
     // Events
     event XPEarned(address indexed user, uint256 xpAmount, uint256 totalXP);
     event VerifierRegistered(uint256 indexed id, address verifier);
@@ -55,10 +61,20 @@ contract XPManager is Ownable {
     event VerifierUpdated(uint256 indexed id, address oldVerifier, address newVerifier);
     event XPLevelsSet(uint256[] thresholds, uint256[] levels);
     event LevelUp(address indexed user, uint256 newLevel, uint256 totalXP);
+    event CitizenNFTAddressSet(address indexed oldAddress, address indexed newAddress);
 
-    constructor() Ownable(msg.sender) {
-        // No constructor parameters needed for pure XP system
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
+
+    function initialize() public initializer {
+        __Ownable_init();
+        __UUPSUpgradeable_init();
+        _transferOwnership(msg.sender);
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     /**
      * @notice Register a new verifier
@@ -108,6 +124,17 @@ contract XPManager is Ownable {
         require(erc20RewardConfig.active, "Config not active");
         erc20RewardConfig.active = false;
         emit ERC20RewardConfigDeactivated(erc20RewardConfig.tokenAddress);
+    }
+
+    /**
+     * @notice Set the citizen NFT contract address for citizenship verification
+     * @param citizenNFTAddress Address of the citizen NFT contract
+     */
+    function setCitizenNFTAddress(address citizenNFTAddress) external onlyOwner {
+        require(citizenNFTAddress != address(0), "Invalid citizen NFT address");
+        address oldAddress = address(citizenNFT);
+        citizenNFT = IERC5643Like(citizenNFTAddress);
+        emit CitizenNFTAddressSet(oldAddress, citizenNFTAddress);
     }
 
     /**
@@ -318,6 +345,18 @@ contract XPManager is Ownable {
     }
 
     /**
+     * @notice Check if a user is a citizen (owns at least one citizen NFT)
+     * @param user Address to check
+     * @return True if user is a citizen, false otherwise
+     */
+    function isCitizen(address user) public view returns (bool) {
+        if (address(citizenNFT) == address(0)) {
+            return false; // No citizen NFT contract set
+        }
+        return citizenNFT.balanceOf(user) > 0;
+    }
+
+    /**
      * @dev Internal function to handle XP claiming logic
      * @param user Address to credit XP to
      * @param conditionId ID of the verifier condition
@@ -326,6 +365,7 @@ contract XPManager is Ownable {
     function _claimXPInternal(address user, uint256 conditionId, bytes calldata context) internal {
         require(user != address(0), "Invalid user");
         require(verifiers[conditionId] != address(0), "Verifier not found");
+        require(isCitizen(user), "Only citizens can claim XP");
 
         IXPVerifier verifier = IXPVerifier(verifiers[conditionId]);
 
@@ -396,6 +436,7 @@ contract XPManager is Ownable {
     function _claimBulkXPInternal(address user, uint256 conditionId, bytes calldata context) internal {
         require(user != address(0), "Invalid user");
         require(verifiers[conditionId] != address(0), "Verifier not found");
+        require(isCitizen(user), "Only citizens can claim XP");
 
         // Check if verifier supports bulk claiming
         IStagedXPVerifier stagedVerifier = IStagedXPVerifier(verifiers[conditionId]);
@@ -442,8 +483,6 @@ contract XPManager is Ownable {
         emit VerifierClaimed(user, conditionId, totalXP);
     }
 
-
-
     /**
      * @notice Get total XP for a user
      * @param user Address of the user
@@ -481,6 +520,8 @@ contract XPManager is Ownable {
         return userClaimedVerifiers[user].length;
     }
 
+
+
     /**
      * @dev Internal function to record that a user has claimed from a verifier
      * @param user Address of the user
@@ -499,7 +540,7 @@ contract XPManager is Ownable {
      * @param user Address of the user
      * @param amount XP to grant
      */
-    function _grantXP(address user, uint256 amount) internal {
+    function _grantXP(address user, uint256 amount) internal virtual {
         uint256 oldLevel = _getUserLevelInternal(user);
         
         userXP[user] += amount;
@@ -671,5 +712,4 @@ contract XPManager is Ownable {
             }
         }
     }
-
 }
