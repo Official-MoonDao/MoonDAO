@@ -106,6 +106,15 @@ function getEthAmountFromProposal(actions: Action[] | undefined): number {
   return ethAmount
 }
 
+import { daysUntilTimestamp } from '@/lib/utils/timestamp'
+
+function getDaysLeft(proposal: any): number {
+  if (proposal?.end) {
+    return daysUntilTimestamp(proposal.end)
+  }
+  return 0
+}
+
 export default function SingedInDashboard({
   newestNewsletters,
   newestCitizens,
@@ -733,6 +742,7 @@ export default function SingedInDashboard({
                 {proposals &&
                   proposals.slice(0, 3).map((proposal: any, i: number) => {
                     const ethAmount = getEthAmountFromProposal(proposal.actions)
+                    const daysLeft = getDaysLeft(proposal)
 
                     return (
                       <Link
@@ -766,21 +776,22 @@ export default function SingedInDashboard({
                               </div>
                               <span className="hidden sm:inline">•</span>
                               <div className="flex items-center gap-1">
-                                <span className="font-medium text-white">
-                                  {3 + i} days
-                                </span>
-                                <span>left</span>
+                                {daysLeft > 0 ? (
+                                  <>
+                                    <span className="font-medium text-white">
+                                      {daysLeft} {daysLeft === 1 ? 'day' : 'days'}
+                                    </span>
+                                    <span>left</span>
+                                  </>
+                                ) : (
+                                  <span className="font-medium text-white">
+                                    Voting closed
+                                  </span>
+                                )}
                               </div>
                             </div>
-                            <span className="hidden sm:inline">•</span>
-                            <div className="flex items-center gap-1">
-                              <span className="font-medium text-white">
-                                {3 + i} days
-                              </span>
-                              <span>left</span>
-                              <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
-                                Vote
-                              </div>
+                            <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
+                              Vote
                             </div>
                           </div>
                         </div>
