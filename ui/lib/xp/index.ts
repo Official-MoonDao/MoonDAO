@@ -14,7 +14,7 @@ import {
   HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES,
   HAS_SUBMITTED_PR_VERIFIER_ADDRESSES,
   HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES,
-  REFERRAL_VERIFIER_ADDRESSES,
+  CITIZEN_REFERRAL_VERIFIER_ADDRESSES,
 } from 'const/config'
 import { utils as ethersUtils } from 'ethers'
 import { NextApiRequest } from 'next'
@@ -2043,7 +2043,7 @@ export async function checkReferralBulkEligibility(params: {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
 
-  const verifierAddress = REFERRAL_VERIFIER_ADDRESSES[
+  const verifierAddress = CITIZEN_REFERRAL_VERIFIER_ADDRESSES[
     XP_ORACLE_CHAIN
   ] as Address
   if (!verifierAddress) {
@@ -2119,7 +2119,7 @@ export async function submitReferralBulkClaimFor(params: {
   })
 
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
-  const verifierAddress = REFERRAL_VERIFIER_ADDRESSES[
+  const verifierAddress = CITIZEN_REFERRAL_VERIFIER_ADDRESSES[
     XP_ORACLE_CHAIN
   ] as Address
 
