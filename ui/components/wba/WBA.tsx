@@ -11,6 +11,7 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
@@ -41,6 +42,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
   const account = useActiveAccount()
+  const { isMobile } = useWindowSize()
   const userAddress = account?.address
 
   const isVotingPeriod = true
@@ -165,7 +167,11 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
           popOverEffect={false}
           isProfile
         >
-          <div className="flex flex-col gap-6 p-6 px:40 md:p-8 md:px-40 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px]">
+          <div
+            className={`flex flex-col gap-6 px:40 md:p-8 md:px-40 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] ${
+              !isMobile && 'p-6'
+            }`}
+          >
             <div>
               {finalists && finalists.length > 0 ? (
                 finalists.map((finalist: any, i) => (
