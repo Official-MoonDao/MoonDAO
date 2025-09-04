@@ -475,7 +475,7 @@ contract XPManagerTest is Test {
         vm.stopPrank();
 
         // User has no available rewards initially
-        assertEq(xpManager.getAvailableERC20Reward(user1), 0);
+        assertEq(xpManager.calculateAvailableERC20Reward(user1), 0);
 
         // Give user1 25 XP - rewards should be claimed automatically
         vm.startPrank(user1);
@@ -484,7 +484,7 @@ contract XPManagerTest is Test {
         vm.stopPrank();
 
         // Available reward should be 0 since it was claimed automatically
-        assertEq(xpManager.getAvailableERC20Reward(user1), 0);
+        assertEq(xpManager.calculateAvailableERC20Reward(user1), 0);
         
         // But user should have received tokens
         assertEq(rewardToken.balanceOf(user1), 25 * conversionRate);
@@ -612,7 +612,7 @@ contract XPManagerTest is Test {
         
         // Should receive tokens automatically: 25 XP * 0.2 = 5 tokens
         assertEq(rewardToken.balanceOf(user1), initialBalance + 25 * conversionRate);
-        assertEq(xpManager.getAvailableERC20Reward(user1), 0); // No pending rewards
+        assertEq(xpManager.calculateAvailableERC20Reward(user1), 0); // No pending rewards
         vm.stopPrank();
 
         // User1 claims more XP to reach 50 total
@@ -622,7 +622,7 @@ contract XPManagerTest is Test {
         
         // Should now have tokens for 50 XP total: 50 * 0.2 = 10 tokens
         assertEq(rewardToken.balanceOf(user1), initialBalance + 50 * conversionRate);
-        assertEq(xpManager.getAvailableERC20Reward(user1), 0); // Still no pending rewards
+        assertEq(xpManager.calculateAvailableERC20Reward(user1), 0); // Still no pending rewards
         vm.stopPrank();
 
         // User1 claims more XP to reach 75 total
@@ -632,7 +632,7 @@ contract XPManagerTest is Test {
         
         // Should now have tokens for 75 XP total: 75 * 0.2 = 15 tokens
         assertEq(rewardToken.balanceOf(user1), initialBalance + 75 * conversionRate);
-        assertEq(xpManager.getAvailableERC20Reward(user1), 0); // Still no pending rewards
+        assertEq(xpManager.calculateAvailableERC20Reward(user1), 0); // Still no pending rewards
         vm.stopPrank();
 
         // Verify XP total
@@ -674,8 +674,8 @@ contract XPManagerTest is Test {
         vm.stopPrank();
 
         // Both users should have no available rewards (all claimed automatically)
-        assertEq(xpManager.getAvailableERC20Reward(user1), 0);
-        assertEq(xpManager.getAvailableERC20Reward(user2), 0);
+        assertEq(xpManager.calculateAvailableERC20Reward(user1), 0);
+        assertEq(xpManager.calculateAvailableERC20Reward(user2), 0);
         
         // Verify XP totals
         assertEq(xpManager.getTotalXP(user1), 25);

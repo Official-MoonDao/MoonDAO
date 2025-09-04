@@ -79,7 +79,7 @@ contract ERC20RewardsTest is Test {
         vm.startPrank(user);
 
         // Check available rewards
-        uint256 available = xpManager.getAvailableERC20Reward(user);
+        uint256 available = xpManager.calculateAvailableERC20Reward(user);
         assertEq(available, 0, "Should have no rewards initially");
 
         // Simulate earning XP (this would normally happen through verifiers)

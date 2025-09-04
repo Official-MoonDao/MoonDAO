@@ -91,7 +91,7 @@ contract XPFlowTest is Test {
         assertEq(tokenBalanceAfter, tokenBalanceBefore + expectedReward, "Should automatically receive ERC20 tokens");
 
         // Step 5: Verify no pending rewards (all claimed automatically)
-        uint256 availableRewards = xpManager.getAvailableERC20Reward(user);
+        uint256 availableRewards = xpManager.calculateAvailableERC20Reward(user);
         assertEq(availableRewards, 0, "No pending rewards should remain");
 
         // Step 6: Verify claim is marked as used
@@ -148,7 +148,7 @@ contract XPFlowTest is Test {
         assertEq(xpManager.getTotalXP(user), 500, "Should have 500 XP total");
 
         // Verify no pending rewards
-        assertEq(xpManager.getAvailableERC20Reward(user), 0, "No pending rewards should remain");
+        assertEq(xpManager.calculateAvailableERC20Reward(user), 0, "No pending rewards should remain");
 
         vm.stopPrank();
     }
