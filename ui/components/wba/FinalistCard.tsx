@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useContext, memo, useState, useEffect } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import useWindowSize from '@/lib/team/use-window-size'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { Finalist } from '@/components/wba/Finalist'
 import NumberStepper from '../layout/NumberStepper'
@@ -25,6 +26,7 @@ const FinalistCardContent = memo(
     isVotingPeriod,
     ineligible,
   }: any) => {
+    const { isMobile } = useWindowSize()
     return (
       <div
         id="card-container"
@@ -41,11 +43,15 @@ const FinalistCardContent = memo(
             />
             <div className="flex flex-col">
               <Link href={`/citizen/${finalist?.citizenId}`} passHref>
-                <h1 className="font-GoodTimes">{finalist?.name || ''}</h1>
+                <h1 className={`font-GoodTimes ${isMobile && 'text-xs'}`}>
+                  {finalist?.name || ''}
+                </h1>
               </Link>
               <div className="flex flex-row">
                 <StandardButton
-                  className={`gradient-2 w-fit font-[14px] mr-4`}
+                  className={`gradient-2 w-fit font-[14px] mr-${
+                    isMobile ? 2 : 4
+                  }`}
                   link={finalist?.videoUrl}
                   onClick={(e: any) => {
                     e.stopPropagation()
@@ -53,7 +59,7 @@ const FinalistCardContent = memo(
                   hoverEffect={false}
                   target={'_blank'}
                 >
-                  <p className="text-[14px]">Video Response</p>
+                  <p className="text-[14px]">Video{!isMobile && ' Response'}</p>
                 </StandardButton>
                 <StandardButton
                   className={`gradient-2 w-fit font-[14px] mr-4`}
@@ -64,7 +70,9 @@ const FinalistCardContent = memo(
                   hoverEffect={false}
                   target={'_blank'}
                 >
-                  <p className="text-[14px]">Written Response</p>
+                  <p className="text-[14px]">
+                    Written{!isMobile && ' Response'}
+                  </p>
                 </StandardButton>
               </div>
             </div>
