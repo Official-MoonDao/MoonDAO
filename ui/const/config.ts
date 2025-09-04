@@ -412,12 +412,12 @@ export const XP_ORACLE_ADDRESSES: Index = {
   sepolia: '0x755D48e6C3744B723bd0326C57F99A92a3Ca3287',
 }
 
-export const XP_PROXY_ADDRESSES: Index = {
+export const XP_MANAGER_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0xFa60d86C2dFbA7a69f7938C21537f4dA76292167',
 }
 
-export const XP_MANAGER_ADDRESSES: Index = {
+export const XP_IMPLEMENTATION_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0xf78f0f23Cd74CfAb433F1701A398eb2f5248b1cD',
 }
