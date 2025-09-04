@@ -161,9 +161,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
           }
           description=""
         >
-          <div className="flex flex-row w-full">
-            <div className="px-8 bg-black/20 backdrop-blur-sm border border-white/10 lg:p-8 rounded-[2vmax] md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1000px]">
-              <div className="flex p-2 pb-0 flex-row w-full justify-between max-w-[600px] items-start">
+          <div className="flex flex-row w-full justify-center">
+            <div className="px-8 bg-black/20 backdrop-blur-sm border border-white/10 lg:p-8 rounded-[2vmax] md:m-5 mb-0 md:mb-0 flex flex-col w-full max-w-[800px]">
+              <div className="flex p-2 pb-0 flex-row w-full justify-between items-start">
                 <Steps
                   className="mb-4 w-[300px] sm:w-[600px] lg:max-w-[900px] md:-ml-16 -ml-10"
                   steps={['Design', 'Profile', 'Checkout']}
@@ -200,7 +200,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   title="Team Profile"
                   description="Please complete your team profile by filling out the form below."
                 >
-                  <div className="w-full max-w-[900px] bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden relative">
+                  <div className="w-full bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden relative">
                     <Widget
                       className="w-full"
                       id={

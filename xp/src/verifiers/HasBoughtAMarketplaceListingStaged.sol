@@ -72,7 +72,7 @@ contract HasBoughtAMarketplaceListingStaged is XPOracleVerifier, StagedXPVerifie
 
     /**
      * @dev Implementation of the abstract _checkStageEligibility function
-     * @dev Uses your existing oracle backend format with minPurchases
+     * @dev Uses your existing oracle backend format with purchases
      * @param user Address of the user
      * @param context Raw context data from your existing backend
      * @return eligible Whether the user is eligible
@@ -85,18 +85,20 @@ contract HasBoughtAMarketplaceListingStaged is XPOracleVerifier, StagedXPVerifie
         override
         returns (bool eligible, uint256 stageIndex, uint256 xpAmount)
     {
-        (uint256 minPurchases,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+
+        (uint256 purchases,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // Find which stage this minPurchases corresponds to
-        stageIndex = _findStageByThreshold(minPurchases);
+        // Find which stage this purchases corresponds to
+        stageIndex = _findStageByThreshold(purchases);
+
         if (stageIndex == type(uint256).max) {
             return (false, 0, 0); // No stage matches this threshold
         }
 
         // Verify oracle proof using your existing backend format
         _verifyOracleProof(
-            user, keccak256(abi.encode(minPurchases)), stages[stageIndex].xpAmount, validAfterTs, validBefore, signature
+            user, keccak256(abi.encode(purchases)), stages[stageIndex].xpAmount, validAfterTs, validBefore, signature
         );
 
         return (true, stageIndex, stages[stageIndex].xpAmount);
@@ -114,11 +116,11 @@ contract HasBoughtAMarketplaceListingStaged is XPOracleVerifier, StagedXPVerifie
         override(IXPVerifier, StagedXPVerifier)
         returns (bytes32)
     {
-        (uint256 minPurchases, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
+        (uint256 purchases, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
         // Use your original claimId format for backwards compatibility
-        bytes32 contextHash = keccak256(abi.encode(minPurchases, amount, validAfterTs, validBefore));
+        bytes32 contextHash = keccak256(abi.encode(purchases, amount, validAfterTs, validBefore));
         return keccak256(abi.encodePacked(address(this), user, contextHash));
     }
 
@@ -135,31 +137,21 @@ contract HasBoughtAMarketplaceListingStaged is XPOracleVerifier, StagedXPVerifie
         override
         returns (bool eligible, uint256 userMetric)
     {
-        (uint256 minPurchases,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+        (uint256 purchases,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // For bulk claims, the minPurchases in context represents the user's actual purchase count
+        // For bulk claims, the purchases in context represents the user's actual purchase count
         // Verify oracle proof using your existing backend format
         _verifyOracleProof(
             user,
-            keccak256(abi.encode(minPurchases)),
+            keccak256(abi.encode(purchases)),
             0, // XP amount not used in verification, will be calculated during bulk claim
             validAfterTs,
             validBefore,
             signature
         );
 
-        return (true, minPurchases);
-    }
-
-    /**
-     * @notice Set the XPManager address (only callable by owner)
-     * @param _xpManager Address of the XPManager contract
-     */
-    function setXPManager(address _xpManager) external override onlyOwner {
-        require(_xpManager != address(0), "Invalid XPManager address");
-        xpManager = _xpManager;
-        emit XPManagerSet(_xpManager);
+        return (true, purchases);
     }
 
     /**

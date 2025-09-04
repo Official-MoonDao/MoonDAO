@@ -5,7 +5,7 @@ import "./XPOracleVerifier.sol";
 
 /// @title HasJoinedATeam
 /// @notice Verifier that checks if a user has joined at least one team on MoonDAO (off-chain via oracle)
-/// @dev Context: abi.encode(uint256 minTeams, uint256 xpAmount, uint256 validAfter, uint256 validBefore, bytes signature)
+/// @dev Context: abi.encode(uint256 teamsJoined, uint256 xpAmount, uint256 validAfter, uint256 validBefore, bytes signature)
 contract HasJoinedATeam is XPOracleVerifier {
     uint256 public xpPerClaim;
 
@@ -22,21 +22,21 @@ contract HasJoinedATeam is XPOracleVerifier {
     }
 
     function isEligible(address user, bytes calldata context) external view returns (bool eligible, uint256 xpAmount) {
-        (uint256 minTeams,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+        (uint256 teamsJoined,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // The oracle enforces that the given `user` has joined at least `minTeams` teams
-        _verifyOracleProof(user, keccak256(abi.encode(minTeams)), xpPerClaim, validAfterTs, validBefore, signature);
+        // The oracle enforces that the given `user` has joined at least `teamsJoined` teams
+        _verifyOracleProof(user, keccak256(abi.encode(teamsJoined)), xpPerClaim, validAfterTs, validBefore, signature);
 
         eligible = true;
         xpAmount = xpPerClaim;
     }
 
     function claimId(address user, bytes calldata context) external view returns (bytes32) {
-        (uint256 minTeams, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
+        (uint256 teamsJoined, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
         // Keep amount in the claimId for backwards compatibility even if ignored
-        bytes32 contextHash = keccak256(abi.encode(minTeams, amount, validAfterTs, validBefore));
+        bytes32 contextHash = keccak256(abi.encode(teamsJoined, amount, validAfterTs, validBefore));
         return keccak256(abi.encodePacked(address(this), user, contextHash));
     }
 

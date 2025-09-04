@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title HasContributedStaged
 /// @notice Verifier that awards staged XP based on contribution milestones
-/// @dev Context: abi.encode(uint256 minContributions, uint256 xpAmount, uint256 validAfter, uint256 validBefore, bytes signature)
+/// @dev Context: abi.encode(uint256 contributions, uint256 xpAmount, uint256 validAfter, uint256 validBefore, bytes signature)
 contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
     constructor(address _oracle) XPOracleVerifier(_oracle) {
         // Initialize default contribution stages
@@ -17,7 +17,6 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
         _addStage(10, 50); // 10 contributions = 75 XP (total: 120 XP)
         _addStage(25, 100); // 25 contributions = 150 XP (total: 270 XP)
         _addStage(50, 300); // 50 contributions = 300 XP (total: 570 XP)
-        _addStage(100, 500); // 100 contributions = 500 XP (total: 1070 XP)
     }
 
     // Admin functions - using inherited onlyOwner modifier from XPOracleVerifier -> Ownable
@@ -72,7 +71,7 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
 
     /**
      * @dev Implementation of the abstract _checkStageEligibility function
-     * @dev Uses your existing oracle backend format with minContributions
+     * @dev Uses your existing oracle backend format with contributions
      * @param user Address of the user
      * @param context Raw context data from your existing backend
      * @return eligible Whether the user is eligible
@@ -85,11 +84,11 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
         override
         returns (bool eligible, uint256 stageIndex, uint256 xpAmount)
     {
-        (uint256 minContributions,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+        (uint256 contributions,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // Find which stage this minContributions corresponds to
-        stageIndex = _findStageByThreshold(minContributions);
+        // Find which stage this contributions corresponds to
+        stageIndex = _findStageByThreshold(contributions);
         if (stageIndex == type(uint256).max) {
             return (false, 0, 0); // No stage matches this threshold
         }
@@ -97,7 +96,7 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
         // Verify oracle proof using your existing backend format
         _verifyOracleProof(
             user,
-            keccak256(abi.encode(minContributions)),
+            keccak256(abi.encode(contributions)),
             stages[stageIndex].xpAmount,
             validAfterTs,
             validBefore,
@@ -119,11 +118,11 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
         override(IXPVerifier, StagedXPVerifier)
         returns (bytes32)
     {
-        (uint256 minContributions, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
+        (uint256 contributions, uint256 amount, uint256 validAfterTs, uint256 validBefore,) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
         // Use your original claimId format for backwards compatibility
-        bytes32 contextHash = keccak256(abi.encode(minContributions, amount, validAfterTs, validBefore));
+        bytes32 contextHash = keccak256(abi.encode(contributions, amount, validAfterTs, validBefore));
         return keccak256(abi.encodePacked(address(this), user, contextHash));
     }
 
@@ -140,31 +139,21 @@ contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
         override
         returns (bool eligible, uint256 userMetric)
     {
-        (uint256 minContributions,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
+        (uint256 contributions,, uint256 validAfterTs, uint256 validBefore, bytes memory signature) =
             abi.decode(context, (uint256, uint256, uint256, uint256, bytes));
 
-        // For bulk claims, the minContributions in context represents the user's actual contribution count
+        // For bulk claims, the contributions in context represents the user's actual contribution count
         // Verify oracle proof using your existing backend format
         _verifyOracleProof(
             user,
-            keccak256(abi.encode(minContributions)),
+            keccak256(abi.encode(contributions)),
             0, // XP amount not used in verification, will be calculated during bulk claim
             validAfterTs,
             validBefore,
             signature
         );
 
-        return (true, minContributions);
-    }
-
-    /**
-     * @notice Set the XPManager address (only callable by owner)
-     * @param _xpManager Address of the XPManager contract
-     */
-    function setXPManager(address _xpManager) external override onlyOwner {
-        require(_xpManager != address(0), "Invalid XPManager address");
-        xpManager = _xpManager;
-        emit XPManagerSet(_xpManager);
+        return (true, contributions);
     }
 
     /**

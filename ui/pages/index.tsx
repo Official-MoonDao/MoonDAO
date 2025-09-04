@@ -1,3 +1,8 @@
+import CitizenTableABI from 'const/abis/CitizenTable.json'
+import JobTableABI from 'const/abis/JobBoardTable.json'
+import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
+import ProjectTableABI from 'const/abis/ProjectTable.json'
+import TeamTableABI from 'const/abis/TeamTable.json'
 import {
   CITIZEN_TABLE_ADDRESSES,
   DEFAULT_CHAIN_V5,
@@ -7,22 +12,18 @@ import {
   TEAM_TABLE_ADDRESSES,
 } from 'const/config'
 import { blockedProjects } from 'const/whitelist'
-import CitizenTableABI from 'const/abis/CitizenTable.json'
-import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
-import JobTableABI from 'const/abis/JobBoardTable.json'
-import TeamTableABI from 'const/abis/TeamTable.json'
-import ProjectTableABI from 'const/abis/ProjectTable.json'
+import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
-import Head from 'next/head'
+import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { getAUMHistory, getMooneyPrice } from '@/lib/coinstats'
+import { getCitizensLocationData } from '@/lib/map'
 import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
-import { getContract, readContract } from 'thirdweb'
 import { calculateARRFromTransfers } from '@/lib/treasury/arr'
 import Callout1 from '../components/home/Callout1'
 import Callout2 from '../components/home/Callout2'
@@ -147,7 +148,7 @@ export async function getStaticProps() {
     try {
       const chain = DEFAULT_CHAIN_V5
       const chainSlug = getChainSlug(chain)
-      
+
       const citizenTableContract = getContract({
         client: serverClient,
         address: CITIZEN_TABLE_ADDRESSES[chainSlug],
@@ -215,7 +216,11 @@ export async function getStaticProps() {
         ),
         queryTable(
           chain,
-          `SELECT * FROM ${marketplaceTableName} ORDER BY id DESC LIMIT 10`
+          `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${Math.floor(
+            Date.now() / 1000
+          )}) AND (endTime = 0 OR endTime >= ${Math.floor(
+            Date.now() / 1000
+          )}) ORDER BY id DESC LIMIT 10`
         ),
         queryTable(
           chain,
@@ -225,7 +230,7 @@ export async function getStaticProps() {
         ),
         queryTable(
           chain,
-          `SELECT * FROM ${teamTableName} ORDER BY id DESC LIMIT 10`
+          `SELECT * FROM ${teamTableName} ORDER BY id DESC`
         ),
         queryTable(chain, `SELECT * FROM ${projectTableName} ORDER BY id DESC`),
       ])
@@ -260,13 +265,19 @@ export async function getStaticProps() {
   }
 
   // Use Promise.allSettled to run all operations in parallel with individual error handling
-  const [transferResult, contractResult, aumResult, mooneyPriceResult] =
-    await Promise.allSettled([
-      allTransferData(),
-      contractOperations(),
-      getAUMData(),
-      getMooneyPriceData(),
-    ])
+  const [
+    transferResult,
+    contractResult,
+    aumResult,
+    mooneyPriceResult,
+    citizensLocationResult,
+  ] = await Promise.allSettled([
+    allTransferData(),
+    contractOperations(),
+    getAUMData(),
+    getMooneyPriceData(),
+    getCitizensLocationData(),
+  ])
 
   // Extract results with fallbacks and proper type handling
   if (transferResult.status === 'fulfilled') {
@@ -325,16 +336,12 @@ export async function getStaticProps() {
     }
 
     // Process teams data for home page display
-    filteredTeams = teams.filter((team: any) => team.id && team.name)
+    filteredTeams = teams || []
+  }
 
-    // Process citizens data for map display
-    citizensLocationData = citizens
-      .filter((citizen: any) => citizen.location)
-      .map((citizen: any) => ({
-        name: citizen.name || 'Anonymous',
-        location: citizen.location,
-        bio: citizen.bio || '',
-      }))
+  // Get citizens location data from the refactored function
+  if (citizensLocationResult.status === 'fulfilled') {
+    citizensLocationData = citizensLocationResult.value
   }
 
   if (aumResult.status === 'fulfilled') {
