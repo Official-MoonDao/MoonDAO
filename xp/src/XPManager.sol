@@ -9,6 +9,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IXPVerifier.sol";
 import "./interfaces/IStagedXPVerifier.sol";
 import "./interfaces/IERC5643Like.sol";
+import "./libraries/XPLevelsLib.sol";
+import "./libraries/ERC20RewardsLib.sol";
+import "./libraries/ProofManagementLib.sol";
 
 contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
@@ -24,25 +27,11 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     mapping(address => mapping(uint256 => bool)) public userVerifierClaims; // user => verifierId => hasClaimed
     mapping(address => uint256[]) public userClaimedVerifiers; // user => array of claimed verifier IDs
 
-    // ERC20 Rewards system - direct conversion rate
-    struct ERC20RewardConfig {
-        address tokenAddress;
-        uint256 conversionRate; // How many ERC20 tokens per 1 XP (with decimals)
-        bool active;
-    }
-
-    // XP Level system
-    struct XPLevel {
-        uint256 xpThreshold;
-        uint256 level;
-        bool active;
-    }
-
     // Single ERC20 reward configuration
-    ERC20RewardConfig private erc20RewardConfig;
+    ERC20RewardsLib.ERC20RewardConfig private erc20RewardConfig;
 
     // XP Levels configuration
-    XPLevel[] private xpLevels;
+    XPLevelsLib.XPLevel[] private xpLevels;
 
     // Track claimed ERC20 rewards per user
     mapping(address => uint256) public claimedERC20Rewards; // user => total claimed amount
@@ -143,22 +132,8 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
      * @param levels Array of level numbers (must match thresholds length)
      */
     function setXPLevels(uint256[] calldata thresholds, uint256[] calldata levels) external onlyOwner {
-        require(thresholds.length == levels.length, "Arrays length mismatch");
-        require(thresholds.length > 0, "No levels provided");
-
-        // Validate thresholds are in ascending order
-        for (uint256 i = 1; i < thresholds.length; i++) {
-            require(thresholds[i] > thresholds[i - 1], "Thresholds must be ascending");
-        }
-
-        // Clear existing levels
-        delete xpLevels;
-
-        // Add new levels
-        for (uint256 i = 0; i < thresholds.length; i++) {
-            xpLevels.push(XPLevel({xpThreshold: thresholds[i], level: levels[i], active: true}));
-        }
-
+        XPLevelsLib.validateLevels(thresholds, levels);
+        XPLevelsLib.setLevelsFromArrays(xpLevels, thresholds, levels);
         emit XPLevelsSet(thresholds, levels);
     }
 
@@ -169,19 +144,7 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
      * @return active Whether levels are configured
      */
     function getXPLevels() external view returns (uint256[] memory thresholds, uint256[] memory levels, bool active) {
-        if (xpLevels.length == 0) {
-            return (new uint256[](0), new uint256[](0), false);
-        }
-
-        thresholds = new uint256[](xpLevels.length);
-        levels = new uint256[](xpLevels.length);
-
-        for (uint256 i = 0; i < xpLevels.length; i++) {
-            thresholds[i] = xpLevels[i].xpThreshold;
-            levels[i] = xpLevels[i].level;
-        }
-
-        return (thresholds, levels, true);
+        return XPLevelsLib.getLevelsAsArrays(xpLevels);
     }
 
     /**
@@ -199,22 +162,7 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
      * @return Level for the given XP amount (0 if no levels configured)
      */
     function getLevelForXP(uint256 xpAmount) external view returns (uint256) {
-        if (xpLevels.length == 0) {
-            return 0;
-        }
-
-        uint256 level = 0;
-
-        // Find the highest level for the given XP amount
-        for (uint256 i = 0; i < xpLevels.length; i++) {
-            if (xpLevels[i].active && xpAmount >= xpLevels[i].xpThreshold) {
-                level = xpLevels[i].level;
-            } else {
-                break; // Thresholds are in ascending order, so we can break here
-            }
-        }
-
-        return level;
+        return XPLevelsLib.getLevelForXP(xpLevels, xpAmount);
     }
 
     /**
@@ -225,28 +173,7 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
      * @return xpProgress Current XP progress toward next level
      */
     function getNextLevelInfo(address user) external view returns (uint256 nextLevel, uint256 xpRequired, uint256 xpProgress) {
-        if (xpLevels.length == 0) {
-            return (0, 0, 0);
-        }
-
-        uint256 userTotalXP = userXP[user];
-        uint256 currentLevel = 0;
-
-        // Find current level and next level
-        for (uint256 i = 0; i < xpLevels.length; i++) {
-            if (xpLevels[i].active && userTotalXP >= xpLevels[i].xpThreshold) {
-                currentLevel = xpLevels[i].level;
-            } else {
-                // This is the next level
-                nextLevel = xpLevels[i].level;
-                xpRequired = xpLevels[i].xpThreshold;
-                xpProgress = userTotalXP;
-                return (nextLevel, xpRequired, xpProgress);
-            }
-        }
-
-        // User is at max level
-        return (0, 0, 0);
+        return XPLevelsLib.getNextLevelInfo(xpLevels, userXP[user]);
     }
 
     /**
@@ -282,17 +209,7 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
      * @return Available reward amount
      */
     function calculateAvailableERC20Reward(address user) public view returns (uint256) {
-        if (!erc20RewardConfig.active) {
-            return 0;
-        }
-
-        uint256 totalEarned = (userXP[user] * erc20RewardConfig.conversionRate);
-        uint256 alreadyClaimed = claimedERC20Rewards[user];
-        
-        if (totalEarned > alreadyClaimed) {
-            return totalEarned - alreadyClaimed;
-        }
-        return 0;
+        return ERC20RewardsLib.calculateAvailableReward(erc20RewardConfig, userXP, claimedERC20Rewards, user);
     }
 
     /**
@@ -311,7 +228,7 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
      * @return active Whether the config is active
      */
     function getERC20RewardConfig() external view returns (address tokenAddress, uint256 conversionRate, bool active) {
-        ERC20RewardConfig storage config = erc20RewardConfig;
+        ERC20RewardsLib.ERC20RewardConfig storage config = erc20RewardConfig;
         return (config.tokenAddress, config.conversionRate, config.active);
     }
 
@@ -383,15 +300,7 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         require(xpAmount > 0, "No XP to claim");
 
         // Ensure sufficient ERC20 balance to cover the payout that will be triggered by this claim
-        if (erc20RewardConfig.active) {
-            uint256 newTotalEarned = ((userXP[user] + xpAmount) * erc20RewardConfig.conversionRate);
-            uint256 alreadyClaimed = claimedERC20Rewards[user];
-            if (newTotalEarned > alreadyClaimed) {
-                uint256 projectedPayout = newTotalEarned - alreadyClaimed;
-                uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
-                require(bal >= projectedPayout, "Insufficient ERC20 balance");
-            }
-        }
+        require(ERC20RewardsLib.checkSufficientBalance(erc20RewardConfig, userXP, claimedERC20Rewards, user, xpAmount), "Insufficient ERC20 balance");
 
         // Mark as used
         usedProofs[claimId] = true;
@@ -455,15 +364,7 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         require(totalXP > 0, "No XP to claim");
 
         // Ensure sufficient ERC20 balance to cover the payout that will be triggered by this claim
-        if (erc20RewardConfig.active) {
-            uint256 newTotalEarned = ((userXP[user] + totalXP) * erc20RewardConfig.conversionRate);
-            uint256 alreadyClaimed = claimedERC20Rewards[user];
-            if (newTotalEarned > alreadyClaimed) {
-                uint256 projectedPayout = newTotalEarned - alreadyClaimed;
-                uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
-                require(bal >= projectedPayout, "Insufficient ERC20 balance");
-            }
-        }
+        require(ERC20RewardsLib.checkSufficientBalance(erc20RewardConfig, userXP, claimedERC20Rewards, user, totalXP), "Insufficient ERC20 balance");
 
         // Mark as used
         usedProofs[claimId] = true;
@@ -561,23 +462,7 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
      * @return Current level
      */
     function _getUserLevelInternal(address user) internal view returns (uint256) {
-        if (xpLevels.length == 0) {
-            return 0;
-        }
-
-        uint256 userTotalXP = userXP[user];
-        uint256 currentLevel = 0;
-
-        // Find the highest level the user qualifies for
-        for (uint256 i = 0; i < xpLevels.length; i++) {
-            if (xpLevels[i].active && userTotalXP >= xpLevels[i].xpThreshold) {
-                currentLevel = xpLevels[i].level;
-            } else {
-                break; // Thresholds are in ascending order, so we can break here
-            }
-        }
-
-        return currentLevel;
+        return XPLevelsLib.getLevelForXP(xpLevels, userXP[user]);
     }
 
     /**
@@ -585,21 +470,9 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
      * @param user Address of the user
      */
     function _claimERC20Rewards(address user) internal {
-        if (!erc20RewardConfig.active) {
-            return;
-        }
-
-        uint256 availableReward = calculateAvailableERC20Reward(user);
-        if (availableReward > 0) {
-            uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
-            require(bal >= availableReward, "Insufficient ERC20 balance");
-            // Update claimed amount
-            claimedERC20Rewards[user] += availableReward;
-            
-            // Transfer tokens
-            IERC20(erc20RewardConfig.tokenAddress).safeTransfer(user, availableReward);
-            
-            emit ERC20RewardClaimed(user, erc20RewardConfig.tokenAddress, availableReward);
+        uint256 claimedAmount = ERC20RewardsLib.claimRewards(erc20RewardConfig, userXP, claimedERC20Rewards, user);
+        if (claimedAmount > 0) {
+            emit ERC20RewardClaimed(user, erc20RewardConfig.tokenAddress, claimedAmount);
         }
     }
 
@@ -631,26 +504,9 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
         delete userClaimedVerifiers[user];
         
         // Reset all used proofs for this user
-        _resetAllUserProofs(user);
+        ProofManagementLib.resetAllUserProofs(usedProofs, verifiers, user);
         
         emit UserReset(user, oldXP, claimedVerifiersCount);
-    }
-
-    /**
-     * @dev Internal function to reset ALL used proofs for a user
-     * @dev Simplified approach to avoid gas issues
-     * @param user Address of the user to reset all proofs for
-     */
-    function _resetAllUserProofs(address user) internal {
-        // Reset only basic patterns to avoid gas issues
-        for (uint256 i = 1; i <= 5; i++) { // Limit to first 5 verifiers
-            if (verifiers[i] != address(0)) {
-                bytes32 basicClaimId = keccak256(abi.encodePacked(verifiers[i], user, keccak256(abi.encode(uint256(0)))));
-                usedProofs[basicClaimId] = false;
-                bytes32 emptyClaimId = keccak256(abi.encodePacked(verifiers[i], user, bytes32(0)));
-                usedProofs[emptyClaimId] = false;
-            }
-        }
     }
 
     /**
@@ -660,26 +516,7 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
      */
     function resetVerifierProofs(uint256 verifierId) external onlyOwner {
         require(verifiers[verifierId] != address(0), "Verifier not found");
-        
-        address verifierAddress = verifiers[verifierId];
-        
-        // Reset basic patterns only
-        bytes32[] memory contexts = new bytes32[](3);
-        contexts[0] = keccak256(abi.encode(uint256(0)));
-        contexts[1] = keccak256(abi.encode(uint256(100)));
-        contexts[2] = bytes32(0);
-        
-        address[] memory users = new address[](3);
-        users[0] = address(0x1);
-        users[1] = address(0x2);
-        users[2] = address(0x3);
-        
-        for (uint256 c = 0; c < contexts.length; c++) {
-            for (uint256 u = 0; u < users.length; u++) {
-                bytes32 claimId = keccak256(abi.encodePacked(verifierAddress, users[u], contexts[c]));
-                usedProofs[claimId] = false;
-            }
-        }
+        ProofManagementLib.resetVerifierProofs(usedProofs, verifiers[verifierId]);
     }
 
     /**
@@ -691,25 +528,6 @@ contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     function resetVerifierProofsForUser(uint256 verifierId, address user) external onlyOwner {
         require(verifiers[verifierId] != address(0), "Verifier not found");
         require(user != address(0), "Invalid user address");
-        
-        address verifierAddress = verifiers[verifierId];
-        
-        // Reset basic context patterns
-        bytes32[] memory contexts = new bytes32[](4);
-        contexts[0] = keccak256(abi.encode(uint256(0)));
-        contexts[1] = keccak256(abi.encode(uint256(100)));
-        contexts[2] = keccak256(abi.encode(uint256(1000)));
-        contexts[3] = bytes32(0);
-        
-        for (uint256 c = 0; c < contexts.length; c++) {
-            bytes32 claimId = keccak256(abi.encodePacked(verifierAddress, user, contexts[c]));
-            usedProofs[claimId] = false;
-            
-            // Reset bulk claim patterns for staged verifiers (limited stages)
-            for (uint256 stage = 0; stage <= 3; stage++) {
-                bytes32 bulkClaimId = keccak256(abi.encodePacked(verifierAddress, user, stage, contexts[c]));
-                usedProofs[bulkClaimId] = false;
-            }
-        }
+        ProofManagementLib.resetVerifierProofsForUser(usedProofs, verifiers[verifierId], user);
     }
 }
