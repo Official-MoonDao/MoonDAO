@@ -135,7 +135,7 @@ contract Config is Script {
         POSITION_MANAGERS[BASE] = baseJson.readAddress('.PositionManager');
         POSITION_MANAGERS[POLYGON] = 0x1Ec2eBf4F37E7363FDfe3551602425af0B3ceef9;
         POSITION_MANAGERS[ARB_SEP] = 0xAc631556d3d4019C95769033B5E719dD77124BAc;
-        POSITION_MANAGERS[SEP] = 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4;
+        POSITION_MANAGERS[SEP] = sepJson.readAddress('.PositionManager');
 
         V4_ROUTERS[MAINNET] = 0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af;
         V4_ROUTERS[ARBITRUM] = arbJson.readAddress(".UniswapV4Router");
