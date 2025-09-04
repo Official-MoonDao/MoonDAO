@@ -35,79 +35,50 @@ contract MockERC20 is ERC20 {
 
 // XPManagerV2 with referral XP sharing functionality
 contract XPManagerV2 is XPManager {
-    // NEW: Referral XP sharing system (added in upgrade)
-    struct ReferralXPConfig {
-        uint256 percentage; // Basis points (e.g., 1000 = 10%)
+    struct ReferralConfig {
+        uint128 percentage; // Basis points (e.g., 1000 = 10%)
         bool active;
-        uint256 maxDepth; // How many levels deep to share
+        uint128 maxDepth; // How many levels deep to share
     }
 
-    ReferralXPConfig public referralXPConfig;
-    mapping(address => uint256) public referralXP; // user => XP earned from referrals
-    address public citizenReferralsContract; // Reference to CitizenReferralsStaged contract
+    ReferralConfig public referralConfig;
+    mapping(address => uint256) public referralXP;
+    address public citizenReferralsContract;
 
-    // NEW: Referral events
-    event ReferralXPConfigSet(uint256 percentage, bool active, uint256 maxDepth);
-    event CitizenReferralsContractSet(address indexed oldContract, address indexed newContract);
+    // Optimized events - removed some parameters to save space
+    event ReferralConfigSet(uint128 percentage, bool active, uint128 maxDepth);
+    event CitizenReferralsSet(address indexed oldContract, address indexed newContract);
     event ReferralXPEarned(address indexed referrer, address indexed referredUser, uint256 xpAmount);
 
-    /**
-     * @notice Set referral XP sharing configuration
-     * @param _percentage Percentage in basis points (1000 = 10%)
-     * @param _active Whether referral sharing is active
-     * @param _maxDepth Maximum referral depth (0 = only direct referrals)
-     */
-    function setReferralXPConfig(uint256 _percentage, bool _active, uint256 _maxDepth) external onlyOwner {
-        require(_percentage <= 10000, "Percentage cannot exceed 100%");
-        referralXPConfig = ReferralXPConfig(_percentage, _active, _maxDepth);
-        emit ReferralXPConfigSet(_percentage, _active, _maxDepth);
+    function setReferralConfig(uint128 _percentage, bool _active, uint128 _maxDepth) external onlyOwner {
+        require(_percentage <= 10000, "Invalid percentage");
+        referralConfig = ReferralConfig(_percentage, _active, _maxDepth);
+        emit ReferralConfigSet(_percentage, _active, _maxDepth);
     }
 
-    /**
-     * @notice Set the CitizenReferralsStaged contract address
-     * @param _citizenReferralsContract Address of the CitizenReferralsStaged contract
-     */
-    function setCitizenReferralsContract(address _citizenReferralsContract) external onlyOwner {
-        require(_citizenReferralsContract != address(0), "Invalid contract address");
+    function setCitizenReferrals(address _contract) external onlyOwner {
+        require(_contract != address(0), "Invalid address");
         address oldContract = citizenReferralsContract;
-        citizenReferralsContract = _citizenReferralsContract;
-        emit CitizenReferralsContractSet(oldContract, _citizenReferralsContract);
+        citizenReferralsContract = _contract;
+        emit CitizenReferralsSet(oldContract, _contract);
     }
 
-
-
-    /**
-     * @notice Get referral information for a user
-     * @param user Address of the user
-     * @return referrer Address of the referrer (from CitizenReferralsStaged)
-     * @return referralXPAmount Total XP earned from referrals
-     */
     function getReferralInfo(address user) external view returns (address referrer, uint256 referralXPAmount) {
-        if (citizenReferralsContract != address(0)) {
-            // Get referrer from CitizenReferralsStaged contract
-            referrer = ICitizenReferralsStaged(citizenReferralsContract).referredBy(user);
-        } else {
-            referrer = address(0);
-        }
+        referrer = citizenReferralsContract != address(0) 
+            ? ICitizenReferralsStaged(citizenReferralsContract).referredBy(user)
+            : address(0);
         return (referrer, referralXP[user]);
     }
 
-    /**
-     * @dev Internal function to grant XP - UPGRADED VERSION WITH REFERRAL SHARING
-     * @param user Address of the user
-     * @param amount XP to grant
-     */
     function _grantXP(address user, uint256 amount) internal override {
         uint256 oldLevel = _getUserLevelInternal(user);
-        
-        // Grant XP to the user
         userXP[user] += amount;
         
-        // NEW: Handle referral XP sharing if enabled
-        if (referralXPConfig.active && citizenReferralsContract != address(0)) {
+        // Handle referral sharing
+        if (referralConfig.active && citizenReferralsContract != address(0)) {
             address referrer = ICitizenReferralsStaged(citizenReferralsContract).referredBy(user);
             if (referrer != address(0)) {
-                uint256 referralAmount = (amount * referralXPConfig.percentage) / 10000;
+                uint256 referralAmount = (amount * referralConfig.percentage) / 10000;
                 if (referralAmount > 0) {
                     userXP[referrer] += referralAmount;
                     referralXP[referrer] += referralAmount;
@@ -118,10 +89,8 @@ contract XPManagerV2 is XPManager {
         }
         
         uint256 newLevel = _getUserLevelInternal(user);
-
         emit XPEarned(user, amount, userXP[user]);
         
-        // Emit level up event if user reached a new level
         if (newLevel > oldLevel) {
             emit LevelUp(user, newLevel, userXP[user]);
         }
@@ -232,10 +201,10 @@ contract XPManagerUpgradeTest is Test {
         vm.startPrank(owner);
         
         // Set referral config: 10% to referrer
-        xpManagerV2.setReferralXPConfig(1000, true, 0); // 10% to direct referrer only
+        xpManagerV2.setReferralConfig(1000, true, 0); // 10% to direct referrer only
         
         // Set the CitizenReferralsStaged contract address
-        xpManagerV2.setCitizenReferralsContract(address(citizenReferrals));
+        xpManagerV2.setCitizenReferrals(address(citizenReferrals));
         
         vm.stopPrank();
         
@@ -358,15 +327,15 @@ contract XPManagerUpgradeTest is Test {
         vm.startPrank(owner);
         
         // Test invalid percentage (>100%)
-        vm.expectRevert("Percentage cannot exceed 100%");
-        xpManagerV2.setReferralXPConfig(10001, true, 0);
+        vm.expectRevert("Invalid percentage");
+        xpManagerV2.setReferralConfig(10001, true, 0);
         
         // Test valid percentage
-        xpManagerV2.setReferralXPConfig(1000, true, 0); // 10%
+        xpManagerV2.setReferralConfig(1000, true, 0); // 10%
         
         // Test invalid CitizenReferralsStaged contract setup
-        vm.expectRevert("Invalid contract address");
-        xpManagerV2.setCitizenReferralsContract(address(0));
+        vm.expectRevert("Invalid address");
+        xpManagerV2.setCitizenReferrals(address(0));
         
         vm.stopPrank();
     }
