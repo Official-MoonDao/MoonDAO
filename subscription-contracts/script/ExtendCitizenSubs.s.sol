@@ -3,29 +3,29 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "../src/ERC5643Citizen.sol";
-import "../src/Whitelist.sol";
+import {MoonDAOCitizen} from "../src/ERC5643Citizen.sol";
+import {Whitelist} from "../src/Whitelist.sol";
 
 contract ExtendCitizenSubsScript is Script {
     address constant CITIZEN_CONTRACT = 0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002;
     address constant DISCOUNT_LIST_CONTRACT = 0x755D48e6C3744B723bd0326C57F99A92a3Ca3287;
-    address constant MULTISIG_ADDRESS = 0x29B0D7d7f0C88Ce0DF1De5888b37B90A6faF75cB;
+    address constant MULTISIG_ADDRESS = 0xB39d2874908F64dB33adde8b4739a9bFe83F9cFC;
     
     // Duration for subscription renewal (1 year in seconds)
     uint64 constant ONE_YEAR = 365 days;
     
-    uint256[] constant BLOCKED_CITIZENS = [48, 72, 140];
+    uint256[] BLOCKED_CITIZENS = [48, 72, 140];
     
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
         
         // Get contract instances
-        ERC5643Citizen citizenContract = ERC5643Citizen(CITIZEN_CONTRACT);
+        MoonDAOCitizen citizenContract = MoonDAOCitizen(CITIZEN_CONTRACT);
         Whitelist discountList = Whitelist(DISCOUNT_LIST_CONTRACT);
         
         console.log("Starting citizen subscription extension process...");
-        console.log("Blocked citizens (will be excluded): %s", vm.toString(BLOCKED_CITIZENS));
+        console.log("Blocked citizens (will be excluded): 48, 72, 140");
         
         // Step 1: Get all valid citizen token IDs (excluding blocked citizens)
         uint256[] memory validTokenIds = getAllValidCitizenTokenIds(citizenContract);
@@ -67,7 +67,7 @@ contract ExtendCitizenSubsScript is Script {
      * @param tokenId The token ID to check
      * @return isBlocked True if the token is blocked
      */
-    function isTokenBlocked(uint256 tokenId) internal pure returns (bool) {
+    function isTokenBlocked(uint256 tokenId) internal view returns (bool) {
         for (uint256 i = 0; i < BLOCKED_CITIZENS.length; i++) {
             if (BLOCKED_CITIZENS[i] == tokenId) {
                 return true;
@@ -81,7 +81,7 @@ contract ExtendCitizenSubsScript is Script {
      * @param citizenContract The ERC5643Citizen contract instance
      * @return validTokenIds Array of valid token IDs (excluding blocked citizens)
      */
-    function getAllValidCitizenTokenIds(ERC5643Citizen citizenContract) internal view returns (uint256[] memory) {
+    function getAllValidCitizenTokenIds(MoonDAOCitizen citizenContract) internal view returns (uint256[] memory) {
         uint256 maxTokens = 150; // Adjust this based on your expected token count
         uint256[] memory tempTokenIds = new uint256[](maxTokens);
         uint256 validCount = 0;
@@ -120,7 +120,7 @@ contract ExtendCitizenSubsScript is Script {
      * @param tokenIds Array of token IDs to process
      */
     function addCitizensToDiscountList(
-        ERC5643Citizen citizenContract, 
+        MoonDAOCitizen citizenContract, 
         Whitelist discountList, 
         uint256[] memory tokenIds
     ) internal {
@@ -137,7 +137,7 @@ contract ExtendCitizenSubsScript is Script {
      * @param tokenIds Array of token IDs to process
      */
     function renewAllCitizenSubscriptions(
-        ERC5643Citizen citizenContract, 
+        MoonDAOCitizen citizenContract, 
         uint256[] memory tokenIds
     ) internal {
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -157,7 +157,7 @@ contract ExtendCitizenSubsScript is Script {
      * @param tokenIds Array of token IDs to verify
      */
     function verifySubscriptionExtensions(
-        ERC5643Citizen citizenContract, 
+        MoonDAOCitizen citizenContract, 
         uint256[] memory tokenIds
     ) internal view {
         uint64 currentTime = uint64(block.timestamp);
@@ -184,7 +184,7 @@ contract ExtendCitizenSubsScript is Script {
      * @param tokenIds Array of token IDs to process
      */
     function removeCitizensFromDiscountList(
-        ERC5643Citizen citizenContract, 
+        MoonDAOCitizen citizenContract, 
         Whitelist discountList, 
         uint256[] memory tokenIds
     ) internal {
