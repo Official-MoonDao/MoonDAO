@@ -31,6 +31,7 @@ import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
+import viemChains from '@/lib/viem/viemChains'
 import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
 import TeamABI from '../../const/abis/Team.json'
 import Container from '../layout/Container'
@@ -412,6 +413,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
 
                           return await fundWallet(address, {
                             amount: String(roundedCost),
+                            chain: viemChains[chainSlug],
                           })
                         }
 
