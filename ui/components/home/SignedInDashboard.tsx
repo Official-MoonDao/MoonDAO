@@ -118,9 +118,21 @@ function getDaysLeft(proposal: any): number {
 
 // Function to count unique countries from location data
 function countUniqueCountries(locations: any[]): number {
-  if (!locations) return 0
-  const countries = new Set(locations.map((loc) => loc.country))
-  return countries.size
+  if (!locations || locations.length === 0) return 25
+  
+  try {
+    const countries = new Set(
+      locations
+        .map((loc) => loc.country || loc.formattedAddress?.split(',').pop()?.trim() || 'Unknown')
+        .filter(country => country && country !== 'Unknown' && country !== '')
+    )
+    
+    // Return fallback of 25 if no valid countries found
+    return countries.size > 0 ? countries.size : 25
+  } catch (error) {
+    console.error('Error counting countries:', error)
+    return 25
+  }
 }
 
 export default function SingedInDashboard({
