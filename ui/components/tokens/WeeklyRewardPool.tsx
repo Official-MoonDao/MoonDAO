@@ -344,7 +344,7 @@ export default function WeeklyRewardPool() {
       <div className="relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-bold text-transparent bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text">
+          <h3 className="text-lg font-bold">
             Weekly Reward Pool
           </h3>
         </div>
@@ -450,7 +450,7 @@ export default function WeeklyRewardPool() {
               }
               action={handleCheckIn}
               isDisabled={isCheckedIn}
-              className={`w-full py-4 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.01] shadow-lg ${
+              className={`w-full py-4 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.01] shadow-lg whitespace-nowrap ${
                 isCheckedIn
                   ? 'bg-gradient-to-r from-green-500 to-emerald-600 cursor-not-allowed shadow-green-500/25'
                   : 'bg-gradient-to-r from-blue-500 via-purple-600 to-pink-600 hover:from-blue-600 hover:via-purple-700 hover:to-pink-700 shadow-purple-500/25'

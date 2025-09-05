@@ -751,7 +751,7 @@ export default function SingedInDashboard({
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-4">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-white">
-                  Active Proposals
+                  Latest Proposals
                 </h3>
                 <StandardButton
                   className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
