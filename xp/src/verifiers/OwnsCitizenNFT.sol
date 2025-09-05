@@ -3,10 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IXPVerifier.sol";
-
-interface IERC5643Like {
-    function balanceOf(address owner) external view returns (uint256);
-}
+import "../interfaces/IERC5643Like.sol";
 
 /// @title OwnsCitizenNFT
 /// @notice Verifier that checks if a user owns a MoonDAO Citizen NFT

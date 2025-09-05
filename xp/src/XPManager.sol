@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IXPVerifier.sol";
 import "./interfaces/IStagedXPVerifier.sol";
+import "./interfaces/IERC5643Like.sol";
 
-contract XPManager is Ownable {
+contract XPManager is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     // User state
@@ -44,6 +47,9 @@ contract XPManager is Ownable {
     // Track claimed ERC20 rewards per user
     mapping(address => uint256) public claimedERC20Rewards; // user => total claimed amount
 
+    // Citizen NFT contract for citizenship verification
+    IERC5643Like public citizenNFT;
+
     // Events
     event XPEarned(address indexed user, uint256 xpAmount, uint256 totalXP);
     event VerifierRegistered(uint256 indexed id, address verifier);
@@ -55,10 +61,20 @@ contract XPManager is Ownable {
     event VerifierUpdated(uint256 indexed id, address oldVerifier, address newVerifier);
     event XPLevelsSet(uint256[] thresholds, uint256[] levels);
     event LevelUp(address indexed user, uint256 newLevel, uint256 totalXP);
+    event CitizenNFTAddressSet(address indexed oldAddress, address indexed newAddress);
 
-    constructor() Ownable(msg.sender) {
-        // No constructor parameters needed for pure XP system
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
+
+    function initialize() public initializer {
+        __Ownable_init();
+        __UUPSUpgradeable_init();
+        _transferOwnership(msg.sender);
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     /**
      * @notice Register a new verifier
@@ -108,6 +124,17 @@ contract XPManager is Ownable {
         require(erc20RewardConfig.active, "Config not active");
         erc20RewardConfig.active = false;
         emit ERC20RewardConfigDeactivated(erc20RewardConfig.tokenAddress);
+    }
+
+    /**
+     * @notice Set the citizen NFT contract address for citizenship verification
+     * @param citizenNFTAddress Address of the citizen NFT contract
+     */
+    function setCitizenNFTAddress(address citizenNFTAddress) external onlyOwner {
+        require(citizenNFTAddress != address(0), "Invalid citizen NFT address");
+        address oldAddress = address(citizenNFT);
+        citizenNFT = IERC5643Like(citizenNFTAddress);
+        emit CitizenNFTAddressSet(oldAddress, citizenNFTAddress);
     }
 
     /**
@@ -243,7 +270,7 @@ contract XPManager is Ownable {
     ) {
         (thresholds, levels, ) = this.getXPLevels();
         userLevel = this.getUserLevel(user);
-        currentUserXP = this.getTotalXP(user);
+        currentUserXP = userXP[user];
         (nextLevel, xpRequired, xpProgress) = this.getNextLevelInfo(user);
         
         return (thresholds, levels, userLevel, currentUserXP, nextLevel, xpRequired, xpProgress);
@@ -268,14 +295,6 @@ contract XPManager is Ownable {
         return 0;
     }
 
-    /**
-     * @notice Get available ERC20 rewards for a user
-     * @param user Address of the user
-     * @return Available reward amount
-     */
-    function getAvailableERC20Reward(address user) external view returns (uint256) {
-        return calculateAvailableERC20Reward(user);
-    }
 
     /**
      * @notice Get ERC20 reward configuration
@@ -284,8 +303,7 @@ contract XPManager is Ownable {
      * @return active Whether the config is active
      */
     function getERC20RewardConfig() external view returns (address tokenAddress, uint256 conversionRate, bool active) {
-        ERC20RewardConfig storage config = erc20RewardConfig;
-        return (config.tokenAddress, config.conversionRate, config.active);
+        return (erc20RewardConfig.tokenAddress, erc20RewardConfig.conversionRate, erc20RewardConfig.active);
     }
 
     /**
@@ -318,6 +336,18 @@ contract XPManager is Ownable {
     }
 
     /**
+     * @notice Check if a user is a citizen (owns at least one citizen NFT)
+     * @param user Address to check
+     * @return True if user is a citizen, false otherwise
+     */
+    function isCitizen(address user) public view returns (bool) {
+        if (address(citizenNFT) == address(0)) {
+            return false; // No citizen NFT contract set
+        }
+        return citizenNFT.balanceOf(user) > 0;
+    }
+
+    /**
      * @dev Internal function to handle XP claiming logic
      * @param user Address to credit XP to
      * @param conditionId ID of the verifier condition
@@ -326,6 +356,7 @@ contract XPManager is Ownable {
     function _claimXPInternal(address user, uint256 conditionId, bytes calldata context) internal {
         require(user != address(0), "Invalid user");
         require(verifiers[conditionId] != address(0), "Verifier not found");
+        require(isCitizen(user), "Only citizens can claim XP");
 
         IXPVerifier verifier = IXPVerifier(verifiers[conditionId]);
 
@@ -343,15 +374,7 @@ contract XPManager is Ownable {
         require(xpAmount > 0, "No XP to claim");
 
         // Ensure sufficient ERC20 balance to cover the payout that will be triggered by this claim
-        if (erc20RewardConfig.active) {
-            uint256 newTotalEarned = ((userXP[user] + xpAmount) * erc20RewardConfig.conversionRate);
-            uint256 alreadyClaimed = claimedERC20Rewards[user];
-            if (newTotalEarned > alreadyClaimed) {
-                uint256 projectedPayout = newTotalEarned - alreadyClaimed;
-                uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
-                require(bal >= projectedPayout, "Insufficient ERC20 balance");
-            }
-        }
+        _checkERC20Balance(user, xpAmount);
 
         // Mark as used
         usedProofs[claimId] = true;
@@ -396,6 +419,7 @@ contract XPManager is Ownable {
     function _claimBulkXPInternal(address user, uint256 conditionId, bytes calldata context) internal {
         require(user != address(0), "Invalid user");
         require(verifiers[conditionId] != address(0), "Verifier not found");
+        require(isCitizen(user), "Only citizens can claim XP");
 
         // Check if verifier supports bulk claiming
         IStagedXPVerifier stagedVerifier = IStagedXPVerifier(verifiers[conditionId]);
@@ -414,15 +438,7 @@ contract XPManager is Ownable {
         require(totalXP > 0, "No XP to claim");
 
         // Ensure sufficient ERC20 balance to cover the payout that will be triggered by this claim
-        if (erc20RewardConfig.active) {
-            uint256 newTotalEarned = ((userXP[user] + totalXP) * erc20RewardConfig.conversionRate);
-            uint256 alreadyClaimed = claimedERC20Rewards[user];
-            if (newTotalEarned > alreadyClaimed) {
-                uint256 projectedPayout = newTotalEarned - alreadyClaimed;
-                uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
-                require(bal >= projectedPayout, "Insufficient ERC20 balance");
-            }
-        }
+        _checkERC20Balance(user, totalXP);
 
         // Mark as used
         usedProofs[claimId] = true;
@@ -441,8 +457,6 @@ contract XPManager is Ownable {
 
         emit VerifierClaimed(user, conditionId, totalXP);
     }
-
-
 
     /**
      * @notice Get total XP for a user
@@ -481,6 +495,8 @@ contract XPManager is Ownable {
         return userClaimedVerifiers[user].length;
     }
 
+
+
     /**
      * @dev Internal function to record that a user has claimed from a verifier
      * @param user Address of the user
@@ -499,7 +515,7 @@ contract XPManager is Ownable {
      * @param user Address of the user
      * @param amount XP to grant
      */
-    function _grantXP(address user, uint256 amount) internal {
+    function _grantXP(address user, uint256 amount) internal virtual {
         uint256 oldLevel = _getUserLevelInternal(user);
         
         userXP[user] += amount;
@@ -537,6 +553,23 @@ contract XPManager is Ownable {
         }
 
         return currentLevel;
+    }
+
+    /**
+     * @dev Internal function to check ERC20 balance for projected payout
+     * @param user Address of the user
+     * @param additionalXP Additional XP that will be added
+     */
+    function _checkERC20Balance(address user, uint256 additionalXP) internal view {
+        if (!erc20RewardConfig.active) return;
+        
+        uint256 newTotalEarned = ((userXP[user] + additionalXP) * erc20RewardConfig.conversionRate);
+        uint256 alreadyClaimed = claimedERC20Rewards[user];
+        if (newTotalEarned > alreadyClaimed) {
+            uint256 projectedPayout = newTotalEarned - alreadyClaimed;
+            uint256 bal = IERC20(erc20RewardConfig.tokenAddress).balanceOf(address(this));
+            require(bal >= projectedPayout, "Insufficient ERC20 balance");
+        }
     }
 
     /**
@@ -589,87 +622,7 @@ contract XPManager is Ownable {
         // Clear the claimed verifiers array
         delete userClaimedVerifiers[user];
         
-        // Reset all used proofs for this user
-        _resetAllUserProofs(user);
-        
         emit UserReset(user, oldXP, claimedVerifiersCount);
-    }
-
-    /**
-     * @dev Internal function to reset ALL used proofs for a user
-     * @dev Simplified approach to avoid gas issues
-     * @param user Address of the user to reset all proofs for
-     */
-    function _resetAllUserProofs(address user) internal {
-        // Reset only basic patterns to avoid gas issues
-        for (uint256 i = 1; i <= 5; i++) { // Limit to first 5 verifiers
-            if (verifiers[i] != address(0)) {
-                bytes32 basicClaimId = keccak256(abi.encodePacked(verifiers[i], user, keccak256(abi.encode(uint256(0)))));
-                usedProofs[basicClaimId] = false;
-                bytes32 emptyClaimId = keccak256(abi.encodePacked(verifiers[i], user, bytes32(0)));
-                usedProofs[emptyClaimId] = false;
-            }
-        }
-    }
-
-    /**
-     * @notice Reset all used proofs for a specific verifier (onlyOwner)
-     * @dev Simplified reset to avoid gas issues
-     * @param verifierId ID of the verifier to reset proofs for
-     */
-    function resetVerifierProofs(uint256 verifierId) external onlyOwner {
-        require(verifiers[verifierId] != address(0), "Verifier not found");
-        
-        address verifierAddress = verifiers[verifierId];
-        
-        // Reset basic patterns only
-        bytes32[] memory contexts = new bytes32[](3);
-        contexts[0] = keccak256(abi.encode(uint256(0)));
-        contexts[1] = keccak256(abi.encode(uint256(100)));
-        contexts[2] = bytes32(0);
-        
-        address[] memory users = new address[](3);
-        users[0] = address(0x1);
-        users[1] = address(0x2);
-        users[2] = address(0x3);
-        
-        for (uint256 c = 0; c < contexts.length; c++) {
-            for (uint256 u = 0; u < users.length; u++) {
-                bytes32 claimId = keccak256(abi.encodePacked(verifierAddress, users[u], contexts[c]));
-                usedProofs[claimId] = false;
-            }
-        }
-    }
-
-    /**
-     * @notice Reset all used proofs for a specific verifier and user combination (onlyOwner)
-     * @dev Simplified reset to avoid gas issues
-     * @param verifierId ID of the verifier to reset proofs for
-     * @param user Address of the specific user
-     */
-    function resetVerifierProofsForUser(uint256 verifierId, address user) external onlyOwner {
-        require(verifiers[verifierId] != address(0), "Verifier not found");
-        require(user != address(0), "Invalid user address");
-        
-        address verifierAddress = verifiers[verifierId];
-        
-        // Reset basic context patterns
-        bytes32[] memory contexts = new bytes32[](4);
-        contexts[0] = keccak256(abi.encode(uint256(0)));
-        contexts[1] = keccak256(abi.encode(uint256(100)));
-        contexts[2] = keccak256(abi.encode(uint256(1000)));
-        contexts[3] = bytes32(0);
-        
-        for (uint256 c = 0; c < contexts.length; c++) {
-            bytes32 claimId = keccak256(abi.encodePacked(verifierAddress, user, contexts[c]));
-            usedProofs[claimId] = false;
-            
-            // Reset bulk claim patterns for staged verifiers (limited stages)
-            for (uint256 stage = 0; stage <= 3; stage++) {
-                bytes32 bulkClaimId = keccak256(abi.encodePacked(verifierAddress, user, stage, contexts[c]));
-                usedProofs[bulkClaimId] = false;
-            }
-        }
     }
 
 }

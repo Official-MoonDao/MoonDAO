@@ -4,5 +4,14 @@ out = "out"
 libs = ["lib"]
 # Exclude subscription-contracts to avoid dependency issues
 ignore_compile = ["../subscription-contracts"]
+solc = "0.8.28"
+
+[profile.ci]
+src = "src"
+out = "out"
+libs = ["lib"]
+# Exclude subscription-contracts to avoid dependency issues
+ignore_compile = ["../subscription-contracts"]
+solc = "0.8.28"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

@@ -18,9 +18,15 @@ import {
   HAS_VOTING_POWER_VERIFIER_ADDRESSES,
   HAS_SUBMITTED_PR_VERIFIER_ADDRESSES,
   HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES,
+  CITIZEN_REFERRAL_VERIFIER_ADDRESSES,
 } from 'const/config'
+import { useContext, useMemo } from 'react'
+import toast from 'react-hot-toast'
+import CitizenContext from '../citizen/citizen-context'
+import toastStyle from '../marketplace/marketplace-utils/toastConfig'
 
-export const XP_VERIFIERS: any = [
+// Static verifiers array for server-side use
+export const XP_VERIFIERS = [
   {
     verifierId: 0,
     verifierAddress: HAS_VOTING_POWER_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
@@ -165,4 +171,43 @@ export const XP_VERIFIERS: any = [
       },
     },
   },
+  {
+    verifierId: 10,
+    verifierAddress: CITIZEN_REFERRAL_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/citizen-referrals',
+    type: 'staged',
+    metricKey: 'referralCount',
+    title: 'Citizen Referrals',
+    description: 'Refer your friends to the Space Acceleration Network.',
+    icon: UserGroupIcon,
+    actionText: 'Copy Referral Link',
+  },
 ]
+
+export function useXPVerifiers() {
+  const { citizen } = useContext(CitizenContext)
+
+  const xpVerifiers = useMemo(() => {
+    return XP_VERIFIERS.map((verifier) => {
+      if (
+        verifier.verifierAddress ===
+        CITIZEN_REFERRAL_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG]
+      ) {
+        return {
+          ...verifier,
+          action: () => {
+            navigator.clipboard.writeText(
+              `${window.location.origin}/citizen/?referredBy=${citizen.owner}`
+            )
+            toast.success('Referral link copied to clipboard!', {
+              style: toastStyle,
+            })
+          },
+        }
+      }
+      return verifier
+    })
+  }, [citizen])
+
+  return xpVerifiers
+}

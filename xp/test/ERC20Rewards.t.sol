@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import "src/XPManager.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract MockRewardToken is ERC20 {
     constructor() ERC20("Mock Reward Token", "MRT") {
@@ -22,8 +23,14 @@ contract ERC20RewardsTest is Test {
     function setUp() public {
         vm.startPrank(owner);
 
-        // Deploy contracts
-        xpManager = new XPManager();
+        // Deploy XPManager implementation
+        XPManager implementation = new XPManager();
+        
+        // Deploy proxy and initialize
+        bytes memory initData = abi.encodeWithSelector(XPManager.initialize.selector);
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
+        xpManager = XPManager(address(proxy));
+        
         rewardToken = new MockRewardToken();
 
         // Transfer tokens to XPManager for rewards
@@ -72,7 +79,7 @@ contract ERC20RewardsTest is Test {
         vm.startPrank(user);
 
         // Check available rewards
-        uint256 available = xpManager.getAvailableERC20Reward(user);
+        uint256 available = xpManager.calculateAvailableERC20Reward(user);
         assertEq(available, 0, "Should have no rewards initially");
 
         // Simulate earning XP (this would normally happen through verifiers)

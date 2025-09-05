@@ -6,6 +6,7 @@ import "../src/XPManager.sol";
 import "../src/verifiers/OwnsCitizenNFT.sol";
 import "../src/mocks/MockERC5643Citizen.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract MockERC20 is ERC20 {
     constructor() ERC20("XP Reward", "XPR") {
@@ -28,8 +29,13 @@ contract XPFlowTest is Test {
     function setUp() public {
         vm.startPrank(owner);
 
-        // Deploy XP Manager
-        xpManager = new XPManager();
+        // Deploy XPManager implementation
+        XPManager implementation = new XPManager();
+        
+        // Deploy proxy and initialize
+        bytes memory initData = abi.encodeWithSelector(XPManager.initialize.selector);
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
+        xpManager = XPManager(address(proxy));
 
         // Deploy Citizen NFT (mock for testing)
         citizenNFT = new MockERC5643Citizen("MoonDAO Citizen", "CITIZEN", treasury, address(0xABC), whitelist, discountList);
@@ -49,6 +55,9 @@ contract XPFlowTest is Test {
         // Set up ERC20 reward configuration with conversion rate
         uint256 conversionRate = 1e16; // 0.01 tokens per XP
         xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
+
+        // Set citizen NFT address in XPManager
+        xpManager.setCitizenNFTAddress(address(citizenNFT));
 
         vm.stopPrank();
     }
@@ -82,7 +91,7 @@ contract XPFlowTest is Test {
         assertEq(tokenBalanceAfter, tokenBalanceBefore + expectedReward, "Should automatically receive ERC20 tokens");
 
         // Step 5: Verify no pending rewards (all claimed automatically)
-        uint256 availableRewards = xpManager.getAvailableERC20Reward(user);
+        uint256 availableRewards = xpManager.calculateAvailableERC20Reward(user);
         assertEq(availableRewards, 0, "No pending rewards should remain");
 
         // Step 6: Verify claim is marked as used
@@ -139,7 +148,7 @@ contract XPFlowTest is Test {
         assertEq(xpManager.getTotalXP(user), 500, "Should have 500 XP total");
 
         // Verify no pending rewards
-        assertEq(xpManager.getAvailableERC20Reward(user), 0, "No pending rewards should remain");
+        assertEq(xpManager.calculateAvailableERC20Reward(user), 0, "No pending rewards should remain");
 
         vm.stopPrank();
     }
