@@ -9,8 +9,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   try {
     // ConvertKit API configuration
-    const CONVERTKIT_API_KEY = process.env.CONVERT_KIT_API_KEY
-    const CONVERTKIT_API_SECRET = process.env.CONVERT_KIT_API_SECRET
+    const CONVERTKIT_API_KEY = process.env.CONVERT_KIT_V4_API_KEY
 
     if (!CONVERTKIT_API_KEY) {
       console.log('ConvertKit API key not found')
@@ -23,15 +22,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Try multiple ConvertKit endpoints to find the most recent newsletters
     let allBroadcasts: any[] = []
 
-    const endpoints = [
-      `https://api.convertkit.com/v3/broadcasts?api_key=${CONVERTKIT_API_KEY}`, // All broadcasts
-      `https://api.convertkit.com/v3/broadcasts?api_key=${CONVERTKIT_API_KEY}&status=sent&sort_order=desc`, // Sent newsletters, newest first
-      `https://api.convertkit.com/v3/broadcasts?api_key=${CONVERTKIT_API_KEY}&status=published&sort_order=desc`, // Published newsletters
-    ]
-
-    console.log(
-      'Trying multiple ConvertKit endpoints to find recent newsletters...'
-    )
+    const endpoints = [`https://api.kit.com/v4/broadcasts`]
 
     for (const endpoint of endpoints) {
       try {
@@ -39,6 +30,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'X-Kit-Api-Key': CONVERTKIT_API_KEY,
           },
         })
 
@@ -55,7 +47,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
               subject: b.subject,
               published_at: b.published_at,
               created_at: b.created_at,
-              status: b.status,
+              public: b.public,
             }))
 
             // Merge broadcasts, avoiding duplicates
@@ -100,20 +92,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             .replace(/^-+|-+$/g, '')
         }
 
-        // Try multiple URL fields from ConvertKit
+        // Try multiple URL fields from ConvertKit v4
         let publicUrl = null
         const urlFields = [
           'public_url',
-          'web_url', 
+          'web_url',
           'preview_url',
           'share_url',
           'permalink',
           'url',
-          'link'
+          'link',
         ]
 
         for (const field of urlFields) {
-          if (broadcast[field] && typeof broadcast[field] === 'string' && broadcast[field].includes('http')) {
+          if (
+            broadcast[field] &&
+            typeof broadcast[field] === 'string' &&
+            broadcast[field].includes('http')
+          ) {
             publicUrl = broadcast[field]
             break
           }
@@ -132,34 +128,62 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           publicUrl = 'https://news.moondao.com/posts'
         }
 
+        // Use published_at if available, otherwise fall back to created_at
+        const publishedDate = broadcast.published_at || broadcast.created_at
+
+        // Simple description for all newsletters
+        const getDescription = (): string => {
+          return 'Newsletter content available'
+        }
+
+        // Calculate read time based on cleaned content length
+        const calculateReadTime = (content: string): number => {
+          if (!content) return 5 // Default 5 minutes
+
+          // Clean the content first to get actual readable text
+          let cleaned = content
+            .replace(/<[^>]*>/g, '') // Remove HTML tags
+            .replace(/@media[^{]*\{[^}]*\}/g, '') // Remove CSS media queries
+            .replace(/@[^{]*\{[^}]*\}/g, '') // Remove other CSS rules
+            .replace(/[^{}]*\{[^}]*\}/g, '') // Remove CSS properties
+            .replace(/\s+/g, ' ') // Normalize whitespace
+            .trim()
+
+          // Simple word count estimation (rough approximation)
+          const wordCount = cleaned.split(/\s+/).length
+          const readTime = Math.ceil(wordCount / 200) // 200 words per minute
+          return Math.max(1, Math.min(readTime, 60)) // Between 1-60 minutes
+        }
+
         return {
           id: broadcast.id?.toString() || Math.random().toString(),
           title: broadcast.subject || 'Newsletter Update',
-          description:
-            broadcast.preview_text ||
-            (broadcast.content
-              ? broadcast.content.substring(0, 200).replace(/<[^>]*>/g, '') +
-                '...'
-              : 'Newsletter content available'),
-          publishedAt: broadcast.published_at || broadcast.created_at,
+          description: getDescription(),
+          publishedAt: publishedDate,
           views: broadcast.total_recipients || null, // Use real recipient count or null if not available
-          readTime: Math.ceil((broadcast.content?.length || 1000) / 200),
-          image: null, // ConvertKit doesn't provide thumbnails in basic API
+          readTime: calculateReadTime(broadcast.content || ''),
+          image: null, // Always use text-based icons instead of thumbnail images
           url: publicUrl,
           stats: broadcast.stats || {},
-          isArchived:
-            new Date(broadcast.published_at || broadcast.created_at) <
-            new Date('2024-01-01'), // Mark as archived if older than 2024
+          isArchived: new Date(publishedDate) < new Date('2024-01-01'), // Mark as archived if older than 2024
+          isPublic: broadcast.public || false, // Track if broadcast is public
         }
       }) || []
 
-    // Filter to only include published/sent newsletters from the last 2 years
+    // Filter to only include public newsletters from the last 2 years
     const twoYearsAgo = new Date()
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
 
     const recentNewsletters = newsletters.filter((newsletter: any) => {
+      // Only include public newsletters with valid published dates
+      if (!newsletter.isPublic || !newsletter.publishedAt) {
+        return false
+      }
+
       const publishedDate = new Date(newsletter.publishedAt)
-      return publishedDate >= twoYearsAgo
+      const isRecent = publishedDate >= twoYearsAgo
+
+      return isRecent
     })
 
     // Sort by published date (newest first)
