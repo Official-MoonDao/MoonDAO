@@ -152,7 +152,7 @@ export default function CitizenReferral({
     try {
       const accessToken = await getAccessToken()
 
-      const response = await fetch('/api/xp/san-referred', {
+      const response = await fetch('/api/xp/citizen-referred', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
