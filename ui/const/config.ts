@@ -1,4 +1,9 @@
-import { arbitrum, sepolia, arbitrumSepolia } from '../lib/infura/infuraChains'
+import {
+  arbitrum,
+  base,
+  sepolia,
+  arbitrumSepolia,
+} from '../lib/infura/infuraChains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
@@ -57,8 +62,8 @@ export const TEST_CHAIN =
   process.env.NEXT_PUBLIC_TEST_CHAIN === 'arbitrum-sepolia'
     ? arbitrumSepolia
     : sepolia
-export const DEFAULT_CHAIN_V5 =
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : TEST_CHAIN
+export const DEFAULT_CHAIN_V5 = arbitrum
+//process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : TEST_CHAIN
 
 export const DEFAULT_CHAIN_V5_SLUG = getChainSlug(DEFAULT_CHAIN_V5)
 

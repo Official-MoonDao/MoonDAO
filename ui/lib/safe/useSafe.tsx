@@ -119,6 +119,8 @@ export default function useSafe(
   ) {
     try {
       const nextNonce = await getNextNonce()
+      console.log('nextNonce', nextNonce)
+      console.log('sdata', safeTransactionData)
 
       // Create a new transaction with the next available nonce
       const safeTx = await safe?.createTransaction({
@@ -142,6 +144,13 @@ export default function useSafe(
 
       if (!signature) throw new Error('Failed to sign transaction hash')
 
+      console.log('args',{
+        safeAddress,
+        safeTransactionData: safeTx.data,
+        safeTxHash,
+        senderAddress: wallets?.[selectedWallet]?.address,
+        senderSignature: signature.data,
+      })
       await safeApiKit?.proposeTransaction({
         safeAddress,
         safeTransactionData: safeTx.data,

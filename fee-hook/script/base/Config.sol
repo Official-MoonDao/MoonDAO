@@ -130,7 +130,7 @@ contract Config is Script {
         POOL_MANAGERS[ARB_SEP] = 0xFB3e0C6F74eB1a21CC1Da29aeC80D2Dfe6C9a317;
         POOL_MANAGERS[SEP] = 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543;
 
-        POSITION_MANAGERS[MAINNET] = ethJson.readAddress('.PositionManager')
+        POSITION_MANAGERS[MAINNET] = ethJson.readAddress('.PositionManager');
         POSITION_MANAGERS[ARBITRUM] = arbJson.readAddress('.PositionManager');
         POSITION_MANAGERS[BASE] = baseJson.readAddress('.PositionManager');
         POSITION_MANAGERS[POLYGON] = 0x1Ec2eBf4F37E7363FDfe3551602425af0B3ceef9;
