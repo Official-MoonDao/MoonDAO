@@ -53,6 +53,7 @@ import {
 } from '@/lib/typeform/citizenFormData'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
+import viemChains from '@/lib/viem/viemChains'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import CitizenABI from '../../const/abis/Citizen.json'
 import CrossChainMinterABI from '../../const/abis/CrossChainMinter.json'
@@ -211,6 +212,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         setIsLoadingMint(false)
         return await fundWallet(address, {
           amount: String(roundedCost),
+          chain: viemChains[selectedChainSlug],
         })
       }
 
