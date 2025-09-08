@@ -80,7 +80,7 @@ contract CitizenReferralsStaged is StagedXPVerifier, Ownable {
      * @return The name of the verifier
      */
     function name() external pure override returns (string memory) {
-        return "SAN Referrals Staged";
+        return "Citizen Referrals Staged:v1";
     }
     
     /**
