@@ -5,6 +5,8 @@ import "forge-std/Test.sol";
 import "../src/XPManager.sol";
 import "../src/verifiers/HasVotingPowerStaged.sol";
 import "../src/interfaces/IXPOracle.sol";
+import "../src/mocks/MockERC5643Citizen.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract MockXPOracle is IXPOracle {
     mapping(bytes32 => bool) public validProofs;
@@ -42,6 +44,7 @@ contract BulkClaimTest is Test {
     XPManager public xpManager;
     HasVotingPowerStaged public votingVerifier;
     MockXPOracle public oracle;
+    MockERC5643Citizen public citizenNFT;
 
     address public user = address(0x123);
     address public owner = address(this);
@@ -51,7 +54,18 @@ contract BulkClaimTest is Test {
     function setUp() public {
         // Deploy contracts
         oracle = new MockXPOracle();
-        xpManager = new XPManager();
+        
+        // Deploy Citizen NFT
+        citizenNFT = new MockERC5643Citizen("MoonDAO Citizen", "CITIZEN", address(0), address(0), address(0), address(0));
+        
+        // Deploy XPManager implementation
+        XPManager implementation = new XPManager();
+        
+        // Deploy proxy and initialize
+        bytes memory initData = abi.encodeWithSelector(XPManager.initialize.selector);
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
+        xpManager = XPManager(address(proxy));
+        
         votingVerifier = new HasVotingPowerStaged(address(oracle));
 
         // Register verifier
@@ -59,6 +73,12 @@ contract BulkClaimTest is Test {
 
         // Set XPManager in verifier
         votingVerifier.setXPManager(address(xpManager));
+
+        // Set citizen NFT address in XPManager
+        xpManager.setCitizenNFTAddress(address(citizenNFT));
+
+        // Give user a citizen NFT
+        citizenNFT.mintTo(user);
     }
 
     function testBulkClaimAllStages() public {

@@ -59,22 +59,27 @@ export async function getStagedQuestProgress(
 
   const userHighestStageNum = Number(userHighestStage)
 
-  // Calculate next stage directly instead of relying on getNextClaimableStage
+  // Find the highest stage the user qualifies for based on their metric
   let nextStageIndex = null
   let nextStage = null
+  let nextStageXP = null
 
-  if (userHighestStageNum < stages.length - 1) {
+  // Find the highest stage threshold that the user's metric exceeds
+  for (let i = stages.length - 1; i >= 0; i--) {
+    if (userMetric >= Number(stages[i].threshold) && stages[i].active) {
+      nextStageIndex = i
+      nextStage = stages[i]
+      break
+    }
+  }
+
+  // Calculate the next stage's XP (the stage you're working toward)
+  if (nextStageIndex !== null && nextStageIndex < stages.length - 1) {
     // There's a next stage available
-    nextStageIndex = userHighestStageNum + 1
-    nextStage = stages[nextStageIndex]
-  } else if (userHighestStageNum === 0 && stages.length > 0) {
-    // User hasn't started yet, first stage is next
-    nextStageIndex = 0
-    nextStage = stages[0]
-  } else if (userHighestStageNum >= stages.length - 1 && stages.length > 0) {
-    // User is on the final stage, show the final stage info
-    nextStageIndex = stages.length - 1
-    nextStage = stages[nextStageIndex]
+    nextStageXP = Number(stages[nextStageIndex + 1].xpAmount)
+  } else if (nextStageIndex === null && stages.length > 0) {
+    // User doesn't qualify for any stage yet, next stage is the first stage
+    nextStageXP = Number(stages[0].xpAmount)
   }
 
   // Calculate progress to next stage
@@ -110,7 +115,7 @@ export async function getStagedQuestProgress(
     currentUserMetric: userMetric,
     nextClaimableStage: nextStageIndex,
     nextStageThreshold: nextStage ? Number(nextStage.threshold) : null,
-    nextStageXP: nextStage ? Number(nextStage.xpAmount) : null,
+    nextStageXP: nextStageXP,
     totalClaimableXP: Number(totalClaimableXP),
     progressToNext,
     isMaxStageReached,

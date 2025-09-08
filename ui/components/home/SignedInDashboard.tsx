@@ -69,6 +69,7 @@ import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
 import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget } from '@/lib/utils/rewards'
+import { daysUntilTimestamp } from '@/lib/utils/timestamp'
 import { ARRChart } from '@/components/dashboard/treasury/ARRChart'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import ChartModal from '@/components/layout/ChartModal'
@@ -84,6 +85,7 @@ import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
+import CitizenReferral from '../subscription/CitizenReferral'
 import Quests from '../xp/Quests'
 
 // import Quests from '@/components/xp/Quests'
@@ -106,8 +108,6 @@ function getEthAmountFromProposal(actions: Action[] | undefined): number {
 
   return ethAmount
 }
-
-import { daysUntilTimestamp } from '@/lib/utils/timestamp'
 
 function getDaysLeft(proposal: any): number {
   if (proposal?.end) {
@@ -468,6 +468,14 @@ export default function SingedInDashboard({
             <div className="order-2">
               <WeeklyRewardPool />
             </div>
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
+              <p className="text-gray-300 text-sm">
+                Were you referred to the Space Acceleration Network?
+              </p>
+              <div className="space-y-8 h-full mt-4">
+                <CitizenReferral />
+              </div>
+            </div>
 
             {/* Key Metrics Card */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
@@ -802,7 +810,8 @@ export default function SingedInDashboard({
                                 {daysLeft > 0 ? (
                                   <>
                                     <span className="font-medium text-white">
-                                      {daysLeft} {daysLeft === 1 ? 'day' : 'days'}
+                                      {daysLeft}{' '}
+                                      {daysLeft === 1 ? 'day' : 'days'}
                                     </span>
                                     <span>left</span>
                                   </>
@@ -1290,7 +1299,8 @@ export default function SingedInDashboard({
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 lg:top-6 lg:right-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
-                  {countUniqueCountries(citizensLocationData)} {/* Unique countries */}
+                  {countUniqueCountries(citizensLocationData)}{' '}
+                  {/* Unique countries */}
                 </div>
                 <div className="text-xs sm:text-sm opacity-90 leading-tight">
                   Countries
