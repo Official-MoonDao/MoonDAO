@@ -312,7 +312,7 @@ export default function TeamMarketplaceListingModal({
             id="listing-title-input"
             type="text"
             placeholder="Title"
-            className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+            className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm text-black"
             onChange={(e) => {
               setListingData({ ...listingData, title: e.target.value })
             }}
@@ -322,7 +322,7 @@ export default function TeamMarketplaceListingModal({
           <textarea
             id="listing-description-input"
             placeholder="Description"
-            className="w-full h-[200px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+            className="w-full h-[200px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm text-black"
             onChange={(e) => {
               setListingData({ ...listingData, description: e.target.value })
             }}
@@ -339,7 +339,7 @@ export default function TeamMarketplaceListingModal({
               id="listing-price-input"
               type="text"
               placeholder="Price"
-              className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+              className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm text-black"
               onChange={(e) => {
                 setListingData({ ...listingData, price: e.target.value })
               }}
