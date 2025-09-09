@@ -45,7 +45,7 @@ export default function IndexCard({
     >
       <span
         id="index-content-container"
-        className="h-full p-[20px] md:pb-10 2xl:p-[24px] 3xl:p-[28px] rounded-2xl overflow-hidden flex flex-col justify-between min-h-[200px] md:min-h-[240px] 2xl:min-h-[280px] 3xl:min-h-[320px]"
+        className="h-full p-[16px] md:pb-8 2xl:p-[20px] 3xl:p-[24px] rounded-2xl overflow-hidden flex flex-col justify-between min-h-[160px] md:min-h-[180px] 2xl:min-h-[200px] 3xl:min-h-[220px]"
       >
         <span
           id="index-content"
@@ -58,14 +58,14 @@ export default function IndexCard({
               alt={iconAlt || ''}
               width="250"
               height="250"
-              className="z-20 w-[60px] h-[60px] md:w-[100px] md:h-[100px] 2xl:w-[120px] 2xl:h-[120px] 3xl:w-[140px] 3xl:h-[140px] pb-3 md:pb-5 2xl:pb-6 3xl:pb-7"
+              className="z-20 w-[50px] h-[50px] md:w-[80px] md:h-[80px] 2xl:w-[90px] 2xl:h-[90px] 3xl:w-[100px] 3xl:h-[100px] pb-2 md:pb-3 2xl:pb-4 3xl:pb-5"
             />
           ) : (
             <></>
           )}
           <h2
             id="index-main-header"
-            className="z-20 pt-[20px] 2xl:pt-[24px] 3xl:pt-[28px] mb-3 md:mb-5 2xl:mb-6 3xl:mb-7 static-sub-header font-GoodTimes text-center text-lg md:text-xl 2xl:text-2xl 3xl:text-3xl"
+            className="z-20 pt-[12px] 2xl:pt-[16px] 3xl:pt-[20px] mb-2 md:mb-3 2xl:mb-4 3xl:mb-5 static-sub-header font-GoodTimes text-center text-lg md:text-xl 2xl:text-2xl 3xl:text-3xl"
           >
             {header && header}
             {metadata?.name}
