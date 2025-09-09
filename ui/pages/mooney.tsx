@@ -5,6 +5,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 import Link from 'next/link'
+import Head from 'next/head'
 import { CheckCircleIcon, ShieldCheckIcon, UsersIcon, GlobeAltIcon, LockClosedIcon, ScaleIcon, ArrowRightIcon, ChartPieIcon } from '@heroicons/react/24/outline'
 import { ethereum } from '@/lib/infura/infuraChains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -140,6 +141,9 @@ export default function Mooney() {
         title="$MOONEY Token - MoonDAO Governance" 
         description="Learn about MOONEY, the governance token powering MoonDAO's mission to establish a lunar settlement. Buy, lock, and bridge MOONEY tokens to participate in decentralized space exploration governance." 
       />
+      <Head>
+        <link rel="preload" as="image" href="/assets/ngc6357_4k.webp" />
+      </Head>
       
       <Container is_fullwidth={true}>
         <div className="min-h-screen bg-dark-cool text-white w-full">
@@ -148,7 +152,7 @@ export default function Mooney() {
           <section className="relative min-h-screen px-6 w-full flex items-center justify-center overflow-hidden">
             <div
               className="w-full h-full absolute top-0 left-0 bg-cover bg-no-repeat bg-center z-0"
-              style={{backgroundImage: 'url("/assets/ngc6357_4k.jpg")'}}
+              style={{backgroundImage: 'url("/assets/ngc6357_4k.webp")'}}
             ></div>
             <div className="absolute inset-0 bg-black/40 z-1"></div>
             <div className="max-w-7xl mx-auto text-center space-y-8 relative z-10 -mt-20">

@@ -356,12 +356,17 @@ export default function Network({
           'The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond.'
         }
         image="https://ipfs.io/ipfs/QmbExwDgVoDYpThFaVRRxUkusHnXxMj3Go8DdWrXg1phxi"
-      />
+      >
+        <link rel="preload" as="image" href="/assets/NetworkHero.webp" />
+        <link rel="preload" as="image" href="/assets/JoinImage.webp" />
+        <link rel="preload" as="image" href="/assets/citizen-default.webp" />
+        <link rel="preload" as="image" href="/assets/team_image.webp" />
+      </Head>
       <Container>
         {/* Hero Section */}
         <div className="relative w-full h-screen rounded-3xl overflow-hidden">
           <Image
-            src="/assets/NetworkHero.png"
+            src="/assets/NetworkHero.webp"
             alt="Space Acceleration Network"
             fill
             className="object-cover"
@@ -395,7 +400,7 @@ export default function Network({
       <div id="join-moondao" className="relative w-full py-12 md:py-14 lg:py-20 xl:py-24 2xl:py-32">
         <div className="absolute inset-0">
           <Image
-            src="/assets/JoinImage.png"
+            src="/assets/JoinImage.webp"
             alt="Join MoonDAO"
             fill
             className="object-cover"
@@ -420,7 +425,7 @@ export default function Network({
                 <div className="flex flex-col items-center text-center">
                   <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
                     <Image
-                      src="/assets/citizen-default.png"
+                      src="/assets/citizen-default.webp"
                       width={96}
                       height={96}
                       alt="Become a Citizen"
@@ -456,7 +461,7 @@ export default function Network({
                 <div className="flex flex-col items-center text-center">
                   <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
                     <Image
-                      src="/assets/team_image.png"
+                      src="/assets/team_image.webp"
                       width={96}
                       height={96}
                       alt="Create a Team"
