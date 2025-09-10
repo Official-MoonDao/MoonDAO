@@ -27,6 +27,7 @@ import {
 } from 'thirdweb'
 import { Address, Hex } from 'thirdweb'
 import { privateKeyToAccount as twPrivateKeyToAccount } from 'thirdweb/wallets'
+import { getHSMSigner, isHSMAvailable } from '@/lib/google/hsm-signer'
 import {
   arbitrum,
   base,
@@ -41,6 +42,44 @@ import { signOracleProof } from '../oracle'
 function normalizePk(pk?: string): `0x${string}` {
   if (!pk) throw new Error('ORACLE_SIGNER_PK missing')
   return (pk.startsWith('0x') ? pk : `0x${pk}`) as `0x${string}`
+}
+
+/**
+ * Create an account for signing transactions, using HSM if available
+ */
+async function createSignerAccount(authToken?: string): Promise<any> {
+  if (isHSMAvailable()) {
+    if (!authToken) {
+      throw new Error('Authentication token required for HSM operations')
+    }
+    const questSigner = getSecureQuestSigner()
+    const signerAddress = await questSigner.getAddress()
+
+    // Create a custom account that uses the HSM signer
+    return {
+      address: signerAddress,
+      signMessage: async (message: string) => {
+        const result = await questSigner.signMessage(message as Hex, authToken)
+        return result.signature
+      },
+      signTypedData: async (domain: any, types: any, message: any) => {
+        const result = await questSigner.signTypedData(
+          domain,
+          types,
+          message,
+          authToken
+        )
+        return result.signature
+      },
+    }
+  } else {
+    // Fall back to private key account
+    const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
+    return twPrivateKeyToAccount({
+      client: serverClient,
+      privateKey: relayerPk,
+    })
+  }
 }
 
 function getVerifierId(verifierAddress: Address): bigint {
@@ -513,6 +552,7 @@ export async function signHasVotedProof(params: {
   user: Address
   votes: bigint // Changed from minVotes to votes for clarity
   validitySeconds?: number
+  authToken?: string // Required for HSM operations
 }): Promise<SignedProofResult> {
   if (
     !XP_ORACLE_NAME ||
@@ -591,6 +631,7 @@ export async function signOwnsCitizenProof(params: {
     contextHash,
     xpAmount,
     validitySeconds: params.validitySeconds,
+    authToken: params.authToken,
   })
 
   const context = defaultAbiCoder.encode(
@@ -789,11 +830,7 @@ export async function submitHasVotingPowerClaimFor(params: {
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
-  const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
-  const account = twPrivateKeyToAccount({
-    client: serverClient,
-    privateKey: relayerPk,
-  })
+  const account = await createSignerAccount()
 
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
   const verifierId = getVerifierId(contractAddress)
@@ -915,11 +952,7 @@ export async function submitBulkClaimFor(params: {
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
-  const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
-  const account = twPrivateKeyToAccount({
-    client: serverClient,
-    privateKey: relayerPk,
-  })
+  const account = await createSignerAccount()
 
   const contractAddress =
     params.xpManager || (XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address)
@@ -1049,11 +1082,7 @@ export async function submitHasCreatedTeamClaimFor(params: {
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
-  const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
-  const account = twPrivateKeyToAccount({
-    client: serverClient,
-    privateKey: relayerPk,
-  })
+  const account = await createSignerAccount()
 
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
   const verifierId = getVerifierId(contractAddress)
@@ -1169,11 +1198,7 @@ export async function submitHasVotedClaimFor(params: {
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
-  const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
-  const account = twPrivateKeyToAccount({
-    client: serverClient,
-    privateKey: relayerPk,
-  })
+  const account = await createSignerAccount()
 
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
   const verifierId = getVerifierId(contractAddress)
@@ -1379,11 +1404,7 @@ export async function submitHasCompletedCitizenProfileClaimFor(params: {
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
-  const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
-  const account = twPrivateKeyToAccount({
-    client: serverClient,
-    privateKey: relayerPk,
-  })
+  const account = await createSignerAccount()
 
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
   const verifierAddress = HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES[
@@ -1504,11 +1525,7 @@ export async function submitHasTokenBalanceBulkClaimFor(params: {
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
-  const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
-  const account = twPrivateKeyToAccount({
-    client: serverClient,
-    privateKey: relayerPk,
-  })
+  const account = await createSignerAccount()
 
   const verifierAddress = HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES[
     XP_ORACLE_CHAIN
@@ -1676,11 +1693,7 @@ export async function submitHasJoinedTeamClaimFor(params: {
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
-  const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
-  const account = twPrivateKeyToAccount({
-    client: serverClient,
-    privateKey: relayerPk,
-  })
+  const account = await createSignerAccount()
 
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
   const verifierAddress = HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES[
@@ -1910,11 +1923,7 @@ export async function submitHasSubmittedIssueClaimForSingle(params: {
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
-  const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
-  const account = twPrivateKeyToAccount({
-    client: serverClient,
-    privateKey: relayerPk,
-  })
+  const account = await createSignerAccount()
 
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
 
@@ -2112,11 +2121,7 @@ export async function submitReferralBulkClaimFor(params: {
 }): Promise<{ txHash: Hex }> {
   const twChain =
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : sepolia
-  const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
-  const account = twPrivateKeyToAccount({
-    client: serverClient,
-    privateKey: relayerPk,
-  })
+  const account = await createSignerAccount()
 
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
   const verifierAddress = CITIZEN_REFERRAL_VERIFIER_ADDRESSES[

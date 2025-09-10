@@ -7,6 +7,7 @@ import {
 } from 'const/config'
 import { Wallet, utils as ethersUtils, providers } from 'ethers'
 import { getContract, readContract } from 'thirdweb'
+import { getHSMSigner, isHSMAvailable } from '@/lib/google/hsm-signer'
 import { arbitrum, sepolia } from '@/lib/infura/infuraChains'
 import { serverClient } from '@/lib/thirdweb/client'
 
@@ -70,12 +71,28 @@ export async function signOracleProof(params: {
   contextHash: Hex
   xpAmount: bigint // still required by oracle proof
   validitySeconds?: number
+  authToken?: string // Required for HSM operations
 }): Promise<{ validAfter: bigint; validBefore: bigint; signature: Hex }> {
   if (!XP_ORACLE_NAME || !XP_ORACLE_VERSION) {
     throw new Error('Oracle env not configured')
   }
 
-  const wallet = new Wallet(normalizePk(process.env.XP_ORACLE_SIGNER_PK))
+  // Use HSM signer if available, otherwise fall back to private key
+  let signerAddress: Address
+  let signer: any
+
+  if (isHSMAvailable()) {
+    if (!params.authToken) {
+      throw new Error('Authentication token required for HSM operations')
+    }
+    const hsmSigner = getHSMSigner()
+    signerAddress = await hsmSigner.getAddress()
+    signer = hsmSigner
+  } else {
+    const wallet = new Wallet(normalizePk(process.env.XP_ORACLE_SIGNER_PK))
+    signerAddress = wallet.address as Address
+    signer = wallet
+  }
 
   // Pre-flight: check if signer has enough funds to complete transactions
   const twChain =
@@ -83,7 +100,7 @@ export async function signOracleProof(params: {
 
   // Check wallet balance using existing Infura chain configurations
   const provider = new providers.JsonRpcProvider(twChain.rpc)
-  const balance = await provider.getBalance(wallet.address)
+  const balance = await provider.getBalance(signerAddress)
 
   // Ensure minimum balance for gas fees (0.01 ETH equivalent)
   const minBalance = BigInt(10_000_000_000_000_000) // 0.01 ETH in wei
@@ -111,13 +128,13 @@ export async function signOracleProof(params: {
   const authorized = (await readContract({
     contract: oracleContract,
     method: 'isSigner',
-    params: [wallet.address as Address],
+    params: [signerAddress],
   })) as boolean
   if (!authorized) {
     throw new Error(
-      `Oracle signer not authorized: ${
-        wallet.address
-      }\noracle: ${oracleAddress}\nchainId: ${Number(XP_ORACLE_CHAIN_ID)}`
+      `Oracle signer not authorized: ${signerAddress}\noracle: ${oracleAddress}\nchainId: ${Number(
+        XP_ORACLE_CHAIN_ID
+      )}`
     )
   }
 
@@ -167,11 +184,21 @@ export async function signOracleProof(params: {
     ],
   } as const
 
-  const signature = (await wallet._signTypedData(
-    domain as any,
-    types as any,
-    proof as any
-  )) as Hex
+  let signature: Hex
+
+  if (isHSMAvailable()) {
+    // Use HSM signer for typed data
+    signature = (
+      await signer.signTypedData(domain, types, proof, params.authToken!)
+    ).signature
+  } else {
+    // Use ethers wallet for typed data
+    signature = (await signer._signTypedData(
+      domain as any,
+      types as any,
+      proof as any
+    )) as Hex
+  }
 
   return { validAfter, validBefore, signature }
 }

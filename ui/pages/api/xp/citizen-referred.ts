@@ -36,6 +36,7 @@ import {
 } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { privateKeyToAccount as twPrivateKeyToAccount } from 'thirdweb/wallets'
+import { getSecureQuestSigner, isHSMAvailable } from '@/lib/google/hsm-signer'
 import { getPrivyUserData } from '@/lib/privy'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
@@ -177,16 +178,49 @@ async function addReferral(
     throw new Error('Referral verifier address not configured')
   }
 
-  // Get the authorized signer's private key from environment
-  const authorizedSignerPk = process.env.XP_ORACLE_SIGNER_PK
-  if (!authorizedSignerPk) {
-    throw new Error('Authorized signer private key not configured')
-  }
+  // Use HSM signer if available, otherwise fall back to private key
+  let account: any
 
-  const account = twPrivateKeyToAccount({
-    client: serverClient,
-    privateKey: normalizePk(authorizedSignerPk),
-  })
+  if (isHSMAvailable()) {
+    const questSigner = getSecureQuestSigner()
+    const signerAddress = await questSigner.getAddress()
+    const authToken = process.env.HSM_AUTH_TOKEN
+
+    if (!authToken) {
+      throw new Error('HSM authentication token not configured')
+    }
+
+    // For HSM, we need to create a custom account that uses the HSM signer
+    // This is a simplified approach - in production you might want to implement
+    // a more sophisticated account wrapper
+    account = {
+      address: signerAddress,
+      signMessage: async (message: string) => {
+        const result = await questSigner.signMessage(message as Hex, authToken)
+        return result.signature
+      },
+      signTypedData: async (domain: any, types: any, message: any) => {
+        const result = await questSigner.signTypedData(
+          domain,
+          types,
+          message,
+          authToken
+        )
+        return result.signature
+      },
+    }
+  } else {
+    // Get the authorized signer's private key from environment
+    const authorizedSignerPk = process.env.XP_ORACLE_SIGNER_PK
+    if (!authorizedSignerPk) {
+      throw new Error('Authorized signer private key not configured')
+    }
+
+    account = twPrivateKeyToAccount({
+      client: serverClient,
+      privateKey: normalizePk(authorizedSignerPk),
+    })
+  }
 
   const contract = getContract({
     client: serverClient,
