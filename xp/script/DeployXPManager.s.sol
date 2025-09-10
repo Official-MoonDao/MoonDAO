@@ -17,21 +17,29 @@ import "../src/verifiers/HasSubmittedIssue.sol";
 import "../src/verifiers/CitizenReferralsStaged.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-
-
 contract DeployXPManagerScript is Script {
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address authorizedSignerAddress = vm.envAddress("AUTHORIZED_SIGNER_ADDRESS");
+        // Get configuration from environment
+        address authorizedSignerAddress = vm.envAddress("HSM_SIGNER_ADDRESS");
         address oracleAddress = vm.envAddress("ORACLE_ADDRESS");
         address rewardToken = vm.envAddress("REWARD_TOKEN");
         address citizenNFTAddress = vm.envAddress("CITIZEN_ADDRESS");
+        address daoSafeAddress = vm.envAddress("DAO_SAFE_ADDRESS");
 
         if (oracleAddress == address(0)) {
             revert("No oracle address provided");
         }
 
-        vm.startBroadcast(deployerPrivateKey);
+        if (authorizedSignerAddress == address(0)) {
+            revert("No HSM signer address provided");
+        }
+
+        if (daoSafeAddress == address(0)) {
+            revert("No DAO safe address provided");
+        }
+
+        // Start broadcast
+        vm.startBroadcast();
 
         // Deploy XPManager implementation
         XPManager implementation = new XPManager();
@@ -66,7 +74,7 @@ contract DeployXPManagerScript is Script {
         hasSubmittedPRVerifier.setXPManager(address(xpManager));
         citizenReferralsVerifier.setXPManager(address(xpManager));
 
-        // Set authorized signer address
+        // Set GCP HSM signer as authorized signer
         citizenReferralsVerifier.setAuthorizedSigner(authorizedSignerAddress);
 
         // Register verifiers
@@ -82,7 +90,8 @@ contract DeployXPManagerScript is Script {
         xpManager.registerVerifier(9, address(hasSubmittedPRVerifier));
         xpManager.registerVerifier(10, address(citizenReferralsVerifier));
 
-        // Set up XP levels: More realistic progression based on actual verifier rewards
+
+        // Set up XP levels
         uint256[] memory thresholds = new uint256[](6);
         uint256[] memory levels = new uint256[](6);
         
@@ -113,6 +122,27 @@ contract DeployXPManagerScript is Script {
         if (citizenNFTAddress != address(0)) {
             xpManager.setCitizenNFTAddress(citizenNFTAddress);
         }
+
+        // Transfer ownership to DAO Safe
+        xpManager.transferOwnership(daoSafeAddress);
+        votingPowerVerifier.transferOwnership(daoSafeAddress);
+        hasVotedVerifier.transferOwnership(daoSafeAddress);
+        hasTokenBalanceVerifier.transferOwnership(daoSafeAddress);
+        hasContributedVerifier.transferOwnership(daoSafeAddress);
+        hasBoughtAMarketplaceListingVerifier.transferOwnership(daoSafeAddress);
+        hasSubmittedPRVerifier.transferOwnership(daoSafeAddress);
+        citizenReferralsVerifier.transferOwnership(daoSafeAddress);
+        hasJoinedATeamVerifier.transferOwnership(daoSafeAddress);
+        hasCreatedTeamVerifier.transferOwnership(daoSafeAddress);
+        hasCompletedCitizenProfileVerifier.transferOwnership(daoSafeAddress);
+        hasSubmittedIssueVerifier.transferOwnership(daoSafeAddress);
+
+        console.log("=== DEPLOYMENT SUMMARY ===");
+        console.log("XPManager Proxy:", address(xpManager));
+        console.log("XPManager Implementation:", address(implementation));
+        console.log("DAO Safe Address:", daoSafeAddress);
+        console.log("HSM Signer Address:", authorizedSignerAddress);
+        console.log("All contracts transferred to DAO Safe");
         
         vm.stopBroadcast();
     }
