@@ -95,8 +95,8 @@ export default function Callout3() {
         />
       </div>
 
-      <div className="relative z-10 container mx-auto px-5 py-20 md:py-28">
-        <h2 className="header text-center font-GoodTimes pb-5 2xl:pb-8 3xl:pb-12 text-4xl 2xl:text-6xl 3xl:text-7xl text-white">
+      <div className="relative z-10 container mx-auto px-5 py-12 md:py-16">
+        <h2 className="header text-center font-GoodTimes pb-4 2xl:pb-6 3xl:pb-8 text-4xl 2xl:text-6xl 3xl:text-7xl text-white">
           At A Glance
         </h2>
         <div
