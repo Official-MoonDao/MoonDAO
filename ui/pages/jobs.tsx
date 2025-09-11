@@ -89,9 +89,28 @@ export default function Jobs({ jobs }: JobsProps) {
           popOverEffect={false}
           isProfile
         >
-          <div className={`bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8 relative ${!citizen ? 'overflow-hidden' : ''}`}>
-            {!citizen && (
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-10 flex items-center justify-center">
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8 relative">
+            {citizen ? (
+              // Render jobs content only for citizens
+              filteredJobs?.[0] ? (
+                <CardGridContainer>
+                  {filteredJobs.map((job: JobType, i: number) => (
+                    <Job
+                      key={`job-${i}`}
+                      job={job}
+                      showTeam
+                      teamContract={teamContract}
+                    />
+                  ))}
+                </CardGridContainer>
+              ) : (
+                <div className="mt-4 w-full h-[400px] flex justify-center items-center">
+                  <p className="">No jobs found.</p>
+                </div>
+              )
+            ) : (
+              // Show access required message for non-citizens
+              <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center max-w-md mx-auto p-8">
                   <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -114,25 +133,6 @@ export default function Jobs({ jobs }: JobsProps) {
                 </div>
               </div>
             )}
-            
-            <div className={!citizen ? 'blur-sm pointer-events-none' : ''}>
-              {filteredJobs?.[0] ? (
-                <CardGridContainer>
-                  {filteredJobs.map((job: JobType, i: number) => (
-                    <Job
-                      key={`job-${i}`}
-                      job={job}
-                      showTeam
-                      teamContract={teamContract}
-                    />
-                  ))}
-                </CardGridContainer>
-              ) : (
-                <div className="mt-4 w-full h-[400px] flex justify-center items-center">
-                  <p className="">No jobs found.</p>
-                </div>
-              )}
-            </div>
           </div>
         </ContentLayout>
       </Container>
