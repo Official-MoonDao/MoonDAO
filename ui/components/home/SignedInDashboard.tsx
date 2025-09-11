@@ -1098,13 +1098,13 @@ export default function SingedInDashboard({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {currentProjects.slice(0, 8).map((project: any, index: number) => (
                   <Link key={index} href={`/project/${project.id}`} passHref>
-                    <div className="bg-black/30 rounded-xl p-4 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/20 transition-all duration-200">
+                    <div className="bg-black/30 rounded-xl p-4 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/20 transition-all duration-200 h-32 flex flex-col">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-semibold text-white text-sm">
+                        <h4 className="font-semibold text-white text-sm flex-1 mr-2">
                           {project.name}
                         </h4>
                         <span
-                          className={`px-2 py-1 rounded text-xs ${
+                          className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
                             project.active
                               ? 'bg-green-500/20 text-green-300'
                               : 'bg-gray-500/20 text-gray-300'
@@ -1113,7 +1113,7 @@ export default function SingedInDashboard({
                           {project.active ? 'Active' : 'Inactive'}
                         </span>
                       </div>
-                      <p className="text-green-100 text-xs leading-relaxed">
+                      <p className="text-green-100 text-xs leading-relaxed flex-1 overflow-hidden">
                         {project.description?.length > 100
                           ? `${project.description.substring(0, 100)}...`
                           : project.description || 'No description available'}
@@ -1124,7 +1124,7 @@ export default function SingedInDashboard({
                 
                 {/* Show more projects indicator if there are more than 8 */}
                 {currentProjects.length > 8 && (
-                  <div className="bg-black/30 rounded-xl p-4 border border-green-500/10 flex items-center justify-center">
+                  <div className="bg-black/30 rounded-xl p-4 border border-green-500/10 h-32 flex items-center justify-center">
                     <div className="text-center">
                       <div className="text-lg font-bold text-green-300 mb-1">
                         +{currentProjects.length - 8}
