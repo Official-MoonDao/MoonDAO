@@ -394,7 +394,7 @@ export default function SingedInDashboard({
                   )}
                   <div className="text-xs sm:text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
                     <BoltIcon className="w-3 h-3" />
-                    vMOONEY
+                    Voting Power
                   </div>
                   <div className="flex justify-center">
                     <StandardButton
