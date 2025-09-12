@@ -4,7 +4,6 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import Job, { Job as JobType } from '../jobs/Job'
-import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 import Card from './Card'
 import TeamJobModal from './TeamJobModal'
@@ -85,16 +84,16 @@ export default function TeamJobs({
   return (
     <section
       id="jobs section"
-      className="bg-slide-section mb-5 p-5 md:pr-0 md:pb-10 rounded-tl-[2vmax] rounded-bl-[5vmax]"
+      className="p-6"
     >
-      <Card className="w-full flex flex-col justify-between gap-5">
+      <div className="w-full flex flex-col justify-between gap-5">
         <div
           id="job-title-container"
-          className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center pr-12"
+          className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center"
         >
-          <div className="flex pb-5 gap-5 opacity-[50%]">
-            <Image src={jobIcon} alt="Job icon" width={30} height={30} />
-            <p className="header font-GoodTimes">Open Job Board</p>
+          <div className="flex gap-5">
+            <Image src={jobIcon} alt="Job icon" width={30} height={30} className="opacity-70" />
+            <h2 className="font-GoodTimes text-2xl text-white">Open Job Board</h2>
           </div>{' '}
           {isManager && (
             <StandardButton
@@ -108,8 +107,8 @@ export default function TeamJobs({
           )}
         </div>
         {isManager || isCitizen ? (
-          <SlidingCardMenu id="team-jobs-sliding-card-menu">
-            <div className="flex gap-4">
+          <div className="mt-4">
+            <div className="flex gap-4 flex-wrap">
               {jobs?.[0] ? (
                 jobs.map((job, i) => (
                   <Job
@@ -122,10 +121,10 @@ export default function TeamJobs({
                   />
                 ))
               ) : (
-                <p className="p-4 pt-6">{`This team hasn't listed any open roles yet.`}</p>
+                <p className="text-slate-300 text-center py-8">{`This team hasn't listed any open roles yet.`}</p>
               )}
             </div>
-          </SlidingCardMenu>
+          </div>
         ) : (
           <div className="flex flex-col gap-4 ">
             <p>
@@ -152,7 +151,7 @@ export default function TeamJobs({
             refreshJobs={getEntityJobs}
           />
         )}
-      </Card>
+      </div>
     </section>
   )
 }
