@@ -4,6 +4,7 @@ import {
   XP_ORACLE_CHAIN_ID,
   XP_ORACLE_CHAIN,
   XP_ORACLE_ADDRESSES,
+  GCP_HSM_SIGNER_ADDRESS,
 } from 'const/config'
 import { Wallet, utils as ethersUtils, providers } from 'ethers'
 import { getContract, readContract } from 'thirdweb'
@@ -71,7 +72,7 @@ export async function signOracleProof(params: {
   contextHash: Hex
   xpAmount: bigint // still required by oracle proof
   validitySeconds?: number
-  authToken?: string // Required for HSM operations
+  // Remove authToken requirement
 }): Promise<{ validAfter: bigint; validBefore: bigint; signature: Hex }> {
   if (!XP_ORACLE_NAME || !XP_ORACLE_VERSION) {
     throw new Error('Oracle env not configured')
@@ -81,17 +82,36 @@ export async function signOracleProof(params: {
   let signerAddress: Address
   let signer: any
 
+  // Use HSM signer if we have full KMS setup, otherwise use private key
   if (isHSMAvailable()) {
-    if (!params.authToken) {
-      throw new Error('Authentication token required for HSM operations')
+    try {
+      const hsmSigner = getHSMSigner()
+      signerAddress = await hsmSigner.getAddress()
+      console.log('Using HSM signer with full KMS setup')
+      console.log('HSM signer address:', signerAddress)
+      console.log('Expected HSM address from config:', GCP_HSM_SIGNER_ADDRESS)
+      signer = hsmSigner
+    } catch (error) {
+      console.warn('HSM signer failed, falling back to private key:', error)
+      const wallet = new Wallet(normalizePk(process.env.XP_ORACLE_SIGNER_PK))
+      signerAddress = wallet.address as Address
+      signer = wallet
     }
-    const hsmSigner = getHSMSigner()
-    signerAddress = await hsmSigner.getAddress()
-    signer = hsmSigner
   } else {
+    // Use private key signer
     const wallet = new Wallet(normalizePk(process.env.XP_ORACLE_SIGNER_PK))
     signerAddress = wallet.address as Address
     signer = wallet
+
+    // Check if the private key address matches the expected HSM address
+    if (
+      GCP_HSM_SIGNER_ADDRESS &&
+      signerAddress.toLowerCase() !== GCP_HSM_SIGNER_ADDRESS.toLowerCase()
+    ) {
+      console.warn(
+        `Address mismatch: private key address ${signerAddress} does not match expected HSM address ${GCP_HSM_SIGNER_ADDRESS}`
+      )
+    }
   }
 
   // Pre-flight: check if signer has enough funds to complete transactions
@@ -104,6 +124,7 @@ export async function signOracleProof(params: {
 
   // Ensure minimum balance for gas fees (0.01 ETH equivalent)
   const minBalance = BigInt(10_000_000_000_000_000) // 0.01 ETH in wei
+
   if (balance.lt(minBalance)) {
     throw new Error(
       `Oracle signer has insufficient funds: ${ethersUtils.formatEther(
@@ -130,6 +151,11 @@ export async function signOracleProof(params: {
     method: 'isSigner',
     params: [signerAddress],
   })) as boolean
+  console.log('Oracle authorization check:')
+  console.log('  Signer address:', signerAddress)
+  console.log('  Oracle address:', oracleAddress)
+  console.log('  Chain ID:', Number(XP_ORACLE_CHAIN_ID))
+  console.log('  Authorized:', authorized)
   if (!authorized) {
     throw new Error(
       `Oracle signer not authorized: ${signerAddress}\noracle: ${oracleAddress}\nchainId: ${Number(
@@ -186,18 +212,56 @@ export async function signOracleProof(params: {
 
   let signature: Hex
 
-  if (isHSMAvailable()) {
-    // Use HSM signer for typed data
-    signature = (
-      await signer.signTypedData(domain, types, proof, params.authToken!)
-    ).signature
+  // Use the signer that was selected above
+  if (isHSMAvailable() && signer.signTypedData) {
+    try {
+      console.log('Attempting HSM signing...')
+      // Use HSM signer for typed data
+      const result = await signer.signTypedData(domain, types, proof)
+      console.log('HSM signing successful, signature:', result.signature)
+      console.log('HSM claims address:', result.address)
+      signature = result.signature
+
+      // Test signature recovery to verify it matches HSM address
+      try {
+        const messageHash = ethersUtils._TypedDataEncoder.hash(
+          domain,
+          types,
+          proof
+        )
+        const recoveredAddress = ethersUtils.verifyMessage(
+          ethersUtils.arrayify(messageHash),
+          signature
+        )
+        console.log('Signature recovers to:', recoveredAddress)
+        console.log(
+          'Addresses match:',
+          recoveredAddress.toLowerCase() === result.address.toLowerCase()
+        )
+      } catch (recoveryError) {
+        console.warn('Failed to recover address from signature:', recoveryError)
+      }
+    } catch (error) {
+      console.error('HSM signing failed:', error)
+      console.log('Falling back to private key signing...')
+      // Fall back to private key signing
+      const wallet = new Wallet(normalizePk(process.env.XP_ORACLE_SIGNER_PK))
+      signature = (await wallet._signTypedData(
+        domain as any,
+        types as any,
+        proof as any
+      )) as Hex
+      console.log('Private key signing successful, signature:', signature)
+    }
   } else {
+    console.log('Using ethers wallet for signing...')
     // Use ethers wallet for typed data
     signature = (await signer._signTypedData(
       domain as any,
       types as any,
       proof as any
     )) as Hex
+    console.log('Ethers wallet signing successful, signature:', signature)
   }
 
   return { validAfter, validBefore, signature }

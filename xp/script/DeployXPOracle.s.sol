@@ -9,6 +9,7 @@ contract DeployXPOracleScript is Script {
     string public constant ORACLE_VERSION = "1.0.0";
 
     function run() external {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address oracleSigner = vm.envAddress("HSM_SIGNER_ADDRESS");
         address daoSafeAddress = vm.envAddress("DAO_SAFE_ADDRESS");
 
@@ -21,7 +22,7 @@ contract DeployXPOracleScript is Script {
         }
 
         // Start broadcast
-        vm.startBroadcast();
+        vm.startBroadcast(deployerPrivateKey);
 
         XPOracle oracle = new XPOracle(ORACLE_NAME, ORACLE_VERSION);
 

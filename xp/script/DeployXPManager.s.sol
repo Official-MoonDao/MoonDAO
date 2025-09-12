@@ -20,6 +20,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 contract DeployXPManagerScript is Script {
     function run() external {
         // Get configuration from environment
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address authorizedSignerAddress = vm.envAddress("HSM_SIGNER_ADDRESS");
         address oracleAddress = vm.envAddress("ORACLE_ADDRESS");
         address rewardToken = vm.envAddress("REWARD_TOKEN");
@@ -39,7 +40,7 @@ contract DeployXPManagerScript is Script {
         }
 
         // Start broadcast
-        vm.startBroadcast();
+        vm.startBroadcast(deployerPrivateKey);
 
         // Deploy XPManager implementation
         XPManager implementation = new XPManager();

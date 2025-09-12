@@ -27,7 +27,11 @@ import {
 } from 'thirdweb'
 import { Address, Hex } from 'thirdweb'
 import { privateKeyToAccount as twPrivateKeyToAccount } from 'thirdweb/wallets'
-import { getHSMSigner, isHSMAvailable } from '@/lib/google/hsm-signer'
+import {
+  getHSMSigner,
+  isHSMAvailable,
+  createHSMWallet,
+} from '@/lib/google/hsm-signer'
 import {
   arbitrum,
   base,
@@ -47,31 +51,10 @@ function normalizePk(pk?: string): `0x${string}` {
 /**
  * Create an account for signing transactions, using HSM if available
  */
-async function createSignerAccount(authToken?: string): Promise<any> {
+async function createSignerAccount(): Promise<any> {
   if (isHSMAvailable()) {
-    if (!authToken) {
-      throw new Error('Authentication token required for HSM operations')
-    }
-    const questSigner = getSecureQuestSigner()
-    const signerAddress = await questSigner.getAddress()
-
-    // Create a custom account that uses the HSM signer
-    return {
-      address: signerAddress,
-      signMessage: async (message: string) => {
-        const result = await questSigner.signMessage(message as Hex, authToken)
-        return result.signature
-      },
-      signTypedData: async (domain: any, types: any, message: any) => {
-        const result = await questSigner.signTypedData(
-          domain,
-          types,
-          message,
-          authToken
-        )
-        return result.signature
-      },
-    }
+    // Use HSM wallet for both oracle signing and transaction sending
+    return await createHSMWallet()
   } else {
     // Fall back to private key account
     const relayerPk = normalizePk(process.env.XP_ORACLE_SIGNER_PK)
@@ -631,7 +614,6 @@ export async function signOwnsCitizenProof(params: {
     contextHash,
     xpAmount,
     validitySeconds: params.validitySeconds,
-    authToken: params.authToken,
   })
 
   const context = defaultAbiCoder.encode(
@@ -1696,14 +1678,12 @@ export async function submitHasJoinedTeamClaimFor(params: {
   const account = await createSignerAccount()
 
   const contractAddress = XP_MANAGER_ADDRESSES[XP_ORACLE_CHAIN] as Address
+
   const verifierAddress = HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES[
     XP_ORACLE_CHAIN
   ] as Address
   const verifierId = getVerifierId(verifierAddress)
-
   if (!contractAddress) throw new Error('XP Manager address missing for chain')
-  if (!verifierId)
-    throw new Error(`Verifier ID not found for address: ${verifierAddress}`)
 
   const contract = getContract({
     client: serverClient,
