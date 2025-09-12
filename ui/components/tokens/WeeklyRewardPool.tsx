@@ -445,8 +445,8 @@ export default function WeeklyRewardPool() {
             <PrivyWeb3Button
               label={
                 isCheckedIn 
-                  ? '✨ Already Checked In' 
-                  : '🚀 Check In & Claim Rewards'
+                  ? 'Already Checked In' 
+                  : 'Check In & Claim Reward'
               }
               action={handleCheckIn}
               isDisabled={isCheckedIn}
