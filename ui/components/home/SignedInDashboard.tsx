@@ -1042,81 +1042,127 @@ export default function SingedInDashboard({
           </div>
         </div>
 
-        {/* Upcoming Events Section - Full Width */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold text-white">Upcoming Events</h3>
-            <StandardButton
-              className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
-              link="/events"
-            >
-              View All Events
-            </StandardButton>
-          </div>
-
-          <div className="w-full relative">
-            <div
-              id="luma-loading-dashboard"
-              className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center min-h-[350px]"
-            >
-              <div className="text-white text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                <p className="text-sm">Loading events...</p>
+        {/* Active Projects Section - Full Width */}
+        <div className="bg-gradient-to-br from-green-600/20 to-emerald-800/20 backdrop-blur-xl border border-green-500/20 rounded-2xl p-6 mt-8 mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+              <div>
+                <h3 className="text-2xl font-bold text-white flex items-center gap-2 mb-2">
+                  <RocketLaunchIcon className="w-7 h-7" />
+                  Active Projects
+                </h3>
+                <p className="text-green-200 text-sm">
+                  Contribute to space exploration initiatives
+                </p>
+              </div>
+              
+              {/* Stats next to title */}
+              <div className="flex gap-4">
+                <div className="bg-black/20 rounded-lg px-4 py-2 border border-green-500/20">
+                  <div className="text-lg font-bold text-white">
+                    {Math.round(ethBudget)} ETH
+                  </div>
+                  <div className="text-green-200 text-xs">
+                    Quarterly Budget
+                  </div>
+                </div>
+                <div className="bg-black/20 rounded-lg px-4 py-2 border border-green-500/20">
+                  <div className="text-lg font-bold text-white">
+                    {currentProjects?.length || 0}
+                  </div>
+                  <div className="text-green-200 text-xs">Total Projects</div>
+                </div>
               </div>
             </div>
-            <iframe
-              src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
-              width="100%"
-              height="400"
-              frameBorder="0"
-              style={{ border: '1px solid #ffffff20', borderRadius: '12px' }}
-              allowFullScreen
-              aria-hidden="false"
-              tabIndex={0}
-              className="rounded-lg relative z-10"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="MoonDAO Events Calendar"
-              onLoad={(e) => {
-                const loadingDiv = document.getElementById(
-                  'luma-loading-dashboard'
-                )
-                if (loadingDiv) {
-                  loadingDiv.style.display = 'none'
-                }
-              }}
-            />
-            {/* Fallback link */}
-            <div className="mt-4 text-center">
-              <p className="text-white/70 text-sm mb-2">
-                Can't see the calendar?
-              </p>
-              <a
-                href="https://lu.ma/moondao"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+            
+            {/* Buttons on the right */}
+            <div className="flex gap-3">
+              <StandardButton
+                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-6 py-3 rounded-xl font-medium transition-all"
+                link="/submit"
               >
-                View events on lu.ma
-                <svg
-                  className="ml-2 w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                  />
-                </svg>
-              </a>
+                Propose Project
+              </StandardButton>
+              <StandardButton
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all"
+                link="/projects"
+              >
+                View All Projects
+              </StandardButton>
             </div>
           </div>
+
+          {currentProjects && currentProjects.length > 0 ? (
+            <div>
+              {/* Projects Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {currentProjects.slice(0, 8).map((project: any, index: number) => (
+                  <Link key={index} href={`/project/${project.id}`} passHref>
+                    <div className="bg-black/30 rounded-xl p-4 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/20 transition-all duration-200 h-32 flex flex-col">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-white text-sm flex-1 mr-2">
+                          {project.name}
+                        </h4>
+                        <span
+                          className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
+                            project.active
+                              ? 'bg-green-500/20 text-green-300'
+                              : 'bg-gray-500/20 text-gray-300'
+                          }`}
+                        >
+                          {project.active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <p className="text-green-100 text-xs leading-relaxed flex-1 overflow-hidden">
+                        {project.description?.length > 100
+                          ? `${project.description.substring(0, 100)}...`
+                          : project.description || 'No description available'}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+                
+                {/* Show more projects indicator if there are more than 8 */}
+                {currentProjects.length > 8 && (
+                  <div className="bg-black/30 rounded-xl p-4 border border-green-500/10 h-32 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-green-300 mb-1">
+                        +{currentProjects.length - 8}
+                      </div>
+                      <p className="text-green-200 text-xs mb-2">More Projects</p>
+                      <StandardButton
+                        className="bg-green-600/20 hover:bg-green-600/40 text-green-300 text-xs px-3 py-1 rounded-lg transition-all"
+                        link="/projects"
+                      >
+                        View All
+                      </StandardButton>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-black/20 rounded-xl p-8 border border-green-500/20">
+              <div className="text-center">
+                <RocketLaunchIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+                <h4 className="font-bold text-white text-xl mb-2">
+                  No Active Projects
+                </h4>
+                <p className="text-gray-400 text-sm mb-4">
+                  Check back soon for new space exploration initiatives
+                </p>
+                <StandardButton
+                  className="bg-green-600/20 hover:bg-green-600/40 text-green-300 px-6 py-3 rounded-lg transition-all"
+                  link="/projects"
+                >
+                  View All Projects
+                </StandardButton>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Featured Projects Section */}
+        {/* Launchpad & Events Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 mb-8">
           {/* Launchpad Feature */}
           <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 sm:p-6 lg:p-8">
@@ -1154,101 +1200,83 @@ export default function SingedInDashboard({
             </div>
           </div>
 
-          {/* Projects Feature */}
-          <div className="bg-gradient-to-br from-green-600/20 to-emerald-800/20 backdrop-blur-xl border border-green-500/20 rounded-2xl p-4 sm:p-6 lg:p-8">
+          {/* Events Feature */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div className="min-w-0 flex-1">
                 <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                  <RocketLaunchIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
-                  <span className="leading-tight">Active Projects</span>
+                  <NewspaperIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                  <span className="leading-tight">Upcoming Events</span>
                 </h3>
-                <p className="text-green-200 text-sm sm:text-base leading-tight">
-                  Contribute to space exploration initiatives
+                <p className="text-gray-300 text-sm sm:text-base leading-tight">
+                  Join the community events and discussions
                 </p>
               </div>
               <StandardButton
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold shadow-lg transition-all text-sm sm:text-base whitespace-nowrap flex-shrink-0"
-                link="/projects"
+                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
+                link="/events"
               >
-                View All Projects
+                View All Events
               </StandardButton>
             </div>
 
-            <div className="bg-black/20 rounded-xl p-6 border border-green-500/20">
-              <div className="grid grid-cols-2 gap-6 mb-4">
-                <div>
-                  <div className="text-2xl font-bold text-white">
-                    {Math.round(ethBudget)} ETH
-                  </div>
-                  <div className="text-green-200 text-sm">
-                    Quarterly Rewards Budget
+            <div className="bg-black/20 rounded-xl p-4 border border-white/10">
+              <div className="w-full relative">
+                <div
+                  id="luma-loading-dashboard-small"
+                  className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center min-h-[200px]"
+                >
+                  <div className="text-white text-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
+                    <p className="text-xs">Loading events...</p>
                   </div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-white">
-                    {currentProjects?.length || 0}
-                  </div>
-                  <div className="text-green-200 text-sm">Active Projects</div>
-                </div>
+                <iframe
+                  src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
+                  width="100%"
+                  height="250"
+                  frameBorder="0"
+                  style={{ border: '1px solid #ffffff20', borderRadius: '8px' }}
+                  allowFullScreen
+                  aria-hidden="false"
+                  tabIndex={0}
+                  className="rounded-lg relative z-10"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="MoonDAO Events Calendar"
+                  onLoad={(e) => {
+                    const loadingDiv = document.getElementById(
+                      'luma-loading-dashboard-small'
+                    )
+                    if (loadingDiv) {
+                      loadingDiv.style.display = 'none'
+                    }
+                  }}
+                />
               </div>
-
-              {currentProjects && currentProjects.length > 0 ? (
-                <div className="pt-4 border-t border-green-500/20">
-                  <div className="text-sm mb-3">
-                    <span className="font-medium text-white">
-                      Featured Project:
-                    </span>
-                  </div>
-                  <div className="bg-black/30 rounded-lg p-4 border border-green-500/10">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-semibold text-white text-sm">
-                        {currentProjects[0].name}
-                      </h4>
-                      <span
-                        className={`px-2 py-1 rounded text-xs ${
-                          currentProjects[0].active
-                            ? 'bg-green-500/20 text-green-300'
-                            : 'bg-gray-500/20 text-gray-300'
-                        }`}
-                      >
-                        {currentProjects[0].active ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    <p className="text-green-100 text-xs leading-relaxed">
-                      {currentProjects[0].description?.length > 120
-                        ? `${currentProjects[0].description.substring(
-                            0,
-                            120
-                          )}...`
-                        : currentProjects[0].description ||
-                          'No description available'}
-                    </p>
-                    {currentProjects.length > 1 && (
-                      <p className="text-green-300 text-xs mt-2">
-                        +{currentProjects.length - 1} more projects available
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="pt-4 border-t border-green-500/20">
-                  <div className="text-center py-8">
-                    <RocketLaunchIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-                    <p className="text-gray-400 text-sm mb-2">
-                      No active projects at the moment
-                    </p>
-                    <p className="text-gray-500 text-xs mb-4">
-                      Check back soon for new space exploration initiatives
-                    </p>
-                    <StandardButton
-                      className="bg-green-600/20 hover:bg-green-600/40 text-green-300 text-sm px-4 py-2 rounded-lg transition-all"
-                      link="/projects"
-                    >
-                      View All Projects
-                    </StandardButton>
-                  </div>
-                </div>
-              )}
+              <div className="mt-3 text-center">
+                <a
+                  href="https://lu.ma/moondao"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-3 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 font-medium rounded-lg transition-colors duration-200 text-sm"
+                >
+                  View on lu.ma
+                  <svg
+                    className="ml-2 w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </a>
+              </div>
             </div>
           </div>
         </div>
