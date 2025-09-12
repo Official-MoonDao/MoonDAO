@@ -226,17 +226,19 @@ export default function Lock() {
 
               {/* Network Selection */}
               <div className="mb-8">
-                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
-                  <div className="flex-1 max-w-md">
-                    <h3 className="text-lg font-semibold text-white mb-2">
-                      Network Selection
-                    </h3>
-                    <p className="text-gray-300 text-sm">
-                      Select the blockchain network where you want to lock your MOONEY tokens
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <NetworkSelector />
+                <div className="max-w-2xl mx-auto">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        Network Selection
+                      </h3>
+                      <p className="text-gray-300 text-sm">
+                        Select a network to lock your MOONEY tokens
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <NetworkSelector compact />
+                    </div>
                   </div>
                 </div>
               </div>
