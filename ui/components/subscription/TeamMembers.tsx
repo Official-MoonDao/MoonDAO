@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
-import ProfileCard from '../layout/ProfileCard'
+import IPFSRenderer from '../layout/IPFSRenderer'
 
 type TeamMemberProps = {
   address: string
@@ -25,29 +26,13 @@ type Wearer = {
 
 function TeamMemberSkeleton() {
   return (
-    <div className="w-[350px]">
-      <div className="animate-pulse bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-full h-full min-h-[500px]">
-        <div className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between">
-          <div className="flex flex-col">
-            {/* Image skeleton */}
-            <div className="w-full h-[275px] bg-gray-700/50 mb-4 animate-pulse rounded-2xl rounded-tr-[5vmax] rounded-bl-[5vmax] rounded-br-[5vmax]" />
-
-            {/* Title section skeleton */}
-            <div className="flex pb-5 flex-row items-center pr-5 justify-start">
-              {/* Icon skeleton */}
-              <div className="pt-[20px] w-[50px] h-[50px] bg-gray-700/50 rounded-full animate-pulse" />
-              {/* Name skeleton */}
-              <div className="pt-[20px] ml-4 flex-1">
-                <div className="h-6 bg-gray-700/50 rounded animate-pulse w-3/4" />
-              </div>
-            </div>
-
-            {/* Description skeleton */}
-            <div className="mt-4 space-y-2">
-              <div className="h-4 bg-gray-700/50 rounded animate-pulse w-full" />
-              <div className="h-4 bg-gray-700/50 rounded animate-pulse w-3/4" />
-            </div>
-          </div>
+    <div className="w-full p-4 bg-slate-600/20 rounded-xl animate-pulse">
+      <div className="flex flex-row items-start gap-4 w-full">
+        <div className="w-[60px] h-[60px] bg-slate-700/50 rounded-xl flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="h-4 bg-slate-700/50 rounded w-3/4 mb-2" />
+          <div className="h-3 bg-slate-700/50 rounded w-1/2 mb-2" />
+          <div className="h-3 bg-slate-700/50 rounded w-full" />
         </div>
       </div>
     </div>
@@ -141,25 +126,41 @@ function TeamMember({
     return <TeamMemberSkeleton />
   }
 
+  const citizenName = metadata?.name || 'Anon'
+  const citizenDescription = metadata?.description || 'This citizen has yet to add a profile'
+  const roles = hatNames?.map((hatName: any) => hatName.name || '...').join(', ') || 'Team Member'
+
+  const link = `/citizen/${metadata?.name ? `${metadata.name.toLowerCase().replace(/\s+/g, '-')}-${metadata?.id || nft?.id}` : 'anon'}`
+
   return (
-    <div className="w-[350px]">
-      <ProfileCard
-        inline
-        metadata={{ id: metadata?.id || nft?.id, ...metadata }}
-        owner={address}
-        type="citizen"
-        hovertext={metadata?.name && 'Explore Profile'}
-        horizontalscroll
-        subheader={
-          <div className="flex flex-col h-[50px] overflow-auto">
-            {hatNames?.map((hatName: any, i: number) => (
-              <p key={`${address}-hat-name-${i}`}>{hatName.name || '...'}</p>
-            ))}
+    <Link href={link} className="block w-full">
+      <div className="w-full p-4 bg-slate-600/20 rounded-xl hover:bg-slate-600/30 transition-colors group">
+        <div className="flex flex-row items-start gap-4 w-full">
+          <div className="w-[60px] h-[60px] flex-shrink-0">
+            <IPFSRenderer
+              className="w-full h-full object-cover rounded-xl border-2 border-slate-500/50"
+              src={metadata?.image || '/assets/citizen_image.png'}
+              width={60}
+              height={60}
+              alt={citizenName}
+            />
           </div>
-        }
-        profile
-      />
-    </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-white text-sm mb-1 group-hover:text-slate-200 transition-colors truncate">
+              {citizenName}
+            </h3>
+            <p className="text-xs text-slate-400 mb-2 truncate">
+              {roles}
+            </p>
+            <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
+              {citizenDescription.length > 100
+                ? citizenDescription.slice(0, 100) + '...'
+                : citizenDescription}
+            </p>
+          </div>
+        </div>
+      </div>
+    </Link>
   )
 }
 
@@ -172,11 +173,15 @@ export default function TeamMembers({
 
   // Show loading skeletons while wearers data is loading
   if (!wearers || !wearers?.[0]?.address) {
-    return <TeamMembersLoadingSkeleton count={hats?.length || 3} />
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TeamMembersLoadingSkeleton count={hats?.length || 3} />
+      </div>
+    )
   }
 
   return (
-    <>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {wearers.map((w: Wearer, i: number) => (
         <TeamMember
           key={`${w.address}-wearer-${i}`}
@@ -186,6 +191,6 @@ export default function TeamMembers({
           hatsContract={hatsContract}
         />
       ))}
-    </>
+    </div>
   )
 }
