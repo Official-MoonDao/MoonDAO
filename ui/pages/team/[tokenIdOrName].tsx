@@ -176,7 +176,8 @@ export default function TeamDetailPage({
     isManager,
     subIsValid,
     isLoading: isLoadingTeamData,
-  } = useTeamData(teamContract, hatsContract, nft)
+    hasFullAccess,
+  } = useTeamData(teamContract, hatsContract, nft, citizen)
 
   const hats = useSubHats(selectedChain, adminHatId, true)
 
@@ -508,6 +509,7 @@ export default function TeamDetailPage({
                   jobTableContract={jobTableContract}
                   isManager={isManager}
                   isCitizen={citizen}
+                  hasFullAccess={hasFullAccess}
                 />
               </div>
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">

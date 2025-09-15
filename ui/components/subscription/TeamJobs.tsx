@@ -13,6 +13,7 @@ type TeamJobsProps = {
   jobTableContract: any
   isManager: boolean
   isCitizen: any
+  hasFullAccess?: boolean
 }
 
 export default function TeamJobs({
@@ -20,6 +21,7 @@ export default function TeamJobs({
   jobTableContract,
   isManager,
   isCitizen,
+  hasFullAccess = false,
 }: TeamJobsProps) {
   const router = useRouter()
   const [jobs, setJobs] = useState<JobType[]>()
@@ -118,10 +120,53 @@ export default function TeamJobs({
                     jobTableContract={jobTableContract}
                     editable={isManager}
                     refreshJobs={getEntityJobs}
+                    previewMode={!hasFullAccess}
                   />
                 ))
               ) : (
                 <p className="text-slate-300 text-center py-8">{`This team hasn't listed any open roles yet.`}</p>
+              )}
+            </div>
+          </div>
+        ) : jobs?.[0] ? (
+          // Show preview for non-citizens
+          <div className="mt-4">
+            <div className="bg-slate-800/50 rounded-xl border border-slate-600/30 p-6 mb-4">
+              <div className="text-center">
+                <h4 className="text-lg font-semibold text-white mb-2">
+                  🔒 {jobs.length} Job{jobs.length !== 1 ? 's' : ''} Available
+                </h4>
+                <p className="text-slate-300 mb-4">
+                  This team has active job postings. Become a Citizen to view full details, salary information, and application links.
+                </p>
+                <StandardButton
+                  className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"
+                  onClick={() => {
+                    router.push('/citizen')
+                  }}
+                >
+                  Become a Citizen
+                </StandardButton>
+              </div>
+            </div>
+            <div className="flex gap-4 flex-wrap opacity-50 pointer-events-none">
+              {jobs.slice(0, 3).map((job, i) => (
+                <Job
+                  id={`team-job-preview-${job.id}`}
+                  key={`team-job-preview-${job.id}`}
+                  job={job}
+                  jobTableContract={jobTableContract}
+                  editable={false}
+                  refreshJobs={getEntityJobs}
+                  previewMode={true}
+                />
+              ))}
+              {jobs.length > 3 && (
+                <div className="w-full md:w-[calc(50%-0.5rem)] xl:w-[calc(33.33%-0.67rem)] bg-slate-700/30 rounded-xl border border-slate-600/30 p-6 flex items-center justify-center">
+                  <p className="text-slate-400 text-center">
+                    +{jobs.length - 3} more job{jobs.length - 3 !== 1 ? 's' : ''}
+                  </p>
+                </div>
               )}
             </div>
           </div>
