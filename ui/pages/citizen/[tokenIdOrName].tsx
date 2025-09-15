@@ -30,6 +30,7 @@ import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import { useCitizen } from '@/lib/citizen/useCitizen'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
@@ -123,6 +124,9 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
   } = useCitizenData(nft, citizenContract)
 
   const isOwner = address?.toLowerCase() === nft?.owner?.toLowerCase()
+
+  // Check if current user is a citizen (for viewing permissions)
+  const currentUserCitizen = useCitizen(selectedChain, citizenContract, address)
 
   const { data: votes } = useVotesOfAddress(nft?.owner)
 
@@ -368,7 +372,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
           />
         )}
 
-        {!isGuest && !citizen && !isOwner && subIsValid && !isDeleted && (
+        {!isGuest && !currentUserCitizen && !isOwner && subIsValid && !isDeleted && (
           <Action
             title="Unlock Full Profile"
             description="Become a Citizen of the Space Acceleration Network to view the full profile. Citizenship also unlocks access to the jobs board, marketplace discounts, and more benefits."
