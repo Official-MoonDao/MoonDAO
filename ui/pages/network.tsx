@@ -208,12 +208,9 @@ export default function Network({
       )?.value
       const isFeatured = featuredTeams.includes(nft.metadata.name)
 
-      const type = nft?.metadata?.attributes?.find(
-        (attr: any) => attr.trait_type === 'communications'
-      )?.value
-        ? 'team'
-        : 'citizen'
-      const link = `/${type === 'team' ? 'team' : 'citizen'}/${
+      // Use the current tab to determine the type instead of checking attributes
+      const type = tab === 'teams' ? 'team' : 'citizen'
+      const link = `/${type}/${
         type === 'team'
           ? generatePrettyLink(nft.metadata.name)
           : generatePrettyLinkWithId(nft.metadata.name, nft.id.toString())
