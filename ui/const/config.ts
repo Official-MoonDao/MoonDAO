@@ -408,7 +408,7 @@ export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
 
 //GCP HSM Signer used for XP oracle verification, citizen referrals and gasless transactions
 export const GCP_HSM_SIGNER_ADDRESS =
-  '0x48570b40c1be5a2371adbe42f3994c023686088d'
+  '0xb206325e6562517532686dfeeead4c104d9f5d32'
 
 export const XP_ORACLE_CHAIN =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arbitrum' : 'sepolia'

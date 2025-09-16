@@ -208,7 +208,7 @@ export async function signOracleProof(params: {
       { name: 'validAfter', type: 'uint256' },
       { name: 'validBefore', type: 'uint256' },
     ],
-  } as const
+  }
 
   let signature: Hex
 
@@ -229,8 +229,9 @@ export async function signOracleProof(params: {
           types,
           proof
         )
-        const recoveredAddress = ethersUtils.verifyMessage(
-          ethersUtils.arrayify(messageHash),
+        // CORRECT - this is for EIP-712 signatures
+        const recoveredAddress = ethersUtils.recoverAddress(
+          messageHash,
           signature
         )
         console.log('Signature recovers to:', recoveredAddress)

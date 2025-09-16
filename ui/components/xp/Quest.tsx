@@ -135,12 +135,19 @@ export default function Quest({
           setIsCheckingClaimed(true)
         }
 
+        console.log('Checking claim status for:', {
+          userAddress,
+          verifierId: quest.verifier.verifierId,
+          polling,
+        })
+
         const claimed = await readContract({
           contract: xpManagerContract,
           method: 'hasClaimedFromVerifier' as string,
           params: [userAddress, quest.verifier.verifierId],
         })
 
+        console.log('Contract read result - claimed:', claimed)
         setHasClaimed(Boolean(claimed))
         // Always clear checking status when not polling, regardless of result
         if (!polling) {
@@ -148,7 +155,10 @@ export default function Quest({
         }
         return Boolean(claimed)
       } else {
-        console.log('Missing xpManagerContract or userAddress')
+        console.log('Missing xpManagerContract or userAddress', {
+          xpManagerContract: !!xpManagerContract,
+          userAddress: !!userAddress,
+        })
         // Always clear checking status when not polling
         if (!polling) {
           setIsCheckingClaimed(false)
@@ -291,9 +301,16 @@ export default function Quest({
 
     const poll = async () => {
       try {
+        console.log(
+          `Polling attempt ${
+            attempts + 1
+          }/${maxAttempts} for quest claim confirmation`
+        )
         const claimed = await fetchHasClaimed(true)
+        console.log('Polling result - claimed:', claimed)
 
         if (claimed) {
+          console.log('Quest claim confirmed on blockchain!')
           setIsPollingClaim(false)
           pollingTimeoutRef.current = null
           toast.success('Quest claim confirmed on blockchain!', {
@@ -427,6 +444,7 @@ export default function Quest({
 
       if (eligible) {
         if (txHash) {
+          console.log('Quest claim successful, txHash:', txHash)
           setError(null) // Clear any previous errors
           toast.success(
             'Quest claimed successfully! Waiting for blockchain confirmation...',
