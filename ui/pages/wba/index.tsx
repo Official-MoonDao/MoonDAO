@@ -36,7 +36,7 @@ export async function getStaticProps() {
     let finalists: Finalist[] = [
       {
         id: 0,
-        name: 'Brooke Shepard ★',
+        name: 'Brooke Shepard ⭐',
         citizenId: 139,
         videoUrl: 'https://www.youtube.com/watch?v=nEnkisEsUlE&t=19s',
         writtenUrl:
@@ -52,7 +52,7 @@ export async function getStaticProps() {
       },
       {
         id: 2,
-        name: 'Daniela Fernanda Cisternas ★',
+        name: 'Daniela Fernanda Cisternas ⭐',
         citizenId: 138,
         videoUrl: 'https://www.youtube.com/watch?v=nEnkisEsUlE&t=260s',
         writtenUrl:
@@ -108,7 +108,7 @@ export async function getStaticProps() {
       },
       {
         id: 9,
-        name: 'Shriya Musuku ★',
+        name: 'Shriya Musuku ⭐',
         citizenId: 91,
         videoUrl: 'https://www.youtube.com/watch?v=nEnkisEsUlE&t=1174s',
         writtenUrl:
