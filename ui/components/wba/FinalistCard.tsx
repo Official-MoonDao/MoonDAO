@@ -15,6 +15,7 @@ type FinalistCardProps = {
   handleDistributionChange?: (finalistId: string, value: number) => void
   userHasVotingPower?: any
   isVotingPeriod?: boolean
+  percentage: number
 }
 
 const FinalistCardContent = memo(
@@ -25,6 +26,7 @@ const FinalistCardContent = memo(
     userHasVotingPower,
     isVotingPeriod,
     ineligible,
+    percentage,
   }: any) => {
     const { isMobile } = useWindowSize()
     return (
@@ -77,25 +79,9 @@ const FinalistCardContent = memo(
               </div>
             </div>
           </div>
-          {isVotingPeriod &&
-            (ineligible ? (
-              <div className="flex flex-col items-end">
-                <p className="text-gray-400">{'Ineligible'}</p>
-              </div>
-            ) : (
-              <NumberStepper
-                number={distribution?.[finalist?.id] || 0}
-                setNumber={(value: any) => {
-                  if (distribution && handleDistributionChange) {
-                    handleDistributionChange(String(finalist?.id), value)
-                  }
-                }}
-                step={1}
-                min={0}
-                max={100}
-                isDisabled={!userHasVotingPower}
-              />
-            ))}
+          <div className="flex flex-col items-end mr-24">
+            <p className="text-gray-400">{Math.round(percentage * 10) / 10}%</p>
+          </div>
         </div>
       </div>
     )
@@ -109,6 +95,7 @@ export default function FinalistCard({
   handleDistributionChange,
   userHasVotingPower,
   isVotingPeriod,
+  percentage,
 }: FinalistCardProps) {
   const account = useActiveAccount()
   const address = account?.address
@@ -129,6 +116,7 @@ export default function FinalistCard({
           handleDistributionChange={handleDistributionChange}
           userHasVotingPower={userHasVotingPower}
           isVotingPeriod={isVotingPeriod}
+          percentage={percentage}
         />
       ) : (
         <Link href={`/citizen/${finalist?.citizenId}`} passHref>
@@ -136,6 +124,7 @@ export default function FinalistCard({
             finalist={finalist}
             userHasVotingPower={userHasVotingPower}
             isVotingPeriod={isVotingPeriod}
+            percentage={percentage}
           />
         </Link>
       )}
