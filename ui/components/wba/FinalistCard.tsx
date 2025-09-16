@@ -79,7 +79,7 @@ const FinalistCardContent = memo(
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-end mr-24">
+          <div className="flex flex-col items-end">
             <p className="text-gray-400">{Math.round(percentage * 10) / 10}%</p>
           </div>
         </div>
