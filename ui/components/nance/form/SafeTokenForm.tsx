@@ -59,7 +59,11 @@ export default function SafeTokenForm({
     : [{ id: 'nope', name: 'no tokens found in Safe' }]
 
   const filteredItems = acceptedTokens
-    ? items.filter((item) => acceptedTokens.includes(item.id))
+    ? items.filter((item) => {
+        console.log('item', item)
+        console.log('acceptedTokens', acceptedTokens)
+        return acceptedTokens.some((token) => item.name?.startsWith(token))
+      })
     : items
 
   // set default to first item after data loads
