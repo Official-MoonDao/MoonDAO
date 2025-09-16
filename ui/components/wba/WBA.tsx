@@ -96,11 +96,10 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
   }, [userVotingPower, userAddress])
 
   // Map from address to percentage of commnity rewards
-  let outcome
   const readyToRunVoting = distributions.length > 0
   if (readyToRunVoting) {
     const SUM_TO_ONE_HUNDRED = 100
-    outcome = runQuadraticVoting(
+    const outcome = runQuadraticVoting(
       distributions,
       addressToQuadraticVotingPower,
       SUM_TO_ONE_HUNDRED
