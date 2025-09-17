@@ -561,8 +561,6 @@ export default function TeamDetailPage({
                       >
                         {/* <StandardButton
                           className="min-w-[200px] gradient-2 rounded-[5vmax]"
-                          onClick={() => {
-                            window.open(
                               `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
                             )
                           }}

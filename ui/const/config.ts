@@ -1,5 +1,5 @@
 import { arbitrum, sepolia, arbitrumSepolia } from '../lib/infura/infuraChains'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getChainSlug } from '../lib/thirdweb/chain'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -24,11 +24,13 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig =
-  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
+const ethConfig = require(
+  `../../contracts/deployments/ethereum`
+) as DeploymentConfig
 
-const polygonConfig =
-  require(`../../contracts/deployments/polygon`) as DeploymentConfig
+const polygonConfig = require(
+  `../../contracts/deployments/polygon`
+) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
@@ -36,11 +38,13 @@ const arbitrumConfig =
 const baseConfig =
   require('../../contracts/deployments/base') as DeploymentConfig
 
-const goerliConfig =
-  require(`../../contracts/deployments/goerli`) as DeploymentConfig
+const goerliConfig = require(
+  `../../contracts/deployments/goerli`
+) as DeploymentConfig
 
-const sepoliaConfig =
-  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
+const sepoliaConfig = require(
+  `../../contracts/deployments/sepolia`
+) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -505,8 +509,9 @@ export const HATS_PASSTHROUGH_MODULE_ADDRESS =
 
 export const TABLELAND_ENDPOINT = `https://${
   process.env.NEXT_PUBLIC_CHAIN != 'mainnet' ? 'testnets.' : ''
-}tableland.network/api/v1/query`
-
+}tableland.network/api/v1`
+//export const TABLELAND_ENDPOINT = 'http://localhost:8080/api/v1/query'
+//export const TABLELAND_ENDPOINT = 'http://127.0.0.1:8080/api/v1'
 export const CHAIN_TOKEN_NAMES: Index = {
   ethereum: 'ETH',
   polygon: 'MATIC',

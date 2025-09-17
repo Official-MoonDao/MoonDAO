@@ -2,6 +2,7 @@
 import { Database } from '@tableland/sdk'
 import { ethers } from 'ethers'
 import { Chain } from '@/lib/infura/infuraChains'
+import { TABLELAND_ENDPOINT } from 'const/config'
 
 // Signer adapter for Tableland SDK
 function createTablelandSigner(wallet: ethers.Wallet, chainId: number) {
@@ -30,6 +31,7 @@ export default async function queryTable(chain: Chain, statement: string) {
 
   const db = new Database({
     signer,
+    baseUrl: TABLELAND_ENDPOINT,
   })
 
   const stmt = db.prepare(statement)

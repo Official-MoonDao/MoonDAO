@@ -45,6 +45,10 @@ export async function getStaticProps() {
     const { quarter, year } = getRelativeQuarter(
       isRewardsCycle(new Date()) ? -1 : 0
     )
+    const distributionStatement = `SELECT * FROM ${DISTRIBUTION_TABLE_NAMES[chainSlug]}`
+    console.log('distributionStatement', distributionStatement)
+    const distributions = await queryTable(chain, distributionStatement)
+    console.log('distributions', distributions)
 
     const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
     const projects = await queryTable(chain, projectStatement)
@@ -67,9 +71,6 @@ export async function getStaticProps() {
       }
       return a.eligible ? 1 : -1
     })
-
-    const distributionStatement = `SELECT * FROM ${DISTRIBUTION_TABLE_NAMES[chainSlug]} WHERE year = ${year} AND quarter = ${quarter}`
-    const distributions = await queryTable(chain, distributionStatement)
 
     return {
       props: {

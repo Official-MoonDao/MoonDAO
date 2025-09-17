@@ -7,24 +7,30 @@ import {
   ethereum,
   polygon,
   sepolia,
-} from '@/lib/infura/infuraChains'
+} from '../../lib/infura/infuraChains'
 
 export function getChainSlug(chain: Chain) {
   let slug
   // Special cases for chains with different naming
   if (chain.name === 'Arbitrum One') {
     slug = 'arbitrum'
-  } else if (chain.name === 'Base Sepolia Testnet' || chain.name === 'Base Sepolia') {
+  } else if (
+    chain.name === 'Base Sepolia Testnet' ||
+    chain.name === 'Base Sepolia'
+  ) {
     slug = 'base-sepolia-testnet'
   } else if (chain.name === 'Arbitrum Sepolia') {
     slug = 'arbitrum-sepolia'
-  } else if (chain.name === 'OP Sepolia Testnet' || chain.name === 'Optimism Sepolia') {
+  } else if (
+    chain.name === 'OP Sepolia Testnet' ||
+    chain.name === 'Optimism Sepolia'
+  ) {
     slug = 'op-sepolia'
   } else {
     // Default: lowercase and replace spaces with hyphens
     slug = chain.name?.toLowerCase().replace(/\s+/g, '-') ?? ''
   }
-  
+
   return slug
 }
 
