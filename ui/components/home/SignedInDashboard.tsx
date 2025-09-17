@@ -92,21 +92,65 @@ import Quests from '../xp/Quests'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
-// Function to extract ETH amount from proposal actions
-function getEthAmountFromProposal(actions: Action[] | undefined): number {
-  if (!actions) return 0
+// Function to extract funding information from proposal actions
+function getFundingFromProposal(actions: Action[] | undefined): { hasRequests: boolean; totalUsd: number; tokens: { symbol: string; amount: number }[] } {
+  if (!actions) return { hasRequests: false, totalUsd: 0, tokens: [] }
 
-  let ethAmount = 0
+  const tokens: { symbol: string; amount: number }[] = []
+  let totalUsd = 0
+
   actions
     .filter((action) => action.type === 'Request Budget')
     .flatMap((action) => (action.payload as RequestBudget).budget)
     .forEach((transfer) => {
-      if (transfer.token === ETH_MOCK_ADDRESS) {
-        ethAmount += Number(transfer.amount)
+      const amount = Number(transfer.amount)
+      if (amount > 0) {
+        // Determine token symbol - check various ways the token might be specified
+        let symbol = 'Unknown'
+        const tokenStr = transfer.token?.toString().toLowerCase() || ''
+        
+        if (transfer.token === ETH_MOCK_ADDRESS || transfer.token === 'ETH' || tokenStr === 'eth') {
+          symbol = 'ETH'
+          totalUsd += amount * 2000 // Rough ETH price for sorting
+        } else if (tokenStr.includes('usdc') || transfer.token === 'USDC') {
+          symbol = 'USDC'
+          totalUsd += amount // USDC is roughly $1
+        } else if (tokenStr.includes('usdt') || transfer.token === 'USDT') {
+          symbol = 'USDT'
+          totalUsd += amount // USDT is roughly $1
+        } else if (tokenStr.includes('dai') || transfer.token === 'DAI') {
+          symbol = 'DAI'
+          totalUsd += amount // DAI is roughly $1
+        } else if (transfer.token === 'MOONEY' || tokenStr === 'mooney') {
+          symbol = 'MOONEY'
+          totalUsd += amount * 0.001 // Rough MOONEY price
+        } else if (tokenStr.startsWith('0x')) {
+          // It's a contract address - try to map to known tokens
+          if (tokenStr === '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' || // Ethereum USDC
+              tokenStr === '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359' || // Polygon USDC  
+              tokenStr === '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913') {   // Base USDC
+            symbol = 'USDC'
+            totalUsd += amount
+          } else {
+            // Unknown contract address - just show a generic token symbol
+            symbol = 'Token'
+            totalUsd += amount
+          }
+        } else {
+          // For other unknown tokens, use the string as-is but truncate if too long
+          symbol = transfer.token?.length > 10 ? transfer.token.substring(0, 10) + '...' : (transfer.token || 'Unknown')
+          totalUsd += amount
+        }
+        
+        tokens.push({ symbol, amount })
       }
     })
 
-  return ethAmount
+  return { 
+    hasRequests: tokens.length > 0, 
+    totalUsd, 
+    tokens 
+  }
 }
 
 function getDaysLeft(proposal: any): number {
@@ -114,6 +158,191 @@ function getDaysLeft(proposal: any): number {
     return daysUntilTimestamp(proposal.end)
   }
   return 0
+}
+
+// Function to get the proper status display for a proposal
+function getProposalStatusDisplay(proposal: any, votingInfo: any, daysLeft: number): string {
+  // If we have voting info from Snapshot, use it for more accurate status
+  if (votingInfo) {
+    if (votingInfo.state === 'active') {
+      return `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left to vote`
+    } else if (votingInfo.state === 'closed') {
+      return 'Voting closed'
+    }
+  }
+  
+  // Fall back to proposal status
+  switch (proposal.status) {
+    case 'Temperature Check':
+      return 'Temperature Check'
+    case 'Voting':
+      return daysLeft > 0 ? `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left to vote` : 'Voting closed'
+    case 'Discussion':
+      return 'In Discussion'
+    case 'Approved':
+      return 'Approved'
+    case 'Cancelled':
+      return 'Cancelled'
+    case 'Archived':
+      return 'Archived'
+    default:
+      return proposal.status || 'Unknown status'
+  }
+}
+
+// Function to determine if a proposal has requested funding
+function getProposalFundingDisplay(proposal: any): JSX.Element | string {
+  // Enhanced debugging with proposal body inspection
+  console.log('=== DEBUGGING PROPOSAL FUNDING ===');
+  console.log('Proposal title:', proposal.title);
+  console.log('Proposal uuid:', proposal.uuid);
+  console.log('Proposal body length:', proposal.body?.length || 0);
+  console.log('Proposal body preview:', proposal.body?.substring(0, 500) || 'No body');
+  console.log('Has actions:', !!proposal.actions);
+  console.log('Actions length:', proposal.actions?.length || 0);
+  console.log('Actions data:', proposal.actions);
+  
+  // Try to parse budget from table format as fallback
+  let budgetFromTable: { amount: number; token: string }[] = []
+  if (proposal.body && proposal.actions?.length === 0) {
+    console.log('Attempting to parse table format for:', proposal.title);
+    
+    // Look for table with Transaction Type, Amount, Token Type pattern
+    // More flexible regex to handle various table formats
+    const tablePattern = /\|\s*Transaction Type[^|]*\|\s*Amount[^|]*\|\s*Token Type[^|]*\|[\s\S]*?\|\s*Send[^|]*\|\s*\$?([0-9,]+)[^|]*\|\s*([A-Z]+)[^|]*\|/i;
+    const tableMatch = proposal.body.match(tablePattern);
+    
+    console.log('Table regex match result:', tableMatch);
+    
+    if (tableMatch) {
+      const amountStr = tableMatch[1].replace(/,/g, '');
+      const amount = parseFloat(amountStr);
+      const token = tableMatch[2].trim();
+      console.log('Parsed table budget:', { amount, token, amountStr });
+      budgetFromTable = [{ amount, token }];
+    } else {
+      // Try alternative patterns for different table formats
+      const altPattern = /\|\s*Send[^|]*\|\s*\$?([0-9,]+)[^|]*\|\s*([A-Z]+)[^|]*\|/i;
+      const altMatch = proposal.body.match(altPattern);
+      console.log('Alternative pattern match:', altMatch);
+      
+      if (altMatch) {
+        const amountStr = altMatch[1].replace(/,/g, '');
+        const amount = parseFloat(amountStr);
+        const token = altMatch[2].trim();
+        console.log('Parsed alternative table budget:', { amount, token, amountStr });
+        budgetFromTable = [{ amount, token }];
+      }
+    }
+  }
+
+  // Check if there are any budget request actions or parsed table data
+  if ((!proposal.actions || proposal.actions.length === 0) && budgetFromTable.length === 0) {
+    return 'No funding requested'
+  }
+
+  const budgetActions = proposal.actions?.filter((action: any) => action.type === 'Request Budget') || []
+  console.log('Budget actions found:', budgetActions.length, budgetActions);
+
+  // Combine budget from actions and table parsing
+  if (budgetActions.length === 0 && budgetFromTable.length === 0) {
+    return 'No funding requested'
+  }
+
+  // Extract budget details for better display
+  const budgetDetails: { amount: number; token: string }[] = []
+  
+  // Add budget from actions
+  budgetActions.forEach((action: any) => {
+    if (action.payload?.budget) {
+      action.payload.budget.forEach((budget: any) => {
+        const amount = Number(budget.amount)
+        if (amount > 0 && budget.token) {
+          budgetDetails.push({ amount, token: budget.token })
+        }
+      })
+    }
+  })
+  
+  // Add budget from table parsing
+  budgetFromTable.forEach(({ amount, token }) => {
+    budgetDetails.push({ amount, token })
+  })
+
+  console.log('Budget details:', budgetDetails);
+
+  if (budgetDetails.length === 0) {
+    return 'Budget requested (details TBD)'
+  }
+
+  // Format the display with proper token names
+  if (budgetDetails.length === 1) {
+    const { amount, token } = budgetDetails[0]
+    const tokenSymbol = getTokenSymbol(token)
+    return `${formatNumberUSStyle(amount)} ${tokenSymbol} requested`
+  } else {
+    // Multiple tokens
+    const firstBudget = budgetDetails[0]
+    const tokenSymbol = getTokenSymbol(firstBudget.token)
+    return `${formatNumberUSStyle(firstBudget.amount)} ${tokenSymbol} + others requested`
+  }
+}
+
+// Helper function to get token symbol from address or string
+function getTokenSymbol(token: string): string {
+  if (!token) return 'Token'
+  
+  const tokenLower = token.toLowerCase()
+  
+  // Handle common token patterns
+  if (token === 'ETH' || token === ETH_MOCK_ADDRESS || tokenLower === 'eth') {
+    return 'ETH'
+  }
+  
+  if (token === 'USDC' || tokenLower.includes('usdc')) {
+    return 'USDC'
+  }
+  
+  if (token === 'USDT' || tokenLower.includes('usdt')) {
+    return 'USDT'
+  }
+  
+  if (token === 'DAI' || tokenLower.includes('dai')) {
+    return 'DAI'
+  }
+  
+  if (token === 'MOONEY' || tokenLower.includes('mooney')) {
+    return 'MOONEY'
+  }
+  
+  // Check for known USDC contract addresses
+  const usdcAddresses = [
+    '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', // Ethereum USDC
+    '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359', // Polygon USDC
+    '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // Base USDC
+    '0xaf88d065e77c8cc2239327c5edb3a432268e5831', // Arbitrum USDC
+  ]
+  
+  if (usdcAddresses.includes(tokenLower)) {
+    return 'USDC'
+  }
+  
+  // Check for known USDT contract addresses
+  const usdtAddresses = [
+    '0xdac17f958d2ee523a2206206994597c13d831ec7', // Ethereum USDT
+  ]
+  
+  if (usdtAddresses.includes(tokenLower)) {
+    return 'USDT'
+  }
+  
+  // If it's a long hex address, show as "Token"
+  if (tokenLower.startsWith('0x') && token.length > 10) {
+    return 'Token'
+  }
+  
+  // Otherwise return the token as-is (but limit length)
+  return token.length > 8 ? token.substring(0, 8) + '...' : token
 }
 
 // Function to count unique countries from location data
@@ -770,10 +999,18 @@ export default function SingedInDashboard({
               </div>
 
               <div className="space-y-4 h-full overflow-y-auto">
-                {proposals &&
-                  proposals.slice(0, 3).map((proposal: any, i: number) => {
-                    const ethAmount = getEthAmountFromProposal(proposal.actions)
+                {proposals && proposals.filter((proposal: any) => 
+                  proposal.status !== 'Discussion' && proposal.status !== 'Draft'
+                ).length > 0 ? (
+                  proposals
+                    .filter((proposal: any) => proposal.status !== 'Discussion' && proposal.status !== 'Draft') // Filter out drafts and discussions
+                    .slice(0, 3)
+                    .map((proposal: any, i: number) => {
+                    const fundingInfo = getFundingFromProposal(proposal.actions)
                     const daysLeft = getDaysLeft(proposal)
+                    const votingInfo = votingInfoMap?.[proposal?.voteURL || '']
+                    const statusDisplay = getProposalStatusDisplay(proposal, votingInfo, daysLeft)
+                    const fundingDisplay = getProposalFundingDisplay(proposal)
 
                     return (
                       <Link
@@ -789,47 +1026,50 @@ export default function SingedInDashboard({
                                   179 - i
                                 }: Study on Lunar Surface Selection For Settlement`}
                             </h4>
-                            {i === 0 && (
-                              <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
-                                Active
-                              </span>
-                            )}
+                            <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${
+                              proposal.status === 'Temperature Check' 
+                                ? 'bg-green-500/20 text-green-300 border-green-500/30'
+                                : proposal.status === 'Voting'
+                                ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                : proposal.status === 'Approved'
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                : 'bg-gray-500/20 text-gray-300 border-gray-500/30'
+                            }`}>
+                              {proposal.status === 'Temperature Check' ? 'Temp Check' : proposal.status}
+                            </span>
                           </div>
                           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-300">
                               <div className="flex items-center gap-1">
                                 <span className="font-medium text-white">
-                                  {ethAmount > 0
-                                    ? `${formatNumberUSStyle(ethAmount)} ETH`
-                                    : 'No funding'}
+                                  {fundingDisplay}
                                 </span>
-                                <span>requested</span>
                               </div>
-                              <span className="hidden sm:inline">•</span>
-                              <div className="flex items-center gap-1">
-                                {daysLeft > 0 ? (
-                                  <>
+                              {votingInfo?.end && (
+                                <>
+                                  <span className="hidden sm:inline">•</span>
+                                  <div className="flex items-center gap-1">
                                     <span className="font-medium text-white">
-                                      {daysLeft}{' '}
-                                      {daysLeft === 1 ? 'day' : 'days'}
+                                      {statusDisplay}
                                     </span>
-                                    <span>left</span>
-                                  </>
-                                ) : (
-                                  <span className="font-medium text-white">
-                                    Voting closed
-                                  </span>
-                                )}
-                              </div>
+                                  </div>
+                                </>
+                              )}
                             </div>
                             <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
-                              Vote
+                              {['Voting', 'Temperature Check'].includes(proposal.status) ? 'Vote' : 'View'}
                             </div>
                           </div>
                         </div>
                       </Link>
                     )
-                  })}
+                  })
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    <p className="text-sm">No active proposals available at the moment.</p>
+                    <p className="text-xs mt-2">Check back later for new proposals to vote on!</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
