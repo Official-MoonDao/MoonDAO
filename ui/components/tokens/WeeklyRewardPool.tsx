@@ -17,6 +17,7 @@ import {
 import {
   arbitrum,
   base,
+  ethereum,
   sepolia,
   arbitrumSepolia,
   Chain,
@@ -42,7 +43,7 @@ export default function WeeklyRewardPool() {
   const { wallets } = useWallets()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains: Chain[] = useMemo(
-    () => (isTestnet ? [sepolia, arbitrumSepolia] : [arbitrum, base]),
+    () => (isTestnet ? [sepolia, arbitrumSepolia] : [arbitrum, base, ethereum]),
     [isTestnet]
   )
 
@@ -74,7 +75,7 @@ export default function WeeklyRewardPool() {
 
               // Get the native ETH balance using thirdweb's RPC
               try {
-                const rpcUrl = chain.rpc[0]
+                const rpcUrl = chain.rpc
                 const response = await fetch(rpcUrl, {
                   method: 'POST',
                   headers: {
