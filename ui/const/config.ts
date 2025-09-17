@@ -507,11 +507,7 @@ export const HATS_ADDRESS = '0x3bc1A0Ad72417f2d411118085256fC53CBdDd137'
 export const HATS_PASSTHROUGH_MODULE_ADDRESS =
   '0x050079a8fbFCE76818C62481BA015b89567D2d35'
 
-export const TABLELAND_ENDPOINT = `https://${
-  process.env.NEXT_PUBLIC_CHAIN != 'mainnet' ? 'testnets.' : ''
-}tableland.network/api/v1`
-//export const TABLELAND_ENDPOINT = 'http://localhost:8080/api/v1/query'
-//export const TABLELAND_ENDPOINT = 'http://127.0.0.1:8080/api/v1'
+export const TABLELAND_ENDPOINT = `https://tableland.moondao.com/api/v1`
 export const CHAIN_TOKEN_NAMES: Index = {
   ethereum: 'ETH',
   polygon: 'MATIC',
