@@ -535,4 +535,4 @@ export const MOONDAO_MISSIONS_SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? 'https://api.studio.thegraph.com/query/111994/moon-dao-missions-arb/version/latest'
     : 'https://api.studio.thegraph.com/query/111994/moon-dao-missions-sepolia/version/latest'
-export const TICK_SPACING = 100
+export const TICK_SPACING = 200
