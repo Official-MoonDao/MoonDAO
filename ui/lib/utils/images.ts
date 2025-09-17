@@ -21,8 +21,28 @@ export async function fitImage(
       // Clear the canvas to ensure transparency
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      // Stretch the image to fit the canvas
-      ctx.drawImage(img, 0, 0, maxWidth, maxHeight)
+      // Calculate aspect ratios
+      const imageAspectRatio = img.width / img.height
+      const targetAspectRatio = maxWidth / maxHeight
+
+      let drawWidth = maxWidth
+      let drawHeight = maxHeight
+      let drawX = 0
+      let drawY = 0
+
+      // Calculate dimensions to maintain aspect ratio
+      if (imageAspectRatio > targetAspectRatio) {
+        // Image is wider than target - fit to width
+        drawHeight = maxWidth / imageAspectRatio
+        drawY = (maxHeight - drawHeight) / 2
+      } else {
+        // Image is taller than target - fit to height
+        drawWidth = maxHeight * imageAspectRatio
+        drawX = (maxWidth - drawWidth) / 2
+      }
+
+      // Draw the image centered with proper aspect ratio
+      ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight)
 
       canvas.toBlob((blob) => {
         if (blob) {
@@ -161,5 +181,56 @@ export async function isImageBlank(file: File): Promise<boolean> {
     }
 
     img.src = objectUrl
+  })
+}
+
+export async function cropImageWithCoordinates(
+  file: File,
+  cropX: number,
+  cropY: number,
+  cropSize: number
+): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+
+      if (!ctx) {
+        reject(new Error('Unable to get canvas context'))
+        return
+      }
+
+      // Set canvas size to crop size (square)
+      canvas.width = cropSize
+      canvas.height = cropSize
+
+      // Clear the canvas to ensure transparency
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      // Draw the cropped image onto the canvas
+      ctx.drawImage(
+        img,
+        cropX,
+        cropY,
+        cropSize,
+        cropSize,
+        0,
+        0,
+        cropSize,
+        cropSize
+      )
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const croppedFile = new File([blob], file.name, { type: 'image/png' })
+          resolve(croppedFile)
+        } else {
+          reject(new Error('Failed to create blob from canvas'))
+        }
+      }, 'image/png')
+    }
+    img.onerror = (error) => reject(error)
+    img.src = URL.createObjectURL(file)
   })
 }

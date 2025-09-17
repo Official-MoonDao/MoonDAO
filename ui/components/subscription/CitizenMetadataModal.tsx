@@ -216,7 +216,9 @@ export default function CitizenMetadataModal({
         {stage === 0 && (
           <>
             <div className="w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">Basic Information</h2>
+              <h2 className="text-lg font-semibold text-white mb-4">
+                Basic Information
+              </h2>
               <CitizenMetadataForm
                 nft={nft}
                 citizenData={citizenData}
@@ -256,8 +258,12 @@ export default function CitizenMetadataModal({
         {stage === 2 && (
           <>
             <div className="text-center mb-6 w-full">
-              <h3 className="text-xl font-semibold text-white mb-3">Almost Done!</h3>
-              <p className="text-white/70">Would you like to update your email for notifications?</p>
+              <h3 className="text-xl font-semibold text-white mb-3">
+                Almost Done!
+              </h3>
+              <p className="text-white/70">
+                Would you like to update your email for notifications?
+              </p>
             </div>
             <div className="flex gap-4 w-full">
               <button
@@ -277,7 +283,9 @@ export default function CitizenMetadataModal({
         )}
         {stage === 3 && (
           <div className="w-full">
-            <h3 className="text-lg font-semibold text-white mb-4">Update Email</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">
+              Update Email
+            </h3>
             <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden relative">
               <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
                 <Widget
@@ -300,7 +308,9 @@ export default function CitizenMetadataModal({
         {stage === 4 && (
           <>
             <div className="w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">Review & Submit</h2>
+              <h2 className="text-lg font-semibold text-white mb-4">
+                Review & Submit
+              </h2>
               <CitizenMetadataForm
                 nft={nft}
                 citizenData={citizenData}
