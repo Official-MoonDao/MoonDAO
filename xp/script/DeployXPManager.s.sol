@@ -14,13 +14,18 @@ import "../src/verifiers/HasBoughtAMarketplaceListingStaged.sol";
 import "../src/verifiers/HasJoinedATeam.sol";
 import "../src/verifiers/HasSubmittedPRStaged.sol";
 import "../src/verifiers/HasSubmittedIssue.sol";
+import "../src/verifiers/CitizenReferralsStaged.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+
 
 
 contract DeployXPManagerScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address authorizedSignerAddress = vm.envAddress("AUTHORIZED_SIGNER_ADDRESS");
         address oracleAddress = vm.envAddress("ORACLE_ADDRESS");
         address rewardToken = vm.envAddress("REWARD_TOKEN");
+        address citizenNFTAddress = vm.envAddress("CITIZEN_ADDRESS");
 
         if (oracleAddress == address(0)) {
             revert("No oracle address provided");
@@ -28,8 +33,13 @@ contract DeployXPManagerScript is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        // Deploy XPManager (no constructor parameters needed)
-        XPManager xpManager = new XPManager();
+        // Deploy XPManager implementation
+        XPManager implementation = new XPManager();
+        
+        // Deploy proxy and initialize
+        bytes memory initData = abi.encodeWithSelector(XPManager.initialize.selector);
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
+        XPManager xpManager = XPManager(address(proxy));
 
         // Deploy single verifiers
         HasJoinedATeam hasJoinedATeamVerifier = new HasJoinedATeam(oracleAddress, 5);
@@ -45,6 +55,19 @@ contract DeployXPManagerScript is Script {
         HasBoughtAMarketplaceListingStaged hasBoughtAMarketplaceListingVerifier =
             new HasBoughtAMarketplaceListingStaged(oracleAddress);
         HasSubmittedPRStaged hasSubmittedPRVerifier = new HasSubmittedPRStaged(oracleAddress);
+        CitizenReferralsStaged citizenReferralsVerifier = new CitizenReferralsStaged(oracleAddress);
+
+        // Set XPManager address
+        votingPowerVerifier.setXPManager(address(xpManager));
+        hasVotedVerifier.setXPManager(address(xpManager));
+        hasTokenBalanceVerifier.setXPManager(address(xpManager));
+        hasContributedVerifier.setXPManager(address(xpManager));
+        hasBoughtAMarketplaceListingVerifier.setXPManager(address(xpManager));
+        hasSubmittedPRVerifier.setXPManager(address(xpManager));
+        citizenReferralsVerifier.setXPManager(address(xpManager));
+
+        // Set authorized signer address
+        citizenReferralsVerifier.setAuthorizedSigner(authorizedSignerAddress);
 
         // Register verifiers
         xpManager.registerVerifier(0, address(votingPowerVerifier));
@@ -57,17 +80,18 @@ contract DeployXPManagerScript is Script {
         xpManager.registerVerifier(7, address(hasJoinedATeamVerifier));
         xpManager.registerVerifier(8, address(hasSubmittedIssueVerifier));
         xpManager.registerVerifier(9, address(hasSubmittedPRVerifier));
+        xpManager.registerVerifier(10, address(citizenReferralsVerifier));
 
         // Set up XP levels: More realistic progression based on actual verifier rewards
         uint256[] memory thresholds = new uint256[](6);
         uint256[] memory levels = new uint256[](6);
         
-        thresholds[0] = 50;    // 50 XP = Level 1 (achievable with basic activities)
-        thresholds[1] = 150;   // 150 XP = Level 2 (moderate engagement)
+        thresholds[0] = 25;    // 25 XP = Level 1 (basic activities)
+        thresholds[1] = 100;   // 100 XP = Level 2 (moderate engagement)  
         thresholds[2] = 300;   // 300 XP = Level 3 (active user)
-        thresholds[3] = 600;   // 600 XP = Level 4 (very active user)
-        thresholds[4] = 1000;  // 1000 XP = Level 5 (power user)
-        thresholds[5] = 2000;  // 2000 XP = Level 6 (whale/elite user)
+        thresholds[3] = 750;   // 750 XP = Level 4 (very active user)
+        thresholds[4] = 1500;  // 1500 XP = Level 5 (power user)
+        thresholds[5] = 3000;  // 3000 XP = Level 6 (whale/elite user)
         
         levels[0] = 1;
         levels[1] = 2;
@@ -84,6 +108,11 @@ contract DeployXPManagerScript is Script {
         uint256 conversionRate = 1e18; // 1 * 10^18
         
         xpManager.setERC20RewardConfig(address(rewardToken), conversionRate);
+        
+        // Set citizen NFT address for citizenship verification
+        if (citizenNFTAddress != address(0)) {
+            xpManager.setCitizenNFTAddress(citizenNFTAddress);
+        }
         
         vm.stopBroadcast();
     }

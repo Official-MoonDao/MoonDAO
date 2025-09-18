@@ -113,8 +113,7 @@ export default function Jobs({ jobs }: JobsProps) {
                   </StandardButton>
                 </div>
               </div>
-            )}
-            
+            )}         
             <div className={!citizen ? 'blur-sm pointer-events-none' : ''}>
               {filteredJobs?.[0] ? (
                 <CardGridContainer>

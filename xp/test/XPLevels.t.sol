@@ -5,6 +5,8 @@ import "forge-std/Test.sol";
 import "../src/XPManager.sol";
 import "../src/FakeERC20.sol";
 import "../src/interfaces/IXPVerifier.sol";
+import "../src/mocks/MockERC5643Citizen.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 // Mock verifier for testing XP granting
 contract MockXPVerifier is IXPVerifier {
@@ -34,6 +36,7 @@ contract MockXPVerifier is IXPVerifier {
 contract XPLevelsTest is Test {
     XPManager public xpManager;
     FakeERC20 public erc20Token;
+    MockERC5643Citizen public citizenNFT;
     
     address public owner = address(0x1);
     address public user1 = address(0x2);
@@ -42,9 +45,18 @@ contract XPLevelsTest is Test {
     function setUp() public {
         vm.startPrank(owner);
         
-        // Deploy contracts
-        xpManager = new XPManager();
+        // Deploy XPManager implementation
+        XPManager implementation = new XPManager();
+        
+        // Deploy proxy and initialize
+        bytes memory initData = abi.encodeWithSelector(XPManager.initialize.selector);
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
+        xpManager = XPManager(address(proxy));
+        
         erc20Token = new FakeERC20("Test Token", "TEST");
+        
+        // Deploy Citizen NFT
+        citizenNFT = new MockERC5643Citizen("MoonDAO Citizen", "CITIZEN", address(0), address(0), address(0), address(0));
         
         // Set up XP levels: More realistic progression based on actual verifier rewards
         uint256[] memory thresholds = new uint256[](6);
@@ -72,6 +84,13 @@ contract XPLevelsTest is Test {
         
         // Fund the XPManager with ERC20 tokens
         erc20Token.mint(address(xpManager), 1000e18); // 1000 tokens
+        
+        // Set citizen NFT address in XPManager
+        xpManager.setCitizenNFTAddress(address(citizenNFT));
+        
+        // Give users citizen NFTs
+        citizenNFT.mintTo(user1);
+        citizenNFT.mintTo(user2);
         
         vm.stopPrank();
     }

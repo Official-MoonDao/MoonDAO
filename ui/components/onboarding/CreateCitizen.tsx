@@ -53,6 +53,7 @@ import {
 } from '@/lib/typeform/citizenFormData'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
+import viemChains from '@/lib/viem/viemChains'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import CitizenABI from '../../const/abis/Citizen.json'
 import CrossChainMinterABI from '../../const/abis/CrossChainMinter.json'
@@ -211,6 +212,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         setIsLoadingMint(false)
         return await fundWallet(address, {
           amount: String(roundedCost),
+          chain: viemChains[selectedChainSlug],
         })
       }
 
@@ -319,6 +321,41 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           citizenName,
           mintedTokenId
         )
+
+        // Call the referral API to record the referral
+        try {
+          const accessToken = await getAccessToken()
+
+          // Check if there's a referral parameter in the URL
+          const urlParams = new URLSearchParams(window.location.search)
+          const referredBy = urlParams.get('referredBy')
+
+          if (referredBy && referredBy !== address) {
+            // Call the referral API
+            const referralResponse = await fetch('/api/xp/citizen-referred', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`,
+              },
+              body: JSON.stringify({
+                referrerAddress: referredBy,
+                accessToken: accessToken,
+              }),
+            })
+
+            if (referralResponse.ok) {
+              const result = await referralResponse.json()
+              toast.success('Referral recorded successfully!')
+            } else {
+              const error = await referralResponse.json()
+              console.error('Failed to record referral:', error)
+            }
+          }
+        } catch (error) {
+          console.error('Error recording referral:', error)
+        }
+
         setTimeout(async () => {
           await sendDiscordMessage(
             'networkNotifications',

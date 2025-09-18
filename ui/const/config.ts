@@ -423,57 +423,67 @@ export const XP_ORACLE_ADDRESSES: Index = {
 
 export const XP_MANAGER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xAD53584E58FaD67c48f96BA2e26FF489b3404d2C',
+  sepolia: '0xF0Adf81F15270bBfB943c5648a9Cc18ADc48b35c',
+}
+
+export const XP_MANAGER_IMPLEMENTATION_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '0x7618B47B865C7f18ABcf2DD49e74da1282A8A428',
 }
 
 export const HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x570b7351d394AE72fA8727529127369aFB85dDc5',
+  sepolia: '0xa6419ffFd0Bc70A5bccE08C90444CAe0bBF3A4a6',
 }
 
 export const HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x10117473DE0F0e490ECcE94845BC4f336FB0F0f0',
+  sepolia: '0x51c5D89B4A853F18aDecA1fc90C06057932C33Ef',
 }
 
 export const HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x9BE82EEbC4D21Bcef5d204B5A87d04dcA4ABFBea',
+  sepolia: '0xEFfc0Ed9a8Da4EA08cc9Ed5c065411B003acf0ec',
 }
 
 export const HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x4694629A92145D9013613f725B7482086FE38DeD',
+  sepolia: '0x2CD9b97F6210f8ef7153461e859e3696eC866e2d',
 }
 
 export const HAS_VOTING_POWER_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x8b024b98BaB56882a3Ebb220a654E70869c9403A',
+  sepolia: '0xf666E02F7f7962c65BD55c2bd3F391035985a76c',
 }
 
 export const HAS_VOTED_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x992C3466fBC33b4F944b96bc368C91eb7Aa6d6f8',
+  sepolia: '0x3435ea1c59cb8200e34a92E44A176b678c9c7433',
 }
 
 export const HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xBDb8D69F3604B27Ae040dFb3582FF6417c6C9783',
+  sepolia: '0x6c79928B8b1A0208fD4925fcDCA498CcA0d38EC8',
 }
 
 export const HAS_CONTRIBUTED_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0x85D8e5b9DD69b0E35553C6e2B9e39181aaB79F64',
+  sepolia: '0xcA36ADaC115478737213fc533751b75D4FbE12F3',
 }
 
 export const HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xc96806745e934c7b3E7e0e905c41de3E22f00EB2',
+  sepolia: '0xb461795752a9F2739541057f13e7E925e3a9E9A3',
 }
 
 export const HAS_SUBMITTED_PR_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xf75aBC2612A10372B4c579294cEAB080B73e41C5',
+  sepolia: '0xC6501B42B98dD495fE694b69C013f8c1d64f6c0B',
+}
+
+export const CITIZEN_REFERRAL_VERIFIER_ADDRESSES: Index = {
+  arbtirum: '',
+  sepolia: '0x529c408772C7a5CcC41882a3dde4083573E3Faf3',
 }
 
 export const DISCORD_GUILD_ID = '914720248140279868'
@@ -525,4 +535,4 @@ export const MOONDAO_MISSIONS_SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? 'https://api.studio.thegraph.com/query/111994/moon-dao-missions-arb/version/latest'
     : 'https://api.studio.thegraph.com/query/111994/moon-dao-missions-sepolia/version/latest'
-export const TICK_SPACING = 100
+export const TICK_SPACING = 200

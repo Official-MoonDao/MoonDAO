@@ -217,7 +217,7 @@ export default function TeamJobModal({
             id="job-title-input"
             type="text"
             placeholder="Title"
-            className="w-full mt-2 py-2 px-5 border-2 dark:border-0 dark:bg-[#0f152f] rounded-t-[20px] focus:outline-none focus:ring-2 focus:ring-light-warm"
+            className="w-full mt-2 py-2 px-5 border-2 dark:border-0 dark:bg-[#0f152f] rounded-t-[20px] focus:outline-none focus:ring-2 focus:ring-light-warm text-black"
             onChange={(e) => {
               setJobData({ ...jobData, title: e.target.value })
             }}
@@ -227,7 +227,7 @@ export default function TeamJobModal({
           <textarea
             id="job-description-input"
             placeholder="Description"
-            className="w-full h-[250px] py-2 px-5 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm focus:outline-none focus:ring-2 focus:ring-light-warm"
+            className="w-full h-[250px] py-2 px-5 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm focus:outline-none focus:ring-2 focus:ring-light-warm text-black"
             onChange={(e) => {
               setJobData({ ...jobData, description: e.target.value })
             }}
@@ -243,7 +243,7 @@ export default function TeamJobModal({
             id="job-application-link-input"
             type="text"
             placeholder="Application Link"
-            className="w-full py-2 px-5 border-2 rounded-b-[20px] dark:border-0 dark:bg-[#0f152f] focus:outline-none focus:ring-2 focus:ring-light-warm"
+            className="w-full py-2 px-5 border-2 rounded-b-[20px] dark:border-0 dark:bg-[#0f152f] focus:outline-none focus:ring-2 focus:ring-light-warm text-black"
             onChange={(e) => {
               setJobData({ ...jobData, contactInfo: e.target.value })
             }}

@@ -1,5 +1,9 @@
 import { PlusCircleIcon } from '@heroicons/react/20/solid'
-import { GlobeAmericasIcon, ListBulletIcon, MoonIcon } from '@heroicons/react/24/outline'
+import {
+  GlobeAmericasIcon,
+  ListBulletIcon,
+  MoonIcon,
+} from '@heroicons/react/24/outline'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
 import {
@@ -29,6 +33,7 @@ import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import { getAttribute } from '@/lib/utils/nft'
+import Job, { Job as JobType } from '../components/jobs/Job'
 import Card from '../components/layout/Card'
 import Container from '../components/layout/Container'
 import Frame from '../components/layout/Frame'
@@ -41,10 +46,9 @@ import Search from '@/components/layout/Search'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import Tab from '@/components/layout/Tab'
-import Job, { Job as JobType } from '../components/jobs/Job'
 import CitizenABI from '../const/abis/Citizen.json'
-import TeamABI from '../const/abis/Team.json'
 import JobsABI from '../const/abis/JobBoardTable.json'
+import TeamABI from '../const/abis/Team.json'
 
 // Dynamic imports for globe components
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
@@ -79,7 +83,7 @@ export default function Network({
 
   const [tab, setTab] = useState<string>('citizens')
   const [mapView, setMapView] = useState<string>('earth') // For map sub-tabs
-  
+
   function loadByTab(tab: string) {
     if (tab === 'teams') {
       setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
@@ -116,7 +120,7 @@ export default function Network({
     (newPage: number) => {
       setPageIdx(newPage)
       shallowQueryRoute({ tab, page: newPage.toString() })
-      
+
       // Scroll to the controls section to keep the user focused on the network browsing area
       setTimeout(() => {
         const controls = document.getElementById('network-controls')
@@ -149,7 +153,10 @@ export default function Network({
 
   useEffect(() => {
     const { tab: urlTab, page: urlPage } = router.query
-    if (urlTab && (urlTab === 'teams' || urlTab === 'citizens' || urlTab === 'map')) {
+    if (
+      urlTab &&
+      (urlTab === 'teams' || urlTab === 'citizens' || urlTab === 'map')
+    ) {
       setTab(urlTab as string)
     }
     if (urlPage && !isNaN(Number(urlPage))) {
@@ -186,17 +193,26 @@ export default function Network({
             No {tab} found
           </h3>
           <p className="text-slate-400">
-            {input ? `No results for "${input}"` : `No ${tab} available at the moment.`}
+            {input
+              ? `No results for "${input}"`
+              : `No ${tab} available at the moment.`}
           </p>
         </div>
       )
     }
 
     return paginatedNFTs.map((nft, i) => {
-      const teamTier = getAttribute(nft?.metadata?.attributes as any[], 'Team Tier')?.value
+      const teamTier = getAttribute(
+        nft?.metadata?.attributes as any[],
+        'Team Tier'
+      )?.value
       const isFeatured = featuredTeams.includes(nft.metadata.name)
 
-      const type = nft?.metadata?.attributes?.find((attr: any) => attr.trait_type === 'Type')?.value
+      const type = nft?.metadata?.attributes?.find(
+        (attr: any) => attr.trait_type === 'communications'
+      )?.value
+        ? 'team'
+        : 'citizen'
       const link = `/${type === 'team' ? 'team' : 'citizen'}/${
         type === 'team'
           ? generatePrettyLink(nft.metadata.name)
@@ -204,7 +220,10 @@ export default function Network({
       }`
 
       return (
-        <div className="w-full h-full" key={`${nft.metadata.name}-${nft.id}-${i}`}>
+        <div
+          className="w-full h-full"
+          key={`${nft.metadata.name}-${nft.id}-${i}`}
+        >
           <StandardDetailCard
             title={nft.metadata.name}
             paragraph={nft.metadata.description}
@@ -223,7 +242,7 @@ export default function Network({
         description="Discover and connect with citizens and teams building the future of space exploration"
         image="https://ipfs.io/ipfs/QmbbjvWBUAXPPibj4ZbzzErVaZBSD99r3dbt5CGQMd5Bkh"
       />
-      
+
       <Container>
         <Frame noPadding>
           {/* Compact Header Section */}
@@ -233,7 +252,8 @@ export default function Network({
                 Explore the Network
               </h1>
               <p className="sub-header text-white/80 max-w-3xl mx-auto mb-6">
-                Discover and connect with citizens and teams building the future of space exploration
+                Discover and connect with citizens and teams building the future
+                of space exploration
               </p>
             </div>
           </div>
@@ -242,12 +262,22 @@ export default function Network({
           <div id="network-controls" className="max-w-6xl mx-auto mb-8 px-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               {/* Search Bar - Always present but invisible for map tab */}
-              <div className={`w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3 ${tab === 'map' ? 'invisible' : ''}`}>
+              <div
+                className={`w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3 ${
+                  tab === 'map' ? 'invisible' : ''
+                }`}
+              >
                 <Search
                   className="w-full"
                   input={input}
                   setInput={setInput}
-                  placeholder={tab === 'teams' ? 'Search teams' : tab === 'citizens' ? 'Search citizens' : 'Search network'}
+                  placeholder={
+                    tab === 'teams'
+                      ? 'Search teams'
+                      : tab === 'citizens'
+                      ? 'Search citizens'
+                      : 'Search network'
+                  }
                 />
               </div>
 
@@ -328,7 +358,11 @@ export default function Network({
                 </div>
                 <div className="w-full flex justify-center">
                   <div className="w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
-                    <div className={`flex items-center justify-center ${mapView !== 'earth' && 'hidden'}`}>
+                    <div
+                      className={`flex items-center justify-center ${
+                        mapView !== 'earth' && 'hidden'
+                      }`}
+                    >
                       <Earth pointsData={citizensLocationData || []} />
                     </div>
                     <div className={`${mapView !== 'moon' && 'hidden'}`}>
@@ -450,12 +484,12 @@ export async function getServerSideProps() {
       chain: chain,
       abi: CitizenTableABI as any,
     })
-    
+
     const citizenTableName = await readContract({
       contract: citizenTableContract,
       method: 'getTableName',
     })
-    
+
     const citizenRows: any = await queryTable(
       chain,
       `SELECT * FROM ${citizenTableName}`
@@ -518,7 +552,10 @@ export async function getServerSideProps() {
           })
           return +expiresAt.toString() > now
         } catch (error) {
-          console.error(`Error checking expiration for team ${nft?.metadata?.id}:`, error)
+          console.error(
+            `Error checking expiration for team ${nft?.metadata?.id}:`,
+            error
+          )
           return false
         }
       }
@@ -584,7 +621,10 @@ export async function getServerSideProps() {
           })
           return +expiresAt.toString() > now
         } catch (error) {
-          console.error(`Error checking expiration for citizen ${nft?.metadata?.id}:`, error)
+          console.error(
+            `Error checking expiration for citizen ${nft?.metadata?.id}:`,
+            error
+          )
           return false
         }
       }
@@ -594,8 +634,11 @@ export async function getServerSideProps() {
 
     // Get citizens location data for the map
     let citizensLocationData: any[] = []
-    
-    if (process.env.NEXT_PUBLIC_ENV === 'prod' || process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
+
+    if (
+      process.env.NEXT_PUBLIC_ENV === 'prod' ||
+      process.env.NEXT_PUBLIC_TEST_ENV === 'true'
+    ) {
       // Get location data for each citizen
       for (const citizen of filteredCitizens) {
         const citizenLocation = getAttribute(
