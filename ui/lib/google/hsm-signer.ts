@@ -11,7 +11,7 @@
  * - Proxies unknown JSON-RPC methods to the configured RPC node
  */
 import { KeyManagementServiceClient } from '@google-cloud/kms'
-import { ethers, utils, providers, BigNumber } from 'ethers'
+import { utils, providers } from 'ethers'
 import {
   arrayify,
   hexlify,
@@ -53,23 +53,12 @@ const KMS_CLIENT = (() => {
   return new KeyManagementServiceClient({ credentials: creds })
 })()
 
-// Use string BigInt (works with lower targets than ES2020)
-const SEC_P256K1_N = BigInt(
-  '115792089237316195423570985008687907852837564279074904382605163141518161494337'
-)
-
 // secp256k1 curve parameters
 const SEC_P256K1_P = BigInt(
   '115792089237316195423570985008687907853269984665640564039457584007908834671663'
 )
-const SEC_P256K1_A = BigInt(0)
+
 const SEC_P256K1_B = BigInt(7)
-const SEC_P256K1_GX = BigInt(
-  '55066263022277343669578718895168534326250603453777594175500187360389116729240'
-)
-const SEC_P256K1_GY = BigInt(
-  '32670510020758816978083085130507043184471273380659243275938904335757337482424'
-)
 
 let cachedUncompressedPubKey: Uint8Array | undefined
 let cachedAddress: Address | undefined

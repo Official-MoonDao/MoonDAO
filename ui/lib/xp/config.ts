@@ -1,7 +1,6 @@
 import {
   BanknotesIcon,
   CheckBadgeIcon,
-  ShoppingBagIcon,
   UserGroupIcon,
   CodeBracketIcon,
   ExclamationTriangleIcon,
@@ -138,34 +137,6 @@ export const XP_VERIFIERS = [
     icon: UserGroupIcon,
     actionText: 'Copy Referral Link',
   },
-  // {
-  //   verifierId: 2,
-  //   verifierAddress:
-  //     HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-  //   route: '/api/xp/has-created-a-team-proof',
-  //   type: 'single',
-  //   metricKey: 'teamsCreated',
-  //   title: 'Create a Team',
-  //   description: 'Create a team in the Space Acceleration Network.',
-  //   icon: UserGroupIcon,
-  //   link: '/team',
-  //   linkText: 'Create Team',
-  // },
-  // {
-  //   verifierId: 6,
-  //   verifierAddress:
-  //     HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES[
-  //       DEFAULT_CHAIN_V5_SLUG
-  //     ],
-  //   route: '/api/xp/has-bought-marketplace-listings-proof',
-  //   type: 'staged',
-  //   metricKey: 'purchaseCount', // Placeholder - update when this API is implemented
-  //   title: 'Marketplace Listings',
-  //   description: 'Buy a listing in the MoonDAO marketplace',
-  //   icon: ShoppingBagIcon,
-  //   link: '/marketplace',
-  //   linkText: 'Buy Listing',
-  // },
 ]
 
 export function useXPVerifiers() {
