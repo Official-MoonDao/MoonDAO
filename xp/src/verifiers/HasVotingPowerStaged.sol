@@ -13,11 +13,11 @@ contract HasVotingPowerStaged is XPOracleVerifier, StagedXPVerifier {
     constructor(address _oracle) XPOracleVerifier(_oracle) {
         // Initialize default voting power stages
         // Note: After deployment, you can use setStageConfig() for easy reconfiguration
-        _addStage(1, 5); // 1 voting power = 10 XP
-        _addStage(10, 10); // 10 voting power = 25 XP (total: 35 XP)
-        _addStage(100, 20); // 100 voting power = 50 XP (total: 85 XP)
-        _addStage(1000, 50); // 1,000 voting power = 100 XP (total: 185 XP)
-        _addStage(10000, 100); // 10,000 voting power = 500 XP (total: 685 XP)
+        _addStage(1, 10); // 1 voting power = 10 XP
+        _addStage(10, 25); // 10 voting power = 25 XP (total: 11 XP)
+        _addStage(100, 50); // 100 voting power = 50 XP (total: 85 XP)
+        _addStage(1000, 100); // 1,000 voting power = 100 XP (total: 185 XP)
+        _addStage(10000, 200); // 10,000 voting power = 200 XP (total: 385 XP)
     }
 
     function name() external pure returns (string memory) {

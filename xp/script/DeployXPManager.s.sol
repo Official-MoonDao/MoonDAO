@@ -6,11 +6,9 @@ import "../src/XPManager.sol";
 import "../src/XPOracle.sol";
 import "../src/verifiers/HasVotingPowerStaged.sol";
 import "../src/verifiers/HasVotedStaged.sol";
-import "../src/verifiers/HasTokenBalanceStaged.sol";
 import "../src/verifiers/HasCreatedATeam.sol";
 import "../src/verifiers/HasContributedStaged.sol";
 import "../src/verifiers/HasCompletedCitizenProfile.sol";
-import "../src/verifiers/HasBoughtAMarketplaceListingStaged.sol";
 import "../src/verifiers/HasJoinedATeam.sol";
 import "../src/verifiers/HasSubmittedPRStaged.sol";
 import "../src/verifiers/HasSubmittedIssue.sol";
@@ -52,26 +50,20 @@ contract DeployXPManagerScript is Script {
 
         // Deploy single verifiers
         HasJoinedATeam hasJoinedATeamVerifier = new HasJoinedATeam(oracleAddress, 5);
-        HasCreatedATeam hasCreatedTeamVerifier = new HasCreatedATeam(oracleAddress, 5);
         HasCompletedCitizenProfile hasCompletedCitizenProfileVerifier = new HasCompletedCitizenProfile(oracleAddress, 5);
         HasSubmittedIssue hasSubmittedIssueVerifier = new HasSubmittedIssue(oracleAddress, 5);
 
         // Deploy staged verifiers
         HasVotingPowerStaged votingPowerVerifier = new HasVotingPowerStaged(oracleAddress);
         HasVotedStaged hasVotedVerifier = new HasVotedStaged(oracleAddress);
-        HasTokenBalanceStaged hasTokenBalanceVerifier = new HasTokenBalanceStaged(oracleAddress);
         HasContributedStaged hasContributedVerifier = new HasContributedStaged(oracleAddress);
-        HasBoughtAMarketplaceListingStaged hasBoughtAMarketplaceListingVerifier =
-            new HasBoughtAMarketplaceListingStaged(oracleAddress);
         HasSubmittedPRStaged hasSubmittedPRVerifier = new HasSubmittedPRStaged(oracleAddress);
         CitizenReferralsStaged citizenReferralsVerifier = new CitizenReferralsStaged(oracleAddress);
 
         // Set XPManager address
         votingPowerVerifier.setXPManager(address(xpManager));
         hasVotedVerifier.setXPManager(address(xpManager));
-        hasTokenBalanceVerifier.setXPManager(address(xpManager));
         hasContributedVerifier.setXPManager(address(xpManager));
-        hasBoughtAMarketplaceListingVerifier.setXPManager(address(xpManager));
         hasSubmittedPRVerifier.setXPManager(address(xpManager));
         citizenReferralsVerifier.setXPManager(address(xpManager));
 
@@ -81,15 +73,12 @@ contract DeployXPManagerScript is Script {
         // Register verifiers
         xpManager.registerVerifier(0, address(votingPowerVerifier));
         xpManager.registerVerifier(1, address(hasVotedVerifier));
-        xpManager.registerVerifier(2, address(hasTokenBalanceVerifier));
-        xpManager.registerVerifier(3, address(hasCreatedTeamVerifier));
-        xpManager.registerVerifier(4, address(hasContributedVerifier));
-        xpManager.registerVerifier(5, address(hasCompletedCitizenProfileVerifier));
-        xpManager.registerVerifier(6, address(hasBoughtAMarketplaceListingVerifier));
-        xpManager.registerVerifier(7, address(hasJoinedATeamVerifier));
-        xpManager.registerVerifier(8, address(hasSubmittedIssueVerifier));
-        xpManager.registerVerifier(9, address(hasSubmittedPRVerifier));
-        xpManager.registerVerifier(10, address(citizenReferralsVerifier));
+        xpManager.registerVerifier(2, address(hasContributedVerifier));
+        xpManager.registerVerifier(3, address(hasCompletedCitizenProfileVerifier));
+        xpManager.registerVerifier(4, address(hasJoinedATeamVerifier));
+        xpManager.registerVerifier(5, address(hasSubmittedIssueVerifier));
+        xpManager.registerVerifier(6, address(hasSubmittedPRVerifier));
+        xpManager.registerVerifier(7, address(citizenReferralsVerifier));
 
 
         // Set up XP levels
@@ -128,13 +117,10 @@ contract DeployXPManagerScript is Script {
         xpManager.transferOwnership(daoSafeAddress);
         votingPowerVerifier.transferOwnership(daoSafeAddress);
         hasVotedVerifier.transferOwnership(daoSafeAddress);
-        hasTokenBalanceVerifier.transferOwnership(daoSafeAddress);
         hasContributedVerifier.transferOwnership(daoSafeAddress);
-        hasBoughtAMarketplaceListingVerifier.transferOwnership(daoSafeAddress);
         hasSubmittedPRVerifier.transferOwnership(daoSafeAddress);
         citizenReferralsVerifier.transferOwnership(daoSafeAddress);
         hasJoinedATeamVerifier.transferOwnership(daoSafeAddress);
-        hasCreatedTeamVerifier.transferOwnership(daoSafeAddress);
         hasCompletedCitizenProfileVerifier.transferOwnership(daoSafeAddress);
         hasSubmittedIssueVerifier.transferOwnership(daoSafeAddress);
 

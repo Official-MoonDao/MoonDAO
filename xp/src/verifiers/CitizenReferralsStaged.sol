@@ -31,17 +31,11 @@ contract CitizenReferralsStaged is StagedXPVerifier, Ownable {
         
         authorizedSigner = _authorizedSigner;
         
-        // Initialize default stages (can be updated by admin)
-        // Stage 0: 1 referral = 100 XP
-        // Stage 1: 5 referrals = 250 XP  
-        // Stage 2: 10 referrals = 500 XP
-        // Stage 3: 25 referrals = 1000 XP
-        // Stage 4: 50 referrals = 2000 XP
-        _addStage(1, 100);
-        _addStage(5, 250);
-        _addStage(10, 500);
-        _addStage(25, 1000);
-        _addStage(50, 2000);
+        _addStage(1, 50);  // 1 referral = 50 XP (total: 50 XP)
+        _addStage(5, 150);  // 5 referrals = 150 XP (total: 200 XP)
+        _addStage(10, 300);  // 10 referrals = 300 XP (total: 500 XP)
+        _addStage(25, 600);  // 25 referrals = 600 XP (total: 1100 XP)
+        _addStage(50, 1200);  // 50 referrals = 1200 XP (total: 2300 XP)
     }
     
     /**

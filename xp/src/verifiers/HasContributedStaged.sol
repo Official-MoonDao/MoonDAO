@@ -12,11 +12,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract HasContributedStaged is XPOracleVerifier, StagedXPVerifier {
     constructor(address _oracle) XPOracleVerifier(_oracle) {
         // Initialize default contribution stages
-        _addStage(1, 10); // 1 contribution = 10 XP
-        _addStage(3, 20); // 3 contributions = 30 XP (total: 45 XP)
-        _addStage(10, 50); // 10 contributions = 75 XP (total: 120 XP)
-        _addStage(25, 100); // 25 contributions = 150 XP (total: 270 XP)
-        _addStage(50, 300); // 50 contributions = 300 XP (total: 570 XP)
+        _addStage(1, 25); // 1 contribution = 25 XP
+        _addStage(3, 50); // 3 contributions = 50 XP (total: 75 XP)
+        _addStage(10, 100); // 10 contributions = 100 XP (total: 175 XP)
+        _addStage(25, 200); // 25 contributions = 200 XP (total: 375 XP)
+        _addStage(50, 500); // 50 contributions = 500 XP (total: 875 XP)
     }
 
     // Admin functions - using inherited onlyOwner modifier from XPOracleVerifier -> Ownable
