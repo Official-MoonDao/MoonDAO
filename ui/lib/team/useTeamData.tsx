@@ -4,7 +4,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { getAttribute } from '../utils/nft'
 import { addHttpsIfMissing } from '../utils/strings'
 
-export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
+export function useTeamData(teamContract: any, hatsContract: any, nft: any, isCitizen?: boolean) {
   const account = useActiveAccount()
   const address = account?.address
 
@@ -16,6 +16,11 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
   const [hatTreeId, setHatTreeId] = useState<any>()
   const [adminHatId, setAdminHatId] = useState<any>()
   const [managerHatId, setManagerHatId] = useState<any>()
+
+  // Determine access level for the current user
+  const hasFullAccess = useMemo(() => {
+    return isCitizen || isManager || address === nft?.owner
+  }, [isCitizen, isManager, address, nft?.owner])
 
   const socials = useMemo(() => {
     const entityTwitter = getAttribute(
@@ -147,5 +152,6 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any) {
     isManager,
     isLoading,
     subIsValid,
+    hasFullAccess,
   }
 }
