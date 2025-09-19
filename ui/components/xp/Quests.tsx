@@ -44,10 +44,6 @@ export default function Quests({}: QuestsProps) {
 
   const fetchUserData = useCallback(async () => {
     if (!userAddress || !xpManagerContract) {
-      console.log('fetchUserData: missing required data', {
-        userAddress,
-        xpManagerContract: !!xpManagerContract,
-      })
       return
     }
 

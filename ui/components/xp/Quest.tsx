@@ -148,10 +148,6 @@ export default function Quest({
         }
         return Boolean(claimed)
       } else {
-        console.log('Missing xpManagerContract or userAddress', {
-          xpManagerContract: !!xpManagerContract,
-          userAddress: !!userAddress,
-        })
         // Always clear checking status when not polling
         if (!polling) {
           setIsCheckingClaimed(false)
