@@ -148,7 +148,6 @@ export default function Quest({
         }
         return Boolean(claimed)
       } else {
-        console.log('Missing xpManagerContract or userAddress')
         // Always clear checking status when not polling
         if (!polling) {
           setIsCheckingClaimed(false)
@@ -292,7 +291,6 @@ export default function Quest({
     const poll = async () => {
       try {
         const claimed = await fetchHasClaimed(true)
-
         if (claimed) {
           setIsPollingClaim(false)
           pollingTimeoutRef.current = null
@@ -344,7 +342,7 @@ export default function Quest({
           }
 
           toast.error(
-            'Claim confirmation timed out. The transaction may have succeeded - please refresh to check your XP.',
+            'Claim confirmation timed out. The transaction may have succeeded - please refresh.',
             {
               duration: 8000,
               style: toastStyle,
@@ -427,6 +425,7 @@ export default function Quest({
 
       if (eligible) {
         if (txHash) {
+          console.log('Quest claim successful, txHash:', txHash)
           setError(null) // Clear any previous errors
           toast.success(
             'Quest claimed successfully! Waiting for blockchain confirmation...',

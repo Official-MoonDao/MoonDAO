@@ -406,6 +406,10 @@ export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   ethereum: 30110, //arbitrum eid
 }
 
+//GCP HSM Signer used for XP oracle verification, citizen referrals and gasless transactions
+export const GCP_HSM_SIGNER_ADDRESS =
+  '0xb206325e6562517532686dfeeead4c104d9f5d32'
+
 export const XP_ORACLE_CHAIN =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arbitrum' : 'sepolia'
 
@@ -417,73 +421,58 @@ export const XP_ORACLE_VERSION = '1.0.0'
 export const XP_ORACLE_SIGNER_PK = process.env.XP_ORACLE_SIGNER_PK
 
 export const XP_ORACLE_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0x755D48e6C3744B723bd0326C57F99A92a3Ca3287',
+  arbitrum: '0x0e031bD22d4De6B9944b7393fEfdBb813D245D94',
+  sepolia: '0x1b170AeAa10cF10d788444628490c9d96Ce1dA13',
 }
 
 export const XP_MANAGER_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0xF0Adf81F15270bBfB943c5648a9Cc18ADc48b35c',
+  arbitrum: '0x96B260A0D01B41594d9CbacE3d95db51A8142224',
+  sepolia: '0x51E4a50a98A1600291F18436FDC3b415328A4BbC',
 }
 
 export const XP_MANAGER_IMPLEMENTATION_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0x7618B47B865C7f18ABcf2DD49e74da1282A8A428',
+  arbitrum: '0xE2246ac28aF192dC57BB8b652e49633f423176dc',
+  sepolia: '0x22BA498E56e96E45521b186BD063f60FcEC338A7',
 }
 
 export const HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '0xa6419ffFd0Bc70A5bccE08C90444CAe0bBF3A4a6',
-}
-
-export const HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0x51c5D89B4A853F18aDecA1fc90C06057932C33Ef',
+  sepolia: '0xFB2bF2C0Ad209ccbdEe9d9303c6f1C572dc80e7e',
 }
 
 export const HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0xEFfc0Ed9a8Da4EA08cc9Ed5c065411B003acf0ec',
+  arbitrum: '0x9f696baCb87068A74Cd5fAe1c3B6F61caB6500e4',
+  sepolia: '0xA71dFED5358B6AcA8e4d4773D5dbCa92e3556c40',
 }
 
 export const HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0x2CD9b97F6210f8ef7153461e859e3696eC866e2d',
+  arbitrum: '0x2d02119F528Aa4Da0494B60B60580Cc27BFE1424',
+  sepolia: '0x69baeEFde781720838e81cE09a6C004F6C2437ee',
 }
 
 export const HAS_VOTING_POWER_VERIFIER_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0xf666E02F7f7962c65BD55c2bd3F391035985a76c',
+  arbitrum: '0x406894255f40D2113699D005eE3A51b752FE6674',
+  sepolia: '0xf65AFD18599de2ae8AF757572d787453C7Bd1Df4',
 }
 
 export const HAS_VOTED_VERIFIER_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0x3435ea1c59cb8200e34a92E44A176b678c9c7433',
-}
-
-export const HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0x6c79928B8b1A0208fD4925fcDCA498CcA0d38EC8',
+  arbitrum: '0x4cd72338f72C49971e724939f35Aa046427c7E78',
+  sepolia: '0x5EEA856Ce9E3015Ba2dEcBDC25Ed7Ea7ab5F70F0',
 }
 
 export const HAS_CONTRIBUTED_VERIFIER_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0xcA36ADaC115478737213fc533751b75D4FbE12F3',
-}
-
-export const HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0xb461795752a9F2739541057f13e7E925e3a9E9A3',
+  arbitrum: '0xe4Bfea51BC2FBA9Bc4E1119779395857b441b5DC',
+  sepolia: '0x5a94463Aa3342Ee2a660521158EF184934E674Bd',
 }
 
 export const HAS_SUBMITTED_PR_VERIFIER_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '0xC6501B42B98dD495fE694b69C013f8c1d64f6c0B',
+  arbitrum: '0x1147D688f3eAfc54610D5d705BcAde950B4E7eF2',
+  sepolia: '0x9Cba0A6619b398Cb6682b8e5D8eca766670164AA',
 }
 
 export const CITIZEN_REFERRAL_VERIFIER_ADDRESSES: Index = {
-  arbtirum: '',
-  sepolia: '0x529c408772C7a5CcC41882a3dde4083573E3Faf3',
+  arbitrum: '0xC63dc9E57462BAdF25CEf7d88C75DBD4697a470b',
+  sepolia: '0x7F97014bc3BE2256e7128e38EfC638775b001787',
 }
 
 export const DISCORD_GUILD_ID = '914720248140279868'

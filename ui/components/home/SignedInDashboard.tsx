@@ -458,7 +458,7 @@ export default function SingedInDashboard({
         </div>
 
         {/* Quest System - Horizontal Section */}
-        {address && selectedChain === sepolia && <Quests />}
+        {address && <Quests />}
 
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
