@@ -436,7 +436,7 @@ export const XP_MANAGER_IMPLEMENTATION_ADDRESSES: Index = {
 }
 
 export const HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0xFB2bF2C0Ad209ccbdEe9d9303c6f1C572dc80e7e',
   sepolia: '0xFB2bF2C0Ad209ccbdEe9d9303c6f1C572dc80e7e',
 }
 
@@ -471,7 +471,7 @@ export const HAS_SUBMITTED_PR_VERIFIER_ADDRESSES: Index = {
 }
 
 export const CITIZEN_REFERRAL_VERIFIER_ADDRESSES: Index = {
-  arbitrum: '0xC63dc9E57462BAdF25CEf7d88C75DBD4697a470b',
+  arbitrum: '0x0BD91f6eAc316A8177F1a9F559D13765417d6C66',
   sepolia: '0x7F97014bc3BE2256e7128e38EfC638775b001787',
 }
 
