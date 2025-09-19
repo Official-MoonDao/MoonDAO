@@ -421,7 +421,7 @@ export const XP_ORACLE_VERSION = '1.0.0'
 export const XP_ORACLE_SIGNER_PK = process.env.XP_ORACLE_SIGNER_PK
 
 export const XP_ORACLE_ADDRESSES: Index = {
-  arbitrum: '0x0e031bD22d4De6B9944b7393fEfdBb813D245D94.',
+  arbitrum: '0x0e031bD22d4De6B9944b7393fEfdBb813D245D94',
   sepolia: '0x1b170AeAa10cF10d788444628490c9d96Ce1dA13',
 }
 
