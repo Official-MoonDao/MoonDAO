@@ -625,10 +625,3 @@ export function getAddressFromEnvPublicKey(): Address {
 
   return deriveAddressFromPublicKey(publicKeyHex)
 }
-
-/**
- * Get a secure quest signer (alias for getHSMSigner for backward compatibility)
- */
-export function getSecureQuestSigner(): any {
-  return getHSMSigner()
-}
