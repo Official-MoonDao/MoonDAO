@@ -34,9 +34,8 @@ import {
   prepareContractCall,
   sendTransaction,
 } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { privateKeyToAccount as twPrivateKeyToAccount } from 'thirdweb/wallets'
-import { getSecureQuestSigner, isHSMAvailable } from '@/lib/google/hsm-signer'
+import { isHSMAvailable, createHSMWallet } from '@/lib/google/hsm-signer'
 import { getPrivyUserData } from '@/lib/privy'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
@@ -101,70 +100,6 @@ async function isValidCitizen(address: Address): Promise<boolean> {
   }
 }
 
-async function validateReferrerMintedCitizen(
-  referredCitizenAddress: Address,
-  referrerAddress: Address
-): Promise<{ isValid: boolean; error?: string }> {
-  try {
-    const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
-    const citizenContractAddress = CITIZEN_ADDRESSES[chainSlug] as Address
-
-    if (!citizenContractAddress) {
-      throw new Error('Citizen contract address not configured')
-    }
-
-    const contract = getContract({
-      client: serverClient,
-      chain: DEFAULT_CHAIN_V5,
-      address: citizenContractAddress,
-      abi: CitizenABI as any,
-    })
-
-    // Get the token ID owned by the referred citizen
-    const referredTokenId = await readContract({
-      contract,
-      method: 'getOwnedToken',
-      params: [referredCitizenAddress],
-    })
-
-    // Get the NFT details to find who minted it
-    const nft = await getNFT({
-      contract,
-      tokenId: BigInt(referredTokenId),
-      includeOwner: true,
-    })
-
-    if (!nft.owner) {
-      return {
-        isValid: false,
-        error: 'Referred address does not own a citizen NFT',
-      }
-    }
-
-    // Check if the referrer is the current owner (who minted it)
-    // In most NFT contracts, the minter becomes the initial owner
-    if (nft.owner.toLowerCase() !== referredCitizenAddress.toLowerCase()) {
-      return {
-        isValid: false,
-        error: 'Only the person who minted the citizen can assign the referral',
-      }
-    }
-
-    return { isValid: true }
-  } catch (error: any) {
-    // Handle the "No token owned" error specifically
-    if (error.reason === 'No token owned') {
-      return {
-        isValid: false,
-        error: 'Referred address does not own a citizen NFT',
-      }
-    }
-
-    console.error('Error validating referrer minted citizen:', error)
-    return { isValid: false, error: 'Failed to validate referral' }
-  }
-}
-
 async function addReferral(
   referredCitizenAddress: Address,
   citizenAddress: Address
@@ -182,33 +117,8 @@ async function addReferral(
   let account: any
 
   if (isHSMAvailable()) {
-    const questSigner = getSecureQuestSigner()
-    const signerAddress = await questSigner.getAddress()
-    const authToken = process.env.HSM_AUTH_TOKEN
-
-    if (!authToken) {
-      throw new Error('HSM authentication token not configured')
-    }
-
-    // For HSM, we need to create a custom account that uses the HSM signer
-    // This is a simplified approach - in production you might want to implement
-    // a more sophisticated account wrapper
-    account = {
-      address: signerAddress,
-      signMessage: async (message: string) => {
-        const result = await questSigner.signMessage(message as Hex, authToken)
-        return result.signature
-      },
-      signTypedData: async (domain: any, types: any, message: any) => {
-        const result = await questSigner.signTypedData(
-          domain,
-          types,
-          message,
-          authToken
-        )
-        return result.signature
-      },
-    }
+    // Use HSM wallet compatible with thirdweb (includes address & sendTransaction)
+    account = await createHSMWallet()
   } else {
     // Get the authorized signer's private key from environment
     const authorizedSignerPk = process.env.XP_ORACLE_SIGNER_PK
@@ -330,18 +240,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (!isReferrerValid) {
       return res.status(400).json({
         error: 'Referrer address does not own a valid citizen NFT',
-      })
-    }
-
-    // Validate that the API caller is the one who minted the citizen
-    const mintValidation = await validateReferrerMintedCitizen(
-      normalizedReferredAddress,
-      normalizedReferrerAddress
-    )
-
-    if (!mintValidation.isValid) {
-      return res.status(400).json({
-        error: mintValidation.error,
       })
     }
 
