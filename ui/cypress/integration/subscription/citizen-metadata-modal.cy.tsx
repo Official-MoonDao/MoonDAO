@@ -27,16 +27,18 @@ describe('<CitizenMetadataModal /> ', () => {
   })
 
   it('Renders the component and all stages', () => {
-    cy.get('h1').contains('Update Info')
+    cy.get('h1').contains('Edit Profile')
+    cy.get('button').contains('Next: Update Profile Picture').click()
     cy.get('button').contains('Next').click()
-    cy.get('button').contains('Yes').should('exist')
-    cy.get('button').contains('No').should('exist').click()
-    cy.get('p').contains('Name').should('exist')
+    cy.get('button').contains('Yes, Update Email').should('exist')
+    cy.get('button').contains('Skip for Now').should('exist').click()
+    cy.contains('Review & Submit').should('exist')
   })
 
   it('Renders form inputs with correct initial values', () => {
+    cy.get('button').contains('Next: Update Profile Picture').click()
     cy.get('button').contains('Next').click()
-    cy.get('button').contains('No').click()
+    cy.get('button').contains('Skip for Now').click()
     cy.get('#citizen-name-input').should('have.value', nft.metadata.name)
     cy.get('#citizen-bio-input').should('have.value', nft.metadata.description)
     cy.get('#citizen-location-input').should(
