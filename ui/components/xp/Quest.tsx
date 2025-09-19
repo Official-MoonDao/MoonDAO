@@ -995,22 +995,25 @@ export default function Quest({
 
                     {/* Action Buttons - Right side */}
                     <div className="flex gap-2 flex-shrink-0">
-                      {!isCompleted && !needsGitHubLink && (
-                        <PrivyWeb3Button
-                          label="Claim"
-                          action={async () => {
-                            await claimQuest()
-                          }}
-                          isDisabled={
-                            isLoadingClaim ||
-                            (quest.verifier.type === 'staged' &&
-                              stagedProgress?.totalClaimableXP === 0)
-                          }
-                          requiredChain={DEFAULT_CHAIN_V5}
-                          className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
-                          noPadding
-                        />
-                      )}
+                      {!isCompleted &&
+                        !needsGitHubLink &&
+                        stagedProgress?.totalClaimableXP !== 0 && (
+                          <PrivyWeb3Button
+                            label="Claim"
+                            action={async () => {
+                              await claimQuest()
+                            }}
+                            isDisabled={
+                              isLoadingClaim ||
+                              (quest.verifier.type === 'staged' &&
+                                stagedProgress?.totalClaimableXP === 0)
+                            }
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400/20 text-yellow-300 font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
+                            noPadding
+                            noGradient
+                          />
+                        )}
 
                       {getErrorButton(error || '') && (
                         <div className="flex justify-center">
@@ -1088,8 +1091,9 @@ export default function Quest({
                         }}
                         isDisabled={isLoadingClaim}
                         requiredChain={DEFAULT_CHAIN_V5}
-                        className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-700 hover:via-blue-600 hover:to-blue-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
+                        className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400/20 text-yellow-300 font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
                         noPadding
+                        noGradient
                       />
                     </div>
                   )}
