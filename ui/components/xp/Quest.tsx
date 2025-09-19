@@ -135,19 +135,12 @@ export default function Quest({
           setIsCheckingClaimed(true)
         }
 
-        console.log('Checking claim status for:', {
-          userAddress,
-          verifierId: quest.verifier.verifierId,
-          polling,
-        })
-
         const claimed = await readContract({
           contract: xpManagerContract,
           method: 'hasClaimedFromVerifier' as string,
           params: [userAddress, quest.verifier.verifierId],
         })
 
-        console.log('Contract read result - claimed:', claimed)
         setHasClaimed(Boolean(claimed))
         // Always clear checking status when not polling, regardless of result
         if (!polling) {
@@ -301,16 +294,8 @@ export default function Quest({
 
     const poll = async () => {
       try {
-        console.log(
-          `Polling attempt ${
-            attempts + 1
-          }/${maxAttempts} for quest claim confirmation`
-        )
         const claimed = await fetchHasClaimed(true)
-        console.log('Polling result - claimed:', claimed)
-
         if (claimed) {
-          console.log('Quest claim confirmed on blockchain!')
           setIsPollingClaim(false)
           pollingTimeoutRef.current = null
           toast.success('Quest claim confirmed on blockchain!', {
@@ -361,7 +346,7 @@ export default function Quest({
           }
 
           toast.error(
-            'Claim confirmation timed out. The transaction may have succeeded - please refresh to check your XP.',
+            'Claim confirmation timed out. The transaction may have succeeded - please refresh.',
             {
               duration: 8000,
               style: toastStyle,
