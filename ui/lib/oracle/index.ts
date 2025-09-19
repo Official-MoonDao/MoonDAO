@@ -87,9 +87,6 @@ export async function signOracleProof(params: {
     try {
       const hsmSigner = getHSMSigner()
       signerAddress = await hsmSigner.getAddress()
-      console.log('Using HSM signer with full KMS setup')
-      console.log('HSM signer address:', signerAddress)
-      console.log('Expected HSM address from config:', GCP_HSM_SIGNER_ADDRESS)
       signer = hsmSigner
     } catch (error) {
       console.warn('HSM signer failed, falling back to private key:', error)
@@ -151,11 +148,6 @@ export async function signOracleProof(params: {
     method: 'isSigner',
     params: [signerAddress],
   })) as boolean
-  console.log('Oracle authorization check:')
-  console.log('  Signer address:', signerAddress)
-  console.log('  Oracle address:', oracleAddress)
-  console.log('  Chain ID:', Number(XP_ORACLE_CHAIN_ID))
-  console.log('  Authorized:', authorized)
   if (!authorized) {
     throw new Error(
       `Oracle signer not authorized: ${signerAddress}\noracle: ${oracleAddress}\nchainId: ${Number(
@@ -215,11 +207,8 @@ export async function signOracleProof(params: {
   // Use the signer that was selected above
   if (isHSMAvailable() && signer.signTypedData) {
     try {
-      console.log('Attempting HSM signing...')
       // Use HSM signer for typed data
       const result = await signer.signTypedData(domain, types, proof)
-      console.log('HSM signing successful, signature:', result.signature)
-      console.log('HSM claims address:', result.address)
       signature = result.signature
 
       // Test signature recovery to verify it matches HSM address
@@ -233,11 +222,6 @@ export async function signOracleProof(params: {
         const recoveredAddress = ethersUtils.recoverAddress(
           messageHash,
           signature
-        )
-        console.log('Signature recovers to:', recoveredAddress)
-        console.log(
-          'Addresses match:',
-          recoveredAddress.toLowerCase() === result.address.toLowerCase()
         )
       } catch (recoveryError) {
         console.warn('Failed to recover address from signature:', recoveryError)
@@ -262,7 +246,6 @@ export async function signOracleProof(params: {
       types as any,
       proof as any
     )) as Hex
-    console.log('Ethers wallet signing successful, signature:', signature)
   }
 
   return { validAfter, validBefore, signature }
