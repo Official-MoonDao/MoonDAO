@@ -7,17 +7,13 @@ describe('<Footer />', () => {
 
   it('Renders privacy policy and terms of service links', () => {
     // Check for Privacy Policy link
-    cy.get('a[href="https://docs.moondao.com/Legal/Website-Privacy-Policy"]')
+    cy.get('a[href="/privacy-policy"]')
       .should('exist')
       .and('contain.text', 'Privacy Policy')
-      .and('have.attr', 'target', '_blank')
 
     // Check for Terms of Service link
-    cy.get(
-      'a[href="https://docs.moondao.com/Legal/Website-Terms-and-Conditions"]'
-    )
+    cy.get('a[href="/terms-of-service"]')
       .should('exist')
       .and('contain.text', 'Terms of Service')
-      .and('have.attr', 'target', '_blank')
   })
 })
