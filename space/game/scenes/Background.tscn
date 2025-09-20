@@ -1,0 +1,191 @@
+[gd_scene load_steps=4 format=3 uid="uid://bb3vn0vonxqrd"]
+
+[sub_resource type="GDScript" id="GDScript_l6r8x"]
+script/source = "extends Node2D
+
+@export var phase_speed: float = 0.05
+@onready var sky: ColorRect = %Sky   # ← grabs the unique-named node
+
+func _ready() -> void:
+	if sky == null:
+		push_error(\"BackgroundDriver: 'Sky' not found. Ensure the ColorRect has Unique Name = Sky.\")
+		return
+
+func _process(delta: float) -> void:
+	if sky == null: return
+	var mat := sky.material
+	if mat == null:
+		push_error(\"BackgroundDriver: ColorRect has no ShaderMaterial assigned.\")
+		return
+	mat.set_shader_parameter(\"u_time\", Time.get_ticks_msec() / 1000.0)
+	var off := float(mat.get_shader_parameter(\"u_phase_offset\"))
+	mat.set_shader_parameter(\"u_phase_offset\", fmod(off + delta * phase_speed, 1.0))
+"
+
+[sub_resource type="Shader" id="Shader_274mx"]
+code = "shader_type canvas_item;
+
+// ---- Parameters (show in Inspector) ----
+uniform float u_time               : hint_range(0.0, 99999.0) = 0.0; // driven by script (or uses TIME if left alone)
+uniform vec2  u_resolution         = vec2(320.0, 180.0); // virtual resolution for pixelation look
+uniform float u_pixelate           : hint_range(0.0, 1.0) = 1.0;     // 1 = pixelated, 0 = smooth
+uniform float u_star_density       : hint_range(0.0, 1.0) = 0.35;
+uniform float u_star_twinkle       : hint_range(0.0, 1.0) = 0.7;
+uniform float u_star_brightness    : hint_range(0.0, 2.0) = 1.0;
+
+uniform vec3  u_sky_top            : source_color = vec3(0.05, 0.07, 0.12);
+uniform vec3  u_sky_bottom         : source_color = vec3(0.01, 0.02, 0.05);
+
+uniform vec3  u_moon_color         : source_color = vec3(0.90, 0.93, 1.0);
+uniform vec3  u_moon_shadow        : source_color = vec3(0.28, 0.32, 0.40);
+uniform float u_moon_size          : hint_range(0.05, 0.6) = 0.18;  // relative to min(view size)
+uniform vec2  u_moon_pos           = vec2(0.78, 0.28);              // 0..1 viewport
+uniform float u_phase_offset       : hint_range(0.0, 1.0) = 0.0;    // 0..1 cycle (new->full->new)
+uniform float u_crater_intensity   : hint_range(0.0, 1.5) = 0.6;
+
+uniform float u_vignette           : hint_range(0.0, 1.0) = 0.45;
+uniform float u_grain              : hint_range(0.0, 0.5) = 0.10;
+uniform float u_dither_strength    : hint_range(0.0, 0.5) = 0.08;
+uniform sampler2D SCREEN_TEXTURE : hint_screen_texture, filter_linear_mipmap;
+
+// ---- Helpers ----
+float hash(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }
+
+float noise(vec2 p){
+    vec2 i = floor(p), f = fract(p);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    vec2 u = f*f*(3.0 - 2.0*f);
+    return mix(mix(a,b,u.x), mix(c,d,u.x), u.y);
+}
+
+float fbm(vec2 p){
+    float v = 0.0;
+    float a = 0.5;
+    for(int i=0;i<4;i++){
+        v += a*noise(p);
+        p *= 2.02;
+        a *= 0.5;
+    }
+    return v;
+}
+
+// Ordered Bayer 4x4 dither (nice indie vibe)
+float bayer4(vec2 uv){
+    int x = int(mod(floor(uv.x),4.0));
+    int y = int(mod(floor(uv.y),4.0));
+    int m[16] = int[16](
+        0,  8,  2, 10,
+       12,  4, 14,  6,
+        3, 11,  1,  9,
+       15,  7, 13,  5
+    );
+    return float(m[y*4+x]) / 16.0;
+}
+
+// Pixelation
+vec2 pixel_uv(vec2 uv) {
+    if (u_pixelate < 0.5) return uv;
+    vec2 px = u_resolution;
+    return (floor(uv * px) + 0.5) / px;
+}
+
+void fragment() {
+    vec2 uv = UV;
+    vec2 ires = vec2(textureSize(SCREEN_TEXTURE, 0)); // actual viewport size
+    vec2 puv = pixel_uv(uv);
+
+    // Gradient sky
+    float sky_t = smoothstep(0.0,1.0,puv.y);
+    vec3 sky = mix(u_sky_bottom, u_sky_top, sky_t);
+
+    // Stars (hash grid + twinkle)
+    vec2 star_uv = puv * 400.0;
+    float star_mask = step(1.0 - u_star_density, hash(floor(star_uv)));
+    float tw = 0.5 + 0.5*sin(u_time*3.0 + hash(floor(star_uv)*13.7)*6.2831);
+    float star_val = star_mask * pow(tw, (1.0 - u_star_twinkle)*2.0 + 0.5) * u_star_brightness;
+    sky += vec3(star_val) * 0.8;
+
+    // Moon position & size
+    float minSide = min(ires.x, ires.y);
+    float r = u_moon_size * (minSide/ires.y); // scale relative to height to keep roundness
+    vec2 moon_uv = (puv - u_moon_pos);
+    float dist = length(moon_uv) / r;
+
+    // Base moon disc with soft edge
+    float moon = smoothstep(1.0, 0.98, dist);
+
+    // Craters via fbm
+    float cr = fbm(moon_uv * 18.0 + vec2(0.0, u_time*0.03));
+    float crater_mask = smoothstep(0.55, 0.9, cr);
+    vec3 moon_albedo = mix(u_moon_color, u_moon_shadow, crater_mask * u_crater_intensity);
+
+    // Moon phase mask (wax/wane)
+    float phase = fract(u_phase_offset); // 0..1
+    // Convert to [-1..1] where 0 = full, +/-1 = new (simple cosine-ish curve)
+    float phase_curve = cos(phase * 6.28318530718);
+    // Lit side along x-axis (rotate slightly over time for life)
+    float angle = 0.15 * sin(u_time * 0.07);
+    vec2 dir = normalize(vec2(cos(angle), sin(angle)));
+    float terminator = dot(normalize(moon_uv + 1e-5), dir);
+
+    // Sharpen the phase edge a bit
+    float lit = smoothstep(-0.2, 0.2, terminator + phase_curve * 0.6);
+
+    // Compose moon color
+    vec3 moon_col = moon_albedo * moon * lit;
+
+    // Vignette
+    vec2 c = puv - 0.5;
+    float vign = 1.0 - smoothstep(0.3, 0.95, length(c));
+    sky *= mix(1.0, vign, u_vignette);
+
+    // Grain
+    float g = (hash(puv * (ires.xy + u_time)) - 0.5) * 2.0 * u_grain;
+    sky += g;
+
+    // Add moon on top of sky
+    vec3 col = sky + moon_col;
+
+    // Dither (ordered 4x4)
+    float d = bayer4(puv * ires.xy);
+    col += (d - 0.5) * u_dither_strength;
+
+    COLOR = vec4(col, 1.0);
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sx43m"]
+shader = SubResource("Shader_274mx")
+shader_parameter/u_time = 0.0
+shader_parameter/u_resolution = Vector2(320, 180)
+shader_parameter/u_pixelate = 1.0
+shader_parameter/u_star_density = 0.35
+shader_parameter/u_star_twinkle = 0.7
+shader_parameter/u_star_brightness = 1.0
+shader_parameter/u_sky_top = Color(0.05, 0.07, 0.12, 1)
+shader_parameter/u_sky_bottom = Color(0.01, 0.02, 0.05, 1)
+shader_parameter/u_moon_color = Color(0.9, 0.93, 1, 1)
+shader_parameter/u_moon_shadow = Color(0.28, 0.32, 0.4, 1)
+shader_parameter/u_moon_size = 0.18
+shader_parameter/u_moon_pos = Vector2(0.78, 0.28)
+shader_parameter/u_phase_offset = 0.0
+shader_parameter/u_crater_intensity = 0.6
+shader_parameter/u_vignette = 0.45
+shader_parameter/u_grain = 0.1
+shader_parameter/u_dither_strength = 0.08
+
+[node name="Background" type="Node2D"]
+script = SubResource("GDScript_l6r8x")
+
+[node name="Sky" type="ColorRect" parent="."]
+unique_name_in_owner = true
+z_index = -100
+material = SubResource("ShaderMaterial_sx43m")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2

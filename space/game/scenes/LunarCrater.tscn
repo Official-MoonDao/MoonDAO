@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://cmd416pwcs5x8"]
+
+[ext_resource type="Texture2D" uid="uid://nk77u3etxiq" path="res://art/map_assets_1.png" id="1_hbn7a"]
+
+[node name="LunarCrater" type="Node2D"]
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_hbn7a")
+region_enabled = true
+region_rect = Rect2(655.75946, 617.4292, 340.8499, 149.33704)

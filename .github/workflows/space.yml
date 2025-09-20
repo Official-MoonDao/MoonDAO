@@ -1,0 +1,25 @@
+# .github/workflows/build-game.yml
+name: Build Godot
+on: [push, workflow_dispatch]
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: "4.3" # pin your version
+          include-templates: true
+
+      - name: Export Web
+        working-directory: space/game
+        run: |
+          mkdir -p ../ui/public/space
+          godot --headless --path . \
+            --export-release "Web" \
+            ../ui/public/space/index.html

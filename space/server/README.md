@@ -1,0 +1,1 @@
+ JWT_SERCRET=devsecret npx ts-node src/index.ts 

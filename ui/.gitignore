@@ -48,3 +48,6 @@ public/sitemap*.xml
 scripts/generated/*
 !scripts/generated/.gitkeep
 .claude
+
+# space
+/public/space

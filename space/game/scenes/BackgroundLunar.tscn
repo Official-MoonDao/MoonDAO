@@ -1,0 +1,39 @@
+[gd_scene load_steps=6 format=3 uid="uid://lg1e70p4tyqh"]
+
+[ext_resource type="Script" uid="uid://doyei2aaeavs4" path="res://scripts/BackgroundLunar.gd" id="1_ik8e0"]
+[ext_resource type="Shader" uid="uid://ba1g5ihtseajy" path="res://scenes/BackgroundLunar.gdshader" id="1_ken1w"]
+[ext_resource type="Texture2D" uid="uid://chg5eubooxtkx" path="res://art/lunar_albedo_indie.png" id="3_c2yhu"]
+[ext_resource type="Texture2D" uid="uid://bqoie5vpixssa" path="res://art/lunar_normal_height_indie.png" id="4_fsfyn"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ik8e0"]
+shader = ExtResource("1_ken1w")
+shader_parameter/u_view_size = Vector2(100, 100)
+shader_parameter/u_offset = Vector2(0, 0)
+shader_parameter/u_time = 0.0
+shader_parameter/albedo_tex = ExtResource("3_c2yhu")
+shader_parameter/normal_tex = ExtResource("4_fsfyn")
+shader_parameter/u_tile_px = 2000.0
+shader_parameter/u_uv_scale = 0.65
+shader_parameter/u_pixel_res = Vector2(300, 300)
+shader_parameter/height_scale = 0.01
+shader_parameter/steps_base = 30.0
+shader_parameter/steps_max = 100.0
+shader_parameter/view_dir_ts = Vector3(0, 0, 1)
+shader_parameter/light_dir_ss = Vector3(-0.55, -0.32, 1)
+shader_parameter/light_strength = 0.85
+shader_parameter/cL_bias = 0.9
+shader_parameter/cL_scale = 0.01
+shader_parameter/normal_strength = 1.0
+shader_parameter/albedo_tint = Color(0.52708346, 0.52708346, 0.52708346, 1)
+shader_parameter/exposure = 0.95
+shader_parameter/contrast = 0.95
+shader_parameter/at_strength = 0.55
+shader_parameter/at_scale = 0.75
+shader_parameter/at_variants = 3.0
+
+[node name="BackgroundLunar" type="Node2D"]
+script = ExtResource("1_ik8e0")
+sprite_path = NodePath("Sprite2D")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+material = SubResource("ShaderMaterial_ik8e0")

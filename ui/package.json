@@ -71,7 +71,7 @@
     "graphql-request": "^6.1.0",
     "gsap": "^3.12.7",
     "html2canvas-pro": "^1.5.8",
-    "jose": "^4.15.4",
+    "jose": "^6.1.0",
     "juice-sdk-core": "^1.7.0-beta",
     "juice-sdk-react": "^1.7.0-beta",
     "marked": "^15.0.7",

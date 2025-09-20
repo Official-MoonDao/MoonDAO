@@ -317,6 +317,11 @@ module.exports = withTM(
           destination: '/launch',
           permanent: true,
         },
+        {
+          source: '/space',
+          destination: '/space/index.html',
+          permanent: true,
+        },
         ...(process.env.NEXT_PUBLIC_ENV === 'prod'
           ? [
               {

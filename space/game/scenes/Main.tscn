@@ -1,0 +1,26 @@
+[gd_scene load_steps=5 format=3 uid="uid://bnifiqnix7eit"]
+
+[ext_resource type="Script" uid="uid://dikjtumnju782" path="res://scripts/MainNetClient.gd" id="1_elqb8"]
+[ext_resource type="Script" uid="uid://dwy60f8w7ue2q" path="res://scripts/Level1.gd" id="2_rarhs"]
+[ext_resource type="PackedScene" uid="uid://lg1e70p4tyqh" path="res://scenes/BackgroundLunar.tscn" id="2_rvslj"]
+[ext_resource type="PackedScene" uid="uid://cmd416pwcs5x8" path="res://scenes/LunarCrater.tscn" id="3_0bbpv"]
+
+[node name="Main" type="Node2D"]
+y_sort_enabled = true
+script = ExtResource("1_elqb8")
+
+[node name="Level1" type="Node2D" parent="."]
+script = ExtResource("2_rarhs")
+
+[node name="BackgroundLunar" parent="Level1" instance=ExtResource("2_rvslj")]
+
+[node name="Interactables" type="Node2D" parent="Level1"]
+unique_name_in_owner = true
+y_sort_enabled = true
+
+[node name="LunarCrater" parent="Level1/Interactables" instance=ExtResource("3_0bbpv")]
+
+[node name="Actors" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Camera2D" type="Camera2D" parent="."]
