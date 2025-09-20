@@ -24,6 +24,17 @@ import toastStyle from '../marketplace/marketplace-utils/toastConfig'
 // Static verifiers array for server-side use
 export const XP_VERIFIERS = [
   {
+    verifierId: 7,
+    verifierAddress: CITIZEN_REFERRAL_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/citizen-referrals',
+    type: 'staged',
+    metricKey: 'referralCount',
+    title: 'Citizen Referrals',
+    description: 'Refer your friends to the Space Acceleration Network.',
+    icon: UserGroupIcon,
+    actionText: 'Copy Referral Link',
+  },
+  {
     verifierId: 0,
     verifierAddress: HAS_VOTING_POWER_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/voting-power-proof',
@@ -125,17 +136,6 @@ export const XP_VERIFIERS = [
           'from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700',
       },
     },
-  },
-  {
-    verifierId: 7,
-    verifierAddress: CITIZEN_REFERRAL_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/citizen-referrals',
-    type: 'staged',
-    metricKey: 'referralCount',
-    title: 'Citizen Referrals',
-    description: 'Refer your friends to the Space Acceleration Network.',
-    icon: UserGroupIcon,
-    actionText: 'Copy Referral Link',
   },
 ]
 

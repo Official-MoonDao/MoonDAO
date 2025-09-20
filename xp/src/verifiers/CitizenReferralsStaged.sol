@@ -31,11 +31,11 @@ contract CitizenReferralsStaged is StagedXPVerifier, Ownable {
         
         authorizedSigner = _authorizedSigner;
         
-        _addStage(1, 50);  // 1 referral = 50 XP (total: 50 XP)
-        _addStage(5, 150);  // 5 referrals = 150 XP (total: 200 XP)
-        _addStage(10, 300);  // 10 referrals = 300 XP (total: 500 XP)
-        _addStage(25, 600);  // 25 referrals = 600 XP (total: 1100 XP)
-        _addStage(50, 1200);  // 50 referrals = 1200 XP (total: 2300 XP)
+        _addStage(1, 1000);  // 1 referral = 1000 XP (total: 1000 XP)
+        _addStage(3, 3000);  // 5 referrals = 3000 XP (total: 4000 XP)
+        _addStage(5, 5000);  // 10 referrals = 5000 XP (total: 9000 XP)
+        _addStage(10, 10000);  // 25 referrals = 10000 XP (total: 19000 XP)
+        _addStage(25, 25000);  // 50 referrals = 25000 XP (total: 39000 XP)
     }
     
     /**
@@ -67,6 +67,32 @@ contract CitizenReferralsStaged is StagedXPVerifier, Ownable {
         address oldSigner = authorizedSigner;
         authorizedSigner = _newSigner;
         emit AuthorizedSignerSet(oldSigner, _newSigner);
+    }
+    
+    /**
+     * @notice Set the staged XP configuration (thresholds and xpAmounts)
+     * @dev Thresholds must be strictly ascending. Existing stages are replaced.
+     * @param thresholds Array of threshold requirements (e.g., referral counts)
+     * @param xpAmounts Array of XP amounts corresponding to each threshold
+     */
+    function setStageConfig(uint256[] calldata thresholds, uint256[] calldata xpAmounts) external onlyOwner {
+        require(thresholds.length == xpAmounts.length, "Arrays length mismatch");
+        require(thresholds.length > 0, "No stages provided");
+
+        // Validate thresholds are in ascending order
+        for (uint256 i = 1; i < thresholds.length; i++) {
+            require(thresholds[i] > thresholds[i - 1], "Thresholds must be ascending");
+        }
+
+        // Clear existing stages
+        delete stages;
+
+        // Add new stages
+        for (uint256 i = 0; i < thresholds.length; i++) {
+            stages.push(Stage({threshold: thresholds[i], xpAmount: xpAmounts[i], active: true}));
+        }
+
+        emit StageConfigSet(thresholds, xpAmounts);
     }
     
     /**

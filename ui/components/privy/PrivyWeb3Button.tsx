@@ -26,6 +26,7 @@ type PrivyWeb3BtnProps = {
   requiredChain?: any
   v5?: boolean
   noPadding?: boolean
+  noGradient?: boolean
 }
 
 function Button({
@@ -37,15 +38,16 @@ function Button({
   isDisabled,
   children,
   noPadding = false,
+  noGradient = false,
 }: any) {
   return (
     <button
       id={id}
       data-testid={dataTestId}
       type={type}
-      className={`${
-        noPadding ? '' : 'px-5 py-3'
-      } text-lg gradient-2 text-white disabled:opacity-50 ${className}`}
+      className={`${noPadding ? '' : 'px-5 py-3'} text-lg ${
+        noGradient ? '' : 'gradient-2'
+      } text-white disabled:opacity-50 ${className}`}
       onClick={onClick}
       disabled={isDisabled}
     >
@@ -68,6 +70,7 @@ export function PrivyWeb3Button({
   requiredChain,
   v5 = false,
   noPadding = false,
+  noGradient = false,
 }: PrivyWeb3BtnProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet } = useContext(PrivyWalletContext)
@@ -121,6 +124,7 @@ export function PrivyWeb3Button({
           className={className}
           onClick={login}
           noPadding={noPadding}
+          noGradient={noGradient}
         >
           Connect
         </Button>
@@ -147,6 +151,7 @@ export function PrivyWeb3Button({
           }}
           isDisabled={isDisabled}
           noPadding={noPadding}
+          noGradient={noGradient}
         >
           Switch Network
         </Button>
@@ -170,6 +175,7 @@ export function PrivyWeb3Button({
           }}
           isDisabled={isDisabled || isLoading}
           noPadding={noPadding}
+          noGradient={noGradient}
         >
           {isLoading ? (
             <div className="w-full">
