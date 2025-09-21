@@ -9,8 +9,8 @@ const cspHeader = `
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors 'none';
-    connect-src 'self' https://auth.privy.io https://*.privy.systems https://*.thirdweb.com https://*.nance.app https://*.walletconnect.com wss://*.walletconnect.com https://www.walletlink.org wss://*.walletlink.org https://*.safe.global https://*.ipfscdn.io https://*.ensideas.com https://*.amazonaws.com https://apple.com https://google.com https://www.apple.com https://www.google.com https://*.snapshot.org https://testnets.tableland.network https://tableland.network https://*.coinbase.com https://ipfs.io https://cloudflare-ipfs.com/* https://*.etherscan.io https://*.vimeo.com https://*.uniswap.org https://*.layerzero-scan.com https://docs.google.com https://docs.moondao.com https://*.layerzero-scan.com https://*.juicebox.money https://rpc2.base.org https://rpc2.arbitrum.org https://rpc2.sepolia.org https://rpc2.mainnet.org https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://google-analytics.com https://*.google-analytics.com https://*.infura.io https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com https://nance-ts-production.up.railway.app;
+    frame-ancestors 'self';
+    connect-src 'self' https://auth.privy.io https://*.privy.systems https://*.thirdweb.com https://*.nance.app https://*.walletconnect.com wss://*.walletconnect.com https://www.walletlink.org wss://*.walletlink.org https://*.safe.global https://*.ipfscdn.io https://*.ensideas.com https://*.amazonaws.com https://apple.com https://google.com https://www.apple.com https://www.google.com https://*.snapshot.org https://testnets.tableland.network https://tableland.network https://*.coinbase.com https://ipfs.io https://cloudflare-ipfs.com/* https://*.etherscan.io https://*.vimeo.com https://*.uniswap.org https://*.layerzero-scan.com https://docs.google.com https://docs.moondao.com https://*.layerzero-scan.com https://*.juicebox.money https://rpc2.base.org https://rpc2.arbitrum.org https://rpc2.sepolia.org https://rpc2.mainnet.org https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://google-analytics.com https://*.google-analytics.com https://*.infura.io https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com https://nance-ts-production.up.railway.app http://localhost:2567 http://127.0.0.1:2567 ws://localhost:2567 wss://localhost:2567 ws://127.0.0.1:2567 wss://127.0.0.1:2567;
     frame-src 'self' https://*.youtube.com https://*.privy.io https://*.moondao.com https://*.typeform.com https://*.snapshot.org https://*.coinbase.com https://moondao.ck.page https://moondao.kit.com https://*.vimeo.com https://docs.google.com https://docs.moondao.com https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com;
     upgrade-insecure-requests;
 `
@@ -46,11 +46,27 @@ module.exports = withTM(
     async headers() {
       return [
         {
+          source: '/space-client/:path*',
+          headers: [
+            {
+              key: 'Content-Security-Policy',
+              value: cspHeader.replace(/\n/g, ''),
+            },
+            { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+            { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+            { key: 'Cross-Origin-Embedder-Policy', value: 'require-corp' },
+          ],
+        },
+        {
           source: '/(.*)',
           headers: [
             {
               key: 'Content-Security-Policy',
               value: cspHeader.replace(/\n/g, ''),
+            },
+            {
+              key: 'X-Frame-Options',
+              value: 'SAMEORIGIN',
             },
           ],
         },
@@ -315,11 +331,6 @@ module.exports = withTM(
         {
           source: '/launchpad',
           destination: '/launch',
-          permanent: true,
-        },
-        {
-          source: '/space',
-          destination: '/space/index.html',
           permanent: true,
         },
         ...(process.env.NEXT_PUBLIC_ENV === 'prod'

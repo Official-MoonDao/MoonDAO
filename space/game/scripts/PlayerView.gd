@@ -1,7 +1,7 @@
 extends Node2D
 
 @export var sprite_path: NodePath     # set this in the Inspector
-@onready var sprite: AnimatedSprite2D = %AstronautSprite
+@onready var sprite: AnimatedSprite2D = $AstronautSprite
 
 
 func _ready() -> void:
@@ -12,13 +12,27 @@ func update_from_velocity(v: Vector2) -> void:
 	if v.length() < 0.1:
 		sprite.stop()
 		sprite.frame = 0
+		sprite.flip_h = false  # Reset flip when idle
 		return
+	
 	var dir := "down"
+	var should_flip := false
+	
 	if abs(v.x) > abs(v.y):
-		dir = "right" if v.x > 0.0 else "left"
+		if v.x > 0.0:
+			dir = "right"
+			should_flip = false
+		else:
+			dir = "left"
+			should_flip = true
 	else:
 		dir = "down" if v.y > 0.0 else "up"
-	var anim := "walk_" + dir
+		should_flip = false
+	
+	# Use right-facing animation for left movement, but flip it
+	var anim := "walk_" + (dir if dir != "left" else "right")
+	sprite.flip_h = should_flip
+	
 	if sprite.animation != anim or not sprite.is_playing():
 		sprite.play(anim)
 

@@ -4,15 +4,25 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@colyseus/core": "^0.16.21",
-    "@colyseus/schema": "^3.0.60",
-    "@colyseus/ws-transport": "^0.16.5",
+    "@colyseus/core": "0.14.30",
+    "@colyseus/schema": "1.0.40",
+    "@colyseus/ws-transport": "0.14.17",
+    "colyseus.js": "0.14",
     "jose": "^6.1.0",
+    "jsonwebtoken": "^9.0.2",
     "zod": "^4.1.9"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.5.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "undici": "^7.16.0"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "start": "node dist/index.js",
+    "dev": "JWT_SECRET=devsecret ts-node src/index.ts",
+    "seat:test": "node ./scripts/seat-test.mjs"
   }
 }

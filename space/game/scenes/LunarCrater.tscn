@@ -3,6 +3,8 @@
 [ext_resource type="Texture2D" uid="uid://nk77u3etxiq" path="res://art/map_assets_1.png" id="1_hbn7a"]
 
 [node name="LunarCrater" type="Node2D"]
+z_as_relative = false
+z_index = -10
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("1_hbn7a")

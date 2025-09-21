@@ -1,9 +1,14 @@
-[gd_scene load_steps=21 format=3 uid="uid://67y32qbcw0vu"]
+[gd_scene load_steps=19 format=3 uid="uid://67y32qbcw0vu"]
 
 [ext_resource type="Script" uid="uid://dasfo8f2akysq" path="res://scripts/Player.gd" id="1_mdl7e"]
 [ext_resource type="PackedScene" uid="uid://d2ikedkm1bh3s" path="res://scenes/Astronaut.tscn" id="1_p0vlq"]
 [ext_resource type="Texture2D" uid="uid://76u31151kgx4" path="res://art/astro.png" id="2_v6fml"]
 [ext_resource type="Script" uid="uid://ced5w7s74ba5a" path="res://scripts/PlayerView.gd" id="3_qu4a1"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_1"]
+font_size = 32
+font_color = Color(0, 0, 0, 1)
+outline_size = 1
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_mdl7e"]
 atlas = ExtResource("2_v6fml")
@@ -16,10 +21,6 @@ region = Rect2(231, 316, 189, 280)
 [sub_resource type="AtlasTexture" id="AtlasTexture_d3wef"]
 atlas = ExtResource("2_v6fml")
 region = Rect2(420, 316, 189, 280)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_o4126"]
-atlas = ExtResource("2_v6fml")
-region = Rect2(609, 316, 189, 280)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_lkdrv"]
 atlas = ExtResource("2_v6fml")
@@ -37,10 +38,6 @@ region = Rect2(231, 36, 189, 280)
 atlas = ExtResource("2_v6fml")
 region = Rect2(420, 36, 189, 280)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_bruh7"]
-atlas = ExtResource("2_v6fml")
-region = Rect2(609, 36, 189, 280)
-
 [sub_resource type="AtlasTexture" id="AtlasTexture_6eyey"]
 atlas = ExtResource("2_v6fml")
 region = Rect2(798, 36, 189, 280)
@@ -48,10 +45,6 @@ region = Rect2(798, 36, 189, 280)
 [sub_resource type="AtlasTexture" id="AtlasTexture_p7iby"]
 atlas = ExtResource("2_v6fml")
 region = Rect2(42, 596, 189, 280)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_0rnld"]
-atlas = ExtResource("2_v6fml")
-region = Rect2(231, 596, 189, 280)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_srp4u"]
 atlas = ExtResource("2_v6fml")
@@ -78,19 +71,11 @@ animations = [{
 "texture": SubResource("AtlasTexture_d3wef")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_o4126")
-}, {
-"duration": 1.0,
 "texture": SubResource("AtlasTexture_lkdrv")
 }],
 "loop": true,
 "name": &"walk_down",
 "speed": 2.0
-}, {
-"frames": [],
-"loop": true,
-"name": &"walk_left",
-"speed": 5.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -103,7 +88,21 @@ animations = [{
 "texture": SubResource("AtlasTexture_khinc")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_bruh7")
+"texture": SubResource("AtlasTexture_6eyey")
+}],
+"loop": true,
+"name": &"walk_left",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_70d11")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_cw2d6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_khinc")
 }, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_6eyey")
@@ -115,9 +114,6 @@ animations = [{
 "frames": [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_p7iby")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_0rnld")
 }, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_srp4u")
@@ -137,11 +133,14 @@ animations = [{
 script = ExtResource("1_mdl7e")
 
 [node name="Label" type="Label" parent="."]
-offset_top = -12.0
-offset_right = 40.0
-offset_bottom = 11.0
+offset_left = -50.0
+offset_top = -190.0
+offset_right = 50.0
+offset_bottom = -165.0
 text = "\"\""
+label_settings = SubResource("LabelSettings_1")
 horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="Astronaut" parent="." instance=ExtResource("1_p0vlq")]
 script = ExtResource("3_qu4a1")
@@ -149,5 +148,8 @@ script = ExtResource("3_qu4a1")
 [node name="AstronautSprite" type="AnimatedSprite2D" parent="Astronaut"]
 unique_name_in_owner = true
 sprite_frames = SubResource("SpriteFrames_d3wef")
-animation = &"walk_left"
+animation = &"walk_up"
 speed_scale = 3.0
+
+[node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
+max_distance = 300.0

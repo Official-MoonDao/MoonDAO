@@ -94,22 +94,21 @@ func _on_data():
 	var code = reader.get_u8()
 	match code:
 		CODE_JOIN_ROOM:
-			
-			var token = reader.get_string(reader.get_u8())
-			
+			# Colyseus 0.14: JOIN_ROOM payload = [serializerId, handshakeBytes?]
+			# Older plugins expected a reconnection token first; not present on 0.14
 			var serializer_id = reader.get_string(reader.get_u8())
 			
 			if serializer == null:
 				serializer = ser.getSerializer(serializer_id, schema_type)
 			
 			if decoder.has_more():
-				if serializer:
-					serializer.handshake(decoder)
-				else:
-					on_error.emit([1, "Can not find serializer"])
-					return
+				# Discard handshake bytes for compatibility with Colyseus 0.14
+				# (schema reflection formats may differ). We'll rely on schema definitions instead.
+				while decoder.has_more():
+					decoder.reader.get_u8()
 			
-			self.reconnection_token = str(room_id, ":", token)
+			# For reconnection, use room_id + session_id (Colyseus 0.14 uses sessionId)
+			self.reconnection_token = str(room_id, ":", session_id)
 			_has_joined = true
 			on_join.emit()
 			send_raw([CODE_JOIN_ROOM])
@@ -148,6 +147,9 @@ func connect_remote(url: String):
 	elif url.begins_with("https:"):
 		_url = url.replace("https:", "wss:")
 	#_url = _url.replace("/colyseus", "")
+	# Request Colyseus subprotocol to satisfy server expectations (Godot 4)
+	if ws.has_method("set_supported_protocols"):
+		ws.set_supported_protocols(PackedStringArray(["colyseus"]))
 	ws.connect_to_url(_url)
 	frame_runner.start()
 

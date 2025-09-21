@@ -11,9 +11,14 @@ config_version=5
 [application]
 
 config/name="space"
-run/main_scene="uid://bnifiqnix7eit"
+run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.5", "Mobile")
+boot_splash/image="uid://bp01iffbdvvac"
 config/icon="res://icon.svg"
+
+[audio]
+
+driver/enable_input=true
 
 [rendering]
 

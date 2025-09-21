@@ -8,6 +8,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "NODE_OPTIONS='--max-old-space-size=8192' next build",
+    "build:with-space": "npm run build:space && NODE_OPTIONS='--max-old-space-size=8192' next build",
+    "build:space": "cd ../space/game && mkdir -p ../ui/public/space-client && godot --headless --path . --export-release 'Web' ../ui/public/space-client/index.html",
     "postbuild": "next-sitemap",
     "start": "next start",
     "lint": "next lint",
