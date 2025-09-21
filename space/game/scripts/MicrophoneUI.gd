@@ -101,7 +101,7 @@ func setup_glass_morphism_ui() -> void:
 	# Create microphone icon (using emoji/text)
 	mic_icon = Label.new()
 	mic_icon.name = "MicIcon"
-	mic_icon.text = "🎤"
+	mic_icon.text = "mic"
 	mic_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mic_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	mic_icon.size = Vector2(80, 80)

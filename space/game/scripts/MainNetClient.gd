@@ -2,6 +2,7 @@
 extends Node2D
 
 @export var server_url: String = "ws://localhost:2567"
+# @export var server_url: String = "wss://moondao-space.ayla.dev:2567"
 @export var room_name: String  = "lobby"
 
 const PLAYER_SCENE_PATH        := "res://scenes/Player.tscn"
