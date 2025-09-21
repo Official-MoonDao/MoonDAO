@@ -7,6 +7,7 @@ const MoveMsg = z.object({ x: z.number(), y: z.number() });
 
 export class Lobby extends Room<RoomState> {
   maxClients = 64;
+  private activeUserSessions = new Map<string, string>(); // userId -> sessionId mapping
 
   async onCreate(options: any) {
     this.setState(new RoomState());
@@ -28,9 +29,9 @@ export class Lobby extends Room<RoomState> {
       p.x += x;
       p.y += y;
 
-      // Optional: clamp to world bounds
-      p.x = Math.max(0, Math.min(p.x, 2000));
-      p.y = Math.max(0, Math.min(p.y, 2000));
+      // Optional: clamp to world bounds (allow negative coordinates)
+      p.x = Math.max(-2000, Math.min(p.x, 2000));
+      p.y = Math.max(-2000, Math.min(p.y, 2000));
 
       // Debug logging (remove after testing)
       if (Math.abs(x) > 0.1 || Math.abs(y) > 0.1) {
@@ -39,6 +40,15 @@ export class Lobby extends Room<RoomState> {
             2
           )}) to (${p.x.toFixed(2)}, ${p.y.toFixed(2)})`
         );
+
+        // Special logging for movements from/near spawn
+        if (Math.abs(p.x) < 50 || Math.abs(p.y) < 50) {
+          console.log(
+            `*** SPAWN AREA MOVEMENT *** Player near origin: (${p.x.toFixed(
+              2
+            )}, ${p.y.toFixed(2)})`
+          );
+        }
       }
     });
 
@@ -219,21 +229,85 @@ export class Lobby extends Room<RoomState> {
     );
     const optToken = options?.token;
     const token = optToken || urlToken;
+    let userId = "";
+    let userName = "Anon";
+
     if (token) {
       try {
         const payload = jwt.verify(token, process.env.JWT_SECRET!);
         const sub = (payload as any)?.sub ?? "";
         const name =
           (payload as any)?.name ?? (payload as any)?.wallet ?? "Anon";
-        (client as any).user = { id: String(sub), name };
+        userId = String(sub);
+        userName = name;
         console.log("on Auth ok", payload);
-        return true;
       } catch (e) {
         console.warn("JWT verify failed, falling back to anon user");
+        // Fallback: allow connection without token (dev) – identify by sessionId
+        userId = client.sessionId;
+        userName = "Anon";
+      }
+    } else {
+      // Fallback: allow connection without token (dev) – identify by sessionId
+      userId = client.sessionId;
+      userName = "Anon";
+    }
+
+    // Debug logging for session tracking
+    console.log(
+      `🔍 AUTH DEBUG - User ID: ${userId}, Session ID: ${client.sessionId}`
+    );
+    console.log(
+      `🔍 AUTH DEBUG - Is authenticated user: ${userId !== client.sessionId}`
+    );
+    console.log(
+      `🔍 AUTH DEBUG - Active sessions:`,
+      Array.from(this.activeUserSessions.entries())
+    );
+    console.log(
+      `🔍 AUTH DEBUG - Has existing session for user: ${this.activeUserSessions.has(
+        userId
+      )}`
+    );
+
+    // Check for duplicate sessions (only for authenticated users, not anon)
+    if (userId !== client.sessionId && this.activeUserSessions.has(userId)) {
+      const existingSessionId = this.activeUserSessions.get(userId)!;
+      console.log(`🔍 AUTH DEBUG - Existing session ID: ${existingSessionId}`);
+
+      const existingClient = this.clients.find(
+        (c) => c.sessionId === existingSessionId
+      );
+      console.log(`🔍 AUTH DEBUG - Found existing client: ${!!existingClient}`);
+
+      if (existingClient) {
+        console.log(
+          `⚠️ Duplicate session detected for user ${userId}. Rejecting NEW connection instead of old one`
+        );
+
+        // Send error message to the client before rejecting
+        try {
+          (client as any).send("duplicate_session_error", {
+            message: "Only one session per account is allowed",
+          });
+        } catch (e) {
+          console.log("Could not send message to client before rejection");
+        }
+
+        // Reject the NEW connection with a clear error message
+        console.log(
+          `🚫 Rejecting new session ${client.sessionId} - duplicate account`
+        );
+        return false; // This properly rejects the authentication
+      } else {
+        console.log(
+          `⚠️ Session ${existingSessionId} not found in clients, cleaning up stale reference`
+        );
+        this.activeUserSessions.delete(userId);
       }
     }
-    // Fallback: allow connection without token (dev) – identify by sessionId
-    (client as any).user = { id: client.sessionId, name: "Anon" };
+
+    (client as any).user = { id: userId, name: userName };
     return true;
   }
 
@@ -243,14 +317,44 @@ export class Lobby extends Room<RoomState> {
     p.id = String(user.id);
     p.name = user.name;
     this.state.players.set(client.sessionId, p);
+
+    // Track active session for this user (only for authenticated users, not anon)
+    if (user.id !== client.sessionId) {
+      this.activeUserSessions.set(user.id, client.sessionId);
+      console.log(
+        `✅ User ${user.id} (${user.name}) joined with session ${client.sessionId}`
+      );
+    } else {
+      console.log(`✅ Anonymous user joined with session ${client.sessionId}`);
+    }
+
     console.log("onJoin", client.sessionId);
     console.log("players size", this.state.players.size);
+    console.log("active user sessions:", this.activeUserSessions.size);
 
     // (message-based sync removed; rely on schema)
   }
 
   onLeave(client: Client) {
+    const user = (client as any).user;
     this.state.players.delete(client.sessionId);
+
+    // Remove from active sessions tracking (only for authenticated users, not anon)
+    if (user && user.id !== client.sessionId) {
+      // Only remove if this session is the currently active one for this user
+      if (this.activeUserSessions.get(user.id) === client.sessionId) {
+        this.activeUserSessions.delete(user.id);
+        console.log(
+          `🚪 User ${user.id} (${user.name}) left, session ${client.sessionId} removed from tracking`
+        );
+      }
+    } else {
+      console.log(`🚪 Anonymous user left, session ${client.sessionId}`);
+    }
+
+    console.log("onLeave", client.sessionId);
+    console.log("players size", this.state.players.size);
+    console.log("active user sessions:", this.activeUserSessions.size);
     // (message-based sync removed)
   }
 }

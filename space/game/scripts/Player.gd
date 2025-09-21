@@ -9,6 +9,8 @@ var is_local_player := false
 var network_position := Vector2.ZERO
 var last_input_time := 0.0
 var session_id := ""
+var voice_chat_node: Node = null  # Reference to VoiceChat for proximity calculations
+var room: Object = null  # Reference to room for sending movement updates
 
 func _process(delta: float) -> void:
 	if not is_local_player:
@@ -28,6 +30,9 @@ func _process(delta: float) -> void:
 			# We're close enough to the target, stop animating
 			if view.has_method("update_from_velocity"):
 				view.update_from_velocity(Vector2.ZERO)
+		
+		# Update this player's position in VoiceChat for proximity calculations
+		_update_voice_chat_position()
 		return
 	
 	# Local player: immediate input response with client-side prediction
@@ -37,11 +42,25 @@ func _process(delta: float) -> void:
 	) * speed * delta
 
 	if v != Vector2.ZERO:
-		position += v
+		global_position += v  # Use global_position to match server coordinate system
 		last_input_time = Time.get_time_dict_from_system().get("unix", 0.0)
+		print("Local player moved to: ", global_position, " delta: ", v)
+		
+		# Send movement delta to server for multiplayer sync
+		if room != null:
+			var input_dir := Vector2(
+				Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left"),
+				Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up")
+			)
+			var delta_x = input_dir.x * delta * speed
+			var delta_y = input_dir.y * delta * speed
+			room.send("move", {"x": delta_x, "y": delta_y})
 	
 	if view.has_method("update_from_velocity"):
 		view.update_from_velocity(v / delta)  # convert back to velocity
+	
+	# Update local player position in VoiceChat for proximity calculations
+	_update_voice_chat_position()
 
 func set_local_player(is_local: bool) -> void:
 	is_local_player = is_local
@@ -51,12 +70,15 @@ func set_network_position(net_pos: Vector2) -> void:
 	if not is_local_player:
 		# For remote players, the position will be smoothly interpolated in _process()
 		# and animations will be handled there too
+		print("Remote player ", session_id, " network position set to: ", net_pos)
 		pass
 	else:
 		# For local player, only reconcile if we haven't had input recently
 		# This prevents server corrections from fighting local movement
 		if Time.get_time_dict_from_system().get("unix", 0.0) - last_input_time > 0.1:
+			var old_pos = global_position
 			global_position = global_position.lerp(net_pos, 0.3)
+			print("Local player reconciled from ", old_pos, " to ", global_position, " (server says: ", net_pos, ")")
 
 func set_name_text(txt: String) -> void:
 	if name_label == null:
@@ -65,6 +87,36 @@ func set_name_text(txt: String) -> void:
 
 func set_session_id(sid: String) -> void:
 	session_id = sid
+
+func set_voice_chat_reference(voice_chat: Node) -> void:
+	"""Set reference to VoiceChat node for proximity calculations"""
+	voice_chat_node = voice_chat
+
+func set_room_reference(room_ref: Object) -> void:
+	"""Set reference to room for sending movement updates"""
+	room = room_ref
+
+func _update_voice_chat_position() -> void:
+	"""Update this player's position in the VoiceChat system"""
+	if not voice_chat_node:
+		return
+	
+	if is_local_player:
+		if voice_chat_node.has_method("update_local_player_position"):
+			voice_chat_node.update_local_player_position(global_position)
+	else:
+		if voice_chat_node.has_method("update_player_position") and session_id != "":
+			voice_chat_node.update_player_position(session_id, global_position)
+
+func _get_proximity_volume() -> float:
+	"""Get proximity volume for this player based on distance from local player"""
+	if not voice_chat_node or is_local_player:
+		return 1.0
+	
+	if voice_chat_node.has_method("get_proximity_volume_for_player"):
+		return voice_chat_node.get_proximity_volume_for_player(session_id)
+	
+	return 1.0
 
 func play_voice_frames(frames_data: Array) -> void:
 	if is_local_player:
@@ -89,17 +141,23 @@ func play_voice_frames(frames_data: Array) -> void:
 			var mono_val = float(frame_data) if frame_data is float else 0.0
 			frames[i] = Vector2(mono_val, mono_val)
 	
-	# Choose the appropriate audio player
+	# Choose the appropriate audio player and apply proximity volume
 	var audio_player: Node
+	var proximity_volume = _get_proximity_volume()
+	var proximity_volume_db = linear_to_db(proximity_volume)
+	
 	if OS.has_feature("web"):
 		if audio_player_fallback == null:
 			audio_player_fallback = AudioStreamPlayer.new()
 			add_child(audio_player_fallback)
-			audio_player_fallback.volume_db = 0.0
 			print("Player: Created fallback AudioStreamPlayer for web frames")
 		audio_player = audio_player_fallback
+		audio_player.volume_db = proximity_volume_db
 	else:
 		audio_player = audio_player_2d
+		audio_player.volume_db = proximity_volume_db
+	
+	print("Player: Applied proximity volume: ", proximity_volume, " (", proximity_volume_db, " dB) for session: ", session_id)
 	
 	# Create or reuse AudioStreamGenerator
 	if audio_player.stream == null or not audio_player.stream is AudioStreamGenerator:
@@ -151,13 +209,21 @@ func play_voice_audio(audio_bytes: PackedByteArray) -> void:
 	if frames.size() > 0:
 		print("Player: Sample frame data: ", frames[0], " to ", frames[min(frames.size()-1, 4)])
 	
+	# Calculate proximity volume once for all platforms
+	var proximity_volume = _get_proximity_volume()
+	var proximity_volume_db = linear_to_db(proximity_volume)
+	
 	# For web platform, use JavaScript Web Audio API for better compatibility
 	if OS.has_feature("web") and Engine.has_singleton("JavaScriptBridge"):
-		_play_audio_via_web_audio(frames, 1.0)
+		print("Player: Applying proximity volume ", proximity_volume, " to web audio for session: ", session_id)
+		_play_audio_via_web_audio(frames, proximity_volume)
 		return
 	
-	# Choose the appropriate audio player for native platforms
+	# Choose the appropriate audio player for native platforms and apply proximity volume
 	var audio_player: Node = audio_player_2d
+	audio_player.volume_db = proximity_volume_db
+	
+	print("Player: Applied proximity volume: ", proximity_volume, " (", proximity_volume_db, " dB) for session: ", session_id)
 	
 	# Create or reuse AudioStreamGenerator for real-time playback
 	if audio_player.stream == null or not audio_player.stream is AudioStreamGenerator:

@@ -336,7 +336,7 @@ func update_ui_state() -> void:
 		tween.tween_property(mic_icon, "modulate:a", 1.0, 1.0)
 		
 	else:
-		mic_icon.text = "🎤"
+		mic_icon.text = "mic"
 		mic_icon.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))  # Gray
 		status_label.text = "Off"
 		status_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 0.8))

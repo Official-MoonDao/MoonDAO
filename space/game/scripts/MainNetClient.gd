@@ -24,6 +24,7 @@ var _follow: Node2D = null     # local player to follow
 # Fallbacks to ensure you SEE something
 var _dummy_timer := 0.0
 var _dummy_spawned := false
+var _connection_failed := false  # Track if connection failed to prevent dummy spawning
 
 # Authentication data
 var auth_token: String = ""
@@ -36,6 +37,13 @@ func _ready() -> void:
 	# var audio_test = load("res://scripts/AudioTest.gd").new()
 	# add_child(audio_test)
 	print("MainNetClient: AudioTest disabled - no automatic microphone activation")
+	
+	# Disable processing until connection succeeds
+	set_process(false)
+	
+	# TEST: Show error immediately for debugging
+	# Uncomment this line to test if error display works:
+	# call_deferred("_create_duplicate_session_error_display")
 	
 	# --- 1) Actors container sanity
 	if actors == null:
@@ -106,29 +114,41 @@ func _connect_to_server() -> void:
 			return
 	
 	var promise = client.join_or_create(ROOM_STATE_SCHEMA_REF, room_name, opts)
+	print("MainNetClient: 🔍 Promise created, waiting for completion...")
 	await promise.completed
+	print("MainNetClient: 🔍 Promise completed, state: ", promise.get_state())
+	
 	if promise.get_state() == promise.State.Failed:
 		var error_msg = str(promise.get_error())
-		print("MainNetClient: Join failed: ", error_msg)
+		print("MainNetClient: ❌ Join failed: ", error_msg)
 		
-		# Check if it's an authentication error
-		if "auth" in error_msg.to_lower() or "token" in error_msg.to_lower() or "unauthorized" in error_msg.to_lower():
-			push_error("Authentication failed: %s" % error_msg)
-			_handle_auth_failure(error_msg)
-		else:
-			push_error("Connection failed: %s" % error_msg)
+		# Simple approach: if connection fails, assume it's a duplicate session
+		# (since that's our main restriction now)
+		print("MainNetClient: 🔍 Connection failed - showing duplicate session error")
+		call_deferred("_create_duplicate_session_error_display")
 		return
+	elif promise.get_state() == promise.State.Completed:
+		print("MainNetClient: ✅ Connection succeeded!")
+	else:
+		print("MainNetClient: ⚠️ Unexpected promise state: ", promise.get_state())
 
 	room = promise.get_data()
 	room.on_join.on(Callable(self, "_on_join"))
 	room.on_state_change.on(Callable(self, "_on_state_change"))
 	room.on_message("voice_data").on(Callable(self, "_on_voice_data"))
+	room.on_message("duplicate_session").on(Callable(self, "_on_duplicate_session"))
+	room.on_error.on(Callable(self, "_on_room_error"))
+	room.on_leave.on(Callable(self, "_on_room_leave"))
 	
 	# Setup voice chat (don't let it register its own message handler)
 	if voice_chat:
 		voice_chat.set_room(room, false)  # false = don't register message handler
+		voice_chat.set_main_net_client(self)  # Set reference for player access
 	
 	print("MainNetClient: joined room: ", room_name)
+	
+	# Connection succeeded, enable processing
+	set_process(true)
 	
 	# In dev mode, allow dummy players for testing
 	if is_dev_mode:
@@ -142,7 +162,13 @@ func _connect_to_server() -> void:
 
 func _handle_auth_failure(error_msg: String) -> void:
 	print("MainNetClient: Authentication failed: ", error_msg)
-	_show_auth_required_error()
+	
+	# Check if this is specifically a duplicate session case
+	# For now, just show the duplicate session error for any auth failure
+	# since our main use case is preventing duplicate sessions
+	print("MainNetClient: 🔍 Treating auth failure as duplicate session")
+	call_deferred("_create_duplicate_session_error_display")
+	return
 
 func _show_auth_required_error() -> void:
 	print("MainNetClient: ❌❌❌ AUTHENTICATION REQUIRED ❌❌❌")
@@ -200,29 +226,16 @@ func _create_auth_error_display() -> void:
 
 func _process(delta: float) -> void:
 	# Spawn a guaranteed dummy after 1s if we haven't seen any server players.
-	if not _dummy_spawned:
+	# But NOT if connection failed (e.g., duplicate session)
+	if not _dummy_spawned and not _connection_failed:
 		_dummy_timer += delta
 		if _dummy_timer > 1.0 and players.size() == 0:
 			_spawn_dummy_player()
 			_dummy_spawned = true
 			print("MainNetClient: spawned local dummy so you can see something.")
 
-	# Send continuous input to server for smooth movement
-	if room != null:
-		var v := Vector2.ZERO
-		if Input.is_action_pressed("ui_right"):
-			v.x += 1
-		if Input.is_action_pressed("ui_left"):
-			v.x -= 1
-		if Input.is_action_pressed("ui_down"):
-			v.y += 1
-		if Input.is_action_pressed("ui_up"):
-			v.y -= 1
-		
-		# Send movement every frame for smooth server updates
-		if v != Vector2.ZERO:
-			# Send movement delta scaled properly for server
-			room.send("move", {"x": v.x * delta * 140.0, "y": v.y * delta * 140.0})
+	# Note: Input processing moved to Player.gd to avoid double movement
+	# Player.gd handles both local movement and sending updates to server
 
 	# Smooth-follow the local player with the camera
 	if _follow != null and cam != null:
@@ -289,6 +302,14 @@ func _sync_from_state(state) -> void:
 			if inst.has_method("set_session_id"):
 				inst.set_session_id(sid)
 			
+			# Set VoiceChat reference for proximity calculations
+			if inst.has_method("set_voice_chat_reference") and voice_chat:
+				inst.set_voice_chat_reference(voice_chat)
+			
+			# Set room reference for sending movement updates (local player only)
+			if is_local and inst.has_method("set_room_reference"):
+				inst.set_room_reference(room)
+			
 			if inst.has_method("set_name_text"):
 				var nm := ""
 				var p0 = players_map.at(sid)
@@ -353,9 +374,109 @@ func _on_voice_data(data) -> void:
 		print("MainNetClient: ❌ Cannot forward to VoiceChat - ", "voice_chat is null" if not voice_chat else "method not found")
 	
 	# NOTE: Removed direct player audio calls - all voice data now goes through VoiceChat/VoiceUI
-	# for proper proximity volume calculation. The VoiceUI will handle playing the audio
-	# with the correct volume based on distance between players.
-	print("MainNetClient: Voice data forwarded to VoiceChat for proximity processing - format: ", format)
+
+func _on_duplicate_session(data) -> void:
+	print("MainNetClient: 🔍 DUPLICATE SESSION MESSAGE RECEIVED: ", data)
+	print("MainNetClient: 🔍 About to show duplicate session error...")
+	_show_duplicate_session_error()
+	print("MainNetClient: 🔍 Duplicate session error display should be showing now")
+
+func _on_room_error(error_data) -> void:
+	print("MainNetClient: Room error: ", error_data)
+	var error_code = 0
+	var error_message = "Unknown error"
+	
+	if error_data is Array and error_data.size() >= 2:
+		error_code = error_data[0]
+		error_message = str(error_data[1])
+	elif error_data is Dictionary:
+		error_code = error_data.get("code", 0)
+		error_message = str(error_data.get("message", "Unknown error"))
+	else:
+		error_message = str(error_data)
+	
+	print("MainNetClient: Error code: ", error_code, " message: ", error_message)
+
+func _on_room_leave(code: int = 0) -> void:
+	print("MainNetClient: 🔍 DISCONNECT DEBUG - Room leave with code: ", code)
+	print("MainNetClient: 🔍 DISCONNECT DEBUG - Code type: ", typeof(code))
+	
+	# Check if this is a duplicate session disconnection
+	if code == 4001:
+		print("MainNetClient: 🔍 DISCONNECT DEBUG - Duplicate session code detected!")
+		_show_duplicate_session_error()
+	else:
+		print("MainNetClient: 🔍 DISCONNECT DEBUG - Normal disconnect (code: ", code, ")")
+
+func _show_duplicate_session_error() -> void:
+	print("MainNetClient: ❌ DUPLICATE SESSION DETECTED ❌")
+	print("MainNetClient: Another session was started with this account.")
+	print("MainNetClient: 🔍 About to stop processing and create error display...")
+	
+	# Prevent game from continuing and stop all timers/processes
+	set_process(false)
+	set_physics_process(false)
+	_dummy_spawned = true  # Make sure no dummy spawning happens
+	
+	# Show error message in game
+	print("MainNetClient: 🔍 Calling _create_duplicate_session_error_display()...")
+	_create_duplicate_session_error_display()
+	print("MainNetClient: 🔍 Error display creation completed")
+
+func _create_duplicate_session_error_display() -> void:
+	print("MainNetClient: 🔍 Creating duplicate session error display...")
+	print("MainNetClient: 🔍 Node tree ready: ", is_inside_tree())
+	print("MainNetClient: 🔍 Node name: ", name)
+	
+	# STOP EVERYTHING IMMEDIATELY
+	set_process(false)
+	set_physics_process(false)
+	_dummy_spawned = true
+	_connection_failed = true
+	
+	# Create a simple UI overlay to show the duplicate session error
+	var error_layer = CanvasLayer.new()
+	error_layer.layer = 100  # High layer to appear on top
+	add_child(error_layer)
+	print("MainNetClient: 🔍 Error layer added to scene tree")
+	print("MainNetClient: 🔍 Error layer children count: ", error_layer.get_child_count())
+	
+	# Full screen background to completely hide the game
+	var background = ColorRect.new()
+	background.color = Color(0.2, 0.1, 0.1, 1.0)  # Solid dark red background
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	error_layer.add_child(background)
+	
+	# Main container - centers everything
+	var container = CenterContainer.new()
+	container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	error_layer.add_child(container)
+	
+	# Text container - vertical layout for title and message
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 30)
+	container.add_child(vbox)
+	
+	# Title
+	var title = Label.new()
+	title.text = "⚠️ DUPLICATE SESSION"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 48)
+	title.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4, 1.0))
+	vbox.add_child(title)
+	
+	# Message
+	var message = Label.new()
+	message.text = "Another session was started with this account.\nOnly one session per account is allowed.\n\nPlease close this window and use the other session,\nor refresh this page to reconnect."
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	message.add_theme_font_size_override("font_size", 24)
+	message.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9, 1.0))
+	vbox.add_child(message)
+	
+	print("MainNetClient: Duplicate session error display created")
 
 # --------- helpers ---------
 

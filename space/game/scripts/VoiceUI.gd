@@ -55,17 +55,18 @@ func _process(_delta: float) -> void:
 			voice_status.add_theme_color_override("font_color", Color.GRAY)
 
 func _on_voice_received(session_id: String, audio_data: PackedByteArray) -> void:
-	print("VoiceUI: Received voice from session: ", session_id, " with ", audio_data.size(), " bytes")
+	print("VoiceUI: 🔥 VOICE RECEIVED! Session: ", session_id, " bytes: ", audio_data.size())
 	
 	# Calculate proximity-based volume
 	var volume = calculate_proximity_volume(session_id)
+	print("VoiceUI: 🔥 CALCULATED VOLUME: ", volume)
 	
 	# Play the received audio with proximity volume
 	if voice_chat and audio_data.size() > 0:
 		voice_chat.play_voice_data(audio_data, volume)
-		print("VoiceUI: Playing voice data from ", session_id, " at volume: ", volume)
+		print("VoiceUI: 🔥 PLAYING at volume: ", volume)
 	else:
-		print("VoiceUI: Cannot play audio - no voice_chat or no data")
+		print("VoiceUI: ❌ Cannot play audio - no voice_chat or no data")
 	
 	# Visual feedback when receiving voice (only if volume > 0)
 	if volume > 0.1:  # Only show indicator if voice is audible
@@ -78,7 +79,7 @@ func _on_voice_received(session_id: String, audio_data: PackedByteArray) -> void
 func calculate_proximity_volume(session_id: String) -> float:
 	"""Calculate volume based on distance between local player and speaking player"""
 	if not main_net_client:
-		print("VoiceUI: No main_net_client reference")
+		print("VoiceUI: No main_net_client reference - returning 1.0")
 		return 1.0
 	
 	# Get the speaking player's position
@@ -89,28 +90,47 @@ func calculate_proximity_volume(session_id: String) -> float:
 	
 	var speaking_player = main_net_client.players[session_id]
 	if not speaking_player:
-		print("VoiceUI: Speaking player is null")
+		print("VoiceUI: Speaking player is null - returning 1.0")
 		return 1.0
 	
 	# Get local player (the one being followed by camera)
 	var local_player = main_net_client._follow
 	if not local_player:
-		print("VoiceUI: No local player to calculate distance from")
+		print("VoiceUI: No local player to calculate distance from - returning 1.0")
 		return 1.0
 	
 	# Calculate distance between players
 	var distance = local_player.global_position.distance_to(speaking_player.global_position)
 	
-	# Use VoiceChat's proximity calculation
-	var volume = voice_chat.calculate_proximity_volume(distance)
+	# Simple proximity calculation directly here
+	var proximity_range = 1000.0  # Maximum distance for voice chat
+	var volume = 0.0
+	
+	if distance > proximity_range:
+		volume = 0.0
+	elif distance < 30.0:
+		# Very close: full volume (0-30 pixels)
+		volume = 1.0
+	elif distance < 60.0:
+		# Close: slight falloff (30-60 pixels)
+		volume = 0.8 + (0.2 * (1.0 - (distance - 30.0) / 30.0))
+	elif distance < 100.0:
+		# Medium: noticeable falloff (60-100 pixels)
+		var zone_progress = (distance - 60.0) / 40.0
+		volume = 0.8 * (1.0 - (zone_progress * zone_progress))  # Quadratic falloff
+	else:
+		# Far: rapid falloff to silence (100-1000 pixels)
+		var zone_progress = (distance - 100.0) / 900.0
+		# Exponential falloff for realistic distance effect
+		volume = 0.3 * pow(1.0 - zone_progress, 3.0)
 	
 	# Enhanced debug output for testing
-	print("🔊 PROXIMITY TEST: Distance from ", session_id, ": ", distance, " pixels → Volume: ", volume)
+	print("🔊 PROXIMITY: Distance from ", session_id, ": ", distance, " pixels → Volume: ", volume)
 	print("🔊 Local player position: ", local_player.global_position)
 	print("🔊 Speaking player position: ", speaking_player.global_position)
 	
 	if volume == 0.0:
-		print("🔊 🔇 SILENT: Player too far away (distance > ", voice_chat.proximity_range, ")")
+		print("🔊 🔇 SILENT: Player too far away (distance > ", proximity_range, ")")
 	elif volume < 0.1:
 		print("🔊 🔉 QUIET: Low volume due to distance")
 	elif volume < 0.5:

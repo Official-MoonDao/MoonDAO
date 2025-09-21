@@ -15,6 +15,7 @@ var microphone_player: AudioStreamPlayer  # For microphone input
 var room: Object = null  # Reference to Colyseus room
 var web_audio_setup_done := false  # Track if web audio has been set up
 var record_bus_index: int  # Index of the audio bus for recording
+var main_net_client: Node = null  # Reference to MainNetClient for player access
 
 # Audio transmission management
 var last_voice_send_time := 0.0
@@ -22,6 +23,10 @@ var adaptive_interval := 0.03  # Start at 30ms, adjust based on audio amount
 
 # Audio settings
 const BUFFER_SIZE = 256  # Smaller buffer to prevent overflow
+
+# Proximity voice chat
+var player_positions: Dictionary = {}  # session_id -> Vector2 position
+var local_player_position: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	print("VoiceChat: ==================== VOICECHAT STARTING ====================")
@@ -120,8 +125,8 @@ func _ready() -> void:
 			const inputBuffer = event.inputBuffer;
 			const channelData = inputBuffer.getChannelData(0);
 			
-			// Moderate volume reduction - clean but audible
-			const inputVolume = 0.4;  // 40% of original volume - good balance
+			// Increased volume for better audibility
+			const inputVolume = 0.8;  // 80% of original volume - louder but clean
 			
 			// Convert to array for Godot with reduced volume and debug info
 			let maxInput = 0;
@@ -500,6 +505,10 @@ func set_room(colyseus_room: Object, register_handler: bool = true) -> void:
 		else:
 			print("VoiceChat: Connected to room for voice chat (message handled by MainNetClient)")
 
+func set_main_net_client(client: Node) -> void:
+	"""Set reference to MainNetClient for player access"""
+	main_net_client = client
+
 # Old functions removed - using new web audio compatible versions below
 
 func _process(_delta: float) -> void:
@@ -670,9 +679,9 @@ func audio_frames_to_bytes(frames: PackedVector2Array) -> PackedByteArray:
 		var left_float = clamp(frame.x, -0.95, 0.95)  # Leave headroom to prevent clipping
 		var right_float = clamp(frame.y, -0.95, 0.95)
 		
-		# Convert to 16-bit with clean conversion for 40% volume audio
-		var left = int(round(left_float * 30000))  # Good range for 40% volume input
-		var right = int(round(right_float * 30000))
+		# Convert to 16-bit with clean conversion for 80% volume audio
+		var left = int(round(left_float * 25000))  # Good range for 80% volume input
+		var right = int(round(right_float * 25000))
 		
 		# Pack as little-endian 16-bit integers
 		bytes[i * 4] = left & 0xFF
@@ -888,10 +897,7 @@ func _on_voice_data_received(data) -> void:
 			print("VoiceChat: Received ", audio_bytes.size(), " bytes from native client")
 			if audio_bytes.size() > 0:
 				voice_data_received.emit(session_id, audio_bytes)
-				
-				# TEMPORARY: Play audio directly to bypass VoiceUI connection issues
-				print("VoiceChat: 🔊 DIRECT PLAYBACK: Playing audio directly (bypassing VoiceUI)")
-				play_voice_data(audio_bytes, 0.8)  # Play at 80% volume for testing
+				print("VoiceChat: ✅ Emitted to VoiceUI - proximity will be calculated there")
 			else:
 				print("VoiceChat: No bytes in native voice data")
 	else:
@@ -1306,8 +1312,12 @@ func _add_to_playback_buffer(session_id: String, frames: PackedVector2Array, sam
 	"""Add audio directly to continuous streaming buffer for immediate playback"""
 	print("VoiceChat: 🔊 Adding ", frames.size(), " frames directly to continuous stream")
 	
-	# Feed frames immediately to the continuous stream - no buffering, no delays
-	_play_audio_via_web_audio_with_sample_rate(frames, sample_rate, 1.0)
+	# Calculate proximity volume
+	var proximity_volume = _calculate_proximity_volume_for_session(session_id)
+	print("VoiceChat: 🔊 Proximity volume for ", session_id, ": ", proximity_volume)
+	
+	# Feed frames immediately to the continuous stream with proximity volume
+	_play_audio_via_web_audio_with_sample_rate(frames, sample_rate, proximity_volume)
 
 func _queue_audio_for_playback(session_id: String, frames: PackedVector2Array, sample_rate: float) -> void:
 	"""Queue audio for smooth playback to prevent choppy audio"""
@@ -1623,6 +1633,23 @@ func _input(event: InputEvent) -> void:
 	
 	# V key functionality removed - microphone is now controlled entirely by UI toggle
 
+func update_player_position(session_id: String, position: Vector2) -> void:
+	"""Update a player's position for proximity calculations"""
+	player_positions[session_id] = position
+
+func update_local_player_position(position: Vector2) -> void:
+	"""Update the local player's position for proximity calculations"""
+	local_player_position = position
+
+func get_proximity_volume_for_player(session_id: String) -> float:
+	"""Calculate proximity volume for a specific player based on distance from local player"""
+	if not player_positions.has(session_id):
+		return 1.0  # Default volume if position unknown
+	
+	var player_pos = player_positions[session_id]
+	var distance = local_player_position.distance_to(player_pos)
+	return calculate_proximity_volume(distance)
+
 func calculate_proximity_volume(distance: float) -> float:
 	print("VoiceChat: calculate_proximity_volume called with distance: ", distance)
 	print("VoiceChat: Current proximity_range: ", proximity_range)
@@ -1635,23 +1662,23 @@ func calculate_proximity_volume(distance: float) -> float:
 	var volume = 0.0
 	
 	if distance < 30.0:
-		# Very close: full volume (0-30 pixels)
-		volume = 1.0
+		# Very close: boosted volume (0-30 pixels)
+		volume = 1.5  # 150% volume for very close
 		print("VoiceChat: Very close zone (< 30) - volume: ", volume)
 	elif distance < 60.0:
 		# Close: slight falloff (30-60 pixels)
-		volume = 0.8 + (0.2 * (1.0 - (distance - 30.0) / 30.0))
+		volume = 1.2 + (0.3 * (1.0 - (distance - 30.0) / 30.0))  # 120-150% volume
 		print("VoiceChat: Close zone (30-60) - volume: ", volume)
 	elif distance < 100.0:
 		# Medium: noticeable falloff (60-100 pixels)
 		var zone_progress = (distance - 60.0) / 40.0
-		volume = 0.8 * (1.0 - (zone_progress * zone_progress))  # Quadratic falloff
+		volume = 1.2 * (1.0 - (zone_progress * zone_progress * 0.5))  # 60-120% volume
 		print("VoiceChat: Medium zone (60-100) - volume: ", volume)
 	else:
 		# Far: rapid falloff to silence (100-150 pixels)
 		var zone_progress = (distance - 100.0) / 50.0
 		# Exponential falloff for realistic distance effect
-		volume = 0.3 * pow(1.0 - zone_progress, 3.0)
+		volume = 0.6 * pow(1.0 - zone_progress, 3.0)  # 0-60% volume
 		print("VoiceChat: Far zone (100-150) - volume: ", volume)
 	
 	return volume
@@ -2032,3 +2059,58 @@ func _destroy_complete_microphone_system() -> void:
 	web_audio_setup_done = false
 	
 	print("VoiceChat: ✅ Complete microphone system destroyed - is_recording: ", is_recording)
+
+func _calculate_proximity_volume_for_session(session_id: String) -> float:
+	"""Calculate proximity volume for a session"""
+	print("VoiceChat: DEBUG - Calculating proximity for session: ", session_id)
+	
+	if not main_net_client:
+		print("VoiceChat: DEBUG - No main_net_client, returning 1.0")
+		return 1.0
+	
+	# Get the speaking player
+	if not main_net_client.players.has(session_id):
+		print("VoiceChat: DEBUG - Player ", session_id, " not found in players")
+		print("VoiceChat: DEBUG - Available players: ", main_net_client.players.keys())
+		return 1.0
+	
+	var speaking_player = main_net_client.players[session_id]
+	if not speaking_player:
+		print("VoiceChat: DEBUG - Speaking player is null")
+		return 1.0
+	
+	# Get local player
+	var local_player = main_net_client._follow
+	if not local_player:
+		print("VoiceChat: DEBUG - No local player (_follow is null)")
+		return 1.0
+	
+	# Calculate distance
+	var distance = local_player.global_position.distance_to(speaking_player.global_position)
+	print("VoiceChat: DEBUG - Distance: ", distance, " pixels")
+	print("VoiceChat: DEBUG - Local player pos: ", local_player.global_position)
+	print("VoiceChat: DEBUG - Speaking player pos: ", speaking_player.global_position)
+	print("VoiceChat: DEBUG - Proximity range: ", proximity_range)
+	
+	# Simple proximity calculation with boosted volume
+	var volume = 1.0
+	if distance > proximity_range:
+		volume = 0.0
+		print("VoiceChat: DEBUG - Distance > range, volume = 0.0")
+	elif distance < 30.0:
+		volume = 1.5  # 150% volume for very close
+		print("VoiceChat: DEBUG - Very close, volume = 1.5")
+	elif distance < 60.0:
+		volume = 1.2 + (0.3 * (1.0 - (distance - 30.0) / 30.0))  # 120-150% volume
+		print("VoiceChat: DEBUG - Close zone, volume = ", volume)
+	elif distance < 100.0:
+		var zone_progress = (distance - 60.0) / 40.0
+		volume = 1.2 * (1.0 - (zone_progress * zone_progress * 0.5))  # 60-120% volume
+		print("VoiceChat: DEBUG - Medium zone, volume = ", volume)
+	else:
+		var zone_progress = (distance - 100.0) / (proximity_range - 100.0)
+		volume = 0.6 * pow(1.0 - zone_progress, 3.0)  # 0-60% volume
+		print("VoiceChat: DEBUG - Far zone, volume = ", volume)
+	
+	print("VoiceChat: DEBUG - Final calculated volume: ", volume)
+	return volume
