@@ -554,7 +554,7 @@ export default function TeamDetailPage({
                       />
                       <h2 className="header font-GoodTimes">Meet the Team</h2>
                     </div>
-                    {isManager && (
+                    {isManager && hats?.[0]?.id && (
                       <div
                         id="button-container"
                         className="pr-12 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
