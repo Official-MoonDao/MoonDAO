@@ -8,12 +8,13 @@ const MoveMsg = z.object({ x: z.number(), y: z.number() });
 export class Lobby extends Room<RoomState> {
   maxClients = 64;
   private activeUserSessions = new Map<string, string>(); // userId -> sessionId mapping
+  private sessionCleanupTimers = new Map<string, NodeJS.Timeout>(); // sessionId -> cleanup timer
 
   async onCreate(options: any) {
     this.setState(new RoomState());
     // Extend seat reservation TTL to avoid early expiration during WebSocket upgrade in dev
     try {
-      (this as any).setSeatReservationTime?.(300);
+      (this as any).setSeatReservationTime?.(600); // Increased from 300 to 600 seconds
       console.log(
         "Lobby onCreate: seatReservationTime=",
         (this as any).seatReservationTime
@@ -282,23 +283,15 @@ export class Lobby extends Room<RoomState> {
 
       if (existingClient) {
         console.log(
-          `⚠️ Duplicate session detected for user ${userId}. Rejecting NEW connection instead of old one`
+          `⚠️ Duplicate session detected for user ${userId}. Disconnecting old session and allowing new one`
         );
 
-        // Send error message to the client before rejecting
-        try {
-          (client as any).send("duplicate_session_error", {
-            message: "Only one session per account is allowed",
-          });
-        } catch (e) {
-          console.log("Could not send message to client before rejection");
-        }
+        // Force cleanup the old session and allow the new one
+        this.forceCleanupUser(userId);
 
-        // Reject the NEW connection with a clear error message
-        console.log(
-          `🚫 Rejecting new session ${client.sessionId} - duplicate account`
-        );
-        return false; // This properly rejects the authentication
+        // Allow the new connection
+        (client as any).user = { id: userId, name: userName };
+        return true;
       } else {
         console.log(
           `⚠️ Session ${existingSessionId} not found in clients, cleaning up stale reference`
@@ -313,48 +306,94 @@ export class Lobby extends Room<RoomState> {
 
   onJoin(client: Client) {
     const user = (client as any).user;
-    const p = new Player();
-    p.id = String(user.id);
-    p.name = user.name;
-    this.state.players.set(client.sessionId, p);
 
-    // Track active session for this user (only for authenticated users, not anon)
-    if (user.id !== client.sessionId) {
-      this.activeUserSessions.set(user.id, client.sessionId);
-      console.log(
-        `✅ User ${user.id} (${user.name}) joined with session ${client.sessionId}`
-      );
-    } else {
-      console.log(`✅ Anonymous user joined with session ${client.sessionId}`);
+    // Clear any existing cleanup timer for this session
+    if (this.sessionCleanupTimers.has(client.sessionId)) {
+      clearTimeout(this.sessionCleanupTimers.get(client.sessionId)!);
+      this.sessionCleanupTimers.delete(client.sessionId);
     }
 
+    // Track authenticated users to prevent duplicates
+    if (user && user.id !== client.sessionId) {
+      this.activeUserSessions.set(user.id, client.sessionId);
+      console.log(
+        `👋 User ${user.id} (${user.name}) joined with session ${client.sessionId}`
+      );
+    } else {
+      console.log(`👋 Anonymous user joined with session ${client.sessionId}`);
+    }
+
+    const player = new Player();
+    player.x = Math.random() * 400 - 200;
+    player.y = Math.random() * 400 - 200;
+    player.name = user?.name || `Player${Math.floor(Math.random() * 1000)}`;
+
+    this.state.players.set(client.sessionId, player);
     console.log("onJoin", client.sessionId);
     console.log("players size", this.state.players.size);
-    console.log("active user sessions:", this.activeUserSessions.size);
-
-    // (message-based sync removed; rely on schema)
   }
 
-  onLeave(client: Client) {
+  onLeave(client: Client, consented?: boolean) {
     const user = (client as any).user;
-    this.state.players.delete(client.sessionId);
+
+    // Set a cleanup timer instead of immediate cleanup
+    const cleanupTimer = setTimeout(() => {
+      this.cleanupSession(client.sessionId, user);
+      this.sessionCleanupTimers.delete(client.sessionId);
+    }, 5000); // 5 second delay to allow for reconnection
+
+    this.sessionCleanupTimers.set(client.sessionId, cleanupTimer);
+
+    console.log(
+      `🔄 Session ${client.sessionId} scheduled for cleanup in 5 seconds`
+    );
+  }
+
+  private cleanupSession(sessionId: string, user: any) {
+    // Remove player from game state
+    this.state.players.delete(sessionId);
 
     // Remove from active sessions tracking (only for authenticated users, not anon)
-    if (user && user.id !== client.sessionId) {
+    if (user && user.id !== sessionId) {
       // Only remove if this session is the currently active one for this user
-      if (this.activeUserSessions.get(user.id) === client.sessionId) {
+      if (this.activeUserSessions.get(user.id) === sessionId) {
         this.activeUserSessions.delete(user.id);
         console.log(
-          `🚪 User ${user.id} (${user.name}) left, session ${client.sessionId} removed from tracking`
+          `🚪 User ${user.id} (${user.name}) session ${sessionId} cleaned up`
         );
       }
     } else {
-      console.log(`🚪 Anonymous user left, session ${client.sessionId}`);
+      console.log(`🚪 Anonymous session ${sessionId} cleaned up`);
     }
 
-    console.log("onLeave", client.sessionId);
+    console.log("Session cleaned up:", sessionId);
     console.log("players size", this.state.players.size);
     console.log("active user sessions:", this.activeUserSessions.size);
-    // (message-based sync removed)
+  }
+
+  // Add method to handle forced cleanup on duplicate detection
+  private forceCleanupUser(userId: string) {
+    const existingSessionId = this.activeUserSessions.get(userId);
+    if (existingSessionId) {
+      // Clear any pending cleanup timer
+      if (this.sessionCleanupTimers.has(existingSessionId)) {
+        clearTimeout(this.sessionCleanupTimers.get(existingSessionId)!);
+        this.sessionCleanupTimers.delete(existingSessionId);
+      }
+
+      // Find and disconnect the existing client
+      const existingClient = this.clients.find(
+        (c) => c.sessionId === existingSessionId
+      );
+      if (existingClient) {
+        console.log(
+          `🔌 Force disconnecting existing session ${existingSessionId}`
+        );
+        existingClient.leave(4000, "Duplicate session detected");
+      }
+
+      // Immediate cleanup
+      this.cleanupSession(existingSessionId, { id: userId });
+    }
   }
 }

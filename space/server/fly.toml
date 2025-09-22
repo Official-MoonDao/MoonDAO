@@ -1,0 +1,28 @@
+app = "moondao-space-server"
+primary_region = "sjc"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  PORT = "2567"
+
+[http_service]
+  internal_port = 2567
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  max_machines_running = 1  # ADD THIS LINE - Force single machine
+
+[deploy]
+  release_command = "echo 'Deployment complete'"
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+# ADD THIS SECTION - Scale to exactly 1 machine
+[processes]
+  app = 1

@@ -1,8 +1,8 @@
 # res://scripts/MainNetClient.gd
 extends Node2D
 
-@export var server_url: String = "ws://localhost:2567"
-# @export var server_url: String = "wss://moondao-space.ayla.dev:2567"
+# @export var server_url: String = "ws://localhost:2567"
+@export var server_url: String = "wss://moondao-space-server.fly.dev"
 @export var room_name: String  = "lobby"
 
 const PLAYER_SCENE_PATH        := "res://scenes/Player.tscn"
@@ -16,6 +16,12 @@ var room: Object = null
 var players: Dictionary = {}   # sessionId -> Player instance
 var last_pos: Dictionary = {}  # sessionId -> Vector2 (for anim velocity)
 var last_input: Vector2 = Vector2.ZERO  # Track last input to avoid spam
+
+# Add these variables for proper session management
+var is_connecting: bool = false
+var connection_timeout_timer: Timer
+var max_connection_attempts: int = 3
+var current_attempt: int = 0
 
 @onready var actors: Node2D = $Actors
 @onready var cam: Camera2D = _ensure_camera()
@@ -68,6 +74,7 @@ func _check_authentication_and_connect() -> void:
 	
 	# Check for token in URL hash
 	var tk := _get_token_from_hash()
+	print("MainNetClient: 🔍 DEBUG - Token from hash: ", tk.substr(0, 20) + "..." if tk.length() > 20 else tk)
 	if tk != "":
 		print("MainNetClient: Token found in URL hash")
 		auth_token = tk
@@ -84,56 +91,87 @@ func _connect_to_server() -> void:
 		print("MainNetClient: Connection not allowed - authentication required")
 		return
 	
-	print("MainNetClient: Starting server connection...")
+	if is_connecting:
+		print("MainNetClient: Already connecting, ignoring duplicate request")
+		return
+	
+	current_attempt += 1
+	if current_attempt > max_connection_attempts:
+		print("MainNetClient: Max connection attempts reached")
+		_handle_connection_failure()
+		return
+	
+	is_connecting = true
+	print("MainNetClient: Starting server connection attempt ", current_attempt)
+	
+	# Setup connection timeout
+	if not connection_timeout_timer:
+		connection_timeout_timer = Timer.new()
+		add_child(connection_timeout_timer)
+		connection_timeout_timer.timeout.connect(_on_connection_timeout)
+	
+	connection_timeout_timer.wait_time = 10.0  # 10 second timeout
+	connection_timeout_timer.start()
 	
 	var url := _resolve_server_url()
 	print("MainNetClient: connecting to ", url, " room=", room_name)
-
-	client = _new_client(url)
-	if client == null:
-		push_error("MainNetClient: Could not construct Colyseus client. Check addon path under 'addons/godot_colyseus/'.")
-		return
-
-	var ROOM_STATE_SCHEMA_REF: GDScript = preload(ROOM_STATE_SCHEMA_PATH)
-
-	var opts: Dictionary = {}
 	
-	# Use auth token if we have one, otherwise check URL hash (for dev mode)
-	if auth_token != "":
-		opts["token"] = auth_token
-		print("MainNetClient: Using provided auth token")
-	else:
-		var tk := _get_token_from_hash()
-		if tk != "":
-			opts["token"] = tk
-			print("MainNetClient: Using token from URL hash")
-		elif is_dev_mode:
-			print("MainNetClient: Dev mode - connecting without token")
-		else:
-			push_error("MainNetClient: ❌ AUTHENTICATION REQUIRED - No token provided and not in dev mode")
-			_show_auth_required_error()
+	# Create client if needed
+	if client == null:
+		client = _new_client(url)
+		if not client:
+			print("MainNetClient: ❌ Failed to create Colyseus client")
+			_handle_connection_failure()
 			return
 	
-	var promise = client.join_or_create(ROOM_STATE_SCHEMA_REF, room_name, opts)
-	print("MainNetClient: 🔍 Promise created, waiting for completion...")
+	# Connection options
+	var options = {}
+	if not is_dev_mode:
+		options["token"] = auth_token
+	
+	print("MainNetClient: 🔍 Attempting to join room...")
+	
+	var ROOM_STATE_SCHEMA_REF: GDScript = preload(ROOM_STATE_SCHEMA_PATH)
+	var promise = client.join_or_create(ROOM_STATE_SCHEMA_REF, room_name, options)
+	if promise == null:
+		print("MainNetClient: ❌ Failed to create connection promise")
+		_handle_connection_failure()
+		return
+	
+	# Use the new promise-based approach with proper error handling
 	await promise.completed
-	print("MainNetClient: 🔍 Promise completed, state: ", promise.get_state())
 	
 	if promise.get_state() == promise.State.Failed:
-		var error_msg = str(promise.get_error())
-		print("MainNetClient: ❌ Join failed: ", error_msg)
-		
-		# Simple approach: if connection fails, assume it's a duplicate session
-		# (since that's our main restriction now)
-		print("MainNetClient: 🔍 Connection failed - showing duplicate session error")
-		call_deferred("_create_duplicate_session_error_display")
-		return
-	elif promise.get_state() == promise.State.Completed:
-		print("MainNetClient: ✅ Connection succeeded!")
+		_on_room_join_error(promise.get_error())
 	else:
-		print("MainNetClient: ⚠️ Unexpected promise state: ", promise.get_state())
+		_on_room_joined(promise.get_data())
 
-	room = promise.get_data()
+func _on_room_joined(new_room) -> void:
+	is_connecting = false
+	current_attempt = 0  # Reset on success
+	
+	if connection_timeout_timer:
+		connection_timeout_timer.stop()
+	
+	print("MainNetClient: ✅ Successfully connected to room!")
+	room = new_room
+	_setup_room_handlers()
+	set_process(true)
+	
+	# In dev mode, allow dummy players for testing
+	if is_dev_mode:
+		print("MainNetClient: Dev mode - enabling dummy player spawn")
+		_dummy_spawned = false  # Allow dummy spawning in dev mode
+	else:
+		_dummy_spawned = true   # Prevent dummy spawning in production
+	
+	# Ensure we sync from state shortly after join (in case initial patch arrives a tick later)
+	call_deferred("_debug_post_join")
+
+func _setup_room_handlers() -> void:
+	if not room:
+		return
+		
 	room.on_join.on(Callable(self, "_on_join"))
 	room.on_state_change.on(Callable(self, "_on_state_change"))
 	room.on_message("voice_data").on(Callable(self, "_on_voice_data"))
@@ -147,19 +185,48 @@ func _connect_to_server() -> void:
 		voice_chat.set_main_net_client(self)  # Set reference for player access
 	
 	print("MainNetClient: joined room: ", room_name)
+
+func _on_room_join_error(error) -> void:
+	is_connecting = false
 	
-	# Connection succeeded, enable processing
-	set_process(true)
+	if connection_timeout_timer:
+		connection_timeout_timer.stop()
 	
-	# In dev mode, allow dummy players for testing
-	if is_dev_mode:
-		print("MainNetClient: Dev mode - enabling dummy player spawn")
-		_dummy_spawned = false  # Allow dummy spawning in dev mode
+	print("MainNetClient: ❌ Failed to join room: ", error)
+	
+	# Check if it's a duplicate session error
+	if str(error).find("duplicate") != -1:
+		print("MainNetClient: Detected duplicate session, waiting before retry...")
+		# Wait longer before retry for duplicate sessions
+		await get_tree().create_timer(3.0).timeout
 	else:
-		_dummy_spawned = true   # Prevent dummy spawning in production
+		# Wait shorter for other errors
+		await get_tree().create_timer(1.0).timeout
 	
-	# Ensure we sync from state shortly after join (in case initial patch arrives a tick later)
-	call_deferred("_debug_post_join")
+	_connect_to_server()  # Retry
+
+func _on_connection_timeout() -> void:
+	print("MainNetClient: ⏰ Connection timeout")
+	is_connecting = false
+	
+	if client:
+		if client.has_method("close"):
+			client.close()
+		client = null
+	
+	# Wait before retry
+	await get_tree().create_timer(2.0).timeout
+	_connect_to_server()
+
+func _handle_connection_failure() -> void:
+	is_connecting = false
+	current_attempt = 0
+	_connection_failed = true
+	print("MainNetClient: 💥 Connection failed permanently")
+	
+	# Show error UI to user - for now show duplicate session error
+	# You might want to create a more specific "connection failed" error
+	call_deferred("_create_duplicate_session_error_display")
 
 func _handle_auth_failure(error_msg: String) -> void:
 	print("MainNetClient: Authentication failed: ", error_msg)
@@ -523,7 +590,7 @@ func _resolve_server_url() -> String:
 			host = host_any
 		var use_wss := (proto == "https:")
 		var scheme := "wss" if use_wss else "ws"
-		var url := scheme + "://" + host + ":2567"
+		var url := scheme + "://" + host
 		return _build_url_with_token(url)
 	# 4) Fallback to localhost (with base path)
 	return _build_url_with_token("ws://127.0.0.1:2567")
