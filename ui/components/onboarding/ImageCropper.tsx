@@ -31,13 +31,14 @@ export default function ImageCropper({
     const img = new Image()
     img.onload = () => {
       setImageSize({ width: img.width, height: img.height })
-      // Initialize crop area to center
+
+      // Initialize crop area as largest possible square (full width or height)
       const minDimension = Math.min(img.width, img.height)
-      const initialSize = Math.min(minDimension, 200)
+
       setCropArea({
-        x: (img.width - initialSize) / 2,
-        y: (img.height - initialSize) / 2,
-        size: initialSize,
+        x: (img.width - minDimension) / 2,
+        y: (img.height - minDimension) / 2,
+        size: minDimension,
       })
     }
     img.src = URL.createObjectURL(image)
