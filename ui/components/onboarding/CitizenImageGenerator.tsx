@@ -192,12 +192,14 @@ export function ImageGenerator({
       const imgElement = new window.Image()
       imgElement.onload = () => {
         setImageSize({ width: imgElement.width, height: imgElement.height })
+
+        // Initialize crop area as largest possible square (full width or height)
         const minDimension = Math.min(imgElement.width, imgElement.height)
-        const initialSize = Math.min(minDimension, 200)
+
         setCropArea({
-          x: (imgElement.width - initialSize) / 2,
-          y: (imgElement.height - initialSize) / 2,
-          size: initialSize,
+          x: (imgElement.width - minDimension) / 2,
+          y: (imgElement.height - minDimension) / 2,
+          size: minDimension,
         })
 
         // Calculate displayed image size after a short delay to ensure container is rendered
@@ -316,6 +318,7 @@ export function ImageGenerator({
       imageSize.width,
       imageSize.height,
       displayedImageSize.width,
+      displayedImageSize.height,
       displayedImageSize.offsetX,
       displayedImageSize.offsetY,
     ]
@@ -363,6 +366,7 @@ export function ImageGenerator({
       containerRef,
       inputImage,
       displayedImageSize.width,
+      displayedImageSize.height,
       imageSize,
       dragStart,
       isResizing,
@@ -689,15 +693,15 @@ export function ImageGenerator({
                   setShowError(false)
 
                   // Reset the crop area to center when re-cropping
+                  // Initialize as largest possible square (full width or height)
                   const minDimension = Math.min(
                     imageSize.width,
                     imageSize.height
                   )
-                  const initialSize = Math.min(minDimension, 200)
                   setCropArea({
-                    x: (imageSize.width - initialSize) / 2,
-                    y: (imageSize.height - initialSize) / 2,
-                    size: initialSize,
+                    x: (imageSize.width - minDimension) / 2,
+                    y: (imageSize.height - minDimension) / 2,
+                    size: minDimension,
                   })
                 }
               }}
