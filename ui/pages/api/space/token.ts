@@ -45,25 +45,53 @@ export default async function handler(
       const statement = `SELECT * FROM ${
         CITIZEN_TABLE_NAMES[chainSlug]
       } WHERE owner = '${wallet.toLowerCase()}'`
+
+      console.log('🔍 Database query details:', {
+        chain: chain,
+        chainSlug: chainSlug,
+        tableName: CITIZEN_TABLE_NAMES[chainSlug],
+        wallet: wallet.toLowerCase(),
+        statement: statement,
+        env: process.env.NODE_ENV,
+      })
+
       const citizenRows = await queryTable(chain, statement)
+
+      console.log('🔍 Query results:', {
+        rowCount: citizenRows?.length || 0,
+        firstRow: citizenRows?.[0] || null,
+      })
 
       const citizen: any = citizenRows[0]
 
       if (!citizen) {
+        console.log('❌ No citizen found for wallet:', wallet.toLowerCase())
         return res.status(400).json({ error: 'No citizen found' })
       }
 
       citizenName = citizen.name || 'Unknown Citizen'
+      console.log('🔍 Citizen data found:', {
+        name: citizen.name,
+        citizenName: citizenName,
+        wallet: wallet,
+      })
     } catch (error) {
       console.log('Error fetching citizen data:', error)
       return res.status(500).json({ error: 'Failed to fetch citizen data' })
     }
 
-    const token = await new SignJWT({
+    const jwtPayload = {
       sub: wallet.toLowerCase(),
       wallet: wallet,
       name: citizenName,
-    })
+    }
+
+    console.log(
+      '🔍 Creating JWT with payload:',
+      JSON.stringify(jwtPayload, null, 2)
+    )
+
+    const token = await new SignJWT(jwtPayload)
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('10m')
       .sign(new TextEncoder().encode(process.env.SPACE_JWT_SECRET))
