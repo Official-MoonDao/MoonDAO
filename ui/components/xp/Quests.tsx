@@ -175,6 +175,7 @@ export default function Quests({}: QuestsProps) {
                 linkText: verifier.linkText,
                 action: verifier.action,
                 actionText: verifier.actionText,
+                modalButton: verifier.modalButton,
               }}
               variant="onboarding"
               userAddress={userAddress}

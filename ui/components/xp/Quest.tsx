@@ -4,7 +4,7 @@ import ERC20ABI from 'const/abis/ERC20.json'
 import StagedXPVerifierABI from 'const/abis/StagedXPVerifier.json'
 import XPVerifierABI from 'const/abis/XPVerifier.json'
 import { DEFAULT_CHAIN_V5, MOONEY_ADDRESSES } from 'const/config'
-import {
+import React, {
   ComponentType,
   useCallback,
   useContext,
@@ -41,6 +41,7 @@ export type QuestItem = {
   linkText?: string
   action?: () => void
   actionText?: string
+  modalButton?: React.ComponentType<any>
 }
 
 type QuestProps = {
@@ -762,6 +763,8 @@ export default function Quest({
     ]
   )
 
+  const ModalButton = quest?.modalButton || null
+
   return (
     <div
       className={`px-4 py-4 rounded-xl border transition-all duration-500 group relative overflow-hidden ${getContainerClasses()}`}
@@ -994,69 +997,72 @@ export default function Quest({
                     </div>
 
                     {/* Action Buttons - Right side */}
-                    <div className="flex gap-2 flex-shrink-0">
-                      {!isCompleted &&
-                        !needsGitHubLink &&
-                        stagedProgress?.totalClaimableXP !== 0 && (
-                          <PrivyWeb3Button
-                            label="Claim"
-                            action={async () => {
-                              await claimQuest()
-                            }}
-                            isDisabled={
-                              isLoadingClaim ||
-                              (quest.verifier.type === 'staged' &&
-                                stagedProgress?.totalClaimableXP === 0)
-                            }
-                            requiredChain={DEFAULT_CHAIN_V5}
-                            className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400/20 text-yellow-300 font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
-                            noPadding
-                            noGradient
-                          />
+                    <div className="flex gap-2 flex-col flex-shrink-0 items-end">
+                      <div className="flex gap-2">
+                        {!isCompleted &&
+                          !needsGitHubLink &&
+                          stagedProgress?.totalClaimableXP !== 0 && (
+                            <PrivyWeb3Button
+                              label="Claim"
+                              action={async () => {
+                                await claimQuest()
+                              }}
+                              isDisabled={
+                                isLoadingClaim ||
+                                (quest.verifier.type === 'staged' &&
+                                  stagedProgress?.totalClaimableXP === 0)
+                              }
+                              requiredChain={DEFAULT_CHAIN_V5}
+                              className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400/20 text-yellow-300 font-medium py-2 px-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
+                              noPadding
+                              noGradient
+                            />
+                          )}
+
+                        {getErrorButton(error || '') && (
+                          <div className="flex justify-center">
+                            {getErrorButton(error || '')}
+                          </div>
                         )}
 
-                      {getErrorButton(error || '') && (
-                        <div className="flex justify-center">
-                          {getErrorButton(error || '')}
-                        </div>
-                      )}
+                        {!isCompleted &&
+                          quest.link &&
+                          quest.linkText &&
+                          !needsGitHubLink && (
+                            <StandardButton
+                              className={getButtonClasses()}
+                              link={
+                                quest.link === 'citizenProfile'
+                                  ? `/citizen/${generatePrettyLinkWithId(
+                                      citizen.name,
+                                      citizen.id
+                                    )}`
+                                  : quest.link
+                              }
+                              target={
+                                quest.link.startsWith('/') ||
+                                quest.link === 'citizenProfile'
+                                  ? '_self'
+                                  : '_blank'
+                              }
+                            >
+                              {quest.linkText}
+                            </StandardButton>
+                          )}
 
-                      {!isCompleted &&
-                        quest.link &&
-                        quest.linkText &&
-                        !needsGitHubLink && (
-                          <StandardButton
-                            className={getButtonClasses()}
-                            link={
-                              quest.link === 'citizenProfile'
-                                ? `/citizen/${generatePrettyLinkWithId(
-                                    citizen.name,
-                                    citizen.id
-                                  )}`
-                                : quest.link
-                            }
-                            target={
-                              quest.link.startsWith('/') ||
-                              quest.link === 'citizenProfile'
-                                ? '_self'
-                                : '_blank'
-                            }
-                          >
-                            {quest.linkText}
-                          </StandardButton>
-                        )}
-
-                      {!isCompleted &&
-                        quest.action &&
-                        quest.actionText &&
-                        !needsGitHubLink && (
-                          <button
-                            onClick={quest.action}
-                            className={getButtonClasses()}
-                          >
-                            {quest.actionText}
-                          </button>
-                        )}
+                        {!isCompleted &&
+                          quest.action &&
+                          quest.actionText &&
+                          !needsGitHubLink && (
+                            <button
+                              onClick={quest.action}
+                              className={getButtonClasses()}
+                            >
+                              {quest.actionText}
+                            </button>
+                          )}
+                      </div>
+                      {!isCompleted && ModalButton && <ModalButton />}
                     </div>
                   </div>
                 ) : (
@@ -1102,46 +1108,50 @@ export default function Quest({
                     {getErrorButton(error || '')}
                   </div>
 
-                  {!isCompleted &&
-                    quest.link &&
-                    quest.linkText &&
-                    !needsGitHubLink && (
-                      <div className="inline-block">
-                        <StandardButton
-                          className={getButtonClasses()}
-                          link={
-                            quest.link === 'citizenProfile'
-                              ? `/citizen/${generatePrettyLinkWithId(
-                                  citizen.metadata.name,
-                                  citizen.id
-                                )}`
-                              : quest.link
-                          }
-                          target={
-                            quest.link.startsWith('/') ||
-                            quest.link === 'citizenProfile'
-                              ? '_self'
-                              : '_blank'
-                          }
-                        >
-                          {quest.linkText}
-                        </StandardButton>
-                      </div>
-                    )}
+                  <div className="flex flex-col gap-2">
+                    {!isCompleted &&
+                      quest.link &&
+                      quest.linkText &&
+                      !needsGitHubLink && (
+                        <div className="inline-block">
+                          <StandardButton
+                            className={getButtonClasses()}
+                            link={
+                              quest.link === 'citizenProfile'
+                                ? `/citizen/${generatePrettyLinkWithId(
+                                    citizen.metadata.name,
+                                    citizen.id
+                                  )}`
+                                : quest.link
+                            }
+                            target={
+                              quest.link.startsWith('/') ||
+                              quest.link === 'citizenProfile'
+                                ? '_self'
+                                : '_blank'
+                            }
+                          >
+                            {quest.linkText}
+                          </StandardButton>
+                        </div>
+                      )}
 
-                  {!isCompleted &&
-                    quest.action &&
-                    quest.actionText &&
-                    !needsGitHubLink && (
-                      <div className="inline-block">
-                        <button
-                          onClick={quest.action}
-                          className={getButtonClasses()}
-                        >
-                          {quest.actionText}
-                        </button>
-                      </div>
-                    )}
+                    {!isCompleted &&
+                      quest.action &&
+                      quest.actionText &&
+                      !needsGitHubLink && (
+                        <div className="inline-block">
+                          <button
+                            onClick={quest.action}
+                            className={getButtonClasses()}
+                          >
+                            {quest.actionText}
+                          </button>
+                        </div>
+                      )}
+
+                    {!isCompleted && ModalButton && <ModalButton />}
+                  </div>
                 </div>
               </div>
             )}
