@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@bananapus/core": "^1.0.6",
+    "@bananapus/core-v5": "^0.0.4",
     "@layerzerolabs/lz-evm-messagelib-v2": "^3.0.61",
     "@layerzerolabs/lz-evm-oapp-v2": "^3.0.99",
     "@layerzerolabs/lz-evm-protocol-v2": "^3.0.60",

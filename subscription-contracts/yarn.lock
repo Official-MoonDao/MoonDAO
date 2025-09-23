@@ -103,6 +103,17 @@
     "@babel/helper-string-parser" "^7.27.1"
     "@babel/helper-validator-identifier" "^7.27.1"
 
+"@bananapus/core-v5@^0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@bananapus/core-v5/-/core-v5-0.0.4.tgz#efa941235153b09f2fd8c5f4cb0d8b9c6c6ff0f3"
+  integrity sha512-72sRV6UUFNysxXesGgD+cbnt2xwUlpxWZh/1L3fEOxcWzr8zHiRhB1c8UMpmUqm5WCaJRrsjWWZyebuoxD7dYA==
+  dependencies:
+    "@bananapus/permission-ids-v5" "^0.0.2"
+    "@chainlink/contracts" "^1.3.0"
+    "@openzeppelin/contracts" "^5.2.0"
+    "@prb/math" "^4.1.0"
+    "@uniswap/permit2" "github:Uniswap/permit2"
+
 "@bananapus/core@^1.0.6":
   version "1.0.6"
   resolved "https://registry.yarnpkg.com/@bananapus/core/-/core-1.0.6.tgz#a8a688a07b3c706db6733fdd0afdc1d6163541bf"
@@ -113,6 +124,11 @@
     "@openzeppelin/contracts" "^5.2.0"
     "@prb/math" "^4.1.0"
     "@uniswap/permit2" "github:Uniswap/permit2"
+
+"@bananapus/permission-ids-v5@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@bananapus/permission-ids-v5/-/permission-ids-v5-0.0.2.tgz#0d950328bf713492dcd75e50b088e545b4efc639"
+  integrity sha512-BZDwUUES7kIEwqsXUMn7B/yc7Xdvn+Sun+Huk6GtXSxgKZwhguL2YSqdOksFcsOqA/YZFKHqBbRh2hi3M+f3Ag==
 
 "@bananapus/permission-ids@^0.0.17":
   version "0.0.17"
