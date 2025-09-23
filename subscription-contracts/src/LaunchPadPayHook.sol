@@ -2,14 +2,14 @@
 pragma solidity ^0.8.0;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {JBPayHookSpecification} from "@nana-core/structs/JBPayHookSpecification.sol";
-import {IJBRulesets} from "@nana-core/interfaces/IJBRulesets.sol";
-import {JBBeforePayRecordedContext} from "@nana-core/structs/JBBeforePayRecordedContext.sol";
-import {JBBeforeCashOutRecordedContext} from "@nana-core/structs/JBBeforeCashOutRecordedContext.sol";
-import {JBCashOutHookSpecification} from "@nana-core/structs/JBCashOutHookSpecification.sol";
-import {IJBTerminalStore} from "@nana-core/interfaces/IJBTerminalStore.sol";
-import {IJBRulesetDataHook} from "@nana-core/interfaces/IJBRulesetDataHook.sol";
-import { JBConstants } from "@nana-core/libraries/JBConstants.sol";
+import {JBPayHookSpecification} from "@nana-core-v5/structs/JBPayHookSpecification.sol";
+import {IJBRulesets} from "@nana-core-v5/interfaces/IJBRulesets.sol";
+import {JBBeforePayRecordedContext} from "@nana-core-v5/structs/JBBeforePayRecordedContext.sol";
+import {JBBeforeCashOutRecordedContext} from "@nana-core-v5/structs/JBBeforeCashOutRecordedContext.sol";
+import {JBCashOutHookSpecification} from "@nana-core-v5/structs/JBCashOutHookSpecification.sol";
+import {IJBTerminalStore} from "@nana-core-v5/interfaces/IJBTerminalStore.sol";
+import {IJBRulesetDataHook} from "@nana-core-v5/interfaces/IJBRulesetDataHook.sol";
+import { JBConstants } from "@nana-core-v5/libraries/JBConstants.sol";
 
 
 // LaunchPadPayHook

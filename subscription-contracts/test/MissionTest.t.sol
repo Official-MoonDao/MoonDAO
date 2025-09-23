@@ -4,12 +4,12 @@ pragma solidity ^0.8.20;
 
 import {Vesting} from "../src/Vesting.sol";
 import {PoolDeployer} from "../src/PoolDeployer.sol";
-import "@nana-core/interfaces/IJBRulesetApprovalHook.sol";
+import "@nana-core-v5/interfaces/IJBRulesetApprovalHook.sol";
 import {IWETH9} from "v4-periphery/src/interfaces/external/IWETH9.sol";
 import {WETH} from "solmate/src/tokens/WETH.sol";
-import {IJBRulesets} from "@nana-core/interfaces/IJBRulesets.sol";
-import {IJBMultiTerminal} from "@nana-core/interfaces/IJBMultiTerminal.sol";
-import {IJBDirectory} from "@nana-core/interfaces/IJBDirectory.sol";
+import {IJBRulesets} from "@nana-core-v5/interfaces/IJBRulesets.sol";
+import {IJBMultiTerminal} from "@nana-core-v5/interfaces/IJBMultiTerminal.sol";
+import {IJBDirectory} from "@nana-core-v5/interfaces/IJBDirectory.sol";
 import {MoonDAOTeam} from "../src/ERC5643.sol";
 import {GnosisSafeProxyFactory} from "../src/GnosisSafeProxyFactory.sol";
 import {MissionCreator} from "../src/MissionCreator.sol";
@@ -23,11 +23,11 @@ import {Hats} from "@hats/Hats.sol";
 import {HatsModuleFactory} from "@hats-module/HatsModuleFactory.sol";
 import {deployModuleFactory} from "@hats-module/utils/DeployFunctions.sol";
 import {Whitelist} from "../src/Whitelist.sol";
-import {IJBTerminal} from "@nana-core/interfaces/IJBTerminal.sol";
-import {IJBTokens} from "@nana-core/interfaces/IJBTokens.sol";
-import {JBConstants} from "@nana-core/libraries/JBConstants.sol";
-import {IJBController} from "@nana-core/interfaces/IJBController.sol";
-import {IJBTerminalStore} from "@nana-core/interfaces/IJBTerminalStore.sol";
+import {IJBTerminal} from "@nana-core-v5/interfaces/IJBTerminal.sol";
+import {IJBTokens} from "@nana-core-v5/interfaces/IJBTokens.sol";
+import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
+import {IJBController} from "@nana-core-v5/interfaces/IJBController.sol";
+import {IJBTerminalStore} from "@nana-core-v5/interfaces/IJBTerminalStore.sol";
 import "base/Config.sol";
 
 contract MissionTest is Test, Config {
