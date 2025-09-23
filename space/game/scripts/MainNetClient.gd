@@ -1,8 +1,8 @@
 # res://scripts/MainNetClient.gd
 extends Node2D
 
-# @export var server_url: String = "ws://localhost:2567"
-@export var server_url: String = "wss://moondao-space-server.fly.dev"
+@export var server_url: String = "ws://localhost:2567"
+# @export var server_url: String = "wss://moondao-space-server.fly.dev"
 @export var room_name: String  = "lobby"
 
 const PLAYER_SCENE_PATH        := "res://scenes/Player.tscn"
@@ -367,16 +367,26 @@ func _sync_from_state(state) -> void:
 		if not players.has(sid):
 			var inst_ps: PackedScene = preload(PLAYER_SCENE_PATH)
 			var inst: Node2D = inst_ps.instantiate()
-			actors.add_child(inst)
-			players[sid] = inst
 			
-			# Mark local vs remote player
+			# Set session ID and player type FIRST
 			var is_local = (room != null and sid == room.session_id)
+			if inst.has_method("set_session_id"):
+				inst.set_session_id(sid)
 			if inst.has_method("set_local_player"):
 				inst.set_local_player(is_local)
 			
-			if inst.has_method("set_session_id"):
-				inst.set_session_id(sid)
+			# Set initial position immediately to avoid overlapping at (0,0)
+			var p0 = players_map.at(sid)
+			if ("x" in p0) and ("y" in p0):
+				var spawn_pos := Vector2(float(p0.x), float(p0.y))
+				inst.global_position = spawn_pos
+				# Also initialize the network position for proper synchronization
+				if inst.has_method("set_network_position"):
+					inst.set_network_position(spawn_pos)
+				print("Player ", sid, " (", "LOCAL" if is_local else "REMOTE", ") spawned directly at server position: ", spawn_pos)
+			
+			actors.add_child(inst)
+			players[sid] = inst
 			
 			# Set WebRTC VoiceChat reference for proximity calculations
 			if inst.has_method("set_voice_chat_reference") and voice_chat:
@@ -388,7 +398,6 @@ func _sync_from_state(state) -> void:
 			
 			if inst.has_method("set_name_text"):
 				var nm := ""
-				var p0 = players_map.at(sid)
 				if ("name" in p0) and (p0.name is String):
 					nm = p0.name
 				inst.set_name_text(nm)
@@ -402,12 +411,12 @@ func _sync_from_state(state) -> void:
 		if ("x" in p) and ("y" in p):
 			var next := Vector2(float(p.x), float(p.y))
 			
-			# Use new prediction-aware positioning
+			# Always use set_network_position for proper interpolation and prediction
 			if node.has_method("set_network_position"):
 				node.set_network_position(next)
-			elif node.has_method("set_pos"):
-				node.set_pos(next.x, next.y)
 			else:
+				# Fallback: direct position setting (should not happen with Player nodes)
+				print("Warning: Node ", node.name, " doesn't have set_network_position method, using direct positioning")
 				node.global_position = next
 			last_pos[sid] = next
 			

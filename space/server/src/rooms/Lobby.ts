@@ -313,13 +313,67 @@ export class Lobby extends Room<RoomState> {
     }
 
     const player = new Player();
-    player.x = Math.random() * 400 - 200;
-    player.y = Math.random() * 400 - 200;
+
+    // Generate non-overlapping spawn position
+    const spawnPosition = this.findNonOverlappingSpawnPosition();
+    player.x = spawnPosition.x;
+    player.y = spawnPosition.y;
     player.name = user?.name || `Player${Math.floor(Math.random() * 1000)}`;
 
     this.state.players.set(client.sessionId, player);
-    console.log("onJoin", client.sessionId);
+    console.log(
+      `onJoin ${client.sessionId} spawned at (${player.x.toFixed(
+        1
+      )}, ${player.y.toFixed(1)})`
+    );
     console.log("players size", this.state.players.size);
+  }
+
+  private findNonOverlappingSpawnPosition(): { x: number; y: number } {
+    const MIN_DISTANCE = 100; // Minimum distance between players
+    const MAX_ATTEMPTS = 50; // Prevent infinite loops
+    const SPAWN_RADIUS = 300; // Area to spawn within
+
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      // Generate random position in spawn area
+      const angle = Math.random() * 2 * Math.PI;
+      const distance = Math.random() * SPAWN_RADIUS;
+      const x = Math.cos(angle) * distance;
+      const y = Math.sin(angle) * distance;
+
+      // Check if this position is far enough from all existing players
+      let validPosition = true;
+      for (const [sessionId, existingPlayer] of this.state.players) {
+        const dx = x - existingPlayer.x;
+        const dy = y - existingPlayer.y;
+        const distanceToPlayer = Math.sqrt(dx * dx + dy * dy);
+
+        if (distanceToPlayer < MIN_DISTANCE) {
+          validPosition = false;
+          break;
+        }
+      }
+
+      if (validPosition) {
+        console.log(
+          `Found valid spawn position at (${x.toFixed(1)}, ${y.toFixed(
+            1
+          )}) after ${attempt + 1} attempts`
+        );
+        return { x, y };
+      }
+    }
+
+    // Fallback: if we can't find a non-overlapping position, spawn at a random location
+    // This should rarely happen unless the spawn area is very crowded
+    const fallbackX = Math.random() * 600 - 300; // Larger area as fallback
+    const fallbackY = Math.random() * 600 - 300;
+    console.warn(
+      `Could not find non-overlapping spawn position after ${MAX_ATTEMPTS} attempts, using fallback (${fallbackX.toFixed(
+        1
+      )}, ${fallbackY.toFixed(1)})`
+    );
+    return { x: fallbackX, y: fallbackY };
   }
 
   onLeave(client: Client, consented?: boolean) {

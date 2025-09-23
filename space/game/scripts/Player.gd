@@ -21,7 +21,15 @@ func _process(delta: float) -> void:
 		
 		# Only interpolate if we're not already at the target
 		if distance_to_target > 1.0:  # Small threshold to avoid micro-movements
-			global_position = global_position.lerp(network_position, 8.0 * delta)
+			# Use adaptive interpolation speed based on distance
+			# Closer players move more smoothly to reduce "jitter" when overlapping
+			var lerp_speed = 8.0
+			if distance_to_target < 50.0:  # If very close to target
+				lerp_speed = 4.0  # Slower, smoother movement
+			elif distance_to_target > 200.0:  # If far from target
+				lerp_speed = 12.0  # Faster catch-up
+			
+			global_position = global_position.lerp(network_position, lerp_speed * delta)
 			
 			# Calculate velocity from the interpolated movement for animations
 			var velocity = (global_position - old_pos) / delta
@@ -65,19 +73,44 @@ func _process(delta: float) -> void:
 
 func set_local_player(is_local: bool) -> void:
 	is_local_player = is_local
+	if is_local:
+		# Reset input time to prevent immediate reconciliation conflicts
+		last_input_time = 0.0
+		print("DEBUG: Set as local player - session_id: ", session_id)
 
 func set_network_position(net_pos: Vector2) -> void:
+	# Debug: Log all position updates to trace the sync issue
+	print("DEBUG: ", session_id, " set_network_position called with: ", net_pos, " (current pos: ", global_position, ", is_local: ", is_local_player, ")")
+	
 	network_position = net_pos
 	if not is_local_player:
 		# For remote players, the position will be smoothly interpolated in _process()
-		pass
+		# But if this is the first position update, set it directly to avoid starting at (0,0)
+		if global_position == Vector2.ZERO and network_position != Vector2.ZERO:
+			print("DEBUG: Remote player initial position set to: ", network_position)
+			global_position = network_position
 	else:
 		# For local player, only reconcile if we haven't had input recently
 		# This prevents server corrections from fighting local movement
-		if Time.get_time_dict_from_system().get("unix", 0.0) - last_input_time > 0.1:
+		var time_since_input = Time.get_time_dict_from_system().get("unix", 0.0) - last_input_time
+		var distance_to_server = global_position.distance_to(net_pos)
+		
+		# Only reconcile if:
+		# 1. No recent input (not actively moving), AND
+		# 2. Server position is significantly different (> 10 pixels)
+		if time_since_input > 0.1 and distance_to_server > 10.0:
 			var old_pos = global_position
-			global_position = global_position.lerp(net_pos, 0.3)
-			print("Local player reconciled from ", old_pos, " to ", global_position, " (server says: ", net_pos, ")")
+			# Use gentler reconciliation for smaller distances to reduce "snapping"
+			var lerp_strength = 0.3
+			if distance_to_server < 50.0:
+				lerp_strength = 0.1  # Very gentle correction for small differences
+			elif distance_to_server > 100.0:
+				lerp_strength = 0.5  # Stronger correction for large differences
+			
+			global_position = global_position.lerp(net_pos, lerp_strength)
+			print("Local player reconciled from ", old_pos, " to ", global_position, " (server says: ", net_pos, ", distance: ", distance_to_server.round(), ")")
+		else:
+			print("DEBUG: Local player reconciliation skipped - time_since_input: ", time_since_input, ", distance: ", distance_to_server)
 
 func set_name_text(txt: String) -> void:
 	if name_label == null:
