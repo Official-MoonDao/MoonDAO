@@ -37,7 +37,13 @@ contract Config is Script {
     mapping(uint256 => address) public STARGATE_POOLS;
     mapping(uint256 => address) public MISSION_CREATOR_ADDRESSES;
     // Juicebox contract addresses are shared across chains
-    address constant JB_MULTI_TERMINAL = address(0xDB9644369c79C3633cDE70D2Df50d827D7dC7Dbc);
+    address constant JB_V5_MULTI_TERMINAL = address(0x2dB6d704058E552DeFE415753465df8dF0361846);
+    address constant JB_V5_CONTROLLER = address(0x27da30646502e2f642bE5281322Ae8C394F7668a);
+    address constant JB_V5_RULESETS = address(0x6292281D69c3593FCF6eA074E5797341476ab428);
+    address constant JB_V5_PROJECTS = address(0x885f707EFA18D2cb12f05a3a8eBA6B4B26c8c1D4);
+    address constant JB_V5_TERMINAL_STORE = address(0xfE33B439Ec53748C87DcEDACb83f05aDd5014744);
+    address constant JB_V5_TOKENS= address(0x4d0Edd347FB1fA21589C1E109B3474924BE87636)
+    address constant JB_V5_DIRECTORY = address(0x0061E516886A0540F63157f112C0588eE0651dCF)
     address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
     address payable constant CROSS_CHAIN_PAY_ADDRESS = payable(address(0xb9Ce576bec5D36F89275eb9bE6C1057B3bD3572C));
 

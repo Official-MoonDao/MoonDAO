@@ -1,5 +1,5 @@
-//Juicebox V4
-import JBV4TokenABI from 'const/abis/JBV4Token.json'
+//Juicebox V5
+import JBV5Token from 'const/abis/JBV5Token.json'
 import {
   JB_NATIVE_TOKEN_ADDRESS,
   MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL,
@@ -65,7 +65,7 @@ export default function useJBProjectData({
   const tokenContract = useContract({
     chain: selectedChain,
     address: token?.tokenAddress,
-    abi: JBV4TokenABI,
+    abi: JBV5Token.abi,
   })
 
   //Metadata and Ruleset

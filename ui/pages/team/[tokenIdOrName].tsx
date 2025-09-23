@@ -11,9 +11,9 @@ import {
 import Safe, { SafeConfig } from '@safe-global/protocol-kit'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
-import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
-import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
-import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
+import JBV5Controller from 'const/abis/JBV5Controller.json'
+import JBV5Directory from 'const/abis/JBV5Directory.json'
+import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import JobBoardTableABI from 'const/abis/JobBoardTable.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
@@ -28,10 +28,10 @@ import {
   MARKETPLACE_TABLE_ADDRESSES,
   TEAM_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
-  JBV4_CONTROLLER_ADDRESSES,
-  JBV4_TOKENS_ADDRESSES,
+  JBV5_CONTROLLER_ADDRESS,
+  JBV5_TOKENS_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
-  JBV4_DIRECTORY_ADDRESSES,
+  JBV5_DIRECTORY_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
 } from 'const/config'
 import { blockedTeams } from 'const/whitelist'
@@ -151,20 +151,20 @@ export default function TeamDetailPage({
   })
 
   const jbControllerContract = useContract({
-    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
-    abi: JBV4ControllerABI,
+    address: JBV5_CONTROLLER_ADDRESS,
+    abi: JBV5Controller.abi,
     chain: selectedChain,
   })
 
   const jbDirectoryContract = useContract({
-    address: JBV4_DIRECTORY_ADDRESSES[chainSlug],
-    abi: JBV4DirectoryABI,
+    address: JBV5_DIRECTORY_ADDRESS,
+    abi: JBV5Directory.abi,
     chain: selectedChain,
   })
 
   const jbTokensContract = useContract({
-    address: JBV4_TOKENS_ADDRESSES[chainSlug],
-    abi: JBV4TokensABI,
+    address: JBV5_TOKENS_ADDRESS,
+    abi: JBV5Tokens.abi,
     chain: selectedChain,
   })
 

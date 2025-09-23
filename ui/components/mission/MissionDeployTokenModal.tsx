@@ -1,6 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
-import JBControllerABI from 'const/abis/JBV4Controller.json'
-import { JBV4_CONTROLLER_ADDRESSES } from 'const/config'
+import JBV5Controller from 'const/abis/JBV5Controller.json'
+import { JBV5_CONTROLLER_ADDRESS } from 'const/config'
 import { ethers } from 'ethers'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -80,7 +80,7 @@ export default function MissionDeployTokenModal({
     }
 
     try {
-      const iface = new ethers.utils.Interface(JBControllerABI)
+      const iface = new ethers.utils.Interface(JBV5Controller.abi)
       const txData = iface.encodeFunctionData('deployERC20For', [
         mission?.projectId,
         token.name,
@@ -88,7 +88,7 @@ export default function MissionDeployTokenModal({
         keccak256(toUtf8Bytes(`${mission?.projectId}-${Date.now()}`)),
       ])
       await queueSafeTx({
-        to: JBV4_CONTROLLER_ADDRESSES[chainSlug],
+        to: JBV5_CONTROLLER_ADDRESS,
         data: txData,
         value: '0',
         safeTxGas: '1000000',

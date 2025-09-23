@@ -24,11 +24,13 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig =
-  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
+const ethConfig = require(
+  `../../contracts/deployments/ethereum`
+) as DeploymentConfig
 
-const polygonConfig =
-  require(`../../contracts/deployments/polygon`) as DeploymentConfig
+const polygonConfig = require(
+  `../../contracts/deployments/polygon`
+) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
@@ -36,11 +38,13 @@ const arbitrumConfig =
 const baseConfig =
   require('../../contracts/deployments/base') as DeploymentConfig
 
-const goerliConfig =
-  require(`../../contracts/deployments/goerli`) as DeploymentConfig
+const goerliConfig = require(
+  `../../contracts/deployments/goerli`
+) as DeploymentConfig
 
-const sepoliaConfig =
-  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
+const sepoliaConfig = require(
+  `../../contracts/deployments/sepolia`
+) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -275,15 +279,22 @@ export const JBV4_DIRECTORY_ADDRESSES: Index = {
   arbitrum: '0x0bc9f153dee4d3d474ce0903775b9b2aaae9aa41',
   sepolia: '0x0bC9F153DEe4d3D474ce0903775b9b2AAae9AA41',
 }
-export const JB_NATIVE_TOKEN_ADDRESS =
-  '0x000000000000000000000000000000000000EEEe'
-
-export const JB_NATIVE_TOKEN_ID = 61166
-
 export const JBV4_TERMINAL_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0xdb9644369c79c3633cde70d2df50d827d7dc7dbc',
 }
+
+export const JBV5_CONTROLLER_ADDRESS =
+  '0x27da30646502e2f642bE5281322Ae8C394F7668a'
+export const JBV5_TOKENS_ADDRESSES =
+  '0x4d0Edd347FB1fA21589C1E109B3474924BE87636'
+export const JBV5_DIRECTORY_ADDRESSES =
+  '0x0061E516886A0540F63157f112C0588eE0651dCF'
+export const JBV5_TERMINAL_ADDRESSES =
+  '0x2dB6d704058E552DeFE415753465df8dF0361846'
+export const JB_NATIVE_TOKEN_ADDRESS =
+  '0x000000000000000000000000000000000000EEEe'
+export const JB_NATIVE_TOKEN_ID = 61166
 //Citzens & Teams Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
 //Citizens & Teams Arbitrum Hat Tree : https://app.hatsprotocol.xyz/trees/42161/42
 export const MOONDAO_HAT_TREE_IDS: Index = {

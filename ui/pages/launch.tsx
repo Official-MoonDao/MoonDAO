@@ -1,17 +1,17 @@
 import { useLogin, usePrivy } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
-import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
-import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
-import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
+import JBV5Controller from 'const/abis/JBV5Controller.json'
+import JBV5Directory from 'const/abis/JBV5Directory.json'
+import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import MissionCreatorABI from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
-  JBV4_CONTROLLER_ADDRESSES,
-  JBV4_DIRECTORY_ADDRESSES,
-  JBV4_TOKENS_ADDRESSES,
+  JBV5_CONTROLLER_ADDRESS,
+  JBV5_DIRECTORY_ADDRESS,
+  JBV5_TOKENS_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
@@ -89,21 +89,21 @@ export default function Launch({ missions }: any) {
   })
 
   const jbControllerContract = useContract({
-    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
+    address: JBV5_CONTROLLER_ADDRESS,
     chain: selectedChain,
-    abi: JBV4ControllerABI as any,
+    abi: JBV5Controller.abi as any,
   })
 
   const jbDirectoryContract = useContract({
-    address: JBV4_DIRECTORY_ADDRESSES[chainSlug],
+    address: JBV5_DIRECTORY_ADDRESS,
     chain: selectedChain,
-    abi: JBV4DirectoryABI as any,
+    abi: JBV5Directory.abi as any,
   })
 
   const jbTokensContract = useContract({
-    address: JBV4_TOKENS_ADDRESSES[chainSlug],
+    address: JBV5_TOKENS_ADDRESS,
     chain: selectedChain,
-    abi: JBV4TokensABI as any,
+    abi: JBV5Tokens.abi as any,
   })
 
   const hatsContract = useContract({
@@ -1299,10 +1299,10 @@ export const getStaticProps: GetStaticProps = async (): Promise<
       return !blockedMissions.includes(mission.id) && mission && mission.id
     })
 
-    const jbV4ControllerContract = getContract({
+    const jbV5ControllerContract = getContract({
       client: serverClient,
-      address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
-      abi: JBV4ControllerABI as any,
+      address: JBV5_CONTROLLER_ADDRESS,
+      abi: JBV5Controller.abi as any,
       chain: chain,
     })
 
@@ -1329,7 +1329,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
           }
 
           const metadataURI = await readContract({
-            contract: jbV4ControllerContract,
+            contract: jbV5ControllerContract,
             method: 'uriOf' as string,
             params: [missionRow.projectId],
           })

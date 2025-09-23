@@ -1,16 +1,16 @@
-import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
-import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
-import JBV4TokenABI from 'const/abis/JBV4Token.json'
-import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
+import JBV5Controller from 'const/abis/JBV5Controller.json'
+import JBV5Directory from 'const/abis/JBV5Directory.json'
+import JBV5Token from 'const/abis/JBV5Token.json'
+import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import LaunchPadPayHookABI from 'const/abis/LaunchPadPayHook.json'
 import MissionCreatorABI from 'const/abis/MissionCreatorSep.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
   IPFS_GATEWAY,
-  JBV4_CONTROLLER_ADDRESSES,
-  JBV4_DIRECTORY_ADDRESSES,
-  JBV4_TOKENS_ADDRESSES,
+  JBV5_CONTROLLER_ADDRESS,
+  JBV5_DIRECTORY_ADDRESS,
+  JBV5_TOKENS_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
   JB_NATIVE_TOKEN_ADDRESS,
   MISSION_TABLE_NAMES,
@@ -33,15 +33,15 @@ const CHAIN_SLUG = getChainSlug(CHAIN)
 
 const jbControllerContract = getContract({
   client: serverClient,
-  address: JBV4_CONTROLLER_ADDRESSES[CHAIN_SLUG],
-  abi: JBV4ControllerABI as any,
+  address: JBV5_CONTROLLER_ADDRESS,
+  abi: JBV5Controller.abi as any,
   chain: CHAIN,
 })
 
 const jbDirectoryContract = getContract({
   client: serverClient,
-  address: JBV4_DIRECTORY_ADDRESSES[CHAIN_SLUG],
-  abi: JBV4DirectoryABI as any,
+  address: JBV5_DIRECTORY_ADDRESS,
+  abi: JBV5Directory.abi as any,
   chain: CHAIN,
 })
 
@@ -182,8 +182,8 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     // Create jbTokensContract for token data fetching
     const jbTokensContract = getContract({
       client: serverClient,
-      address: JBV4_TOKENS_ADDRESSES[chainSlug],
-      abi: JBV4TokensABI as any,
+      address: JBV5_TOKENS_ADDRESS,
+      abi: JBV5Tokens.abi as any,
       chain: chain,
     })
 
@@ -297,7 +297,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         const tokenContract = getContract({
           client: serverClient,
           address: tokenAddress,
-          abi: JBV4TokenABI as any,
+          abi: JBV5Token.abi as any,
           chain: chain,
         })
 

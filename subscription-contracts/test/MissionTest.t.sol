@@ -53,7 +53,6 @@ contract MissionTest is Test, Config {
     IJBRulesets jbRulesets;
     IJBTokens jbTokens;
     IJBController jbController;
-    address jbProjectsAddress;
 
 
     function setUp() public {
@@ -75,8 +74,7 @@ contract MissionTest is Test, Config {
         moonDAOTeamTable = new MoonDaoTeamTableland("MoonDaoTeamTable");
         moonDAOTeam = new MoonDAOTeam("erc5369", "ERC5643", TREASURY, address(hatsBase), address(teamDiscountList));
         moonDAOTeamCreator = new MoonDAOTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(moonDAOTeam), gnosisSafeAddress, address(proxyFactory), address(moonDAOTeamTable), address(teamWhitelist));
-        jbDirectory = IJBDirectory(0x0bC9F153DEe4d3D474ce0903775b9b2AAae9AA41);
-
+        jbDirectory = IJBDirectory(JB_V5_DIRECTORY);
 
         uint256 topHatId = hats.mintTopHat(user1, "", "");
         uint256 moonDAOTeamAdminHatId = hats.createHat(topHatId, "", 1, TREASURY, TREASURY, true, "");
@@ -86,18 +84,12 @@ contract MissionTest is Test, Config {
         moonDAOTeamCreator.setMoonDaoTeamAdminHatId(moonDAOTeamAdminHatId);
         moonDAOTeam.setMoonDaoCreator(address(moonDAOTeamCreator));
         hats.mintHat(moonDAOTeamAdminHatId, address(moonDAOTeamCreator));
-        address jbMultiTerminalAddress = address(0xDB9644369c79C3633cDE70D2Df50d827D7dC7Dbc);
-        jbProjectsAddress = address(0x0b538A02610d7d3Cc91Ce2870F423e0a34D646AD);
+        jbRulesets = IJBRulesets(JB_V5_RULESETS);
+        jbTerminalStore = IJBTerminalStore(JB_V5_TERMINAL_STORE);
+        jbTokens = IJBTokens(JB_V5_TOKENS);
+        jbController = IJBController(JB_V5_CONTROLLER);
 
-        address jbTerminalStoreAddress = address(0x6F6740ddA12033ca9fBAA56693194E38cfD36827);
-        address jbControllerAddress = address(0xb291844F213047Eb9e1621AE555B1Eae6700d553);
-        address jbRulesetsAddress = address(0xDA86EeDb67C6C9FB3E58FE83Efa28674D7C89826);
-        jbRulesets = IJBRulesets(jbRulesetsAddress);
-        jbTerminalStore = IJBTerminalStore(jbTerminalStoreAddress);
-        jbTokens = IJBTokens(0xA59e9F424901fB9DBD8913a9A32A081F9425bf36);
-        jbController = IJBController(jbControllerAddress);
-
-        missionCreator = new MissionCreator(jbControllerAddress, jbMultiTerminalAddress, jbProjectsAddress, jbTerminalStoreAddress, jbRulesetsAddress, address(moonDAOTeam), zero, TREASURY, FEE_HOOK_ADDRESSES[block.chainid], POSITION_MANAGERS[block.chainid]);
+        missionCreator = new MissionCreator(JB_V5_CONTROLLER, JB_V5_MULTI_TERMINAL, JB_V5_PROJECTS, JB_V5_TERMINAL_STORE, JB_V5_RULESETS, address(moonDAOTeam), zero, TREASURY, FEE_HOOK_ADDRESSES[block.chainid], POSITION_MANAGERS[block.chainid]);
         missionTable = new MissionTable("TestMissionTable", address(missionCreator));
         missionCreator.setMissionTable(address(missionTable));
 
@@ -892,10 +884,10 @@ contract MissionTest is Test, Config {
 
     function testSetJBProjects() public {
         vm.prank(user1);
-        missionCreator.setJBProjects(address(jbProjectsAddress));
+        missionCreator.setJBProjects(address(JB_V5_PROJECTS));
         vm.prank(user2);
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user2));
-        missionCreator.setJBProjects(address(jbProjectsAddress));
+        missionCreator.setJBProjects(address(JB_V5_PROJECTS));
     }
 
     function testSetFeeHookAddress() public {
