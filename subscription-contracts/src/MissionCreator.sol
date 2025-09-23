@@ -264,8 +264,8 @@ contract MissionCreator is Ownable, IERC721Receiver {
             accountingContextsToAccept: new JBAccountingContext[](1) // Initialize as dynamic array
         });
         terminalConfigurations[0].accountingContextsToAccept[0] = JBAccountingContext({
-            token: address(0xEEEe), // The token to accept through the given terminal. Ensure this is a valid token address
-            decimals: 18, // The number of decimals the token is accounted with as a fixed point number.
+            token: JBConstants.NATIVE_TOKEN,
+            decimals: 18,
             currency: 61166 // The currency used with the token is ETH. This ensures proper price conversion when necessary.
         });
 
