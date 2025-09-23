@@ -29,7 +29,7 @@ jobs:
             subscription-contracts/node_modules
             subscription-contracts/lib
             subscription-contracts/out
-          key: key-${{ runner.os }}-npm-v2-${{ hashFiles('**/package-lock.json') }}
+          key: key-${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             key-${{ runner.os }}-npm-new
 
