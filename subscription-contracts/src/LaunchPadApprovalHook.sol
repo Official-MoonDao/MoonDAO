@@ -34,8 +34,7 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook {
 
     function approvalStatusOf(
         uint256 projectId,
-        uint256,
-        uint256 start
+        JBRuleset memory ruleset
     ) external view override returns (JBApprovalStatus) {
         uint256 currentFunding = _totalFunding(terminal, projectId);
         if (currentFunding >= fundingGoal && block.timestamp >= deadline) {

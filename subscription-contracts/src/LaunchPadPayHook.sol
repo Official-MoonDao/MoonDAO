@@ -106,7 +106,7 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         totalSupply = (currentFunding * weight) / (2 * 1e18);
     }
 
-    function hasMintPermissionFor(uint256 projectId, address addr) external view override returns (bool flag){
+    function hasMintPermissionFor(uint256 projectId, JBRuleset memory ruleset, address addr) external view override returns (bool flag){
         return false;
     }
 
