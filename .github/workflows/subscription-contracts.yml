@@ -77,8 +77,8 @@ jobs:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
         run: |
           cd subscription-contracts
-          forge coverage --via-ir --fork-url 127.0.0.1:8545 -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov --report-file sepolia-coverge.info
-          forge coverage --via-ir --fork-url 127.0.0.1:8546 -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov --report-file arbitrum-coverge.info
+          forge coverage --via-ir --fork-url 127.0.0.1:8545 -vv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov --report-file sepolia-coverge.info
+          forge coverage --via-ir --fork-url 127.0.0.1:8546 -vv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov --report-file arbitrum-coverge.info
           lcov -a sepolia-coverge.info -a arbitrum-coverge.info -o coverage.info
         id: test
 
