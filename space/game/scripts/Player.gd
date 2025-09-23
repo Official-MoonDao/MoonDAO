@@ -15,30 +15,28 @@ var last_voice_position_update := 0.0  # Throttle voice position updates
 
 func _process(delta: float) -> void:
 	if not is_local_player:
-		# Non-local players: smooth interpolate to network position
-		var old_pos = global_position
+		# SIMPLE: Just use very fast interpolation - no teleport detection
 		var distance_to_target = global_position.distance_to(network_position)
 		
-		# Only interpolate if we're not already at the target
-		if distance_to_target > 1.0:  # Small threshold to avoid micro-movements
-			# Use adaptive interpolation speed based on distance
-			# Closer players move more smoothly to reduce "jitter" when overlapping
-			var lerp_speed = 8.0
-			if distance_to_target < 50.0:  # If very close to target
-				lerp_speed = 4.0  # Slower, smoother movement
-			elif distance_to_target > 200.0:  # If far from target
-				lerp_speed = 12.0  # Faster catch-up
+		if distance_to_target > 1.0:
+			var old_pos = global_position
+			# Use moderate interpolation speed that works well with animations
+			global_position = global_position.lerp(network_position, 15.0 * delta)
 			
-			global_position = global_position.lerp(network_position, lerp_speed * delta)
-			
-			# Calculate velocity from the interpolated movement for animations
+			# Calculate velocity and update animations
 			var velocity = (global_position - old_pos) / delta
-			if view.has_method("update_from_velocity"):
+			if view and view.has_method("update_from_velocity"):
 				view.update_from_velocity(velocity)
+			
+			# Ensure sprite is visible
+			if view and "sprite" in view and view.sprite:
+				view.sprite.visible = true
 		else:
-			# We're close enough to the target, stop animating
-			if view.has_method("update_from_velocity"):
+			# Close enough - stop animating but keep visible
+			if view and view.has_method("update_from_velocity"):
 				view.update_from_velocity(Vector2.ZERO)
+			if view and "sprite" in view and view.sprite:
+				view.sprite.visible = true
 		
 		# Update voice chat position (throttled to avoid spam)
 		_update_voice_chat_position_throttled()
@@ -53,7 +51,6 @@ func _process(delta: float) -> void:
 	if v != Vector2.ZERO:
 		global_position += v  # Use global_position to match server coordinate system
 		last_input_time = Time.get_time_dict_from_system().get("unix", 0.0)
-		print("Local player moved to: ", global_position, " delta: ", v)
 		
 		# Send movement delta to server for multiplayer sync
 		if room != null:
@@ -64,6 +61,9 @@ func _process(delta: float) -> void:
 			var delta_x = input_dir.x * delta * speed
 			var delta_y = input_dir.y * delta * speed
 			room.send("move", {"x": delta_x, "y": delta_y})
+			
+			# Optional: Send periodic heartbeat for sync
+			# room.send("position_heartbeat", {"x": global_position.x, "y": global_position.y})
 	
 	if view.has_method("update_from_velocity"):
 		view.update_from_velocity(v / delta)  # convert back to velocity
@@ -73,51 +73,24 @@ func _process(delta: float) -> void:
 
 func set_local_player(is_local: bool) -> void:
 	is_local_player = is_local
-	if is_local:
-		# Reset input time to prevent immediate reconciliation conflicts
-		last_input_time = 0.0
-		print("DEBUG: Set as local player - session_id: ", session_id)
 
 func set_network_position(net_pos: Vector2) -> void:
-	# Debug: Log all position updates to trace the sync issue
-	print("DEBUG: ", session_id, " set_network_position called with: ", net_pos, " (current pos: ", global_position, ", is_local: ", is_local_player, ")")
-	
 	network_position = net_pos
+	
 	if not is_local_player:
-		# For remote players, the position will be smoothly interpolated in _process()
-		# But if this is the first position update, set it directly to avoid starting at (0,0)
-		if global_position == Vector2.ZERO and network_position != Vector2.ZERO:
-			print("DEBUG: Remote player initial position set to: ", network_position)
-			global_position = network_position
+		# For remote players: let _process() handle the interpolation
+		pass
 	else:
 		# For local player, only reconcile if we haven't had input recently
 		# This prevents server corrections from fighting local movement
-		var time_since_input = Time.get_time_dict_from_system().get("unix", 0.0) - last_input_time
-		var distance_to_server = global_position.distance_to(net_pos)
-		
-		# Only reconcile if:
-		# 1. No recent input (not actively moving), AND
-		# 2. Server position is significantly different (> 10 pixels)
-		if time_since_input > 0.1 and distance_to_server > 10.0:
+		if Time.get_time_dict_from_system().get("unix", 0.0) - last_input_time > 0.1:
 			var old_pos = global_position
-			# Use gentler reconciliation for smaller distances to reduce "snapping"
-			var lerp_strength = 0.3
-			if distance_to_server < 50.0:
-				lerp_strength = 0.1  # Very gentle correction for small differences
-			elif distance_to_server > 100.0:
-				lerp_strength = 0.5  # Stronger correction for large differences
-			
-			global_position = global_position.lerp(net_pos, lerp_strength)
-			print("Local player reconciled from ", old_pos, " to ", global_position, " (server says: ", net_pos, ", distance: ", distance_to_server.round(), ")")
-		else:
-			print("DEBUG: Local player reconciliation skipped - time_since_input: ", time_since_input, ", distance: ", distance_to_server)
+			global_position = global_position.lerp(net_pos, 0.3)
 
 func set_name_text(txt: String) -> void:
 	if name_label == null:
 		return
 	name_label.text = txt if txt != null else ""
-
-# Talking indicator functions removed
 
 func set_session_id(sid: String) -> void:
 	session_id = sid

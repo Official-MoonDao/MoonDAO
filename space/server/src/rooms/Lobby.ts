@@ -4,11 +4,18 @@ import { z } from "zod";
 import jwt from "jsonwebtoken";
 
 const MoveMsg = z.object({ x: z.number(), y: z.number() });
+const PositionHeartbeatMsg = z.object({
+  x: z.number(),
+  y: z.number(),
+  timestamp: z.number(),
+  type: z.string().optional(),
+});
 
 export class Lobby extends Room<RoomState> {
   maxClients = 64;
   private activeUserSessions = new Map<string, string>(); // userId -> sessionId mapping
   private sessionCleanupTimers = new Map<string, NodeJS.Timeout>(); // sessionId -> cleanup timer
+  private playerMetadata = new Map<string, any>(); // Custom metadata storage for tracking movement times
 
   async onCreate(options: any) {
     this.setState(new RoomState());
@@ -30,27 +37,44 @@ export class Lobby extends Room<RoomState> {
       p.x += x;
       p.y += y;
 
-      // Optional: clamp to world bounds (allow negative coordinates)
-      p.x = Math.max(-2000, Math.min(p.x, 2000));
-      p.y = Math.max(-2000, Math.min(p.y, 2000));
+      // Track last movement time to coordinate with heartbeat system
+      const playerKey = `lastMove_${client.sessionId}`;
+      this.playerMetadata.set(playerKey, Date.now());
 
-      // Debug logging (remove after testing)
-      if (Math.abs(x) > 0.1 || Math.abs(y) > 0.1) {
-        console.log(
-          `Player ${client.sessionId} moved by (${x.toFixed(2)}, ${y.toFixed(
-            2
-          )}) to (${p.x.toFixed(2)}, ${p.y.toFixed(2)})`
-        );
+      // NO BOUNDS CLAMPING - let players go anywhere
+    });
 
-        // Special logging for movements from/near spawn
-        if (Math.abs(p.x) < 50 || Math.abs(p.y) < 50) {
-          console.log(
-            `*** SPAWN AREA MOVEMENT *** Player near origin: (${p.x.toFixed(
-              2
-            )}, ${p.y.toFixed(2)})`
-          );
-        }
-      }
+    // REAL-TIME position updates - no complex logic, just set position
+    this.onMessage("position_heartbeat", (client, payload) => {
+      const { x, y, timestamp, type } = PositionHeartbeatMsg.parse(payload);
+      const p = this.state.players.get(client.sessionId);
+      if (!p) return;
+
+      // SIMPLE: Just set the position - REAL-TIME
+      p.x = x;
+      p.y = y;
+    });
+
+    // Minimap position query - return authoritative server positions
+    this.onMessage("minimap_positions", (client, payload) => {
+      const positions: {
+        [sessionId: string]: { x: number; y: number; name: string };
+      } = {};
+
+      // Collect all player positions from server state
+      this.state.players.forEach((player, sessionId) => {
+        positions[sessionId] = {
+          x: player.x,
+          y: player.y,
+          name: player.name || "",
+        };
+      });
+
+      // Send back authoritative positions
+      client.send("minimap_positions_response", {
+        positions: positions,
+        timestamp: Date.now(),
+      });
     });
 
     // WebRTC Signaling for Voice Chat
@@ -390,6 +414,10 @@ export class Lobby extends Room<RoomState> {
     console.log(
       `🔄 Session ${client.sessionId} scheduled for cleanup in 5 seconds`
     );
+  }
+
+  onDispose() {
+    console.log("Room disposed");
   }
 
   private cleanupSession(sessionId: string, user: any) {

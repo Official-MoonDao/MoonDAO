@@ -1,8 +1,8 @@
 # res://scripts/MainNetClient.gd
 extends Node2D
 
-@export var server_url: String = "ws://localhost:2567"
-# @export var server_url: String = "wss://moondao-space-server.fly.dev"
+# @export var server_url: String = "ws://localhost:2567"
+@export var server_url: String = "wss://moondao-space-server.fly.dev"
 @export var room_name: String  = "lobby"
 
 const PLAYER_SCENE_PATH        := "res://scenes/Player.tscn"
@@ -774,5 +774,9 @@ func _ensure_camera() -> Camera2D:
 func get_local_player() -> Node2D:
 	"""Return the local player node for background synchronization"""
 	return _follow
+
+func get_players() -> Dictionary:
+	"""Return the players dictionary for minimap"""
+	return players
 
 # _on_player_talking_changed function removed
