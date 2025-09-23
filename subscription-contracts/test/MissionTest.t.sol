@@ -293,7 +293,7 @@ contract MissionTest is Test, Config {
         vm.startPrank(teamAddress);
         payhook.setFundingTurnedOff(true);
         vm.stopPrank();
-        JBRuleset ruleset;
+        JBRuleset memory ruleset;
         assertFalse(payhook.hasMintPermissionFor(projectId, ruleset, user1));
 
         uint256 payAmount = 1_000_000_000_000_000_000;
