@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/interfaces/IERC165.sol";
 import "@nana-core-v5/interfaces/IJBRulesetApprovalHook.sol";
 import "@nana-core-v5/interfaces/IJBTerminalStore.sol";
 import "@nana-core-v5/libraries/JBConstants.sol";
+import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
 
 // Hook to enable payouts after a funding goal is reached and a deadline is passed.
 contract LaunchPadApprovalHook is IJBRulesetApprovalHook {

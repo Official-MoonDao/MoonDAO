@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {JBPayHookSpecification} from "@nana-core-v5/structs/JBPayHookSpecification.sol";
 import {IJBRulesets} from "@nana-core-v5/interfaces/IJBRulesets.sol";
+import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
+
 import {JBBeforePayRecordedContext} from "@nana-core-v5/structs/JBBeforePayRecordedContext.sol";
 import {JBBeforeCashOutRecordedContext} from "@nana-core-v5/structs/JBBeforeCashOutRecordedContext.sol";
 import {JBCashOutHookSpecification} from "@nana-core-v5/structs/JBCashOutHookSpecification.sol";
