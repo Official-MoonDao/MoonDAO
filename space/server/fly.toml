@@ -22,7 +22,3 @@ primary_region = "sjc"
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
-
-# ADD THIS SECTION - Scale to exactly 1 machine
-[processes]
-  app = 1

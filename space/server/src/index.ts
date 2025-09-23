@@ -3,7 +3,7 @@ import { WebSocketTransport, WebSocketClient } from "@colyseus/ws-transport";
 import url from "url";
 import querystring from "querystring";
 import { Lobby } from "./rooms/Lobby";
-import { RedisPresence } from "@colyseus/redis-presence";
+// import { RedisPresence } from "@colyseus/redis-presence"; // Not used currently
 
 class DebugWsTransport extends WebSocketTransport {
   async onConnection(rawClient: any, req: any) {
@@ -94,13 +94,10 @@ process.on("unhandledRejection", (reason, promise) => {
 const transport = new DebugWsTransport();
 console.log("✅ Transport created");
 
-// Replace LocalPresence with RedisPresence
+// Using LocalPresence for single-machine deployment
 const gameServer = new Server({
   transport: transport,
-  presence: new RedisPresence({
-    host: process.env.REDIS_HOST,
-    port: parseInt(process.env.REDIS_PORT || "6379"),
-  }),
+  presence: new LocalPresence(),
 });
 console.log("✅ Game server created");
 
@@ -129,7 +126,6 @@ gameServer
   .then(() => {
     console.log(`🎉 Colyseus listening on 0.0.0.0:${PORT}`);
     console.log("🌐 Server is ready to accept connections");
-    console.log("📡 WebSocket endpoint: wss://moondao-space-server.fly.dev/");
 
     // Log all incoming connections
     const server = (transport as any).server;

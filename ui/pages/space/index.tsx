@@ -204,7 +204,7 @@ export default function Space() {
 
                   <div className="pt-4">
                     <a
-                      href="/marketplace"
+                      href="/citizen"
                       className="inline-block w-full py-4 px-6 bg-gradient-to-r from-moon-orange to-red-500 hover:from-moon-orange/90 hover:to-red-500/90 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-moon-orange/50 focus:ring-offset-2 focus:ring-offset-slate-900"
                     >
                       Get Citizen NFT

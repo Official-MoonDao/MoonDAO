@@ -53,173 +53,135 @@ export class Lobby extends Room<RoomState> {
       }
     });
 
-    this.onMessage("voice_data", (client, payload) => {
-      try {
-        console.log(
-          "Voice data received from",
-          client.sessionId,
-          "payload:",
-          typeof payload,
-          "keys:",
-          Object.keys(payload)
-        );
+    // WebRTC Signaling for Voice Chat
+    // Handle WebRTC offer from client
+    this.onMessage("webrtc_offer", (client, payload) => {
+      console.log(
+        `🎤 WebRTC offer from ${client.sessionId} to ${payload.targetSessionId}`
+      );
 
-        // DEBUG: Check what client actually sent
-        if (payload.frames) {
-          console.log(
-            `🔊 CLIENT SENT - Frame count: ${
-              payload.frames.length
-            }, Frame type: ${typeof payload.frames[0]}`
-          );
-          if (payload.frames.length > 0) {
-            console.log(`🔊 First frame from client:`, payload.frames[0]);
-
-            // Check frame data quality on server side
-            let maxAmp = 0;
-            let nonZeroFrames = 0;
-            for (let i = 0; i < Math.min(10, payload.frames.length); i++) {
-              const frame = payload.frames[i];
-              if (Array.isArray(frame) && frame.length >= 2) {
-                const amp = Math.max(Math.abs(frame[0]), Math.abs(frame[1]));
-                if (amp > maxAmp) maxAmp = amp;
-                if (amp > 0) nonZeroFrames++;
-              }
-            }
-            console.log(
-              `🔊 CLIENT AUDIO QUALITY - Max amplitude: ${maxAmp.toFixed(
-                6
-              )}, Non-zero frames: ${nonZeroFrames}/10`
-            );
-          }
-        }
-
-        // Handle both formats: legacy bytes and new frames
-        if (!payload || (!payload.data && !payload.frames)) {
-          console.error("Voice data missing - no data or frames field");
-          return;
-        }
-
-        const { data, frames, sample_rate, format, chunk_info } = payload;
-
-        // Broadcast voice data to all other clients with the sender's session ID
-        const broadcastPayload: any = {
-          session_id: client.sessionId,
-          sample_rate: sample_rate || 22050,
-          format: format || "bytes",
-        };
-
-        // Include chunk info if present (for chunked transmission)
-        if (chunk_info) {
-          broadcastPayload.chunk_info = chunk_info;
-          console.log(
-            `🔊 Broadcasting chunk ${chunk_info.chunk_index + 1}/${
-              chunk_info.total_chunks
-            } from ${client.sessionId}`
-          );
-        }
-
-        // Include the appropriate data field
-        if (
-          (format === "frames" ||
-            format === "frames_highprec" ||
-            format === "frames_direct") &&
-          frames
-        ) {
-          // For frames_direct, frames is already a simple array of floats (mono)
-          if (format === "frames_direct") {
-            broadcastPayload.frames = [...frames]; // Simple copy for mono float array
-            console.log(
-              "Broadcasting direct frames data from",
-              client.sessionId,
-              "- sample count:",
-              frames.length
-            );
-          } else {
-            // IMPORTANT: Deep copy frames to prevent reference issues (for stereo frames)
-            broadcastPayload.frames = JSON.parse(JSON.stringify(frames));
-            console.log(
-              "Broadcasting frames data from",
-              client.sessionId,
-              "- frame count:",
-              frames.length
-            );
-          }
-
-          // DEBUG: Check frame data quality
-          let maxAmplitude = 0;
-          let nonZeroCount = 0;
-          for (let i = 0; i < Math.min(10, frames.length); i++) {
-            const frame = frames[i];
-            let amplitude = 0;
-
-            if (format === "frames_direct") {
-              // Direct frames are mono floats
-              amplitude = Math.abs(frame);
-            } else if (Array.isArray(frame) && frame.length >= 2) {
-              // Regular frames are stereo arrays
-              amplitude = Math.max(Math.abs(frame[0]), Math.abs(frame[1]));
-            }
-
-            if (amplitude > maxAmplitude) maxAmplitude = amplitude;
-            if (amplitude > 0) nonZeroCount++;
-          }
-          console.log(
-            `🔊 SERVER FRAME DEBUG - Max amplitude: ${maxAmplitude}, Non-zero frames: ${nonZeroCount}/${Math.min(
-              10,
-              frames.length
-            )}`
-          );
-          if (frames.length > 0) {
-            console.log(
-              `🔊 First few frames:`,
-              frames.slice(0, Math.min(3, frames.length))
-            );
-          }
-
-          // Compare original vs broadcast frames to check for corruption
-          const broadcastFrames = broadcastPayload.frames;
-          let corruptionDetected = false;
-          for (let i = 0; i < Math.min(5, frames.length); i++) {
-            if (
-              JSON.stringify(frames[i]) !== JSON.stringify(broadcastFrames[i])
-            ) {
-              corruptionDetected = true;
-              break;
-            }
-          }
-          console.log(
-            `🔊 BROADCAST INTEGRITY - Corruption detected: ${corruptionDetected}`
-          );
-        } else if (data) {
-          broadcastPayload.data = data;
-          console.log(
-            "Broadcasting byte data from",
-            client.sessionId,
-            "- size:",
-            data.length || data.byteLength || "unknown"
-          );
-        } else {
-          console.error("No valid data field found");
-          return;
-        }
-
-        this.broadcast("voice_data", broadcastPayload, { except: client });
-
-        // Log appropriate data size based on format
-        let dataSize = "unknown";
-        if (format === "frames" && frames) {
-          dataSize = `${frames.length} frames`;
-        } else if (data) {
-          dataSize =
-            data instanceof ArrayBuffer
-              ? `${data.byteLength} bytes`
-              : `${data.length || data.byteLength || "unknown"} bytes`;
-        }
-
-        console.log(`Voice data from ${client.sessionId}, size: ${dataSize}`);
-      } catch (error) {
-        console.error("Error processing voice data:", error);
+      if (!payload.targetSessionId || !payload.offer) {
+        console.error("Invalid WebRTC offer payload");
+        return;
       }
+
+      const targetClient = this.clients.find(
+        (c) => c.sessionId === payload.targetSessionId
+      );
+      if (targetClient) {
+        targetClient.send("webrtc_offer", {
+          offer: payload.offer,
+          fromSessionId: client.sessionId,
+        });
+        console.log(
+          `✅ Forwarded WebRTC offer from ${client.sessionId} to ${payload.targetSessionId}`
+        );
+      } else {
+        console.log(
+          `❌ Target client ${payload.targetSessionId} not found for WebRTC offer`
+        );
+      }
+    });
+
+    // Handle WebRTC answer from client
+    this.onMessage("webrtc_answer", (client, payload) => {
+      console.log(
+        `🎤 WebRTC answer from ${client.sessionId} to ${payload.targetSessionId}`
+      );
+
+      if (!payload.targetSessionId || !payload.answer) {
+        console.error("Invalid WebRTC answer payload");
+        return;
+      }
+
+      const targetClient = this.clients.find(
+        (c) => c.sessionId === payload.targetSessionId
+      );
+      if (targetClient) {
+        targetClient.send("webrtc_answer", {
+          answer: payload.answer,
+          fromSessionId: client.sessionId,
+        });
+        console.log(
+          `✅ Forwarded WebRTC answer from ${client.sessionId} to ${payload.targetSessionId}`
+        );
+      } else {
+        console.log(
+          `❌ Target client ${payload.targetSessionId} not found for WebRTC answer`
+        );
+      }
+    });
+
+    // Handle WebRTC ICE candidates
+    this.onMessage("webrtc_ice_candidate", (client, payload) => {
+      console.log(
+        `🎤 WebRTC ICE candidate from ${client.sessionId} to ${payload.targetSessionId}`
+      );
+
+      if (!payload.targetSessionId || !payload.candidate) {
+        console.error("Invalid WebRTC ICE candidate payload");
+        return;
+      }
+
+      const targetClient = this.clients.find(
+        (c) => c.sessionId === payload.targetSessionId
+      );
+      if (targetClient) {
+        targetClient.send("webrtc_ice_candidate", {
+          candidate: payload.candidate,
+          fromSessionId: client.sessionId,
+        });
+        console.log(
+          `✅ Forwarded ICE candidate from ${client.sessionId} to ${payload.targetSessionId}`
+        );
+      } else {
+        console.log(
+          `❌ Target client ${payload.targetSessionId} not found for ICE candidate`
+        );
+      }
+    });
+
+    // Handle voice chat room join/leave
+    this.onMessage("voice_chat_join", (client, payload) => {
+      console.log(`🎤 ${client.sessionId} joining voice chat`);
+
+      // Notify all other clients that this client wants to join voice chat
+      this.broadcast(
+        "voice_chat_peer_joined",
+        {
+          sessionId: client.sessionId,
+          position: payload.position || { x: 0, y: 0 },
+        },
+        { except: client }
+      );
+
+      // Send list of current voice chat participants to the new joiner
+      const voiceChatPeers = this.clients
+        .filter((c) => c.sessionId !== client.sessionId)
+        .map((c) => ({
+          sessionId: c.sessionId,
+          position: this.state.players.get(c.sessionId)
+            ? {
+                x: this.state.players.get(c.sessionId)!.x,
+                y: this.state.players.get(c.sessionId)!.y,
+              }
+            : { x: 0, y: 0 },
+        }));
+
+      client.send("voice_chat_peers_list", { peers: voiceChatPeers });
+    });
+
+    this.onMessage("voice_chat_leave", (client, payload) => {
+      console.log(`🎤 ${client.sessionId} leaving voice chat`);
+
+      // Notify all other clients that this client left voice chat
+      this.broadcast(
+        "voice_chat_peer_left",
+        {
+          sessionId: client.sessionId,
+        },
+        { except: client }
+      );
     });
   }
 
@@ -228,22 +190,49 @@ export class Lobby extends Room<RoomState> {
     const urlToken = new URL(request.url!, "http://x").searchParams.get(
       "token"
     );
+    console.log(
+      "🔍 AUTH DEBUG - URL token from query:",
+      urlToken ? urlToken.substring(0, 20) + "..." : "none"
+    );
+
     const optToken = options?.token;
+    console.log(
+      "🔍 AUTH DEBUG - Options token:",
+      optToken ? optToken.substring(0, 20) + "..." : "none"
+    );
+
     const token = optToken || urlToken;
+    console.log(
+      "🔍 AUTH DEBUG - Final token to use:",
+      token ? token.substring(0, 20) + "..." : "none"
+    );
     let userId = "";
     let userName = "Anon";
 
     if (token) {
       try {
+        console.log(
+          "🔍 JWT DEBUG - Token found:",
+          token.substring(0, 20) + "..."
+        );
+        console.log(
+          "🔍 JWT DEBUG - JWT_SECRET exists:",
+          !!process.env.JWT_SECRET
+        );
+
         const payload = jwt.verify(token, process.env.JWT_SECRET!);
         const sub = (payload as any)?.sub ?? "";
         const name =
           (payload as any)?.name ?? (payload as any)?.wallet ?? "Anon";
         userId = String(sub);
         userName = name;
-        console.log("on Auth ok", payload);
+        console.log("✅ JWT verify successful - payload:", payload);
       } catch (e) {
-        console.warn("JWT verify failed, falling back to anon user");
+        console.warn("❌ JWT verify failed:", (e as Error).message);
+        console.log(
+          "🔍 JWT DEBUG - Token that failed:",
+          token.substring(0, 50) + "..."
+        );
         // Fallback: allow connection without token (dev) – identify by sessionId
         userId = client.sessionId;
         userName = "Anon";

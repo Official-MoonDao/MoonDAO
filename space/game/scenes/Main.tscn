@@ -4,12 +4,14 @@
 [ext_resource type="Script" uid="uid://dwy60f8w7ue2q" path="res://scripts/Level1.gd" id="2_rarhs"]
 [ext_resource type="PackedScene" uid="uid://lg1e70p4tyqh" path="res://scenes/BackgroundLunar.tscn" id="2_rvslj"]
 [ext_resource type="PackedScene" uid="uid://cmd416pwcs5x8" path="res://scenes/LunarCrater.tscn" id="3_0bbpv"]
-[ext_resource type="Script" path="res://scripts/VoiceChat.gd" id="4_voicechat"]
-[ext_resource type="Script" path="res://scripts/MicrophoneUI.gd" id="5_micui"]
+[ext_resource type="Script" uid="uid://ceye5sjwq11tk" path="res://scripts/VoiceChat.gd" id="4_voicechat"]
+[ext_resource type="Script" uid="uid://cn3yw26s18d64" path="res://scripts/MicrophoneUI.gd" id="5_micui"]
 
 [node name="Main" type="Node2D"]
 y_sort_enabled = true
 script = ExtResource("1_elqb8")
+server_url = null
+room_name = null
 
 [node name="Level1" type="Node2D" parent="."]
 script = ExtResource("2_rarhs")
@@ -38,4 +40,6 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("5_micui")

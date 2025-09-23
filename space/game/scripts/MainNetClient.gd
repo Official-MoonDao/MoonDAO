@@ -174,15 +174,23 @@ func _setup_room_handlers() -> void:
 		
 	room.on_join.on(Callable(self, "_on_join"))
 	room.on_state_change.on(Callable(self, "_on_state_change"))
-	room.on_message("voice_data").on(Callable(self, "_on_voice_data"))
+	# WebRTC handles voice data directly, no need for message handler
 	room.on_message("duplicate_session").on(Callable(self, "_on_duplicate_session"))
 	room.on_error.on(Callable(self, "_on_room_error"))
 	room.on_leave.on(Callable(self, "_on_room_leave"))
 	
-	# Setup voice chat (don't let it register its own message handler)
+	# Setup WebRTC voice chat
 	if voice_chat:
-		voice_chat.set_room(room, false)  # false = don't register message handler
+		voice_chat.set_room(room)
 		voice_chat.set_main_net_client(self)  # Set reference for player access
+		
+		# player_talking_changed signal connection removed
+	
+	# Expose room to JavaScript for WebRTC signaling
+	if OS.has_feature("web") and Engine.has_singleton("JavaScriptBridge"):
+		JavaScriptBridge.eval("window.godotColyseusRoom = window.colyseusRoom || null;")
+		# We'll set the actual room reference when we have it available
+		_expose_room_to_javascript()
 	
 	print("MainNetClient: joined room: ", room_name)
 
@@ -370,7 +378,7 @@ func _sync_from_state(state) -> void:
 			if inst.has_method("set_session_id"):
 				inst.set_session_id(sid)
 			
-			# Set VoiceChat reference for proximity calculations
+			# Set WebRTC VoiceChat reference for proximity calculations
 			if inst.has_method("set_voice_chat_reference") and voice_chat:
 				inst.set_voice_chat_reference(voice_chat)
 			
@@ -402,6 +410,14 @@ func _sync_from_state(state) -> void:
 			else:
 				node.global_position = next
 			last_pos[sid] = next
+			
+			# Update voice chat position for proximity audio
+			if voice_chat:
+				var is_local = (room != null and sid == room.session_id)
+				if is_local:
+					voice_chat.update_local_player_position(next)
+				else:
+					voice_chat.update_player_position(sid, next)
 	# Remove players not present
 	var to_remove: Array = []
 	for existing_sid in players.keys():
@@ -416,32 +432,119 @@ func _sync_from_state(state) -> void:
 	if _follow != null and not players.values().has(_follow):
 		_follow = null
 
-func _on_voice_data(data) -> void:
-	print("MainNetClient: 🔊 _on_voice_data called with data type: ", typeof(data))
-	var sender_session_id = data.get("session_id", "")
-	var format = data.get("format", "bytes")  # Default to bytes for backward compatibility
+# Voice data is now handled directly by WebRTC - no server relay needed
+# This function is kept for compatibility but is no longer used
+func _on_voice_data(_data) -> void:
+	print("MainNetClient: Legacy voice_data message received, but WebRTC handles audio directly")
+
+func _expose_room_to_javascript() -> void:
+	"""Expose the Colyseus room to JavaScript for WebRTC signaling"""
+	if not OS.has_feature("web") or not Engine.has_singleton("JavaScriptBridge"):
+		return
 	
-	print("MainNetClient: 🔊 Voice data from session: '", sender_session_id, "' format: ", format)
-	print("MainNetClient: 🔊 Current players in room: ", players.keys())
-	print("MainNetClient: 🔊 Total players: ", players.size())
-	var my_session_id = ""
-	if room != null:
-		if room.has_method("get") and room.get("session_id") != null:
-			my_session_id = str(room.get("session_id"))
-		elif "session_id" in room:
-			my_session_id = str(room.session_id)
+	# Create a JavaScript wrapper for the room that can send messages
+	var js_room_wrapper = """
+	window.godotColyseusRoom = {
+		send: function(messageType, data) {
+			// This will be called from JavaScript to send WebRTC signaling messages
+			console.log('🌐 JavaScript sending message to Colyseus:', messageType, data);
+			
+			// Store the message to be picked up by Godot
+			if (!window.webrtcSignalingQueue) {
+				window.webrtcSignalingQueue = [];
+			}
+			const message = {
+				type: messageType,
+				data: data,
+				timestamp: Date.now()
+			};
+			window.webrtcSignalingQueue.push(message);
+			console.log('🎤 Added to WebRTC queue:', messageType, 'Queue size:', window.webrtcSignalingQueue.length);
+		}
+	};
+	
+	console.log('✅ Godot Colyseus room wrapper created for WebRTC');
+	"""
+	
+	JavaScriptBridge.eval(js_room_wrapper)
+	
+	# Set up polling for WebRTC signaling messages from JavaScript
+	print("MainNetClient: 🎤 Creating WebRTC signaling timer...")
+	var signaling_timer = Timer.new()
+	signaling_timer.wait_time = 0.05  # Check every 50ms
+	signaling_timer.timeout.connect(_process_webrtc_signaling_queue)
+	signaling_timer.autostart = true
+	add_child(signaling_timer)
+	print("MainNetClient: ✅ WebRTC signaling timer created and started")
+
+var _last_timer_debug: float = 0.0
+
+func _process_webrtc_signaling_queue() -> void:
+	"""Process WebRTC signaling messages from JavaScript"""
+	# Debug: Print every 5 seconds to confirm timer is working
+	var current_time = Time.get_ticks_msec() / 1000.0
+	if current_time - _last_timer_debug > 5.0:
+		print("MainNetClient: 🎤 WebRTC signaling timer alive (checking every 50ms)")
+		_last_timer_debug = current_time
+	
+	if not OS.has_feature("web") or not Engine.has_singleton("JavaScriptBridge"):
+		return
+	if not room:
+		# print("MainNetClient: 🎤 No room available for WebRTC signaling")
+		return
+	
+	var js_check_queue = """
+	(function() {
+		if (!window.webrtcSignalingQueue) {
+			console.log('🎤 Queue check: webrtcSignalingQueue does not exist');
+			return null;
+		}
+		if (window.webrtcSignalingQueue.length === 0) {
+			// console.log('🎤 Queue check: queue is empty');
+			return null;
+		}
+		
+		const message = window.webrtcSignalingQueue.shift();
+		console.log('🎤 Dequeued message:', message.type, 'Queue size now:', window.webrtcSignalingQueue.length);
+		
+		// Return as JSON string for Godot to parse
+		const messageData = {
+			type: message.type,
+			data: message.data,
+			timestamp: message.timestamp
+		};
+		const jsonString = JSON.stringify(messageData);
+		console.log('🎤 Returning JSON to Godot:', jsonString);
+		return jsonString;
+	})();
+	"""
+	
+	var json_string = JavaScriptBridge.eval(js_check_queue)
+	if json_string and json_string is String:
+		print("MainNetClient: 🎤 Received JSON from JavaScript: ", json_string)
+		
+		# Parse JSON string to Dictionary
+		var json_parser = JSON.new()
+		var parse_result = json_parser.parse(json_string)
+		
+		if parse_result == OK:
+			var message = json_parser.data
+			print("MainNetClient: 🎤 Parsed WebRTC signaling message: ", message)
+			print("MainNetClient: 🎤 Message type: ", message.get("type", "unknown"))
+			print("MainNetClient: 🎤 Message data: ", message.get("data", {}))
+			
+			if message.has("type") and message.has("data"):
+				# Send the message through the actual Colyseus room
+				var msg_type = message.get("type")
+				var msg_data = message.get("data")
+				room.send(msg_type, msg_data)
+				print("MainNetClient: 🎤 Forwarded WebRTC signaling message: ", msg_type, " to: ", msg_data.get("targetSessionId", "unknown"))
+			else:
+				print("MainNetClient: ❌ Invalid WebRTC message format: ", message)
 		else:
-			my_session_id = "unknown"
-	print("MainNetClient: 🔊 My session ID: ", my_session_id)
-	
-	# IMPORTANT: Also forward to VoiceChat for proximity processing and UI updates
-	if voice_chat and voice_chat.has_method("_on_voice_data_received"):
-		voice_chat._on_voice_data_received(data)
-		print("MainNetClient: 🔊 Forwarded voice data to VoiceChat")
-	else:
-		print("MainNetClient: ❌ Cannot forward to VoiceChat - ", "voice_chat is null" if not voice_chat else "method not found")
-	
-	# NOTE: Removed direct player audio calls - all voice data now goes through VoiceChat/VoiceUI
+			print("MainNetClient: ❌ Failed to parse JSON: ", json_string)
+	elif json_string:
+		print("MainNetClient: 🎤 Received non-string from JavaScript: ", json_string, " type: ", type_string(typeof(json_string)))
 
 func _on_duplicate_session(data) -> void:
 	print("MainNetClient: 🔍 DUPLICATE SESSION MESSAGE RECEIVED: ", data)
@@ -655,3 +758,5 @@ func _ensure_camera() -> Camera2D:
 	c.position_smoothing_speed = 10.0
 	# Optional zoom or limits can go here
 	return c
+
+# _on_player_talking_changed function removed

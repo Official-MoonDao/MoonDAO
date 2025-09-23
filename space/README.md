@@ -45,13 +45,12 @@ To export the game as an HTML5 build for the MoonDAO web interface:
 
 2. **Configure Export Settings:**
    - Set the export path to: `../ui/public/space-client/index.html`
-   - Ensure "Export With Debug" is unchecked for production builds
 
 3. **Export the Game:**
-   - Click "Export Project"
+   - Click "Export All"
    - Click "Release"
    - The game will be built and placed in `/ui/public/space-client/`
-   - The web build can then be accessed through the MoonDAO UI
+   - The web build can then be accessed through the MoonDAO UI at /space
 
 ### Game Controls
 

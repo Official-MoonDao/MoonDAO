@@ -8,8 +8,8 @@ signal microphone_toggled(enabled: bool)
 @onready var mic_icon: Label
 @onready var status_label: Label
 @onready var glass_panel: Panel
-
 var microphone_enabled := false
+var mic_is_loading := false
 
 func _ready() -> void:
 	print("MicrophoneUI: _ready() called")
@@ -133,6 +133,8 @@ func setup_glass_morphism_ui() -> void:
 	status_label.add_theme_constant_override("shadow_offset_x", 1)
 	status_label.add_theme_constant_override("shadow_offset_y", 1)
 	
+	# Note: We'll use the mic_icon for all states instead of a separate loading spinner
+	
 	# Connect button signal
 	mic_button.pressed.connect(_on_mic_button_pressed)
 	print("MicrophoneUI: Button signal connected successfully")
@@ -141,27 +143,30 @@ func setup_glass_morphism_ui() -> void:
 	print("MicrophoneUI: Final positions - Panel: ", glass_panel.position, " Button: ", mic_button.position)
 
 func connect_voice_chat() -> void:
-	print("MicrophoneUI: Searching for VoiceChat node...")
+	print("MicrophoneUI: Searching for voice chat node...")
 	
-	# Try multiple paths to find VoiceChat
+	# Try multiple paths to find voice chat (WebRTCVoiceManager or VoiceChat compatibility wrapper)
 	var paths_to_try = [
-		"../../VoiceChat",  # Main/VoiceChat from Main/UI/MicrophoneUI
-		"../VoiceChat",     # Alternative if structure is different
-		"/root/Main/VoiceChat"  # Absolute path as fallback
+		"../../WebRTCVoiceManager",  # Main/WebRTCVoiceManager from Main/UI/MicrophoneUI
+		"../../VoiceChat",           # Main/VoiceChat compatibility wrapper
+		"../WebRTCVoiceManager",     # Alternative if structure is different
+		"../VoiceChat",              # Alternative compatibility wrapper
+		"/root/Main/WebRTCVoiceManager",  # Absolute path as fallback
+		"/root/Main/VoiceChat"       # Absolute compatibility wrapper fallback
 	]
 	
 	for path in paths_to_try:
 		print("MicrophoneUI: Trying path: ", path)
 		var candidate = get_node_or_null(path)
 		if candidate:
-			print("MicrophoneUI: Found node at path: ", path, " - checking if it's VoiceChat...")
+			print("MicrophoneUI: Found node at path: ", path, " - checking if it has voice chat methods...")
 			print("MicrophoneUI: Node name: ", candidate.name, " class: ", candidate.get_class())
 			if candidate.has_method("set_voice_enabled") and candidate.has_method("get_voice_enabled"):
 				voice_chat = candidate
-				print("MicrophoneUI: ✅ Confirmed VoiceChat at path: ", path)
+				print("MicrophoneUI: ✅ Confirmed voice chat node at path: ", path)
 				break
 			else:
-				print("MicrophoneUI: ❌ Node doesn't have VoiceChat methods: ", path)
+				print("MicrophoneUI: ❌ Node doesn't have voice chat methods: ", path)
 		else:
 			print("MicrophoneUI: ❌ Path failed: ", path)
 	
@@ -174,60 +179,18 @@ func connect_voice_chat() -> void:
 			print("MicrophoneUI: Main node children: ")
 			for child in main_node.get_children():
 				print("  - ", child.name, " (", child.get_class(), ") script: ", child.get_script())
-				if child.name == "VoiceChat":
-					print("MicrophoneUI: Found VoiceChat node, checking methods...")
+				# Look for WebRTCVoiceManager or VoiceChat
+				if child.name == "WebRTCVoiceManager" or child.name == "VoiceChat":
+					print("MicrophoneUI: Found voice chat node, checking methods...")
 					print("MicrophoneUI: Has set_voice_enabled: ", child.has_method("set_voice_enabled"))
 					print("MicrophoneUI: Has get_voice_enabled: ", child.has_method("get_voice_enabled"))
-					print("MicrophoneUI: Has debug_voice_chat_state: ", child.has_method("debug_voice_chat_state"))
 					
-					# Try to force the script to work by calling a simple method
 					if child.has_method("set_voice_enabled"):
 						voice_chat = child
-						print("MicrophoneUI: ✅ Found valid VoiceChat in children")
+						print("MicrophoneUI: ✅ Found valid voice chat node in children: ", child.name)
 						break
 					else:
-						print("MicrophoneUI: ⚠️ VoiceChat node found but script not loaded properly")
-						# Try to force script reload or find the right instance
-						if child.get_script():
-							print("MicrophoneUI: Script exists: ", child.get_script().resource_path)
-							print("MicrophoneUI: Script is valid: ", child.get_script().is_valid())
-							
-							# Try to force reload the script
-							print("MicrophoneUI: Attempting to reload VoiceChat script...")
-							var script = load("res://scripts/VoiceChat.gd")
-							if script:
-								child.set_script(script)
-								# Force the node to reinitialize
-								child.call("_ready")
-								
-								# Check again after reload
-								if child.has_method("set_voice_enabled"):
-									voice_chat = child
-									print("MicrophoneUI: ✅ Successfully reloaded script and found VoiceChat!")
-									break
-								else:
-									print("MicrophoneUI: ❌ Script reloaded but methods still not available")
-									print("MicrophoneUI: Available methods: ")
-									for method in child.get_method_list():
-										if "voice" in method.name.to_lower() or "recording" in method.name.to_lower():
-											print("  - ", method.name)
-							else:
-								print("MicrophoneUI: ❌ Could not reload VoiceChat.gd script")
-						else:
-							print("MicrophoneUI: No script attached to VoiceChat node!")
-							# Try to manually load the script
-							var script = load("res://scripts/VoiceChat.gd")
-							if script:
-								print("MicrophoneUI: Attempting to manually attach VoiceChat script...")
-								child.set_script(script)
-								if child.has_method("set_voice_enabled"):
-									voice_chat = child
-									print("MicrophoneUI: ✅ Successfully attached script and found VoiceChat!")
-									break
-								else:
-									print("MicrophoneUI: ❌ Script attached but methods still not available")
-							else:
-								print("MicrophoneUI: ❌ Could not load VoiceChat.gd script")
+						print("MicrophoneUI: ⚠️ Voice chat node found but methods not available: ", child.name)
 		
 		# Try finding by group if still not found
 		if not voice_chat:
@@ -248,12 +211,22 @@ func connect_voice_chat() -> void:
 			_recursive_node_search(get_tree().root)
 	
 	if voice_chat:
-		print("MicrophoneUI: ✅ Connected to VoiceChat successfully!")
-		print("MicrophoneUI: VoiceChat type: ", voice_chat.get_class())
-		print("MicrophoneUI: VoiceChat voice_enabled: ", voice_chat.voice_enabled)
-		print("MicrophoneUI: VoiceChat is_recording: ", voice_chat.is_recording)
+		print("MicrophoneUI: ✅ Connected to voice chat successfully!")
+		print("MicrophoneUI: Voice chat type: ", voice_chat.get_class())
+		print("MicrophoneUI: Voice chat name: ", voice_chat.name)
+		if voice_chat.has_method("get_voice_enabled"):
+			print("MicrophoneUI: Voice enabled: ", voice_chat.get_voice_enabled())
+		if voice_chat.has_method("get_is_recording"):
+			print("MicrophoneUI: Is recording: ", voice_chat.get_is_recording())
+		
+		# Connect to microphone ready signal
+		if voice_chat.has_signal("microphone_ready_changed"):
+			voice_chat.microphone_ready_changed.connect(_on_microphone_ready_changed)
+			print("MicrophoneUI: ✅ Connected to microphone_ready_changed signal")
+		else:
+			print("MicrophoneUI: ⚠️ microphone_ready_changed signal not found")
 	else:
-		print("MicrophoneUI: ❌ ERROR - VoiceChat not found after all attempts!")
+		print("MicrophoneUI: ❌ ERROR - Voice chat node not found after all attempts!")
 
 func _on_mic_button_pressed() -> void:
 	print("MicrophoneUI: 🎤 BUTTON PRESSED! - Current state: ", microphone_enabled)
@@ -263,7 +236,13 @@ func toggle_microphone() -> void:
 	microphone_enabled = !microphone_enabled
 	print("MicrophoneUI: Microphone toggled to: ", microphone_enabled)
 	
-	update_ui_state()
+	# Show loading state immediately when enabling mic
+	if microphone_enabled:
+		mic_is_loading = true
+		update_ui_state()
+	else:
+		mic_is_loading = false
+		update_ui_state()
 	
 	# If voice_chat is null, try to reconnect
 	if not voice_chat:
@@ -307,28 +286,50 @@ func toggle_microphone() -> void:
 	# Emit signal for other components
 	microphone_toggled.emit(microphone_enabled)
 
+func _on_microphone_ready_changed(is_ready: bool) -> void:
+	"""Handle microphone ready state changes"""
+	print("MicrophoneUI: Microphone ready changed to: ", is_ready)
+	if microphone_enabled:  # Only update if mic is enabled
+		mic_is_loading = not is_ready
+		update_ui_state()
+
 func update_ui_state() -> void:
-	if microphone_enabled:
-		mic_icon.text = "🎤"
+	if mic_is_loading and microphone_enabled:
+		# Loading state: "..." with default styling
+		mic_icon.text = "..."
+		mic_icon.add_theme_color_override("font_color", Color.WHITE)  # Default white
+		status_label.text = "Loading..."
+		status_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.8))  # Default white
+		
+		# Default button style for loading
+		var loading_style = StyleBoxFlat.new()
+		loading_style.bg_color = Color(1.0, 1.0, 1.0, 0.05)  # Default glass style
+		loading_style.corner_radius_top_left = 15
+		loading_style.corner_radius_top_right = 15
+		loading_style.corner_radius_bottom_left = 15
+		loading_style.corner_radius_bottom_right = 15
+		mic_button.add_theme_stylebox_override("normal", loading_style)
+		
+		# Stop any previous animations
+		mic_icon.modulate.a = 1.0
+		
+	elif microphone_enabled:
+		# Live state: "mic" with green styling
+		mic_icon.text = "mic"
 		mic_icon.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))  # Green
 		status_label.text = "Live"
-		status_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 0.9))
+		status_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 0.9))  # Green
 		
-		# Update button style to show active state (no borders)
+		# Green button style for active state
 		var active_style = StyleBoxFlat.new()
-		active_style.bg_color = Color(0.3, 0.8, 0.3, 0.2)
-		# Remove borders for clean look
-		active_style.border_width_left = 0
-		active_style.border_width_right = 0
-		active_style.border_width_top = 0
-		active_style.border_width_bottom = 0
+		active_style.bg_color = Color(0.3, 0.8, 0.3, 0.2)  # Green tint
 		active_style.corner_radius_top_left = 15
 		active_style.corner_radius_top_right = 15
 		active_style.corner_radius_bottom_left = 15
 		active_style.corner_radius_bottom_right = 15
 		mic_button.add_theme_stylebox_override("normal", active_style)
 		
-		# Add subtle pulsing effect to show it's always transmitting
+		# Add subtle pulsing effect to show it's live
 		mic_icon.modulate.a = 1.0
 		var tween = create_tween()
 		tween.set_loops()
@@ -336,13 +337,14 @@ func update_ui_state() -> void:
 		tween.tween_property(mic_icon, "modulate:a", 1.0, 1.0)
 		
 	else:
+		# Disabled state: "mic" with default styling
 		mic_icon.text = "mic"
 		mic_icon.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))  # Gray
 		status_label.text = "Off"
-		status_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 0.8))
+		status_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 0.8))  # Gray
 		mic_icon.modulate.a = 1.0  # Stop any pulsing
 		
-		# Reset button style to normal
+		# Default button style for disabled state
 		var normal_style = StyleBoxFlat.new()
 		normal_style.bg_color = Color(1.0, 1.0, 1.0, 0.05)
 		normal_style.corner_radius_top_left = 15
@@ -374,13 +376,13 @@ func _update_positions_if_needed() -> void:
 		status_label.position = Vector2(current_screen_size.x - 120, current_screen_size.y - 15)
 
 func _recursive_node_search(node: Node) -> void:
-	"""Recursively search for VoiceChat node with proper methods"""
+	"""Recursively search for voice chat node with proper methods"""
 	if voice_chat:
 		return  # Already found
 	
 	# Check current node
 	if node.has_method("set_voice_enabled") and node.has_method("get_voice_enabled"):
-		print("MicrophoneUI: ✅ Found VoiceChat via recursive search: ", node.name, " at ", node.get_path())
+		print("MicrophoneUI: ✅ Found voice chat node via recursive search: ", node.name, " at ", node.get_path())
 		voice_chat = node
 		return
 	
