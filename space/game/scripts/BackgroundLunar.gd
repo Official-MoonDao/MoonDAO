@@ -4,10 +4,13 @@ extends Node2D
 @export var player_path: NodePath
 @export var camera_path: NodePath
 @export var pixels_per_world_unit: float = 1.0
-@export var parallax: float = 0.85
+@export var world_aligned: bool = true  # Set to true for static background aligned with world objects
+@export var parallax_factor: float = 0.85  # Only used when world_aligned is false
 
 @onready var lunar_sprite: Sprite2D = _resolve_sprite()
 @onready var player: Node2D = get_node_or_null(player_path) as Node2D
+var local_player: Node2D = null  # Cache for the local player
+var last_valid_player_pos: Vector2 = Vector2.ZERO  # Cache last known good player position
 @onready var cam: Camera2D = (
 	get_node_or_null(camera_path) as Camera2D
 	if camera_path != NodePath() else get_viewport().get_camera_2d()
@@ -46,7 +49,10 @@ func _process(_dt: float) -> void:
 	# size of ONE virtual pixel in screen units
 	var px := Vector2(vp.x / pix_res.x, vp.y / pix_res.y)
 
-	# camera world pos
+	# Find local player if not cached or if the cached one is invalid
+	_update_local_player_reference()
+
+	# Get camera position for sprite positioning (keep this simple)
 	var cam_pos := Vector2.ZERO
 	if cam != null:
 		cam_pos = cam.global_position
@@ -59,15 +65,27 @@ func _process(_dt: float) -> void:
 	)
 	lunar_sprite.position = snapped_tl
 
-	# choose movement source (player if present, else camera)
-	var src := (player.global_position if player != null else cam_pos)
-	var world_offset := src * pixels_per_world_unit * parallax
+	# Calculate world offset - SIMPLE approach
+	var world_offset: Vector2
+	
+	if world_aligned:
+		# Static background aligned with world objects
+		# Since camera now follows player directly, use camera position
+		world_offset = cam_pos * pixels_per_world_unit
+	else:
+		# Parallax background
+		var player_pos = _get_best_player_position()
+		var using_player = player_pos != Vector2.ZERO
+		var src: Vector2 = (player_pos if using_player else cam_pos)
+		world_offset = src * pixels_per_world_unit * parallax_factor
+		
 
 	# snap offset to the same grid so shader sampling is stable
 	var snapped_off := Vector2(
 		floor(world_offset.x / px.x) * px.x,
 		floor(world_offset.y / px.y) * px.y
 	)
+	
 
 	mat.set_shader_parameter("u_time", Time.get_ticks_msec() / 1000.0)
 	mat.set_shader_parameter("u_offset", snapped_off)
@@ -113,3 +131,66 @@ func _find_sprite_recursive(node: Node) -> Sprite2D:
 		if r != null:
 			return r
 	return null
+
+func _update_local_player_reference() -> void:
+	# Try to use the explicit player reference first
+	if player != null and is_instance_valid(player):
+		local_player = player
+		return
+	
+	# Search for the local player in the scene tree
+	if local_player == null or not is_instance_valid(local_player):
+		local_player = _find_local_player()
+
+func _find_local_player() -> Node2D:
+	# Look for the MainNetClient and get its local player
+	var main_client = get_tree().get_first_node_in_group("main_client")
+	if main_client == null:
+		# Fallback: search for MainNetClient by name/type
+		main_client = _find_main_net_client_recursive(get_tree().root)
+	
+	if main_client != null and main_client.has_method("get_local_player"):
+		return main_client.get_local_player()
+	
+	# Fallback: look for any Player node with is_local_player = true
+	return _find_local_player_recursive(get_tree().root)
+
+func _find_main_net_client_recursive(node: Node) -> Node:
+	if node.get_script() != null:
+		var script_path = node.get_script().resource_path
+		if script_path.ends_with("MainNetClient.gd"):
+			return node
+	
+	for child in node.get_children():
+		var result = _find_main_net_client_recursive(child)
+		if result != null:
+			return result
+	return null
+
+func _find_local_player_recursive(node: Node) -> Node2D:
+	# Check if this node is a local player
+	if node is Node2D:
+		# Try different ways to check if it's a local player
+		if node.has_method("get") and node.get("is_local_player") == true:
+			return node as Node2D
+		if "is_local_player" in node and node.is_local_player == true:
+			return node as Node2D
+		# Check if it has a script with is_local_player property
+		if node.get_script() != null and "is_local_player" in node and node.is_local_player:
+			return node as Node2D
+	
+	for child in node.get_children():
+		var result = _find_local_player_recursive(child)
+		if result != null:
+			return result
+	return null
+
+func _get_best_player_position() -> Vector2:
+	if local_player != null and is_instance_valid(local_player):
+		var pos = local_player.global_position
+		# Cache this valid position
+		last_valid_player_pos = pos
+		return pos
+	else:
+		# Return last valid position instead of Vector2.ZERO to avoid fallback to camera
+		return last_valid_player_pos

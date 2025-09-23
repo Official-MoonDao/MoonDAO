@@ -39,6 +39,9 @@ var is_dev_mode: bool = false
 var connection_allowed: bool = false
 
 func _ready() -> void:
+	# Add to group so background can find this node
+	add_to_group("main_client")
+	
 	# DISABLED: AudioTest was causing "always on" microphone
 	# print("MainNetClient: Adding microphone test...")
 	# var audio_test = load("res://scripts/AudioTest.gd").new()
@@ -313,9 +316,9 @@ func _process(delta: float) -> void:
 	# Note: Input processing moved to Player.gd to avoid double movement
 	# Player.gd handles both local movement and sending updates to server
 
-	# Smooth-follow the local player with the camera
+	# Direct camera follow (no smoothing to prevent background sync issues)
 	if _follow != null and cam != null:
-		cam.global_position = cam.global_position.lerp(_follow.global_position, 0.2)
+		cam.global_position = _follow.global_position
 
 	# Fallback: proactively sync from current room state
 	if room != null:
@@ -761,11 +764,15 @@ func _ensure_camera() -> Camera2D:
 		c.name = "Camera2D"
 		add_child(c)
 
-	# make it active and smooth
+	# make it active and disable smoothing to fix background sync
 	c.make_current()
-	c.position_smoothing_enabled = true
+	c.position_smoothing_enabled = false  # Disabled to prevent background floating
 	c.position_smoothing_speed = 10.0
 	# Optional zoom or limits can go here
 	return c
+
+func get_local_player() -> Node2D:
+	"""Return the local player node for background synchronization"""
+	return _follow
 
 # _on_player_talking_changed function removed
