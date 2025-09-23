@@ -5,6 +5,7 @@ pragma solidity ^0.8.20;
 import {Vesting} from "../src/Vesting.sol";
 import {PoolDeployer} from "../src/PoolDeployer.sol";
 import "@nana-core-v5/interfaces/IJBRulesetApprovalHook.sol";
+import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
 import {IWETH9} from "v4-periphery/src/interfaces/external/IWETH9.sol";
 import {WETH} from "solmate/src/tokens/WETH.sol";
 import {IJBRulesets} from "@nana-core-v5/interfaces/IJBRulesets.sol";
@@ -292,7 +293,8 @@ contract MissionTest is Test, Config {
         vm.startPrank(teamAddress);
         payhook.setFundingTurnedOff(true);
         vm.stopPrank();
-        assertFalse(payhook.hasMintPermissionFor(projectId, user1));
+        JBRuleset ruleset;
+        assertFalse(payhook.hasMintPermissionFor(projectId, ruleset, user1));
 
         uint256 payAmount = 1_000_000_000_000_000_000;
         vm.expectRevert("Funding has been turned off.");
