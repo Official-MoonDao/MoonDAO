@@ -65,7 +65,7 @@ export default function useJBProjectData({
   const tokenContract = useContract({
     chain: selectedChain,
     address: token?.tokenAddress,
-    abi: JBV5Token.abi,
+    abi: JBV5Token,
   })
 
   //Metadata and Ruleset

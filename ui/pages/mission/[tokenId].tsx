@@ -297,7 +297,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         const tokenContract = getContract({
           client: serverClient,
           address: tokenAddress,
-          abi: JBV5Token.abi as any,
+          abi: JBV5Token as any,
           chain: chain,
         })
 

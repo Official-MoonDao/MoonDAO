@@ -268,7 +268,7 @@ export default function MissionProfile({
 
   const missionTokenContract = useContract({
     address: token.tokenAddress,
-    abi: JBV5Token.abi as any,
+    abi: JBV5Token as any,
     chain: selectedChain,
   })
 
