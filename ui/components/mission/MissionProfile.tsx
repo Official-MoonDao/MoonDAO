@@ -146,7 +146,7 @@ export default function MissionProfile({
 
   const jbTerminalContract = useContract({
     address: JBV5_TERMINAL_ADDRESS,
-    abi: JBMultiTerminal.abi as any,
+    abi: JBV5MultiTerminal.abi as any,
     chain: selectedChain,
   })
 
