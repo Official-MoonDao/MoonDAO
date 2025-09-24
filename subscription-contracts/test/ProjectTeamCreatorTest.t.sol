@@ -42,13 +42,13 @@ contract CreatorTest is Test {
         IHats hats = IHats(address(hatsBase));
         HatsModuleFactory hatsFactory = deployModuleFactory(hats, SALT, "");
         PassthroughModule passthrough = new PassthroughModule("");
-        address gnosisSafeAddress = address(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        address gnosisSafeSingleton = address(0x3E5c63644E683549055b9Be8653de26E0B4CD36E); // Gnosis Safe singleton on Sepolia
         GnosisSafeProxyFactory proxyFactory = new GnosisSafeProxyFactory();
 
         table = new Project("PROJECT");
 
         team = new ProjectTeam("PROJECT", "MDPT", user4, address(hats));
-        creator = new ProjectTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(team), gnosisSafeAddress, address(proxyFactory), address(table));
+        creator = new ProjectTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(team), gnosisSafeSingleton, address(proxyFactory), address(table));
 
         table.setProjectTeam(address(team));
         uint256 topHatId = hats.mintTopHat(user4, "", "");
