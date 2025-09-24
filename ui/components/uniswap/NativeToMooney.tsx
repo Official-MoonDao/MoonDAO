@@ -1,5 +1,10 @@
 import { ArrowDownIcon } from '@heroicons/react/24/outline'
-import { CHAIN_TOKEN_NAMES, MOONEY_ADDRESSES } from 'const/config'
+import {
+  CHAIN_TOKEN_NAMES,
+  MOONEY_ADDRESSES,
+  FEE_HOOK_ADDRESSES,
+  TICK_SPACING,
+} from 'const/config'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -26,7 +31,12 @@ export default function NativeToMooney({ selectedChain }: any) {
   const [hasValidRoute, setHasValidRoute] = useState(false)
 
   const mooneyAddress = MOONEY_ADDRESSES[chainSlug]
-  const { quote, swap } = useUniswapV4(mooneyAddress, 18)
+  const { quote, swap } = useUniswapV4(
+    mooneyAddress,
+    18,
+    TICK_SPACING,
+    FEE_HOOK_ADDRESSES[chainSlug]
+  )
 
   useEffect(() => {
     const numAmount = parseFloat(amount) || 0

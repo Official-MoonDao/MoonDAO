@@ -131,37 +131,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         // Use published_at if available, otherwise fall back to created_at
         const publishedDate = broadcast.published_at || broadcast.created_at
 
-        // Simple description for all newsletters
-        const getDescription = (): string => {
-          return 'Newsletter content available'
-        }
 
-        // Calculate read time based on cleaned content length
-        const calculateReadTime = (content: string): number => {
-          if (!content) return 5 // Default 5 minutes
 
-          // Clean the content first to get actual readable text
-          let cleaned = content
-            .replace(/<[^>]*>/g, '') // Remove HTML tags
-            .replace(/@media[^{]*\{[^}]*\}/g, '') // Remove CSS media queries
-            .replace(/@[^{]*\{[^}]*\}/g, '') // Remove other CSS rules
-            .replace(/[^{}]*\{[^}]*\}/g, '') // Remove CSS properties
-            .replace(/\s+/g, ' ') // Normalize whitespace
-            .trim()
 
-          // Simple word count estimation (rough approximation)
-          const wordCount = cleaned.split(/\s+/).length
-          const readTime = Math.ceil(wordCount / 200) // 200 words per minute
-          return Math.max(1, Math.min(readTime, 60)) // Between 1-60 minutes
-        }
 
         return {
           id: broadcast.id?.toString() || Math.random().toString(),
           title: broadcast.subject || 'Newsletter Update',
-          description: getDescription(),
           publishedAt: publishedDate,
           views: broadcast.total_recipients || null, // Use real recipient count or null if not available
-          readTime: calculateReadTime(broadcast.content || ''),
           image: null, // Always use text-based icons instead of thumbnail images
           url: publicUrl,
           stats: broadcast.stats || {},

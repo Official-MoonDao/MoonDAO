@@ -61,19 +61,25 @@ export default function Home({
 
   if (citizen) {
     return (
-      <SignedInDashboard
-        newestNewsletters={newestNewsletters}
-        newestCitizens={newestCitizens}
-        newestListings={newestListings}
-        newestJobs={newestJobs}
-        citizenSubgraphData={citizenSubgraphData}
-        aumData={aumData}
-        arrData={arrData}
-        mooneyPrice={mooneyPrice}
-        filteredTeams={filteredTeams}
-        citizensLocationData={citizensLocationData}
-        currentProjects={currentProjects}
-      />
+      <>
+        <WebsiteHead
+          title="Welcome"
+          description="MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement."
+        />
+        <SignedInDashboard
+          newestNewsletters={newestNewsletters}
+          newestCitizens={newestCitizens}
+          newestListings={newestListings}
+          newestJobs={newestJobs}
+          citizenSubgraphData={citizenSubgraphData}
+          aumData={aumData}
+          arrData={arrData}
+          mooneyPrice={mooneyPrice}
+          filteredTeams={filteredTeams}
+          citizensLocationData={citizensLocationData}
+          currentProjects={currentProjects}
+        />
+      </>
     )
   }
 
@@ -228,10 +234,7 @@ export async function getStaticProps() {
             Date.now() / 1000
           )}) ORDER BY id DESC LIMIT 10`
         ),
-        queryTable(
-          chain,
-          `SELECT * FROM ${teamTableName} ORDER BY id DESC`
-        ),
+        queryTable(chain, `SELECT * FROM ${teamTableName} ORDER BY id DESC`),
         queryTable(chain, `SELECT * FROM ${projectTableName} ORDER BY id DESC`),
       ])
 

@@ -12,12 +12,12 @@ contract HasSubmittedPRStaged is XPOracleVerifier, StagedXPVerifier {
     constructor(address _oracle) XPOracleVerifier(_oracle) {
         // Initialize default PR submission stages
         // Note: After deployment, you can use setStageConfig() for easy reconfiguration
-        _addStage(1, 10); // 1 PR = 10 XP
-        _addStage(5, 25); // 5 PRs = 25 XP (total: 35 XP)
-        _addStage(10, 50); // 10 PRs = 50 XP (total: 85 XP)
-        _addStage(25, 100); // 25 PRs = 100 XP (total: 185 XP)
-        _addStage(50, 200); // 50 PRs = 300 XP (total: 485 XP)
-        _addStage(100, 500); // 100 PRs = 500 XP (total: 985 XP)
+        _addStage(1, 25); // 1 PR = 25 XP
+        _addStage(5, 50); // 5 PRs = 50 XP (total: 75 XP)
+        _addStage(10, 100); // 10 PRs = 100 XP (total: 175 XP)
+        _addStage(25, 200); // 25 PRs = 200 XP (total: 375 XP)
+        _addStage(50, 500); // 50 PRs = 500 XP (total: 775 XP)
+        _addStage(100, 800); // 100 PRs = 800 XP (total: 1575 XP)
     }
 
     function name() external pure returns (string memory) {

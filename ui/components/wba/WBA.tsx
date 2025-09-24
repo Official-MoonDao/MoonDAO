@@ -83,6 +83,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
     return distributions ? distributions.map((d) => d.address) : []
   }, [distributions])
 
+  const percentages = [13.9, 7.7, 12.9, 10.6, 9.6, 8.3, 6, 10.5, 7.9, 12.5]
   const { walletVPs: _vps } = useTotalVPs(addresses)
   const addressToQuadraticVotingPower = Object.fromEntries(
     addresses.map((address, index) => [address, _vps[index]])
@@ -102,6 +103,15 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
       distributions,
       addressToQuadraticVotingPower,
       SUM_TO_ONE_HUNDRED
+    )
+    console.log(
+      finalists
+        .map((finalist) => {
+          return `${finalist.name}: ${
+            Math.round(outcome[finalist.id] * 10) / 10
+          }%`
+        })
+        .join(', ')
     )
   }
 
@@ -192,6 +202,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
                       }
                       userHasVotingPower={userHasVotingPower}
                       isVotingPeriod={isVotingPeriod}
+                      percentage={percentages[finalist.id]}
                     />
                   </div>
                 ))
