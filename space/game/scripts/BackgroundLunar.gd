@@ -52,32 +52,43 @@ func _process(_dt: float) -> void:
 	# Find local player if not cached or if the cached one is invalid
 	_update_local_player_reference()
 
+	# Update background scale for current camera zoom
+	_fit_to_viewport()
+
 	# Get camera position for sprite positioning (keep this simple)
 	var cam_pos := Vector2.ZERO
 	if cam != null:
 		cam_pos = cam.global_position
 
+	# Account for zoom when calculating viewport coverage
+	var effective_vp := vp
+	if cam != null and cam.zoom.x > 0:
+		effective_vp = vp / cam.zoom.x  # Larger effective viewport when zoomed out
+
 	# snap the sprite's top-left to the virtual pixel grid (prevents swimming)
-	var top_left := cam_pos - vp * 0.5
+	var top_left := cam_pos - effective_vp * 0.5
 	var snapped_tl := Vector2(
 		floor(top_left.x / px.x) * px.x,
 		floor(top_left.y / px.y) * px.y
 	)
 	lunar_sprite.position = snapped_tl
 
-	# Calculate world offset - SIMPLE approach
+	# Calculate world offset - account for zoom to prevent fast movement when zoomed out
 	var world_offset: Vector2
+	var zoom_compensation := 1.0
+	if cam != null and cam.zoom.x > 0:
+		zoom_compensation = cam.zoom.x  # Use zoom to normalize movement speed
 	
 	if world_aligned:
 		# Static background aligned with world objects
 		# Since camera now follows player directly, use camera position
-		world_offset = cam_pos * pixels_per_world_unit
+		world_offset = cam_pos * pixels_per_world_unit * zoom_compensation
 	else:
 		# Parallax background
 		var player_pos = _get_best_player_position()
 		var using_player = player_pos != Vector2.ZERO
 		var src: Vector2 = (player_pos if using_player else cam_pos)
-		world_offset = src * pixels_per_world_unit * parallax_factor
+		world_offset = src * pixels_per_world_unit * parallax_factor * zoom_compensation
 		
 
 	# snap offset to the same grid so shader sampling is stable
@@ -98,7 +109,14 @@ func _fit_to_viewport() -> void:
 	var vp := get_viewport_rect().size
 	var tex := lunar_sprite.texture
 	var tex_size := Vector2(max(1.0, tex.get_width()), max(1.0, tex.get_height()))
-	lunar_sprite.scale = Vector2(vp.x / tex_size.x, vp.y / tex_size.y)
+	
+	# Account for camera zoom - when zoomed out, background needs to be bigger
+	var zoom_factor := 1.0
+	if cam != null and cam.zoom.x > 0:
+		zoom_factor = 1.0 / cam.zoom.x  # Inverse of zoom (zoom out = bigger background)
+	
+	var base_scale := Vector2(vp.x / tex_size.x, vp.y / tex_size.y)
+	lunar_sprite.scale = base_scale * zoom_factor
 
 func _ensure_texture() -> void:
 	if lunar_sprite == null:

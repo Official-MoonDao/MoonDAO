@@ -1,5 +1,6 @@
-extends Node2D
-@export var speed := 140.0
+extends CharacterBody2D
+@export var speed := 280.0  # 40% faster (200 * 1.4 = 280)
+@export var sprint_multiplier := 1.6  # Sprint is 60% faster than walking
 @onready var view: Node2D = $Astronaut
 @onready var name_label: Label = $Label
 # Talking indicator functionality removed
@@ -11,9 +12,17 @@ var last_input_time := 0.0
 var session_id := ""
 var voice_chat_node: Node = null  # Reference to VoiceChat for proximity calculations
 var room: Object = null  # Reference to room for sending movement updates
+var team_room_manager: Node = null  # Reference to TeamRoomManager for zone detection
 var last_voice_position_update := 0.0  # Throttle voice position updates
+# Collision shape is now defined in the Player.tscn scene file
 
-func _process(delta: float) -> void:
+func _ready():
+	# Configure collision properties for better wall collision
+	collision_layer = 1  # Player collision layer
+	collision_mask = 1   # What the player can collide with
+	floor_max_angle = 0  # Don't allow sliding on slopes (we're in 2D)
+	
+func _physics_process(delta: float) -> void:
 	if not is_local_player:
 		# SIMPLE: Just use very fast interpolation - no teleport detection
 		var distance_to_target = global_position.distance_to(network_position)
@@ -43,33 +52,54 @@ func _process(delta: float) -> void:
 		return
 	
 	# Local player: immediate input response with client-side prediction
-	var v := Vector2(
+	var input_dir := Vector2(
 		Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left"),
 		Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up")
-	) * speed * delta
-
-	if v != Vector2.ZERO:
-		global_position += v  # Use global_position to match server coordinate system
+	)
+	
+	if input_dir != Vector2.ZERO:
+		# Check if sprinting (holding shift)
+		var is_sprinting = Input.is_action_pressed("ui_accept") or Input.is_key_pressed(KEY_SHIFT)
+		var current_speed = speed * (sprint_multiplier if is_sprinting else 1.0)
+		
+		velocity = input_dir * current_speed
 		last_input_time = Time.get_time_dict_from_system().get("unix", 0.0)
 		
-		# Send movement delta to server for multiplayer sync
-		if room != null:
-			var input_dir := Vector2(
-				Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left"),
-				Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up")
-			)
-			var delta_x = input_dir.x * delta * speed
-			var delta_y = input_dir.y * delta * speed
-			room.send("move", {"x": delta_x, "y": delta_y})
+		# Update animation speed based on movement speed
+		if view.has_method("set_animation_speed"):
+			var speed_ratio = current_speed / speed  # 1.0 for walking, sprint_multiplier for sprinting
+			view.set_animation_speed(speed_ratio)
+	else:
+		velocity = Vector2.ZERO  # Stop if no input
+		# Reset animation speed to normal when not moving
+		if view.has_method("set_animation_speed"):
+			view.set_animation_speed(1.0)
+		
+	# Always call move_and_slide to apply physics
+	move_and_slide()
+		
+	# Send movement delta to server for multiplayer sync (only if moving)
+	if input_dir != Vector2.ZERO and room != null:
+		# Use the same speed calculation as local movement
+		var is_sprinting = Input.is_action_pressed("ui_accept") or Input.is_key_pressed(KEY_SHIFT)
+		var current_speed = speed * (sprint_multiplier if is_sprinting else 1.0)
+		var delta_x = input_dir.x * delta * current_speed
+		var delta_y = input_dir.y * delta * current_speed
+		room.send("move", {"x": delta_x, "y": delta_y})
 			
 			# Optional: Send periodic heartbeat for sync
 			# room.send("position_heartbeat", {"x": global_position.x, "y": global_position.y})
 	
 	if view.has_method("update_from_velocity"):
-		view.update_from_velocity(v / delta)  # convert back to velocity
+		view.update_from_velocity(velocity)  # Use the actual velocity
+	else:
+		velocity = Vector2.ZERO  # Stop if no input
 	
 	# Update local player position in VoiceChat for proximity calculations
 	_update_voice_chat_position()
+	
+	# Check for team room entry/exit based on position
+	_check_team_room_zones()
 
 func set_local_player(is_local: bool) -> void:
 	is_local_player = is_local
@@ -125,6 +155,19 @@ func _update_voice_chat_position() -> void:
 	else:
 		if voice_chat_node.has_method("update_player_position") and session_id != "":
 			voice_chat_node.update_player_position(session_id, global_position)
+
+func set_team_room_manager_reference(manager: Node) -> void:
+	"""Set the TeamRoomManager reference for zone detection"""
+	team_room_manager = manager
+
+func _check_team_room_zones() -> void:
+	"""Check if local player should enter/exit team rooms based on position"""
+	if not is_local_player or not team_room_manager:
+		return
+	
+	# Only check zones for local player
+	if team_room_manager.has_method("check_team_room_entry"):
+		team_room_manager.check_team_room_entry(global_position)
 
 # All audio processing functions removed - WebRTC handles audio automatically!
 # Player now only handles position updates for proximity audio calculations

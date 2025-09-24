@@ -38,3 +38,11 @@ func update_from_velocity(v: Vector2) -> void:
 
 func set_pos(x: float, y: float) -> void:
 	global_position = Vector2(x, y)
+
+func set_animation_speed(speed_multiplier: float) -> void:
+	"""Set the animation speed multiplier for walking/sprinting"""
+	if sprite == null: return
+	
+	# Base speed scale is 3.0 (from the scene), multiply by sprint factor
+	var base_speed = 3.0
+	sprite.speed_scale = base_speed * speed_multiplier

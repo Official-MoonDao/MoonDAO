@@ -1,6 +1,6 @@
 extends Control
 
-@export var minimap_size: Vector2 = Vector2(200, 200)
+@export var minimap_size: Vector2 = Vector2(220, 220)
 @export var world_scale: float = 0.02  # How much world space fits in the minimap
 @export var update_interval: float = 0.2  # Update frequency in seconds (reduced for stability)
 @export var edge_margin: float = 10.0  # Margin from edge for clamped indicators
@@ -10,13 +10,19 @@ extends Control
 @export var border_color: Color = Color(0.3, 0.3, 0.4, 1.0)
 @export var terrain_color: Color = Color(0.2, 0.2, 0.25, 0.6)
 @export var local_player_color: Color = Color(0.2, 0.8, 0.2, 1.0)
-@export var remote_player_color: Color = Color(0.8, 0.2, 0.2, 1.0)
+@export var remote_player_color: Color = Color(0.7, 0.3, 0.9, 1.0)  # Purple for other players
 @export var edge_indicator_color: Color = Color(1.0, 0.8, 0.2, 1.0)
+
+# Team room colors
+@export var accessible_team_room_color: Color = Color(0.2, 0.8, 0.2, 0.8)  # Green for accessible
+@export var inaccessible_team_room_color: Color = Color(0.8, 0.2, 0.2, 0.6)  # Red for inaccessible
+@export var team_room_size: float = 12.0  # Bigger squares
 
 # References
 var main_net_client: Node = null
 var local_player: Node2D = null
 var players: Dictionary = {}  # sessionId -> player data
+var team_room_manager: Node = null  # Reference to team room manager
 
 # UI elements
 var background_panel: Panel
@@ -32,6 +38,11 @@ var room_connection: Object = null  # Reference to Colyseus room
 
 func _ready() -> void:
 	print("DEBUG: Minimap _ready() called")
+	
+	# Force set the remote player color to purple (override @export)
+	remote_player_color = Color(0.7, 0.3, 0.9, 1.0)
+	print("🎨 MINIMAP: Set remote_player_color to purple: ", remote_player_color)
+	
 	# Set up the minimap UI
 	_setup_minimap_ui()
 	
@@ -112,8 +123,9 @@ func _position_minimap() -> void:
 	var screen_size = get_viewport().get_visible_rect().size
 	position = Vector2(20, screen_size.y - minimap_size.y - 20)
 	
-	# Connect to screen size changes
-	get_viewport().size_changed.connect(_on_screen_size_changed)
+	# Connect to screen size changes (only if not already connected)
+	if not get_viewport().size_changed.is_connected(_on_screen_size_changed):
+		get_viewport().size_changed.connect(_on_screen_size_changed)
 
 func _on_screen_size_changed() -> void:
 	_position_minimap()
@@ -137,6 +149,10 @@ func _update_player_data() -> void:
 	# Get local player
 	if main_net_client.has_method("get_local_player"):
 		local_player = main_net_client.get_local_player()
+	
+	# Get team room manager
+	if not team_room_manager and "team_room_manager" in main_net_client:
+		team_room_manager = main_net_client.team_room_manager
 	
 	# Get all players - try different access methods
 	var new_players = {}
@@ -222,7 +238,7 @@ func _draw_minimap() -> void:
 		var max_distance = minimap_radius
 		
 		var indicator_color = local_player_color if is_local else remote_player_color
-		var indicator_size = 6.0 if is_local else 4.0
+		var indicator_size = 6.0 if is_local else 5.0
 		
 		if distance_from_center <= max_distance:
 			# Player is within minimap bounds - draw normally
@@ -231,7 +247,7 @@ func _draw_minimap() -> void:
 			# Player is outside bounds - draw on edge with direction
 			var direction = relative_pos.normalized()
 			var edge_pos = minimap_center + direction * max_distance
-			_draw_edge_indicator(edge_pos, direction, edge_indicator_color, is_local)
+			_draw_edge_indicator(edge_pos, direction, indicator_color, is_local)
 
 func _draw_player_indicator(pos: Vector2, color: Color, indicator_size: float, is_local: bool) -> void:
 	# Draw player dot
@@ -242,7 +258,7 @@ func _draw_player_indicator(pos: Vector2, color: Color, indicator_size: float, i
 	minimap_canvas.draw_arc(pos, indicator_size + 1, 0, TAU, 16, indicator_border_color, 1.0)
 
 func _draw_edge_indicator(pos: Vector2, direction: Vector2, color: Color, is_local: bool) -> void:
-	var edge_size = 6.0 if is_local else 4.0
+	var edge_size = 6.0 if is_local else 5.0
 	
 	# Draw the indicator dot
 	minimap_canvas.draw_circle(pos, edge_size, color)
@@ -280,6 +296,9 @@ func _on_canvas_draw() -> void:
 	# Draw terrain pattern
 	_draw_terrain_pattern(local_pos, minimap_center, minimap_radius)
 	
+	# Draw team rooms
+	_draw_team_rooms(local_pos, minimap_center, minimap_radius)
+	
 	# Draw player indicators - AGGRESSIVE network position usage
 	for session_id in players.keys():
 		var player_node = players[session_id]
@@ -300,7 +319,7 @@ func _on_canvas_draw() -> void:
 		var max_distance = minimap_radius
 		
 		var indicator_color = local_player_color if is_local else remote_player_color
-		var indicator_size = 6.0 if is_local else 4.0
+		var indicator_size = 6.0 if is_local else 5.0
 		
 		if distance_from_center <= max_distance:
 			# Player is within minimap bounds - draw normally
@@ -309,7 +328,7 @@ func _on_canvas_draw() -> void:
 			# Player is outside bounds - draw on edge with direction
 			var direction = relative_pos.normalized()
 			var edge_pos = minimap_center + direction * max_distance
-			_draw_edge_indicator(edge_pos, direction, edge_indicator_color, is_local)
+			_draw_edge_indicator(edge_pos, direction, indicator_color, is_local)
 	
 	# Clean minimap - no debug text
 
@@ -332,5 +351,60 @@ func _draw_terrain_pattern(local_pos: Vector2, center: Vector2, radius: float) -
 			var feature_screen_pos = center + Vector2(cos(angle), sin(angle)) * radius * 0.3
 			var feature_size = 2.0 + (terrain_hash % 3)
 			minimap_canvas.draw_circle(feature_screen_pos, feature_size, terrain_color)
+
+func _draw_team_rooms(local_pos: Vector2, center: Vector2, radius: float) -> void:
+	"""Draw team room indicators on the minimap"""
+	if not team_room_manager:
+		return
+	
+	# Get team rooms from the team room manager
+	var team_rooms = {}
+	if team_room_manager.has_method("get_team_rooms"):
+		team_rooms = team_room_manager.get_team_rooms()
+	
+	if team_rooms.size() == 0:
+		return
+	
+	# Get local player's teams for access checking
+	var local_player_teams = []
+	if "local_player_team_ids" in team_room_manager:
+		local_player_teams = team_room_manager.local_player_team_ids
+	
+	# Draw each team room
+	for team_id in team_rooms.keys():
+		var team_room = team_rooms[team_id]
+		if not is_instance_valid(team_room):
+			continue
+		
+		# Get team room world position
+		var team_room_pos = team_room.global_position + Vector2(team_room.room_width / 2, team_room.room_height / 2)  # Center of room
+		
+		# Calculate relative position to local player
+		var relative_pos = (team_room_pos - local_pos) * world_scale
+		var minimap_pos = center + relative_pos
+		
+		# Check if team room is within minimap bounds
+		var distance_from_center = relative_pos.length()
+		var max_distance = radius
+		
+		if distance_from_center <= max_distance:
+			# Determine if player has access to this team room
+			var has_access = local_player_teams.has(team_id)
+			var room_color = accessible_team_room_color if has_access else inaccessible_team_room_color
+			
+			# Draw team room as a square
+			var room_rect = Rect2(minimap_pos - Vector2(team_room_size / 2, team_room_size / 2), Vector2(team_room_size, team_room_size))
+			minimap_canvas.draw_rect(room_rect, room_color)
+			
+			# Draw border
+			var border_color = Color.WHITE if has_access else Color.BLACK
+			minimap_canvas.draw_rect(room_rect, border_color, false, 1.0)
+			
+			# Draw team ID text centered in the square
+			var font = get_theme_default_font()
+			var font_size = 10
+			var text_size = font.get_string_size(team_id, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+			var text_pos = minimap_pos - Vector2(text_size.x / 2, -text_size.y / 2 - 2)  # Center text in square
+			minimap_canvas.draw_string(font, text_pos, team_id, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.WHITE)
 
 # Smoothing function removed - using server positions directly

@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  # Colyseus game server
+  colyseus:
+    build: .
+    ports:
+      - "2567:2567"
+    environment:
+      - NODE_ENV=production
+      - PORT=2567
+      - JWT_SECRET=devsecret
+      - LIVEKIT_WS_URL=ws://livekit:7880
+      - LIVEKIT_CLIENT_URL=ws://localhost:7880
+      - LIVEKIT_API_KEY=devkey
+      - LIVEKIT_API_SECRET=secret
+      - API_BASE_URL=http://host.docker.internal:3000
+    depends_on:
+      - livekit
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:2567/health",
+          "||",
+          "exit",
+          "1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # LiveKit SFU server (official image)
+  livekit:
+    image: livekit/livekit-server:latest
+    command: --config /etc/livekit.yaml --node-ip=0.0.0.0
+    restart: unless-stopped
+    ports:
+      - "7880:7880" # WebSocket/HTTP
+      - "7881:7881" # WebRTC over TCP
+      - "7882:7882/udp" # TURN/UDP
+      - "50000-50100:50000-50100/udp" # WebRTC UDP range (smaller range to avoid conflicts)
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml
+    depends_on:
+      - redis
+
+  # Redis for LiveKit state
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:

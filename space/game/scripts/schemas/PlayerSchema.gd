@@ -7,4 +7,7 @@ static func define_fields():
 		Field.new("name", Field.Types.STRING),
 		Field.new("x",    Field.Types.NUMBER),
 		Field.new("y",    Field.Types.NUMBER),
+		Field.new("teamIds", Field.Types.ARRAY, "string"),
+		Field.new("currentTeamRoom", Field.Types.STRING),
+		Field.new("currentVoiceRoom", Field.Types.STRING),
 	]

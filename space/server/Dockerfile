@@ -19,6 +19,9 @@ RUN yarn build
 # Production stage
 FROM node:20-alpine AS production
 
+# Install curl and other utilities
+RUN apk add --no-cache curl wget
+
 # Set the working directory
 WORKDIR /app
 
@@ -31,20 +34,24 @@ RUN yarn install --frozen-lockfile --production && yarn cache clean
 # Copy the built application from the builder stage
 COPY --from=builder /app/dist ./dist
 
-# Create a non-root user for security
+# Simple startup - just run Colyseus (LiveKit runs in separate container)
+
+# Create a non-root user for security (Colyseus will run as this user)
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S colyseus -u 1001
+    adduser -S nodejs -u 1001
 
 # Change ownership of the app directory to the nodejs user
-RUN chown -R colyseus:nodejs /app
-USER colyseus
+RUN chown -R nodejs:nodejs /app
 
-# Expose the port the app runs on
+# Expose port for Colyseus
 EXPOSE 2567
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=2567
 
-# Command to run the application
+# Switch to non-root user
+USER nodejs
+
+# Start Colyseus server
 CMD ["node", "dist/index.js"]

@@ -15,10 +15,10 @@ const cspHeader = `
     upgrade-insecure-requests;
 `
 
-// Relaxed CSP for space-client to allow WebSocket connections
+// Relaxed CSP for space-client to allow WebSocket connections and mediasoup-client
 const spaceClientCspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline';
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net;
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: *;
     font-src 'self' *;
@@ -27,7 +27,7 @@ const spaceClientCspHeader = `
     form-action 'self';
     frame-ancestors 'self';
     connect-src 'self' * ws: wss: http: https:;
-    frame-src 'self';
+    frame-src 'self' https://auth.privy.io https://*.privy.io https://*.privy.systems;
 `
 
 module.exports = withTM(
@@ -72,7 +72,27 @@ module.exports = withTM(
           ],
         },
         {
-          source: '/(.*)',
+          source: '/space-client',
+          headers: [
+            {
+              key: 'Content-Security-Policy',
+              value: spaceClientCspHeader.replace(/\n/g, ''),
+            },
+            { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          ],
+        },
+        {
+          source: '/space',
+          headers: [
+            {
+              key: 'Content-Security-Policy',
+              value: spaceClientCspHeader.replace(/\n/g, ''),
+            },
+            { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          ],
+        },
+        {
+          source: '/((?!space-client|space$).*)',
           headers: [
             {
               key: 'Content-Security-Policy',

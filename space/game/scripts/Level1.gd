@@ -3,7 +3,7 @@ extends Node2D
 
 # ---------- Tunables ----------
 @export var chunk_size: int = 256            # smaller => more frequent chunk crossings
-@export var cell_size: int = 200             # base spacing; one candidate per grid cell
+@export var cell_size: int = 350             # base spacing; one candidate per grid cell (increased for fewer craters)
 @export var neighbor_radius_cells: int = 1   # 1..2; exclusion neighborhood for blue-noise
 @export var jitter_ratio: float = 0.32       # 0..0.49; offset from grid center
 

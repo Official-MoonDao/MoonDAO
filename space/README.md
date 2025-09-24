@@ -45,6 +45,11 @@ To export the game as an HTML5 build for the MoonDAO web interface:
 
 2. **Configure Export Settings:**
    - Set the export path to: `../ui/public/space-client/index.html`
+   - Head Include: <script
+      src="https://unpkg.com/mediasoup-client@3/build/mediasoup-client.js"
+      onload="console.log('✅ Mediasoup script loaded, globals:', Object.keys(window).filter(k => k.toLowerCase().includes('mediasoup') || k === 'Device'))"
+      onerror="console.error('❌ Failed to load mediasoup script')"
+    ></script>
 
 3. **Export the Game:**
    - Click "Export All"

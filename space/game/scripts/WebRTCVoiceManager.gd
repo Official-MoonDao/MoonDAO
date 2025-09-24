@@ -28,6 +28,10 @@ var proximity_range := 800.0  # Proximity distance in pixels (realistic voice ch
 var local_player_position: Vector2 = Vector2.ZERO
 var player_positions: Dictionary = {}  # session_id -> Vector2
 
+# Team room spatial audio isolation
+var current_voice_zone: String = "lobby"  # Current voice zone: "lobby" or team room ID
+var player_voice_zones: Dictionary = {}  # session_id -> voice_zone
+
 func _ready() -> void:
 	print("WebRTCVoiceManager: Initializing simplified voice chat system")
 	add_to_group("voice_chat")
@@ -523,11 +527,25 @@ func _get_my_session_id() -> String:
 		var session_id = room.get_session_id()
 		print("WebRTCVoiceManager: 🎤 Got session ID via get_session_id(): ", session_id)
 		return session_id
-	elif room.has_property("sessionId"):
+	
+	# Try to access properties using get() method (Godot 4 compatible)
+	if room.has_method("get"):
+		var session_id = room.get("sessionId")
+		if session_id != null:
+			print("WebRTCVoiceManager: 🎤 Got session ID via get('sessionId'): ", session_id)
+			return session_id
+		
+		session_id = room.get("session_id")
+		if session_id != null:
+			print("WebRTCVoiceManager: 🎤 Got session ID via get('session_id'): ", session_id)
+			return session_id
+	
+	# Try direct property access (fallback)
+	if "sessionId" in room:
 		var session_id = room.sessionId
 		print("WebRTCVoiceManager: 🎤 Got session ID via sessionId property: ", session_id)
 		return session_id
-	elif room.has_property("session_id"):
+	elif "session_id" in room:
 		var session_id = room.session_id
 		print("WebRTCVoiceManager: 🎤 Got session ID via session_id property: ", session_id)
 		return session_id
@@ -670,6 +688,37 @@ func _on_peers_list(data) -> void:
 			_create_webrtc_offer_delayed(peer.sessionId)
 		else:
 			print("WebRTCVoiceManager: 🎤 I'm listening - waiting for offers from talking players, not creating offer to: ", peer.sessionId)
+
+func on_voice_zone_changed() -> void:
+	"""Handle voice zone changes - reconnect to appropriate peers based on new zone"""
+	print("WebRTCVoiceManager: 🎤 Voice zone changed - reconnecting to appropriate peers")
+	
+	if not room:
+		print("WebRTCVoiceManager: ❌ No room available for zone change")
+		return
+	
+	# Close all existing peer connections since we're changing voice zones
+	_cleanup_all_peer_connections()
+	
+	# Re-join voice chat to get new peer list based on current voice zone
+	print("WebRTCVoiceManager: 🎤 Rejoining voice chat for new zone...")
+	room.send("voice_chat_join", {})
+
+func _cleanup_all_peer_connections() -> void:
+	"""Close and clean up all existing peer connections"""
+	print("WebRTCVoiceManager: 🧹 Cleaning up all peer connections for zone change")
+	
+	for session_id in peer_connections.keys():
+		var peer_data = peer_connections[session_id]
+		if typeof(peer_data) == TYPE_DICTIONARY:
+			if "peer_connection" in peer_data and peer_data.peer_connection != null:
+				print("WebRTCVoiceManager: 🧹 Closing connection to: ", session_id)
+				if peer_data.peer_connection.has_method("close"):
+					peer_data.peer_connection.close()
+	
+	# Clear all connections
+	peer_connections.clear()
+	print("WebRTCVoiceManager: 🧹 All peer connections cleaned up")
 
 func _create_webrtc_offer_delayed(target_session_id: String) -> void:
 	"""Create WebRTC offer with delay to ensure initialization completes"""

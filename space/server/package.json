@@ -7,9 +7,11 @@
     "@colyseus/core": "0.14.30",
     "@colyseus/schema": "1.0.40",
     "@colyseus/ws-transport": "0.14.17",
+    "@livekit/protocol": "^1.42.0",
     "colyseus.js": "0.14",
     "jose": "^6.1.0",
     "jsonwebtoken": "^9.0.2",
+    "livekit-server-sdk": "^2.13.3",
     "zod": "^4.1.9"
   },
   "devDependencies": {

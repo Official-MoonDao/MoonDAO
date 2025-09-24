@@ -1,0 +1,106 @@
+🚀 Starting Colyseus server...
+📊 Environment variables:
+  - NODE_ENV: production
+  - PORT: 2567
+  - JWT_SECRET: ✅ Set
+✅ Transport created
+✅ Game server created
+🏠 Defining lobby room...
+✅ Lobby room defined successfully
+🔌 Attempting to listen on port: 2567
+⏰ seatReservationTimeToLive: 300
+✅ Server initialization complete
+🎉 Colyseus listening on 0.0.0.0:2567
+🌐 Server is ready to accept connections
+🔌 Raw WebSocket connection established from: 127.0.0.1
+📨 ALL HTTP HEAD /health from 127.0.0.1
+📨 Headers: {
+  host: 'localhost:2567',
+  'user-agent': 'Wget/1.25.0',
+  accept: '*/*',
+  'accept-encoding': 'identity',
+  connection: 'Keep-Alive'
+}
+🔌 Raw WebSocket connection established from: 127.0.0.1
+📨 ALL HTTP HEAD /health from 127.0.0.1
+📨 Headers: {
+  host: 'localhost:2567',
+  'user-agent': 'Wget/1.25.0',
+  accept: '*/*',
+  'accept-encoding': 'identity',
+  connection: 'Keep-Alive'
+}
+🔌 Raw WebSocket connection established from: 127.0.0.1
+📨 ALL HTTP HEAD /health from 127.0.0.1
+📨 Headers: {
+  host: 'localhost:2567',
+  'user-agent': 'Wget/1.25.0',
+  accept: '*/*',
+  'accept-encoding': 'identity',
+  connection: 'Keep-Alive'
+}
+🔌 Raw WebSocket connection established from: 127.0.0.1
+📨 ALL HTTP HEAD /health from 127.0.0.1
+📨 Headers: {
+  host: 'localhost:2567',
+  'user-agent': 'Wget/1.25.0',
+  accept: '*/*',
+  'accept-encoding': 'identity',
+  connection: 'Keep-Alive'
+}
+🔌 Raw WebSocket connection established from: 127.0.0.1
+📨 ALL HTTP HEAD /health from 127.0.0.1
+📨 Headers: {
+  host: 'localhost:2567',
+  'user-agent': 'Wget/1.25.0',
+  accept: '*/*',
+  'accept-encoding': 'identity',
+  connection: 'Keep-Alive'
+}
+🔌 Raw WebSocket connection established from: 127.0.0.1
+📨 ALL HTTP HEAD /health from 127.0.0.1
+📨 Headers: {
+  host: 'localhost:2567',
+  'user-agent': 'Wget/1.25.0',
+  accept: '*/*',
+  'accept-encoding': 'identity',
+  connection: 'Keep-Alive'
+}
+🔌 Raw WebSocket connection established from: 127.0.0.1
+📨 ALL HTTP HEAD /health from 127.0.0.1
+📨 Headers: {
+  host: 'localhost:2567',
+  'user-agent': 'Wget/1.25.0',
+  accept: '*/*',
+  'accept-encoding': 'identity',
+  connection: 'Keep-Alive'
+}
+🔌 Raw WebSocket connection established from: 127.0.0.1
+📨 ALL HTTP HEAD /health from 127.0.0.1
+📨 Headers: {
+  host: 'localhost:2567',
+  'user-agent': 'Wget/1.25.0',
+  accept: '*/*',
+  'accept-encoding': 'identity',
+  connection: 'Keep-Alive'
+}
+🔌 Raw WebSocket connection established from: 127.0.0.1
+📨 ALL HTTP HEAD /health from 127.0.0.1
+📨 Headers: {
+  host: 'localhost:2567',
+  'user-agent': 'Wget/1.25.0',
+  accept: '*/*',
+  'accept-encoding': 'identity',
+  connection: 'Keep-Alive'
+}
+🔌 Raw WebSocket connection established from: 127.0.0.1
+📨 ALL HTTP HEAD /health from 127.0.0.1
+📨 Headers: {
+  host: 'localhost:2567',
+  'user-agent': 'Wget/1.25.0',
+  accept: '*/*',
+  'accept-encoding': 'identity',
+  connection: 'Keep-Alive'
+}
+🔌 Server shutting down...
+📴 Received SIGTERM, shutting down gracefully

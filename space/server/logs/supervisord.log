@@ -1,0 +1,7 @@
+2025-09-24 09:21:20,883 INFO Set uid to user 0 succeeded
+2025-09-24 09:21:20,884 INFO supervisord started with pid 1
+2025-09-24 09:21:21,892 INFO spawned: 'colyseus' with pid 8
+2025-09-24 09:21:23,004 INFO success: colyseus entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-24 09:28:16,354 WARN received SIGTERM indicating exit request
+2025-09-24 09:28:16,355 INFO waiting for colyseus to die
+2025-09-24 09:28:16,360 INFO stopped: colyseus (exit status 0)

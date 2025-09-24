@@ -1,0 +1,31 @@
+# Minimal LiveKit server configuration for development
+port: 7880
+
+# Basic WebRTC configuration
+rtc:
+  tcp_port: 7881
+  udp_port: 7882
+  port_range_start: 50000
+  port_range_end: 50100
+  use_external_ip: false
+
+# Redis for state management
+redis:
+  address: redis:6379
+
+# API keys for authentication
+keys:
+  devkey: secret
+
+# Room settings
+room:
+  auto_create: true
+  empty_timeout: 300
+  max_participants: 100
+
+# Development mode
+development: true
+
+# Basic logging
+logging:
+  level: info

@@ -1,8 +1,8 @@
 # res://scripts/MainNetClient.gd
 extends Node2D
 
-# @export var server_url: String = "ws://localhost:2567"
-@export var server_url: String = "wss://moondao-space-server.fly.dev"
+@export var server_url: String = "ws://localhost:2567"
+# @export var server_url: String = "wss://moondao-space-server.fly.dev"
 @export var room_name: String  = "lobby"
 
 const PLAYER_SCENE_PATH        := "res://scenes/Player.tscn"
@@ -27,6 +27,7 @@ var current_attempt: int = 0
 @onready var cam: Camera2D = _ensure_camera()
 @onready var voice_chat: Node = $VoiceChat
 var _follow: Node2D = null     # local player to follow
+var team_room_manager: Node2D = null  # Team room manager
 
 # Fallbacks to ensure you SEE something
 var _dummy_timer := 0.0
@@ -37,6 +38,61 @@ var _connection_failed := false  # Track if connection failed to prevent dummy s
 var auth_token: String = ""
 var is_dev_mode: bool = false
 var connection_allowed: bool = false
+
+# Camera zoom settings
+var current_zoom: float = 1.0
+var min_zoom: float = 0.25  # Can zoom out to 25% (see 4x more area)
+var max_zoom: float = 3.0  # Can zoom in to 300% (closer view)
+var zoom_step: float = 0.003  # How much to zoom per scroll step (40% less sensitive)
+
+func _input(event):
+	"""Handle input events like mouse wheel/trackpad for zoom"""
+	# Handle traditional mouse wheel (button events)
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_zoom_in()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_zoom_out()
+	
+	# Handle macOS trackpad scrolling (pan gesture events)
+	elif event is InputEventPanGesture:
+		if event.delta.y > 0:
+			_zoom_out()
+		elif event.delta.y < 0:
+			_zoom_in()
+	
+	# Handle general scroll events (fallback)
+	elif event.has_method("get_factor"):
+		var factor = event.get_factor()
+		if factor > 0:
+			_zoom_out()
+		elif factor < 0:
+			_zoom_in()
+
+func _unhandled_input(event):
+	"""Alternative input handler for scroll events"""
+	if event is InputEventPanGesture:
+		if event.delta.y > 0:
+			_zoom_out()
+			get_viewport().set_input_as_handled()
+		elif event.delta.y < 0:
+			_zoom_in()
+			get_viewport().set_input_as_handled()
+
+func _zoom_in():
+	"""Zoom in (closer view)"""
+	current_zoom = min(current_zoom + zoom_step, max_zoom)
+	_update_camera_zoom()
+
+func _zoom_out():
+	"""Zoom out (wider view)"""
+	current_zoom = max(current_zoom - zoom_step, min_zoom)
+	_update_camera_zoom()
+
+func _update_camera_zoom():
+	"""Apply the current zoom level to the camera"""
+	if cam:
+		cam.zoom = Vector2(current_zoom, current_zoom)
 
 func _ready() -> void:
 	# Add to group so background can find this node
@@ -61,7 +117,10 @@ func _ready() -> void:
 		return
 	actors.y_sort_enabled = true
 
-	# --- 2) Check authentication and connect
+	# --- 2) Create team room manager
+	_create_team_room_manager()
+	
+	# --- 3) Check authentication and connect
 	_check_authentication_and_connect()
 
 func _check_authentication_and_connect() -> void:
@@ -189,11 +248,33 @@ func _setup_room_handlers() -> void:
 		
 		# player_talking_changed signal connection removed
 	
-	# Expose room to JavaScript for WebRTC signaling
+	# Setup team room manager
+	if team_room_manager:
+		team_room_manager.set_room_reference(room)
+		
+		# Connect team room entry/exit signals to voice chat updates
+		if not team_room_manager.team_room_entered.is_connected(_on_team_room_entered):
+			team_room_manager.team_room_entered.connect(_on_team_room_entered)
+		if not team_room_manager.team_room_exited.is_connected(_on_team_room_exited):
+			team_room_manager.team_room_exited.connect(_on_team_room_exited)
+	
+	# Expose room to JavaScript for WebRTC signaling (only if using WebRTC, not LiveKit)
 	if OS.has_feature("web") and Engine.has_singleton("JavaScriptBridge"):
-		JavaScriptBridge.eval("window.godotColyseusRoom = window.colyseusRoom || null;")
-		# We'll set the actual room reference when we have it available
-		_expose_room_to_javascript()
+		# Check if we're using LiveKit instead of WebRTC
+		var using_livekit = false
+		if voice_chat and voice_chat.has_method("get_script"):
+			var script_path = str(voice_chat.get_script().get_path())
+			if "VoiceChat.gd" in script_path:
+				print("MainNetClient: 🎙️ VoiceChat wrapper detected - using LiveKit SFU, skipping WebRTC setup")
+				using_livekit = true
+		
+		if not using_livekit:
+			print("MainNetClient: 🎤 Setting up WebRTC P2P signaling...")
+			JavaScriptBridge.eval("window.godotColyseusRoom = window.colyseusRoom || null;")
+			# We'll set the actual room reference when we have it available
+			_expose_room_to_javascript()
+		else:
+			print("MainNetClient: ✅ LiveKit SFU mode - no WebRTC timer needed")
 	
 	print("MainNetClient: joined room: ", room_name)
 
@@ -355,6 +436,10 @@ func _sync_from_state(state) -> void:
 	if state == null:
 		return
 	
+	# Update team rooms from state
+	if team_room_manager:
+		team_room_manager.update_team_rooms_from_state(state)
+	
 	# Access players MapSchema - use get() or direct property access
 	var players_map
 	if state.has_method("get"):
@@ -399,11 +484,34 @@ func _sync_from_state(state) -> void:
 			if is_local and inst.has_method("set_room_reference"):
 				inst.set_room_reference(room)
 			
+			# Set team room manager reference for zone detection (local player only)
+			if is_local and inst.has_method("set_team_room_manager_reference") and team_room_manager:
+				inst.set_team_room_manager_reference(team_room_manager)
+			
 			if inst.has_method("set_name_text"):
 				var nm := ""
 				if ("name" in p0) and (p0.name is String):
 					nm = p0.name
 				inst.set_name_text(nm)
+			
+			# Set team IDs and update team room manager for local player
+			if ("teamIds" in p0) and p0.teamIds != null:
+				print("🔍 CLIENT: Found teamIds in player data: ", p0.teamIds)
+				var team_ids = []
+				for i in range(p0.teamIds.size()):
+					team_ids.append(p0.teamIds.at(i))
+				
+				print("🔍 CLIENT: Processing player - is_local=", is_local, " team_room_manager=", team_room_manager != null)
+				
+				if is_local and team_room_manager:
+					print("🔍 CLIENT: Updating local player teams: ", team_ids)
+					team_room_manager.update_local_player_teams(team_ids)
+				else:
+					print("🔍 CLIENT: Not local player or no team room manager")
+					if is_local and not team_room_manager:
+						print("❌ LOCAL PLAYER BUT NO TEAM ROOM MANAGER!")
+					print("MainNetClient: Updated local player teams: ", team_ids)
+			
 			if is_local:
 				_follow = inst
 	# Update positions
@@ -768,7 +876,17 @@ func _ensure_camera() -> Camera2D:
 	c.make_current()
 	c.position_smoothing_enabled = false  # Disabled to prevent background floating
 	c.position_smoothing_speed = 10.0
-	# Optional zoom or limits can go here
+	
+	# Set up camera limits for proper zoom-out viewing
+	c.limit_left = -10000
+	c.limit_right = 10000
+	c.limit_top = -10000
+	c.limit_bottom = 10000
+	c.limit_smoothed = false
+	
+	# Set initial zoom
+	c.zoom = Vector2(current_zoom, current_zoom)
+	
 	return c
 
 func get_local_player() -> Node2D:
@@ -778,5 +896,29 @@ func get_local_player() -> Node2D:
 func get_players() -> Dictionary:
 	"""Return the players dictionary for minimap"""
 	return players
+
+func _create_team_room_manager():
+	"""Create and initialize the team room manager"""
+	var team_room_manager_script: GDScript = preload("res://scripts/TeamRoomManager.gd")
+	team_room_manager = Node2D.new()
+	team_room_manager.set_script(team_room_manager_script)
+	add_child(team_room_manager)
+	print("MainNetClient: Team room manager created")
+
+func _on_team_room_entered(team_id: String) -> void:
+	"""Handle team room entry - trigger voice chat zone change"""
+	print("🎤 MainNetClient: Player entered team room ", team_id, " - updating voice chat zone")
+	if voice_chat and voice_chat.has_method("on_voice_zone_changed"):
+		voice_chat.on_voice_zone_changed()
+	else:
+		print("🎤 Voice chat zone change method not available")
+
+func _on_team_room_exited(team_id: String) -> void:
+	"""Handle team room exit - trigger voice chat zone change"""
+	print("🎤 MainNetClient: Player exited team room ", team_id, " - updating voice chat zone")
+	if voice_chat and voice_chat.has_method("on_voice_zone_changed"):
+		voice_chat.on_voice_zone_changed()
+	else:
+		print("🎤 Voice chat zone change method not available")
 
 # _on_player_talking_changed function removed

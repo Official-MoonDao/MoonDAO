@@ -58,6 +58,9 @@ region = Rect2(609, 596, 189, 280)
 atlas = ExtResource("2_v6fml")
 region = Rect2(798, 596, 189, 280)
 
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 30.0
+
 [sub_resource type="SpriteFrames" id="SpriteFrames_d3wef"]
 animations = [{
 "frames": [{
@@ -129,7 +132,7 @@ animations = [{
 "speed": 2.0
 }]
 
-[node name="Player" type="Node2D"]
+[node name="Player" type="CharacterBody2D"]
 script = ExtResource("1_mdl7e")
 
 [node name="Label" type="Label" parent="."]
@@ -150,6 +153,9 @@ unique_name_in_owner = true
 sprite_frames = SubResource("SpriteFrames_d3wef")
 animation = &"walk_up"
 speed_scale = 3.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_player")
 
 [node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
 max_distance = 300.0
