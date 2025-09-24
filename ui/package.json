@@ -17,8 +17,9 @@
   },
   "dependencies": {
     "@arbitrum/sdk": "^3.3.3",
-    "@covalenthq/client-sdk": "^2.3.1",
     "@coinbase/cbpay-js": "^2.4.0",
+    "@covalenthq/client-sdk": "^2.3.1",
+    "@google-cloud/kms": "^5.1.0",
     "@google-cloud/storage": "^7.16.0",
     "@hatsprotocol/sdk-v1-core": "^0.9.0",
     "@hatsprotocol/sdk-v1-subgraph": "^0.4.3",
@@ -55,6 +56,7 @@
     "@walletconnect/qrcode-modal": "^1.8.0",
     "abitype": "^0.10.2",
     "axios": "^1.4.0",
+    "bech32": "^1.1.4",
     "canvas-confetti": "^1.9.3",
     "chart.js": "^4.4.4",
     "daisyui": "^4.12.23",
@@ -136,6 +138,7 @@
     "autoprefixer": "^10.4.0",
     "cypress": "^12.17.3",
     "cypress-file-upload": "^5.0.8",
+    "dotenv": "^17.2.2",
     "eslint": "8.4.1",
     "eslint-config-next": "13.4.10",
     "eslint-config-prettier": "^8.3.0",
@@ -144,6 +147,7 @@
     "prettier": "^2.5.1",
     "react-error-boundary": "^5.0.0",
     "tailwindcss": "^3.3.2",
-    "ts-migrate": "^0.1.35"
+    "ts-migrate": "^0.1.35",
+    "ts-node": "^10.9.2"
   }
 }

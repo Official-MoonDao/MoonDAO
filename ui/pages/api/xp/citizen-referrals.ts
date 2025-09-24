@@ -2,7 +2,7 @@ import { utils as ethersUtils } from 'ethers'
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { Address, Hex } from 'thirdweb'
+import { Address } from 'thirdweb'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
 import {
   getUserAndAccessToken,
@@ -45,6 +45,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
 
     return res.status(200).json({
+      eligible: true,
       txHash,
     })
   } catch (err: any) {

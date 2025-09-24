@@ -85,6 +85,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       await signHasVotedProof({
         user: user as Address,
         votes: BigInt(votesCount), // Use actual vote count
+        authToken: process.env.HSM_AUTH_TOKEN, // Use server-side auth token
       })
 
     const { txHash } = await submitHasVotedBulkClaimFor({

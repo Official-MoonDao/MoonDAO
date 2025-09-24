@@ -348,14 +348,19 @@ function getTokenSymbol(token: string): string {
 // Function to count unique countries from location data
 function countUniqueCountries(locations: any[]): number {
   if (!locations || locations.length === 0) return 25
-  
+
   try {
     const countries = new Set(
       locations
-        .map((loc) => loc.country || loc.formattedAddress?.split(',').pop()?.trim() || 'Unknown')
-        .filter(country => country && country !== 'Unknown' && country !== '')
+        .map(
+          (loc) =>
+            loc.country ||
+            loc.formattedAddress?.split(',').pop()?.trim() ||
+            'Unknown'
+        )
+        .filter((country) => country && country !== 'Unknown' && country !== '')
     )
-    
+
     // Return fallback of 25 if no valid countries found
     return countries.size > 0 ? countries.size : 25
   } catch (error) {
@@ -687,7 +692,7 @@ export default function SingedInDashboard({
         </div>
 
         {/* Quest System - Horizontal Section */}
-        {address && selectedChain === sepolia && <Quests />}
+        {address && <Quests />}
 
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
@@ -1295,16 +1300,14 @@ export default function SingedInDashboard({
                   Contribute to space exploration initiatives
                 </p>
               </div>
-              
+
               {/* Stats next to title */}
               <div className="flex gap-4">
                 <div className="bg-black/20 rounded-lg px-4 py-2 border border-green-500/20">
                   <div className="text-lg font-bold text-white">
                     {Math.round(ethBudget)} ETH
                   </div>
-                  <div className="text-green-200 text-xs">
-                    Quarterly Budget
-                  </div>
+                  <div className="text-green-200 text-xs">Quarterly Budget</div>
                 </div>
                 <div className="bg-black/20 rounded-lg px-4 py-2 border border-green-500/20">
                   <div className="text-lg font-bold text-white">
@@ -1314,7 +1317,7 @@ export default function SingedInDashboard({
                 </div>
               </div>
             </div>
-            
+
             {/* Buttons on the right */}
             <div className="flex gap-3">
               <StandardButton
@@ -1336,32 +1339,34 @@ export default function SingedInDashboard({
             <div>
               {/* Projects Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {currentProjects.slice(0, 8).map((project: any, index: number) => (
-                  <Link key={index} href={`/project/${project.id}`} passHref>
-                    <div className="bg-black/30 rounded-xl p-4 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/20 transition-all duration-200 h-32 flex flex-col">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-semibold text-white text-sm flex-1 mr-2">
-                          {project.name}
-                        </h4>
-                        <span
-                          className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
-                            project.active
-                              ? 'bg-green-500/20 text-green-300'
-                              : 'bg-gray-500/20 text-gray-300'
-                          }`}
-                        >
-                          {project.active ? 'Active' : 'Inactive'}
-                        </span>
+                {currentProjects
+                  .slice(0, 8)
+                  .map((project: any, index: number) => (
+                    <Link key={index} href={`/project/${project.id}`} passHref>
+                      <div className="bg-black/30 rounded-xl p-4 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/20 transition-all duration-200 h-32 flex flex-col">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-semibold text-white text-sm flex-1 mr-2">
+                            {project.name}
+                          </h4>
+                          <span
+                            className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
+                              project.active
+                                ? 'bg-green-500/20 text-green-300'
+                                : 'bg-gray-500/20 text-gray-300'
+                            }`}
+                          >
+                            {project.active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        <p className="text-green-100 text-xs leading-relaxed flex-1 overflow-hidden">
+                          {project.description?.length > 100
+                            ? `${project.description.substring(0, 100)}...`
+                            : project.description || 'No description available'}
+                        </p>
                       </div>
-                      <p className="text-green-100 text-xs leading-relaxed flex-1 overflow-hidden">
-                        {project.description?.length > 100
-                          ? `${project.description.substring(0, 100)}...`
-                          : project.description || 'No description available'}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-                
+                    </Link>
+                  ))}
+
                 {/* Show more projects indicator if there are more than 8 */}
                 {currentProjects.length > 8 && (
                   <div className="bg-black/30 rounded-xl p-4 border border-green-500/10 h-32 flex items-center justify-center">
@@ -1369,7 +1374,9 @@ export default function SingedInDashboard({
                       <div className="text-lg font-bold text-green-300 mb-1">
                         +{currentProjects.length - 8}
                       </div>
-                      <p className="text-green-200 text-xs mb-2">More Projects</p>
+                      <p className="text-green-200 text-xs mb-2">
+                        More Projects
+                      </p>
                       <StandardButton
                         className="bg-green-600/20 hover:bg-green-600/40 text-green-300 text-xs px-3 py-1 rounded-lg transition-all"
                         link="/projects"

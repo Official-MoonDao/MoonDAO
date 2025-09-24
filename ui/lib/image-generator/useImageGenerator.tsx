@@ -135,6 +135,7 @@ export default function useImageGenerator(
       }
       // Clean up uploaded file
       await deleteFromGoogleStorage(uploadedFilename)
+      setIsLoading(false) // Add this line
     }
 
     if (job.status === 'INSUFFICIENT_CREDIT') {
@@ -147,6 +148,7 @@ export default function useImageGenerator(
       }
       // Clean up uploaded file
       await deleteFromGoogleStorage(uploadedFilename)
+      setIsLoading(false) // Add this line
     }
 
     if (job.status === 'COMPLETED') {

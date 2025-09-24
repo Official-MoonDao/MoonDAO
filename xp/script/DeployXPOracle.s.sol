@@ -10,16 +10,35 @@ contract DeployXPOracleScript is Script {
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address oracleSigner = vm.envAddress("HSM_SIGNER_ADDRESS");
+        address daoSafeAddress = vm.envAddress("DAO_SAFE_ADDRESS");
 
-        address oracleSigner = vm.envAddress("ORACLE_SIGNER");
+        if (oracleSigner == address(0)) {
+            revert("No HSM signer address provided");
+        }
 
+        if (daoSafeAddress == address(0)) {
+            revert("No DAO safe address provided");
+        }
+
+        // Start broadcast
         vm.startBroadcast(deployerPrivateKey);
 
         XPOracle oracle = new XPOracle(ORACLE_NAME, ORACLE_VERSION);
 
-        if (oracleSigner != address(0)) {
-            oracle.setSigner(oracleSigner, true);
-        }
+        oracle.setSigner(oracleSigner, true);
+
+        // Transfer ownership to DAO Safe
+        oracle.transferOwnership(daoSafeAddress);
+
+        // Log deployment summary
+        console.log("=== ORACLE DEPLOYMENT SUMMARY ===");
+        console.log("Oracle Address:", address(oracle));
+        console.log("Oracle Name:", ORACLE_NAME);
+        console.log("Oracle Version:", ORACLE_VERSION);
+        console.log("HSM Signer Address:", oracleSigner);
+        console.log("DAO Safe Address:", daoSafeAddress);
+        console.log("Oracle transferred to DAO Safe");
 
         vm.stopBroadcast();
     }

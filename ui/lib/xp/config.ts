@@ -1,19 +1,15 @@
 import {
   BanknotesIcon,
   CheckBadgeIcon,
-  ShoppingBagIcon,
   UserGroupIcon,
   CodeBracketIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
 import {
   DEFAULT_CHAIN_V5_SLUG,
-  HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES,
   HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES,
   HAS_CONTRIBUTED_VERIFIER_ADDRESSES,
-  HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES,
   HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES,
-  HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES,
   HAS_VOTED_VERIFIER_ADDRESSES,
   HAS_VOTING_POWER_VERIFIER_ADDRESSES,
   HAS_SUBMITTED_PR_VERIFIER_ADDRESSES,
@@ -27,6 +23,17 @@ import toastStyle from '../marketplace/marketplace-utils/toastConfig'
 
 // Static verifiers array for server-side use
 export const XP_VERIFIERS = [
+  {
+    verifierId: 7,
+    verifierAddress: CITIZEN_REFERRAL_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
+    route: '/api/xp/citizen-referrals',
+    type: 'staged',
+    metricKey: 'referralCount',
+    title: 'Citizen Referrals',
+    description: 'Refer your friends to the Space Acceleration Network.',
+    icon: UserGroupIcon,
+    actionText: 'Copy Referral Link',
+  },
   {
     verifierId: 0,
     verifierAddress: HAS_VOTING_POWER_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
@@ -53,32 +60,6 @@ export const XP_VERIFIERS = [
   },
   {
     verifierId: 2,
-    verifierAddress:
-      HAS_TOKEN_BALANCE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/mooney-balance',
-    type: 'staged',
-    metricKey: 'tokenBalance',
-    metricFormatting: (metric: number) =>
-      Number(metric / 1e18).toLocaleString(),
-    title: 'MOONEY',
-    description: 'Hold MOONEY in your wallet.',
-    icon: BanknotesIcon,
-  },
-  // {
-  //   verifierId: 3,
-  //   verifierAddress:
-  //     HAS_CREATED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-  //   route: '/api/xp/has-created-a-team-proof',
-  //   type: 'single',
-  //   metricKey: 'teamsCreated',
-  //   title: 'Create a Team',
-  //   description: 'Create a team in the Space Acceleration Network.',
-  //   icon: UserGroupIcon,
-  //   link: '/team',
-  //   linkText: 'Create Team',
-  // },
-  {
-    verifierId: 4,
     verifierAddress: HAS_CONTRIBUTED_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/has-contributed-proof',
     type: 'staged',
@@ -90,7 +71,7 @@ export const XP_VERIFIERS = [
     linkText: 'Contribute',
   },
   {
-    verifierId: 5,
+    verifierId: 3,
     verifierAddress:
       HAS_COMPLETED_CITIZEN_PROFILE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/has-completed-citizen-profile-proof',
@@ -102,23 +83,8 @@ export const XP_VERIFIERS = [
     link: 'citizenProfile',
     linkText: 'Complete Profile',
   },
-  // {
-  //   verifierId: 6,
-  //   verifierAddress:
-  //     HAS_BOUGHT_A_MARKETPLACE_LISTING_VERIFIER_ADDRESSES[
-  //       DEFAULT_CHAIN_V5_SLUG
-  //     ],
-  //   route: '/api/xp/has-bought-marketplace-listings-proof',
-  //   type: 'staged',
-  //   metricKey: 'purchaseCount', // Placeholder - update when this API is implemented
-  //   title: 'Marketplace Listings',
-  //   description: 'Buy a listing in the MoonDAO marketplace',
-  //   icon: ShoppingBagIcon,
-  //   link: '/marketplace',
-  //   linkText: 'Buy Listing',
-  // },
   {
-    verifierId: 7,
+    verifierId: 4,
     verifierAddress:
       HAS_JOINED_A_TEAM_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/has-joined-a-team-proof',
@@ -131,7 +97,7 @@ export const XP_VERIFIERS = [
     linkText: 'Join Team',
   },
   {
-    verifierId: 8,
+    verifierId: 5,
     verifierAddress:
       HAS_SUBMITTED_ISSUE_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/has-submitted-issue-proof',
@@ -152,7 +118,7 @@ export const XP_VERIFIERS = [
     },
   },
   {
-    verifierId: 9,
+    verifierId: 6,
     verifierAddress: HAS_SUBMITTED_PR_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
     route: '/api/xp/has-submitted-pr-proof',
     type: 'staged',
@@ -170,17 +136,6 @@ export const XP_VERIFIERS = [
           'from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700',
       },
     },
-  },
-  {
-    verifierId: 10,
-    verifierAddress: CITIZEN_REFERRAL_VERIFIER_ADDRESSES[DEFAULT_CHAIN_V5_SLUG],
-    route: '/api/xp/citizen-referrals',
-    type: 'staged',
-    metricKey: 'referralCount',
-    title: 'Citizen Referrals',
-    description: 'Refer your friends to the Space Acceleration Network.',
-    icon: UserGroupIcon,
-    actionText: 'Copy Referral Link',
   },
 ]
 

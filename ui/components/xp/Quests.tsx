@@ -6,6 +6,7 @@ import {
 } from '@heroicons/react/24/outline'
 import XPManagerABI from 'const/abis/XPManager.json'
 import { XP_MANAGER_ADDRESSES } from 'const/config'
+import Link from 'next/link'
 import { useCallback, useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Address } from 'thirdweb'
@@ -43,10 +44,6 @@ export default function Quests({}: QuestsProps) {
 
   const fetchUserData = useCallback(async () => {
     if (!userAddress || !xpManagerContract) {
-      console.log('fetchUserData: missing required data', {
-        userAddress,
-        xpManagerContract: !!xpManagerContract,
-      })
       return
     }
 
@@ -186,6 +183,15 @@ export default function Quests({}: QuestsProps) {
             />
           ))}
         </div>
+        <p className="w-full text-center text-sm text-slate-300 mt-4">
+          {'By proceeding with claiming quests you agree to the '}
+          <Link
+            href="/terms-of-service"
+            className="text-blue-500 hover:text-blue-400 hover:underline transition-colors"
+          >
+            {'Terms of Service.'}
+          </Link>
+        </p>
       </div>
     </div>
   )

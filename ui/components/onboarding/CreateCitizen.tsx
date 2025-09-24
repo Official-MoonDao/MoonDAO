@@ -86,15 +86,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const [inputImage, setInputImage] = useState<File>()
   //Final Image for Citizen Profile
   const [citizenImage, setCitizenImage] = useState<any>()
-  const {
-    generateImage,
-    isLoading: generating,
-    error: generateError,
-  } = useImageGenerator(
-    '/api/image-gen/citizen-image',
-    inputImage,
-    setCitizenImage
-  )
 
   const [citizenData, setCitizenData] = useState<CitizenData>({
     name: '',
@@ -110,6 +101,14 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
+  const [isImageGenerating, setIsImageGenerating] = useState(false)
+
+  // When the generated image arrives, stop showing the loading animation in stage 2
+  useEffect(() => {
+    if (isImageGenerating && citizenImage) {
+      setIsImageGenerating(false)
+    }
+  }, [citizenImage, isImageGenerating])
 
   const { fundWallet } = useFundWallet()
 
@@ -438,6 +437,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                   nextStage={() => setStage(1)}
                   stage={stage}
                   generateInBG
+                  onGenerationStateChange={setIsImageGenerating}
                 />
                 {process.env.NEXT_PUBLIC_ENV === 'dev' && (
                   <button
@@ -499,7 +499,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                   {`Welcome to the future of off-world coordination with MoonDAO.`}
                 </p> */}
                 <div className="flex flex-col items-center">
-                  <div className="relative">
+                  <div className="relative w-[600px] h-[600px] rounded-2xl border border-slate-600/30 bg-slate-900/40 overflow-hidden">
                     <Image
                       src={
                         citizenImage
@@ -511,8 +511,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                       alt="citizen-image"
                       width={600}
                       height={600}
-                      className="rounded-2xl border border-slate-600/30"
+                      className="rounded-2xl"
                     />
+                    {isImageGenerating && !citizenImage && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                        <img
+                          src="/assets/MoonDAO-Loading-Animation.svg"
+                          alt="generating"
+                          className="w-40 h-40 opacity-90"
+                        />
+                      </div>
+                    )}
                     {!citizenImage && !inputImage && (
                       <div className="absolute inset-0 flex items-center justify-center bg-slate-800/50 rounded-2xl">
                         <p className="text-white text-center px-4">
@@ -538,7 +547,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                   {!citizenImage && inputImage && (
                     <div className="mt-4 text-center">
                       <p className="text-slate-300 opacity-75">
-                        Image generation in progress...
+                        {isImageGenerating
+                          ? 'Image generation in progress...'
+                          : 'Using uploaded image'}
                       </p>
                       <button
                         onClick={() => setStage(0)}
