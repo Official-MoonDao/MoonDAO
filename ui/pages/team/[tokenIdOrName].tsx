@@ -389,6 +389,32 @@ export default function TeamDetailPage({
           refreshListings={() => router.reload()}
         />
       )}
+
+      {/*Subscription Extension Container*/}
+      {isManager || address === nft.owner ? (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            onClick={() => setTeamSubscriptionModalEnabled(true)}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
+          >
+            <span>Extend Subscription</span>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </button>
+        </div>
+      ) : null}
+
       <ContentLayout
         description={ProfileHeader}
         mainPadding

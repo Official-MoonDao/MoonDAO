@@ -4,6 +4,7 @@ import { readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
+import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import IPFSRenderer from '../layout/IPFSRenderer'
 
 type TeamMemberProps = {
@@ -130,7 +131,7 @@ function TeamMember({
   const citizenDescription = metadata?.description || 'This citizen has yet to add a profile'
   const roles = hatNames?.map((hatName: any) => hatName.name || '...').join(', ') || 'Team Member'
 
-  const link = `/citizen/${metadata?.name ? `${metadata.name.toLowerCase().replace(/\s+/g, '-')}-${metadata?.id || nft?.id}` : 'anon'}`
+  const link = `/citizen/${metadata?.name ? generatePrettyLinkWithId(metadata.name, metadata?.id || nft?.id) : 'anon'}`
 
   return (
     <Link href={link} className="block w-full">

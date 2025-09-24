@@ -19,8 +19,8 @@ export function useTeamData(teamContract: any, hatsContract: any, nft: any, isCi
 
   // Determine access level for the current user
   const hasFullAccess = useMemo(() => {
-    return isCitizen || isManager || address === nft?.owner
-  }, [isCitizen, isManager, address, nft?.owner])
+    return isManager || address === nft?.owner
+  }, [isManager, address, nft?.owner])
 
   const socials = useMemo(() => {
     const entityTwitter = getAttribute(
