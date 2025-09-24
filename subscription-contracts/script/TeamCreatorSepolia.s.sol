@@ -1,5 +1,11 @@
 // SPDX-License-Identifier: MIT
 
+/* 
+Separate Sepolia deployment script - required because:
+1. Sepolia testnet uses different contract addresses than mainnet
+2. Sets openAccess to true for easier testing (vs mainnet which may have restricted access)
+*/
+
 /*
 Deploying a new Team Creator:
 1. Run the script
