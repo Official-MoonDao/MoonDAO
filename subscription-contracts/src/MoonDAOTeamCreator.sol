@@ -36,7 +36,26 @@ contract MoonDAOTeamCreator is Ownable {
 
     bool public openAccess;
 
-    constructor(address _hats, address _hatsModuleFactory, address _hatsPassthrough, address _moonDAOTeam, address _gnosisSingleton, address _gnosisSafeProxyFactory, address _table, address _whitelist) Ownable(msg.sender) {
+    mapping(address => bool) public authorizedSigners;
+
+    struct HatURIs {
+        string adminHatURI;
+        string managerHatURI;
+        string memberHatURI;
+    }
+
+    struct TeamMetadata {
+        string name;
+        string bio;
+        string image;
+        string twitter;
+        string communications;
+        string website;
+        string _view;
+        string formId;
+    }
+
+    constructor(address _hats, address _hatsModuleFactory, address _hatsPassthrough, address _moonDAOTeam, address _gnosisSingleton, address _gnosisSafeProxyFactory, address _table, address _whitelist, address[] memory _authorizedSigners) Ownable(msg.sender) {
         hats = IHats(_hats);
         moonDAOTeam = MoonDAOTeam(_moonDAOTeam);
         gnosisSingleton = _gnosisSingleton;
@@ -46,10 +65,46 @@ contract MoonDAOTeamCreator is Ownable {
 
         table = MoonDaoTeamTableland(_table);
         whitelist = Whitelist(_whitelist);
+        for (uint256 i = 0; i < _authorizedSigners.length; i++) {
+            authorizedSigners[_authorizedSigners[i]] = true;
+        }
+    }
+
+    function setAuthorizedSigner(address _authorizedSigner, bool _authorized) external onlyOwner {
+        authorizedSigners[_authorizedSigner] = _authorized;
+    }
+
+    modifier onlyAuthorizedSigner() {
+        require(authorizedSigners[msg.sender], "Only authorized signer can call this function");
+        _;
+    }
+
+    function setMoonDAOTeam(address _moonDAOTeam) external onlyOwner() {
+        moonDAOTeam = MoonDAOTeam(_moonDAOTeam);
     }
 
     function setMoonDaoTeamAdminHatId(uint256 _MoonDaoTeamAdminHatId) external onlyOwner() {
         MoonDaoTeamAdminHatId = _MoonDaoTeamAdminHatId;
+    }
+
+    function setGnosisSingleton(address _gnosisSingleton) external onlyOwner() {
+        gnosisSingleton = _gnosisSingleton;
+    }
+
+    function setGnosisSafeProxyFactory(address _gnosisSafeProxyFactory) external onlyOwner() {
+        gnosisSafeProxyFactory = GnosisSafeProxyFactory(_gnosisSafeProxyFactory);
+    }
+
+    function setHats(address _hats) external onlyOwner() {
+        hats = IHats(_hats);
+    }
+
+    function setHatsModuleFactory(address _hatsModuleFactory) external onlyOwner() {
+        hatsModuleFactory = HatsModuleFactory(_hatsModuleFactory);
+    }
+
+    function setHatsPassthrough(address _hatsPassthrough) external onlyOwner() {
+        hatsPassthrough = _hatsPassthrough;
     }
 
     function setMoonDaoTeamTable(address _table) external onlyOwner() {
@@ -64,30 +119,50 @@ contract MoonDAOTeamCreator is Ownable {
         openAccess = _openAccess;
     }
 
-    function createMoonDAOTeam(string memory adminHatURI, string memory managerHatURI, string memory memberHatURI, string calldata name, string calldata bio, string calldata image, string calldata twitter, string calldata communications, string calldata website, string calldata _view, string memory formId, address[] memory members) external payable returns (uint256 tokenId, uint256 childHatId) {
+    function createMoonDAOTeamFor(
+        address creator,
+        HatURIs memory hatURIs,
+        TeamMetadata calldata metadata,
+        address[] memory members
+    ) external payable onlyAuthorizedSigner returns (uint256 tokenId, uint256 childHatId) {
+        return _createMoonDAOTeam(creator, hatURIs, metadata, members);
+    }
 
-        require(whitelist.isWhitelisted(msg.sender) || openAccess, "Only whitelisted addresses can create a MoonDAO Team");
+    function createMoonDAOTeam(
+        HatURIs memory hatURIs,
+        TeamMetadata calldata metadata,
+        address[] memory members
+    ) external payable returns (uint256 tokenId, uint256 childHatId) {
+        return _createMoonDAOTeam(msg.sender, hatURIs, metadata, members);
+    }
+
+    function _createMoonDAOTeam(
+        address creator,
+        HatURIs memory hatURIs,
+        TeamMetadata calldata metadata,
+        address[] memory members
+    ) internal returns (uint256 tokenId, uint256 childHatId) {
+
+        require(whitelist.isWhitelisted(creator) || openAccess, "Only whitelisted addresses can create a MoonDAO Team");
         
-
-        bytes memory safeCallData = constructSafeCallData(msg.sender, members);
+        bytes memory safeCallData = constructSafeCallData(creator, members);
         GnosisSafeProxy gnosisSafe = gnosisSafeProxyFactory.createProxy(gnosisSingleton, safeCallData);
         
         //admin hat
-        uint256 teamAdminHat = hats.createHat(MoonDaoTeamAdminHatId, adminHatURI, 1, address(gnosisSafe), address(gnosisSafe), true, "");
+        uint256 teamAdminHat = hats.createHat(MoonDaoTeamAdminHatId, hatURIs.adminHatURI, 1, address(gnosisSafe), address(gnosisSafe), true, "");
         hats.mintHat(teamAdminHat, address(this));
 
         //manager hat
-        uint256 teamManagerHat = hats.createHat(teamAdminHat, managerHatURI, 8, address(gnosisSafe), address(gnosisSafe), true, "");
+        uint256 teamManagerHat = hats.createHat(teamAdminHat, hatURIs.managerHatURI, 8, address(gnosisSafe), address(gnosisSafe), true, "");
 
-        hats.mintHat(teamManagerHat, msg.sender);
+        hats.mintHat(teamManagerHat, creator);
         hats.transferHat(teamAdminHat, address(this), address(gnosisSafe));
 
         //member hat
-        uint256 teamMemberHat = hats.createHat(teamManagerHat, memberHatURI, 1000, address(gnosisSafe), address(gnosisSafe), true, '');
+        uint256 teamMemberHat = hats.createHat(teamManagerHat, hatURIs.memberHatURI, 1000, address(gnosisSafe), address(gnosisSafe), true, '');
 
-        //member hat passthrough module (allow admin hat to control member hat)
+        //member hat passthrough module (allow manager hat to control member hat)
         PassthroughModule memberPassthroughModule = PassthroughModule(deployModuleInstance(hatsModuleFactory, hatsPassthrough, teamMemberHat, abi.encodePacked(teamManagerHat), "", 0));
-
 
         hats.changeHatEligibility(teamMemberHat, address(memberPassthroughModule));
         hats.changeHatToggle(teamMemberHat, address(memberPassthroughModule));
@@ -95,23 +170,23 @@ contract MoonDAOTeamCreator is Ownable {
         //payment splitter
         address[] memory payees = new address[](2);
         payees[0] = address(gnosisSafe);
-        payees[1] = msg.sender;
+        payees[1] = creator;
         uint256[] memory shares = new uint256[](2);
         shares[0] = 9900;
         shares[1] = 100;
         PaymentSplitter split = new PaymentSplitter(payees, shares);
 
         //mint
-        tokenId = moonDAOTeam.mintTo{value: msg.value}(address(gnosisSafe), msg.sender, teamAdminHat, teamManagerHat, teamMemberHat, address(memberPassthroughModule), address(split));
+        tokenId = moonDAOTeam.mintTo{value: msg.value}(address(gnosisSafe), creator, teamAdminHat, teamManagerHat, teamMemberHat, address(memberPassthroughModule), address(split));
 
-        table.insertIntoTable(tokenId, name, bio, image, twitter, communications, website, _view, formId);
+        table.insertIntoTable(tokenId, metadata.name, metadata.bio, metadata.image, metadata.twitter, metadata.communications, metadata.website, metadata._view, metadata.formId);
     }
 
     function constructSafeCallData(address caller, address[] memory members) internal returns (bytes memory) {
         uint256 maxOwners = 5;
         uint256 ownersLength = members.length + 1 > maxOwners ? maxOwners : members.length + 1;
         address[] memory owners = new address[](ownersLength);
-        owners[0] = msg.sender;
+        owners[0] = caller;
         for (uint i = 1; i < ownersLength; i++) {
             owners[i] = members[i - 1];
         }

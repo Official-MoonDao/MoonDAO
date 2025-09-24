@@ -493,17 +493,26 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           contract: teamCreatorContract,
                           method: 'createMoonDAOTeam' as string,
                           params: [
-                            'ipfs://' + adminHatMetadataIpfsHash,
-                            'ipfs://' + managerHatMetadataIpfsHash,
-                            'ipfs://' + memberHatMetadataIpfsHash,
-                            teamData.name,
-                            teamData.description,
-                            'ipfs://' + newImageIpfsHash,
-                            teamData.twitter,
-                            teamData.communications,
-                            teamData.website,
-                            teamData.view,
-                            teamData.formResponseId,
+                            // HatURIs struct
+                            {
+                              adminHatURI: 'ipfs://' + adminHatMetadataIpfsHash,
+                              managerHatURI:
+                                'ipfs://' + managerHatMetadataIpfsHash,
+                              memberHatURI:
+                                'ipfs://' + memberHatMetadataIpfsHash,
+                            },
+                            // TeamMetadata struct
+                            {
+                              name: teamData.name,
+                              bio: teamData.description,
+                              image: 'ipfs://' + newImageIpfsHash,
+                              twitter: teamData.twitter,
+                              communications: teamData.communications,
+                              website: teamData.website,
+                              _view: teamData.view,
+                              formId: teamData.formResponseId,
+                            },
+                            // members array
                             [],
                           ],
                           value: cost,
