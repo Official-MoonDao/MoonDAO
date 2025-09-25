@@ -262,7 +262,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Handle specific contract errors
     if (err.message?.includes('Citizen is already referred')) {
       return res.status(409).json({
-        error: 'Citizen is already referred by someone else',
+        error: 'You have alreay set a referrer',
       })
     }
 

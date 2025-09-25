@@ -85,7 +85,6 @@ import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
-import CitizenReferral from '../subscription/CitizenReferral'
 import Quests from '../xp/Quests'
 
 // import Quests from '@/components/xp/Quests'
@@ -472,14 +471,6 @@ export default function SingedInDashboard({
             {/* Weekly Reward Pool - Enhanced UI */}
             <div className="order-2">
               <WeeklyRewardPool />
-            </div>
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
-              <p className="text-gray-300 text-sm">
-                Were you referred to the Space Acceleration Network?
-              </p>
-              <div className="space-y-8 h-full mt-4">
-                <CitizenReferral />
-              </div>
             </div>
 
             {/* Key Metrics Card */}

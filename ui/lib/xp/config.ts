@@ -18,6 +18,7 @@ import {
 } from 'const/config'
 import { useContext, useMemo } from 'react'
 import toast from 'react-hot-toast'
+import CitizenReferral from '@/components/subscription/CitizenReferral'
 import CitizenContext from '../citizen/citizen-context'
 import toastStyle from '../marketplace/marketplace-utils/toastConfig'
 
@@ -33,6 +34,7 @@ export const XP_VERIFIERS = [
     description: 'Refer your friends to the Space Acceleration Network.',
     icon: UserGroupIcon,
     actionText: 'Copy Referral Link',
+    modalButton: CitizenReferral,
   },
   {
     verifierId: 0,
