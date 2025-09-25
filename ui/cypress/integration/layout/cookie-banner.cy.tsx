@@ -3,7 +3,7 @@ import CookieBanner from '@/components/layout/CookieBanner'
 describe('<CookieBanner />', () => {
   beforeEach(() => {
     cy.clearLocalStorage()
-    cy.window().then((win) => {
+    cy.window().then((win: any) => {
       win.gtag = cy.stub().as('gtagStub')
     })
   })
@@ -42,7 +42,7 @@ describe('<CookieBanner />', () => {
     cy.contains('a', 'Privacy Policy').should(
       'have.attr',
       'href',
-      'https://docs.moondao.com/Legal/Website-Privacy-Policy'
+      '/privacy-policy'
     )
   })
 })
