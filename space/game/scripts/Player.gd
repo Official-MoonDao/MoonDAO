@@ -75,25 +75,24 @@ func _physics_process(delta: float) -> void:
 		if view.has_method("set_animation_speed"):
 			view.set_animation_speed(1.0)
 		
+	# Store position before collision detection
+	var old_position = global_position
+	
 	# Always call move_and_slide to apply physics
 	move_and_slide()
-		
-	# Send movement delta to server for multiplayer sync (only if moving)
-	if input_dir != Vector2.ZERO and room != null:
-		# Use the same speed calculation as local movement
-		var is_sprinting = Input.is_action_pressed("ui_accept") or Input.is_key_pressed(KEY_SHIFT)
-		var current_speed = speed * (sprint_multiplier if is_sprinting else 1.0)
-		var delta_x = input_dir.x * delta * current_speed
-		var delta_y = input_dir.y * delta * current_speed
-		room.send("move", {"x": delta_x, "y": delta_y})
+	
+	# Send ACTUAL movement delta to server (after collision resolution)
+	if room != null:
+		var actual_delta = global_position - old_position
+		# Only send if there was actual movement (avoid spam when hitting walls)
+		if actual_delta.length() > 0.1:
+			room.send("move", {"x": actual_delta.x, "y": actual_delta.y})
 			
 			# Optional: Send periodic heartbeat for sync
 			# room.send("position_heartbeat", {"x": global_position.x, "y": global_position.y})
 	
 	if view.has_method("update_from_velocity"):
 		view.update_from_velocity(velocity)  # Use the actual velocity
-	else:
-		velocity = Vector2.ZERO  # Stop if no input
 	
 	# Update local player position in VoiceChat for proximity calculations
 	_update_voice_chat_position()
