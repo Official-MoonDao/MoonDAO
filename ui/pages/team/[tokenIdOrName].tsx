@@ -554,35 +554,36 @@ export default function TeamDetailPage({
                         managerHatId={managerHatId}
                       />
                     </div>
-                    {isManager && hats?.[0]?.id && (
-                      <div
-                        id="button-container"
-                        className="pr-12 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
+                  )}
+                  {isManager && hats?.[0]?.id && (
+                    <div
+                      id="button-container"
+                      className="pr-12 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
+                    >
+                      {/* <StandardButton
+                        className="min-w-[200px] gradient-2 rounded-[5vmax]"
+                        onClick={() => {
+                          window.open(
+                            `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
+                          )
+                        }}
                       >
-                        {/* <StandardButton
-                          className="min-w-[200px] gradient-2 rounded-[5vmax]"
-                          onClick={() => {
-                            window.open(
-                              `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
-                            )
-                          }}
-                        >
-                          Manage Members
-                        </StandardButton> */}
-                        <TeamManageMembers
-                          account={account}
-                          hats={hats}
-                          hatsContract={hatsContract}
-                          teamContract={teamContract}
-                          teamId={tokenId}
-                          selectedChain={selectedChain}
-                          multisigAddress={nft.owner}
-                          adminHatId={adminHatId}
-                          managerHatId={managerHatId}
-                        />
-                      </div>
-                    )}
-                  </div>
+                        Manage Members
+                      </StandardButton> */}
+                      <TeamManageMembers
+                        account={account}
+                        hats={hats}
+                        hatsContract={hatsContract}
+                        teamContract={teamContract}
+                        teamId={tokenId}
+                        selectedChain={selectedChain}
+                        multisigAddress={nft.owner}
+                        adminHatId={adminHatId}
+                        managerHatId={managerHatId}
+                      />
+                    </div>
+                  )}
+                </div>
                 <div className="mt-4">
                   {hats?.[0].id && (
                     <TeamMembers
