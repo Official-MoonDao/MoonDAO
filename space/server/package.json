@@ -25,6 +25,11 @@
     "build": "tsc -p .",
     "start": "node dist/index.js",
     "dev": "JWT_SECRET=devsecret ts-node src/index.ts",
-    "seat:test": "node ./scripts/seat-test.mjs"
+    "seat:test": "node ./scripts/seat-test.mjs",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "docker-compose restart",
+    "docker:rebuild": "docker-compose down && docker-compose build --no-cache && docker-compose up -d"
   }
 }

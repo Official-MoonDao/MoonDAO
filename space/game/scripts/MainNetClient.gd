@@ -258,23 +258,9 @@ func _setup_room_handlers() -> void:
 		if not team_room_manager.team_room_exited.is_connected(_on_team_room_exited):
 			team_room_manager.team_room_exited.connect(_on_team_room_exited)
 	
-	# Expose room to JavaScript for WebRTC signaling (only if using WebRTC, not LiveKit)
-	if OS.has_feature("web") and Engine.has_singleton("JavaScriptBridge"):
-		# Check if we're using LiveKit instead of WebRTC
-		var using_livekit = false
-		if voice_chat and voice_chat.has_method("get_script"):
-			var script_path = str(voice_chat.get_script().get_path())
-			if "VoiceChat.gd" in script_path:
-				print("MainNetClient: 🎙️ VoiceChat wrapper detected - using LiveKit SFU, skipping WebRTC setup")
-				using_livekit = true
-		
-		if not using_livekit:
-			print("MainNetClient: 🎤 Setting up WebRTC P2P signaling...")
-			JavaScriptBridge.eval("window.godotColyseusRoom = window.colyseusRoom || null;")
-			# We'll set the actual room reference when we have it available
-			_expose_room_to_javascript()
-		else:
-			print("MainNetClient: ✅ LiveKit SFU mode - no WebRTC timer needed")
+	# We're using LiveKit for voice chat - no WebRTC setup needed
+	if voice_chat:
+		print("MainNetClient: ✅ Using LiveKit voice chat system")
 	
 	print("MainNetClient: joined room: ", room_name)
 

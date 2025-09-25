@@ -195,17 +195,14 @@ func setup_glass_morphism_ui() -> void:
 	print("UI: Final positions - Panel: ", glass_panel.position, " Button: ", mic_button.position)
 
 func connect_voice_chat() -> void:
-	print("UI: 🔍 Searching for voice chat node...")
+	print("UI: �� Searching for LiveKit voice chat system...")
 	print("UI: 🔍 Current node path: ", get_path())
 	
-	# Try multiple paths to find voice chat - prioritize VoiceChat wrapper over direct WebRTC
+	# Only look for VoiceChat wrapper (which uses LiveKit) - no WebRTC references
 	var paths_to_try = [
-		"../../VoiceChat",           # Main/VoiceChat compatibility wrapper (PRIORITY)
-		"/root/Main/VoiceChat",      # Absolute compatibility wrapper fallback
-		"../VoiceChat",              # Alternative compatibility wrapper
-		"../../WebRTCVoiceManager",  # Main/WebRTCVoiceManager from Main/UI/GameUI (fallback)
-		"../WebRTCVoiceManager",     # Alternative if structure is different
-		"/root/Main/WebRTCVoiceManager",  # Absolute path as fallback
+		"../../VoiceChat",           # Main/VoiceChat wrapper (PRIORITY)
+		"/root/Main/VoiceChat",      # Absolute wrapper fallback
+		"../VoiceChat",              # Alternative wrapper path
 	]
 	
 	for path in paths_to_try:
@@ -217,14 +214,14 @@ func connect_voice_chat() -> void:
 			if candidate.has_method("set_voice_enabled") and candidate.has_method("get_voice_enabled"):
 				voice_chat = candidate
 				print("UI: ✅ CONFIRMED voice chat node at path: ", path)
-				print("UI: ✅ Connected to: ", candidate.name, " which should be VoiceChat wrapper")
+				print("UI: ✅ Connected to: ", candidate.name, " (LiveKit voice system)")
 				break
 			else:
 				print("UI: ❌ Node doesn't have voice chat methods: ", path)
 		else:
 			print("UI: ❌ Path failed: ", path)
 	
-	# Manual search as final fallback
+	# Manual search as fallback
 	if not voice_chat:
 		print("UI: Trying manual search...")
 		var main_node = get_node_or_null("../..")
@@ -233,8 +230,8 @@ func connect_voice_chat() -> void:
 			print("UI: Main node children: ")
 			for child in main_node.get_children():
 				print("  - ", child.name, " (", child.get_class(), ") script: ", child.get_script())
-				# Look for WebRTCVoiceManager or VoiceChat
-				if child.name == "WebRTCVoiceManager" or child.name == "VoiceChat":
+				# Only look for VoiceChat (LiveKit wrapper)
+				if child.name == "VoiceChat":
 					print("UI: Found voice chat node, checking methods...")
 					print("UI: Has set_voice_enabled: ", child.has_method("set_voice_enabled"))
 					print("UI: Has get_voice_enabled: ", child.has_method("get_voice_enabled"))
@@ -265,7 +262,7 @@ func connect_voice_chat() -> void:
 			_recursive_node_search(get_tree().root)
 	
 	if voice_chat:
-		print("UI: ✅ Connected to voice chat successfully!")
+		print("UI: ✅ Connected to LiveKit voice chat successfully!")
 		print("UI: Voice chat type: ", voice_chat.get_class())
 		print("UI: Voice chat name: ", voice_chat.name)
 		if voice_chat.has_method("get_voice_enabled"):
@@ -275,12 +272,13 @@ func connect_voice_chat() -> void:
 		
 		# Connect to microphone ready signal
 		if voice_chat.has_signal("microphone_ready_changed"):
-			voice_chat.microphone_ready_changed.connect(_on_microphone_ready_changed)
-			print("UI: ✅ Connected to microphone_ready_changed signal")
+			if not voice_chat.microphone_ready_changed.is_connected(_on_microphone_ready_changed):
+				voice_chat.microphone_ready_changed.connect(_on_microphone_ready_changed)
+				print("UI: ✅ Connected to microphone_ready_changed signal")
 		else:
 			print("UI: ⚠️ microphone_ready_changed signal not found")
 	else:
-		print("UI: ❌ ERROR - Voice chat node not found after all attempts!")
+		print("UI: ❌ ERROR - LiveKit voice chat system not found!")
 
 func _on_mic_button_pressed() -> void:
 	print("UI: 🎤 BUTTON PRESSED! - Current state: ", microphone_enabled)

@@ -139,7 +139,8 @@ func _start_voice_chat() -> void:
 			
 			const voiceManager = window.webrtcVoiceManager;
 			
-			// Get microphone access
+			// Only get microphone access if we're actually going to talk
+			// For listening-only, we skip microphone access
 			if (!voiceManager.localStream) {
 				console.log('🎤 Requesting microphone access...');
 				voiceManager.localStream = await navigator.mediaDevices.getUserMedia({
@@ -644,12 +645,89 @@ func _create_offers_to_all_players() -> void:
 		
 	print("WebRTCVoiceManager: 🎤 Total offers created: ", offers_created)
 
+func _initialize_audio_context_for_listening() -> void:
+	"""Initialize audio context for listening without requesting microphone"""
+	print("WebRTCVoiceManager: Initializing audio context for listening...")
+	
+	if not OS.has_feature("web"):
+		print("WebRTCVoiceManager: ❌ WebRTC voice chat only supported on web platform")
+		return
+	
+	if not Engine.has_singleton("JavaScriptBridge"):
+		print("WebRTCVoiceManager: ❌ JavaScriptBridge not available")
+		return
+	
+	# Initialize audio context only (no microphone access needed for listening)
+	var js_init_listening = """
+	(async function() {
+		console.log('🎧 Initializing audio context for listening...');
+		
+		try {
+			// Initialize if not already done
+			if (!window.webrtcVoiceManager) {
+				window.webrtcVoiceManager = {
+					localStream: null,
+					peerConnections: new Map(),
+					audioContext: null,
+					isEnabled: false
+				};
+			}
+			
+			const voiceManager = window.webrtcVoiceManager;
+			
+			// Create audio context for proximity volume control (no microphone needed)
+			if (!voiceManager.audioContext) {
+				voiceManager.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+				console.log('✅ Audio context created for listening, state:', voiceManager.audioContext.state);
+			}
+			
+			// Resume audio context if suspended (required for audio playback)
+			if (voiceManager.audioContext.state === 'suspended') {
+				// User interaction is required to resume audio context
+				console.log('🎧 Audio context is suspended - will resume on user interaction');
+				
+				// Add event listeners to resume audio context on user interaction
+				const resumeAudioContext = async () => {
+					try {
+						await voiceManager.audioContext.resume();
+						console.log('✅ Audio context resumed for listening, state:', voiceManager.audioContext.state);
+					} catch (error) {
+						console.error('❌ Failed to resume audio context:', error);
+					}
+				};
+				
+				document.addEventListener('click', resumeAudioContext, { once: true });
+				document.addEventListener('keydown', resumeAudioContext, { once: true });
+				document.addEventListener('touchstart', resumeAudioContext, { once: true });
+			}
+			
+			voiceManager.isEnabled = true;
+			console.log('✅ Audio context initialized for listening');
+			
+			// Set up helper functions
+			""" + _get_webrtc_helper_functions() + """
+			
+			return true;
+			
+		} catch (error) {
+			console.error('❌ Failed to initialize audio context for listening:', error);
+			return false;
+		}
+	})();
+	"""
+	
+	JavaScriptBridge.eval(js_init_listening)
+	print("WebRTCVoiceManager: ✅ Audio context initialization for listening started")
+
 func _join_voice_chat_for_listening() -> void:
 	"""Automatically join voice chat for listening, even without microphone"""
 	if not room:
 		return
 	
 	print("WebRTCVoiceManager: 🎤 Auto-joining voice chat for listening...")
+	
+	# Initialize audio context first (without microphone)
+	_initialize_audio_context_for_listening()
 	
 	# Send join message to get list of current voice chat participants
 	room.send("voice_chat_join", {})
