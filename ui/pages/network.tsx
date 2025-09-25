@@ -207,7 +207,6 @@ export default function Network({
         'Team Tier'
       )?.value
       const isFeatured = featuredTeams.includes(nft.metadata.name)
-
       const link = `/${tab === 'teams' ? 'team' : 'citizen'}/${
         tab === 'teams'
           ? generatePrettyLink(nft.metadata.name)

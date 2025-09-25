@@ -36,7 +36,7 @@ export default function TeamTreasury({
   )
 
   return (
-    <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-24 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
+    <div className="w-full p-6">
       {safeModalEnabled && isSigner && (
         <SafeModal
           safeData={safeData}
@@ -59,20 +59,21 @@ export default function TeamTreasury({
         />
       )}
       <div className="flex flex-col">
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center pr-12">
-          <div className="flex gap-5 opacity-[50%]">
+        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center mb-6">
+          <div className="flex gap-5">
             <Image
               src={'/assets/icon-treasury.svg'}
               alt="Treasury icon"
               width={30}
               height={30}
+              className="opacity-70"
             />
-            <h2 className="header font-GoodTimes">Treasury</h2>
+            <h2 className="font-GoodTimes text-2xl text-white">Treasury</h2>
           </div>
           {safeData && isSigner && (
-            <div className="flex flex-col md:flex-row md:flex-wrap gap-2">
+            <div className="flex flex-col sm:flex-row gap-3">
               <StandardButton
-                className="min-w-[200px] gradient-2 rounded-[5vmax]"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl py-3 px-6 font-semibold transition-all duration-200 hover:scale-105"
                 onClick={() => {
                   setSafeSendModalEnabled(true)
                 }}
@@ -80,7 +81,7 @@ export default function TeamTreasury({
                 {'Send'}
               </StandardButton>
               <StandardButton
-                className="min-w-[200px] gradient-2 rounded-[5vmax]"
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl py-3 px-6 font-semibold transition-all duration-200 hover:scale-105"
                 onClick={() => {
                   setSafeReceiveModalEnabled(true)
                 }}
@@ -88,7 +89,7 @@ export default function TeamTreasury({
                 {'Receive'}
               </StandardButton>
               <StandardButton
-                className="min-w-[200px] gradient-2 rounded-[5vmax]"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl py-3 px-6 font-semibold transition-all duration-200 hover:scale-105"
                 onClick={() => {
                   setSafeModalEnabled(true)
                 }}
@@ -98,14 +99,15 @@ export default function TeamTreasury({
             </div>
           )}
         </div>
-        <div className="mt-4 flex items-center gap-4"></div>
-        <SafeBalances
-          safeBalances={safeBalances}
-          isLoading={isLoadingBalances}
-        />
+        <div className="mt-4">
+          <SafeBalances
+            safeBalances={safeBalances}
+            isLoading={isLoadingBalances}
+          />
+        </div>
 
         {isSigner && (
-          <div className="mt-4 ml-4">
+          <div className="mt-6">
             <SafeTransactions address={address} safeData={safeData} />
           </div>
         )}
