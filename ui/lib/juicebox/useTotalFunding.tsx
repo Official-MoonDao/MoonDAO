@@ -25,22 +25,24 @@ export default function useTotalFunding(projectId: any) {
     abi: JBV5TerminalStore.abi as any,
     chain: DEFAULT_CHAIN_V5,
   })
-  const { data: balance } = useRead({
+  const { data: balance, isLoading: isLoadingBalance } = useRead({
     contract: jbTerminalStoreContract,
     method: 'balanceOf' as string,
     params: [JBV5_TERMINAL_ADDRESS, projectId, JB_NATIVE_TOKEN_ADDRESS],
   })
-  const { data: usedPayoutLimit } = useRead({
-    contract: jbTerminalStoreContract,
-    method: 'usedPayoutLimitOf' as string,
-    params: [
-      JBV5_TERMINAL_ADDRESS,
-      projectId,
-      JB_NATIVE_TOKEN_ADDRESS,
-      2, // Cycle number 2 for payout cycle
-      JB_NATIVE_TOKEN_ID,
-    ],
-  })
+  const { data: usedPayoutLimit, isLoading: isLoadingUsedPayoutLimit } =
+    useRead({
+      contract: jbTerminalStoreContract,
+      method: 'usedPayoutLimitOf' as string,
+      params: [
+        JBV5_TERMINAL_ADDRESS,
+        projectId,
+        JB_NATIVE_TOKEN_ADDRESS,
+        2, // Cycle number 2 for payout cycle
+        JB_NATIVE_TOKEN_ID,
+      ],
+    })
+  const isLoading = isLoadingBalance || isLoadingUsedPayoutLimit
   const refetch = () => {
     router.reload()
   }
@@ -55,5 +57,6 @@ export default function useTotalFunding(projectId: any) {
   return {
     totalFunding,
     refetch,
+    isLoading,
   }
 }
