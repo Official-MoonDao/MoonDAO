@@ -43,7 +43,7 @@ contract CreatorTest is Test {
         IHats hats = IHats(address(hatsBase));
         HatsModuleFactory hatsFactory = deployModuleFactory(hats, SALT, "");
         PassthroughModule passthrough = new PassthroughModule("");
-        address gnosisSafeAddress = address(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        address gnosisSafeSingleton = address(0x3E5c63644E683549055b9Be8653de26E0B4CD36E); // Gnosis Safe singleton on Sepolia
         GnosisSafeProxyFactory proxyFactory = new GnosisSafeProxyFactory();
 
 
@@ -53,7 +53,8 @@ contract CreatorTest is Test {
         table = new MoonDaoTeamTableland("team");
 
         team = new MoonDAOTeam("erc5369", "ERC5643", user4, address(hats), address(discountList));
-        creator = new MoonDAOTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(team), gnosisSafeAddress, address(proxyFactory), address(table), address(whitelist));
+        address[] memory authorizedSigners = new address[](0);
+        creator = new MoonDAOTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(team), gnosisSafeSingleton, address(proxyFactory), address(table), address(whitelist), authorizedSigners);
 
         creator.setOpenAccess(true);
 
@@ -70,7 +71,25 @@ contract CreatorTest is Test {
 
     function testMint() public {
         vm.prank(user1);
-        creator.createMoonDAOTeam{value: 0.555 ether}(uri, uri, uri, "name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
+        
+        MoonDAOTeamCreator.HatURIs memory hatURIs = MoonDAOTeamCreator.HatURIs({
+            adminHatURI: uri,
+            managerHatURI: uri,
+            memberHatURI: uri
+        });
+        
+        MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
+            name: "name",
+            bio: "bio",
+            image: "image",
+            twitter: "twitter",
+            communications: "communications",
+            website: "website",
+            _view: "view",
+            formId: "formId"
+        });
+        
+        creator.createMoonDAOTeam{value: 0.555 ether}(hatURIs, metadata, new address[](0));
     }
 
 
