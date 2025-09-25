@@ -85,7 +85,6 @@ import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
-import CitizenReferral from '../subscription/CitizenReferral'
 import Quests from '../xp/Quests'
 
 // import Quests from '@/components/xp/Quests'
@@ -119,14 +118,19 @@ function getDaysLeft(proposal: any): number {
 // Function to count unique countries from location data
 function countUniqueCountries(locations: any[]): number {
   if (!locations || locations.length === 0) return 25
-  
+
   try {
     const countries = new Set(
       locations
-        .map((loc) => loc.country || loc.formattedAddress?.split(',').pop()?.trim() || 'Unknown')
-        .filter(country => country && country !== 'Unknown' && country !== '')
+        .map(
+          (loc) =>
+            loc.country ||
+            loc.formattedAddress?.split(',').pop()?.trim() ||
+            'Unknown'
+        )
+        .filter((country) => country && country !== 'Unknown' && country !== '')
     )
-    
+
     // Return fallback of 25 if no valid countries found
     return countries.size > 0 ? countries.size : 25
   } catch (error) {
@@ -468,14 +472,6 @@ export default function SingedInDashboard({
             <div className="order-2">
               <WeeklyRewardPool />
             </div>
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
-              <p className="text-gray-300 text-sm">
-                Were you referred to the Space Acceleration Network?
-              </p>
-              <div className="space-y-8 h-full mt-4">
-                <CitizenReferral />
-              </div>
-            </div>
 
             {/* Key Metrics Card */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
@@ -789,9 +785,24 @@ export default function SingedInDashboard({
                                   179 - i
                                 }: Study on Lunar Surface Selection For Settlement`}
                             </h4>
-                            {i === 0 && (
+                            {proposal.status === 'Voting' && (
                               <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
                                 Active
+                              </span>
+                            )}
+                            {proposal.status === 'Approved' && (
+                              <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
+                                Approved
+                              </span>
+                            )}
+                            {proposal.status === 'Cancelled' && (
+                              <span className="bg-red-500/20 text-red-300 text-xs px-3 py-1 rounded-full border border-red-500/30">
+                                Cancelled
+                              </span>
+                            )}
+                            {proposal.status === 'Rejected' && (
+                              <span className="bg-red-500/20 text-red-300 text-xs px-3 py-1 rounded-full border border-red-500/30">
+                                Rejected
                               </span>
                             )}
                           </div>
@@ -822,9 +833,11 @@ export default function SingedInDashboard({
                                 )}
                               </div>
                             </div>
-                            <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
-                              Vote
-                            </div>
+                            {proposal.status === 'Voting' && (
+                              <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
+                                Vote
+                              </div>
+                            )}
                           </div>
                         </div>
                       </Link>
@@ -1055,16 +1068,14 @@ export default function SingedInDashboard({
                   Contribute to space exploration initiatives
                 </p>
               </div>
-              
+
               {/* Stats next to title */}
               <div className="flex gap-4">
                 <div className="bg-black/20 rounded-lg px-4 py-2 border border-green-500/20">
                   <div className="text-lg font-bold text-white">
                     {Math.round(ethBudget)} ETH
                   </div>
-                  <div className="text-green-200 text-xs">
-                    Quarterly Budget
-                  </div>
+                  <div className="text-green-200 text-xs">Quarterly Budget</div>
                 </div>
                 <div className="bg-black/20 rounded-lg px-4 py-2 border border-green-500/20">
                   <div className="text-lg font-bold text-white">
@@ -1074,7 +1085,7 @@ export default function SingedInDashboard({
                 </div>
               </div>
             </div>
-            
+
             {/* Buttons on the right */}
             <div className="flex gap-3">
               <StandardButton
@@ -1096,32 +1107,34 @@ export default function SingedInDashboard({
             <div>
               {/* Projects Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {currentProjects.slice(0, 8).map((project: any, index: number) => (
-                  <Link key={index} href={`/project/${project.id}`} passHref>
-                    <div className="bg-black/30 rounded-xl p-4 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/20 transition-all duration-200 h-32 flex flex-col">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-semibold text-white text-sm flex-1 mr-2">
-                          {project.name}
-                        </h4>
-                        <span
-                          className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
-                            project.active
-                              ? 'bg-green-500/20 text-green-300'
-                              : 'bg-gray-500/20 text-gray-300'
-                          }`}
-                        >
-                          {project.active ? 'Active' : 'Inactive'}
-                        </span>
+                {currentProjects
+                  .slice(0, 8)
+                  .map((project: any, index: number) => (
+                    <Link key={index} href={`/project/${project.id}`} passHref>
+                      <div className="bg-black/30 rounded-xl p-4 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/20 transition-all duration-200 h-32 flex flex-col">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-semibold text-white text-sm flex-1 mr-2">
+                            {project.name}
+                          </h4>
+                          <span
+                            className={`px-2 py-1 rounded text-xs flex-shrink-0 ${
+                              project.active
+                                ? 'bg-green-500/20 text-green-300'
+                                : 'bg-gray-500/20 text-gray-300'
+                            }`}
+                          >
+                            {project.active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        <p className="text-green-100 text-xs leading-relaxed flex-1 overflow-hidden">
+                          {project.description?.length > 100
+                            ? `${project.description.substring(0, 100)}...`
+                            : project.description || 'No description available'}
+                        </p>
                       </div>
-                      <p className="text-green-100 text-xs leading-relaxed flex-1 overflow-hidden">
-                        {project.description?.length > 100
-                          ? `${project.description.substring(0, 100)}...`
-                          : project.description || 'No description available'}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-                
+                    </Link>
+                  ))}
+
                 {/* Show more projects indicator if there are more than 8 */}
                 {currentProjects.length > 8 && (
                   <div className="bg-black/30 rounded-xl p-4 border border-green-500/10 h-32 flex items-center justify-center">
@@ -1129,7 +1142,9 @@ export default function SingedInDashboard({
                       <div className="text-lg font-bold text-green-300 mb-1">
                         +{currentProjects.length - 8}
                       </div>
-                      <p className="text-green-200 text-xs mb-2">More Projects</p>
+                      <p className="text-green-200 text-xs mb-2">
+                        More Projects
+                      </p>
                       <StandardButton
                         className="bg-green-600/20 hover:bg-green-600/40 text-green-300 text-xs px-3 py-1 rounded-lg transition-all"
                         link="/projects"

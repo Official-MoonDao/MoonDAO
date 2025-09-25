@@ -229,9 +229,11 @@ export const TEAM_ADDRESSES: Index = {
 }
 
 export const TEAM_CREATOR_ADDRESSES: Index = {
-  arbitrum: '0x40C44A32e92358B3407629B1a69225b1858Bc5fe',
-  sepolia: '0x1eafC528435e49Af2b3E970A12Ab2Dddb929bAc1',
+  arbitrum: '0xb11017A04dB4503066Bfbb8acB6a71Fc26869C9d', //v3
+  sepolia: '0xbb33d877005aA1bF00F9216ec6bad66ff93eBE86', //v3
 }
+// team creator arb v2: 0x40C44A32e92358B3407629B1a69225b1858Bc5fe
+// team creator arb v1: 0x203f481336A212Eff43E84761792E307975Cf27b
 
 export const TEAM_TABLE_ADDRESSES: Index = {
   arbitrum: '0x36A57e45A1F8e378AA3e35bD8799bBfB5b4C00b3',

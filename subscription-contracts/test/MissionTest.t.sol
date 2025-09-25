@@ -34,10 +34,10 @@ import "base/Config.sol";
 contract MissionTest is Test, Config {
 
     address zero = address(0);
-    address user1 = address(0x1);
-    address teamAddress = address(0x2);
-    address user2 = address(0x3);
-    address TREASURY = address(0x4);
+    address user1 = address(0x100); // Use non-precompile address
+    address teamAddress = address(0x200);
+    address user2 = address(0x300);
+    address TREASURY = address(0x400);
     IWETH9 public _WETH9 = IWETH9(address(new WETH()));
 
     bytes32 internal constant SALT = bytes32(abi.encode(0x4a75));
@@ -65,7 +65,7 @@ contract MissionTest is Test, Config {
         IHats hats = IHats(address(hatsBase));
         HatsModuleFactory hatsFactory = deployModuleFactory(hats, SALT, "");
         PassthroughModule passthrough = new PassthroughModule("");
-        address gnosisSafeAddress = address(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        address gnosisSafeSingleton = address(0x3E5c63644E683549055b9Be8653de26E0B4CD36E); // Gnosis Safe singleton on Sepolia
         GnosisSafeProxyFactory proxyFactory = new GnosisSafeProxyFactory();
 
         Whitelist teamWhitelist = new Whitelist();
@@ -73,8 +73,10 @@ contract MissionTest is Test, Config {
 
         moonDAOTeamTable = new MoonDaoTeamTableland("MoonDaoTeamTable");
         moonDAOTeam = new MoonDAOTeam("erc5369", "ERC5643", TREASURY, address(hatsBase), address(teamDiscountList));
-        moonDAOTeamCreator = new MoonDAOTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(moonDAOTeam), gnosisSafeAddress, address(proxyFactory), address(moonDAOTeamTable), address(teamWhitelist));
+        address[] memory authorizedSigners = new address[](0);
+        moonDAOTeamCreator = new MoonDAOTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(moonDAOTeam), gnosisSafeSingleton, address(proxyFactory), address(moonDAOTeamTable), address(teamWhitelist), authorizedSigners);
         jbDirectory = IJBDirectory(JB_V5_DIRECTORY);
+
 
         uint256 topHatId = hats.mintTopHat(user1, "", "");
         uint256 moonDAOTeamAdminHatId = hats.createHat(topHatId, "", 1, TREASURY, TREASURY, true, "");
@@ -98,7 +100,25 @@ contract MissionTest is Test, Config {
 
     function _createTeam() internal {
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
+        
+        MoonDAOTeamCreator.HatURIs memory hatURIs = MoonDAOTeamCreator.HatURIs({
+            adminHatURI: "",
+            managerHatURI: "",
+            memberHatURI: ""
+        });
+        
+        MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
+            name: "name",
+            bio: "bio",
+            image: "image",
+            twitter: "twitter",
+            communications: "communications",
+            website: "website",
+            _view: "view",
+            formId: "formId"
+        });
+        
+        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}(hatURIs, metadata, new address[](0));
         vm.stopPrank();
     }
 

@@ -71,6 +71,7 @@ import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import StandardButton from '@/components/layout/StandardButton'
 import SafeModal from '@/components/safe/SafeModal'
 import Action from '@/components/subscription/Action'
 import GeneralActions from '@/components/subscription/GeneralActions'
@@ -347,7 +348,7 @@ export default function TeamDetailPage({
                     )}
 
                     {/*Subscription Extension Container*/}
-                    {/* {isManager || address === nft.owner ? (
+                    {isManager || address === nft.owner ? (
                       <div id="manager-container" className="relative">
                         {expiresAt && (
                           <div id="expires-container" className="">
@@ -359,13 +360,13 @@ export default function TeamDetailPage({
                                 id="extend-sub-button"
                                 className="gradient-2 rounded-[2vmax] rounded-tl-[10px] md:rounded-tl-[2vmax] md:rounded-bl-[10px]"
                               >
-                                <Button
+                                <StandardButton
                                   onClick={() => {
                                     setTeamSubscriptionModalEnabled(true)
                                   }}
                                 >
                                   {'Extend Plan'}
-                                </Button>
+                                </StandardButton>
                               </div>
                             </div>
                           </div>
@@ -373,16 +374,16 @@ export default function TeamDetailPage({
                       </div>
                     ) : (
                       <></>
-                    )} */}
+                    )}
                   </div>
-                  {/* {isManager || address === nft.owner ? (
+                  {isManager || address === nft.owner ? (
                     <p className="opacity-50 mt-2 text-sm">
                       {'Exp: '}
                       {new Date(expiresAt?.toString() * 1000).toLocaleString()}
                     </p>
                   ) : (
                     <></>
-                  )} */}
+                  )}
                   <div className="mt-4">
                     <Address address={nft.owner} />
                   </div>
@@ -462,7 +463,7 @@ export default function TeamDetailPage({
           id="page-container"
           className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
         >
-          {!isDeleted && (
+          {!isDeleted && subIsValid && (
             <div id="entity-actions-container" className=" z-30">
               {isManager || address === nft.owner ? (
                 <div
@@ -507,25 +508,29 @@ export default function TeamDetailPage({
             </div>
           )}
 
-          <TeamTreasury
-            isSigner={isSigner}
-            safeData={safeData}
-            multisigAddress={nft.owner}
-            safeOwners={safeOwners}
-          />
+          {subIsValid && (
+            <TeamTreasury
+              isSigner={isSigner}
+              safeData={safeData}
+              multisigAddress={nft.owner}
+              safeOwners={safeOwners}
+            />
+          )}
 
           {/* Header and socials */}
-          <TeamMissions
-            selectedChain={selectedChain}
-            isManager={isManager}
-            teamId={tokenId}
-            missionTableContract={missionTableContract}
-            missionCreatorContract={missionCreatorContract}
-            jbControllerContract={jbControllerContract}
-            jbDirectoryContract={jbDirectoryContract}
-            jbTokensContract={jbTokensContract}
-            teamContract={teamContract}
-          />
+          {subIsValid && (
+            <TeamMissions
+              selectedChain={selectedChain}
+              isManager={isManager}
+              teamId={tokenId}
+              missionTableContract={missionTableContract}
+              missionCreatorContract={missionCreatorContract}
+              jbControllerContract={jbControllerContract}
+              jbDirectoryContract={jbDirectoryContract}
+              jbTokensContract={jbTokensContract}
+              teamContract={teamContract}
+            />
+          )}
           {subIsValid && !isDeleted ? (
             <div className="z-50 flex flex-col gap-5 mb-[50px]">
               {/* Team Actions */}
@@ -554,7 +559,7 @@ export default function TeamDetailPage({
                       />
                       <h2 className="header font-GoodTimes">Meet the Team</h2>
                     </div>
-                    {isManager && (
+                    {isManager && hats?.[0]?.id && (
                       <div
                         id="button-container"
                         className="pr-12 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
