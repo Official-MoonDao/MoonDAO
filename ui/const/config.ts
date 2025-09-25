@@ -291,6 +291,8 @@ export const JBV5_DIRECTORY_ADDRESS =
   '0x0061E516886A0540F63157f112C0588eE0651dCF'
 export const JBV5_TERMINAL_ADDRESS =
   '0x2dB6d704058E552DeFE415753465df8dF0361846'
+export const JBV5_TERMINAL_STORE_ADDRESS =
+  '0xfE33B439Ec53748C87DcEDACb83f05aDd5014744'
 export const JB_NATIVE_TOKEN_ADDRESS =
   '0x000000000000000000000000000000000000EEEe'
 export const JB_NATIVE_TOKEN_ID = 61166
@@ -534,4 +536,5 @@ export const MOONDAO_MISSIONS_SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? 'https://api.studio.thegraph.com/query/111994/moon-dao-missions-arb/version/latest'
     : 'https://api.studio.thegraph.com/query/111994/moon-dao-missions-sepolia/version/latest'
+
 export const TICK_SPACING = 200

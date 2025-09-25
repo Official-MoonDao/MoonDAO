@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { JBVersion } from 'juice-sdk-core'
 import { JBProjectProvider } from 'juice-sdk-react'
 import { createConfig, http, WagmiProvider } from 'wagmi'
 import { mainnet, arbitrum, base, sepolia } from 'wagmi/chains'
@@ -32,6 +33,7 @@ export default function JuiceProviders({
         <JBProjectProvider
           projectId={BigInt(projectId)}
           chainId={selectedChain.id as any}
+          version={5}
         >
           {children}
         </JBProjectProvider>

@@ -3,7 +3,7 @@ import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
 import JBV5Tokens from 'const/abis/JBV5Tokens.json'
-import MissionCreatorABI from 'const/abis/MissionCreator.json'
+import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -79,7 +79,7 @@ export default function Launch({ missions }: any) {
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
     chain: selectedChain,
-    abi: MissionCreatorABI as any,
+    abi: MissionCreator.abi as any,
   })
 
   const missionTableContract = useContract({

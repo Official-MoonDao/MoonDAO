@@ -3,7 +3,7 @@ import JBV5Directory from 'const/abis/JBV5Directory.json'
 import JBV5Token from 'const/abis/JBV5Token.json'
 import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import LaunchPadPayHookABI from 'const/abis/LaunchPadPayHook.json'
-import MissionCreatorABI from 'const/abis/MissionCreatorSep.json'
+import MissionCreator from 'const/abis/MissionCreator.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
@@ -48,7 +48,7 @@ const jbDirectoryContract = getContract({
 const missionCreatorContract = getContract({
   client: serverClient,
   address: MISSION_CREATOR_ADDRESSES[CHAIN_SLUG],
-  abi: MissionCreatorABI as any,
+  abi: MissionCreator.abi as any,
   chain: CHAIN,
 })
 
@@ -226,7 +226,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         contract: jbDirectoryContract,
         method: 'primaryTerminalOf' as string,
         params: [missionRow.projectId, JB_NATIVE_TOKEN_ADDRESS],
-      }).catch(() => '0x0000000000000000000000000000000000000000'), // Default to zero address if fetch fails
+      }).catch((e) => '0x0000000000000000000000000000000000000000'), // Default to zero address if fetch fails
     ])
 
     const ipfsHash = metadataURI.startsWith('ipfs://')

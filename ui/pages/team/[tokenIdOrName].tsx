@@ -17,7 +17,7 @@ import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import JobBoardTableABI from 'const/abis/JobBoardTable.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
-import MissionCreatorABI from 'const/abis/MissionCreator.json'
+import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -146,7 +146,7 @@ export default function TeamDetailPage({
 
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
-    abi: MissionCreatorABI,
+    abi: MissionCreator.abi,
     chain: selectedChain,
   })
 

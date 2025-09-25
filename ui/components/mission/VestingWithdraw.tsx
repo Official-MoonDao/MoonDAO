@@ -1,4 +1,4 @@
-import MissionCreatorABI from 'const/abis/MissionCreator.json'
+import MissionCreator from 'const/abis/MissionCreator.json'
 import { MISSION_CREATOR_ADDRESSES, ZERO_ADDRESS } from 'const/config'
 import { useContext, useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
@@ -29,7 +29,7 @@ export default function VestingWithdraw({
 
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
-    abi: MissionCreatorABI as any,
+    abi: MissionCreator.abi as any,
     chain: selectedChain,
   })
 

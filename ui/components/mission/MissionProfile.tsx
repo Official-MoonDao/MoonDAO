@@ -6,8 +6,7 @@ import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
 import JBV5Token from 'const/abis/JBV5Token.json'
 import JBV5Tokens from 'const/abis/JBV5Tokens.json'
-// FIXME
-import MissionCreatorABI from 'const/abis/MissionCreatorSep.json'
+import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import PoolDeployerABI from 'const/abis/PoolDeployer.json'
 import TeamABI from 'const/abis/Team.json'
@@ -69,7 +68,7 @@ const CHAIN_SLUG = getChainSlug(CHAIN)
 const missionCreatorContract = getContract({
   client: serverClient,
   address: MISSION_CREATOR_ADDRESSES[CHAIN_SLUG],
-  abi: MissionCreatorABI as any,
+  abi: MissionCreator.abi as any,
   chain: CHAIN,
 })
 
