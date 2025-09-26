@@ -56,7 +56,10 @@ import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
 import { Project } from '@/lib/project/useProjectData'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
-import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import {
+  generatePrettyLink,
+  generatePrettyLinkWithId,
+} from '@/lib/subscription/pretty-links'
 import { teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -922,31 +925,33 @@ export default function SingedInDashboard({
               <div className="space-y-3">
                 {filteredTeams && filteredTeams.length > 0 ? (
                   filteredTeams.slice(0, 5).map((team: any, index: number) => (
-                    <div
+                    <Link
                       key={team.id || index}
-                      className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer"
+                      href={`/team/${generatePrettyLink(team.name)}`}
                     >
-                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                        {team.image ? (
-                          <IPFSRenderer
-                            src={team.image}
-                            alt={team.name}
-                            className="w-full h-full object-cover"
-                            width={100}
-                            height={100}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                            {team.name?.[0] || 'T'}
-                          </div>
-                        )}
+                      <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                        <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                          {team.image ? (
+                            <IPFSRenderer
+                              src={team.image}
+                              alt={team.name}
+                              className="w-full h-full object-cover"
+                              width={100}
+                              height={100}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                              {team.name?.[0] || 'T'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-white font-medium text-sm truncate">
+                            {team.name || 'Team'}
+                          </h4>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-sm truncate">
-                          {team.name || 'Team'}
-                        </h4>
-                      </div>
-                    </div>
+                    </Link>
                   ))
                 ) : (
                   <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
@@ -982,36 +987,38 @@ export default function SingedInDashboard({
                   newestListings
                     .slice(0, 3)
                     .map((listing: any, index: number) => (
-                      <div
+                      <Link
                         key={listing.id || index}
-                        className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer"
+                        href={`/team/${listing.teamId}?listing=${listing.id}`}
                       >
-                        <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                          {listing.image ? (
-                            <IPFSRenderer
-                              src={listing.image}
-                              alt={listing.title}
-                              className="w-full h-full object-cover"
-                              width={100}
-                              height={100}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                              <ShoppingBagIcon className="w-5 h-5" />
-                            </div>
-                          )}
+                        <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                          <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                            {listing.image ? (
+                              <IPFSRenderer
+                                src={listing.image}
+                                alt={listing.title}
+                                className="w-full h-full object-cover"
+                                width={100}
+                                height={100}
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                                <ShoppingBagIcon className="w-5 h-5" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-white font-medium text-sm truncate">
+                              {listing.title || 'Marketplace Item'}
+                            </h4>
+                            <p className="text-gray-400 text-xs">
+                              {listing.price && listing.currency
+                                ? `${listing.price} ${listing.currency}`
+                                : 'View details'}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-white font-medium text-sm truncate">
-                            {listing.title || 'Marketplace Item'}
-                          </h4>
-                          <p className="text-gray-400 text-xs">
-                            {listing.price && listing.currency
-                              ? `${listing.price} ${listing.currency}`
-                              : 'View details'}
-                          </p>
-                        </div>
-                      </div>
+                      </Link>
                     ))
                 ) : (
                   <div className="space-y-3">
