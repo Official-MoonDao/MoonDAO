@@ -137,7 +137,6 @@ export default function useJBProjectTimeline(
           startTimestamp,
           endTimestamp
         )
-        console.log('Query:', query)
         const requestBody = {
           query,
         }
@@ -149,9 +148,6 @@ export default function useJBProjectTimeline(
           },
           body: JSON.stringify(requestBody),
         })
-
-        console.log('Res:', res)
-        console.log('Res JSON:', await res.json())
 
         if (res.ok) {
           const data = await res.json()

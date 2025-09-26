@@ -317,6 +317,20 @@ module.exports = withTM(
           destination: '/launch',
           permanent: true,
         },
+        ...(process.env.NEXT_PUBLIC_ENV === 'prod'
+          ? [
+              {
+                source: '/launch',
+                destination: '/coming-soon?from=launch',
+                permanent: false,
+              },
+              {
+                source: '/mission/:tokenId',
+                destination: '/coming-soon?from=mission',
+                permanent: false,
+              },
+            ]
+          : []),
       ]
     },
     webpack: (config, { isServer }) => {
