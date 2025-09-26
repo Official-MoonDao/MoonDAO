@@ -55,7 +55,7 @@ contract MoonDAOTeamCreator is Ownable {
         string formId;
     }
 
-    constructor(address _hats, address _hatsModuleFactory, address _hatsPassthrough, address _moonDAOTeam, address _gnosisSingleton, address _gnosisSafeProxyFactory, address _table, address _whitelist, address[] memory _authorizedSigners) Ownable(msg.sender) {
+    constructor(address _hats, address _hatsModuleFactory, address _hatsPassthrough, address _moonDAOTeam, address _gnosisSingleton, address _gnosisSafeProxyFactory, address _table, address _whitelist) Ownable(msg.sender) {
         hats = IHats(_hats);
         moonDAOTeam = MoonDAOTeam(_moonDAOTeam);
         gnosisSingleton = _gnosisSingleton;
@@ -65,9 +65,6 @@ contract MoonDAOTeamCreator is Ownable {
 
         table = MoonDaoTeamTableland(_table);
         whitelist = Whitelist(_whitelist);
-        for (uint256 i = 0; i < _authorizedSigners.length; i++) {
-            authorizedSigners[_authorizedSigners[i]] = true;
-        }
     }
 
     function setAuthorizedSigner(address _authorizedSigner, bool _authorized) external onlyOwner {

@@ -52,8 +52,7 @@ contract ERC5643Test is Test {
       table = new MoonDAOTeamTable("MoonDAOTeamTable");
 
       team = new MoonDAOTeam("erc5369", "ERC5643", TREASURY, address(hatsBase), address(discountList));
-      address[] memory authorizedSigners = new address[](0);
-      creator = new MoonDAOTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(team), gnosisSafeSingleton, address(proxyFactory), address(table), address(whitelist), authorizedSigners);
+      creator = new MoonDAOTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(team), gnosisSafeSingleton, address(proxyFactory), address(table), address(whitelist));
 
       creator.setOpenAccess(true);
 

@@ -73,8 +73,7 @@ contract MissionTest is Test, Config {
 
         moonDAOTeamTable = new MoonDaoTeamTableland("MoonDaoTeamTable");
         moonDAOTeam = new MoonDAOTeam("erc5369", "ERC5643", TREASURY, address(hatsBase), address(teamDiscountList));
-        address[] memory authorizedSigners = new address[](0);
-        moonDAOTeamCreator = new MoonDAOTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(moonDAOTeam), gnosisSafeSingleton, address(proxyFactory), address(moonDAOTeamTable), address(teamWhitelist), authorizedSigners);
+        moonDAOTeamCreator = new MoonDAOTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(moonDAOTeam), gnosisSafeSingleton, address(proxyFactory), address(moonDAOTeamTable), address(teamWhitelist));
         jbDirectory = IJBDirectory(JB_V5_DIRECTORY);
 
 

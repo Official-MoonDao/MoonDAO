@@ -44,10 +44,8 @@ contract TeamCreatorSepoliaScript is Script {
         IHats hats = IHats(HATS_ADDRESS);
         uint256 moonDaoTeamAdminHatId = 0x0000018200020000000000000000000000000000000000000000000000000000;
 
-        address[] memory authorizedSigners = new address[](1);
-        authorizedSigners[0] = address(authorizedSignerAddress);
 
-        MoonDAOTeamCreator creator = new MoonDAOTeamCreator(HATS_ADDRESS, HATS_MODULE_FACTORY_ADDRESS, HATS_PASSTHROUGH_ADDRESS, TEAM_ADDRESS, GNOSIS_SINGLETON_ADDRESS, GNOSIS_SAFE_PROXY_FACTORY_ADDRESS, TEAM_TABLE_ADDRESS, WHITELIST_ADDRESS, authorizedSigners);
+        MoonDAOTeamCreator creator = new MoonDAOTeamCreator(HATS_ADDRESS, HATS_MODULE_FACTORY_ADDRESS, HATS_PASSTHROUGH_ADDRESS, TEAM_ADDRESS, GNOSIS_SINGLETON_ADDRESS, GNOSIS_SAFE_PROXY_FACTORY_ADDRESS, TEAM_TABLE_ADDRESS, WHITELIST_ADDRESS);
 
         creator.setOpenAccess(true);
         creator.setMoonDaoTeamAdminHatId(moonDaoTeamAdminHatId);

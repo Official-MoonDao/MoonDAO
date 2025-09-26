@@ -53,8 +53,7 @@ contract CreatorTest is Test {
         table = new MoonDaoTeamTableland("team");
 
         team = new MoonDAOTeam("erc5369", "ERC5643", user4, address(hats), address(discountList));
-        address[] memory authorizedSigners = new address[](0);
-        creator = new MoonDAOTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(team), gnosisSafeSingleton, address(proxyFactory), address(table), address(whitelist), authorizedSigners);
+        creator = new MoonDAOTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(team), gnosisSafeSingleton, address(proxyFactory), address(table), address(whitelist));
 
         creator.setOpenAccess(true);
 
