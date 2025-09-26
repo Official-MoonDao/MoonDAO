@@ -9,5 +9,5 @@ git apply ../../0001-patch-hats.patch
 popd
 echo "Applying patch to MoonDAO..."
 pushd subscription-contracts
-git apply 0001-patch.patch
+git apply 0001-signers.patch
 popd
