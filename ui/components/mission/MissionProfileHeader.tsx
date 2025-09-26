@@ -74,12 +74,12 @@ const MissionProfileHeader = React.memo(
     // Total funding is now passed as props from MissionProfile component
 
     return (
-      <div className="w-full bg-gradient-to-br from-dark-cool via-darkest-cool to-dark-cool relative overflow-hidden">
+      <div className="w-full bg-[#090d21] relative overflow-hidden">
         {/* Background decorative elements */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.1),transparent_50%)] pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(99,102,241,0.05),transparent_50%)] pointer-events-none" />
 
-        <div className="relative z-10 w-full px-[5vw] py-6 lg:py-8">
+        <div className="relative z-10 w-full px-[5vw] pt-4 pb-2 lg:pt-6 lg:pb-3">
           <div className="flex flex-col lg:flex-row gap-x-8 items-center max-w-[1200px] xl:min-w-[1200px] mx-auto">
             {/* Left Column - Mission Image */}
             <div className="flex justify-center lg:justify-start">
@@ -177,8 +177,8 @@ const MissionProfileHeader = React.memo(
 
               {/* Enhanced Funding Stats Card */}
               <div className="bg-gradient-to-br from-dark-cool to-darkest-cool backdrop-blur-lg rounded-xl p-4 lg:p-5 border border-white/10 shadow-xl w-full max-w-2xl">
-                {/* Raised Amount Badge */}
-                <div className="mb-2">
+                {/* Raised Amount Badge with Manager Actions */}
+                <div className="mb-2 flex items-center justify-between">
                   <div className="inline-flex items-center bg-gradient-to-r from-blue-500 to-purple-600 text-white font-GoodTimes py-2 px-4 rounded-full shadow-lg">
                     <Image
                       src="/assets/icon-raised-tokens.svg"
@@ -206,20 +206,82 @@ const MissionProfileHeader = React.memo(
                       </>
                     )}
                   </div>
-                  <p className="text-gray-400 text-xs mt-2 ml-4">
-                    {isLoadingTotalFunding || isLoadingEthPrice ? (
-                      <TextSkeleton width="w-16" height="h-4" />
-                    ) : (
-                      <>
-                        ≈ $
-                        {Math.round(
-                          (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
-                        ).toLocaleString()}{' '}
-                        USD
-                      </>
-                    )}
-                  </p>
+
+                  {/* Compact Manager Actions */}
+                  {account && deadlinePassed && isManager && (
+                    <div className="flex flex-wrap gap-3">
+                          <PrivyWeb3Button
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="group relative bg-white/10 hover:bg-purple-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-purple-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                            label={
+                              <div className="flex items-center gap-2">
+                                <Image
+                                  src="/assets/icon-raised-tokens.svg"
+                                  alt="Send Tokens"
+                                  width={14}
+                                  height={14}
+                                  className="opacity-70 group-hover:opacity-100"
+                                />
+                                <span className="text-xs font-medium">Tokens</span>
+                              </div>
+                            }
+                            action={sendReservedTokens}
+                            isDisabled={!availableTokens}
+                          />
+                          <PrivyWeb3Button
+                            requiredChain={DEFAULT_CHAIN_V5}
+                            className="group relative bg-white/10 hover:bg-blue-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-blue-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                            label={
+                              <div className="flex items-center gap-2">
+                                <Image
+                                  src="/assets/icon-crowdfunding.svg"
+                                  alt="Send Payouts"
+                                  width={14}
+                                  height={14}
+                                  className="opacity-70 group-hover:opacity-100"
+                                />
+                                <span className="text-xs font-medium">Payouts</span>
+                              </div>
+                            }
+                            action={sendPayouts}
+                            isDisabled={!availablePayouts}
+                          />
+                          {stage === 2 && (
+                            <PrivyWeb3Button
+                              requiredChain={DEFAULT_CHAIN_V5}
+                              className="group relative bg-white/10 hover:bg-green-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-green-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                              label={
+                                <div className="flex items-center gap-2">
+                                  <Image
+                                    src="/assets/icon-ethereum.svg"
+                                    alt="Deploy Liquidity"
+                                    width={14}
+                                    height={14}
+                                    className="opacity-90 group-hover:opacity-100"
+                                  />
+                                  <span className="text-xs font-medium">Liquidity</span>
+                                </div>
+                              }
+                              action={deployLiquidityPool}
+                              isDisabled={!poolDeployerAddress}
+                            />
+                          )}
+                    </div>
+                  )}
                 </div>
+                <p className="text-gray-400 text-xs mt-2 ml-4">
+                  {isLoadingTotalFunding || isLoadingEthPrice ? (
+                    <TextSkeleton width="w-16" height="h-4" />
+                  ) : (
+                    <>
+                      ≈ $
+                      {Math.round(
+                        (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
+                      ).toLocaleString()}{' '}
+                      USD
+                    </>
+                  )}
+                </p>
                 {/* Progress Bar */}
                 <div className="mb-3">
                   <MissionFundingProgressBar
@@ -304,35 +366,6 @@ const MissionProfileHeader = React.memo(
                   </div>
                 </div>
               </div>
-
-              {/* Manager Actions */}
-              {account && deadlinePassed && isManager && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <PrivyWeb3Button
-                    requiredChain={DEFAULT_CHAIN_V5}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs"
-                    label="Send Tokens"
-                    action={sendReservedTokens}
-                    isDisabled={!availableTokens}
-                  />
-                  <PrivyWeb3Button
-                    requiredChain={DEFAULT_CHAIN_V5}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs"
-                    label="Send Payouts"
-                    action={sendPayouts}
-                    isDisabled={!availablePayouts}
-                  />
-                  {stage === 2 && (
-                    <PrivyWeb3Button
-                      requiredChain={DEFAULT_CHAIN_V5}
-                      className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-medium py-2 px-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg sm:col-span-2 text-xs"
-                      label="Deploy Liquidity"
-                      action={deployLiquidityPool}
-                      isDisabled={!poolDeployerAddress}
-                    />
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>

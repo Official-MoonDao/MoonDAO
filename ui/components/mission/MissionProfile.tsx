@@ -549,7 +549,7 @@ export default function MissionProfile({
                 />
               </div>
             </div>
-            <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] bg-gradient-to-b from-dark-cool to-darkest-cool flex justify-center">
+            <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] flex justify-center">
               <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 pb-[5vw] md:pb-[2vw]">
                 <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex w-full gap-2 text-light-cool">
                   <Image
