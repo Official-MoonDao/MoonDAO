@@ -11,3 +11,7 @@ echo "Applying patch to MoonDAO..."
 pushd subscription-contracts
 git apply 0001-patch.patch
 popd
+echo "Applying patch to MoonDAO..."
+pushd subscription-contracts
+git apply 0001-struct.patch
+popd
