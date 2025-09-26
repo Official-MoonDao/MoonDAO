@@ -79,6 +79,7 @@ import Frame from '@/components/layout/Frame'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
+import { TokensOfProposal } from '@/components/nance/RequestingTokensOfProposal'
 import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
 import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
@@ -92,20 +93,24 @@ import Quests from '../xp/Quests'
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
 // Function to extract ETH amount from proposal actions
-function getEthAmountFromProposal(actions: Action[] | undefined): number {
-  if (!actions) return 0
+function getTokensFromProposal(
+  actions: Action[] | undefined
+): JSX.Element | string {
+  if (!actions) return 'No funding'
 
-  let ethAmount = 0
+  const transferMap: { [key: string]: number } = {}
   actions
     .filter((action) => action.type === 'Request Budget')
     .flatMap((action) => (action.payload as RequestBudget).budget)
-    .forEach((transfer) => {
-      if (transfer.token === ETH_MOCK_ADDRESS) {
-        ethAmount += Number(transfer.amount)
-      }
-    })
+    .forEach(
+      (transfer) =>
+        (transferMap[transfer.token] =
+          (transferMap[transfer.token] || 0) + Number(transfer.amount))
+    )
 
-  return ethAmount
+  if (Object.entries(transferMap).length === 0) return 'No funding'
+
+  return <TokensOfProposal actions={actions} />
 }
 
 function getDaysLeft(proposal: any): number {
@@ -768,7 +773,9 @@ export default function SingedInDashboard({
               <div className="space-y-4 h-full overflow-y-auto">
                 {proposals &&
                   proposals.slice(0, 3).map((proposal: any, i: number) => {
-                    const ethAmount = getEthAmountFromProposal(proposal.actions)
+                    const tokensRequested = getTokensFromProposal(
+                      proposal.actions
+                    )
                     const daysLeft = getDaysLeft(proposal)
 
                     return (
@@ -810,26 +817,32 @@ export default function SingedInDashboard({
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-300">
                               <div className="flex items-center gap-1">
                                 <span className="font-medium text-white">
-                                  {ethAmount > 0
-                                    ? `${formatNumberUSStyle(ethAmount)} ETH`
-                                    : 'No funding'}
+                                  {tokensRequested}
                                 </span>
-                                <span>requested</span>
+                                {typeof tokensRequested !== 'string' && (
+                                  <span>requested</span>
+                                )}
                               </div>
-                              <span className="hidden sm:inline">•</span>
-                              <div className="flex items-center gap-1">
+
+                              <div className="">
                                 {daysLeft > 0 ? (
-                                  <>
+                                  <div className="flex gap-4">
+                                    <span className="hidden sm:inline">•</span>
                                     <span className="font-medium text-white">
                                       {daysLeft}{' '}
                                       {daysLeft === 1 ? 'day' : 'days'}
                                     </span>
                                     <span>left</span>
-                                  </>
+                                  </div>
+                                ) : proposal.status === 'Voting' ? (
+                                  <></>
                                 ) : (
-                                  <span className="font-medium text-white">
-                                    Voting closed
-                                  </span>
+                                  <div className="flex gap-4">
+                                    <span className="hidden sm:inline">•</span>
+                                    <span className="font-medium text-white">
+                                      Voting closed
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                             </div>
