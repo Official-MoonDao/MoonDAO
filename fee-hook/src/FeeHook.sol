@@ -15,6 +15,7 @@ import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 import {CurrencyLibrary} from "v4-core/src/types/Currency.sol";
+import {SwapParams} from "v4-core/src/types/PoolOperation.sol";
 
 interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
@@ -77,7 +78,7 @@ contract FeeHook is BaseHook, Ownable, IERC721Receiver  {
         vMooneyAddress = _vMooneyAddress;
     }
 
-    function _afterSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata _params, BalanceDelta, bytes calldata)
+    function _afterSwap(address, PoolKey calldata key, SwapParams calldata _params, BalanceDelta, bytes calldata)
         internal
         override
         returns (bytes4, int128)
