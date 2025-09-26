@@ -124,7 +124,6 @@ export default function useJBProjectTimeline(
         })
 
         const data = await res.json()
-
         sgId = data?.projects?.items[0]?.suckerGroupId
       } else {
         sgId = suckerGroupId
