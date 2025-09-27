@@ -2,6 +2,7 @@ extends Node2D
 
 @export var sprite_path: NodePath     # set this in the Inspector
 @onready var sprite: AnimatedSprite2D = $AstronautSprite
+var last_facing_left: bool = false  # Track the last facing direction
 
 
 func _ready() -> void:
@@ -12,7 +13,7 @@ func update_from_velocity(v: Vector2) -> void:
 	if v.length() < 0.1:
 		sprite.stop()
 		sprite.frame = 0
-		sprite.flip_h = false  # Reset flip when idle
+		sprite.flip_h = last_facing_left  # Preserve last facing direction when idle
 		return
 	
 	var dir := "down"
@@ -22,12 +23,15 @@ func update_from_velocity(v: Vector2) -> void:
 		if v.x > 0.0:
 			dir = "right"
 			should_flip = false
+			last_facing_left = false  # Remember we're facing right
 		else:
 			dir = "left"
 			should_flip = true
+			last_facing_left = true   # Remember we're facing left
 	else:
 		dir = "down" if v.y > 0.0 else "up"
 		should_flip = false
+		# Don't change last_facing_left for vertical movement
 	
 	# Use right-facing animation for left movement, but flip it
 	var anim := "walk_" + (dir if dir != "left" else "right")
