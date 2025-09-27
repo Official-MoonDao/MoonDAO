@@ -84,6 +84,7 @@ func setup_glass_morphism_ui() -> void:
 	teams_button.flat = true
 	teams_button.text = ""
 	teams_button.mouse_filter = Control.MOUSE_FILTER_PASS
+	teams_button.focus_mode = Control.FOCUS_NONE  # Disable focus to prevent selection box
 	add_child(teams_button)
 	
 	# Create microphone button (positioned inside glass panel)
@@ -94,6 +95,7 @@ func setup_glass_morphism_ui() -> void:
 	mic_button.flat = true
 	mic_button.text = ""
 	mic_button.mouse_filter = Control.MOUSE_FILTER_PASS  # Allow button clicks
+	mic_button.focus_mode = Control.FOCUS_NONE  # Disable focus to prevent selection box
 	add_child(mic_button)
 	
 	# Style the button with glass morphism
