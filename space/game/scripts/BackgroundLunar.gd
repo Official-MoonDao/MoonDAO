@@ -1,214 +1,136 @@
 extends Node2D
 
-@export var sprite_path: NodePath          # set this to your Sprite2D in the Inspector
-@export var player_path: NodePath
-@export var camera_path: NodePath
-@export var pixels_per_world_unit: float = 1.0
-@export var world_aligned: bool = true  # Set to true for static background aligned with world objects
-@export var parallax_factor: float = 0.85  # Only used when world_aligned is false
+@export var texture_path: String = "res://art/lunar.png"  # Path to lunar texture
+@export var background_size: int = 32768  # Large background size
 
-@onready var lunar_sprite: Sprite2D = _resolve_sprite()
-@onready var player: Node2D = get_node_or_null(player_path) as Node2D
-var local_player: Node2D = null  # Cache for the local player
-var last_valid_player_pos: Vector2 = Vector2.ZERO  # Cache last known good player position
-@onready var cam: Camera2D = (
-	get_node_or_null(camera_path) as Camera2D
-	if camera_path != NodePath() else get_viewport().get_camera_2d()
-)
+var background_sprite: Sprite2D
+var cam: Camera2D
 
 func _ready() -> void:
-	if lunar_sprite == null:
-		push_error("BackgroundLunar: Sprite2D not found. Set 'sprite_path' in Inspector or name a child 'Lunar'.")
+	# Find the camera
+	cam = get_viewport().get_camera_2d()
+	if not cam:
+		push_error("BackgroundLunar: No camera found!")
 		return
 
-	lunar_sprite.centered = false
-	if lunar_sprite.material == null:
-		lunar_sprite.material = ShaderMaterial.new()
-
-	_ensure_texture()
-	_fit_to_viewport()
-
-	if get_viewport():
-		get_viewport().size_changed.connect(_fit_to_viewport)
-
+	# Set background to render behind everything
 	z_index = -1000
-	lunar_sprite.z_index = -1000
+	
+	# Create simple large background with proper shader
+	_create_background()
+	
+	print("BackgroundLunar: Shader background ready")
 
 func _process(_dt: float) -> void:
-	if lunar_sprite == null or lunar_sprite.material == null:
+	# Background stays stationary - it's the world surface
+	pass
+
+func _create_background() -> void:
+	"""Create a large background with proper tiling shader"""
+	# Load the texture
+	print("BackgroundLunar: Loading texture from: " + texture_path)
+	var texture = load(texture_path) as Texture2D
+	if not texture:
+		push_error("BackgroundLunar: Could not load texture: " + texture_path)
 		return
 
-	var mat := lunar_sprite.material as ShaderMaterial
-	var vp := get_viewport_rect().size
-
-	# read virtual pixel resolution from the shader (or hardcode to match your shader)
-	var pix_res : Variant = mat.get_shader_parameter("u_pixel_res")
-	if typeof(pix_res) != TYPE_VECTOR2 or pix_res == Vector2.ZERO:
-		pix_res = Vector2(320, 180)  # fallback if not set
-
-	# size of ONE virtual pixel in screen units
-	var px := Vector2(vp.x / pix_res.x, vp.y / pix_res.y)
-
-	# Find local player if not cached or if the cached one is invalid
-	_update_local_player_reference()
-
-	# Update background scale for current camera zoom
-	_fit_to_viewport()
-
-	# Get camera position for sprite positioning (keep this simple)
-	var cam_pos := Vector2.ZERO
-	if cam != null:
-		cam_pos = cam.global_position
-
-	# Account for zoom when calculating viewport coverage
-	var effective_vp := vp
-	if cam != null and cam.zoom.x > 0:
-		effective_vp = vp / cam.zoom.x  # Larger effective viewport when zoomed out
-
-	# snap the sprite's top-left to the virtual pixel grid (prevents swimming)
-	var top_left := cam_pos - effective_vp * 0.5
-	var snapped_tl := Vector2(
-		floor(top_left.x / px.x) * px.x,
-		floor(top_left.y / px.y) * px.y
-	)
-	lunar_sprite.position = snapped_tl
-
-	# Calculate world offset - account for zoom to prevent fast movement when zoomed out
-	var world_offset: Vector2
-	var zoom_compensation := 1.0
-	if cam != null and cam.zoom.x > 0:
-		zoom_compensation = cam.zoom.x  # Use zoom to normalize movement speed
+	print("BackgroundLunar: Successfully loaded texture: " + str(texture.get_size()))
 	
-	if world_aligned:
-		# Static background aligned with world objects
-		# Since camera now follows player directly, use camera position
-		world_offset = cam_pos * pixels_per_world_unit * zoom_compensation
-	else:
-		# Parallax background
-		var player_pos = _get_best_player_position()
-		var using_player = player_pos != Vector2.ZERO
-		var src: Vector2 = (player_pos if using_player else cam_pos)
-		world_offset = src * pixels_per_world_unit * parallax_factor * zoom_compensation
+	# Create the background sprite
+	background_sprite = Sprite2D.new()
+	background_sprite.texture = texture
+	background_sprite.z_index = -1000
+	
+	# Scale it large
+	var texture_size = texture.get_size()
+	background_sprite.scale = Vector2(background_size / texture_size.x, background_size / texture_size.y)
+	
+	# Use linear filtering for smoother look
+	background_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	
+	# Add simple tiling shader with light blending
+	var shader_material = ShaderMaterial.new()
+	var tiling_shader = _create_tiling_shader()
+	shader_material.shader = tiling_shader
+	background_sprite.material = shader_material
+	
+	add_child(background_sprite)
+
+func _create_tiling_shader() -> Shader:
+	"""Create a seamless shader without tiling boundaries"""
+	var shader = Shader.new()
+	shader.code = """
+	shader_type canvas_item;
+	
+	// Hash function for pseudo-random values
+	float hash(vec2 p) {
+		return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+	}
+	
+	// Smooth noise
+	float noise(vec2 p) {
+		vec2 i = floor(p);
+		vec2 f = fract(p);
+		f = f * f * (3.0 - 2.0 * f);
 		
-
-	# snap offset to the same grid so shader sampling is stable
-	var snapped_off := Vector2(
-		floor(world_offset.x / px.x) * px.x,
-		floor(world_offset.y / px.y) * px.y
-	)
+		float a = hash(i);
+		float b = hash(i + vec2(1.0, 0.0));
+		float c = hash(i + vec2(0.0, 1.0));
+		float d = hash(i + vec2(1.0, 1.0));
+		
+		return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+	}
 	
-
-	mat.set_shader_parameter("u_time", Time.get_ticks_msec() / 1000.0)
-	mat.set_shader_parameter("u_offset", snapped_off)
-	mat.set_shader_parameter("u_view_size", vp)
-
-func _fit_to_viewport() -> void:
-	if lunar_sprite == null:
-		return
-	_ensure_texture()
-	var vp := get_viewport_rect().size
-	var tex := lunar_sprite.texture
-	var tex_size := Vector2(max(1.0, tex.get_width()), max(1.0, tex.get_height()))
-	
-	# Account for camera zoom - when zoomed out, background needs to be bigger
-	var zoom_factor := 1.0
-	if cam != null and cam.zoom.x > 0:
-		zoom_factor = 1.0 / cam.zoom.x  # Inverse of zoom (zoom out = bigger background)
-	
-	var base_scale := Vector2(vp.x / tex_size.x, vp.y / tex_size.y)
-	lunar_sprite.scale = base_scale * zoom_factor
-
-func _ensure_texture() -> void:
-	if lunar_sprite == null:
-		return
-	if lunar_sprite.texture == null:
-		var img := Image.create(1, 1, false, Image.FORMAT_RGBA8)
-		img.set_pixel(0, 0, Color(1, 1, 1, 1))
-		lunar_sprite.texture = ImageTexture.create_from_image(img)
-
-func _resolve_sprite() -> Sprite2D:
-	# A) Use Inspector path if set
-	if sprite_path != NodePath():
-		var n := get_node_or_null(sprite_path)
-		if n is Sprite2D:
-			return n
-
-	# B) Look for a direct child named "Lunar"
-	var by_name := get_node_or_null("Lunar")
-	if by_name is Sprite2D:
-		return by_name as Sprite2D
-
-	# C) Recursive search for any Sprite2D
-	return _find_sprite_recursive(self)
-
-func _find_sprite_recursive(node: Node) -> Sprite2D:
-	for c in node.get_children():
-		if c is Sprite2D:
-			return c as Sprite2D
-		var r := _find_sprite_recursive(c)
-		if r != null:
-			return r
-	return null
-
-func _update_local_player_reference() -> void:
-	# Try to use the explicit player reference first
-	if player != null and is_instance_valid(player):
-		local_player = player
-		return
-	
-	# Search for the local player in the scene tree
-	if local_player == null or not is_instance_valid(local_player):
-		local_player = _find_local_player()
-
-func _find_local_player() -> Node2D:
-	# Look for the MainNetClient and get its local player
-	var main_client = get_tree().get_first_node_in_group("main_client")
-	if main_client == null:
-		# Fallback: search for MainNetClient by name/type
-		main_client = _find_main_net_client_recursive(get_tree().root)
-	
-	if main_client != null and main_client.has_method("get_local_player"):
-		return main_client.get_local_player()
-	
-	# Fallback: look for any Player node with is_local_player = true
-	return _find_local_player_recursive(get_tree().root)
-
-func _find_main_net_client_recursive(node: Node) -> Node:
-	if node.get_script() != null:
-		var script_path = node.get_script().resource_path
-		if script_path.ends_with("MainNetClient.gd"):
-			return node
-	
-	for child in node.get_children():
-		var result = _find_main_net_client_recursive(child)
-		if result != null:
-			return result
-	return null
-
-func _find_local_player_recursive(node: Node) -> Node2D:
-	# Check if this node is a local player
-	if node is Node2D:
-		# Try different ways to check if it's a local player
-		if node.has_method("get") and node.get("is_local_player") == true:
-			return node as Node2D
-		if "is_local_player" in node and node.is_local_player == true:
-			return node as Node2D
-		# Check if it has a script with is_local_player property
-		if node.get_script() != null and "is_local_player" in node and node.is_local_player:
-			return node as Node2D
-	
-	for child in node.get_children():
-		var result = _find_local_player_recursive(child)
-		if result != null:
-			return result
-	return null
-
-func _get_best_player_position() -> Vector2:
-	if local_player != null and is_instance_valid(local_player):
-		var pos = local_player.global_position
-		# Cache this valid position
-		last_valid_player_pos = pos
-		return pos
-	else:
-		# Return last valid position instead of Vector2.ZERO to avoid fallback to camera
-		return last_valid_player_pos
+	void fragment() {
+		// Convert to world coordinates
+		vec2 world_pos = (UV - 0.5) * 32768.0;
+		vec2 tile_coord = world_pos * 0.00025;
+		
+		// Apply subtle pixelation
+		float pixel_size = 200.0;  // Less pixelated but still retro
+		vec2 pixelated_coord = floor(tile_coord * pixel_size) / pixel_size;
+		
+		// Get tile UV coordinates
+		vec2 tile_uv = fract(pixelated_coord);
+		
+		// Create seamless wrapping by averaging edge samples
+		float edge_size = 0.08;  // 8% of texture for smoother edge blending
+		vec3 color = texture(TEXTURE, tile_uv).rgb;
+		
+		// Blend with wrapped edges to eliminate seams
+		if (tile_uv.x < edge_size) {
+			// Near left edge - blend with right edge
+			float wrap_x = tile_uv.x + 1.0 - edge_size;
+			vec3 wrap_color = texture(TEXTURE, vec2(wrap_x, tile_uv.y)).rgb;
+			float blend_weight = (edge_size - tile_uv.x) / edge_size;
+			color = mix(color, wrap_color, blend_weight * 0.5);
+		} else if (tile_uv.x > 1.0 - edge_size) {
+			// Near right edge - blend with left edge  
+			float wrap_x = tile_uv.x - 1.0 + edge_size;
+			vec3 wrap_color = texture(TEXTURE, vec2(wrap_x, tile_uv.y)).rgb;
+			float blend_weight = (tile_uv.x - (1.0 - edge_size)) / edge_size;
+			color = mix(color, wrap_color, blend_weight * 0.5);
+		}
+		
+		if (tile_uv.y < edge_size) {
+			// Near top edge - blend with bottom edge
+			float wrap_y = tile_uv.y + 1.0 - edge_size;
+			vec3 wrap_color = texture(TEXTURE, vec2(tile_uv.x, wrap_y)).rgb;
+			float blend_weight = (edge_size - tile_uv.y) / edge_size;
+			color = mix(color, wrap_color, blend_weight * 0.5);
+		} else if (tile_uv.y > 1.0 - edge_size) {
+			// Near bottom edge - blend with top edge
+			float wrap_y = tile_uv.y - 1.0 + edge_size;  
+			vec3 wrap_color = texture(TEXTURE, vec2(tile_uv.x, wrap_y)).rgb;
+			float blend_weight = (tile_uv.y - (1.0 - edge_size)) / edge_size;
+			color = mix(color, wrap_color, blend_weight * 0.5);
+		}
+		
+		// Add noise to break up any remaining patterns
+		float noise_val = noise(world_pos * 0.001) * 0.03;
+		color += vec3(noise_val);
+		
+		COLOR = vec4(color, 1.0);
+	}
+	"""
+	return shader
