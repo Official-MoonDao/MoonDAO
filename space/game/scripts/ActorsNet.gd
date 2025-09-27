@@ -73,9 +73,26 @@ func _process(_dt: float) -> void:
 	if room == null:
 		return
 	var v := Vector2.ZERO
-	if Input.is_action_pressed("ui_right"): v.x += 1
-	if Input.is_action_pressed("ui_left"):  v.x -= 1
-	if Input.is_action_pressed("ui_down"):  v.y += 1
-	if Input.is_action_pressed("ui_up"):    v.y -= 1
+	
+	# Horizontal movement (prioritize WASD, fall back to arrows)
+	if Input.is_key_pressed(KEY_D):
+		v.x = 1.0
+	elif Input.is_key_pressed(KEY_A):
+		v.x = -1.0
+	elif Input.is_action_pressed("ui_right"):
+		v.x = 1.0
+	elif Input.is_action_pressed("ui_left"):
+		v.x = -1.0
+	
+	# Vertical movement (prioritize WASD, fall back to arrows)
+	if Input.is_key_pressed(KEY_S):
+		v.y = 1.0
+	elif Input.is_key_pressed(KEY_W):
+		v.y = -1.0
+	elif Input.is_action_pressed("ui_down"):
+		v.y = 1.0
+	elif Input.is_action_pressed("ui_up"):
+		v.y = -1.0
+	
 	if v != Vector2.ZERO:
 		room.send("move", {"x": v.x * 4.0, "y": v.y * 4.0})

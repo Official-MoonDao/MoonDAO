@@ -7,6 +7,7 @@ signal microphone_toggled(enabled: bool)
 @onready var mic_button: Button
 @onready var mic_icon: Label
 @onready var status_label: Label
+@onready var spacebar_hint_label: Label
 @onready var glass_panel: Panel
 @onready var teams_button: Button
 @onready var teams_icon: Label
@@ -181,6 +182,23 @@ func setup_glass_morphism_ui() -> void:
 	status_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	status_label.add_theme_constant_override("shadow_offset_x", 1)
 	status_label.add_theme_constant_override("shadow_offset_y", 1)
+	
+	# Create spacebar hint label
+	spacebar_hint_label = Label.new()
+	spacebar_hint_label.name = "SpacebarHintLabel"
+	spacebar_hint_label.text = "(spacebar)"
+	spacebar_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	spacebar_hint_label.size = Vector2(100, 15)
+	spacebar_hint_label.position = Vector2(screen_size.x - 120, screen_size.y + 5)  # Below the status label
+	spacebar_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(spacebar_hint_label)
+	
+	# Style the spacebar hint label
+	spacebar_hint_label.add_theme_font_size_override("font_size", 10)
+	spacebar_hint_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.6))
+	spacebar_hint_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	spacebar_hint_label.add_theme_constant_override("shadow_offset_x", 1)
+	spacebar_hint_label.add_theme_constant_override("shadow_offset_y", 1)
 	
 	# Note: We'll use the mic_icon for all states instead of a separate loading spinner
 	
@@ -450,8 +468,13 @@ func _process(_delta: float) -> void:
 	# No need to track recording state - when enabled, it's always "on"
 	# The microphone is either enabled (always transmitting) or disabled
 	
+	# Handle spacebar toggle for microphone
+	if Input.is_action_just_pressed("ui_accept"):
+		print("UI: Spacebar pressed - toggling microphone")
+		toggle_microphone()
+	
 	# Debug: Check if mouse is over teams button
-	if Input.is_action_just_pressed("ui_accept") or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		var mouse_pos = get_global_mouse_position()
 		if teams_button and teams_button.visible:
 			var button_rect = Rect2(teams_button.global_position, teams_button.size)
@@ -462,7 +485,7 @@ func _process(_delta: float) -> void:
 	_update_positions_if_needed()
 
 func _update_positions_if_needed() -> void:
-	if not glass_panel or not mic_button or not mic_icon or not status_label or not teams_glass_panel or not teams_button or not teams_icon:
+	if not glass_panel or not mic_button or not mic_icon or not status_label or not spacebar_hint_label or not teams_glass_panel or not teams_button or not teams_icon:
 		return
 		
 	var current_screen_size = get_viewport().get_visible_rect().size
@@ -479,6 +502,7 @@ func _update_positions_if_needed() -> void:
 		teams_button.position = Vector2(current_screen_size.x - 230, current_screen_size.y - 110)
 		teams_icon.position = Vector2(current_screen_size.x - 230, current_screen_size.y - 110)
 		status_label.position = Vector2(current_screen_size.x - 120, current_screen_size.y - 15)
+		spacebar_hint_label.position = Vector2(current_screen_size.x - 120, current_screen_size.y + 5)
 
 func _recursive_node_search(node: Node) -> void:
 	"""Recursively search for voice chat node with proper methods"""

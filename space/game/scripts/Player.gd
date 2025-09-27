@@ -52,10 +52,27 @@ func _physics_process(delta: float) -> void:
 		return
 	
 	# Local player: immediate input response with client-side prediction
-	var input_dir := Vector2(
-		Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left"),
-		Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up")
-	)
+	# Handle both WASD and arrow keys, but don't stack them
+	var horizontal_input = 0.0
+	var vertical_input = 0.0
+	
+	# Horizontal movement (prioritize WASD, fall back to arrows)
+	if Input.is_key_pressed(KEY_D):
+		horizontal_input = 1.0
+	elif Input.is_key_pressed(KEY_A):
+		horizontal_input = -1.0
+	else:
+		horizontal_input = Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left")
+	
+	# Vertical movement (prioritize WASD, fall back to arrows)
+	if Input.is_key_pressed(KEY_S):
+		vertical_input = 1.0
+	elif Input.is_key_pressed(KEY_W):
+		vertical_input = -1.0
+	else:
+		vertical_input = Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up")
+	
+	var input_dir := Vector2(horizontal_input, vertical_input)
 	
 	if input_dir != Vector2.ZERO:
 		# Check if sprinting (holding shift)
