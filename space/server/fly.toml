@@ -2,23 +2,96 @@ app = "moondao-space-server"
 primary_region = "sjc"
 
 [build]
+  dockerfile = "Dockerfile.all-in-one"
 
 [env]
   NODE_ENV = "production"
   PORT = "2567"
+  REDIS_URL = "redis://localhost:6379"
+  LIVEKIT_WS_URL = "ws://localhost:7880"
+  LIVEKIT_CLIENT_URL = "wss://moondao-space-server.fly.dev:7880"
+  LIVEKIT_API_KEY = "devkey"
+  LIVEKIT_API_SECRET = "secret"
 
+# Main Colyseus service
 [http_service]
   internal_port = 2567
   force_https = true
   auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
-  max_machines_running = 1  # ADD THIS LINE - Force single machine
+  max_machines_running = 1
+
+# LiveKit WebSocket/HTTP
+[[services]]
+  internal_port = 7880
+  protocol = "tcp"
+  
+  [[services.ports]]
+    port = 7880
+    handlers = ["http"]
+  
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 1000
+
+# LiveKit WebRTC TCP
+[[services]]
+  internal_port = 7881
+  protocol = "tcp"
+  
+  [[services.ports]]
+    port = 7881
+
+# LiveKit TURN/UDP  
+[[services]]
+  internal_port = 7882
+  protocol = "udp"
+  
+  [[services.ports]]
+    port = 7882
+
+# WebRTC UDP port range (limited for Fly.io)
+[[services]]
+  internal_port = 50000
+  protocol = "udp"
+  
+  [[services.ports]]
+    port = 50000
+
+[[services]]
+  internal_port = 50001
+  protocol = "udp"
+  
+  [[services.ports]]
+    port = 50001
+
+[[services]]
+  internal_port = 50002
+  protocol = "udp"
+  
+  [[services.ports]]
+    port = 50002
+
+[[services]]
+  internal_port = 50003
+  protocol = "udp"
+  
+  [[services.ports]]
+    port = 50003
+
+[[services]]
+  internal_port = 50004
+  protocol = "udp"
+  
+  [[services.ports]]
+    port = 50004
 
 [deploy]
-  release_command = "echo 'Deployment complete'"
+  release_command = "echo 'Starting all services'"
 
 [[vm]]
-  memory = '1gb'
-  cpu_kind = 'shared'
+  memory = '2gb'  # Increased for all services
+  cpu_kind = 'performance'  # Better for real-time processing
   cpus = 1

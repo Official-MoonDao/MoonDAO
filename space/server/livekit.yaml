@@ -1,17 +1,19 @@
-# Minimal LiveKit server configuration for development
+# LiveKit server configuration for production deployment
 port: 7880
 
-# Basic WebRTC configuration
+# WebRTC configuration for Fly.io
 rtc:
   tcp_port: 7881
   udp_port: 7882
   port_range_start: 50000
-  port_range_end: 50100
-  use_external_ip: false
+  port_range_end: 50004 # Limited range for Fly.io
+  use_external_ip: true
+  stun_servers:
+    - stun.l.google.com:19302
 
-# Redis for state management
+# Redis for state management (localhost in container)
 redis:
-  address: redis:6379
+  address: localhost:6379
 
 # API keys for authentication
 keys:
@@ -22,10 +24,11 @@ room:
   auto_create: true
   empty_timeout: 300
   max_participants: 100
+  enable_remote_unmute: true
 
-# Development mode
-development: true
+# Production mode
+development: false
 
-# Basic logging
+# Basic logging (removed unsupported fields)
 logging:
   level: info

@@ -4,8 +4,8 @@ extends Node
 const ColyseusInit: GDScript = preload("res://addons/godot_colyseus/init.gd")
 const RoomStateSchema: GDScript = preload("res://scripts/schemas/RoomStateSchema.gd")
 
-# @export var server_url: String = "wss://moondao-space-server.fly.dev"
-@export var server_url: String = "ws://localhost:2567"
+@export var server_url: String = "wss://moondao-space-server.fly.dev"
+# @export var server_url: String = "ws://localhost:2567"
 @export var room_name: String = "lobby"
 
 var jwt_token: String = ""
