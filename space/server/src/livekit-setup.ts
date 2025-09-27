@@ -83,6 +83,38 @@ export class LiveKitManager {
   }
 
   /**
+   * Create a grid room for proximity voice chat
+   */
+  async createGridRoom(roomName: string): Promise<Room> {
+    try {
+      // Try to get existing room first
+      const existingRooms = await this.client.listRooms();
+      const existingRoom = existingRooms.find((room) => room.name === roomName);
+
+      if (existingRoom) {
+        console.log(`🌐 Using existing LiveKit grid room: ${roomName}`);
+        return existingRoom;
+      }
+
+      // Create new grid room
+      const room = await this.client.createRoom({
+        name: roomName,
+        emptyTimeout: 300, // 5 minutes for grid rooms
+        maxParticipants: 50, // Reasonable limit per grid cell
+      });
+
+      console.log(`🌐 Created LiveKit grid room: ${roomName}`);
+      return room;
+    } catch (error) {
+      console.error(
+        `❌ Failed to create LiveKit grid room ${roomName}:`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Generate access token for a player to join a room
    */
   async generateAccessToken(

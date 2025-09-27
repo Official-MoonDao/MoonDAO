@@ -893,19 +893,19 @@ func _create_team_room_manager():
 	print("MainNetClient: Team room manager created")
 
 func _on_team_room_entered(team_id: String) -> void:
-	"""Handle team room entry - trigger voice chat zone change"""
-	print("🎤 MainNetClient: Player entered team room ", team_id, " - updating voice chat zone")
-	if voice_chat and voice_chat.has_method("on_voice_zone_changed"):
-		voice_chat.on_voice_zone_changed()
+	"""Handle team room entry - update proximity voice chat"""
+	print("🎤 MainNetClient: Player entered team room ", team_id, " - updating voice chat")
+	if voice_chat and voice_chat.has_method("on_team_room_entered"):
+		voice_chat.on_team_room_entered(team_id)
 	else:
-		print("🎤 Voice chat zone change method not available")
+		print("🎤 Voice chat team room entry method not available")
 
 func _on_team_room_exited(team_id: String) -> void:
-	"""Handle team room exit - trigger voice chat zone change"""
-	print("🎤 MainNetClient: Player exited team room ", team_id, " - updating voice chat zone")
-	if voice_chat and voice_chat.has_method("on_voice_zone_changed"):
-		voice_chat.on_voice_zone_changed()
+	"""Handle team room exit - update proximity voice chat"""
+	print("🎤 MainNetClient: Player exited team room ", team_id, " - updating voice chat")
+	if voice_chat and voice_chat.has_method("on_team_room_exited"):
+		voice_chat.on_team_room_exited(team_id)
 	else:
-		print("🎤 Voice chat zone change method not available")
+		print("🎤 Voice chat team room exit method not available")
 
 # _on_player_talking_changed function removed

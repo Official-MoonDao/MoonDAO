@@ -15,7 +15,7 @@ var main_net_client: Node = null
 
 # LiveKit state
 var livekit_room: Object = null
-var current_voice_room: String = "lobby"
+var current_voice_room: String = "grid-0-0"
 
 func _ready() -> void:
 	add_to_group("voice_chat")
@@ -112,6 +112,7 @@ func _join_for_listening() -> void:
 		# Set voice_enabled to false for listen-only mode
 		voice_enabled = false
 		is_recording = false
+		print("LiveKitVoiceManager: 🎧 Requesting initial token for room: ", current_voice_room)
 		room.send("get_livekit_token", {"roomName": current_voice_room})
 
 func _on_livekit_error_received(data) -> void:
@@ -124,6 +125,8 @@ func _on_livekit_token_received(data) -> void:
 	var js_connect = """
 	(async function() {
 		try {
+			const requestedRoom = '%s'; // This will be replaced with the room name
+			
 			// Wait for the library to fully initialize
 			await new Promise(resolve => setTimeout(resolve, 1000));
 			
@@ -177,8 +180,33 @@ func _on_livekit_token_received(data) -> void:
 				throw new Error('LiveKit Room class not found after all attempts. Available objects: ' + Object.keys(window).filter(k => k.toLowerCase().includes('live') || k.toLowerCase().includes('kit') || k.toLowerCase().includes('room')));
 			}
 			
-			// Create or get existing room
-			if (!window.godotLiveKitRoom) {
+			// Check if we need to disconnect from current room first
+			if (window.godotLiveKitRoom && window.godotLiveKitRoom.state === 'connected') {
+				console.log('🔄 Already connected to room:', window.godotLiveKitRoom.name);
+				console.log('🔄 Requested room:', requestedRoom);
+				
+				// If we're already in the correct room, check if we just need to enable microphone
+				if (window.godotLiveKitRoom.name === requestedRoom) {
+					console.log('✅ Already in the correct room');
+					// Don't return - continue to microphone enabling logic below
+				} else {
+					console.log('🔄 Disconnecting from current room to switch...');
+					await window.godotLiveKitRoom.disconnect();
+					
+					// Clean up audio elements from previous room
+					if (window.livekitAudioElements) {
+						window.livekitAudioElements.forEach((audioElement, participantId) => {
+							audioElement.pause();
+							audioElement.remove();
+						});
+						window.livekitAudioElements.clear();
+						console.log('🧹 Cleaned up audio elements from previous room');
+					}
+				}
+			}
+			
+			// Create or recreate room (either first time or after disconnect)
+			if (!window.godotLiveKitRoom || window.godotLiveKitRoom.state === 'disconnected') {
 				
 				console.log('✅ Using Room class:', RoomClass);
 				window.godotLiveKitRoom = new RoomClass();
@@ -585,6 +613,15 @@ func _on_livekit_token_received(data) -> void:
 					}
 				}, 2000);
 				
+				// Also subscribe to new tracks as they are published
+				window.godotLiveKitRoom.on('trackPublished', (trackPub, participant) => {
+					console.log('🎵 New track published by', participant.identity, '- auto-subscribing...');
+					if (trackPub.kind === 'audio' && !trackPub.isSubscribed) {
+						trackPub.setSubscribed(true);
+						console.log('✅ Auto-subscribed to audio track from', participant.identity);
+					}
+				});
+				
 				// Set up global error handler for DataChannel issues
 				window.addEventListener('error', (event) => {
 					if (event.message && event.message.includes('DataChannel')) {
@@ -599,8 +636,9 @@ func _on_livekit_token_received(data) -> void:
 				throw connectionError;
 			}
 			
-			// Enable microphone ONLY if voice is enabled (no camera)
-			if (window.godotVoiceEnabled) {
+			// Always enable microphone for track publishing (but mute if voice disabled)
+			// This ensures other players can subscribe to our track even in listen-only mode
+			{
 				try {
 					// First get microphone access with specific constraints
 					console.log('🎤 Requesting microphone access...');
@@ -623,11 +661,18 @@ func _on_livekit_token_received(data) -> void:
 					await window.godotLiveKitRoom.localParticipant.setMicrophoneEnabled(true);
 					console.log('🎤 Microphone enabled in LiveKit (audio only)');
 					
-					// Ensure microphone is not muted
+					// Set microphone mute state based on voice enabled status
+					const shouldMute = !window.godotVoiceEnabled;
 					const audioTracks = stream.getAudioTracks();
 					if (audioTracks.length > 0) {
-						audioTracks[0].enabled = true;
-						console.log('🎤 Audio track enabled:', audioTracks[0].enabled);
+						audioTracks[0].enabled = !shouldMute;
+						console.log('🎤 Audio track enabled:', audioTracks[0].enabled, '(voice enabled:', window.godotVoiceEnabled, ')');
+					}
+					
+					// Also set mute state on LiveKit participant
+					if (window.godotLiveKitRoom.localParticipant) {
+						await window.godotLiveKitRoom.localParticipant.setMicrophoneEnabled(!shouldMute);
+						console.log('🎤 LiveKit microphone muted:', shouldMute);
 					}
 					
 					// Check if LiveKit has the local participant's audio track
@@ -674,7 +719,7 @@ func _on_livekit_token_received(data) -> void:
 			window.godotMicrophoneReady = false;
 		}
 	})();
-	""" % [data.url, data.token, data.roomName]
+	""" % [data.roomName, data.url, data.token, data.roomName]
 	
 	JavaScriptBridge.eval(js_connect)
 	
@@ -782,6 +827,11 @@ func join_team_room(team_id: String) -> void:
 func join_lobby() -> void:
 	"""Join the main lobby voice room"""
 	on_voice_zone_changed("lobby")
+
+func switch_voice_room(room_name: String) -> void:
+	"""Switch to a specific voice room (used by SpatialVoiceManager)"""
+	print("LiveKitVoiceManager: 🔄 Switching to voice room: ", room_name)
+	on_voice_zone_changed(room_name)
 
 func _check_microphone_ready() -> void:
 	"""Check if microphone is ready and emit signal"""

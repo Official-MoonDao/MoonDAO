@@ -10,8 +10,9 @@ var is_recording := false
 var voice_enabled := false
 var proximity_range := 300.0
 
-# Reference to the LiveKit manager
+# Reference to the LiveKit manager and spatial voice manager
 var livekit_manager: Node = null
+var spatial_voice_manager: Node = null
 var room: Object = null
 var main_net_client: Node = null
 
@@ -44,6 +45,24 @@ func _ready() -> void:
 			print("VoiceChat: ❌ Failed to load LiveKitVoiceManager script!")
 	else:
 		print("VoiceChat: ✅ Found existing LiveKitVoiceManager")
+	
+	# Create spatial voice manager for proximity chat
+	print("VoiceChat: Creating SpatialVoiceManager...")
+	var spatial_script = load("res://scripts/SpatialVoiceManager.gd")
+	if spatial_script:
+		spatial_voice_manager = spatial_script.new()
+		if spatial_voice_manager:
+			spatial_voice_manager.name = "SpatialVoiceManager"
+			add_child(spatial_voice_manager)
+			print("VoiceChat: ✅ Created SpatialVoiceManager")
+			
+			# Connect spatial voice manager to LiveKit manager
+			if livekit_manager:
+				spatial_voice_manager.set_livekit_manager(livekit_manager)
+		else:
+			print("VoiceChat: ❌ Failed to create SpatialVoiceManager instance")
+	else:
+		print("VoiceChat: ❌ Failed to load SpatialVoiceManager script")
 	
 	# Connect to voice manager signals
 	if livekit_manager:
@@ -139,6 +158,10 @@ func set_main_net_client(client: Node) -> void:
 		livekit_manager.set_main_net_client(client)
 	else:
 		call_deferred("_deferred_client_setup", client)
+	
+	# Connect spatial voice manager to main client
+	if spatial_voice_manager:
+		spatial_voice_manager.set_main_client(client)
 
 func _deferred_client_setup(client: Node) -> void:
 	"""Deferred client setup for when LiveKit manager isn't ready immediately"""
@@ -161,12 +184,33 @@ func debug_voice_chat_state() -> Dictionary:
 		"livekit_manager_null": true
 	}
 
-# Legacy compatibility functions (mostly no-ops since LiveKit handles everything)
-func update_local_player_position(_position: Vector2) -> void:
-	pass  # LiveKit doesn't need position updates
+# Enhanced position tracking for proximity voice chat
+func update_local_player_position(position: Vector2) -> void:
+	"""Update local player position for proximity voice chat"""
+	if spatial_voice_manager:
+		spatial_voice_manager.update_player_position(position)
 
 func update_player_position(_session_id: String, _position: Vector2) -> void:
-	pass  # LiveKit doesn't need position updates
+	# No longer needed - proximity is handled by spatial voice manager
+	pass
+
+# Team room integration for spatial voice
+func on_team_room_entered(team_id: String) -> void:
+	"""Handle team room entry for voice chat"""
+	if spatial_voice_manager:
+		spatial_voice_manager.on_team_room_entered(team_id)
+
+func on_team_room_exited(team_id: String) -> void:
+	"""Handle team room exit for voice chat"""
+	if spatial_voice_manager:
+		spatial_voice_manager.on_team_room_exited(team_id)
+
+# Debug function for spatial voice
+func get_spatial_voice_debug() -> Dictionary:
+	"""Get debug information about spatial voice system"""
+	if spatial_voice_manager:
+		return spatial_voice_manager.get_debug_info()
+	return {}
 
 func calculate_proximity_volume(_distance: float) -> float:
 	return 1.0  # LiveKit handles audio automatically

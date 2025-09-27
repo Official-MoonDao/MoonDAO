@@ -19,6 +19,10 @@ const TeamRoomEntryMsg = z.object({
 const TEAM_ROOM_SIZE = 1200;
 const TEAM_ROOM_SPACING = TEAM_ROOM_SIZE * 2;
 
+// Proximity voice chat configuration
+const GRID_CELL_SIZE = 1500; // Same as client-side grid size
+const VOICE_PROXIMITY_RANGE = 800; // Voice range within a cell
+
 export class Lobby extends Room<RoomState> {
   maxClients = 64;
   private activeUserSessions = new Map<string, string>(); // userId -> sessionId mapping
@@ -27,6 +31,10 @@ export class Lobby extends Room<RoomState> {
   private teamRefreshTimer: NodeJS.Timeout | null = null; // Timer for refreshing team rooms
   private teamRefreshInterval = 300000; // 5 minutes in milliseconds
   private livekit = new LiveKitManager(); // SFU for voice chat
+
+  // Proximity voice chat tracking
+  private playerVoiceRooms = new Map<string, string>(); // sessionId -> current voice room
+  private voiceRoomOccupancy = new Map<string, Set<string>>(); // voice room -> set of sessionIds
 
   // Fetch valid teams with full data from the API
   private async fetchValidTeams(): Promise<
@@ -83,7 +91,66 @@ export class Lobby extends Room<RoomState> {
     return { x: Math.round(x), y: Math.round(y) };
   }
 
-  // Check if two players can hear each other (same voice zone)
+  // Calculate grid-based voice room for a position
+  private getVoiceRoomForPosition(x: number, y: number): string {
+    const gridX = Math.floor(x / GRID_CELL_SIZE);
+    const gridY = Math.floor(y / GRID_CELL_SIZE);
+    return `grid-${gridX}-${gridY}`;
+  }
+
+  // Get expected voice room for a player based on their current location
+  private getExpectedVoiceRoom(sessionId: string): string {
+    const player = this.state.players.get(sessionId);
+    if (!player) {
+      return "grid-0-0"; // Default room
+    }
+
+    // If player is in a team room, use team voice room
+    if (player.currentTeamRoom) {
+      return `team-${player.currentTeamRoom}`;
+    }
+
+    // Otherwise, use grid-based room
+    return this.getVoiceRoomForPosition(player.x, player.y);
+  }
+
+  // Update player's voice room based on position
+  private updatePlayerVoiceRoom(sessionId: string): void {
+    const expectedRoom = this.getExpectedVoiceRoom(sessionId);
+    const currentRoom = this.playerVoiceRooms.get(sessionId);
+
+    if (currentRoom !== expectedRoom) {
+      // Remove from old room
+      if (currentRoom) {
+        const oldRoomOccupants = this.voiceRoomOccupancy.get(currentRoom);
+        if (oldRoomOccupants) {
+          oldRoomOccupants.delete(sessionId);
+          if (oldRoomOccupants.size === 0) {
+            this.voiceRoomOccupancy.delete(currentRoom);
+          }
+        }
+      }
+
+      // Add to new room
+      if (!this.voiceRoomOccupancy.has(expectedRoom)) {
+        this.voiceRoomOccupancy.set(expectedRoom, new Set());
+      }
+      this.voiceRoomOccupancy.get(expectedRoom)!.add(sessionId);
+      this.playerVoiceRooms.set(sessionId, expectedRoom);
+
+      // Update player's voice room in state
+      const player = this.state.players.get(sessionId);
+      if (player) {
+        player.currentVoiceRoom = expectedRoom;
+      }
+
+      console.log(
+        `🎙️ Player ${sessionId} voice room: ${currentRoom} → ${expectedRoom}`
+      );
+    }
+  }
+
+  // Check if two players can hear each other (enhanced for proximity)
   private canPlayersHearEachOther(
     sessionId1: string,
     sessionId2: string
@@ -95,12 +162,7 @@ export class Lobby extends Room<RoomState> {
       return false;
     }
 
-    // If both players are in the lobby (no team room), they can hear each other
-    if (!player1.currentTeamRoom && !player2.currentTeamRoom) {
-      return true;
-    }
-
-    // If both players are in the same team room, they can hear each other
+    // Team room priority - if both are in same team room, they can hear each other
     if (
       player1.currentTeamRoom &&
       player2.currentTeamRoom &&
@@ -109,8 +171,18 @@ export class Lobby extends Room<RoomState> {
       return true;
     }
 
-    // Otherwise, they are in different voice zones and cannot hear each other
-    return false;
+    // If one is in team room and other isn't, they can't hear each other
+    if (player1.currentTeamRoom || player2.currentTeamRoom) {
+      return false;
+    }
+
+    // Both are in the open world - check proximity
+    const distance = Math.sqrt(
+      Math.pow(player1.x - player2.x, 2) + Math.pow(player1.y - player2.y, 2)
+    );
+
+    // Players can hear each other if within voice range
+    return distance <= VOICE_PROXIMITY_RANGE;
   }
 
   // Create team rooms based on valid teams
@@ -277,6 +349,9 @@ export class Lobby extends Room<RoomState> {
       const playerKey = `lastMove_${client.sessionId}`;
       this.playerMetadata.set(playerKey, Date.now());
 
+      // Update voice room based on new position
+      this.updatePlayerVoiceRoom(client.sessionId);
+
       // NO BOUNDS CLAMPING - let players go anywhere
     });
 
@@ -289,6 +364,9 @@ export class Lobby extends Room<RoomState> {
       // SIMPLE: Just set the position - REAL-TIME
       p.x = x;
       p.y = y;
+
+      // Update voice room based on new position
+      this.updatePlayerVoiceRoom(client.sessionId);
     });
 
     // Minimap position query - return authoritative server positions
@@ -504,10 +582,13 @@ export class Lobby extends Room<RoomState> {
         }`;
         const teamIds = Array.from(player.teamIds);
 
-        // Ensure the LiveKit room exists for team rooms
+        // Ensure the LiveKit room exists for team rooms and grid rooms
         if (roomName !== "lobby" && roomName.startsWith("team-")) {
           const teamId = roomName.replace("team-", "");
           await this.livekit.createTeamRoom(teamId);
+        } else if (roomName.startsWith("grid-")) {
+          // For grid rooms, we need to create them dynamically
+          await this.livekit.createGridRoom(roomName);
         }
 
         const token = await this.livekit.generateAccessToken(
@@ -578,6 +659,9 @@ export class Lobby extends Room<RoomState> {
         teamRoom.allowedPlayers.push(client.sessionId);
       }
 
+      // Update voice room to team room
+      this.updatePlayerVoiceRoom(client.sessionId);
+
       console.log(`🏠 Player ${client.sessionId} entered team room ${teamId}`);
 
       // Notify client of successful entry
@@ -635,6 +719,9 @@ export class Lobby extends Room<RoomState> {
 
       // Update player's current team room
       player.currentTeamRoom = "";
+
+      // Update voice room back to grid-based room
+      this.updatePlayerVoiceRoom(client.sessionId);
 
       // Notify client of successful exit
       client.send("team_room_exited", { teamId: currentTeamRoom });
@@ -810,6 +897,10 @@ export class Lobby extends Room<RoomState> {
     console.log(`🔍 Player ${client.sessionId} has team IDs:`, userTeamIds);
 
     this.state.players.set(client.sessionId, player);
+
+    // Initialize voice room for the player
+    this.updatePlayerVoiceRoom(client.sessionId);
+
     console.log(
       `onJoin ${client.sessionId} spawned at (${player.x.toFixed(
         1
@@ -892,6 +983,25 @@ export class Lobby extends Room<RoomState> {
   }
 
   private cleanupSession(sessionId: string, user: any) {
+    // Clean up voice room tracking
+    const currentVoiceRoom = this.playerVoiceRooms.get(sessionId);
+    if (currentVoiceRoom) {
+      const roomOccupants = this.voiceRoomOccupancy.get(currentVoiceRoom);
+      if (roomOccupants) {
+        roomOccupants.delete(sessionId);
+        if (roomOccupants.size === 0) {
+          this.voiceRoomOccupancy.delete(currentVoiceRoom);
+          console.log(
+            `🎙️ Voice room ${currentVoiceRoom} is now empty and removed`
+          );
+        }
+      }
+      this.playerVoiceRooms.delete(sessionId);
+      console.log(
+        `🎙️ Removed player ${sessionId} from voice room ${currentVoiceRoom}`
+      );
+    }
+
     // Remove player from team rooms
     this.state.teamRooms.forEach((teamRoom, teamId) => {
       const index = teamRoom.allowedPlayers.indexOf(sessionId);
