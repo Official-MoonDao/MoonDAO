@@ -10,8 +10,6 @@ primary_region = "sjc"
   REDIS_URL = "redis://localhost:6379"
   LIVEKIT_WS_URL = "ws://localhost:7880"
   LIVEKIT_CLIENT_URL = "wss://moondao-space-server.fly.dev:7880"
-  LIVEKIT_API_KEY = "devkey"
-  LIVEKIT_API_SECRET = "secret"
 
 # Main Colyseus service
 [http_service]
