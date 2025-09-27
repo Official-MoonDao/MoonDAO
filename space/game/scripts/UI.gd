@@ -831,8 +831,17 @@ func _teleport_to_team(team_id: String) -> void:
 				local_player = main_client.get_local_player()
 			
 			if local_player:
-				local_player.global_position = Vector2(center_x, center_y)
-				print("✅ Teleported to team ", team_id, " at position (", center_x, ", ", center_y, ")")
+				var new_position = Vector2(center_x, center_y)
+				
+				# Use the player's teleport method for proper server synchronization
+				if local_player.has_method("teleport_to_position"):
+					local_player.teleport_to_position(new_position)
+					print("✅ Teleported to team ", team_id, " using Player.teleport_to_position()")
+				else:
+					# Fallback to direct position setting (legacy approach)
+					local_player.global_position = new_position
+					print("⚠️ Used fallback teleport method - server sync may be incomplete")
+					print("✅ Teleported to team ", team_id, " at position (", center_x, ", ", center_y, ")")
 			else:
 				print("❌ No local player found for teleportation!")
 		else:

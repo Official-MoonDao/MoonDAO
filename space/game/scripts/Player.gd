@@ -176,6 +176,37 @@ func set_team_room_manager_reference(manager: Node) -> void:
 	"""Set the TeamRoomManager reference for zone detection"""
 	team_room_manager = manager
 
+func teleport_to_position(new_position: Vector2) -> void:
+	"""Teleport player to a new position and sync with server"""
+	if not is_local_player:
+		print("⚠️ Warning: teleport_to_position called on non-local player")
+		return
+	
+	var old_position = global_position
+	global_position = new_position
+	
+	# Send position update to server for synchronization
+	if room != null:
+		# Try sending as teleport message first
+		room.send("teleport", {"x": new_position.x, "y": new_position.y})
+		print("📡 Sent teleport to server: (", new_position.x, ", ", new_position.y, ")")
+		
+		# Also send as large movement delta as fallback for servers that don't support teleport
+		var delta = new_position - old_position
+		if delta.length() > 0.1:
+			room.send("move", {"x": delta.x, "y": delta.y})
+			print("📡 Sent movement delta as teleport fallback: (", delta.x, ", ", delta.y, ")")
+	else:
+		print("⚠️ Warning: Cannot sync teleport - no room connection")
+	
+	# Update voice chat position immediately
+	_update_voice_chat_position()
+	
+	# Check for team room entry/exit
+	_check_team_room_zones()
+	
+	print("✅ Teleported to position: (", new_position.x, ", ", new_position.y, ")")
+
 func _check_team_room_zones() -> void:
 	"""Check if local player should enter/exit team rooms based on position"""
 	if not is_local_player or not team_room_manager:
