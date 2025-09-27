@@ -131,7 +131,6 @@ export default function useJBProjectTimeline(
 
       try {
         const query = suckerGroupMomentsQuery(
-          selectedChain?.id,
           sgId,
           startTimestamp,
           endTimestamp

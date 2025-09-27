@@ -1,7 +1,9 @@
+import { BENDYSTRAW_JB_VERSION } from 'const/config'
+
 export function projectQuery(projectId: number) {
   return `
      query {
-          projects(where: {projectId: ${+projectId}}, limit: 1) {
+          projects(where: {projectId: ${+projectId}, version: ${BENDYSTRAW_JB_VERSION}}, limit: 1) {
             items {
               id
               projectId
@@ -20,33 +22,7 @@ export function projectQuery(projectId: number) {
   `
 }
 
-export function projectTimelineQuery(
-  chainId: number,
-  projectId: number,
-  startTimestamp: number,
-  endTimestamp: number
-) {
-  return `
-    query {
-      projectMoments(where: {
-        chainId: ${chainId},
-        projectId: ${+projectId},
-        timestamp_gte: ${startTimestamp},
-        timestamp_lte: ${endTimestamp}
-      }) {
-        items {
-          balance
-          volume
-          trendingScore
-          timestamp
-        }
-      }
-    }
-  `
-}
-
 export function suckerGroupMomentsQuery(
-  chainId: number,
   suckerGroupId: string,
   startTimestamp: number,
   endTimestamp: number
@@ -55,7 +31,8 @@ export function suckerGroupMomentsQuery(
     query {
       previous: suckerGroupMoments(where: {
         suckerGroupId: "${suckerGroupId}",
-        timestamp_lt: ${startTimestamp}
+        timestamp_lt: ${startTimestamp},
+        version: ${BENDYSTRAW_JB_VERSION},
       }, orderBy: "timestamp", orderDirection: "desc", limit: 1) {
         items {
           balance
@@ -68,7 +45,8 @@ export function suckerGroupMomentsQuery(
       range: suckerGroupMoments(where: {
         suckerGroupId: "${suckerGroupId}",
         timestamp_gte: ${startTimestamp},
-        timestamp_lte: ${endTimestamp}
+        timestamp_lte: ${endTimestamp},
+        version: ${BENDYSTRAW_JB_VERSION}
       }) {
         items {
           balance
@@ -91,7 +69,7 @@ export function projectEventsQuery(
   timestampCursor?: number | null
 ) {
   // Build the where clause with timestamp filtering for pagination
-  let whereClause = `projectId: ${+projectId}`
+  let whereClause = `projectId: ${+projectId} version: ${BENDYSTRAW_JB_VERSION}`
 
   if (filter) {
     whereClause += `, ${filter}_not: null`
@@ -166,13 +144,12 @@ export function projectEventsQuery(
 
 export function trendingProjectsQuery(
   count: number,
-  skip: number = 0,
-  orderBy: string = 'trendingScore',
-  where: string = 'createdWithinTrendingWindow: true'
+  orderBy: string = 'trendingScore'
 ) {
   return `
     query {
       projects(
+        where: {version: ${BENDYSTRAW_JB_VERSION}},
         limit: ${count}
         orderBy: "${orderBy}"
         orderDirection: "desc"
