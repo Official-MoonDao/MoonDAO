@@ -29,7 +29,7 @@ primary_region = "sjc"
   
   [[services.ports]]
     port = 7880
-    handlers = ["http"]
+    handlers = ["http", "tls"]
   
   [services.concurrency]
     type = "connections"
