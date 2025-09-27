@@ -18,7 +18,8 @@ import { serverClient } from '@/lib/thirdweb/client'
 async function getUserTeamIds(
   walletAddress: string,
   chain: any,
-  chainSlug: string
+  chainSlug: string,
+  req: NextApiRequest
 ): Promise<string[]> {
   try {
     console.log('🔍 Fetching user team IDs for wallet:', walletAddress)
@@ -31,8 +32,13 @@ async function getUserTeamIds(
       abi: TeamABI as any,
     })
 
+    // Build the full URL from the request headers
+    const protocol = req.headers['x-forwarded-proto'] || 'https'
+    const host = req.headers.host
+    const baseUrl = `${protocol}://${host}`
+
     // Fetch user's hats from the hats API (same as useTeamWearer)
-    const res = await fetch('/api/hats/get-wearer', {
+    const res = await fetch(`${baseUrl}/api/hats/get-wearer`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -220,7 +226,12 @@ export default async function handler(
     // Get user's team IDs
     let userTeamIds: string[] = []
     try {
-      userTeamIds = await getUserTeamIds(wallet.toLowerCase(), chain, chainSlug)
+      userTeamIds = await getUserTeamIds(
+        wallet.toLowerCase(),
+        chain,
+        chainSlug,
+        req
+      )
       console.log('🔍 User team IDs:', userTeamIds)
     } catch (error) {
       console.log('Error fetching user team IDs:', error)
