@@ -16,7 +16,6 @@ extends Node2D
 @export var reveal_move_threshold_px: float = 640.0  # fail-safe: reveal if camera moved this far from spawn camera
 
 # ---------- Scenes / Nodes ----------
-var CraterScene: PackedScene = preload("res://scenes/LunarCrater.tscn")
 @onready var actors: Node = _get_or_make_interactables()
 
 # ---------- State ----------
@@ -114,26 +113,7 @@ func _spawn_chunk(c: Vector2i) -> void:
 				rng.randf_range(-jitter, jitter)
 			)
 
-			# Spawn crater
-			var crater := CraterScene.instantiate()
-			crater.global_position = pos
-			actors.add_child(crater)
-			instances.append(crater)
-
-			# Visibility: never pop-in on-screen.
-			if screen_rect.has_point(pos):
-				crater.visible = false
-				crater.modulate.a = 0.0
-				_set_collision_enabled(crater, false, true)
-				_pending_reveal.append({
-					"node": crater,
-					"anchor_cam": cam_pos   # camera position at spawn time (fail-safe distance check)
-				})
-			else:
-				crater.visible = true
-				crater.modulate.a = 0.0
-				_set_collision_enabled(crater, true, true)
-				_fade_in(crater)
+			# Crater spawning removed - no longer generating craters dynamically
 
 	loaded_chunks[key] = instances
 

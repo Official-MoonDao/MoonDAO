@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://dikjtumnju782" path="res://scripts/MainNetClient.gd" id="1_elqb8"]
 [ext_resource type="Script" uid="uid://dwy60f8w7ue2q" path="res://scripts/Level1.gd" id="2_rarhs"]
 [ext_resource type="PackedScene" uid="uid://lg1e70p4tyqh" path="res://scenes/BackgroundLunar.tscn" id="2_rvslj"]
-[ext_resource type="PackedScene" uid="uid://cmd416pwcs5x8" path="res://scenes/LunarCrater.tscn" id="3_0bbpv"]
 [ext_resource type="Script" uid="uid://ceye5sjwq11tk" path="res://scripts/VoiceChat.gd" id="4_voicechat"]
 [ext_resource type="Script" uid="uid://bwxjubp0l2dy2" path="res://scripts/UI.gd" id="5_ui"]
 [ext_resource type="PackedScene" uid="uid://bq8n4v5fkwq7x" path="res://scenes/Minimap.tscn" id="6_minimap"]
@@ -21,8 +20,6 @@ script = ExtResource("2_rarhs")
 unique_name_in_owner = true
 y_sort_enabled = true
 
-[node name="LunarCrater" parent="Level1/Interactables" instance=ExtResource("3_0bbpv")]
-position = Vector2(624, 13)
 
 [node name="Actors" type="Node2D" parent="."]
 y_sort_enabled = true
