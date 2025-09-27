@@ -32,35 +32,28 @@ async function getUserTeamIds(
     })
 
     // Fetch user's hats from the hats API (same as useTeamWearer)
-    const res = await fetch(
-      `${
-        process.env.NEXTAUTH_URL ||
-        process.env.VERCEL_URL ||
-        'http://localhost:3000'
-      }/api/hats/get-wearer`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          chainId: chain.id,
-          wearerAddress: walletAddress,
-          props: {
-            currentHats: {
-              props: {
-                tree: {},
+    const res = await fetch('/api/hats/get-wearer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chainId: chain.id,
+        wearerAddress: walletAddress,
+        props: {
+          currentHats: {
+            props: {
+              tree: {},
+              admin: {
                 admin: {
-                  admin: {
-                    admin: {},
-                  },
+                  admin: {},
                 },
               },
             },
           },
-        }),
-      }
-    )
+        },
+      }),
+    })
 
     if (!res.ok) {
       console.error('Error fetching hats data:', res.statusText)
