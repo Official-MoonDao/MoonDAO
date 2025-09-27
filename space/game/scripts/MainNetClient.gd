@@ -863,11 +863,12 @@ func _ensure_camera() -> Camera2D:
 	c.position_smoothing_enabled = false  # Disabled to prevent background floating
 	c.position_smoothing_speed = 10.0
 	
-	# Set up camera limits for proper zoom-out viewing
-	c.limit_left = -10000
-	c.limit_right = 10000
-	c.limit_top = -10000
-	c.limit_bottom = 10000
+	# Remove camera limits to allow infinite world exploration
+	# The procedurally generated world is infinite, so camera should follow player anywhere
+	# c.limit_left = -10000
+	# c.limit_right = 10000
+	# c.limit_top = -10000
+	# c.limit_bottom = 10000
 	c.limit_smoothed = false
 	
 	# Set initial zoom
