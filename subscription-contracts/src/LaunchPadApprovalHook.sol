@@ -2,9 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/interfaces/IERC165.sol";
-import "@nana-core/interfaces/IJBRulesetApprovalHook.sol";
-import "@nana-core/interfaces/IJBTerminalStore.sol";
-import "@nana-core/libraries/JBConstants.sol";
+import "@nana-core-v5/interfaces/IJBRulesetApprovalHook.sol";
+import "@nana-core-v5/interfaces/IJBTerminalStore.sol";
+import "@nana-core-v5/libraries/JBConstants.sol";
+import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
 
 // Hook to enable payouts after a funding goal is reached and a deadline is passed.
 contract LaunchPadApprovalHook is IJBRulesetApprovalHook {
@@ -34,8 +35,7 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook {
 
     function approvalStatusOf(
         uint256 projectId,
-        uint256,
-        uint256 start
+        JBRuleset memory ruleset
     ) external view override returns (JBApprovalStatus) {
         uint256 currentFunding = _totalFunding(terminal, projectId);
         if (currentFunding >= fundingGoal && block.timestamp >= deadline) {

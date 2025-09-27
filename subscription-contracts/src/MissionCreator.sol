@@ -8,22 +8,22 @@ import {MissionTable} from "./tables/MissionTable.sol";
 import {Vesting} from "./Vesting.sol";
 import {PoolDeployer} from "./PoolDeployer.sol";
 import {MoonDAOTeam} from "./ERC5643.sol";
-import {IJBController} from "@nana-core/interfaces/IJBController.sol";
-import {IJBProjects} from "@nana-core/interfaces/IJBProjects.sol";
-import {JBRulesetConfig} from "@nana-core/structs/JBRulesetConfig.sol";
+import {IJBController} from "@nana-core-v5/interfaces/IJBController.sol";
+import {IJBProjects} from "@nana-core-v5/interfaces/IJBProjects.sol";
+import {JBRulesetConfig} from "@nana-core-v5/structs/JBRulesetConfig.sol";
 import {LaunchPadPayHook} from "./LaunchPadPayHook.sol";
 import {LaunchPadApprovalHook} from "./LaunchPadApprovalHook.sol";
-import {JBRulesetMetadata} from "@nana-core/structs/JBRulesetMetadata.sol";
-import {JBSplitGroup} from "@nana-core/structs/JBSplitGroup.sol";
-import {JBSplit} from "@nana-core/structs/JBSplit.sol";
-import {JBFundAccessLimitGroup} from "@nana-core/structs/JBFundAccessLimitGroup.sol";
-import {JBCurrencyAmount} from "@nana-core/structs/JBCurrencyAmount.sol";
-import {JBConstants} from "@nana-core/libraries/JBConstants.sol";
-import {JBAccountingContext} from "@nana-core/structs/JBAccountingContext.sol";
-import {JBTerminalConfig} from "@nana-core/structs/JBTerminalConfig.sol";
-import {IJBRulesetApprovalHook} from "@nana-core/interfaces/IJBRulesetApprovalHook.sol";
-import {IJBSplitHook} from "@nana-core/interfaces/IJBSplitHook.sol";
-import {IJBTerminal} from "@nana-core/interfaces/IJBTerminal.sol";
+import {JBRulesetMetadata} from "@nana-core-v5/structs/JBRulesetMetadata.sol";
+import {JBSplitGroup} from "@nana-core-v5/structs/JBSplitGroup.sol";
+import {JBSplit} from "@nana-core-v5/structs/JBSplit.sol";
+import {JBFundAccessLimitGroup} from "@nana-core-v5/structs/JBFundAccessLimitGroup.sol";
+import {JBCurrencyAmount} from "@nana-core-v5/structs/JBCurrencyAmount.sol";
+import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
+import {JBAccountingContext} from "@nana-core-v5/structs/JBAccountingContext.sol";
+import {JBTerminalConfig} from "@nana-core-v5/structs/JBTerminalConfig.sol";
+import {IJBRulesetApprovalHook} from "@nana-core-v5/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBSplitHook} from "@nana-core-v5/interfaces/IJBSplitHook.sol";
+import {IJBTerminal} from "@nana-core-v5/interfaces/IJBTerminal.sol";
 
 contract MissionCreator is Ownable, IERC721Receiver {
     IJBController public jbController;
@@ -264,8 +264,8 @@ contract MissionCreator is Ownable, IERC721Receiver {
             accountingContextsToAccept: new JBAccountingContext[](1) // Initialize as dynamic array
         });
         terminalConfigurations[0].accountingContextsToAccept[0] = JBAccountingContext({
-            token: address(0xEEEe), // The token to accept through the given terminal. Ensure this is a valid token address
-            decimals: 18, // The number of decimals the token is accounted with as a fixed point number.
+            token: JBConstants.NATIVE_TOKEN,
+            decimals: 18,
             currency: 61166 // The currency used with the token is ETH. This ensures proper price conversion when necessary.
         });
 

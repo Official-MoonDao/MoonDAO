@@ -5,7 +5,7 @@ import { ILayerZeroComposer } from "@layerzerolabs/lz-evm-protocol-v2/contracts/
 import { OptionsBuilder } from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
 import { OApp, Origin, MessagingFee } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import {JBConstants} from "@nana-core/libraries/JBConstants.sol";
+import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
 import { OFTComposeMsgCodec } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTComposeMsgCodec.sol";
 
 

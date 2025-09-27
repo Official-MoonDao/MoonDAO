@@ -1,4 +1,4 @@
-import MissionCreatorABI from 'const/abis/MissionCreator.json'
+import MissionCreator from 'const/abis/MissionCreator.json'
 import { MISSION_CREATOR_ADDRESSES } from 'const/config'
 import { useContext } from 'react'
 import { getChainSlug } from '../thirdweb/chain'
@@ -12,7 +12,7 @@ export default function useMissionFundingStage(missionId: number | undefined) {
 
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
-    abi: MissionCreatorABI,
+    abi: MissionCreator.abi,
     chain: selectedChain,
   })
 

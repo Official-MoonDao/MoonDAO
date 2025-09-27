@@ -13,12 +13,12 @@ contract CrossChainPayDeploy is Script, Config {
         // deterministic deploys.
         bytes memory constructorArgs = abi.encode(
             deployer,
-            JB_MULTI_TERMINAL,
+            JB_V5_MULTI_TERMINAL,
             address(0)
         );
         (address payAddress, bytes32 salt) =
             Miner.find(CREATE2_DEPLOYER, 0xda0, type(CrossChainPay).creationCode, constructorArgs);
-        CrossChainPay pay = new CrossChainPay{salt: salt}(deployer, JB_MULTI_TERMINAL, address(0));
+        CrossChainPay pay = new CrossChainPay{salt: salt}(deployer, JB_V5_MULTI_TERMINAL, address(0));
         pay.setStargateRouter(STARGATE_POOLS[block.chainid]);
 
         require(address(pay) == payAddress, "Fee hook address mismatch");
