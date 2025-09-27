@@ -43,16 +43,38 @@ export class Lobby extends Room<RoomState> {
     try {
       console.log("🔍 Fetching valid teams from API...");
       const apiUrl = process.env.API_BASE_URL || "http://localhost:3000";
-      const response = await fetch(`${apiUrl}/api/teams/all-valid-team-ids`);
+      const bypassToken = process.env.VERCEL_BYPASS_TOKEN;
+
+      const url = `${apiUrl}/api/teams/all-valid-team-ids`;
+
+      // Build headers with bypass token for Vercel preview deployments
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (bypassToken) {
+        headers["x-vercel-protection-bypass"] = bypassToken;
+        console.log("🔐 Using Vercel bypass token for authentication");
+      }
+
+      const response = await fetch(url, { headers });
 
       if (!response.ok) {
-        console.error("Failed to fetch teams:", response.statusText);
+        console.error(
+          "Failed to fetch teams:",
+          response.status,
+          response.statusText
+        );
+        console.error(
+          "Response headers:",
+          Object.fromEntries(response.headers.entries())
+        );
         return [];
       }
 
       const data = await response.json();
       const teams = data.validTeams || [];
-      console.log("✅ Fetched valid teams:", teams);
+      console.log("✅ Fetched valid teams:", teams.length, "teams");
       return teams;
     } catch (error) {
       console.error("Error fetching valid teams:", error);
