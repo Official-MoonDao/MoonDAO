@@ -37,12 +37,21 @@ async function getUserTeamIds(
     const host = req.headers.host
     const baseUrl = `${protocol}://${host}`
 
+    // Build headers with bypass token for Vercel preview deployments
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    // Add Vercel bypass token if available (for preview deployments)
+    const bypassToken = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+    if (bypassToken) {
+      headers['x-vercel-protection-bypass'] = bypassToken
+    }
+
     // Fetch user's hats from the hats API (same as useTeamWearer)
     const res = await fetch(`${baseUrl}/api/hats/get-wearer`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         chainId: chain.id,
         wearerAddress: walletAddress,
