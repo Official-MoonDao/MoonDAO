@@ -65,6 +65,9 @@ func _create_room_visuals():
 	walls.clear()
 	wall_collision_shapes.clear()
 	
+	# Set team room to render behind players
+	z_index = -50  # Behind players (0) but above background (-1000)
+	
 	# Create floor
 	floor_area = ColorRect.new()
 	floor_area.size = Vector2(room_width, room_height)

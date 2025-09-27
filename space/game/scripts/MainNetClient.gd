@@ -459,6 +459,9 @@ func _sync_from_state(state) -> void:
 					inst.set_network_position(spawn_pos)
 				print("Player ", sid, " (", "LOCAL" if is_local else "REMOTE", ") spawned directly at server position: ", spawn_pos)
 			
+			# Ensure players are always rendered above team rooms
+			inst.z_index = 10  # Above team rooms (-50) and background (-1000)
+			
 			actors.add_child(inst)
 			players[sid] = inst
 			
@@ -838,6 +841,8 @@ func _spawn_dummy_player() -> void:
 		push_error("MainNetClient: Could not load Player.tscn at " + PLAYER_SCENE_PATH)
 		return
 	var inst: Node2D = ps.instantiate()
+	# Ensure dummy player is also rendered above team rooms
+	inst.z_index = 10  # Above team rooms (-50) and background (-1000)
 	actors.add_child(inst)
 	if inst.has_method("set_name_text"):
 		inst.set_name_text("Local Dummy")
