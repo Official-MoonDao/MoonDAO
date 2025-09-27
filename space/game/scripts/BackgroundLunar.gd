@@ -1,10 +1,12 @@
 extends Node2D
 
 @export var texture_path: String = "res://art/lunar.png"  # Path to lunar texture
-@export var background_size: int = 32768  # Large background size
+@export var tile_size: int = 2048  # Size of each background tile
+@export var visible_range: int = 3  # How many tiles to keep loaded around camera
 
-var background_sprite: Sprite2D
+var background_sprites: Dictionary = {}  # Track active tiles
 var cam: Camera2D
+var last_camera_tile: Vector2i = Vector2i.ZERO
 
 func _ready() -> void:
 	# Find the camera
@@ -16,51 +18,100 @@ func _ready() -> void:
 	# Set background to render behind everything
 	z_index = -1000
 	
-	# Create simple large background with proper shader
-	_create_background()
+	# Initialize the first set of background tiles
+	_update_background_tiles(Vector2i.ZERO)
 	
-	print("BackgroundLunar: Shader background ready")
+	print("BackgroundLunar: Infinite tiling background ready")
 
 func _process(_dt: float) -> void:
-	# Background stays stationary - it's the world surface
-	pass
+	if not cam:
+		return
+	
+	# Calculate which tile the camera is currently over
+	var camera_pos = cam.global_position
+	var current_tile = Vector2i(
+		int(floor(camera_pos.x / tile_size)),
+		int(floor(camera_pos.y / tile_size))
+	)
+	
+	# Only update tiles if camera moved to a different tile
+	if current_tile != last_camera_tile:
+		_update_background_tiles(current_tile)
+		last_camera_tile = current_tile
 
-func _create_background() -> void:
-	"""Create a large background with proper tiling shader"""
+func _update_background_tiles(center_tile: Vector2i) -> void:
+	"""Update background tiles around the camera position"""
+	var new_tiles: Dictionary = {}
+	
+	# Calculate which tiles should be visible
+	for x in range(-visible_range, visible_range + 1):
+		for y in range(-visible_range, visible_range + 1):
+			var tile_coord = center_tile + Vector2i(x, y)
+			var tile_key = str(tile_coord.x) + "," + str(tile_coord.y)
+			new_tiles[tile_key] = tile_coord
+	
+	# Remove tiles that are no longer needed
+	for tile_key in background_sprites.keys():
+		if not new_tiles.has(tile_key):
+			var sprite = background_sprites[tile_key]
+			sprite.queue_free()
+			background_sprites.erase(tile_key)
+	
+	# Add new tiles that are now needed
+	for tile_key in new_tiles.keys():
+		if not background_sprites.has(tile_key):
+			var tile_coord = new_tiles[tile_key]
+			_create_background_tile(tile_coord, tile_key)
+
+func _create_background_tile(tile_coord: Vector2i, tile_key: String) -> void:
+	"""Create a single background tile at the specified coordinate"""
 	# Load the texture
-	print("BackgroundLunar: Loading texture from: " + texture_path)
 	var texture = load(texture_path) as Texture2D
 	if not texture:
 		push_error("BackgroundLunar: Could not load texture: " + texture_path)
 		return
-
-	print("BackgroundLunar: Successfully loaded texture: " + str(texture.get_size()))
 	
-	# Create the background sprite
-	background_sprite = Sprite2D.new()
-	background_sprite.texture = texture
-	background_sprite.z_index = -1000
+	# Create the background sprite for this tile
+	var sprite = Sprite2D.new()
+	sprite.texture = texture
+	sprite.z_index = -1000
 	
-	# Scale it large
+	# Position the tile
+	sprite.global_position = Vector2(
+		tile_coord.x * tile_size + tile_size / 2,
+		tile_coord.y * tile_size + tile_size / 2
+	)
+	
+	# Scale the sprite to fit the tile size
 	var texture_size = texture.get_size()
-	background_sprite.scale = Vector2(background_size / texture_size.x, background_size / texture_size.y)
+	sprite.scale = Vector2(
+		float(tile_size) / texture_size.x,
+		float(tile_size) / texture_size.y
+	)
 	
 	# Use linear filtering for smoother look
-	background_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	
-	# Add simple tiling shader with light blending
+	# Add the infinite tiling shader
 	var shader_material = ShaderMaterial.new()
-	var tiling_shader = _create_tiling_shader()
+	var tiling_shader = _create_infinite_tiling_shader()
 	shader_material.shader = tiling_shader
-	background_sprite.material = shader_material
 	
-	add_child(background_sprite)
+	# Pass the tile coordinate to the shader for seamless tiling
+	shader_material.set_shader_parameter("tile_offset", Vector2(tile_coord))
+	
+	sprite.material = shader_material
+	
+	add_child(sprite)
+	background_sprites[tile_key] = sprite
 
-func _create_tiling_shader() -> Shader:
+func _create_infinite_tiling_shader() -> Shader:
 	"""Create a seamless shader without tiling boundaries"""
 	var shader = Shader.new()
 	shader.code = """
 	shader_type canvas_item;
+	
+	uniform vec2 tile_offset;
 	
 	// Hash function for pseudo-random values
 	float hash(vec2 p) {
@@ -82,18 +133,18 @@ func _create_tiling_shader() -> Shader:
 	}
 	
 	void fragment() {
-		// Convert to world coordinates
-		vec2 world_pos = (UV - 0.5) * 32768.0;
+		// Calculate world position for this tile
+		vec2 world_pos = tile_offset * 2048.0 + (UV - 0.5) * 2048.0;
 		vec2 tile_coord = world_pos * 0.00025;
 		
-		// Apply subtle pixelation
+		// Apply subtle pixelation (same as original)
 		float pixel_size = 200.0;  // Less pixelated but still retro
 		vec2 pixelated_coord = floor(tile_coord * pixel_size) / pixel_size;
 		
 		// Get tile UV coordinates
 		vec2 tile_uv = fract(pixelated_coord);
 		
-		// Create seamless wrapping by averaging edge samples
+		// Create seamless wrapping by averaging edge samples (original logic)
 		float edge_size = 0.08;  // 8% of texture for smoother edge blending
 		vec3 color = texture(TEXTURE, tile_uv).rgb;
 		
@@ -126,7 +177,7 @@ func _create_tiling_shader() -> Shader:
 			color = mix(color, wrap_color, blend_weight * 0.5);
 		}
 		
-		// Add noise to break up any remaining patterns
+		// Add noise to break up any remaining patterns (original)
 		float noise_val = noise(world_pos * 0.001) * 0.03;
 		color += vec3(noise_val);
 		
