@@ -1,9 +1,11 @@
 import {
   RocketLaunchIcon,
   ExclamationTriangleIcon,
+  ArrowsPointingOutIcon,
+  ArrowsPointingInIcon,
 } from '@heroicons/react/24/outline'
 import { getAccessToken, usePrivy } from '@privy-io/react-auth'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react'
 import { useContext } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -17,6 +19,9 @@ export default function Space() {
   const [iframeSrc, setIframeSrc] = useState<string | null>(null)
   const [isLoadingToken, setIsLoadingToken] = useState(false)
   const [hasError, setHasError] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  const gameContainerRef = useRef<HTMLDivElement>(null)
 
   const walletAddress = useMemo(() => {
     return (citizen?.owner || account?.address || '').toString()
@@ -31,6 +36,61 @@ export default function Space() {
         : '')
     )
   }, [citizen, walletAddress])
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobileDevice =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        ) ||
+        window.innerWidth <= 768 ||
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0
+      setIsMobile(isMobileDevice)
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Fullscreen detection
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () =>
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  const toggleFullscreen = useCallback(async () => {
+    if (!gameContainerRef.current) return
+
+    try {
+      if (!document.fullscreenElement) {
+        await gameContainerRef.current.requestFullscreen()
+      } else {
+        await document.exitFullscreen()
+      }
+    } catch (error) {
+      console.error('Fullscreen toggle failed:', error)
+    }
+  }, [])
+
+  // Keyboard escape handler
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && document.fullscreenElement) {
+        document.exitFullscreen()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyPress)
+    return () => document.removeEventListener('keydown', handleKeyPress)
+  }, [])
 
   useEffect(() => {
     async function fetchToken() {
@@ -76,6 +136,23 @@ export default function Space() {
       )
     }
   }, [token])
+
+  // Auto-fullscreen on mobile when game loads
+  useEffect(() => {
+    if (!iframeSrc || !isMobile || !gameContainerRef.current) return
+
+    const timer = setTimeout(async () => {
+      if (gameContainerRef.current && !document.fullscreenElement) {
+        try {
+          await gameContainerRef.current.requestFullscreen()
+        } catch (error) {
+          console.log('Auto-fullscreen failed on mobile:', error)
+        }
+      }
+    }, 1000) // Small delay to ensure iframe is loaded
+
+    return () => clearTimeout(timer)
+  }, [iframeSrc, isMobile])
 
   if (!authenticated) {
     return (
@@ -334,12 +411,12 @@ export default function Space() {
           {/* Header with glassmorphism */}
           <div className="mb-6">
             <div className="bg-gradient-to-r from-slate-800/30 to-slate-700/40 backdrop-blur-md border border-slate-600/20 rounded-xl p-3 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0">
+                <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-3">
                   <div className="w-8 h-8 bg-gradient-to-br from-light-cool to-moon-gold rounded-lg flex items-center justify-center flex-shrink-0">
                     <RocketLaunchIcon className="w-4 h-4 text-white" />
                   </div>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-4 text-center md:text-left">
                     <h1 className="text-lg font-GoodTimes text-white whitespace-nowrap">
                       MoonDAO Space
                     </h1>
@@ -357,11 +434,50 @@ export default function Space() {
           </div>
 
           {/* Enhanced iframe container with glassmorphism */}
-          <div className="bg-gradient-to-b from-slate-800/20 to-slate-900/30 backdrop-blur-md border border-slate-600/20 rounded-3xl p-3 shadow-2xl">
+          <div
+            ref={gameContainerRef}
+            className={`bg-gradient-to-b from-slate-800/20 to-slate-900/30 backdrop-blur-md border border-slate-600/20 rounded-3xl p-3 shadow-2xl transition-all duration-300 relative ${
+              isFullscreen ? 'fixed inset-0 z-50 bg-black rounded-none p-0' : ''
+            }`}
+            style={isFullscreen ? { height: '100dvh' } : undefined}
+          >
+            {/* Fullscreen button positioned in top right of game container */}
+            {(() => {
+              const shouldShow = true // Always show the button
+              console.log('Fullscreen button visibility:', {
+                isMobile,
+                isFullscreen,
+                shouldShow,
+              })
+              return shouldShow
+            })() && (
+              <button
+                onClick={toggleFullscreen}
+                className={`absolute z-10 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-600/40 rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-light-cool/50 backdrop-blur-sm ${
+                  isFullscreen ? 'top-4 right-4' : 'top-5 right-5'
+                } ${isMobile && isFullscreen ? 'p-3' : 'p-2'}`}
+                title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+              >
+                {isFullscreen ? (
+                  <ArrowsPointingInIcon
+                    className={`text-slate-300 ${
+                      isMobile && isFullscreen ? 'w-5 h-5' : 'w-4 h-4'
+                    }`}
+                  />
+                ) : (
+                  <ArrowsPointingOutIcon className="w-4 h-4 text-slate-300" />
+                )}
+              </button>
+            )}
             <iframe
               src={iframeSrc}
-              className="w-full h-[75vh] border-0 rounded-2xl bg-black/10"
-              allow="microphone *; autoplay; camera; midi; encrypted-media; vr;"
+              className={`w-full border-0 bg-black/10 transition-all duration-300 ${
+                isFullscreen
+                  ? `${isMobile ? 'h-[95dvh]' : 'h-screen'} rounded-none`
+                  : 'h-[75vh] rounded-2xl'
+              }`}
+              style={isFullscreen ? { height: '100dvh' } : undefined}
+              allow="microphone *; autoplay; camera; midi; encrypted-media;"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
               referrerPolicy="no-referrer-when-downgrade"
               title="MoonDAO Space"
