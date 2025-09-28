@@ -45,10 +45,24 @@ var min_zoom: float = 0.25  # Can zoom out to 25% (see 4x more area)
 var max_zoom: float = 3.0  # Can zoom in to 300% (closer view)
 var zoom_step: float = 0.003  # How much to zoom per scroll step (40% less sensitive)
 
+# Pinch-to-zoom for mobile
+var touch_points: Dictionary = {}
+var initial_distance: float = 0.0
+var initial_zoom: float = 1.0
+var is_pinching: bool = false
+
 func _input(event):
 	"""Handle input events like mouse wheel/trackpad for zoom"""
+	# Handle mobile pinch-to-zoom (only if enabled in GameConfig)
+	var touch_config = GameConfig.get_touch_config()
+	if touch_config.pinch_zoom_enabled:
+		if event is InputEventScreenTouch:
+			_handle_touch_input(event)
+		elif event is InputEventScreenDrag:
+			_handle_touch_drag(event)
+	
 	# Handle traditional mouse wheel (button events)
-	if event is InputEventMouseButton:
+	elif event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_zoom_in()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
@@ -93,6 +107,53 @@ func _update_camera_zoom():
 	"""Apply the current zoom level to the camera"""
 	if cam:
 		cam.zoom = Vector2(current_zoom, current_zoom)
+
+func _handle_touch_input(event: InputEventScreenTouch) -> void:
+	"""Handle touch events for pinch-to-zoom"""
+	if event.pressed:
+		# Touch started - add to touch points
+		touch_points[event.index] = event.position
+		print("MainNetClient: Touch ", event.index, " started at ", event.position)
+		
+		# If this is the second touch, start pinch gesture
+		if touch_points.size() == 2:
+			is_pinching = true
+			initial_zoom = current_zoom
+			var positions = touch_points.values()
+			initial_distance = positions[0].distance_to(positions[1])
+			print("MainNetClient: Pinch gesture started - initial distance: ", initial_distance)
+	else:
+		# Touch ended - remove from touch points
+		touch_points.erase(event.index)
+		print("MainNetClient: Touch ", event.index, " ended")
+		
+		# If we have less than 2 touches, stop pinching
+		if touch_points.size() < 2:
+			is_pinching = false
+			print("MainNetClient: Pinch gesture ended")
+
+func _handle_touch_drag(event: InputEventScreenDrag) -> void:
+	"""Handle touch drag events for pinch-to-zoom"""
+	# Update the position of the dragged touch point
+	if event.index in touch_points:
+		touch_points[event.index] = event.position
+	
+	# If we're pinching with exactly 2 touches
+	if is_pinching and touch_points.size() == 2:
+		var positions = touch_points.values()
+		var current_distance = positions[0].distance_to(positions[1])
+		
+		if initial_distance > 0:
+			# Calculate zoom factor based on distance change
+			var distance_ratio = current_distance / initial_distance
+			var new_zoom = initial_zoom * distance_ratio
+			
+			# Apply zoom limits
+			new_zoom = clamp(new_zoom, min_zoom, max_zoom)
+			
+			# Update current zoom and camera
+			current_zoom = new_zoom
+			_update_camera_zoom()
 
 func _ready() -> void:
 	# Add to group so background can find this node

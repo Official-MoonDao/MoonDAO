@@ -2,6 +2,7 @@
 extends Control
 
 signal microphone_toggled(enabled: bool)
+signal joystick_input(input_vector: Vector2)
 
 @onready var voice_chat: Node = null
 @onready var mic_button: Button
@@ -12,6 +13,20 @@ signal microphone_toggled(enabled: bool)
 @onready var teams_button: Button
 @onready var teams_icon: Label
 @onready var teams_glass_panel: Panel
+
+# Mobile joystick controls
+@onready var joystick_panel: Panel
+@onready var joystick_base: Control
+@onready var joystick_knob: Control
+var joystick_center: Vector2
+var is_mobile: bool = false
+var joystick_radius: float = 70.0  # Will be overridden by GameConfig
+var joystick_deadzone: float = 0.2  # Will be overridden by GameConfig
+var joystick_sprint_threshold: float = 0.9  # Will be overridden by GameConfig
+var current_joystick_vector: Vector2 = Vector2.ZERO
+var current_joystick_is_sprinting: bool = false  # Track if joystick is at sprint threshold
+var joystick_is_active: bool = false  # Track if joystick is being used
+
 var microphone_enabled := false
 var mic_is_loading := false
 var teams_modal: Control = null
@@ -19,11 +34,26 @@ var main_client: Node = null
 
 func _ready() -> void:
 	print("UI: _ready() called")
+	
+	# Add to mobile_ui group for config change notifications
+	add_to_group("mobile_ui")
+	
+	_detect_mobile_platform()
 	setup_glass_morphism_ui()
 	# Wait a frame for other nodes to be ready
 	await get_tree().process_frame
 	connect_voice_chat()
+	
+	# Debug: Check if joystick_input signal exists
+	# UI initialization complete
+	
+	# Connect to our own signal to debug connections
+	if has_signal("joystick_input"):
+		joystick_input.connect(_debug_joystick_connection)
 
+func _detect_mobile_platform() -> void:
+	"""Detect if we're running on a mobile platform"""
+	is_mobile = GameConfig.is_mobile()
 
 func setup_glass_morphism_ui() -> void:
 	print("UI: Setting up glass morphism interface...")
@@ -166,6 +196,10 @@ func setup_glass_morphism_ui() -> void:
 	teams_icon.add_theme_constant_override("shadow_offset_x", 1)
 	teams_icon.add_theme_constant_override("shadow_offset_y", 1)
 	
+	# Create mobile joystick if on mobile platform
+	if is_mobile:
+		_setup_mobile_joystick(screen_size)
+	
 	# Create status label
 	status_label = Label.new()
 	status_label.name = "StatusLabel"
@@ -213,6 +247,104 @@ func setup_glass_morphism_ui() -> void:
 	
 	print("UI: Glass morphism UI setup complete")
 	print("UI: Final positions - Panel: ", glass_panel.position, " Button: ", mic_button.position)
+
+func _setup_mobile_joystick(screen_size: Vector2) -> void:
+	"""Create the mobile joystick with glass morphism styling"""
+	
+	# Get joystick config from GameConfig
+	var joystick_config = GameConfig.get_joystick_config()
+	var joystick_size = joystick_config.size
+	joystick_radius = joystick_config.radius
+	joystick_deadzone = joystick_config.deadzone
+	joystick_sprint_threshold = joystick_config.sprint_threshold
+	
+	# Joystick configured from GameConfig
+	
+	# Position joystick in bottom-left area (easier to reach with left thumb)
+	var margin = 40  # Distance from screen edges
+	var joystick_position = Vector2(
+		margin,  # Left side with margin
+		screen_size.y - joystick_size.y - margin   # Bottom with margin
+	)
+	
+	print("UI: Joystick position calculated: ", joystick_position)
+	
+	# Create joystick background panel with glass morphism
+	joystick_panel = Panel.new()
+	joystick_panel.name = "JoystickPanel"
+	joystick_panel.size = joystick_size
+	joystick_panel.position = joystick_position
+	joystick_panel.mouse_filter = Control.MOUSE_FILTER_PASS  # Allow interaction
+	add_child(joystick_panel)
+	
+	# Apply glass morphism styling to joystick panel
+	var joystick_style = StyleBoxFlat.new()
+	joystick_style.bg_color = Color(1.0, 1.0, 1.0, 0.15)  # More visible for testing
+	joystick_style.corner_radius_top_left = 80
+	joystick_style.corner_radius_top_right = 80
+	joystick_style.corner_radius_bottom_left = 80
+	joystick_style.corner_radius_bottom_right = 80
+	joystick_style.border_width_left = 3
+	joystick_style.border_width_right = 3
+	joystick_style.border_width_top = 3
+	joystick_style.border_width_bottom = 3
+	joystick_style.border_color = Color(1.0, 1.0, 1.0, 0.5)  # More visible border
+	joystick_style.shadow_color = Color(0.0, 0.0, 0.0, 0.3)
+	joystick_style.shadow_size = 5
+	joystick_style.shadow_offset = Vector2(2, 2)
+	joystick_panel.add_theme_stylebox_override("panel", joystick_style)
+	
+	# Create joystick base (background circle)
+	joystick_base = Control.new()
+	joystick_base.name = "JoystickBase"
+	joystick_base.size = Vector2(180, 180)  # Bigger to match new joystick size
+	joystick_base.position = Vector2(10, 10)  # Centered in panel
+	joystick_base.mouse_filter = Control.MOUSE_FILTER_PASS
+	joystick_panel.add_child(joystick_base)
+	
+	# Create joystick knob (draggable element)
+	joystick_knob = Control.new()
+	joystick_knob.name = "JoystickKnob"
+	joystick_knob.size = Vector2(60, 60)
+	joystick_knob.mouse_filter = Control.MOUSE_FILTER_PASS
+	joystick_base.add_child(joystick_knob)
+	
+	# Style the knob with glass morphism
+	var knob_panel = Panel.new()
+	knob_panel.size = Vector2(60, 60)
+	knob_panel.position = Vector2.ZERO
+	knob_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE  # Let parent handle input
+	joystick_knob.add_child(knob_panel)
+	
+	var knob_style = StyleBoxFlat.new()
+	knob_style.bg_color = Color(0.3, 0.8, 1.0, 0.7)  # Blue tint for visibility
+	knob_style.corner_radius_top_left = 30
+	knob_style.corner_radius_top_right = 30
+	knob_style.corner_radius_bottom_left = 30
+	knob_style.corner_radius_bottom_right = 30
+	knob_style.border_width_left = 2
+	knob_style.border_width_right = 2
+	knob_style.border_width_top = 2
+	knob_style.border_width_bottom = 2
+	knob_style.border_color = Color(1.0, 1.0, 1.0, 0.8)
+	knob_style.shadow_color = Color(0.0, 0.0, 0.0, 0.4)
+	knob_style.shadow_size = 3
+	knob_style.shadow_offset = Vector2(1, 1)
+	knob_panel.add_theme_stylebox_override("panel", knob_style)
+	
+	# Calculate joystick center properly (relative to base)
+	var base_center = joystick_base.size / 2
+	joystick_center = base_center
+	
+	# Position knob at center initially
+	var knob_center_offset = joystick_knob.size / 2
+	joystick_knob.position = base_center - knob_center_offset
+	
+	print("UI: Joystick center calculated: ", joystick_center)
+	print("UI: Initial knob position: ", joystick_knob.position)
+	print("UI: Mobile joystick created successfully!")
+	print("UI: Panel global position: ", joystick_panel.global_position)
+	print("UI: Base global position: ", joystick_base.global_position)
 
 func connect_voice_chat() -> void:
 	print("UI: �� Searching for LiveKit voice chat system...")
@@ -473,6 +605,10 @@ func _process(_delta: float) -> void:
 		print("UI: Spacebar pressed - toggling microphone")
 		toggle_microphone()
 	
+	# Handle mobile joystick input
+	if is_mobile and joystick_base:
+		_handle_joystick_input()
+	
 	# Debug: Check if mouse is over teams button
 	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		var mouse_pos = get_global_mouse_position()
@@ -503,6 +639,146 @@ func _update_positions_if_needed() -> void:
 		teams_icon.position = Vector2(current_screen_size.x - 230, current_screen_size.y - 110)
 		status_label.position = Vector2(current_screen_size.x - 120, current_screen_size.y - 15)
 		spacebar_hint_label.position = Vector2(current_screen_size.x - 120, current_screen_size.y + 5)
+		
+		# Update joystick position if it exists
+		if is_mobile and joystick_panel:
+			var margin = 40
+			var target_joystick_pos = Vector2(
+				margin,  # Left side with margin
+				current_screen_size.y - joystick_panel.size.y - margin   # Bottom with margin
+			)
+			joystick_panel.position = target_joystick_pos
+			joystick_center = joystick_base.size / 2
+
+func _handle_joystick_input() -> void:
+	"""Handle mobile joystick touch input"""
+	var input_vector = Vector2.ZERO
+	var mouse_pressed = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+	
+	if mouse_pressed:
+		var mouse_pos = get_global_mouse_position()
+		
+		# Check if we're starting a new joystick interaction
+		if not joystick_is_active:
+			var joystick_global_pos = joystick_panel.global_position
+			var joystick_rect = Rect2(joystick_global_pos, joystick_panel.size)
+			
+			# Only start joystick if clicking within the joystick area
+			if joystick_rect.has_point(mouse_pos):
+				joystick_is_active = true
+		
+		# If joystick is active, process input regardless of mouse position
+		if joystick_is_active:
+			# Calculate touch position relative to joystick base center
+			var base_global_pos = joystick_base.global_position
+			var base_center_global = base_global_pos + joystick_base.size / 2
+			var touch_offset = mouse_pos - base_center_global
+			
+			# Calculate input vector BEFORE clamping (for full range input)
+			var distance = touch_offset.length()
+			if distance > 0:
+				input_vector = touch_offset / joystick_radius
+				# Clamp input vector to maximum of 1.0 in any direction
+				if input_vector.length() > 1.0:
+					input_vector = input_vector.normalized()
+			
+			# Clamp visual knob position to joystick radius (but keep full input range)
+			var visual_offset = touch_offset
+			if distance > joystick_radius:
+				visual_offset = touch_offset.normalized() * joystick_radius
+			
+			# Update knob position (relative to base, centered)
+			var knob_center_offset = joystick_knob.size / 2
+			joystick_knob.position = joystick_center + visual_offset - knob_center_offset
+			
+			# Apply deadzone
+			if input_vector.length() < joystick_deadzone:
+				input_vector = Vector2.ZERO
+			
+			# Check if sprinting (joystick at high intensity)
+			current_joystick_is_sprinting = input_vector.length() >= joystick_sprint_threshold
+			
+			# Update knob visual style based on sprint state
+			_update_joystick_knob_style(current_joystick_is_sprinting)
+			
+	else:
+		# Mouse/touch released - deactivate joystick and return to center
+		if joystick_is_active:
+			joystick_is_active = false
+		
+		# Return knob to center
+		var knob_center_offset = joystick_knob.size / 2
+		joystick_knob.position = joystick_center - knob_center_offset
+		input_vector = Vector2.ZERO
+		current_joystick_is_sprinting = false
+		_update_joystick_knob_style(false)
+	
+	# Store and emit current input (always emit, including zero)
+	current_joystick_vector = input_vector
+	joystick_input.emit(input_vector)
+	
+	# Set global variables for direct access by Player
+	if has_method("get_tree") and get_tree():
+		get_tree().set_meta("joystick_input", input_vector)
+		get_tree().set_meta("joystick_is_sprinting", current_joystick_is_sprinting)
+
+func _debug_joystick_connection(input_vector: Vector2) -> void:
+	"""Debug function to verify signal emission"""
+	pass
+
+func get_joystick_input() -> Vector2:
+	"""Get current joystick input vector for direct access"""
+	return current_joystick_vector
+
+func _update_joystick_knob_style(is_sprinting: bool) -> void:
+	"""Update joystick knob visual style based on sprint state"""
+	if not joystick_knob:
+		return
+		
+	var knob_panel = joystick_knob.get_child(0) as Panel
+	if not knob_panel:
+		return
+	
+	var knob_style = StyleBoxFlat.new()
+	
+	if is_sprinting:
+		# Sprint style: Orange/red tint for high intensity
+		knob_style.bg_color = Color(1.0, 0.5, 0.2, 0.8)  # Orange tint for sprint
+	else:
+		# Normal style: Blue tint
+		knob_style.bg_color = Color(0.3, 0.8, 1.0, 0.7)  # Blue tint for normal
+	
+	# Apply consistent styling
+	knob_style.corner_radius_top_left = 30
+	knob_style.corner_radius_top_right = 30
+	knob_style.corner_radius_bottom_left = 30
+	knob_style.corner_radius_bottom_right = 30
+	knob_style.border_width_left = 2
+	knob_style.border_width_right = 2
+	knob_style.border_width_top = 2
+	knob_style.border_width_bottom = 2
+	knob_style.border_color = Color(1.0, 1.0, 1.0, 0.8)
+	knob_style.shadow_color = Color(0.0, 0.0, 0.0, 0.4)
+	knob_style.shadow_size = 3
+	knob_style.shadow_offset = Vector2(1, 1)
+	
+	knob_panel.add_theme_stylebox_override("panel", knob_style)
+
+func _on_mobile_config_changed() -> void:
+	"""Handle mobile configuration changes"""
+	print("UI: Mobile config changed, updating...")
+	_detect_mobile_platform()
+	
+	# Recreate the UI with new settings
+	if joystick_panel:
+		joystick_panel.queue_free()
+		joystick_panel = null
+		joystick_base = null
+		joystick_knob = null
+	
+	# Wait a frame then recreate
+	await get_tree().process_frame
+	setup_glass_morphism_ui()
 
 func _recursive_node_search(node: Node) -> void:
 	"""Recursively search for voice chat node with proper methods"""

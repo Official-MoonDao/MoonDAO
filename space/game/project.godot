@@ -20,6 +20,10 @@ config/icon="res://icon.svg"
 
 driver/enable_input=true
 
+[autoload]
+
+GameConfig="*res://scripts/GameConfig.gd"
+
 [rendering]
 
 renderer/rendering_method="mobile"

@@ -16,11 +16,17 @@ var team_room_manager: Node = null  # Reference to TeamRoomManager for zone dete
 var last_voice_position_update := 0.0  # Throttle voice position updates
 # Collision shape is now defined in the Player.tscn scene file
 
+# Mobile joystick input
+var joystick_input_vector: Vector2 = Vector2.ZERO
+var ui_node: Node = null  # Reference to UI for joystick input
+
 func _ready():
 	# Configure collision properties for better wall collision
 	collision_layer = 1  # Player collision layer
 	collision_mask = 1   # What the player can collide with
 	floor_max_angle = 0  # Don't allow sliding on slopes (we're in 2D)
+	
+	print("Player: _ready() called - is_local_player: ", is_local_player)
 	
 func _physics_process(delta: float) -> void:
 	if not is_local_player:
@@ -52,31 +58,59 @@ func _physics_process(delta: float) -> void:
 		return
 	
 	# Local player: immediate input response with client-side prediction
-	# Handle both WASD and arrow keys, but don't stack them
+	# Handle WASD, arrow keys, and mobile joystick input
 	var horizontal_input = 0.0
 	var vertical_input = 0.0
 	
-	# Horizontal movement (prioritize WASD, fall back to arrows)
-	if Input.is_key_pressed(KEY_D):
-		horizontal_input = 1.0
-	elif Input.is_key_pressed(KEY_A):
-		horizontal_input = -1.0
-	else:
-		horizontal_input = Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left")
+	# Debug: Show current joystick input vector
+	if joystick_input_vector != Vector2.ZERO:
+		print("Player: Current joystick_input_vector: ", joystick_input_vector)
 	
-	# Vertical movement (prioritize WASD, fall back to arrows)
-	if Input.is_key_pressed(KEY_S):
-		vertical_input = 1.0
-	elif Input.is_key_pressed(KEY_W):
-		vertical_input = -1.0
+	# Debug: Test connection on T key press
+	if Input.is_action_just_pressed("ui_accept") and Input.is_key_pressed(KEY_T):
+		print("Player: Manual connection test triggered!")
+		_connect_to_ui()
+	
+	# Get joystick input via global variable (most reliable approach)
+	var joystick_vector = Vector2.ZERO
+	var joystick_is_sprinting = false
+	
+	if get_tree().has_meta("joystick_input"):
+		joystick_vector = get_tree().get_meta("joystick_input")
+		if get_tree().has_meta("joystick_is_sprinting"):
+			joystick_is_sprinting = get_tree().get_meta("joystick_is_sprinting")
+		
+		# Removed excessive debug logging
+	
+	# Priority order: joystick > WASD > arrow keys
+	var is_using_joystick = joystick_vector.length() > 0.0
+	if is_using_joystick:
+		# Use joystick input (mobile)
+		horizontal_input = joystick_vector.x
+		vertical_input = joystick_vector.y
 	else:
-		vertical_input = Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up")
+		# Horizontal movement (prioritize WASD, fall back to arrows)
+		if Input.is_key_pressed(KEY_D):
+			horizontal_input = 1.0
+		elif Input.is_key_pressed(KEY_A):
+			horizontal_input = -1.0
+		else:
+			horizontal_input = Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left")
+		
+		# Vertical movement (prioritize WASD, fall back to arrows)
+		if Input.is_key_pressed(KEY_S):
+			vertical_input = 1.0
+		elif Input.is_key_pressed(KEY_W):
+			vertical_input = -1.0
+		else:
+			vertical_input = Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up")
 	
 	var input_dir := Vector2(horizontal_input, vertical_input)
 	
 	if input_dir != Vector2.ZERO:
-		# Check if sprinting (holding shift)
-		var is_sprinting = Input.is_action_pressed("ui_accept") or Input.is_key_pressed(KEY_SHIFT)
+		# Check if sprinting (keyboard shift OR joystick at high intensity)
+		var keyboard_sprint = Input.is_action_pressed("ui_accept") or Input.is_key_pressed(KEY_SHIFT)
+		var is_sprinting = keyboard_sprint or (is_using_joystick and joystick_is_sprinting)
 		var current_speed = speed * (sprint_multiplier if is_sprinting else 1.0)
 		
 		velocity = input_dir * current_speed
@@ -119,6 +153,11 @@ func _physics_process(delta: float) -> void:
 
 func set_local_player(is_local: bool) -> void:
 	is_local_player = is_local
+	print("Player: Set as local player: ", is_local, " - Node path: ", get_path())
+	
+	# Connect to UI joystick when we become the local player
+	if is_local:
+		call_deferred("_connect_to_ui")
 
 func set_network_position(net_pos: Vector2) -> void:
 	network_position = net_pos
@@ -218,3 +257,49 @@ func _check_team_room_zones() -> void:
 
 # All audio processing functions removed - WebRTC handles audio automatically!
 # Player now only handles position updates for proximity audio calculations
+
+func _connect_to_ui() -> void:
+	"""Connect to UI joystick input signal"""
+	print("Player: Attempting to connect to UI joystick...")
+	
+	# Find the UI node
+	ui_node = get_node_or_null("/root/Main/UI")
+	if not ui_node:
+		print("Player: UI not found at /root/Main/UI, searching...")
+		# Try alternative paths
+		var main_node = get_node_or_null("/root/Main")
+		if main_node:
+			print("Player: Found Main node, checking children...")
+			for child in main_node.get_children():
+				print("Player: Checking child: ", child.name, " - has joystick_input signal: ", child.has_signal("joystick_input"))
+				if child.name == "UI" or child.has_signal("joystick_input"):
+					ui_node = child
+					print("Player: Found UI node: ", child.name)
+					break
+		else:
+			print("Player: Could not find Main node")
+	else:
+		print("Player: Found UI node at /root/Main/UI")
+	
+	# Connect to joystick signal if UI found
+	if ui_node and ui_node.has_signal("joystick_input"):
+		if not ui_node.joystick_input.is_connected(_on_joystick_input):
+			ui_node.joystick_input.connect(_on_joystick_input)
+			print("Player: ✅ Successfully connected to UI joystick input!")
+		else:
+			print("Player: Already connected to joystick input")
+	else:
+		print("Player: ❌ Could not find UI node with joystick_input signal")
+		if ui_node:
+			print("Player: UI node found but no joystick_input signal")
+		else:
+			print("Player: No UI node found at all")
+
+func _on_joystick_input(input_vector: Vector2) -> void:
+	"""Handle joystick input from UI"""
+	joystick_input_vector = input_vector
+	print("Player: Received joystick input: ", input_vector)
+
+func get_joystick_input() -> Vector2:
+	"""Get current joystick input vector"""
+	return joystick_input_vector

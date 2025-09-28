@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://bnifiqnix7eit"]
+[gd_scene load_steps=7 format=3 uid="uid://bnifiqnix7eit"]
 
 [ext_resource type="Script" uid="uid://dikjtumnju782" path="res://scripts/MainNetClient.gd" id="1_elqb8"]
 [ext_resource type="Script" uid="uid://dwy60f8w7ue2q" path="res://scripts/Level1.gd" id="2_rarhs"]
@@ -19,7 +19,6 @@ script = ExtResource("2_rarhs")
 [node name="Interactables" type="Node2D" parent="Level1"]
 unique_name_in_owner = true
 y_sort_enabled = true
-
 
 [node name="Actors" type="Node2D" parent="."]
 y_sort_enabled = true

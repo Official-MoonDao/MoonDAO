@@ -39,6 +39,9 @@ var room_connection: Object = null  # Reference to Colyseus room
 func _ready() -> void:
 	print("DEBUG: Minimap _ready() called")
 	
+	# Add to mobile_ui group for config change notifications
+	add_to_group("mobile_ui")
+	
 	# Force set the remote player color to purple (override @export)
 	remote_player_color = Color(0.7, 0.3, 0.9, 1.0)
 	print("🎨 MINIMAP: Set remote_player_color to purple: ", remote_player_color)
@@ -49,7 +52,7 @@ func _ready() -> void:
 	# Find the main net client
 	_find_main_net_client()
 	
-	# Position in bottom-left corner
+	# Position using GameConfig
 	_position_minimap()
 	
 	print("DEBUG: Minimap setup complete")
@@ -119,9 +122,19 @@ func _search_for_main_net_client(node: Node) -> Node:
 	return null
 
 func _position_minimap() -> void:
-	# Position in bottom-left corner with some margin
+	# Position based on GameConfig settings
 	var screen_size = get_viewport().get_visible_rect().size
-	position = Vector2(20, screen_size.y - minimap_size.y - 20)
+	var minimap_config = GameConfig.get_minimap_config()
+	var is_mobile = minimap_config.is_mobile
+	
+	if is_mobile and minimap_config.top_left_on_mobile:
+		# Top-left corner on mobile (avoid joystick area)
+		position = Vector2(20, 20)
+		print("Minimap: Positioned in top-left for mobile (GameConfig)")
+	else:
+		# Bottom-left corner on desktop (original position)
+		position = Vector2(20, screen_size.y - minimap_config.size.y - 20)
+		print("Minimap: Positioned in bottom-left for desktop (GameConfig)")
 	
 	# Connect to screen size changes (only if not already connected)
 	if not get_viewport().size_changed.is_connected(_on_screen_size_changed):
@@ -406,5 +419,10 @@ func _draw_team_rooms(local_pos: Vector2, center: Vector2, radius: float) -> voi
 			var text_size = font.get_string_size(team_id, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
 			var text_pos = minimap_pos - Vector2(text_size.x / 2, -text_size.y / 2 - 2)  # Center text in square
 			minimap_canvas.draw_string(font, text_pos, team_id, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.WHITE)
+
+func _on_mobile_config_changed() -> void:
+	"""Handle mobile configuration changes"""
+	print("Minimap: Mobile config changed, repositioning...")
+	_position_minimap()
 
 # Smoothing function removed - using server positions directly
