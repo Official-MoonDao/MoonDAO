@@ -22,6 +22,7 @@ export default function Space() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const gameContainerRef = useRef<HTMLDivElement>(null)
+  const [pseudoFullscreen, setPseudoFullscreen] = useState(false)
 
   const walletAddress = useMemo(() => {
     return (citizen?.owner || account?.address || '').toString()
@@ -70,15 +71,43 @@ export default function Space() {
     if (!gameContainerRef.current) return
 
     try {
-      if (!document.fullscreenElement) {
-        await gameContainerRef.current.requestFullscreen()
+      const element = gameContainerRef.current
+
+      if (!document.fullscreenElement && !pseudoFullscreen) {
+        // Try native fullscreen first
+        if (element.requestFullscreen) {
+          await element.requestFullscreen()
+        } else if ((element as any).webkitRequestFullscreen) {
+          await (element as any).webkitRequestFullscreen()
+        } else if ((element as any).mozRequestFullScreen) {
+          await (element as any).mozRequestFullScreen()
+        } else if ((element as any).msRequestFullscreen) {
+          await (element as any).msRequestFullscreen()
+        } else {
+          // Fallback: Use CSS-based pseudo-fullscreen
+          setPseudoFullscreen(true)
+          return
+        }
       } else {
-        await document.exitFullscreen()
+        // Exit fullscreen
+        if (pseudoFullscreen) {
+          setPseudoFullscreen(false)
+        } else if (document.exitFullscreen) {
+          await document.exitFullscreen()
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen()
+        } else if ((document as any).mozCancelFullScreen) {
+          await (document as any).mozCancelFullScreen()
+        } else if ((document as any).msExitFullscreen) {
+          await (document as any).msExitFullscreen()
+        }
       }
     } catch (error) {
-      console.error('Fullscreen toggle failed:', error)
+      console.error('Native fullscreen failed, using pseudo-fullscreen:', error)
+      // Silently fall back to pseudo-fullscreen
+      setPseudoFullscreen(true)
     }
-  }, [])
+  }, [pseudoFullscreen])
 
   // Keyboard escape handler
   useEffect(() => {
@@ -437,9 +466,15 @@ export default function Space() {
           <div
             ref={gameContainerRef}
             className={`bg-gradient-to-b from-slate-800/20 to-slate-900/30 backdrop-blur-md border border-slate-600/20 rounded-3xl p-3 shadow-2xl transition-all duration-300 relative ${
-              isFullscreen ? 'fixed inset-0 z-50 bg-black rounded-none p-0' : ''
+              isFullscreen || pseudoFullscreen
+                ? 'fixed inset-0 z-50 bg-black rounded-none p-0'
+                : ''
             }`}
-            style={isFullscreen ? { height: '100dvh' } : undefined}
+            style={
+              isFullscreen || pseudoFullscreen
+                ? { height: '100dvh' }
+                : undefined
+            }
           >
             {/* Fullscreen button positioned in top right of game container */}
             {(() => {
@@ -472,11 +507,15 @@ export default function Space() {
             <iframe
               src={iframeSrc}
               className={`w-full border-0 bg-black/10 transition-all duration-300 ${
-                isFullscreen
+                isFullscreen || pseudoFullscreen
                   ? `${isMobile ? 'h-[95dvh]' : 'h-screen'} rounded-none`
                   : 'h-[75vh] rounded-2xl'
               }`}
-              style={isFullscreen ? { height: '100dvh' } : undefined}
+              style={
+                isFullscreen || pseudoFullscreen
+                  ? { height: '100dvh' }
+                  : undefined
+              }
               allow="microphone *; autoplay; camera; midi; encrypted-media;"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
               referrerPolicy="no-referrer-when-downgrade"
