@@ -39,7 +39,29 @@ func is_mobile() -> bool:
 	
 	if auto_detect_mobile:
 		var platform = OS.get_name()
-		return platform in ["Android", "iOS"]
+		
+		# Check for native mobile platforms
+		if platform in ["Android", "iOS"]:
+			return true
+		
+		# For web platform, check additional indicators
+		if platform == "Web":
+			# Check if we have touch support (primary indicator for mobile/tablet)
+			if DisplayServer.is_touchscreen_available():
+				return true
+			
+			# Check screen size as additional indicator
+			var screen_size = DisplayServer.screen_get_size()
+			var min_dimension = min(screen_size.x, screen_size.y)
+			var max_dimension = max(screen_size.x, screen_size.y)
+			
+			# Mobile phones: small screens or very tall aspect ratios
+			if min_dimension <= 768 or (max_dimension / min_dimension) > 1.5:
+				return true
+			
+			# iPad sizes: 768x1024, 834x1194, 1024x1366, etc.
+			if min_dimension <= 1024 and (max_dimension / min_dimension) >= 1.2:
+				return true
 	
 	return false
 
