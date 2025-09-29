@@ -7,9 +7,19 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_TOKEN,
 })
 
-const ratelimit = new Ratelimit({
+const rateLimitSecond = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(5, '1 s'), // 5 requests per second
+})
+
+const rateLimitMinute = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(100, '1 m'), // 100 requests per minute
+})
+
+const rateLimitHour = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(500, '1 h'), // 500 requests per hour
 })
 
 export async function rateLimit(
@@ -19,13 +29,41 @@ export async function rateLimit(
 ) {
   if (process.env.NEXT_PUBLIC_ENV === 'prod') {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
-    const { success } = await ratelimit.limit(ip as string)
+    const identifier = ip as string
 
-    if (success) {
-      next()
-    } else {
-      res.status(429).json({ message: 'Rate limit exceeded' })
+    // Check all rate limits - all must pass
+    const [secondCheck, minuteCheck, hourCheck] = await Promise.all([
+      rateLimitSecond.limit(`second:${identifier}`),
+      rateLimitMinute.limit(`minute:${identifier}`),
+      rateLimitHour.limit(`hour:${identifier}`),
+    ])
+
+    // If any rate limit is exceeded, return 429
+    if (!secondCheck.success) {
+      res.status(429).json({
+        message: 'Rate limit exceeded: Too many requests per second',
+        retryAfter: Math.round(secondCheck.reset / 1000), // seconds until reset
+      })
+      return
     }
+
+    if (!minuteCheck.success) {
+      res.status(429).json({
+        message: 'Rate limit exceeded: Too many requests per minute',
+        retryAfter: Math.round(minuteCheck.reset / 1000),
+      })
+      return
+    }
+
+    if (!hourCheck.success) {
+      res.status(429).json({
+        message: 'Rate limit exceeded: Too many requests per hour',
+        retryAfter: Math.round(hourCheck.reset / 1000),
+      })
+      return
+    }
+
+    next()
   } else {
     next()
   }
