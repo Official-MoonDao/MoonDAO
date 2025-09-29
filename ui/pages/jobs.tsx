@@ -3,6 +3,7 @@ import {
   JOBS_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
+import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -20,7 +21,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
-import StandardButton from '@/components/layout/StandardButton'
+import CitizenTier from '@/components/onboarding/CitizenTier'
 import JobsABI from '../const/abis/JobBoardTable.json'
 import TeamABI from '../const/abis/Team.json'
 
@@ -89,51 +90,35 @@ export default function Jobs({ jobs }: JobsProps) {
           popOverEffect={false}
           isProfile
         >
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8 relative">
-            {citizen ? (
-              // Render jobs content only for citizens
-              filteredJobs?.[0] ? (
-                <CardGridContainer>
-                  {filteredJobs.map((job: JobType, i: number) => (
-                    <Job
-                      key={`job-${i}`}
-                      job={job}
-                      showTeam
-                      teamContract={teamContract}
-                    />
-                  ))}
-                </CardGridContainer>
-              ) : (
-                <div className="mt-4 w-full h-[400px] flex justify-center items-center">
-                  <p className="">No jobs found.</p>
-                </div>
-              )
+          {citizen ? (
+            filteredJobs?.[0] ? (
+              <CardGridContainer>
+                {filteredJobs.map((job: JobType, i: number) => (
+                  <Job
+                    key={`job-${i}`}
+                    job={job}
+                    showTeam
+                    teamContract={teamContract}
+                  />
+                ))}
+              </CardGridContainer>
             ) : (
-              // Show access required message for non-citizens
-              <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-center max-w-md mx-auto p-8">
-                  <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-GoodTimes text-white mb-3">Citizen Access Required</h3>
-                  <p className="text-slate-300 mb-6 leading-relaxed">
-                    You must be a Citizen of the Space Acceleration Network to view the jobs board and explore career opportunities.
-                  </p>
-                  <StandardButton
-                    className="gradient-2 hover:opacity-90 transition-opacity"
-                    textColor="text-white"
-                    borderRadius="rounded-xl"
-                    hoverEffect={false}
-                    link="/join"
-                  >
-                    Become a Citizen
-                  </StandardButton>
-                </div>
+              <div className="mt-4 w-full h-[400px] flex justify-center items-center">
+                <p className="">No jobs found.</p>
               </div>
-            )}
-          </div>
+            )
+          ) : (
+            <div className="md:mb-[5vw] 2xl:mb-[2vw]">
+              <p className="p-5 md:p-0">
+                {
+                  '⚠️ You must be a Citizen of the Space Acceleration Network to view the job board. If you are already a Citizen, please sign in.'
+                }
+              </p>
+              <Link href="/citizen" passHref>
+                <CitizenTier setSelectedTier={() => {}} compact />
+              </Link>
+            </div>
+          )}
         </ContentLayout>
       </Container>
     </section>
