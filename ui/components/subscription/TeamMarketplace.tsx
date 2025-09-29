@@ -2,7 +2,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
-import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
@@ -58,29 +57,30 @@ export default function TeamMarketplace({
   return (
     <div
       id="team-marketplace"
-      className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
+      className="w-full p-6"
     >
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 pr-12">
-        <div className="flex gap-5 opacity-[50%]">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-6">
+        <div className="flex gap-5">
           <Image
             src={'/assets/icon-marketplace.svg'}
             alt="Marketplace icon"
             width={30}
             height={30}
+            className="opacity-70"
           />
-          <h2 className="header font-GoodTimes">Marketplace</h2>
+          <h2 className="font-GoodTimes text-2xl text-white">Marketplace</h2>
         </div>
         {isManager && (
           <StandardButton
-            className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl py-3 px-6 font-semibold transition-all duration-200 hover:scale-105"
             onClick={() => setListingModalEnabled(true)}
           >
             Create a Listing
           </StandardButton>
         )}
       </div>
-      <SlidingCardMenu>
-        <div className="flex gap-4">
+      <div className="mt-4">
+        <div className="flex gap-4 flex-wrap">
           {listings?.[0] &&
             listings.map((listing, i) => (
               <TeamListing
@@ -96,9 +96,9 @@ export default function TeamMarketplace({
               />
             ))}
         </div>
-      </SlidingCardMenu>
+      </div>
       {!listings?.[0] && (
-        <p className="p-4">{`This team hasn't listed any items for sale yet.`}</p>
+        <p className="text-slate-300 text-center py-8">{`This team hasn't listed any items for sale yet.`}</p>
       )}
       {listingModalEnabled && (
         <TeamMarketplaceListingModal

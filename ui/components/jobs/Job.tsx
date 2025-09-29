@@ -32,6 +32,7 @@ type JobProps = {
   editable?: boolean
   teamContract?: any
   showTeam?: boolean
+  previewMode?: boolean
 }
 
 export default function Job({
@@ -42,6 +43,7 @@ export default function Job({
   editable,
   teamContract,
   showTeam,
+  previewMode = false,
 }: JobProps) {
   const account = useActiveAccount()
 
