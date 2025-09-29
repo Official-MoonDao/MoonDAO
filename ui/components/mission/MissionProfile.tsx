@@ -1,12 +1,12 @@
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
-import JBMultiTerminal from 'const/abis/IJBMultiTerminal.json'
-import IJBTerminalStoreABI from 'const/abis/IJBTerminalStore.json'
-import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
-import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
-import JBV4TokenABI from 'const/abis/JBV4Token.json'
-import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
-import MissionCreatorABI from 'const/abis/MissionCreatorSep.json'
+import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
+import JBV5TerminalStore from 'const/abis/JBV5TerminalStore.json'
+import JBV5Controller from 'const/abis/JBV5Controller.json'
+import JBV5Directory from 'const/abis/JBV5Directory.json'
+import JBV5Token from 'const/abis/JBV5Token.json'
+import JBV5Tokens from 'const/abis/JBV5Tokens.json'
+import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import PoolDeployerABI from 'const/abis/PoolDeployer.json'
 import TeamABI from 'const/abis/Team.json'
@@ -14,10 +14,10 @@ import {
   CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
-  JBV4_CONTROLLER_ADDRESSES,
-  JBV4_DIRECTORY_ADDRESSES,
-  JBV4_TERMINAL_ADDRESSES,
-  JBV4_TOKENS_ADDRESSES,
+  JBV5_CONTROLLER_ADDRESS,
+  JBV5_DIRECTORY_ADDRESS,
+  JBV5_TERMINAL_ADDRESS,
+  JBV5_TOKENS_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
@@ -68,14 +68,14 @@ const CHAIN_SLUG = getChainSlug(CHAIN)
 const missionCreatorContract = getContract({
   client: serverClient,
   address: MISSION_CREATOR_ADDRESSES[CHAIN_SLUG],
-  abi: MissionCreatorABI as any,
+  abi: MissionCreator.abi as any,
   chain: CHAIN,
 })
 
 const jbControllerContract = getContract({
   client: serverClient,
-  address: JBV4_CONTROLLER_ADDRESSES[CHAIN_SLUG],
-  abi: JBV4ControllerABI as any,
+  address: JBV5_CONTROLLER_ADDRESS,
+  abi: JBV5Controller.abi as any,
   chain: CHAIN,
 })
 
@@ -144,20 +144,20 @@ export default function MissionProfile({
   })
 
   const jbTerminalContract = useContract({
-    address: JBV4_TERMINAL_ADDRESSES[chainSlug],
-    abi: JBMultiTerminal.abi as any,
+    address: JBV5_TERMINAL_ADDRESS,
+    abi: JBV5MultiTerminal.abi as any,
     chain: selectedChain,
   })
 
   const jbTokensContract = useContract({
-    address: JBV4_TOKENS_ADDRESSES[chainSlug],
-    abi: JBV4TokensABI as any,
+    address: JBV5_TOKENS_ADDRESS,
+    abi: JBV5Tokens.abi as any,
     chain: selectedChain,
   })
 
   const jbDirectoryContract = useContract({
-    address: JBV4_DIRECTORY_ADDRESSES[chainSlug],
-    abi: JBV4DirectoryABI as any,
+    address: JBV5_DIRECTORY_ADDRESS,
+    abi: JBV5Directory.abi as any,
     chain: selectedChain,
   })
 
@@ -267,7 +267,7 @@ export default function MissionProfile({
 
   const missionTokenContract = useContract({
     address: token.tokenAddress,
-    abi: JBV4TokenABI as any,
+    abi: JBV5Token as any,
     chain: selectedChain,
   })
 
@@ -300,7 +300,7 @@ export default function MissionProfile({
         const jbTerminalStoreContract = getContract({
           client: serverClient,
           address: storeAddress,
-          abi: IJBTerminalStoreABI.abi as any,
+          abi: JBV5TerminalStore.abi as any,
           chain: selectedChain,
         })
         const balance: any = await readContract({
@@ -367,7 +367,7 @@ export default function MissionProfile({
       const jbTerminalStoreContract = getContract({
         client: serverClient,
         address: storeAddress,
-        abi: IJBTerminalStoreABI.abi as any,
+        abi: JBV5TerminalStore.abi as any,
         chain: selectedChain,
       })
       const balance: any = await readContract({

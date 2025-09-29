@@ -1,4 +1,4 @@
-[
+{ "abi" : [
   {
     "inputs": [
       { "internalType": "address", "name": "_jbController", "type": "address" },
@@ -367,3 +367,4 @@
     "type": "function"
   }
 ]
+}

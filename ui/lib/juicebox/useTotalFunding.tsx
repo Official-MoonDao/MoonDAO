@@ -3,61 +3,49 @@ import {
   JB_NATIVE_TOKEN_ADDRESS,
   JB_NATIVE_TOKEN_ID,
   ZERO_ADDRESS,
+  JBV5_TERMINAL_ADDRESS,
+  JBV5_TERMINAL_STORE_ADDRESS,
 } from 'const/config'
-import {
-  useJBTerminalContext,
-  useReadJbTerminalStoreBalanceOf,
-  useReadJbDirectoryPrimaryTerminalOf,
-  useReadJbTerminalStoreUsedPayoutLimitOf,
-} from 'juice-sdk-react'
+import { useRouter } from 'next/router'
+import JBV5TerminalStore from 'const/abis/JBV5TerminalStore.json'
+import useRead from '@/lib/thirdweb/hooks/useRead'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
 import { useMemo, useCallback } from 'react'
 
 export default function useTotalFunding(projectId: any) {
-  const chainId = DEFAULT_CHAIN_V5.id
-  type SupportedChainId =
-    | 1
-    | 10
-    | 42161
-    | 8453
-    | 84532
-    | 421614
-    | 11155111
-    | 11155420
-
-  const { data: terminalAddress, refetch: refetchTerminal } =
-    useReadJbDirectoryPrimaryTerminalOf({
-      chainId: chainId as SupportedChainId,
-      args: [projectId ?? 0, JB_NATIVE_TOKEN_ADDRESS],
-    })
-
-  const { store } = useJBTerminalContext()
-
-  const { data: balance, refetch: refetchBalance } =
-    useReadJbTerminalStoreBalanceOf({
-      address: store.data ?? undefined,
-      chainId,
-      args: [
-        terminalAddress ?? ZERO_ADDRESS,
+  const router = useRouter()
+  const jbTerminalContract = useContract({
+    address: JBV5_TERMINAL_ADDRESS,
+    chain: DEFAULT_CHAIN_V5,
+    abi: JBV5MultiTerminal.abi as any,
+  })
+  const jbTerminalStoreContract = useContract({
+    address: JBV5_TERMINAL_STORE_ADDRESS,
+    abi: JBV5TerminalStore.abi as any,
+    chain: DEFAULT_CHAIN_V5,
+  })
+  const { data: balance, isLoading: isLoadingBalance } = useRead({
+    contract: jbTerminalStoreContract,
+    method: 'balanceOf' as string,
+    params: [JBV5_TERMINAL_ADDRESS, projectId, JB_NATIVE_TOKEN_ADDRESS],
+  })
+  const { data: usedPayoutLimit, isLoading: isLoadingUsedPayoutLimit } =
+    useRead({
+      contract: jbTerminalStoreContract,
+      method: 'usedPayoutLimitOf' as string,
+      params: [
+        JBV5_TERMINAL_ADDRESS,
         projectId,
         JB_NATIVE_TOKEN_ADDRESS,
+        2, // Cycle number 2 for payout cycle
+        JB_NATIVE_TOKEN_ID,
       ],
     })
-
-  const {
-    data: usedPayoutLimit,
-    isLoading,
-    refetch: refetchPayoutLimit,
-  } = useReadJbTerminalStoreUsedPayoutLimitOf({
-    address: store.data ?? undefined,
-    chainId,
-    args: [
-      terminalAddress ?? ZERO_ADDRESS,
-      projectId ?? 0,
-      JB_NATIVE_TOKEN_ADDRESS,
-      BigInt(2), // Cycle number 2 for payout cycle
-      BigInt(JB_NATIVE_TOKEN_ID),
-    ],
-  })
+  const isLoading = isLoadingBalance || isLoadingUsedPayoutLimit
+  const refetch = () => {
+    router.reload()
+  }
 
   const totalFunding = useMemo(() => {
     if (projectId == undefined) {
@@ -66,32 +54,9 @@ export default function useTotalFunding(projectId: any) {
     return (balance ?? BigInt(0)) + (usedPayoutLimit ?? BigInt(0))
   }, [balance, usedPayoutLimit, projectId])
 
-  const refetch = useCallback(async () => {
-    console.log('refetching total funding for project:', projectId)
-
-    if (!projectId) {
-      console.log('No projectId provided, skipping refetch')
-      return
-    }
-
-    try {
-      const refetchPromises = []
-
-      if (refetchTerminal) refetchPromises.push(refetchTerminal())
-      if (refetchBalance) refetchPromises.push(refetchBalance())
-      if (refetchPayoutLimit) refetchPromises.push(refetchPayoutLimit())
-
-      if (refetchPromises.length > 0) {
-        await Promise.all(refetchPromises)
-      }
-    } catch (error) {
-      console.error('Error refetching total funding:', error)
-    }
-  }, [projectId, refetchTerminal, refetchBalance, refetchPayoutLimit])
-
   return {
     totalFunding,
-    isLoading,
     refetch,
+    isLoading,
   }
 }
