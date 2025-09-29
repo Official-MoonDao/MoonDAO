@@ -479,34 +479,40 @@ export default function SingedInDashboard({
             </div>
 
             {/* Key Metrics Card */}
+
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
               <h3 className="font-semibold text-white mb-8 text-lg">
                 DAO Metrics
               </h3>
               <div className="space-y-8 h-full">
-                <div
-                  className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
-                  onClick={openCitizensChart}
-                  title="Click to view full chart"
-                >
-                  <div className="flex items-center justify-between mb-5">
-                    <span className="text-gray-300 font-medium">Citizens</span>
-                    <span className="text-white font-bold text-2xl">
-                      {citizenSubgraphData?.transfers?.length || '2,341'}
-                    </span>
-                  </div>
-                  <div className="h-20">
-                    <CitizensChart
-                      transfers={citizenSubgraphData.transfers}
-                      isLoading={false}
-                      height={80}
-                      compact={true}
-                      createdAt={citizenSubgraphData.createdAt}
-                    />
-                  </div>
-                </div>
+                {citizenSubgraphData?.transfers &&
+                  citizenSubgraphData?.transfers.length > 0 && (
+                    <div
+                      className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
+                      onClick={openCitizensChart}
+                      title="Click to view full chart"
+                    >
+                      <div className="flex items-center justify-between mb-5">
+                        <span className="text-gray-300 font-medium">
+                          Citizens
+                        </span>
+                        <span className="text-white font-bold text-2xl">
+                          {citizenSubgraphData?.transfers?.length || '2,341'}
+                        </span>
+                      </div>
+                      <div className="h-20">
+                        <CitizensChart
+                          transfers={citizenSubgraphData.transfers}
+                          isLoading={false}
+                          height={80}
+                          compact={true}
+                          createdAt={citizenSubgraphData.createdAt}
+                        />
+                      </div>
+                    </div>
+                  )}
 
-                {aumData && (
+                {aumData && aumData.aumHistory.length > 0 && (
                   <div
                     className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
                     onClick={openAUMChart}
@@ -529,7 +535,7 @@ export default function SingedInDashboard({
                   </div>
                 )}
 
-                {arrData && (
+                {arrData && arrData.arrHistory.length > 0 && (
                   <div
                     className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
                     onClick={openARRChart}
