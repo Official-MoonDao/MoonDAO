@@ -1099,7 +1099,7 @@ export default function SingedInDashboard({
             <div className="flex gap-3">
               <StandardButton
                 className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-6 py-3 rounded-xl font-medium transition-all"
-                link="/submit"
+                link="/proposals"
               >
                 Propose Project
               </StandardButton>
