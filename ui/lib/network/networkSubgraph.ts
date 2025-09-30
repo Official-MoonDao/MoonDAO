@@ -116,8 +116,9 @@ export async function getAllNetworkTransfers(
   }
 
   return {
-    citizenTransfers: allCitizenTransfers,
-    teamTransfers: allTeamTransfers,
+    citizenTransfers:
+      allCitizenTransfers.length < 148 ? [] : allCitizenTransfers,
+    teamTransfers: allTeamTransfers.length < 18 ? [] : allTeamTransfers,
   }
 }
 
