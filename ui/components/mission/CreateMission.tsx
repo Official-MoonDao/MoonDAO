@@ -696,7 +696,11 @@ export default function CreateMission({
                         className="text-lg text-light-warm font-bold hover:underline"
                         href={`/team/${selectedTeamId}`}
                       >
-                        {selectedTeamNFT?.metadata?.name}
+                        {userTeamsAsManagerLoading ? (
+                          <LoadingSpinner className="scale-75" />
+                        ) : (
+                          selectedTeamNFT?.metadata?.name
+                        )}
                       </Link>
                     </p>
                   )}

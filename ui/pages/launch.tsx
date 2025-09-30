@@ -1,3 +1,4 @@
+import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import { useLogin, usePrivy } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
@@ -143,17 +144,30 @@ export default function Launch({ missions }: any) {
 
   useEffect(() => {
     async function getUserTeamsAsManager() {
+      if (!userTeams) return
       setUserTeamsAsManagerLoading(true)
       setUserTeamsAsManager(undefined)
-      const teamsAsManager = userTeams?.filter(async (team: any) => {
-        if (!team?.teamId) return false
-        const isManager = await readContract({
-          contract: teamContract,
-          method: 'isManager' as string,
-          params: [team.teamId, address],
+
+      const teamChecks = await Promise.all(
+        userTeams.map(async (hat: any) => {
+          if (!hat?.teamId || !hat.id) return { hat, isManager: false }
+
+          const managerHatId: any = await readContract({
+            contract: teamContract,
+            method: 'teamManagerHat' as string,
+            params: [hat.teamId],
+          })
+
+          const isManager = hatIdDecimalToHex(managerHatId) === hat.id
+
+          return { hat, isManager }
         })
-        return isManager
-      })
+      )
+
+      const teamsAsManager = teamChecks
+        .filter(({ isManager }) => isManager)
+        .map(({ hat }) => hat)
+
       setUserTeamsAsManager(teamsAsManager)
       setUserTeamsAsManagerLoading(false)
     }
@@ -161,9 +175,9 @@ export default function Launch({ missions }: any) {
       getUserTeamsAsManager()
     } else {
       setUserTeamsAsManager(undefined)
-      setUserTeamsAsManagerLoading(false)
+      setUserTeamsAsManagerLoading(true)
     }
-  }, [teamContract, userTeams, address, userTeamsLoading])
+  }, [teamContract, userTeams, address])
 
   async function handleCreateMission() {
     if (!user) {
