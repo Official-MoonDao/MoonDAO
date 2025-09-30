@@ -48,16 +48,32 @@ RUN wget -O /tmp/livekit.tar.gz https://github.com/livekit/livekit/releases/down
     mv livekit-server /usr/local/bin/livekit && \
     rm -f livekit.tar.gz
 
-# Copy configuration files
-COPY livekit.yaml /etc/livekit.yaml
+# Create a non-root user for security FIRST
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy configuration files to /app (not /etc)
+COPY livekit.yaml /app/livekit.yaml
 COPY supervisord.conf /etc/supervisord.conf
+
+# Create the key generation script to put keys in livekit.yaml
+RUN echo '#!/bin/bash' > /app/generate-keys.sh && \
+    echo 'echo "=== Key Generation Debug ==="' >> /app/generate-keys.sh && \
+    echo 'echo "LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-NOT_SET}"' >> /app/generate-keys.sh && \
+    echo 'echo "LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-NOT_SET}"' >> /app/generate-keys.sh && \
+    echo 'if [ -z "$LIVEKIT_API_KEY" ] || [ -z "$LIVEKIT_API_SECRET" ]; then' >> /app/generate-keys.sh && \
+    echo '  echo "ERROR: LIVEKIT_API_KEY and LIVEKIT_API_SECRET must be set!"' >> /app/generate-keys.sh && \
+    echo '  exit 1' >> /app/generate-keys.sh && \
+    echo 'fi' >> /app/generate-keys.sh && \
+    echo 'echo "Replacing placeholders in config..."' >> /app/generate-keys.sh && \
+    echo 'sed -i "s/PLACEHOLDER_API_KEY: PLACEHOLDER_API_SECRET/$LIVEKIT_API_KEY: $LIVEKIT_API_SECRET/g" /app/livekit.yaml' >> /app/generate-keys.sh && \
+    echo 'echo "=== Final Config File ==="' >> /app/generate-keys.sh && \
+    echo 'cat /app/livekit.yaml' >> /app/generate-keys.sh && \
+    echo 'echo "=== End Config File ==="' >> /app/generate-keys.sh && \
+    chmod +x /app/generate-keys.sh
 
 # Create directories for logs and data
 RUN mkdir -p /var/log/supervisor /data /var/run
-
-# Create a non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
 
 # Change ownership of necessary directories
 RUN chown -R nodejs:nodejs /app /data /var/log/supervisor /var/run

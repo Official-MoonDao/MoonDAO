@@ -1,6 +1,10 @@
 # LiveKit server configuration for production deployment
 port: 7880
 
+# Authentication keys (will be replaced by environment variables)
+keys:
+  PLACEHOLDER_API_KEY: PLACEHOLDER_API_SECRET
+
 # WebRTC configuration for Fly.io
 rtc:
   tcp_port: 7881
@@ -15,10 +19,6 @@ rtc:
 redis:
   address: localhost:6379
 
-# API keys for authentication
-keys:
-  devkey: secret
-
 # Room settings
 room:
   auto_create: true
@@ -29,6 +29,6 @@ room:
 # Production mode
 development: false
 
-# Basic logging (removed unsupported fields)
+# Basic logging
 logging:
   level: info

@@ -32,9 +32,10 @@ export class Lobby extends Room<RoomState> {
   private teamRefreshInterval = 300000; // 5 minutes in milliseconds
   private livekit = new LiveKitManager(); // SFU for voice chat
 
-  // Proximity voice chat tracking
+  // Enhanced proximity voice chat tracking
   private playerVoiceRooms = new Map<string, string>(); // sessionId -> current voice room
   private voiceRoomOccupancy = new Map<string, Set<string>>(); // voice room -> set of sessionIds
+  private voiceRoomUpdateTimers = new Map<string, NodeJS.Timeout>(); // Throttle voice room updates
 
   // Fetch valid teams with full data from the API
   private async fetchValidTeams(): Promise<
@@ -113,7 +114,7 @@ export class Lobby extends Room<RoomState> {
     return { x: Math.round(x), y: Math.round(y) };
   }
 
-  // Calculate grid-based voice room for a position
+  // Enhanced voice room calculation with hysteresis
   private getVoiceRoomForPosition(x: number, y: number): string {
     const gridX = Math.floor(x / GRID_CELL_SIZE);
     const gridY = Math.floor(y / GRID_CELL_SIZE);
@@ -136,12 +137,41 @@ export class Lobby extends Room<RoomState> {
     return this.getVoiceRoomForPosition(player.x, player.y);
   }
 
-  // Update player's voice room based on position
+  // Update player's voice room based on position with throttling
   private updatePlayerVoiceRoom(sessionId: string): void {
+    // Throttle voice room updates to prevent rapid switching
+    const throttleKey = `voiceUpdate_${sessionId}`;
+    if (this.voiceRoomUpdateTimers.has(throttleKey)) {
+      return; // Skip this update, we're in throttle period
+    }
+
     const expectedRoom = this.getExpectedVoiceRoom(sessionId);
     const currentRoom = this.playerVoiceRooms.get(sessionId);
 
     if (currentRoom !== expectedRoom) {
+      // Check if this is a rapid back-and-forth switch (potential oscillation)
+      const lastRoomKey = `lastVoiceRoom_${sessionId}`;
+      const lastRoom = this.playerMetadata.get(lastRoomKey);
+
+      if (lastRoom === expectedRoom && currentRoom) {
+        // Potential oscillation detected - increase throttle
+        console.log(
+          `🔄 Potential voice room oscillation detected for ${sessionId}: ${lastRoom} ↔ ${currentRoom}`
+        );
+        this.voiceRoomUpdateTimers.set(
+          throttleKey,
+          setTimeout(() => {
+            this.voiceRoomUpdateTimers.delete(throttleKey);
+            // Retry the update after extended delay
+            this.updatePlayerVoiceRoom(sessionId);
+          }, 2000)
+        ); // 2 second delay for oscillation cases
+        return;
+      }
+
+      // Store the previous room for oscillation detection
+      this.playerMetadata.set(lastRoomKey, currentRoom);
+
       // Remove from old room
       if (currentRoom) {
         const oldRoomOccupants = this.voiceRoomOccupancy.get(currentRoom);
@@ -169,6 +199,14 @@ export class Lobby extends Room<RoomState> {
       console.log(
         `🎙️ Player ${sessionId} voice room: ${currentRoom} → ${expectedRoom}`
       );
+
+      // Set throttle timer to prevent rapid subsequent updates
+      this.voiceRoomUpdateTimers.set(
+        throttleKey,
+        setTimeout(() => {
+          this.voiceRoomUpdateTimers.delete(throttleKey);
+        }, 1000)
+      ); // 1 second throttle for normal updates
     }
   }
 
@@ -371,7 +409,7 @@ export class Lobby extends Room<RoomState> {
       const playerKey = `lastMove_${client.sessionId}`;
       this.playerMetadata.set(playerKey, Date.now());
 
-      // Update voice room based on new position
+      // Update voice room with throttling
       this.updatePlayerVoiceRoom(client.sessionId);
 
       // NO BOUNDS CLAMPING - let players go anywhere
@@ -387,7 +425,7 @@ export class Lobby extends Room<RoomState> {
       p.x = x;
       p.y = y;
 
-      // Update voice room based on new position
+      // Update voice room with throttling
       this.updatePlayerVoiceRoom(client.sessionId);
     });
 
@@ -978,7 +1016,15 @@ export class Lobby extends Room<RoomState> {
     return { x: fallbackX, y: fallbackY };
   }
 
-  onLeave(client: Client, consented?: boolean) {
+  // Clean up timers when player leaves
+  async onLeave(client: Client, consented: boolean) {
+    // Clear voice room update timer if it exists
+    const throttleKey = `voiceUpdate_${client.sessionId}`;
+    if (this.voiceRoomUpdateTimers.has(throttleKey)) {
+      clearTimeout(this.voiceRoomUpdateTimers.get(throttleKey)!);
+      this.voiceRoomUpdateTimers.delete(throttleKey);
+    }
+
     const user = (client as any).user;
 
     // Clean up LiveKit resources if needed
