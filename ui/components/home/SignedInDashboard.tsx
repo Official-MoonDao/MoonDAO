@@ -1331,63 +1331,38 @@ export default function SingedInDashboard({
               </StandardButton>
             </div>
 
-            <div className="bg-black/20 rounded-xl p-4 border border-white/10">
-              <div className="w-full relative">
-                <div
-                  id="luma-loading-dashboard-small"
-                  className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center min-h-[200px]"
-                >
-                  <div className="text-white text-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
-                    <p className="text-xs">Loading events...</p>
-                  </div>
+            <div className="relative">
+              <div
+                id="luma-loading-dashboard-small"
+                className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center min-h-[350px]"
+              >
+                <div className="text-white text-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
+                  <p className="text-xs">Loading events...</p>
                 </div>
-                <iframe
-                  src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
-                  width="100%"
-                  height="250"
-                  frameBorder="0"
-                  style={{ border: '1px solid #ffffff20', borderRadius: '8px' }}
-                  allowFullScreen
-                  aria-hidden="false"
-                  tabIndex={0}
-                  className="rounded-lg relative z-10"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="MoonDAO Events Calendar"
-                  onLoad={(e) => {
-                    const loadingDiv = document.getElementById(
-                      'luma-loading-dashboard-small'
-                    )
-                    if (loadingDiv) {
-                      loadingDiv.style.display = 'none'
-                    }
-                  }}
-                />
               </div>
-              <div className="mt-3 text-center">
-                <a
-                  href="https://lu.ma/moondao"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-3 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 font-medium rounded-lg transition-colors duration-200 text-sm"
-                >
-                  View on lu.ma
-                  <svg
-                    className="ml-2 w-3 h-3"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
-                </a>
-              </div>
+              <iframe
+                src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
+                width="100%"
+                height="350"
+                frameBorder="0"
+                style={{ border: '1px solid #ffffff20', borderRadius: '8px' }}
+                allowFullScreen
+                aria-hidden="false"
+                tabIndex={0}
+                className="rounded-lg relative z-10"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="MoonDAO Events Calendar"
+                onLoad={(e) => {
+                  const loadingDiv = document.getElementById(
+                    'luma-loading-dashboard-small'
+                  )
+                  if (loadingDiv) {
+                    loadingDiv.style.display = 'none'
+                  }
+                }}
+              />
             </div>
           </div>
         </div>
