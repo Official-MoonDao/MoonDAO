@@ -13,6 +13,7 @@ import {
   FireIcon,
   GiftIcon,
   PencilIcon,
+  BriefcaseIcon,
 } from '@heroicons/react/24/outline'
 import { Action, RequestBudget } from '@nance/nance-sdk'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
@@ -1190,6 +1191,82 @@ export default function SingedInDashboard({
                   link="/projects"
                 >
                   View All Projects
+                </StandardButton>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Jobs Section - Full Width */}
+        <div className="bg-gradient-to-br from-purple-600/20 to-indigo-800/20 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 mt-8 mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <div>
+              <h3 className="text-2xl font-bold text-white flex items-center gap-2 mb-2">
+                <BriefcaseIcon className="w-7 h-7" />
+                Open Positions
+              </h3>
+              <p className="text-purple-200 text-sm">
+                Join our mission and build the future of space exploration
+              </p>
+            </div>
+
+            {/* Only View All Jobs button */}
+            <StandardButton
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all"
+              link="/jobs"
+            >
+              View All Jobs
+            </StandardButton>
+          </div>
+
+          {newestJobs && newestJobs.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {newestJobs.slice(0, 6).map((job: any, i: number) => (
+                <div key={`job-${i}`} className="bg-black/30 rounded-xl p-5 border border-purple-500/10 hover:border-purple-500/20 transition-all duration-200">
+                  <div className="flex justify-between items-start mb-3">
+                    <h4 className="font-semibold text-white text-lg">
+                      {job.title}
+                    </h4>
+                    {job.tag && (
+                      <span className="bg-purple-500/20 text-purple-300 text-xs px-2 py-1 rounded">
+                        {job.tag}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-purple-100 text-sm mb-4 line-clamp-3">
+                    {job.description}
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-purple-200 text-xs">
+                      Posted {Math.floor((Date.now() / 1000 - job.timestamp) / 86400)} days ago
+                    </span>
+                    {job.contactInfo && (
+                      <StandardButton
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-all"
+                        onClick={() => window.open(job.contactInfo)}
+                      >
+                        Apply
+                      </StandardButton>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-black/20 rounded-xl p-8 border border-purple-500/20">
+              <div className="text-center">
+                <BriefcaseIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+                <h4 className="font-bold text-white text-xl mb-2">
+                  No Open Positions
+                </h4>
+                <p className="text-gray-400 text-sm mb-4">
+                  Check back soon for new job opportunities in space exploration
+                </p>
+                <StandardButton
+                  className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 px-6 py-3 rounded-lg transition-all"
+                  link="/jobs"
+                >
+                  View All Jobs
                 </StandardButton>
               </div>
             </div>
