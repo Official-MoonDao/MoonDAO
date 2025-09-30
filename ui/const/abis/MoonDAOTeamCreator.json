@@ -24,7 +24,12 @@
         "type": "address"
       },
       { "internalType": "address", "name": "_table", "type": "address" },
-      { "internalType": "address", "name": "_whitelist", "type": "address" }
+      { "internalType": "address", "name": "_whitelist", "type": "address" },
+      {
+        "internalType": "address[]",
+        "name": "_authorizedSigners",
+        "type": "address[]"
+      }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -70,21 +75,96 @@
     "type": "function"
   },
   {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "authorizedSigners",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
-      { "internalType": "string", "name": "adminHatURI", "type": "string" },
-      { "internalType": "string", "name": "managerHatURI", "type": "string" },
-      { "internalType": "string", "name": "memberHatURI", "type": "string" },
-      { "internalType": "string", "name": "name", "type": "string" },
-      { "internalType": "string", "name": "bio", "type": "string" },
-      { "internalType": "string", "name": "image", "type": "string" },
-      { "internalType": "string", "name": "twitter", "type": "string" },
-      { "internalType": "string", "name": "communications", "type": "string" },
-      { "internalType": "string", "name": "website", "type": "string" },
-      { "internalType": "string", "name": "_view", "type": "string" },
-      { "internalType": "string", "name": "formId", "type": "string" },
+      {
+        "components": [
+          { "internalType": "string", "name": "adminHatURI", "type": "string" },
+          {
+            "internalType": "string",
+            "name": "managerHatURI",
+            "type": "string"
+          },
+          { "internalType": "string", "name": "memberHatURI", "type": "string" }
+        ],
+        "internalType": "struct MoonDAOTeamCreator.HatURIs",
+        "name": "hatURIs",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          { "internalType": "string", "name": "name", "type": "string" },
+          { "internalType": "string", "name": "bio", "type": "string" },
+          { "internalType": "string", "name": "image", "type": "string" },
+          { "internalType": "string", "name": "twitter", "type": "string" },
+          {
+            "internalType": "string",
+            "name": "communications",
+            "type": "string"
+          },
+          { "internalType": "string", "name": "website", "type": "string" },
+          { "internalType": "string", "name": "_view", "type": "string" },
+          { "internalType": "string", "name": "formId", "type": "string" }
+        ],
+        "internalType": "struct MoonDAOTeamCreator.TeamMetadata",
+        "name": "metadata",
+        "type": "tuple"
+      },
       { "internalType": "address[]", "name": "members", "type": "address[]" }
     ],
     "name": "createMoonDAOTeam",
+    "outputs": [
+      { "internalType": "uint256", "name": "tokenId", "type": "uint256" },
+      { "internalType": "uint256", "name": "childHatId", "type": "uint256" }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "creator", "type": "address" },
+      {
+        "components": [
+          { "internalType": "string", "name": "adminHatURI", "type": "string" },
+          {
+            "internalType": "string",
+            "name": "managerHatURI",
+            "type": "string"
+          },
+          { "internalType": "string", "name": "memberHatURI", "type": "string" }
+        ],
+        "internalType": "struct MoonDAOTeamCreator.HatURIs",
+        "name": "hatURIs",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          { "internalType": "string", "name": "name", "type": "string" },
+          { "internalType": "string", "name": "bio", "type": "string" },
+          { "internalType": "string", "name": "image", "type": "string" },
+          { "internalType": "string", "name": "twitter", "type": "string" },
+          {
+            "internalType": "string",
+            "name": "communications",
+            "type": "string"
+          },
+          { "internalType": "string", "name": "website", "type": "string" },
+          { "internalType": "string", "name": "_view", "type": "string" },
+          { "internalType": "string", "name": "formId", "type": "string" }
+        ],
+        "internalType": "struct MoonDAOTeamCreator.TeamMetadata",
+        "name": "metadata",
+        "type": "tuple"
+      },
+      { "internalType": "address[]", "name": "members", "type": "address[]" }
+    ],
+    "name": "createMoonDAOTeamFor",
     "outputs": [
       { "internalType": "uint256", "name": "tokenId", "type": "uint256" },
       { "internalType": "uint256", "name": "childHatId", "type": "uint256" }
@@ -109,6 +189,90 @@
   {
     "inputs": [],
     "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_authorizedSigner",
+        "type": "address"
+      },
+      { "internalType": "bool", "name": "_authorized", "type": "bool" }
+    ],
+    "name": "setAuthorizedSigner",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_gnosisSafeProxyFactory",
+        "type": "address"
+      }
+    ],
+    "name": "setGnosisSafeProxyFactory",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_gnosisSingleton",
+        "type": "address"
+      }
+    ],
+    "name": "setGnosisSingleton",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_hats", "type": "address" }
+    ],
+    "name": "setHats",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_hatsModuleFactory",
+        "type": "address"
+      }
+    ],
+    "name": "setHatsModuleFactory",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_hatsPassthrough",
+        "type": "address"
+      }
+    ],
+    "name": "setHatsPassthrough",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_moonDAOTeam", "type": "address" }
+    ],
+    "name": "setMoonDAOTeam",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

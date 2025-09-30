@@ -18,24 +18,35 @@ import {MoonDAOTeamCreator} from "../src/MoonDAOTeamCreator.sol";
 import {IHats} from "@hats/Interfaces/IHats.sol";
 
 
-contract MyScript is Script {
+contract TeamCreatorScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address authorizedSignerAddress = vm.envAddress("AUTHORIZED_SIGNER_ADDRESS");
+        address daoSafeAddress = vm.envAddress("DAO_SAFE_ADDRESS");
+
         vm.startBroadcast(deployerPrivateKey);
-        address deployerAddress = vm.addr(deployerPrivateKey);
 
-        address TREASURY = 0xAF26a002d716508b7e375f1f620338442F5470c0;
         address TEAM_ADDRESS = 0xAB2C354eC32880C143e87418f80ACc06334Ff55F;
-        address TEAM_TABLE_ADDRESS = 0x1C9B9847bE88eb3F7154bA6A4560Cb8D52A13dD9;
+        address TEAM_TABLE_ADDRESS = 0x36A57e45A1F8e378AA3e35bD8799bBfB5b4C00b3;
         address WHITELIST_ADDRESS = 0x203ca831edec28b7657A022b8aFe5d28b6BE6Eda;
-
-        IHats hats = IHats(0x3bc1A0Ad72417f2d411118085256fC53CBdDd137);
+        
+        address HATS_ADDRESS = 0x3bc1A0Ad72417f2d411118085256fC53CBdDd137;
+        address HATS_MODULE_FACTORY_ADDRESS = 0x0a3f85fa597B6a967271286aA0724811acDF5CD9;
+        address HATS_PASSTHROUGH_ADDRESS = 0x050079a8fbFCE76818C62481BA015b89567D2d35;
+        address GNOSIS_SINGLETON_ADDRESS = 0x3E5c63644E683549055b9Be8653de26E0B4CD36E;
+        address GNOSIS_SAFE_PROXY_FACTORY_ADDRESS = 0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2;
+         
+        IHats hats = IHats(HATS_ADDRESS);
         uint256 moonDaoTeamAdminHatId = 0x0000002a00010000000000000000000000000000000000000000000000000000;
 
-        MoonDAOTeamCreator creator = new MoonDAOTeamCreator(0x3bc1A0Ad72417f2d411118085256fC53CBdDd137, 0x0a3f85fa597B6a967271286aA0724811acDF5CD9, 0x97b5621E4CD8F403ab5b6036181982752DE3aC44, TEAM_ADDRESS, 0x3E5c63644E683549055b9Be8653de26E0B4CD36E, 0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2, TEAM_TABLE_ADDRESS, WHITELIST_ADDRESS);
+        address[] memory authorizedSigners = new address[](1);
+        authorizedSigners[0] = address(authorizedSignerAddress);   
+        
+        MoonDAOTeamCreator creator = new MoonDAOTeamCreator(HATS_ADDRESS, HATS_MODULE_FACTORY_ADDRESS, HATS_PASSTHROUGH_ADDRESS, TEAM_ADDRESS, GNOSIS_SINGLETON_ADDRESS, GNOSIS_SAFE_PROXY_FACTORY_ADDRESS, TEAM_TABLE_ADDRESS, WHITELIST_ADDRESS, authorizedSigners);
 
-        // creator.setOpenAccess(true);
         creator.setMoonDaoTeamAdminHatId(moonDaoTeamAdminHatId);
+
+        creator.transferOwnership(daoSafeAddress);
 
         vm.stopBroadcast();
     }

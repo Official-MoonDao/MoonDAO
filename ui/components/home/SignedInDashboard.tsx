@@ -13,6 +13,7 @@ import {
   FireIcon,
   GiftIcon,
   PencilIcon,
+  BriefcaseIcon,
 } from '@heroicons/react/24/outline'
 import { Action, RequestBudget } from '@nance/nance-sdk'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
@@ -56,7 +57,10 @@ import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
 import { Project } from '@/lib/project/useProjectData'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
-import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import {
+  generatePrettyLink,
+  generatePrettyLinkWithId,
+} from '@/lib/subscription/pretty-links'
 import { teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -79,79 +83,18 @@ import Frame from '@/components/layout/Frame'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
+import { TokensOfProposal } from '@/components/nance/RequestingTokensOfProposal'
 import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
 import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
-import CitizenReferral from '../subscription/CitizenReferral'
 import Quests from '../xp/Quests'
 
 // import Quests from '@/components/xp/Quests'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
-
-// Function to extract funding information from proposal actions
-function getFundingFromProposal(actions: Action[] | undefined): { hasRequests: boolean; totalUsd: number; tokens: { symbol: string; amount: number }[] } {
-  if (!actions) return { hasRequests: false, totalUsd: 0, tokens: [] }
-
-  const tokens: { symbol: string; amount: number }[] = []
-  let totalUsd = 0
-
-  actions
-    .filter((action) => action.type === 'Request Budget')
-    .flatMap((action) => (action.payload as RequestBudget).budget)
-    .forEach((transfer) => {
-      const amount = Number(transfer.amount)
-      if (amount > 0) {
-        // Determine token symbol - check various ways the token might be specified
-        let symbol = 'Unknown'
-        const tokenStr = transfer.token?.toString().toLowerCase() || ''
-        
-        if (transfer.token === ETH_MOCK_ADDRESS || transfer.token === 'ETH' || tokenStr === 'eth') {
-          symbol = 'ETH'
-          totalUsd += amount * 2000 // Rough ETH price for sorting
-        } else if (tokenStr.includes('usdc') || transfer.token === 'USDC') {
-          symbol = 'USDC'
-          totalUsd += amount // USDC is roughly $1
-        } else if (tokenStr.includes('usdt') || transfer.token === 'USDT') {
-          symbol = 'USDT'
-          totalUsd += amount // USDT is roughly $1
-        } else if (tokenStr.includes('dai') || transfer.token === 'DAI') {
-          symbol = 'DAI'
-          totalUsd += amount // DAI is roughly $1
-        } else if (transfer.token === 'MOONEY' || tokenStr === 'mooney') {
-          symbol = 'MOONEY'
-          totalUsd += amount * 0.001 // Rough MOONEY price
-        } else if (tokenStr.startsWith('0x')) {
-          // It's a contract address - try to map to known tokens
-          if (tokenStr === '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' || // Ethereum USDC
-              tokenStr === '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359' || // Polygon USDC  
-              tokenStr === '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913') {   // Base USDC
-            symbol = 'USDC'
-            totalUsd += amount
-          } else {
-            // Unknown contract address - just show a generic token symbol
-            symbol = 'Token'
-            totalUsd += amount
-          }
-        } else {
-          // For other unknown tokens, use the string as-is but truncate if too long
-          symbol = transfer.token?.length > 10 ? transfer.token.substring(0, 10) + '...' : (transfer.token || 'Unknown')
-          totalUsd += amount
-        }
-        
-        tokens.push({ symbol, amount })
-      }
-    })
-
-  return { 
-    hasRequests: tokens.length > 0, 
-    totalUsd, 
-    tokens 
-  }
-}
 
 function getDaysLeft(proposal: any): number {
   if (proposal?.end) {
@@ -161,7 +104,11 @@ function getDaysLeft(proposal: any): number {
 }
 
 // Function to get the proper status display for a proposal
-function getProposalStatusDisplay(proposal: any, votingInfo: any, daysLeft: number): string {
+function getProposalStatusDisplay(
+  proposal: any,
+  votingInfo: any,
+  daysLeft: number
+): string {
   // If we have voting info from Snapshot, use it for more accurate status
   if (votingInfo) {
     if (votingInfo.state === 'active') {
@@ -170,13 +117,15 @@ function getProposalStatusDisplay(proposal: any, votingInfo: any, daysLeft: numb
       return 'Voting closed'
     }
   }
-  
+
   // Fall back to proposal status
   switch (proposal.status) {
     case 'Temperature Check':
       return 'Temperature Check'
     case 'Voting':
-      return daysLeft > 0 ? `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left to vote` : 'Voting closed'
+      return daysLeft > 0
+        ? `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left to vote`
+        : 'Voting closed'
     case 'Discussion':
       return 'In Discussion'
     case 'Approved':
@@ -192,157 +141,65 @@ function getProposalStatusDisplay(proposal: any, votingInfo: any, daysLeft: numb
 
 // Function to determine if a proposal has requested funding
 function getProposalFundingDisplay(proposal: any): JSX.Element | string {
-  // Enhanced debugging with proposal body inspection
-  console.log('=== DEBUGGING PROPOSAL FUNDING ===');
-  console.log('Proposal title:', proposal.title);
-  console.log('Proposal uuid:', proposal.uuid);
-  console.log('Proposal body length:', proposal.body?.length || 0);
-  console.log('Proposal body preview:', proposal.body?.substring(0, 500) || 'No body');
-  console.log('Has actions:', !!proposal.actions);
-  console.log('Actions length:', proposal.actions?.length || 0);
-  console.log('Actions data:', proposal.actions);
-  
   // Try to parse budget from table format as fallback
   let budgetFromTable: { amount: number; token: string }[] = []
   if (proposal.body && proposal.actions?.length === 0) {
-    console.log('Attempting to parse table format for:', proposal.title);
-    
     // Look for table with Transaction Type, Amount, Token Type pattern
     // More flexible regex to handle various table formats
-    const tablePattern = /\|\s*Transaction Type[^|]*\|\s*Amount[^|]*\|\s*Token Type[^|]*\|[\s\S]*?\|\s*Send[^|]*\|\s*\$?([0-9,]+)[^|]*\|\s*([A-Z]+)[^|]*\|/i;
-    const tableMatch = proposal.body.match(tablePattern);
-    
-    console.log('Table regex match result:', tableMatch);
-    
+    const tablePattern =
+      /\|\s*Transaction Type[^|]*\|\s*Amount[^|]*\|\s*Token Type[^|]*\|[\s\S]*?\|\s*Send[^|]*\|\s*\$?([0-9,]+)[^|]*\|\s*([A-Z]+)[^|]*\|/i
+    const tableMatch = proposal.body.match(tablePattern)
+
     if (tableMatch) {
-      const amountStr = tableMatch[1].replace(/,/g, '');
-      const amount = parseFloat(amountStr);
-      const token = tableMatch[2].trim();
-      console.log('Parsed table budget:', { amount, token, amountStr });
-      budgetFromTable = [{ amount, token }];
+      const amountStr = tableMatch[1].replace(/,/g, '')
+      const amount = parseFloat(amountStr)
+      const token = tableMatch[2].trim()
+      budgetFromTable = [{ amount, token }]
     } else {
       // Try alternative patterns for different table formats
-      const altPattern = /\|\s*Send[^|]*\|\s*\$?([0-9,]+)[^|]*\|\s*([A-Z]+)[^|]*\|/i;
-      const altMatch = proposal.body.match(altPattern);
-      console.log('Alternative pattern match:', altMatch);
-      
+      const altPattern =
+        /\|\s*Send[^|]*\|\s*\$?([0-9,]+)[^|]*\|\s*([A-Z]+)[^|]*\|/i
+      const altMatch = proposal.body.match(altPattern)
+
       if (altMatch) {
-        const amountStr = altMatch[1].replace(/,/g, '');
-        const amount = parseFloat(amountStr);
-        const token = altMatch[2].trim();
-        console.log('Parsed alternative table budget:', { amount, token, amountStr });
-        budgetFromTable = [{ amount, token }];
+        const amountStr = altMatch[1].replace(/,/g, '')
+        const amount = parseFloat(amountStr)
+        const token = altMatch[2].trim()
+        budgetFromTable = [{ amount, token }]
       }
     }
   }
 
   // Check if there are any budget request actions or parsed table data
-  if ((!proposal.actions || proposal.actions.length === 0) && budgetFromTable.length === 0) {
+  if (
+    (!proposal.actions || proposal.actions.length === 0) &&
+    budgetFromTable.length === 0
+  ) {
     return 'No funding requested'
   }
 
-  const budgetActions = proposal.actions?.filter((action: any) => action.type === 'Request Budget') || []
-  console.log('Budget actions found:', budgetActions.length, budgetActions);
+  const budgetActions =
+    proposal.actions?.filter(
+      (action: any) => action.type === 'Request Budget'
+    ) || []
 
-  // Combine budget from actions and table parsing
-  if (budgetActions.length === 0 && budgetFromTable.length === 0) {
-    return 'No funding requested'
-  }
-
-  // Extract budget details for better display
-  const budgetDetails: { amount: number; token: string }[] = []
-  
-  // Add budget from actions
-  budgetActions.forEach((action: any) => {
-    if (action.payload?.budget) {
-      action.payload.budget.forEach((budget: any) => {
-        const amount = Number(budget.amount)
-        if (amount > 0 && budget.token) {
-          budgetDetails.push({ amount, token: budget.token })
-        }
-      })
-    }
-  })
-  
-  // Add budget from table parsing
-  budgetFromTable.forEach(({ amount, token }) => {
-    budgetDetails.push({ amount, token })
-  })
-
-  console.log('Budget details:', budgetDetails);
-
-  if (budgetDetails.length === 0) {
-    return 'Budget requested (details TBD)'
+  // If we have budget actions, use the existing TokensOfProposal component
+  if (budgetActions.length > 0) {
+    return <TokensOfProposal actions={proposal.actions} />
   }
 
-  // Format the display with proper token names
-  if (budgetDetails.length === 1) {
-    const { amount, token } = budgetDetails[0]
-    const tokenSymbol = getTokenSymbol(token)
-    return `${formatNumberUSStyle(amount)} ${tokenSymbol} requested`
-  } else {
-    // Multiple tokens
-    const firstBudget = budgetDetails[0]
-    const tokenSymbol = getTokenSymbol(firstBudget.token)
-    return `${formatNumberUSStyle(firstBudget.amount)} ${tokenSymbol} + others requested`
+  // If we only have table-parsed budget, create mock actions for TokensOfProposal
+  if (budgetFromTable.length > 0) {
+    const mockActions = budgetFromTable.map(({ amount, token }) => ({
+      type: 'Request Budget',
+      payload: {
+        budget: [{ amount: amount.toString(), token }],
+      },
+    }))
+    return <TokensOfProposal actions={mockActions as any} />
   }
-}
 
-// Helper function to get token symbol from address or string
-function getTokenSymbol(token: string): string {
-  if (!token) return 'Token'
-  
-  const tokenLower = token.toLowerCase()
-  
-  // Handle common token patterns
-  if (token === 'ETH' || token === ETH_MOCK_ADDRESS || tokenLower === 'eth') {
-    return 'ETH'
-  }
-  
-  if (token === 'USDC' || tokenLower.includes('usdc')) {
-    return 'USDC'
-  }
-  
-  if (token === 'USDT' || tokenLower.includes('usdt')) {
-    return 'USDT'
-  }
-  
-  if (token === 'DAI' || tokenLower.includes('dai')) {
-    return 'DAI'
-  }
-  
-  if (token === 'MOONEY' || tokenLower.includes('mooney')) {
-    return 'MOONEY'
-  }
-  
-  // Check for known USDC contract addresses
-  const usdcAddresses = [
-    '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', // Ethereum USDC
-    '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359', // Polygon USDC
-    '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // Base USDC
-    '0xaf88d065e77c8cc2239327c5edb3a432268e5831', // Arbitrum USDC
-  ]
-  
-  if (usdcAddresses.includes(tokenLower)) {
-    return 'USDC'
-  }
-  
-  // Check for known USDT contract addresses
-  const usdtAddresses = [
-    '0xdac17f958d2ee523a2206206994597c13d831ec7', // Ethereum USDT
-  ]
-  
-  if (usdtAddresses.includes(tokenLower)) {
-    return 'USDT'
-  }
-  
-  // If it's a long hex address, show as "Token"
-  if (tokenLower.startsWith('0x') && token.length > 10) {
-    return 'Token'
-  }
-  
-  // Otherwise return the token as-is (but limit length)
-  return token.length > 8 ? token.substring(0, 8) + '...' : token
+  return 'Budget requested (details TBD)'
 }
 
 // Function to count unique countries from location data
@@ -702,44 +559,42 @@ export default function SingedInDashboard({
             <div className="order-2">
               <WeeklyRewardPool />
             </div>
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
-              <p className="text-gray-300 text-sm">
-                Were you referred to the Space Acceleration Network?
-              </p>
-              <div className="space-y-8 h-full mt-4">
-                <CitizenReferral />
-              </div>
-            </div>
 
             {/* Key Metrics Card */}
+
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
               <h3 className="font-semibold text-white mb-8 text-lg">
                 DAO Metrics
               </h3>
               <div className="space-y-8 h-full">
-                <div
-                  className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
-                  onClick={openCitizensChart}
-                  title="Click to view full chart"
-                >
-                  <div className="flex items-center justify-between mb-5">
-                    <span className="text-gray-300 font-medium">Citizens</span>
-                    <span className="text-white font-bold text-2xl">
-                      {citizenSubgraphData?.transfers?.length || '2,341'}
-                    </span>
-                  </div>
-                  <div className="h-20">
-                    <CitizensChart
-                      transfers={citizenSubgraphData.transfers}
-                      isLoading={false}
-                      height={80}
-                      compact={true}
-                      createdAt={citizenSubgraphData.createdAt}
-                    />
-                  </div>
-                </div>
+                {citizenSubgraphData?.transfers &&
+                  citizenSubgraphData?.transfers.length > 0 && (
+                    <div
+                      className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
+                      onClick={openCitizensChart}
+                      title="Click to view full chart"
+                    >
+                      <div className="flex items-center justify-between mb-5">
+                        <span className="text-gray-300 font-medium">
+                          Citizens
+                        </span>
+                        <span className="text-white font-bold text-2xl">
+                          {citizenSubgraphData?.transfers?.length || '2,341'}
+                        </span>
+                      </div>
+                      <div className="h-20">
+                        <CitizensChart
+                          transfers={citizenSubgraphData.transfers}
+                          isLoading={false}
+                          height={80}
+                          compact={true}
+                          createdAt={citizenSubgraphData.createdAt}
+                        />
+                      </div>
+                    </div>
+                  )}
 
-                {aumData && (
+                {aumData && aumData.aumHistory.length > 0 && (
                   <div
                     className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
                     onClick={openAUMChart}
@@ -762,7 +617,7 @@ export default function SingedInDashboard({
                   </div>
                 )}
 
-                {arrData && (
+                {arrData && arrData.arrHistory.length > 0 && (
                   <div
                     className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
                     onClick={openARRChart}
@@ -1004,75 +859,98 @@ export default function SingedInDashboard({
               </div>
 
               <div className="space-y-4 h-full overflow-y-auto">
-                {proposals && proposals.filter((proposal: any) => 
-                  proposal.status !== 'Discussion' && proposal.status !== 'Draft'
+                {proposals &&
+                proposals.filter(
+                  (proposal: any) =>
+                    proposal.status !== 'Discussion' &&
+                    proposal.status !== 'Draft'
                 ).length > 0 ? (
                   proposals
-                    .filter((proposal: any) => proposal.status !== 'Discussion' && proposal.status !== 'Draft') // Filter out drafts and discussions
+                    .filter(
+                      (proposal: any) =>
+                        proposal.status !== 'Discussion' &&
+                        proposal.status !== 'Draft'
+                    ) // Filter out drafts and discussions
                     .slice(0, 3)
                     .map((proposal: any, i: number) => {
-                    const fundingInfo = getFundingFromProposal(proposal.actions)
-                    const daysLeft = getDaysLeft(proposal)
-                    const votingInfo = votingInfoMap?.[proposal?.voteURL || '']
-                    const statusDisplay = getProposalStatusDisplay(proposal, votingInfo, daysLeft)
-                    const fundingDisplay = getProposalFundingDisplay(proposal)
+                      const daysLeft = getDaysLeft(proposal)
+                      const votingInfo =
+                        votingInfoMap?.[proposal?.voteURL || '']
+                      const statusDisplay = getProposalStatusDisplay(
+                        proposal,
+                        votingInfo,
+                        daysLeft
+                      )
+                      const fundingDisplay = getProposalFundingDisplay(proposal)
 
-                    return (
-                      <Link
-                        key={proposal.uuid || i}
-                        href={`/proposal/${proposal.uuid}`}
-                        className="block"
-                      >
-                        <div className="bg-white/5 rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all cursor-pointer">
-                          <div className="flex justify-between items-start mb-3">
-                            <h4 className="text-white font-semibold">
-                              {proposal.title ||
-                                `MDP-${
-                                  179 - i
-                                }: Study on Lunar Surface Selection For Settlement`}
-                            </h4>
-                            <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${
-                              proposal.status === 'Temperature Check' 
-                                ? 'bg-green-500/20 text-green-300 border-green-500/30'
-                                : proposal.status === 'Voting'
-                                ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                                : proposal.status === 'Approved'
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                                : 'bg-gray-500/20 text-gray-300 border-gray-500/30'
-                            }`}>
-                              {proposal.status === 'Temperature Check' ? 'Temp Check' : proposal.status}
-                            </span>
-                          </div>
-                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-300">
-                              <div className="flex items-center gap-1">
-                                <span className="font-medium text-white">
-                                  {fundingDisplay}
-                                </span>
+                      return (
+                        <Link
+                          key={proposal.uuid || i}
+                          href={`/proposal/${proposal.uuid}`}
+                          className="block"
+                        >
+                          <div className="bg-white/5 rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all cursor-pointer">
+                            <div className="flex justify-between items-start mb-3">
+                              <h4 className="text-white font-semibold">
+                                {proposal.title ||
+                                  `MDP-${
+                                    179 - i
+                                  }: Study on Lunar Surface Selection For Settlement`}
+                              </h4>
+                              <span
+                                className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${
+                                  proposal.status === 'Temperature Check'
+                                    ? 'bg-green-500/20 text-green-300 border-green-500/30'
+                                    : proposal.status === 'Voting'
+                                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                    : proposal.status === 'Approved'
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                    : 'bg-gray-500/20 text-gray-300 border-gray-500/30'
+                                }`}
+                              >
+                                {proposal.status === 'Temperature Check'
+                                  ? 'Temp Check'
+                                  : proposal.status}
+                              </span>
+                            </div>
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-300">
+                                <div className="flex items-center gap-1">
+                                  <span className="font-medium text-white">
+                                    {fundingDisplay}
+                                  </span>
+                                </div>
+                                {votingInfo?.end && (
+                                  <>
+                                    <span className="hidden sm:inline">•</span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-medium text-white">
+                                        {statusDisplay}
+                                      </span>
+                                    </div>
+                                  </>
+                                )}
                               </div>
-                              {votingInfo?.end && (
-                                <>
-                                  <span className="hidden sm:inline">•</span>
-                                  <div className="flex items-center gap-1">
-                                    <span className="font-medium text-white">
-                                      {statusDisplay}
-                                    </span>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                            <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
-                              {['Voting', 'Temperature Check'].includes(proposal.status) ? 'Vote' : 'View'}
+                              <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
+                                {['Voting', 'Temperature Check'].includes(
+                                  proposal.status
+                                )
+                                  ? 'Vote'
+                                  : 'View'}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </Link>
-                    )
-                  })
+                        </Link>
+                      )
+                    })
                 ) : (
                   <div className="text-center text-gray-400 py-8">
-                    <p className="text-sm">No active proposals available at the moment.</p>
-                    <p className="text-xs mt-2">Check back later for new proposals to vote on!</p>
+                    <p className="text-sm">
+                      No active proposals available at the moment.
+                    </p>
+                    <p className="text-xs mt-2">
+                      Check back later for new proposals to vote on!
+                    </p>
                   </div>
                 )}
               </div>
@@ -1154,31 +1032,33 @@ export default function SingedInDashboard({
               <div className="space-y-3">
                 {filteredTeams && filteredTeams.length > 0 ? (
                   filteredTeams.slice(0, 5).map((team: any, index: number) => (
-                    <div
+                    <Link
                       key={team.id || index}
-                      className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer"
+                      href={`/team/${generatePrettyLink(team.name)}`}
                     >
-                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                        {team.image ? (
-                          <IPFSRenderer
-                            src={team.image}
-                            alt={team.name}
-                            className="w-full h-full object-cover"
-                            width={100}
-                            height={100}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                            {team.name?.[0] || 'T'}
-                          </div>
-                        )}
+                      <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                        <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                          {team.image ? (
+                            <IPFSRenderer
+                              src={team.image}
+                              alt={team.name}
+                              className="w-full h-full object-cover"
+                              width={100}
+                              height={100}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                              {team.name?.[0] || 'T'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-white font-medium text-sm truncate">
+                            {team.name || 'Team'}
+                          </h4>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-sm truncate">
-                          {team.name || 'Team'}
-                        </h4>
-                      </div>
-                    </div>
+                    </Link>
                   ))
                 ) : (
                   <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
@@ -1214,36 +1094,38 @@ export default function SingedInDashboard({
                   newestListings
                     .slice(0, 3)
                     .map((listing: any, index: number) => (
-                      <div
+                      <Link
                         key={listing.id || index}
-                        className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer"
+                        href={`/team/${listing.teamId}?listing=${listing.id}`}
                       >
-                        <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                          {listing.image ? (
-                            <IPFSRenderer
-                              src={listing.image}
-                              alt={listing.title}
-                              className="w-full h-full object-cover"
-                              width={100}
-                              height={100}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                              <ShoppingBagIcon className="w-5 h-5" />
-                            </div>
-                          )}
+                        <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                          <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                            {listing.image ? (
+                              <IPFSRenderer
+                                src={listing.image}
+                                alt={listing.title}
+                                className="w-full h-full object-cover"
+                                width={100}
+                                height={100}
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                                <ShoppingBagIcon className="w-5 h-5" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-white font-medium text-sm truncate">
+                              {listing.title || 'Marketplace Item'}
+                            </h4>
+                            <p className="text-gray-400 text-xs">
+                              {listing.price && listing.currency
+                                ? `${listing.price} ${listing.currency}`
+                                : 'View details'}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-white font-medium text-sm truncate">
-                            {listing.title || 'Marketplace Item'}
-                          </h4>
-                          <p className="text-gray-400 text-xs">
-                            {listing.price && listing.currency
-                              ? `${listing.price} ${listing.currency}`
-                              : 'View details'}
-                          </p>
-                        </div>
-                      </div>
+                      </Link>
                     ))
                 ) : (
                   <div className="space-y-3">
@@ -1322,7 +1204,7 @@ export default function SingedInDashboard({
             <div className="flex gap-3">
               <StandardButton
                 className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-6 py-3 rounded-xl font-medium transition-all"
-                link="/submit"
+                link="/proposals"
               >
                 Propose Project
               </StandardButton>
@@ -1409,6 +1291,87 @@ export default function SingedInDashboard({
           )}
         </div>
 
+        {/* Jobs Section - Full Width */}
+        <div className="bg-gradient-to-br from-purple-600/20 to-indigo-800/20 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 mt-8 mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <div>
+              <h3 className="text-2xl font-bold text-white flex items-center gap-2 mb-2">
+                <BriefcaseIcon className="w-7 h-7" />
+                Open Positions
+              </h3>
+              <p className="text-purple-200 text-sm">
+                Join our mission and build the future of space exploration
+              </p>
+            </div>
+
+            {/* Only View All Jobs button */}
+            <StandardButton
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all"
+              link="/jobs"
+            >
+              View All Jobs
+            </StandardButton>
+          </div>
+
+          {newestJobs && newestJobs.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {newestJobs.slice(0, 6).map((job: any, i: number) => (
+                <div
+                  key={`job-${i}`}
+                  className="bg-black/30 rounded-xl p-5 border border-purple-500/10 hover:border-purple-500/20 transition-all duration-200"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h4 className="font-semibold text-white text-lg">
+                      {job.title}
+                    </h4>
+                    {job.tag && (
+                      <span className="bg-purple-500/20 text-purple-300 text-xs px-2 py-1 rounded">
+                        {job.tag}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-purple-100 text-sm mb-4 line-clamp-3">
+                    {job.description}
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-purple-200 text-xs">
+                      Posted{' '}
+                      {Math.floor((Date.now() / 1000 - job.timestamp) / 86400)}{' '}
+                      days ago
+                    </span>
+                    {job.contactInfo && (
+                      <StandardButton
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-all"
+                        onClick={() => window.open(job.contactInfo)}
+                      >
+                        Apply
+                      </StandardButton>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-black/20 rounded-xl p-8 border border-purple-500/20">
+              <div className="text-center">
+                <BriefcaseIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+                <h4 className="font-bold text-white text-xl mb-2">
+                  No Open Positions
+                </h4>
+                <p className="text-gray-400 text-sm mb-4">
+                  Check back soon for new job opportunities in space exploration
+                </p>
+                <StandardButton
+                  className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 px-6 py-3 rounded-lg transition-all"
+                  link="/jobs"
+                >
+                  View All Jobs
+                </StandardButton>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Launchpad & Events Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 mb-8">
           {/* Launchpad Feature */}
@@ -1467,63 +1430,38 @@ export default function SingedInDashboard({
               </StandardButton>
             </div>
 
-            <div className="bg-black/20 rounded-xl p-4 border border-white/10">
-              <div className="w-full relative">
-                <div
-                  id="luma-loading-dashboard-small"
-                  className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center min-h-[200px]"
-                >
-                  <div className="text-white text-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
-                    <p className="text-xs">Loading events...</p>
-                  </div>
+            <div className="relative">
+              <div
+                id="luma-loading-dashboard-small"
+                className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center min-h-[350px]"
+              >
+                <div className="text-white text-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
+                  <p className="text-xs">Loading events...</p>
                 </div>
-                <iframe
-                  src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
-                  width="100%"
-                  height="250"
-                  frameBorder="0"
-                  style={{ border: '1px solid #ffffff20', borderRadius: '8px' }}
-                  allowFullScreen
-                  aria-hidden="false"
-                  tabIndex={0}
-                  className="rounded-lg relative z-10"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="MoonDAO Events Calendar"
-                  onLoad={(e) => {
-                    const loadingDiv = document.getElementById(
-                      'luma-loading-dashboard-small'
-                    )
-                    if (loadingDiv) {
-                      loadingDiv.style.display = 'none'
-                    }
-                  }}
-                />
               </div>
-              <div className="mt-3 text-center">
-                <a
-                  href="https://lu.ma/moondao"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-3 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 font-medium rounded-lg transition-colors duration-200 text-sm"
-                >
-                  View on lu.ma
-                  <svg
-                    className="ml-2 w-3 h-3"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
-                </a>
-              </div>
+              <iframe
+                src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
+                width="100%"
+                height="350"
+                frameBorder="0"
+                style={{ border: '1px solid #ffffff20', borderRadius: '8px' }}
+                allowFullScreen
+                aria-hidden="false"
+                tabIndex={0}
+                className="rounded-lg relative z-10"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="MoonDAO Events Calendar"
+                onLoad={(e) => {
+                  const loadingDiv = document.getElementById(
+                    'luma-loading-dashboard-small'
+                  )
+                  if (loadingDiv) {
+                    loadingDiv.style.display = 'none'
+                  }
+                }}
+              />
             </div>
           </div>
         </div>

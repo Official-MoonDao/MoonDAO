@@ -11,13 +11,13 @@ import {
 import Safe, { SafeConfig } from '@safe-global/protocol-kit'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
-import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
-import JBV4DirectoryABI from 'const/abis/JBV4Directory.json'
-import JBV4TokensABI from 'const/abis/JBV4Tokens.json'
+import JBV5Controller from 'const/abis/JBV5Controller.json'
+import JBV5Directory from 'const/abis/JBV5Directory.json'
+import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import JobBoardTableABI from 'const/abis/JobBoardTable.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
-import MissionCreatorABI from 'const/abis/MissionCreator.json'
+import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
@@ -28,10 +28,10 @@ import {
   MARKETPLACE_TABLE_ADDRESSES,
   TEAM_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
-  JBV4_CONTROLLER_ADDRESSES,
-  JBV4_TOKENS_ADDRESSES,
+  JBV5_CONTROLLER_ADDRESS,
+  JBV5_TOKENS_ADDRESS,
   MISSION_TABLE_ADDRESSES,
-  JBV4_DIRECTORY_ADDRESSES,
+  JBV5_DIRECTORY_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
 } from 'const/config'
 import { blockedTeams } from 'const/whitelist'
@@ -66,7 +66,6 @@ import { TwitterIcon } from '@/components/assets'
 import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
-import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
@@ -147,25 +146,25 @@ export default function TeamDetailPage({
 
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
-    abi: MissionCreatorABI,
+    abi: MissionCreator.abi,
     chain: selectedChain,
   })
 
   const jbControllerContract = useContract({
-    address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
-    abi: JBV4ControllerABI,
+    address: JBV5_CONTROLLER_ADDRESS,
+    abi: JBV5Controller.abi,
     chain: selectedChain,
   })
 
   const jbDirectoryContract = useContract({
-    address: JBV4_DIRECTORY_ADDRESSES[chainSlug],
-    abi: JBV4DirectoryABI,
+    address: JBV5_DIRECTORY_ADDRESS,
+    abi: JBV5Directory.abi,
     chain: selectedChain,
   })
 
   const jbTokensContract = useContract({
-    address: JBV4_TOKENS_ADDRESSES[chainSlug],
-    abi: JBV4TokensABI,
+    address: JBV5_TOKENS_ADDRESS,
+    abi: JBV5Tokens.abi,
     chain: selectedChain,
   })
 
@@ -179,7 +178,8 @@ export default function TeamDetailPage({
     isManager,
     subIsValid,
     isLoading: isLoadingTeamData,
-  } = useTeamData(teamContract, hatsContract, nft)
+    hasFullAccess,
+  } = useTeamData(teamContract, hatsContract, nft, citizen)
 
   const hats = useSubHats(selectedChain, adminHatId, true)
 
@@ -198,68 +198,62 @@ export default function TeamDetailPage({
 
   //Profile Header Section
   const ProfileHeader = (
-    <div id="orgheader-container">
-      <Frame
-        noPadding
-        bottomRight="0px"
-        bottomLeft="0px"
-        topLeft="0px"
-        topRight="0px"
-        className="z-50"
-        marginBottom="0px"
-      >
-        <div id="frame-content-container" className="w-full">
-          <div
-            id="moon-asset-container"
-            className="bg-white rounded-[100%] w-[100px] h-[100px] absolute top-5 lg:top-[40px] left-5 lg:left-[40px]"
-          ></div>
+    <div id="teamheader-container" className="w-full">
+      <div className="w-full bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 overflow-hidden">
+        <div id="frame-content-container" className="w-full p-6 lg:p-8">
           <div
             id="frame-content"
-            className="w-full flex flex-col lg:flex-row items-start justify-between"
+            className="w-full flex flex-col lg:flex-row items-start justify-between gap-6"
           >
             <div
               id="profile-description-section"
-              className="flex flex-col lg:flex-row items-start lg:items-center gap-4"
+              className="flex w-full flex-col lg:flex-row items-stretch gap-6"
             >
-              {nft?.metadata.image ? (
+              {nft?.metadata?.image ? (
                 <div
-                  id="org-image-container"
-                  className="relative w-full max-w-[350px] h-full md:min-w-[300px] md:min-h-[300px] md:max-w-[300px] md:max-h-[300px]"
+                  id="team-image-container"
+                  className="relative flex-shrink-0"
                 >
-                  <IPFSRenderer
-                    alt="Team Image"
-                    className="rounded-full"
-                    src={nft.metadata.image}
-                    height={300}
-                    width={300}
-                  />
+                  <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
+                    <IPFSRenderer
+                      src={nft?.metadata?.image}
+                      className="w-full h-full object-cover rounded-2xl border-4 border-slate-500/50"
+                      height={250}
+                      width={250}
+                      alt="Team Image"
+                    />
+                  </div>
                   <div
                     id="star-asset-container"
-                    className="absolute bottom-0 lg:right-0"
+                    className="absolute -bottom-2 -right-2"
                   >
-                    <Image
-                      src="/../.././assets/icon-star.svg"
-                      alt=""
-                      width={80}
-                      height={80}
-                    ></Image>
+                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
+                      <Image
+                        src="/../.././assets/icon-star.svg"
+                        alt=""
+                        width={40}
+                        height={40}
+                      />
+                    </div>
                   </div>
                 </div>
               ) : (
-                <></>
+                <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex items-center justify-center flex-shrink-0">
+                  <div className="text-slate-400 text-6xl">🏢</div>
+                </div>
               )}
-              <div id="team-name-container">
+              <div id="team-name-container" className="flex-1 min-w-0 flex flex-col justify-center min-h-[200px] lg:min-h-[250px]">
                 <div
                   id="team-name"
-                  className="flex flex-col flex-col-reverse justify-center gap-2"
+                  className="flex flex-col gap-4 w-full"
                 >
                   <div
-                    id="team-name"
-                    className="flex flex-row gap-2 items-center justify-start"
+                    id="team-name-container"
+                    className="flex flex-col w-full"
                   >
                     {subIsValid && isManager && (
                       <button
-                        className={'absolute top-6 right-6'}
+                        className="absolute top-4 right-4 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
                         onClick={() => {
                           if (address === nft?.owner || isManager)
                             setTeamMetadataModalEnabled(true)
@@ -269,49 +263,46 @@ export default function TeamDetailPage({
                             )
                         }}
                       >
-                        <PencilIcon width={35} height={35} />
+                        <PencilIcon width={24} height={24} className="text-white" />
                       </button>
                     )}
                     {nft ? (
-                      <h1 className="max-w-[450px] text-black opacity-[80%] order-2 lg:order-1 lg:block font-GoodTimes header dark:text-white text-3xl">
-                        {nft.metadata.name}
+                      <h1 className="font-GoodTimes text-white text-2xl lg:text-4xl font-bold mb-3 break-words">
+                        {nft?.metadata?.name}
                       </h1>
                     ) : (
                       <></>
                     )}
+                    <div id="profile-container">
+                      {nft?.metadata?.description ? (
+                        <p className="text-slate-300 text-base leading-relaxed mb-4">
+                          {nft?.metadata.description || ''}
+                        </p>
+                      ) : (
+                        <></>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div id="profile-container">
-                  {nft?.metadata.description ? (
-                    <p
-                      id="profile-description-container"
-                      className="mb-5 w-full lg:w-[80%]"
-                    >
-                      {nft?.metadata.description || ''}
-                    </p>
-                  ) : (
-                    <></>
-                  )}
 
-                  <div className="flex flex-col md:flex-row items-start justify-start lg:pr-10">
-                    {socials ? (
-                      <div
-                        id="socials-container"
-                        className="p-1.5 mb-2 mr-2 md:mb-0 px-5 max-w-[160px] gap-5 rounded-bl-[10px] rounded-[2vmax] md:rounded-[vmax] flex text-sm bg-filter"
-                      >
+                  <div
+                    id="interactions-container"
+                    className="flex flex-col sm:flex-row items-start gap-4"
+                  >
+                    {socials && (
+                      <div className="flex gap-3">
                         {socials.communications && (
                           <Link
-                            className="flex gap-2"
+                            className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center gap-2 hover:bg-slate-500/30 transition-colors"
                             href={socials.communications}
                             target="_blank"
                             passHref
                           >
-                            <ChatBubbleLeftIcon height={25} width={25} />
+                            <ChatBubbleLeftIcon height={20} width={20} className="text-slate-300" />
                           </Link>
                         )}
                         {socials.twitter && (
                           <Link
-                            className="flex gap-2"
+                            className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center gap-2 hover:bg-slate-500/30 transition-colors"
                             href={socials.twitter}
                             target="_blank"
                             passHref
@@ -321,32 +312,16 @@ export default function TeamDetailPage({
                         )}
                         {socials.website && (
                           <Link
-                            className="flex gap-2"
+                            className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center gap-2 hover:bg-slate-500/30 transition-colors"
                             href={socials.website}
                             target="_blank"
                             passHref
                           >
-                            <GlobeAltIcon height={25} width={25} />
+                            <GlobeAltIcon height={20} width={20} className="text-slate-300" />
                           </Link>
                         )}
                       </div>
-                    ) : (
-                      <></>
                     )}
-
-                    {isManager || address === nft.owner ? (
-                      ''
-                    ) : (
-                      <div
-                        id="donation-container"
-                        className="flex items-center max-w-[290px]"
-                      >
-                        {!isDeleted && subIsValid && (
-                          <TeamDonation recipient={nft?.owner} />
-                        )}
-                      </div>
-                    )}
-
                     {/*Subscription Extension Container*/}
                     {isManager || address === nft.owner ? (
                       <div id="manager-container" className="relative">
@@ -392,7 +367,7 @@ export default function TeamDetailPage({
             </div>
           </div>
         </div>
-      </Frame>
+      </div>
     </div>
   )
 
@@ -450,6 +425,32 @@ export default function TeamDetailPage({
           refreshListings={() => router.reload()}
         />
       )}
+
+      {/*Subscription Extension Container*/}
+      {isManager || address === nft.owner ? (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            onClick={() => setTeamSubscriptionModalEnabled(true)}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
+          >
+            <span>Extend Subscription</span>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </button>
+        </div>
+      ) : null}
+
       <ContentLayout
         description={ProfileHeader}
         mainPadding
@@ -470,37 +471,30 @@ export default function TeamDetailPage({
                   id="team-actions-container"
                   className="px-5 pt-5 md:px-0 md:pt-0"
                 >
-                  <Frame
-                    noPadding
-                    marginBottom="0px"
-                    bottomRight="2vmax"
-                    topRight="2vmax"
-                    topLeft="10px"
-                    bottomLeft="2vmax"
-                  >
-                    <div className="mt-2 px-2 grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
+                  <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       <Action
                         title="Fund"
                         description="Launch a mission to raise funds."
-                        icon={<BanknotesIcon height={30} width={30} />}
+                        icon={<BanknotesIcon height={24} width={24} className="text-white" />}
                         onClick={() => router.push('/launch?status=create')}
                       />
                       <Action
                         title="Hire"
                         description="List job openings or contracts to a global talent pool."
                         icon={
-                          <ClipboardDocumentListIcon height={30} width={30} />
+                          <ClipboardDocumentListIcon height={24} width={24} className="text-white" />
                         }
                         onClick={() => setTeamJobModalEnabled(true)}
                       />
                       <Action
                         title="Sell"
                         description="List products, services, or ticketed events for sale."
-                        icon={<BuildingStorefrontIcon height={30} width={30} />}
+                        icon={<BuildingStorefrontIcon height={24} width={24} className="text-white" />}
                         onClick={() => setTeamListingModalEnabled(true)}
                       />
                     </div>
-                  </Frame>
+                  </div>
                 </div>
               ) : (
                 ''
@@ -532,109 +526,123 @@ export default function TeamDetailPage({
             />
           )}
           {subIsValid && !isDeleted ? (
-            <div className="z-50 flex flex-col gap-5 mb-[50px]">
-              {/* Team Actions */}
-              {/* Team */}
-              <Frame
-                noPadding
-                bottomLeft="0px"
-                bottomRight="0px"
-                topRight="0px"
-                topLeft="0px"
-              >
-                <div
-                  id="team-container"
-                  className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
-                >
-                  <div
-                    id="job-title-container"
-                    className="p-5 pb-0 md:p-0 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 pr-12 "
-                  >
-                    <div className="flex gap-5 opacity-[50%]">
-                      <Image
-                        src={teamIcon}
-                        alt="Job icon"
-                        width={30}
-                        height={30}
-                      />
-                      <h2 className="header font-GoodTimes">Meet the Team</h2>
-                    </div>
-                    {isManager && hats?.[0]?.id && (
-                      <div
-                        id="button-container"
-                        className="pr-12 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
-                      >
-                        {/* <StandardButton
-                          className="min-w-[200px] gradient-2 rounded-[5vmax]"
-                          onClick={() => {
-                            window.open(
-                              `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
-                            )
-                          }}
-                        >
-                          Manage Members
-                        </StandardButton> */}
-                        <TeamManageMembers
-                          account={account}
-                          hats={hats}
-                          hatsContract={hatsContract}
-                          teamContract={teamContract}
-                          teamId={tokenId}
-                          selectedChain={selectedChain}
-                          multisigAddress={nft.owner}
-                          adminHatId={adminHatId}
-                          managerHatId={managerHatId}
-                        />
-                      </div>
-                    )}
+            <div className="space-y-6 mb-10">
+              {/* Team Members */}
+              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 mb-6">
+                  <div className="flex gap-5">
+                    <Image
+                      src={teamIcon}
+                      alt="Team icon"
+                      width={30}
+                      height={30}
+                      className="opacity-70"
+                    />
+                    <h2 className="font-GoodTimes text-2xl text-white">Meet the Team</h2>
                   </div>
-
-                  <SlidingCardMenu>
-                    <div className="flex gap-4">
-                      {hats?.[0].id && (
-                        <TeamMembers
-                          hats={hats}
-                          hatsContract={hatsContract}
-                          citizenContract={citizenContract}
-                        />
-                      )}
+                  {isManager && (
+                    <div className="flex gap-2">
+                      <TeamManageMembers
+                        account={account}
+                        hats={hats}
+                        hatsContract={hatsContract}
+                        teamContract={teamContract}
+                        teamId={tokenId}
+                        selectedChain={selectedChain}
+                        multisigAddress={nft.owner}
+                        adminHatId={adminHatId}
+                        managerHatId={managerHatId}
+                      />
                     </div>
-                  </SlidingCardMenu>
+                  )}
+                  {isManager && hats?.[0]?.id && (
+                    <div
+                      id="button-container"
+                      className="pr-12 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
+                    >
+                      {/* <StandardButton
+                        className="min-w-[200px] gradient-2 rounded-[5vmax]"
+                        onClick={() => {
+                          window.open(
+                            `https://app.hatsprotocol.xyz/trees/${selectedChain.chainId}/${hatTreeId}`
+                          )
+                        }}
+                      >
+                        Manage Members
+                      </StandardButton> */}
+                      <TeamManageMembers
+                        account={account}
+                        hats={hats}
+                        hatsContract={hatsContract}
+                        teamContract={teamContract}
+                        teamId={tokenId}
+                        selectedChain={selectedChain}
+                        multisigAddress={nft.owner}
+                        adminHatId={adminHatId}
+                        managerHatId={managerHatId}
+                      />
+                    </div>
+                  )}
                 </div>
-              </Frame>
-              <TeamJobs
-                teamId={tokenId}
-                jobTableContract={jobTableContract}
-                isManager={isManager}
-                isCitizen={citizen}
-              />
-              <TeamMarketplace
-                selectedChain={selectedChain}
-                marketplaceTableContract={marketplaceTableContract}
-                teamContract={teamContract}
-                isManager={isManager}
-                teamId={tokenId}
-                isCitizen={citizen}
-              />
+                <div className="mt-4">
+                  {hats?.[0].id && (
+                    <TeamMembers
+                      hats={hats}
+                      hatsContract={hatsContract}
+                      citizenContract={citizenContract}
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+                <TeamJobs
+                  teamId={tokenId}
+                  jobTableContract={jobTableContract}
+                  isManager={isManager}
+                  isCitizen={citizen}
+                  hasFullAccess={hasFullAccess}
+                />
+              </div>
+              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+                <TeamMarketplace
+                  selectedChain={selectedChain}
+                  marketplaceTableContract={marketplaceTableContract}
+                  teamContract={teamContract}
+                  isManager={isManager}
+                  teamId={tokenId}
+                  isCitizen={citizen}
+                />
+              </div>
               {/* General Actions */}
-              {isManager && <GeneralActions />}
+              {isManager && (
+                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+                  <GeneralActions />
+                </div>
+              )}
             </div>
           ) : (
             // Subscription Expired
-            <Frame>
-              <p className="text-white">
-                {isDeleted
-                  ? `The profile has been deleted, please connect the owner or admin wallet to submit new data.`
-                  : `The profile has expired, please connect the owner or admin wallet to renew.`}
-              </p>
+            <div className="bg-gradient-to-b from-red-900/20 to-red-800/30 rounded-2xl border border-red-600/30 p-6 mb-10">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-GoodTimes text-white mb-2">
+                  {isDeleted ? 'Profile Deleted' : 'Subscription Expired'}
+                </h3>
+                <p className="text-slate-300">
+                  {isDeleted
+                    ? `The profile has been deleted, please connect the owner or admin wallet to submit new data.`
+                    : `The profile has expired, please connect the owner or admin wallet to renew.`}
+                </p>
+              </div>
 
-              <TeamTreasury
-                isSigner={isSigner}
-                safeData={safeData}
-                multisigAddress={nft.owner}
-                safeOwners={safeOwners}
-              />
-            </Frame>
+              <div className="bg-slate-600/20 rounded-xl border border-slate-500/30">
+                <TeamTreasury
+                  isSigner={isSigner}
+                  safeData={safeData}
+                  multisigAddress={nft.owner}
+                  safeOwners={safeOwners}
+                />
+              </div>
+            </div>
           )}
         </div>
       </ContentLayout>

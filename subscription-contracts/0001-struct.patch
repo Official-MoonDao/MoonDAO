@@ -1,0 +1,92 @@
+From 6756b7d200b469a66eced6ea072863fa9413e080 Mon Sep 17 00:00:00 2001
+From: jaderiverstokes <jaderiverstokes@gmail.com>
+Date: Fri, 26 Sep 2025 10:59:07 -0700
+Subject: [PATCH] struct
+
+---
+ subscription-contracts/src/MoonDAOTeamCreator.sol   | 8 +-------
+ subscription-contracts/test/EntityCreatorTest.t.sol | 6 ------
+ subscription-contracts/test/MissionTest.t.sol       | 6 ------
+ subscription-contracts/test/TeamTest.t.sol          | 6 ------
+ 4 files changed, 1 insertion(+), 25 deletions(-)
+
+diff --git a/subscription-contracts/src/MoonDAOTeamCreator.sol b/subscription-contracts/src/MoonDAOTeamCreator.sol
+index 5c61e055..a31f1231 100644
+--- a/subscription-contracts/src/MoonDAOTeamCreator.sol
++++ b/subscription-contracts/src/MoonDAOTeamCreator.sol
+@@ -45,12 +45,6 @@ contract MoonDAOTeamCreator is Ownable {
+     }
+ 
+     struct TeamMetadata {
+-        string name;
+-        string bio;
+-        string image;
+-        string twitter;
+-        string communications;
+-        string website;
+         string _view;
+         string formId;
+     }
+@@ -179,7 +173,7 @@ contract MoonDAOTeamCreator is Ownable {
+         //mint
+         tokenId = moonDAOTeam.mintTo{value: msg.value}(address(gnosisSafe), creator, teamAdminHat, teamManagerHat, teamMemberHat, address(memberPassthroughModule), address(split));
+ 
+-        table.insertIntoTable(tokenId, metadata.name, metadata.bio, metadata.image, metadata.twitter, metadata.communications, metadata.website, metadata._view, metadata.formId);
++        table.insertIntoTable(tokenId, "", "", "", "", "", "", metadata._view, metadata.formId);
+     }
+ 
+     function constructSafeCallData(address caller, address[] memory members) internal returns (bytes memory) {
+diff --git a/subscription-contracts/test/EntityCreatorTest.t.sol b/subscription-contracts/test/EntityCreatorTest.t.sol
+index 5b3fb39f..21296fbd 100644
+--- a/subscription-contracts/test/EntityCreatorTest.t.sol
++++ b/subscription-contracts/test/EntityCreatorTest.t.sol
+@@ -79,12 +79,6 @@ contract CreatorTest is Test {
+         });
+         
+         MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
+-            name: "name",
+-            bio: "bio",
+-            image: "image",
+-            twitter: "twitter",
+-            communications: "communications",
+-            website: "website",
+             _view: "view",
+             formId: "formId"
+         });
+diff --git a/subscription-contracts/test/MissionTest.t.sol b/subscription-contracts/test/MissionTest.t.sol
+index 0eedb883..b50035a8 100644
+--- a/subscription-contracts/test/MissionTest.t.sol
++++ b/subscription-contracts/test/MissionTest.t.sol
+@@ -108,12 +108,6 @@ contract MissionTest is Test, Config {
+         });
+         
+         MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
+-            name: "name",
+-            bio: "bio",
+-            image: "image",
+-            twitter: "twitter",
+-            communications: "communications",
+-            website: "website",
+             _view: "view",
+             formId: "formId"
+         });
+diff --git a/subscription-contracts/test/TeamTest.t.sol b/subscription-contracts/test/TeamTest.t.sol
+index abbcdad1..a322d4db 100644
+--- a/subscription-contracts/test/TeamTest.t.sol
++++ b/subscription-contracts/test/TeamTest.t.sol
+@@ -81,12 +81,6 @@ contract ERC5643Test is Test {
+       });
+       
+       MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
+-          name: "name",
+-          bio: "bio",
+-          image: "image",
+-          twitter: "twitter",
+-          communications: "communications",
+-          website: "website",
+           _view: "view",
+           formId: "formId"
+       });
+-- 
+2.50.1 (Apple Git-155)
+

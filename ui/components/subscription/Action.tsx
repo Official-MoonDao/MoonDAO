@@ -1,5 +1,3 @@
-import SubCard from './SubCard'
-
 type ActionProps = {
   title: string
   description: string | React.ReactNode
@@ -16,18 +14,23 @@ export default function Action({
   disabled = false,
 }: ActionProps) {
   return (
-    <button
+    <div 
+      className={`bg-slate-600/20 rounded-xl p-4 transition-colors cursor-pointer group ${
+        disabled 
+          ? 'opacity-50 cursor-not-allowed' 
+          : 'hover:bg-slate-600/30'
+      }`}
       onClick={disabled ? undefined : onClick}
-      disabled={disabled}
-      className={disabled ? 'opacity-50 cursor-not-allowed' : ''}
     >
-      <SubCard className="flex flex-col gap-2 ease-in-out duration-300 w-[275px] h-[225px] border-[1px] border-transparent hover:border-white">
-        <div className="flex gap-2">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">
           {icon}
-          <p className="pb-2 font-bold text-xl">{title}</p>
         </div>
-        <p className="pb-5">{description}</p>
-      </SubCard>
-    </button>
+        <h3 className="font-bold text-white text-sm">{title}</h3>
+      </div>
+      <p className="text-xs text-slate-300 leading-relaxed">
+        {description}
+      </p>
+    </div>
   )
 }

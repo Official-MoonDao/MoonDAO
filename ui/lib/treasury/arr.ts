@@ -212,6 +212,16 @@ export async function calculateARRFromTransfers(
       }
     }
 
+    if (citizenTransfers.length < 148 || teamTransfers.length < 18) {
+      console.log('Not enough transfers found, returning empty ARR data')
+      return {
+        arrHistory: [],
+        currentARR: 0,
+        citizenARR: 0,
+        teamARR: 0,
+      }
+    }
+
     // Get contract prices and ETH price
     const [contractPrices, ethPrice] = await Promise.all([
       getContractPrices(),

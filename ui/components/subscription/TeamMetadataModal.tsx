@@ -168,10 +168,10 @@ export default function TeamMetadataModal({
     setTeamData({
       name: nft?.metadata?.name,
       description: nft?.metadata?.description,
-      twitter: getAttribute(nft.metadata.attributes, 'twitter').value,
+      twitter: getAttribute(nft.metadata.attributes, 'twitter')?.value,
       communications: getAttribute(nft.metadata.attributes, 'communications')
-        .value,
-      website: getAttribute(nft.metadata.attributes, 'website').value,
+        ?.value,
+      website: getAttribute(nft.metadata.attributes, 'website')?.value,
       view: 'public',
     })
   }, [nft])

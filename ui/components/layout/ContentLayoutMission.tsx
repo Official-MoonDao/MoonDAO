@@ -43,7 +43,7 @@ const ContentLayout: React.FC<ContentProps> = ({
       <section id="title-section" className="z-0 relative bg-black">
         <div className="absolute inset-0 w-full h-full overflow-hidden">
         </div>
-        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#3E3DA2] from-0% to-[#020617] to-80%"></div>
+        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#020617] from-0% to-[#020617] to-80%"></div>
         <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-transparent from-90% sm:from-40% lg:from-80% to-[#090d21] to-90% sm:to-40% lg:to-80%"></div>
         <div id="title-section-container">
           <div id="title" className="relative z-10 flex items-center xl:justify-center">
@@ -136,7 +136,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                           isCompact && !isProfile
                             ? 'mt-0 md:mt-[-120px] lg:mt-[-200px]'
                             : isCompact && isProfile
-                            ? ''
+                            ? 'mt-0 md:mt-[-20px] lg:mt-[-30px]'
                             : 'mt-0 md:mt-[-200px] lg:mt-[-280px] md:pb-0 '
                         }
                     `}

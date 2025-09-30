@@ -2,12 +2,21 @@ import {
   XMarkIcon,
   UserPlusIcon,
   MagnifyingGlassIcon,
-  ChevronDownIcon,
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline'
 import { getAccessToken } from '@privy-io/react-auth'
+import {
+  CITIZEN_REFERRAL_VERIFIER_ADDRESSES,
+  DEFAULT_CHAIN_V5,
+} from 'const/config'
 import { utils as ethersUtils } from 'ethers'
 import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
+import { Address } from 'thirdweb'
+import { getContract, readContract } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import client from '@/lib/thirdweb/client'
 import FormInput from '../forms/FormInput'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
@@ -19,12 +28,28 @@ type Citizen = {
   displayName: string
 }
 
+type ReferrerStatus = {
+  hasReferrer: boolean
+  referrerAddress: string | null
+  citizenAddress: string
+}
+
 type CitizenReferralProps = {
   className?: string
   label?: string
   onSuccess?: () => void
   onError?: () => void
 }
+
+const CITIZEN_REFERRALS_ABI = [
+  {
+    type: 'function',
+    name: 'referredBy',
+    stateMutability: 'view',
+    inputs: [{ name: '', type: 'address' }],
+    outputs: [{ name: '', type: 'address' }],
+  },
+] as const
 
 export default function CitizenReferral({
   className = '',
@@ -40,8 +65,69 @@ export default function CitizenReferral({
   const [isSearching, setIsSearching] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [selectedCitizen, setSelectedCitizen] = useState<Citizen | null>(null)
+  const [referrerStatus, setReferrerStatus] = useState<ReferrerStatus | null>(
+    null
+  )
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const account = useActiveAccount()
+
+  // Check referrer status by calling the contract directly
+  const checkReferrerStatus = async () => {
+    if (!account?.address) {
+      console.log('No active account found')
+      return
+    }
+
+    setIsLoadingStatus(true)
+    try {
+      const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+      const verifierAddress = CITIZEN_REFERRAL_VERIFIER_ADDRESSES[
+        chainSlug
+      ] as Address
+
+      if (!verifierAddress) {
+        throw new Error('Referral verifier address not configured')
+      }
+
+      const contract = getContract({
+        client,
+        chain: DEFAULT_CHAIN_V5,
+        address: verifierAddress,
+        abi: CITIZEN_REFERRALS_ABI as any,
+      })
+
+      // Check if the citizen already has a referrer
+      const existingReferrer = (await readContract({
+        contract,
+        method: 'referredBy',
+        params: [account.address as Address],
+      })) as Address
+
+      const hasReferrer =
+        existingReferrer !== '0x0000000000000000000000000000000000000000'
+
+      setReferrerStatus({
+        hasReferrer,
+        referrerAddress: hasReferrer ? existingReferrer : null,
+        citizenAddress: account.address,
+      })
+    } catch (error) {
+      console.error('Error checking referrer status:', error)
+      toast.error('Failed to check referrer status')
+    } finally {
+      setIsLoadingStatus(false)
+    }
+  }
+
+  // Check status when modal opens
+  useEffect(() => {
+    if (isModalOpen && account?.address) {
+      checkReferrerStatus()
+    }
+  }, [isModalOpen, account?.address])
 
   // Search for citizens
   const searchCitizens = async (query: string) => {
@@ -170,12 +256,7 @@ export default function CitizenReferral({
       }
 
       toast.success('SAN referral recorded successfully!')
-      setIsModalOpen(false)
-      setReferrerAddress('')
-      setSearchQuery('')
-      setSelectedCitizen(null)
-      setSearchResults([])
-      setShowDropdown(false)
+      handleCloseModal()
       onSuccess?.()
     } catch (error: any) {
       console.error('Error recording SAN referral:', error)
@@ -186,14 +267,24 @@ export default function CitizenReferral({
     }
   }
 
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setReferrerAddress('')
+    setSearchQuery('')
+    setSelectedCitizen(null)
+    setSearchResults([])
+    setShowDropdown(false)
+    setReferrerStatus(null)
+  }
+
   return (
     <>
       <StandardButton
-        className={`bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap ${className}`}
+        className={`'px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex items-center justify-center gap-1' ${className}`}
         onClick={() => setIsModalOpen(true)}
       >
         <UserPlusIcon className="w-4 h-4" />
-        Record Referral
+        {referrerStatus?.hasReferrer ? 'View Referrer' : 'Record Referral'}
       </StandardButton>
 
       {isModalOpen && (
@@ -203,14 +294,22 @@ export default function CitizenReferral({
             <div className="w-full flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                  <UserPlusIcon className="w-5 h-5 text-white" />
+                  {referrerStatus?.hasReferrer ? (
+                    <CheckCircleIcon className="w-5 h-5 text-white" />
+                  ) : (
+                    <UserPlusIcon className="w-5 h-5 text-white" />
+                  )}
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-white">
-                    Record Citizen Referral
+                    {referrerStatus?.hasReferrer
+                      ? 'Referrer Already Set'
+                      : 'Record Citizen Referral'}
                   </h1>
                   <p className="text-gray-300 text-sm">
-                    Assign a referrer to your citizen NFT
+                    {referrerStatus?.hasReferrer
+                      ? 'You already have a referrer assigned'
+                      : 'Assign a referrer to your citizen NFT'}
                   </p>
                 </div>
               </div>
@@ -218,7 +317,7 @@ export default function CitizenReferral({
                 id="close-modal"
                 type="button"
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onClick={() => setIsModalOpen(false)}
+                onClick={handleCloseModal}
               >
                 <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
               </button>
@@ -226,127 +325,181 @@ export default function CitizenReferral({
 
             {/* Content */}
             <div className="w-full space-y-6 pb-4">
-              {/* Info Section */}
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  How it works
-                </h3>
-                <ul className="text-gray-300 text-sm space-y-1">
-                  <li>
-                    • Search for the person who referred you by name or token ID
-                  </li>
-                  <li>• They must own a valid citizen NFT</li>
-                  <li>• This action cannot be undone</li>
-                </ul>
-              </div>
-
-              {/* Citizen Search Input */}
-              <div className="w-full relative" ref={dropdownRef}>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Search for Referrer *
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    placeholder="Search by name or token ID..."
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  {isSearching && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              {!account?.address ? (
+                <div className="bg-yellow-500/10 backdrop-blur-sm border border-yellow-500/20 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center">
+                      <span className="text-white text-sm font-bold">!</span>
                     </div>
-                  )}
+                    <h3 className="text-lg font-semibold text-white">
+                      Wallet Not Connected
+                    </h3>
+                  </div>
+                  <p className="text-gray-300 text-sm">
+                    Please connect your wallet to check your referrer status and
+                    record referrals.
+                  </p>
                 </div>
-
-                {/* Search Results Dropdown */}
-                {showDropdown && searchResults.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/20 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                    {searchResults.map((citizen) => (
-                      <button
-                        key={citizen.id}
-                        onClick={() => handleCitizenSelect(citizen)}
-                        className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0"
-                      >
-                        <div className="text-white font-medium">
-                          {citizen.displayName}
-                        </div>
-                        <div className="text-gray-400 text-sm truncate">
-                          {citizen.owner}
-                        </div>
-                      </button>
-                    ))}
+              ) : isLoadingStatus ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span className="ml-3 text-white">
+                    Checking referrer status...
+                  </span>
+                </div>
+              ) : referrerStatus?.hasReferrer ? (
+                /* Already has referrer - show status */
+                <div className="bg-green-500/10 backdrop-blur-sm border border-green-500/20 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <CheckCircleIcon className="w-6 h-6 text-green-400" />
+                    <h3 className="text-lg font-semibold text-white">
+                      Referrer Already Set
+                    </h3>
                   </div>
-                )}
-
-                {/* No Results */}
-                {showDropdown &&
-                  searchResults.length === 0 &&
-                  searchQuery.trim().length > 0 &&
-                  (searchQuery.length >= 2 ||
-                    /^\d+$/.test(searchQuery.trim())) &&
-                  !isSearching && (
-                    <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/20 rounded-xl shadow-lg p-4">
-                      <div className="text-gray-400 text-center">
-                        No citizens found
-                      </div>
+                  <div className="space-y-2">
+                    <p className="text-gray-300 text-sm">
+                      Your citizen NFT already has a referrer assigned.
+                      Referrals can only be set once and cannot be changed.
+                    </p>
+                    <div className="bg-white/5 rounded-lg p-3 mt-4">
+                      <p className="text-gray-400 text-xs mb-1">
+                        Referrer Address:
+                      </p>
+                      <p className="text-white font-mono text-sm break-all">
+                        {referrerStatus.referrerAddress}
+                      </p>
                     </div>
-                  )}
-              </div>
-
-              {/* Selected Citizen Display */}
-              {selectedCitizen && (
-                <div className="w-full bg-white/5 border border-white/20 rounded-xl p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-white font-medium">
-                        {selectedCitizen.displayName}
-                      </div>
-                      <div className="text-gray-400 text-sm">
-                        {selectedCitizen.owner}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSelectedCitizen(null)
-                        setReferrerAddress('')
-                        setSearchQuery('')
-                      }}
-                      className="text-gray-400 hover:text-white transition-colors"
-                    >
-                      <XMarkIcon className="h-5 w-5" />
-                    </button>
                   </div>
                 </div>
+              ) : (
+                /* No referrer - show form */
+                <>
+                  {/* Info Section */}
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      How it works
+                    </h3>
+                    <ul className="text-gray-300 text-sm space-y-1">
+                      <li>
+                        • Search for the person who referred you by name or
+                        token ID
+                      </li>
+                      <li>• They must own a valid citizen NFT</li>
+                      <li>• This action cannot be undone</li>
+                    </ul>
+                  </div>
+
+                  {/* Citizen Search Input */}
+                  <div className="w-full relative" ref={dropdownRef}>
+                    <label className="block text-sm font-medium text-white mb-2">
+                      Search for Referrer *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        placeholder="Search by name or token ID..."
+                        className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      {isSearching && (
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Search Results Dropdown */}
+                    {showDropdown && searchResults.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/20 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                        {searchResults.map((citizen) => (
+                          <button
+                            key={citizen.id}
+                            onClick={() => handleCitizenSelect(citizen)}
+                            className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0"
+                          >
+                            <div className="text-white font-medium">
+                              {citizen.displayName}
+                            </div>
+                            <div className="text-gray-400 text-sm truncate">
+                              {citizen.owner}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* No Results */}
+                    {showDropdown &&
+                      searchResults.length === 0 &&
+                      searchQuery.trim().length > 0 &&
+                      (searchQuery.length >= 2 ||
+                        /^\d+$/.test(searchQuery.trim())) &&
+                      !isSearching && (
+                        <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/20 rounded-xl shadow-lg p-4">
+                          <div className="text-gray-400 text-center">
+                            No citizens found
+                          </div>
+                        </div>
+                      )}
+                  </div>
+
+                  {/* Selected Citizen Display */}
+                  {selectedCitizen && (
+                    <div className="w-full bg-white/5 border border-white/20 rounded-xl p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium">
+                            {selectedCitizen.displayName}
+                          </div>
+                          <div className="text-gray-400 text-sm">
+                            {selectedCitizen.owner}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedCitizen(null)
+                            setReferrerAddress('')
+                            setSearchQuery('')
+                          }}
+                          className="text-gray-400 hover:text-white transition-colors"
+                        >
+                          <XMarkIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Action Buttons */}
               <div className="flex gap-4 w-full">
                 <button
                   className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition-all duration-200 flex-1 border border-white/20"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={handleCloseModal}
                   disabled={isSubmitting}
                 >
-                  Cancel
+                  {referrerStatus?.hasReferrer ? 'Close' : 'Cancel'}
                 </button>
-                <button
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium transition-all duration-200 flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                  onClick={handleSubmitReferral}
-                  disabled={isSubmitting || !selectedCitizen}
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>Recording...</span>
-                    </div>
-                  ) : (
-                    'Record Referral'
-                  )}
-                </button>
+                {!referrerStatus?.hasReferrer && account?.address && (
+                  <button
+                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium transition-all duration-200 flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleSubmitReferral}
+                    disabled={isSubmitting || !selectedCitizen}
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>Recording...</span>
+                      </div>
+                    ) : (
+                      'Record Referral'
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>

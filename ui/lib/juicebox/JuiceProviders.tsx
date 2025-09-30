@@ -4,6 +4,10 @@ import { createConfig, http, WagmiProvider } from 'wagmi'
 import { mainnet, arbitrum, base, sepolia } from 'wagmi/chains'
 
 const thirdwebClientId = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID
+const bendystrawKey = process.env.BENDYSTRAW_API_KEY
+const bendystrawUrl = `https://${
+  process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' && 'testnet.'
+}bendystraw.xyz`
 
 const wagmiConfig = createConfig({
   chains: [mainnet, arbitrum, base, sepolia],
@@ -32,6 +36,11 @@ export default function JuiceProviders({
         <JBProjectProvider
           projectId={BigInt(projectId)}
           chainId={selectedChain.id as any}
+          version={5}
+          bendystraw={{
+            apiKey: bendystrawKey as string,
+            url: bendystrawUrl,
+          }}
         >
           {children}
         </JBProjectProvider>

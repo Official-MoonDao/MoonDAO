@@ -43,7 +43,8 @@ contract MyScript is Script {
 
         teamTable.setMoonDaoTeam(address(team));
 
-        MoonDAOTeamCreator creator = new MoonDAOTeamCreator(0x3bc1A0Ad72417f2d411118085256fC53CBdDd137, 0x0a3f85fa597B6a967271286aA0724811acDF5CD9, 0x97b5621E4CD8F403ab5b6036181982752DE3aC44, address(team), 0x3E5c63644E683549055b9Be8653de26E0B4CD36E, 0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2, address(teamTable), address(whitelist));
+        address[] memory authorizedSigners = new address[](0);
+        MoonDAOTeamCreator creator = new MoonDAOTeamCreator(0x3bc1A0Ad72417f2d411118085256fC53CBdDd137, 0x0a3f85fa597B6a967271286aA0724811acDF5CD9, 0x050079a8fbFCE76818C62481BA015b89567D2d35, address(team), 0x3E5c63644E683549055b9Be8653de26E0B4CD36E, 0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2, address(teamTable), address(whitelist), authorizedSigners);
 
         creator.setOpenAccess(true);
 

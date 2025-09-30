@@ -4,11 +4,11 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - '**.md'
+      - "**.md"
   pull_request:
     branches: [main]
     paths-ignore:
-      - '**.md'
+      - "**.md"
 
 env:
   FOUNDRY_PROFILE: ci
@@ -75,6 +75,7 @@ jobs:
       - name: Run Forge tests
         env:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          FOUNDRY_DISABLE_NIGHTLY_WARNING: true
         run: |
           cd subscription-contracts
           forge coverage --via-ir --fork-url 127.0.0.1:8545 -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov --report-file sepolia-coverge.info

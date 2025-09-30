@@ -4,12 +4,13 @@ pragma solidity ^0.8.20;
 
 import {Vesting} from "../src/Vesting.sol";
 import {PoolDeployer} from "../src/PoolDeployer.sol";
-import "@nana-core/interfaces/IJBRulesetApprovalHook.sol";
+import "@nana-core-v5/interfaces/IJBRulesetApprovalHook.sol";
+import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
 import {IWETH9} from "v4-periphery/src/interfaces/external/IWETH9.sol";
 import {WETH} from "solmate/src/tokens/WETH.sol";
-import {IJBRulesets} from "@nana-core/interfaces/IJBRulesets.sol";
-import {IJBMultiTerminal} from "@nana-core/interfaces/IJBMultiTerminal.sol";
-import {IJBDirectory} from "@nana-core/interfaces/IJBDirectory.sol";
+import {IJBRulesets} from "@nana-core-v5/interfaces/IJBRulesets.sol";
+import {IJBMultiTerminal} from "@nana-core-v5/interfaces/IJBMultiTerminal.sol";
+import {IJBDirectory} from "@nana-core-v5/interfaces/IJBDirectory.sol";
 import {MoonDAOTeam} from "../src/ERC5643.sol";
 import {GnosisSafeProxyFactory} from "../src/GnosisSafeProxyFactory.sol";
 import {MissionCreator} from "../src/MissionCreator.sol";
@@ -23,20 +24,20 @@ import {Hats} from "@hats/Hats.sol";
 import {HatsModuleFactory} from "@hats-module/HatsModuleFactory.sol";
 import {deployModuleFactory} from "@hats-module/utils/DeployFunctions.sol";
 import {Whitelist} from "../src/Whitelist.sol";
-import {IJBTerminal} from "@nana-core/interfaces/IJBTerminal.sol";
-import {IJBTokens} from "@nana-core/interfaces/IJBTokens.sol";
-import {JBConstants} from "@nana-core/libraries/JBConstants.sol";
-import {IJBController} from "@nana-core/interfaces/IJBController.sol";
-import {IJBTerminalStore} from "@nana-core/interfaces/IJBTerminalStore.sol";
+import {IJBTerminal} from "@nana-core-v5/interfaces/IJBTerminal.sol";
+import {IJBTokens} from "@nana-core-v5/interfaces/IJBTokens.sol";
+import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
+import {IJBController} from "@nana-core-v5/interfaces/IJBController.sol";
+import {IJBTerminalStore} from "@nana-core-v5/interfaces/IJBTerminalStore.sol";
 import "base/Config.sol";
 
 contract MissionTest is Test, Config {
 
     address zero = address(0);
-    address user1 = address(0x1);
-    address teamAddress = address(0x2);
-    address user2 = address(0x3);
-    address TREASURY = address(0x4);
+    address user1 = address(0x100); // Use non-precompile address
+    address teamAddress = address(0x200);
+    address user2 = address(0x300);
+    address TREASURY = address(0x400);
     IWETH9 public _WETH9 = IWETH9(address(new WETH()));
 
     bytes32 internal constant SALT = bytes32(abi.encode(0x4a75));
@@ -52,7 +53,6 @@ contract MissionTest is Test, Config {
     IJBRulesets jbRulesets;
     IJBTokens jbTokens;
     IJBController jbController;
-    address jbProjectsAddress;
 
 
     function setUp() public {
@@ -65,7 +65,7 @@ contract MissionTest is Test, Config {
         IHats hats = IHats(address(hatsBase));
         HatsModuleFactory hatsFactory = deployModuleFactory(hats, SALT, "");
         PassthroughModule passthrough = new PassthroughModule("");
-        address gnosisSafeAddress = address(0x0165878A594ca255338adfa4d48449f69242Eb8F);
+        address gnosisSafeSingleton = address(0x3E5c63644E683549055b9Be8653de26E0B4CD36E); // Gnosis Safe singleton on Sepolia
         GnosisSafeProxyFactory proxyFactory = new GnosisSafeProxyFactory();
 
         Whitelist teamWhitelist = new Whitelist();
@@ -73,8 +73,9 @@ contract MissionTest is Test, Config {
 
         moonDAOTeamTable = new MoonDaoTeamTableland("MoonDaoTeamTable");
         moonDAOTeam = new MoonDAOTeam("erc5369", "ERC5643", TREASURY, address(hatsBase), address(teamDiscountList));
-        moonDAOTeamCreator = new MoonDAOTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(moonDAOTeam), gnosisSafeAddress, address(proxyFactory), address(moonDAOTeamTable), address(teamWhitelist));
-        jbDirectory = IJBDirectory(0x0bC9F153DEe4d3D474ce0903775b9b2AAae9AA41);
+        address[] memory authorizedSigners = new address[](0);
+        moonDAOTeamCreator = new MoonDAOTeamCreator(address(hatsBase), address(hatsFactory), address(passthrough), address(moonDAOTeam), gnosisSafeSingleton, address(proxyFactory), address(moonDAOTeamTable), address(teamWhitelist), authorizedSigners);
+        jbDirectory = IJBDirectory(JB_V5_DIRECTORY);
 
 
         uint256 topHatId = hats.mintTopHat(user1, "", "");
@@ -85,18 +86,12 @@ contract MissionTest is Test, Config {
         moonDAOTeamCreator.setMoonDaoTeamAdminHatId(moonDAOTeamAdminHatId);
         moonDAOTeam.setMoonDaoCreator(address(moonDAOTeamCreator));
         hats.mintHat(moonDAOTeamAdminHatId, address(moonDAOTeamCreator));
-        address jbMultiTerminalAddress = address(0xDB9644369c79C3633cDE70D2Df50d827D7dC7Dbc);
-        jbProjectsAddress = address(0x0b538A02610d7d3Cc91Ce2870F423e0a34D646AD);
+        jbRulesets = IJBRulesets(JB_V5_RULESETS);
+        jbTerminalStore = IJBTerminalStore(JB_V5_TERMINAL_STORE);
+        jbTokens = IJBTokens(JB_V5_TOKENS);
+        jbController = IJBController(JB_V5_CONTROLLER);
 
-        address jbTerminalStoreAddress = address(0x6F6740ddA12033ca9fBAA56693194E38cfD36827);
-        address jbControllerAddress = address(0xb291844F213047Eb9e1621AE555B1Eae6700d553);
-        address jbRulesetsAddress = address(0xDA86EeDb67C6C9FB3E58FE83Efa28674D7C89826);
-        jbRulesets = IJBRulesets(jbRulesetsAddress);
-        jbTerminalStore = IJBTerminalStore(jbTerminalStoreAddress);
-        jbTokens = IJBTokens(0xA59e9F424901fB9DBD8913a9A32A081F9425bf36);
-        jbController = IJBController(jbControllerAddress);
-
-        missionCreator = new MissionCreator(jbControllerAddress, jbMultiTerminalAddress, jbProjectsAddress, jbTerminalStoreAddress, jbRulesetsAddress, address(moonDAOTeam), zero, TREASURY, FEE_HOOK_ADDRESSES[block.chainid], POSITION_MANAGERS[block.chainid]);
+        missionCreator = new MissionCreator(JB_V5_CONTROLLER, JB_V5_MULTI_TERMINAL, JB_V5_PROJECTS, JB_V5_TERMINAL_STORE, JB_V5_RULESETS, address(moonDAOTeam), zero, TREASURY, FEE_HOOK_ADDRESSES[block.chainid], POSITION_MANAGERS[block.chainid]);
         missionTable = new MissionTable("TestMissionTable", address(missionCreator));
         missionCreator.setMissionTable(address(missionTable));
 
@@ -105,7 +100,25 @@ contract MissionTest is Test, Config {
 
     function _createTeam() internal {
         vm.startPrank(user1);
-        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}("", "", "","name", "bio", "image", "twitter", "communications", "website", "view", "formId", new address[](0));
+        
+        MoonDAOTeamCreator.HatURIs memory hatURIs = MoonDAOTeamCreator.HatURIs({
+            adminHatURI: "",
+            managerHatURI: "",
+            memberHatURI: ""
+        });
+        
+        MoonDAOTeamCreator.TeamMetadata memory metadata = MoonDAOTeamCreator.TeamMetadata({
+            name: "name",
+            bio: "bio",
+            image: "image",
+            twitter: "twitter",
+            communications: "communications",
+            website: "website",
+            _view: "view",
+            formId: "formId"
+        });
+        
+        moonDAOTeamCreator.createMoonDAOTeam{value: 0.555 ether}(hatURIs, metadata, new address[](0));
         vm.stopPrank();
     }
 
@@ -292,7 +305,8 @@ contract MissionTest is Test, Config {
         vm.startPrank(teamAddress);
         payhook.setFundingTurnedOff(true);
         vm.stopPrank();
-        assertFalse(payhook.hasMintPermissionFor(projectId, user1));
+        JBRuleset memory ruleset;
+        assertFalse(payhook.hasMintPermissionFor(projectId, ruleset, user1));
 
         uint256 payAmount = 1_000_000_000_000_000_000;
         vm.expectRevert("Funding has been turned off.");
@@ -890,10 +904,10 @@ contract MissionTest is Test, Config {
 
     function testSetJBProjects() public {
         vm.prank(user1);
-        missionCreator.setJBProjects(address(jbProjectsAddress));
+        missionCreator.setJBProjects(address(JB_V5_PROJECTS));
         vm.prank(user2);
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user2));
-        missionCreator.setJBProjects(address(jbProjectsAddress));
+        missionCreator.setJBProjects(address(JB_V5_PROJECTS));
     }
 
     function testSetFeeHookAddress() public {

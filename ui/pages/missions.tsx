@@ -1,9 +1,9 @@
-import JBV4ControllerABI from 'const/abis/JBV4Controller.json'
+import JBV5Controller from 'const/abis/JBV5Controller.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
-  JBV4_CONTROLLER_ADDRESSES,
+  JBV5_CONTROLLER_ADDRESS,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
@@ -257,8 +257,8 @@ export const getStaticProps: GetStaticProps = async () => {
 
     const jbV4ControllerContract = getContract({
       client: serverClient,
-      address: JBV4_CONTROLLER_ADDRESSES[chainSlug],
-      abi: JBV4ControllerABI as any,
+      address: JBV5_CONTROLLER_ADDRESS,
+      abi: JBV5Controller.abi as any,
       chain: chain,
     })
 

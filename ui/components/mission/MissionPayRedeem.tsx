@@ -3,7 +3,7 @@ import MissionTokenSwapV4 from '@/components/uniswap/MissionTokenSwapV4'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
 import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
-import JBMultiTerminalABI from 'const/abis/JBV4MultiTerminal.json'
+import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
 import {
   DEFAULT_CHAIN_V5,
   MISSION_CROSS_CHAIN_PAY_ADDRESS,
@@ -435,7 +435,7 @@ function MissionPayRedeemComponent({
   const primaryTerminalContract = useContract({
     address: primaryTerminalAddress,
     chain: DEFAULT_CHAIN_V5,
-    abi: JBMultiTerminalABI as any,
+    abi: JBV5MultiTerminal.abi as any,
     forwardClient,
   })
 

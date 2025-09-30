@@ -3,6 +3,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { TrashIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
 import { DEFAULT_CHAIN_V5, HATS_ADDRESS } from 'const/config'
+import { TEAM_CREATOR_V2_PASSTHROUGH_MODULE_PATCHED_ADDRESSES } from 'const/teams'
 import { ethers } from 'ethers'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -12,6 +13,7 @@ import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import useSafe from '@/lib/safe/useSafe'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import HatsABI from '../../const/abis/Hats.json'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
@@ -81,6 +83,8 @@ function TeamMembers({
 }: any) {
   const hatNames = useHatNames(hatsContract, wearer.hatIds)
 
+  const chainSlug = getChainSlug(selectedChain)
+
   return (
     <>
       <div
@@ -101,12 +105,28 @@ function TeamMembers({
               <button
                 onClick={async () => {
                   try {
-                    const memberHatPassthroughModuleAddress: any =
-                      await readContract({
+                    const v2TeamCreatorPatchedPassthroughModuleAddress =
+                      TEAM_CREATOR_V2_PASSTHROUGH_MODULE_PATCHED_ADDRESSES?.[
+                        chainSlug
+                      ]?.[teamId]
+
+                    let memberHatPassthroughModuleAddress: any = ''
+
+                    if (v2TeamCreatorPatchedPassthroughModuleAddress) {
+                      memberHatPassthroughModuleAddress =
+                        v2TeamCreatorPatchedPassthroughModuleAddress
+                    } else {
+                      memberHatPassthroughModuleAddress = await readContract({
                         contract: teamContract,
                         method: 'memberPassthroughModule' as string,
                         params: [teamId],
                       })
+                    }
+                    await readContract({
+                      contract: teamContract,
+                      method: 'memberPassthroughModule' as string,
+                      params: [teamId],
+                    })
                     const iface = new ethers.utils.Interface(HatsABI)
                     const txData = iface.encodeFunctionData(
                       'setHatWearerStatus',

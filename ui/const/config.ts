@@ -225,9 +225,11 @@ export const TEAM_ADDRESSES: Index = {
 }
 
 export const TEAM_CREATOR_ADDRESSES: Index = {
-  arbitrum: '0x40C44A32e92358B3407629B1a69225b1858Bc5fe',
-  sepolia: '0x1eafC528435e49Af2b3E970A12Ab2Dddb929bAc1',
+  arbitrum: '0xb11017A04dB4503066Bfbb8acB6a71Fc26869C9d', //v3
+  sepolia: '0xbb33d877005aA1bF00F9216ec6bad66ff93eBE86', //v3
 }
+// team creator arb v2: 0x40C44A32e92358B3407629B1a69225b1858Bc5fe
+// team creator arb v1: 0x203f481336A212Eff43E84761792E307975Cf27b
 
 export const TEAM_TABLE_ADDRESSES: Index = {
   arbitrum: '0x36A57e45A1F8e378AA3e35bD8799bBfB5b4C00b3',
@@ -249,13 +251,13 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 }
 
 export const MISSION_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x25c895c552Ca2db6f3675ac734fB9B0f21dffE8d',
-  sepolia: '0x22ef6f5a06F86C56DB9990e861A34cc35ecF8E1B',
+  arbitrum: '0x1B50781A23e32d70Be36116aAe9a21C8B4706E22',
+  sepolia: '0x6ac6a697C7f8F99bF2779aa8e0B4597311771101',
 }
 
 export const MISSION_TABLE_NAMES: Index = {
-  arbitrum: 'MISSIONTABLE_42161_144',
-  sepolia: 'MISSIONTABLE_11155111_1960',
+  arbitrum: 'MissionTable_42161_151',
+  sepolia: 'MissionTable_11155111_1974',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
@@ -275,15 +277,24 @@ export const JBV4_DIRECTORY_ADDRESSES: Index = {
   arbitrum: '0x0bc9f153dee4d3d474ce0903775b9b2aaae9aa41',
   sepolia: '0x0bC9F153DEe4d3D474ce0903775b9b2AAae9AA41',
 }
-export const JB_NATIVE_TOKEN_ADDRESS =
-  '0x000000000000000000000000000000000000EEEe'
-
-export const JB_NATIVE_TOKEN_ID = 61166
-
 export const JBV4_TERMINAL_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '0xdb9644369c79c3633cde70d2df50d827d7dc7dbc',
 }
+
+export const JBV5_CONTROLLER_ADDRESS =
+  '0x27da30646502e2f642bE5281322Ae8C394F7668a'
+export const JBV5_TOKENS_ADDRESS = '0x4d0Edd347FB1fA21589C1E109B3474924BE87636'
+export const JBV5_DIRECTORY_ADDRESS =
+  '0x0061E516886A0540F63157f112C0588eE0651dCF'
+export const JBV5_TERMINAL_ADDRESS =
+  '0x2dB6d704058E552DeFE415753465df8dF0361846'
+export const JBV5_TERMINAL_STORE_ADDRESS =
+  '0xfE33B439Ec53748C87DcEDACb83f05aDd5014744'
+export const JB_NATIVE_TOKEN_ADDRESS =
+  '0x000000000000000000000000000000000000EEEe'
+export const JB_NATIVE_TOKEN_ID = 61166
+export const BENDYSTRAW_JB_VERSION = '5'
 //Citzens & Teams Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
 //Citizens & Teams Arbitrum Hat Tree : https://app.hatsprotocol.xyz/trees/42161/42
 export const MOONDAO_HAT_TREE_IDS: Index = {
@@ -395,7 +406,7 @@ export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
 
 // Shared across chains
 export const MISSION_CROSS_CHAIN_PAY_ADDRESS =
-  '0xb55014C350C214aEc6d97D6ab112f1814c30e553'
+  '0x0761D8CB98CAf0f6bcabbCdd19295bCe2E051cB8'
 
 export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   [key: string]: number
@@ -515,13 +526,13 @@ export const STAKED_ETH_ADDRESS = '0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8'
 
 export const MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? 'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-arb/version/latest'
-    : 'https://api.studio.thegraph.com/query/84320/moon-dao-missions-payment-terminal-sepolia/version/latest'
+    ? 'https://api.studio.thegraph.com/query/38443/moondao-missions-payment-terminal-arb/version/latest'
+    : 'https://api.studio.thegraph.com/query/38443/moondao-missions-payment-terminal-sepolia/version/latest'
 
 export const MOONDAO_NETWORK_SUBGRAPH_URL =
-  'https://api.studio.thegraph.com/query/84320/moon-dao-network/version/latest'
+  'https://api.studio.thegraph.com/query/38443/moondao-network/version/latest'
 export const MOONDAO_MISSIONS_SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? 'https://api.studio.thegraph.com/query/111994/moon-dao-missions-arb/version/latest'
-    : 'https://api.studio.thegraph.com/query/111994/moon-dao-missions-sepolia/version/latest'
+    ? 'https://api.studio.thegraph.com/query/38443/moondao-missions-arb/version/latest'
+    : 'https://api.studio.thegraph.com/query/38443/moondao-missions-sepolia/version/latest'
 export const TICK_SPACING = 200
