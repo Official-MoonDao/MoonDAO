@@ -1,3 +1,4 @@
+import { IPFS_GATEWAY } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
 import Container from '@/components/layout/Container'
@@ -9,11 +10,18 @@ export default function ArtRocket() {
   return (
     <Container>
       <WebsiteHead
-        title="Art Rocket Brazil"
-        description="Art Rocket Project Brazil Contest: Attend the Launch"
+        title="Art Rocket Project"
+        description="Art Rocket Project: Attend the Launch"
+        image={`${IPFS_GATEWAY}/bafybeifkfe5t6ihnqxwr4uksiiphj2obshr5baslkl4v36yo2jxbxigazu`}
       />
       <ContentLayout
-        header={'Art Rocket Project Brazil Contest: Attend the Launch'}
+        header={
+          <p>
+            Art Rocket Project:
+            <br />
+            Attend the Launch
+          </p>
+        }
         description={
           <p>
             Inspired by the success of the MoonDAO and Unity Foundation Art
