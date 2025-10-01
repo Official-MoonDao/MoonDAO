@@ -17,7 +17,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     const ethPrice = await fetch(
-      `https://api.etherscan.io/api?module=stats&action=ethprice&apikey=${process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY}`
+      `https://api.etherscan.io/v2/api?module=stats&action=ethprice&chaindId=1&apikey=${process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY}`
     )
 
     const ethPriceData = await ethPrice.json()

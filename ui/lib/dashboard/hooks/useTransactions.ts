@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 export function useTransactions(page: number) {
   // MoonDAO Multsig Wallet address.
   const MULTISIG_ADDRESS = '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
-  const ETHERSCAN_API_BASE = 'https://api.etherscan.io/api'
+  const ETHERSCAN_API_BASE = 'https://api.etherscan.io/v2/api'
 
   const [transactions, setTransactions] = useState<any>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -17,6 +17,7 @@ export function useTransactions(page: number) {
         `&page=${page}` +
         `&offset=10` +
         `&sort=desc` +
+        `&chainId=1` +
         `&apikey=${process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY}`
       setIsLoading(true)
       fetch(url)
