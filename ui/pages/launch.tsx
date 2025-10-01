@@ -1,3 +1,4 @@
+import { hatIdDecimalToHex } from '@hatsprotocol/sdk-v1-core'
 import { useLogin, usePrivy } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
@@ -16,6 +17,7 @@ import {
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
+import { LAUNCHPAD_WHITELISTED_CITIZENS } from 'const/missions'
 import { blockedMissions } from 'const/whitelist'
 import { GetStaticProps, GetStaticPropsResult } from 'next'
 import Image from 'next/image'
@@ -23,6 +25,7 @@ import { useRouter } from 'next/router'
 import React, { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { sepolia } from '@/lib/infura/infuraChains'
@@ -66,6 +69,9 @@ export default function Launch({ missions }: any) {
       }
     },
   })
+
+  const { citizen } = useContext(CitizenContext)
+  const citizenHasAccess = LAUNCHPAD_WHITELISTED_CITIZENS.includes(citizen?.id)
 
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
@@ -143,17 +149,30 @@ export default function Launch({ missions }: any) {
 
   useEffect(() => {
     async function getUserTeamsAsManager() {
+      if (!userTeams) return
       setUserTeamsAsManagerLoading(true)
       setUserTeamsAsManager(undefined)
-      const teamsAsManager = userTeams?.filter(async (team: any) => {
-        if (!team?.teamId) return false
-        const isManager = await readContract({
-          contract: teamContract,
-          method: 'isManager' as string,
-          params: [team.teamId, address],
+
+      const teamChecks = await Promise.all(
+        userTeams.map(async (hat: any) => {
+          if (!hat?.teamId || !hat.id) return { hat, isManager: false }
+
+          const managerHatId: any = await readContract({
+            contract: teamContract,
+            method: 'teamManagerHat' as string,
+            params: [hat.teamId],
+          })
+
+          const isManager = hatIdDecimalToHex(managerHatId) === hat.id
+
+          return { hat, isManager }
         })
-        return isManager
-      })
+      )
+
+      const teamsAsManager = teamChecks
+        .filter(({ isManager }) => isManager)
+        .map(({ hat }) => hat)
+
       setUserTeamsAsManager(teamsAsManager)
       setUserTeamsAsManagerLoading(false)
     }
@@ -161,9 +180,9 @@ export default function Launch({ missions }: any) {
       getUserTeamsAsManager()
     } else {
       setUserTeamsAsManager(undefined)
-      setUserTeamsAsManagerLoading(false)
+      setUserTeamsAsManagerLoading(true)
     }
-  }, [teamContract, userTeams, address, userTeamsLoading])
+  }, [teamContract, userTeams, address])
 
   async function handleCreateMission() {
     if (!user) {
@@ -216,7 +235,7 @@ export default function Launch({ missions }: any) {
     }
   }, [router.query.status, account, login])
 
-  if (status === 'create') {
+  if (status === 'create' && citizenHasAccess) {
     return (
       <CreateMission
         selectedChain={selectedChain}
@@ -282,34 +301,36 @@ export default function Launch({ missions }: any) {
                   <div className="absolute -inset-1 bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                   {/* Main button */}
-                  <StandardButton
-                    className="relative bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] text-white font-semibold text-sm sm:text-base px-6 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border-0 backdrop-blur-sm text-center"
-                    onClick={handleCreateMission}
-                    hoverEffect={false}
-                  >
-                    <div className="flex items-center justify-center w-full text-center">
-                      <span className="relative text-center pl-2 sm:pl-4">
-                        Launch Your Mission
-                        {/* Text glow effect */}
-                        <span className="absolute inset-0 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent blur-sm opacity-50"></span>
-                      </span>
+                  {citizenHasAccess && (
+                    <StandardButton
+                      className="relative bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] text-white font-semibold text-sm sm:text-base px-6 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border-0 backdrop-blur-sm text-center"
+                      onClick={handleCreateMission}
+                      hoverEffect={false}
+                    >
+                      <div className="flex items-center justify-center w-full text-center">
+                        <span className="relative text-center pl-2 sm:pl-4">
+                          Launch Your Mission
+                          {/* Text glow effect */}
+                          <span className="absolute inset-0 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent blur-sm opacity-50"></span>
+                        </span>
 
-                      {/* Arrow icon */}
-                      <svg
-                        className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform duration-300 ml-1 sm:ml-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 7l5 5m0 0l-5 5m5-5H6"
-                        />
-                      </svg>
-                    </div>
-                  </StandardButton>
+                        {/* Arrow icon */}
+                        <svg
+                          className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform duration-300 ml-1 sm:ml-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 7l5 5m0 0l-5 5m5-5H6"
+                          />
+                        </svg>
+                      </div>
+                    </StandardButton>
+                  )}
                 </div>
               </div>
             </div>
@@ -627,7 +648,7 @@ export default function Launch({ missions }: any) {
                     >
                       <span className="ml-1 md:ml-2">Learn More</span>
                     </StandardButton>
-                    <StandardButton
+                    {/* <StandardButton
                       className="bg-white/10 backdrop-blur-sm text-white font-semibold text-xs md:text-sm px-3 md:px-4 lg:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:bg-white/20 transition-all duration-300 border border-white/20 text-center flex-1 flex items-center justify-center"
                       onClick={() => {
                         // Handle buy action
@@ -639,7 +660,7 @@ export default function Launch({ missions }: any) {
                           ? `Buy ${featuredMissionToken.symbol}`
                           : 'Contribute'}
                       </span>
-                    </StandardButton>
+                    </StandardButton> */}
                   </div>
                 </div>
               </div>
@@ -1163,35 +1184,37 @@ export default function Launch({ missions }: any) {
               <div className="pt-6 md:pt-8">
                 <div className="relative group">
                   {/* Main button */}
-                  <StandardButton
-                    id="launch-mission-button-3"
-                    className="relative bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] text-white font-semibold text-sm sm:text-base px-6 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border-0 backdrop-blur-sm text-center"
-                    onClick={handleCreateMission}
-                    hoverEffect={false}
-                  >
-                    <div className="flex items-center justify-center w-full text-center">
-                      <span className="relative text-center pl-2 sm:pl-4">
-                        Launch Your Mission
-                        {/* Text glow effect */}
-                        <span className="absolute inset-0 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent blur-sm opacity-50"></span>
-                      </span>
+                  {citizenHasAccess && (
+                    <StandardButton
+                      id="launch-mission-button-3"
+                      className="relative bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] text-white font-semibold text-sm sm:text-base px-6 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border-0 backdrop-blur-sm text-center"
+                      onClick={handleCreateMission}
+                      hoverEffect={false}
+                    >
+                      <div className="flex items-center justify-center w-full text-center">
+                        <span className="relative text-center pl-2 sm:pl-4">
+                          Launch Your Mission
+                          {/* Text glow effect */}
+                          <span className="absolute inset-0 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent blur-sm opacity-50"></span>
+                        </span>
 
-                      {/* Arrow icon */}
-                      <svg
-                        className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform duration-300 ml-1 sm:ml-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 7l5 5m0 0l-5 5m5-5H6"
-                        />
-                      </svg>
-                    </div>
-                  </StandardButton>
+                        {/* Arrow icon */}
+                        <svg
+                          className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform duration-300 ml-1 sm:ml-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 7l5 5m0 0l-5 5m5-5H6"
+                          />
+                        </svg>
+                      </div>
+                    </StandardButton>
+                  )}
                 </div>
               </div>
             </div>

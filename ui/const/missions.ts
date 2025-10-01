@@ -1,0 +1,1 @@
+export const LAUNCHPAD_WHITELISTED_CITIZENS = [1, 2, 3, 13, 119]
