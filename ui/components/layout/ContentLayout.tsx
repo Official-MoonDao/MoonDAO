@@ -131,11 +131,9 @@ const ContentLayout: React.FC<ContentProps> = ({
                 >
                   <div
                     id="header-element"
-                    className={`
-                                            w-full max-w-[1200px] leading-[1] font-GoodTimes 
-                                            ${isCompact ? 'pt-0' : 'lg:pt-20'} 
-                                        `}
-                    style={{ fontSize: headerSize || 'max(25px, 4vw)' }}
+                    className={`header-responsive w-full max-w-[1200px] leading-[1] font-GoodTimes ${
+                      isCompact ? 'pt-0' : 'lg:pt-20'
+                    }`}
                   >
                     {header}
                   </div>

@@ -7,12 +7,21 @@ const defaultDescription =
 const defaultImage =
   'https://ipfs.io/ipfs/QmXY1axN4tQGV7CQBFtoE4hMZM3TRGMqqg5DD5LG3dz1dA'
 
+type WebsiteHeadProps = {
+  title?: string
+  secondaryTitle?: string
+  description?: string
+  image?: string
+  children?: any
+}
+
 export default function WebsiteHead({
   title = defaultTitle,
   secondaryTitle,
   description = defaultDescription,
   image = defaultImage,
-}: any) {
+  children,
+}: WebsiteHeadProps) {
   const truncatedDescription =
     description.length > 160
       ? description.substring(0, 160) + '...'
@@ -65,6 +74,7 @@ export default function WebsiteHead({
         content="summary_large_image"
         key="meta-twcard"
       />
+      {children}
     </Head>
   )
 }

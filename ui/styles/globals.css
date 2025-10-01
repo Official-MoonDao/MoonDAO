@@ -462,6 +462,10 @@ a {
   }
 }
 
+.header-responsive {
+  font-size: max(25px, min(3vw, 60px)) !important;
+}
+
 .sub-header {
   font-size: calc(max(2vmin, 20px));
   line-height: 1.2;
