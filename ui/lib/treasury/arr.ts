@@ -44,14 +44,19 @@ async function getEthPrice(): Promise<number> {
   try {
     // For server-side rendering, directly call the Etherscan API
     const response = await fetch(
-      `https://api.etherscan.io/api?module=stats&action=ethprice&apikey=${process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY}`
+      `https://api.etherscan.io/v2/api?module=stats&action=ethprice&chainId=1&apikey=${process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY}`
     )
     const data = await response.json()
+    if (data.message !== 'OK') {
+      throw new Error('Failed to fetch ETH price')
+    }
+    console.log('ETH price data:', data)
     const price = parseFloat(data.result?.ethusd)
+    console.log('ETH price:', price)
     return isNaN(price) ? 3000 : price // Fallback to $3000 if invalid
   } catch (error) {
     console.error('Failed to fetch ETH price:', error)
-    return 3000 // Fallback price
+    return 0 // Fallback price
   }
 }
 
@@ -227,6 +232,16 @@ export async function calculateARRFromTransfers(
       getContractPrices(),
       getEthPrice(),
     ])
+
+    if (ethPrice === 0) {
+      console.log('ETH price is 0, returning empty ARR data')
+      return {
+        arrHistory: [],
+        currentARR: 0,
+        citizenARR: 0,
+        teamARR: 0,
+      }
+    }
 
     // Convert transfers to subscription events
     const citizenEvents = convertTransfersToEvents(
