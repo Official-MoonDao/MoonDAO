@@ -12,6 +12,7 @@ import {
   IPFS_GATEWAY,
   MISSION_TABLE_ADDRESSES,
 } from 'const/config'
+import { LAUNCHPAD_WHITELISTED_CITIZENS } from 'const/missions'
 import { getUnixTime } from 'date-fns'
 import { ethers } from 'ethers'
 import { marked } from 'marked'
@@ -19,7 +20,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useLocalStorage } from 'react-use'
 import {
@@ -30,6 +31,7 @@ import {
 } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
@@ -211,6 +213,7 @@ export default function CreateMission({
   userTeamsAsManager,
   userTeamsAsManagerLoading,
 }: CreateMissionProps) {
+  const { citizen } = useContext(CitizenContext)
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
@@ -542,6 +545,10 @@ export default function CreateMission({
       setSelectedTeamId(undefined)
     }
   }, [userTeamsAsManager, address])
+
+  if (!LAUNCHPAD_WHITELISTED_CITIZENS.includes(citizen?.id)) {
+    return null
+  }
 
   return (
     <Container containerwidth={true}>
