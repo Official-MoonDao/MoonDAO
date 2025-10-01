@@ -1,10 +1,6 @@
 import CitizenABI from 'const/abis/Citizen.json'
 import TeamABI from 'const/abis/Team.json'
-import {
-  CITIZEN_TABLE_ADDRESSES,
-  TEAM_ADDRESSES,
-  CITIZEN_ADDRESSES,
-} from 'const/config'
+import { TEAM_ADDRESSES, CITIZEN_ADDRESSES } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
 import {
   getAllNetworkTransfers,
@@ -39,7 +35,6 @@ interface SubscriptionEvent {
 
 const TEAM_DISCOUNT = 0.067
 
-// Helper function to get ETH price - server-side compatible
 async function getEthPrice(): Promise<number> {
   try {
     // For server-side rendering, directly call the Etherscan API
@@ -50,10 +45,8 @@ async function getEthPrice(): Promise<number> {
     if (data.message !== 'OK') {
       throw new Error('Failed to fetch ETH price')
     }
-    console.log('ETH price data:', data)
     const price = parseFloat(data.result?.ethusd)
-    console.log('ETH price:', price)
-    return isNaN(price) ? 3000 : price // Fallback to $3000 if invalid
+    return isNaN(price) ? 0 : price
   } catch (error) {
     console.error('Failed to fetch ETH price:', error)
     return 0 // Fallback price
