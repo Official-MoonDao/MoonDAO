@@ -1,7 +1,7 @@
 import { Solve } from '@bygdle/javascript-lp-solver'
 import { utils } from 'ethers'
 import _ from 'lodash'
-import { Distribution } from '@/components/nance/RetroactiveRewards'
+import { Distribution } from '@/components/nance/ProjectRewards'
 
 // Function to minimize L1 distance
 function minimizeL1Distance(D: number[], V: number[][]) {

@@ -59,7 +59,7 @@ export type RewardAssetProps = {
   approximateUSD?: boolean
 }
 
-export type RetroactiveRewardsProps = {
+export type ProjectRewardsProps = {
   currentProjects: Project[]
   pastProjects: Project[]
   distributions: Distribution[]
@@ -135,12 +135,12 @@ function RewardAsset({
   )
 }
 
-export function RetroactiveRewards({
+export function ProjectRewards({
   currentProjects,
   pastProjects,
   distributions,
   refreshRewards,
-}: RetroactiveRewardsProps) {
+}: ProjectRewardsProps) {
   const router = useRouter()
 
   const chain = DEFAULT_CHAIN_V5
@@ -502,7 +502,6 @@ export function RetroactiveRewards({
                   </div>
                 )}
               </div>
-
             </div>
             <div className="bg-black/20 rounded-xl border border-white/10 overflow-hidden">
               <PastProjects projects={pastProjects} />

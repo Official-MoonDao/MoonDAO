@@ -16,19 +16,19 @@ import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
 import {
-  RetroactiveRewards,
-  RetroactiveRewardsProps,
-} from '@/components/nance/RetroactiveRewards'
+  ProjectRewards,
+  ProjectRewardsProps,
+} from '@/components/nance/ProjectRewards'
 
-export default function Rewards({
+export default function Projects({
   currentProjects,
   pastProjects,
   distributions,
-}: RetroactiveRewardsProps) {
+}: ProjectRewardsProps) {
   const router = useRouter()
   useChainDefault()
   return (
-    <RetroactiveRewards
+    <ProjectRewards
       currentProjects={currentProjects}
       pastProjects={pastProjects}
       distributions={distributions}

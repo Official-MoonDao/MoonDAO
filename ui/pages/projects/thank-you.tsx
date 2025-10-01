@@ -19,7 +19,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
-import { Distribution } from '@/components/nance/RetroactiveRewards'
+import { Distribution } from '@/components/nance/ProjectRewards'
 
 export default function RewardsThankYou({
   distributionTableName,
