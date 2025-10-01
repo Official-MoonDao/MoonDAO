@@ -12,6 +12,7 @@ type WebsiteHeadProps = {
   secondaryTitle?: string
   description?: string
   image?: string
+  children?: any
 }
 
 export default function WebsiteHead({
@@ -19,6 +20,7 @@ export default function WebsiteHead({
   secondaryTitle,
   description = defaultDescription,
   image = defaultImage,
+  children,
 }: WebsiteHeadProps) {
   const truncatedDescription =
     description.length > 160
@@ -72,6 +74,7 @@ export default function WebsiteHead({
         content="summary_large_image"
         key="meta-twcard"
       />
+      {children}
     </Head>
   )
 }
