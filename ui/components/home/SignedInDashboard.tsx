@@ -88,6 +88,7 @@ import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
 import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import CitizensChart from '@/components/subscription/CitizensChart'
+import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import Quests from '../xp/Quests'
@@ -627,7 +628,7 @@ export default function SingedInDashboard({
             </div>
 
             {/* Activity Feed */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-3">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
                 <h3 className="text-xl font-bold text-white whitespace-nowrap">
                   Recent Activity
@@ -872,6 +873,9 @@ export default function SingedInDashboard({
 
           {/* Right Sidebar - Community & Stats */}
           <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3">
+            {/* Claim Rewards Section */}
+            {address && <ClaimRewardsSection />}
+
             {/* Recent Citizens */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">

@@ -14,11 +14,10 @@ export default function Action({
   disabled = false,
 }: ActionProps) {
   return (
-    <div 
+    <div
+      data-testid="action-container"
       className={`bg-slate-600/20 rounded-xl p-4 transition-colors cursor-pointer group ${
-        disabled 
-          ? 'opacity-50 cursor-not-allowed' 
-          : 'hover:bg-slate-600/30'
+        disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-600/30'
       }`}
       onClick={disabled ? undefined : onClick}
     >
@@ -28,9 +27,7 @@ export default function Action({
         </div>
         <h3 className="font-bold text-white text-sm">{title}</h3>
       </div>
-      <p className="text-xs text-slate-300 leading-relaxed">
-        {description}
-      </p>
+      <p className="text-xs text-slate-300 leading-relaxed">{description}</p>
     </div>
   )
 }

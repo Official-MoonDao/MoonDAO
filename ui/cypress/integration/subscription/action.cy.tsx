@@ -15,13 +15,36 @@ describe('<Action />', () => {
   })
 
   it('Renders with title, description, and icon', () => {
-    cy.get('p.font-bold').should('contain', props.title)
-    cy.get('p.pb-5').should('contain', props.description)
+    cy.get('h3.font-bold').should('contain', props.title)
+    cy.get('p.text-xs').should('contain', props.description)
     cy.get('span').should('contain', 'Icon')
   })
 
-  it('Calls onClick when button is clicked', () => {
-    cy.get('button').click()
+  it('Calls onClick when clicked', () => {
+    cy.get('[data-testid="action-container"]').click()
     cy.wrap(props.onClick).should('have.been.calledOnce')
+  })
+
+  it('Renders as disabled when disabled prop is true', () => {
+    const disabledProps = { ...props, disabled: true }
+    cy.mount(<Action {...disabledProps} />)
+
+    cy.get('[data-testid="action-container"]')
+      .should('have.class', 'opacity-50')
+      .and('have.class', 'cursor-not-allowed')
+  })
+
+  it('Does not call onClick when disabled', () => {
+    const disabledProps = { ...props, disabled: true }
+    cy.mount(<Action {...disabledProps} />)
+
+    cy.get('[data-testid="action-container"]').click()
+    cy.wrap(props.onClick).should('not.have.been.called')
+  })
+
+  it('Has hover effects when not disabled', () => {
+    cy.get('[data-testid="action-container"]')
+      .should('have.class', 'hover:bg-slate-600/30')
+      .and('have.class', 'cursor-pointer')
   })
 })
