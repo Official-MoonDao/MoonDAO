@@ -102,7 +102,7 @@ export default function Missions({ missions }: MissionsProps) {
     <section id="missions-container" className="overflow-hidden">
       <Head
         title={'Missions'}
-        description={description}
+        description={'Discover MoonDAO Missions.'}
         image="https://ipfs.io/ipfs/QmbExwDgVoDYpThFaVRRxUkusHnXxMj3Go8DdWrXg1phxi"
       />
       <Container>
