@@ -86,7 +86,15 @@ function ProposalListSkeleton() {
   )
 }
 
-export default function ProposalList({ noPagination = false }: { noPagination?: boolean }) {
+export default function ProposalList({
+  noPagination = false,
+  compact = false,
+  proposalLimit = 1000,
+}: {
+  noPagination?: boolean
+  compact?: boolean
+  proposalLimit?: number
+}) {
   const router = useRouter()
   const [query, setQuery] = useQueryParams({
     keyword: StringParam,
@@ -119,11 +127,8 @@ export default function ProposalList({ noPagination = false }: { noPagination?: 
     [setQuery]
   )
 
-  const {
-    data: proposalData,
-    isLoading: proposalsLoading,
-  } = useProposals(
-    { space: NANCE_SPACE_NAME, cycle, keyword, limit: 1000 }, // Get all proposals for pagination
+  const { data: proposalData, isLoading: proposalsLoading } = useProposals(
+    { space: NANCE_SPACE_NAME, cycle, keyword, limit: proposalLimit }, // Get all proposals for pagination
     router.isReady
   )
 
@@ -142,8 +147,10 @@ export default function ProposalList({ noPagination = false }: { noPagination?: 
     // Calculate total pages and current page logic
     const totalProposals = allProposals.length
     const currentPageIdx = noPagination ? 1 : pageIdx
-    const calculatedMaxPage = noPagination ? 1 : Math.ceil(totalProposals / itemsPerPage)
-    
+    const calculatedMaxPage = noPagination
+      ? 1
+      : Math.ceil(totalProposals / itemsPerPage)
+
     if (calculatedMaxPage !== maxPage) {
       setMaxPage(calculatedMaxPage)
     }
@@ -181,17 +188,28 @@ export default function ProposalList({ noPagination = false }: { noPagination?: 
       <>
         <div className="rounded-bl-20px overflow-hidden md:pt-5">
           <div className="font-[roboto] w-full">
-            <div className="p-4 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-stretch">
+            <div
+              className={`${
+                compact
+                  ? 'p-2'
+                  : 'p-4 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl'
+              }`}
+            >
+              <div
+                className={`grid grid-cols-1 gap-6 w-full items-stretch ${
+                  compact ? 'grid-cols-1' : 'lg:grid-cols-2'
+                }`}
+              >
                 {proposals.map((proposal) => (
                   <div
                     key={proposal.uuid}
-                    className="h-full bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02]"
+                    className={`h-auto bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02]`}
                   >
                     <Proposal
                       proposal={proposal}
                       packet={packet}
                       votingInfo={votingInfoMap[proposal.voteURL || '']}
+                      compact={compact}
                     />
                   </div>
                 ))}
@@ -199,7 +217,7 @@ export default function ProposalList({ noPagination = false }: { noPagination?: 
             </div>
           </div>
         </div>
-        
+
         {/* Pagination Controls */}
         {!noPagination && maxPage > 1 && (
           <div className="mt-8">

@@ -90,6 +90,7 @@ import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
+import ProposalList from '../nance/ProposalList'
 import Quests from '../xp/Quests'
 
 // import Quests from '@/components/xp/Quests'
@@ -858,102 +859,7 @@ export default function SingedInDashboard({
                 </StandardButton>
               </div>
 
-              <div className="space-y-4 h-full overflow-y-auto">
-                {proposals &&
-                proposals.filter(
-                  (proposal: any) =>
-                    proposal.status !== 'Discussion' &&
-                    proposal.status !== 'Draft'
-                ).length > 0 ? (
-                  proposals
-                    .filter(
-                      (proposal: any) =>
-                        proposal.status !== 'Discussion' &&
-                        proposal.status !== 'Draft'
-                    ) // Filter out drafts and discussions
-                    .slice(0, 3)
-                    .map((proposal: any, i: number) => {
-                      const daysLeft = getDaysLeft(proposal)
-                      const votingInfo =
-                        votingInfoMap?.[proposal?.voteURL || '']
-                      const statusDisplay = getProposalStatusDisplay(
-                        proposal,
-                        votingInfo,
-                        daysLeft
-                      )
-                      const fundingDisplay = getProposalFundingDisplay(proposal)
-
-                      return (
-                        <Link
-                          key={proposal.uuid || i}
-                          href={`/proposal/${proposal.uuid}`}
-                          className="block"
-                        >
-                          <div className="bg-white/5 rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all cursor-pointer">
-                            <div className="flex justify-between items-start mb-3">
-                              <h4 className="text-white font-semibold">
-                                {proposal.title ||
-                                  `MDP-${
-                                    179 - i
-                                  }: Study on Lunar Surface Selection For Settlement`}
-                              </h4>
-                              <span
-                                className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${
-                                  proposal.status === 'Temperature Check'
-                                    ? 'bg-green-500/20 text-green-300 border-green-500/30'
-                                    : proposal.status === 'Voting'
-                                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                                    : proposal.status === 'Approved'
-                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                                    : 'bg-gray-500/20 text-gray-300 border-gray-500/30'
-                                }`}
-                              >
-                                {proposal.status === 'Temperature Check'
-                                  ? 'Temp Check'
-                                  : proposal.status}
-                              </span>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-300">
-                                <div className="flex items-center gap-1">
-                                  <span className="font-medium text-white">
-                                    {fundingDisplay}
-                                  </span>
-                                </div>
-                                {votingInfo?.end && (
-                                  <>
-                                    <span className="hidden sm:inline">•</span>
-                                    <div className="flex items-center gap-1">
-                                      <span className="font-medium text-white">
-                                        {statusDisplay}
-                                      </span>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                              <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
-                                {['Voting', 'Temperature Check'].includes(
-                                  proposal.status
-                                )
-                                  ? 'Vote'
-                                  : 'View'}
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                      )
-                    })
-                ) : (
-                  <div className="text-center text-gray-400 py-8">
-                    <p className="text-sm">
-                      No active proposals available at the moment.
-                    </p>
-                    <p className="text-xs mt-2">
-                      Check back later for new proposals to vote on!
-                    </p>
-                  </div>
-                )}
-              </div>
+              <ProposalList noPagination compact proposalLimit={3} />
             </div>
           </div>
 
