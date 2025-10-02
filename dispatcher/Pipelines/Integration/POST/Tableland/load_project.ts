@@ -25,7 +25,8 @@ const TABLELAND_ENDPOINT = `https://${
 const chain = TEST ? Sepolia : Arbitrum;
 const privateKey = process.env.OPERATOR_PRIVATE_KEY;
 const sdk = ThirdwebSDK.fromPrivateKey(privateKey, chain.slug, {
-    secretKey: process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY,
+  //secretKey: process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY,
+  secretKey: "",
 });
 
 const discordToEthAddress = {
@@ -317,7 +318,7 @@ async function loadProjectData() {
         const [signers, signersUsernames] = await getAddresses(proposal.body, [
           "Multi-sig signers",
         ]);
-        const abstractText = await getAbstract(proposal.body);
+        const abstractText = (await getAbstract(proposal.body)).slice(0, 1000);
 
         // parse out tables from proposal.body which is in markdown format
         const getHatMetadataIPFS = async function (hatType: string) {
