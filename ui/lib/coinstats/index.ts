@@ -2,6 +2,10 @@
 // Replace the contract creation functions with thirdweb-based versions:
 import { ethereum, arbitrum, polygon } from '@/lib/infura/infuraChains'
 import { LineChartData } from '@/components/layout/LineChart'
+import {
+  getUniswapHistoricalPoolData,
+  PoolSubgraphQueryData,
+} from '../uniswap/subgraph'
 
 // Updated with correct 2025 CoinStats API blockchain connectionId values
 export const MOONDAO_SAFES = [
@@ -636,6 +640,29 @@ export async function getAUMHistory(
       ),
       getDeFiBalance(),
     ])
+
+    const poolSubgraphQueryData: PoolSubgraphQueryData[] = defiData.protocols
+      .flatMap((protocol) =>
+        protocol.investments.map((investment) => {
+          if (!investment.poolAddress || !protocol.chain) {
+            return null
+          }
+          return {
+            address: investment.poolAddress,
+            chain: protocol.chain,
+          }
+        })
+      )
+      .filter(
+        (item): item is NonNullable<PoolSubgraphQueryData> => item !== null
+      )
+
+    const uniswapHistoricalPoolData = await getUniswapHistoricalPoolData(
+      poolSubgraphQueryData,
+      days
+    )
+
+    console.log('UNISWAP HISTORICAL POOL DATA', uniswapHistoricalPoolData)
 
     if (!chartResponse.ok) {
       const errorText = await chartResponse.text()
