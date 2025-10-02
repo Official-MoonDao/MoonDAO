@@ -75,6 +75,7 @@ export default function ProposalInfo({
   coauthorsDisabled = true,
   showTitle = true,
   showStatus = true,
+  compact = false,
 }: {
   proposalPacket: ProposalPacket
   votingInfo: SnapshotGraphqlProposalVotingInfo | undefined
@@ -83,6 +84,7 @@ export default function ProposalInfo({
   coauthorsDisabled?: boolean
   showTitle?: boolean
   showStatus?: boolean
+  compact?: boolean
 }) {
   const { proposalIdPrefix } = proposalPacket?.proposalInfo
   const { proposalInfo, ...proposal } = proposalPacket
@@ -193,7 +195,10 @@ export default function ProposalInfo({
                 {`${preTitleDisplay}${proposalPacket.title}`}
               </Link>
             ) : (
-              <span className="text-lg font-semibold text-white" style={{ fontFamily: 'Lato' }}>
+              <span
+                className="text-lg font-semibold text-white"
+                style={{ fontFamily: 'Lato' }}
+              >
                 {`${preTitleDisplay}${proposalPacket.title}`}
               </span>
             ))}
@@ -201,23 +206,25 @@ export default function ProposalInfo({
         {/* Metadata */}
         <div className="mt-2 flex flex-col md:flex-row items-start md:items-center gap-x-6 text-xs font-RobotoMono">
           {/* Author */}
-          <div className="flex items-center gap-x-1">
-            <Image
-              src={`https://cdn.stamp.fyi/avatar/${
-                proposalPacket.authorAddress || ZERO_ADDRESS
-              }`}
-              alt=""
-              className="h-6 w-6 flex-none rounded-full bg-gray-50"
-              width={75}
-              height={75}
-            />
-            <div>
-              <p className="text-gray-400 font-RobotoMono">Author</p>
-              <div className="text-center text-white font-RobotoMono">
-                <AddressLink address={proposalPacket.authorAddress} />
+          {!compact && (
+            <div className="flex items-center gap-x-1">
+              <Image
+                src={`https://cdn.stamp.fyi/avatar/${
+                  proposalPacket.authorAddress || ZERO_ADDRESS
+                }`}
+                alt=""
+                className="h-6 w-6 flex-none rounded-full bg-gray-50"
+                width={75}
+                height={75}
+              />
+              <div>
+                <p className="text-gray-400 font-RobotoMono">Author</p>
+                <div className="text-center text-white font-RobotoMono">
+                  <AddressLink address={proposalPacket.authorAddress} />
+                </div>
               </div>
             </div>
-          </div>
+          )}
           {/* Due / Cycle */}
           {proposalPacket.status === 'Voting' && votingInfo?.end && (
             <div className="flex items-center gap-x-1">

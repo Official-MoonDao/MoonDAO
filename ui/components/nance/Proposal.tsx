@@ -8,12 +8,14 @@ type ProposalProps = {
   proposal: any
   packet: ProposalsPacket
   votingInfo: SnapshotGraphqlProposalVotingInfo | undefined
+  compact?: boolean
 }
 
 export default function Proposal({
   proposal,
   packet,
   votingInfo,
+  compact = false,
 }: ProposalProps) {
   return (
     <div
@@ -29,6 +31,7 @@ export default function Proposal({
             proposalInfo: packet.proposalInfo,
           }}
           votingInfo={votingInfo}
+          compact={compact}
         />
       </div>
       <div className="flex justify-between items-center mt-4">
@@ -61,6 +64,7 @@ export default function Proposal({
         <ChevronRightIcon
           className="h-5 w-5 flex-none text-gray-400"
           aria-hidden="true"
+          data-testid="chevron-right"
         />
       </div>
     </div>
