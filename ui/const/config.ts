@@ -1,5 +1,5 @@
 import { arbitrum, sepolia, arbitrumSepolia } from '../lib/infura/infuraChains'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getChainSlug } from '../lib/thirdweb/chain'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 

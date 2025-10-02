@@ -7,7 +7,7 @@ import {
   ethereum,
   polygon,
   sepolia,
-} from '@/lib/infura/infuraChains'
+} from '../../lib/infura/infuraChains'
 
 export function getChainSlug(chain: Chain) {
   let slug
