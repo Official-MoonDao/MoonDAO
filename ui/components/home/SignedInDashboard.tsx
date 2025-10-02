@@ -14,6 +14,7 @@ import {
   GiftIcon,
   PencilIcon,
   BriefcaseIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline'
 import { Action, RequestBudget } from '@nance/nance-sdk'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
@@ -92,6 +93,8 @@ import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import Quests from '../xp/Quests'
+import { useDashboardPreferences } from '@/lib/dashboard/useDashboardPreferences'
+import DashboardSettingsModal from '@/components/dashboard/DashboardSettingsModal'
 
 // import Quests from '@/components/xp/Quests'
 
@@ -179,6 +182,10 @@ export default function SingedInDashboard({
   // Citizen metadata modal state
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] =
     useState(false)
+
+  // Dashboard preferences
+  const { preferences, updatePreferences, resetPreferences, isLoading: prefsLoading } = useDashboardPreferences()
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
 
   // Client-side newsletter state
   const [clientNewsletters, setClientNewsletters] = useState<any[]>(
@@ -309,6 +316,15 @@ export default function SingedInDashboard({
         {/* Compact All-in-One Header */}
         <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-4 sm:p-6 mb-6 overflow-hidden">
           <div className="absolute inset-0 bg-black/20 rounded-2xl"></div>
+
+          {/* Settings Button */}
+          <button
+            onClick={() => setSettingsModalOpen(true)}
+            className="absolute top-4 right-4 z-20 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center transition-all shadow-lg border border-white/20"
+            title="Dashboard Settings"
+          >
+            <Cog6ToothIcon className="w-5 h-5 text-white" />
+          </button>
 
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-0">
             {/* Left Side - Profile & Title */}
@@ -472,7 +488,7 @@ export default function SingedInDashboard({
         </div>
 
         {/* Quest System - Horizontal Section */}
-        {address && <Quests />}
+        {address && preferences.showQuests && <Quests />}
 
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
@@ -484,7 +500,6 @@ export default function SingedInDashboard({
             </div>
 
             {/* Key Metrics Card */}
-
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
               <h3 className="font-semibold text-white mb-8 text-lg">
                 DAO Metrics
@@ -1087,7 +1102,8 @@ export default function SingedInDashboard({
         </div>
 
         {/* Active Projects Section - Full Width */}
-        <div className="bg-gradient-to-br from-green-600/20 to-emerald-800/20 backdrop-blur-xl border border-green-500/20 rounded-2xl p-6 mt-8 mb-8">
+        {preferences.showProjects && (
+          <div className="bg-gradient-to-br from-green-600/20 to-emerald-800/20 backdrop-blur-xl border border-green-500/20 rounded-2xl p-6 mt-8 mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
             <div className="flex flex-col lg:flex-row lg:items-center gap-4">
               <div>
@@ -1206,10 +1222,12 @@ export default function SingedInDashboard({
               </div>
             </div>
           )}
-        </div>
+          </div>
+        )}
 
         {/* Jobs Section - Full Width */}
-        <div className="bg-gradient-to-br from-purple-600/20 to-indigo-800/20 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 mt-8 mb-8">
+        {preferences.showJobs && (
+          <div className="bg-gradient-to-br from-purple-600/20 to-indigo-800/20 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 mt-8 mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
             <div>
               <h3 className="text-2xl font-bold text-white flex items-center gap-2 mb-2">
@@ -1282,12 +1300,17 @@ export default function SingedInDashboard({
               </div>
             </div>
           )}
-        </div>
+          </div>
+        )}
 
         {/* Launchpad & Events Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 mb-8">
-          {/* Launchpad Feature */}
-          <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 sm:p-6 lg:p-8">
+        {(preferences.showLaunchpad || preferences.showEvents) && (
+          <div className={`grid ${
+            preferences.showLaunchpad && preferences.showEvents ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'
+          } gap-6 mt-8 mb-8`}>
+            {/* Launchpad Feature */}
+            {preferences.showLaunchpad && (
+              <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div className="min-w-0 flex-1">
                 <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
@@ -1320,10 +1343,12 @@ export default function SingedInDashboard({
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+            )}
 
-          {/* Events Feature */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
+            {/* Events Feature */}
+            {preferences.showEvents && (
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div className="min-w-0 flex-1">
                 <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
@@ -1375,11 +1400,14 @@ export default function SingedInDashboard({
                 }}
               />
             </div>
+            </div>
+            )}
           </div>
-        </div>
+        )}
 
         {/* Global Community Map - Enhanced */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8 mb-8">
+        {preferences.showGlobalMap && (
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8 mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="min-w-0 flex-1">
               <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
@@ -1455,7 +1483,8 @@ export default function SingedInDashboard({
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Chart Modal */}
@@ -1479,6 +1508,15 @@ export default function SingedInDashboard({
           setEnabled={setCitizenMetadataModalEnabled}
         />
       )}
+
+      {/* Dashboard Settings Modal */}
+      <DashboardSettingsModal
+        isOpen={settingsModalOpen}
+        setIsOpen={setSettingsModalOpen}
+        preferences={preferences}
+        updatePreferences={updatePreferences}
+        resetPreferences={resetPreferences}
+      />
 
       {/* Extended Footer */}
       <ExpandedFooter
