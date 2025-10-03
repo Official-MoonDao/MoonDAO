@@ -32,7 +32,7 @@ const citizenTableContract = getContract({
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const { citizenId, accessToken } = JSON.parse(req.body)
+    const { citizenId, accessToken } = req.body
 
     try {
       const privyUserData = await getPrivyUserData(accessToken)
