@@ -368,7 +368,8 @@ export default function CitizenMetadataModal({
                   const oldFormResponseId = getAttribute(
                     nft?.metadata?.attributes,
                     'formId'
-                  )
+                  )?.value
+
                   if (oldFormResponseId !== formResponseId) {
                     //delete old typeform response
                     await deleteResponse(
