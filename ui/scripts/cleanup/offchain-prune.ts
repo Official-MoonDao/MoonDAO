@@ -533,6 +533,7 @@ async function main() {
     console.log(`Pinned CIDs: ${allPinnedCIDs?.length || 0}`)
 
     const usedIPFSHashes = new Set<string>()
+    const criticalIssues = []
     const validationStats = {
       totalRecordsProcessed: 0,
       recordsWithIPFS: 0,
@@ -704,24 +705,37 @@ async function main() {
                 validationStats.juiceboxMetadataFetched++
                 const { metadata, metadataURI } = projectMetadataResult
 
-                // Add the metadata URI hash itself if it's IPFS
-                if (metadataURI) {
-                  let metadataHash = metadataURI
-                  if (metadataURI.startsWith('ipfs://')) {
-                    metadataHash = metadataURI.replace('ipfs://', '')
+                // CRITICAL VALIDATION: Check for required metadataURI and logoURI
+                if (!metadataURI) {
+                  criticalIssues.push(
+                    `Mission project ${projectId} missing metadataURI`
+                  )
+                } else {
+                  usedIPFSHashes.add(metadataURI)
+                  validationStats.totalIPFSHashesFound++
+                }
+
+                if (!metadata.logoUri) {
+                  criticalIssues.push(
+                    `Mission project ${projectId} missing logoURI in metadata`
+                  )
+                } else {
+                  // Check if logoURI has gateway and extract IPFS hash
+                  let logoHash = null
+                  if (metadata.logoUri.includes('/ipfs/')) {
+                    const ipfsIndex = metadata.logoUri.indexOf('/ipfs/')
+                    logoHash = metadata.logoUri.substring(ipfsIndex + 6)
+                  } else if (metadata.logoUri.startsWith('ipfs://')) {
+                    logoHash = metadata.logoUri.replace('ipfs://', '')
                   } else if (
-                    metadataURI.match(/^Qm[1-9A-HJ-NP-Za-km-z]{44}$/) ||
-                    metadataURI.match(/^baf[a-z0-9]{56}$/)
+                    metadata.logoUri.match(/^Qm[1-9A-HJ-NP-Za-km-z]{44}$/) ||
+                    metadata.logoUri.match(/^baf[a-z0-9]{56}$/)
                   ) {
-                    metadataHash = metadataURI
+                    logoHash = metadata.logoUri
                   }
 
-                  // Only add if it's a valid IPFS hash
-                  if (
-                    metadataHash.match(/^Qm[1-9A-HJ-NP-Za-km-z]{44}$/) ||
-                    metadataHash.match(/^baf[a-z0-9]{56}$/)
-                  ) {
-                    usedIPFSHashes.add(metadataHash)
+                  if (logoHash) {
+                    usedIPFSHashes.add(logoHash)
                     validationStats.totalIPFSHashesFound++
                   }
                 }
@@ -836,8 +850,6 @@ async function main() {
     await extractIPFSHashes(sepoliaProjects, 'sepoliaProjects')
 
     // Critical validation checks
-    const criticalIssues = []
-
     if (validationStats.juiceboxMetadataFailed > 0) {
       criticalIssues.push(
         `${validationStats.juiceboxMetadataFailed} JuiceBox metadata fetches failed`
