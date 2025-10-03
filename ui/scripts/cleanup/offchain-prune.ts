@@ -1,12 +1,15 @@
 import { HatsSubgraphClient } from '@hatsprotocol/sdk-v1-subgraph'
 import JBV5ControllerABI from 'const/abis/JBV5Controller.json'
+import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
 import {
   CITIZEN_TABLE_NAMES,
   TEAM_TABLE_NAMES,
   MISSION_TABLE_NAMES,
   PROJECT_TABLE_NAMES,
+  MARKETPLACE_TABLE_ADDRESSES,
   JBV5_CONTROLLER_ADDRESS,
   MOONDAO_HAT_TREE_IDS,
+  PROJECT_HAT_TREE_IDS,
   IPFS_GATEWAY,
 } from 'const/config'
 import dotenv from 'dotenv'
@@ -91,6 +94,21 @@ const jbControllerContractSepolia = getContract({
   chain: sepolia,
   address: JBV5_CONTROLLER_ADDRESS,
   abi: JBV5ControllerABI.abi as any,
+})
+
+// Initialize Marketplace table contracts
+const marketplaceTableContractArbitrum = getContract({
+  client: thirdwebClient,
+  chain: arbitrum,
+  address: MARKETPLACE_TABLE_ADDRESSES['arbitrum'],
+  abi: MarketplaceTableABI as any,
+})
+
+const marketplaceTableContractSepolia = getContract({
+  client: thirdwebClient,
+  chain: sepolia,
+  address: MARKETPLACE_TABLE_ADDRESSES['sepolia'],
+  abi: MarketplaceTableABI as any,
 })
 
 const hatsSubgraphClient = new HatsSubgraphClient({
@@ -347,7 +365,14 @@ async function fetchAllHatMetadataCIDs() {
     },
   }
 
-  const [arbitrumHats, sepoliaHats] = await Promise.all([
+  // Fetch both MoonDAO and Project hat trees
+  const [
+    moonDAOArbitrumHats,
+    moonDAOSepoliaHats,
+    projectArbitrumHats,
+    projectSepoliaHats,
+  ] = await Promise.all([
+    // MoonDAO hat trees
     hatsSubgraphClient.getTree({
       chainId: arbitrum.id,
       treeId: +MOONDAO_HAT_TREE_IDS['arbitrum'],
@@ -358,25 +383,69 @@ async function fetchAllHatMetadataCIDs() {
       treeId: +MOONDAO_HAT_TREE_IDS['sepolia'],
       props: queryProps,
     }),
+    // Project hat trees
+    hatsSubgraphClient.getTree({
+      chainId: arbitrum.id,
+      treeId: +PROJECT_HAT_TREE_IDS['arbitrum'],
+      props: queryProps,
+    }),
+    hatsSubgraphClient.getTree({
+      chainId: sepolia.id,
+      treeId: +PROJECT_HAT_TREE_IDS['sepolia'],
+      props: queryProps,
+    }),
   ])
 
   const usedIPFSHashes = new Set<string>()
 
-  // Process Arbitrum hats
-  if (arbitrumHats.hats) {
-    arbitrumHats.hats.forEach((hat: any) => {
-      extractIPFSHashesFromHat(hat, usedIPFSHashes, 'Arbitrum')
+  // Process MoonDAO Arbitrum hats
+  if (moonDAOArbitrumHats.hats) {
+    moonDAOArbitrumHats.hats.forEach((hat: any) => {
+      extractIPFSHashesFromHat(hat, usedIPFSHashes, 'MoonDAO Arbitrum')
     })
   }
 
-  // Process Sepolia hats
-  if (sepoliaHats.hats) {
-    sepoliaHats.hats.forEach((hat: any) => {
-      extractIPFSHashesFromHat(hat, usedIPFSHashes, 'Sepolia')
+  // Process MoonDAO Sepolia hats
+  if (moonDAOSepoliaHats.hats) {
+    moonDAOSepoliaHats.hats.forEach((hat: any) => {
+      extractIPFSHashesFromHat(hat, usedIPFSHashes, 'MoonDAO Sepolia')
+    })
+  }
+
+  // Process Project Arbitrum hats
+  if (projectArbitrumHats.hats) {
+    projectArbitrumHats.hats.forEach((hat: any) => {
+      extractIPFSHashesFromHat(hat, usedIPFSHashes, 'Project Arbitrum')
+    })
+  }
+
+  // Process Project Sepolia hats
+  if (projectSepoliaHats.hats) {
+    projectSepoliaHats.hats.forEach((hat: any) => {
+      extractIPFSHashesFromHat(hat, usedIPFSHashes, 'Project Sepolia')
     })
   }
 
   return usedIPFSHashes
+}
+
+async function getMarketplaceTableName(chain: 'arbitrum' | 'sepolia') {
+  try {
+    const contract =
+      chain === 'arbitrum'
+        ? marketplaceTableContractArbitrum
+        : marketplaceTableContractSepolia
+
+    const tableName = await readContract({
+      contract,
+      method: 'getTableName',
+    })
+
+    return tableName
+  } catch (error) {
+    console.error(`Error getting marketplace table name for ${chain}:`, error)
+    return null
+  }
 }
 
 async function main() {
@@ -425,6 +494,13 @@ async function main() {
     console.error('Error fetching Typeform responses:', error)
     process.exit(1)
   }
+
+  // Get marketplace table names dynamically
+  const [arbitrumMarketplaceTableName, sepoliaMarketplaceTableName] =
+    await Promise.all([
+      getMarketplaceTableName('arbitrum'),
+      getMarketplaceTableName('sepolia'),
+    ])
 
   // Get all data from Tableland tables that could contain IPFS hashes
   try {
@@ -500,6 +576,34 @@ async function main() {
         )
         resolve({ type: 'sepoliaProjects', data: result })
       }),
+
+      // Marketplace listings (listing images/metadata)
+      new Promise(async (resolve) => {
+        await new Promise((r) => setTimeout(r, 1600))
+        if (arbitrumMarketplaceTableName) {
+          const result = await queryTable(
+            arbitrum,
+            `SELECT * FROM ${arbitrumMarketplaceTableName}`
+          )
+          resolve({ type: 'arbitrumMarketplace', data: result })
+        } else {
+          console.warn('⚠️  Could not get Arbitrum marketplace table name')
+          resolve({ type: 'arbitrumMarketplace', data: [] })
+        }
+      }),
+      new Promise(async (resolve) => {
+        await new Promise((r) => setTimeout(r, 1800))
+        if (sepoliaMarketplaceTableName) {
+          const result = await queryTable(
+            sepolia,
+            `SELECT * FROM ${sepoliaMarketplaceTableName}`
+          )
+          resolve({ type: 'sepoliaMarketplace', data: result })
+        } else {
+          console.warn('⚠️  Could not get Sepolia marketplace table name')
+          resolve({ type: 'sepoliaMarketplace', data: [] })
+        }
+      }),
     ]
 
     const tablelandResults = await Promise.all(tablelandPromises)
@@ -526,6 +630,8 @@ async function main() {
       sepoliaMissions,
       arbitrumProjects,
       sepoliaProjects,
+      arbitrumMarketplace,
+      sepoliaMarketplace,
     } = dataMap
 
     console.log('\n=== DATA SUMMARY ===')
@@ -538,6 +644,8 @@ async function main() {
     console.log(`Sepolia Missions: ${sepoliaMissions?.length || 0}`)
     console.log(`Arbitrum Projects: ${arbitrumProjects?.length || 0}`)
     console.log(`Sepolia Projects: ${sepoliaProjects?.length || 0}`)
+    console.log(`Arbitrum Marketplace: ${arbitrumMarketplace?.length || 0}`)
+    console.log(`Sepolia Marketplace: ${sepoliaMarketplace?.length || 0}`)
     console.log(`Hats: ${allHats?.size || 0}`)
     console.log(`Pinned CIDs: ${allPinnedCIDs?.length || 0}`)
 
@@ -556,6 +664,8 @@ async function main() {
       teamsWithTypeformIds: 0,
       missingTypeformIds: 0,
       websiteMetadataIPFSHashesFound: 0,
+      marketplaceListingsWithImages: 0,
+      marketplaceListingsMissingImages: 0,
     }
 
     // Function to extract and validate Typeform response IDs
@@ -834,6 +944,42 @@ async function main() {
             )
           }
         }
+
+        // STRICT VALIDATION for Marketplace listings - ALL must have images
+        if (source.includes('Marketplace')) {
+          let hasValidImage = false
+
+          // Check for image field with IPFS hash
+          if (
+            item.image &&
+            typeof item.image === 'string' &&
+            item.image.trim()
+          ) {
+            const imageValue = item.image.trim()
+            // Check if it's a valid IPFS hash (with or without ipfs:// prefix)
+            const cleanHash = imageValue.startsWith('ipfs://')
+              ? imageValue.replace('ipfs://', '')
+              : imageValue
+
+            if (isValidIPFSHash(cleanHash)) {
+              hasValidImage = true
+              validationStats.marketplaceListingsWithImages++
+              // Make sure it's added to our used set
+              usedIPFSHashes.add(cleanHash)
+            }
+          }
+
+          if (!hasValidImage) {
+            validationStats.marketplaceListingsMissingImages++
+            criticalIssues.push(
+              `❌ CRITICAL: ${source} listing missing valid image - ID: ${item.id}, Title: "${item.title}" - ALL marketplace listings MUST have valid IPFS images!`
+            )
+            console.error(
+              `❌ CRITICAL: ${source} listing missing valid image:`,
+              JSON.stringify(item, null, 2)
+            )
+          }
+        }
       }
     }
 
@@ -857,6 +1003,8 @@ async function main() {
     await extractIPFSHashes(sepoliaMissions, 'sepoliaMissions')
     await extractIPFSHashes(arbitrumProjects, 'arbitrumProjects')
     await extractIPFSHashes(sepoliaProjects, 'sepoliaProjects')
+    await extractIPFSHashes(arbitrumMarketplace, 'arbitrumMarketplace')
+    await extractIPFSHashes(sepoliaMarketplace, 'sepoliaMarketplace')
 
     // Critical validation checks
     if (validationStats.juiceboxMetadataFailed > 0) {
@@ -872,6 +1020,13 @@ async function main() {
     if (usedIPFSHashes.size < validationStats.totalIPFSHashesFound) {
       criticalIssues.push(
         `Hash count mismatch: found ${validationStats.totalIPFSHashesFound} but only ${usedIPFSHashes.size} unique`
+      )
+    }
+
+    // Marketplace validation - CRITICAL if any listings are missing images
+    if (validationStats.marketplaceListingsMissingImages > 0) {
+      criticalIssues.push(
+        `🚨 CRITICAL: ${validationStats.marketplaceListingsMissingImages} marketplace listings are missing valid IPFS images - ALL listings MUST have images!`
       )
     }
 
@@ -909,6 +1064,12 @@ async function main() {
     console.log(`Total pinned CIDs in Pinata: ${allPinnedCIDs?.length || 0}`)
     console.log(
       `Total unique Typeform response IDs found: ${usedTypeformResponseIds.size}`
+    )
+    console.log(
+      `Marketplace listings with images: ${validationStats.marketplaceListingsWithImages}`
+    )
+    console.log(
+      `Marketplace listings missing images: ${validationStats.marketplaceListingsMissingImages}`
     )
 
     // Find unused CIDs (pinned but not referenced in any table)
