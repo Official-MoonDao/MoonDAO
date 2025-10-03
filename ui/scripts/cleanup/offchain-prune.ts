@@ -26,13 +26,10 @@ import queryTable from '@/lib/tableland/queryTable'
 
 dotenv.config({ path: '.env.local' })
 
-// Note: We don't need the Nance SDK - direct API calls work better
-
 const infuraKey = process.env.NEXT_PUBLIC_INFURA_KEY
 const etherscanApiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
 const coordinapeApiKey = process.env.COORDINAPE_API_KEY
 
-// Coordinape GraphQL client setup
 const coordinapeEndpoint = 'https://coordinape-prod.hasura.app/v1/graphql'
 const coordinapeClient = coordinapeApiKey
   ? new GraphQLClient(coordinapeEndpoint, {
@@ -92,12 +89,10 @@ const FORM_IDS = [
   process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string,
 ]
 
-// Initialize thirdweb client for server-side usage
 const thirdwebClient = createThirdwebClient({
   secretKey: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET as string,
 })
 
-// Initialize JuiceBox controller contract
 const jbControllerContractArbitrum = getContract({
   client: thirdwebClient,
   chain: arbitrum,
@@ -112,7 +107,6 @@ const jbControllerContractSepolia = getContract({
   abi: JBV5ControllerABI.abi as any,
 })
 
-// Initialize Marketplace table contracts
 const marketplaceTableContractArbitrum = getContract({
   client: thirdwebClient,
   chain: arbitrum,
@@ -136,17 +130,12 @@ function isValidIPFSHash(hash: string): boolean {
 
 async function upinFromPinata(ipfsHash: string) {
   try {
-    const res = await fetch(
-      `https://api.pinata.cloud/pinning/unpin/${ipfsHash}`,
-      {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${process.env.PINATA_JWT_KEY}`,
-        },
-      }
-    )
-    const data = await res.json()
-    return data
+    await fetch(`https://api.pinata.cloud/pinning/unpin/${ipfsHash}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${process.env.PINATA_JWT_KEY}`,
+      },
+    })
   } catch (error) {
     console.error('Error unpinning from Pinata:', error)
     return null
@@ -1352,6 +1341,9 @@ async function main() {
     })
 
     const nanceProposalHashes = await fetchAllNanceProposalIPFSHashes()
+    if (nanceProposalHashes.length < 5) {
+      criticalIssues.push(`Nance proposal CIDs: ${nanceProposalHashes.length}`)
+    }
     nanceProposalHashes.forEach((hash) => {
       usedIPFSHashes.add(hash)
     })
@@ -1360,14 +1352,16 @@ async function main() {
 
     const coordinapeContributionHashes =
       await fetchAllCoordinapeContributionIPFSHashes()
+    if (coordinapeContributionHashes.length < 5) {
+      criticalIssues.push(
+        `Coordinape contribution CIDs: ${coordinapeContributionHashes.length}`
+      )
+    }
     coordinapeContributionHashes.forEach((hash) => {
       usedIPFSHashes.add(hash)
     })
     validationStats.coordinapeContributionHashesFound =
       coordinapeContributionHashes.length
-    console.log(
-      `Coordinape contribution CIDs: ${coordinapeContributionHashes.length}`
-    )
 
     // Extract IPFS hashes and Typeform IDs from all data sources
     console.log('\n=== 🔍 EXTRACTING IPFS HASHES AND TYPEFORM IDS ===')
@@ -1489,9 +1483,6 @@ async function main() {
       }
     }
 
-    console.log(`Unused CIDs (candidates for unpinning): ${unusedCIDs.length}`)
-
-    // Find unused Typeform responses (all responses minus used ones)
     const unusedTypeformResponses = allResponseIds
       .filter((responseId) => !usedTypeformResponseIds.has(responseId))
       .map((responseId) => ({
@@ -1499,24 +1490,256 @@ async function main() {
         formId: responseIdToFormMap[responseId],
       }))
 
+    // Show deletion preview and ask for confirmation
+    console.log(`\n=== DELETION PREVIEW ===`)
+    console.log(`📋 Items scheduled for deletion:`)
+    console.log(`  • CIDs to unpin from Pinata: ${unusedCIDs.length}`)
     console.log(
-      `Unused Typeform responses (candidates for deletion): ${unusedTypeformResponses.length}`
+      `  • Typeform responses to delete: ${unusedTypeformResponses.length}`
     )
 
-    // console.log(`\n=== START DELETION ===`)
-    // for (const cid of unusedCIDs) {
-    //   console.log(`Unpinning CID ${cid}`)
-    //   await upinFromPinata(cid)
-    //   await new Promise((resolve) => setTimeout(resolve, 1000))
-    // }
-    // for (const { responseId, formId } of unusedTypeformResponses) {
-    //   console.log(`Deleting response ${responseId} from form ${formId}`)
-    //   await deleteResponseFromTypeform(formId, responseId)
-    //   await new Promise((resolve) => setTimeout(resolve, 1000))
-    // }
-    // console.log(`\n=== END DELETION ===`)
+    if (unusedCIDs.length === 0 && unusedTypeformResponses.length === 0) {
+      console.log(`\n✅ No items to delete. Exiting.`)
+      return
+    }
+
+    // Show some examples of what will be deleted
+    if (unusedCIDs.length > 0) {
+      console.log(`\n🗑️  Sample CIDs to be unpinned (showing first 5):`)
+      unusedCIDs.slice(0, 5).forEach((cid) => {
+        console.log(`  • ${cid}`)
+      })
+      if (unusedCIDs.length > 5) {
+        console.log(`  ... and ${unusedCIDs.length - 5} more`)
+      }
+    }
+
+    if (unusedTypeformResponses.length > 0) {
+      console.log(
+        `\n🗑️  Sample Typeform responses to be deleted (showing first 5):`
+      )
+      unusedTypeformResponses.slice(0, 5).forEach(({ responseId, formId }) => {
+        console.log(`  • Response ${responseId} from form ${formId}`)
+      })
+      if (unusedTypeformResponses.length > 5) {
+        console.log(`  ... and ${unusedTypeformResponses.length - 5} more`)
+      }
+    }
+
+    // Wait for user confirmation
+    console.log(`\n⚠️  WARNING: This action cannot be undone!`)
+    console.log(`📝 Please review the items above carefully.`)
+    console.log(
+      `\n🔍 Press ENTER to proceed with deletion, or Ctrl+C to cancel...`
+    )
+
+    // Wait for user input
+    await new Promise<void>((resolve) => {
+      process.stdin.setRawMode(true)
+      process.stdin.resume()
+      process.stdin.on('data', (key) => {
+        // Check if Enter key (13) or newline (10) was pressed
+        if (key[0] === 13 || key[0] === 10) {
+          process.stdin.setRawMode(false)
+          process.stdin.pause()
+          console.log(`\n✅ Confirmed. Starting deletion process...\n`)
+          resolve()
+        } else if (key[0] === 3) {
+          // Ctrl+C
+          console.log(`\n❌ Cancelled by user. Exiting.`)
+          process.exit(0)
+        }
+      })
+    })
+
+    console.log(`\n=== START DELETION ===`)
+
+    const deletionResults = {
+      cids: {
+        attempted: 0,
+        successful: 0,
+        failed: 0,
+        failures: [] as Array<{ cid: string; reason: string; error?: any }>,
+      },
+      typeformResponses: {
+        attempted: 0,
+        successful: 0,
+        failed: 0,
+        failures: [] as Array<{
+          responseId: string
+          formId: string
+          reason: string
+          error?: any
+        }>,
+      },
+    }
+
+    // Delete unused CIDs with error tracking
+    if (unusedCIDs.length > 0) {
+      console.log(
+        `\n🗑️  Unpinning ${unusedCIDs.length} unused CIDs from Pinata...`
+      )
+
+      for (const cid of unusedCIDs) {
+        deletionResults.cids.attempted++
+        console.log(`Unpinning CID ${cid}...`)
+
+        try {
+          await upinFromPinata(cid)
+          deletionResults.cids.successful++
+        } catch (error) {
+          // Unexpected error
+          deletionResults.cids.failed++
+          deletionResults.cids.failures.push({
+            cid,
+            reason: `Unexpected error: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+            error,
+          })
+          console.error(`❌ Unexpected error unpinning ${cid}:`, error)
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
+    } else {
+      console.log(`\n✅ No unused CIDs to unpin`)
+    }
+
+    // Delete unused Typeform responses with error tracking
+    if (unusedTypeformResponses.length > 0) {
+      console.log(
+        `\n🗑️  Deleting ${unusedTypeformResponses.length} unused Typeform responses...`
+      )
+
+      for (const { responseId, formId } of unusedTypeformResponses) {
+        deletionResults.typeformResponses.attempted++
+
+        try {
+          const result = await deleteResponseFromTypeform(formId, responseId)
+          console.log(
+            `Successfully deleted response ${responseId} from form ${formId}`
+          )
+
+          if (result && result.error) {
+            // Typeform returned an error response
+            deletionResults.typeformResponses.failed++
+            deletionResults.typeformResponses.failures.push({
+              responseId,
+              formId,
+              reason: `Typeform API error: ${result.error}`,
+              error: result,
+            })
+            console.error(
+              `❌ Failed to delete response ${responseId}: ${result.error}`
+            )
+          } else if (result === null) {
+            // Network/request error (caught in deleteResponseFromTypeform)
+            deletionResults.typeformResponses.failed++
+            deletionResults.typeformResponses.failures.push({
+              responseId,
+              formId,
+              reason: 'Network or request error (check logs above)',
+            })
+            console.error(
+              `❌ Failed to delete response ${responseId}: Network/request error`
+            )
+          } else {
+            // Success
+            deletionResults.typeformResponses.successful++
+          }
+        } catch (error) {
+          // Unexpected error
+          deletionResults.typeformResponses.failed++
+          deletionResults.typeformResponses.failures.push({
+            responseId,
+            formId,
+            reason: `Unexpected error: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+            error,
+          })
+          console.error(
+            `❌ Unexpected error deleting response ${responseId}:`,
+            error
+          )
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
+    } else {
+      console.log(`\n✅ No unused Typeform responses to delete`)
+    }
+
+    // Print deletion summary
+    console.log(`\n=== DELETION SUMMARY ===`)
+    console.log(`\n📊 CID Deletion Results:`)
+    console.log(`  • Attempted: ${deletionResults.cids.attempted}`)
+    console.log(`  • Successful: ${deletionResults.cids.successful}`)
+    console.log(`  • Failed: ${deletionResults.cids.failed}`)
+
+    if (deletionResults.cids.failures.length > 0) {
+      console.log(`\n❌ CID Deletion Failures:`)
+      deletionResults.cids.failures.forEach(({ cid, reason }) => {
+        console.log(`  • ${cid}: ${reason}`)
+      })
+    }
+
+    console.log(`\n📊 Typeform Response Deletion Results:`)
+    console.log(`  • Attempted: ${deletionResults.typeformResponses.attempted}`)
+    console.log(
+      `  • Successful: ${deletionResults.typeformResponses.successful}`
+    )
+    console.log(`  • Failed: ${deletionResults.typeformResponses.failed}`)
+
+    if (deletionResults.typeformResponses.failures.length > 0) {
+      console.log(`\n❌ Typeform Response Deletion Failures:`)
+      deletionResults.typeformResponses.failures.forEach(
+        ({ responseId, formId, reason }) => {
+          console.log(`  • Response ${responseId} (Form ${formId}): ${reason}`)
+        }
+      )
+    }
+
+    // Overall success rate
+    const totalAttempted =
+      deletionResults.cids.attempted +
+      deletionResults.typeformResponses.attempted
+    const totalSuccessful =
+      deletionResults.cids.successful +
+      deletionResults.typeformResponses.successful
+    const successRate =
+      totalAttempted > 0
+        ? ((totalSuccessful / totalAttempted) * 100).toFixed(1)
+        : '0'
+
+    console.log(
+      `\n🎯 Overall Success Rate: ${successRate}% (${totalSuccessful}/${totalAttempted})`
+    )
+
+    if (
+      deletionResults.cids.failed > 0 ||
+      deletionResults.typeformResponses.failed > 0
+    ) {
+      console.log(
+        `\n⚠️  Some deletions failed. Please review the errors above and retry if necessary.`
+      )
+
+      const failedItems = {
+        timestamp: new Date().toISOString(),
+        failedCIDs: deletionResults.cids.failures,
+        failedTypeformResponses: deletionResults.typeformResponses.failures,
+      }
+
+      console.log(`\n💾 Consider saving failed items for retry:`)
+      console.log(JSON.stringify(failedItems, null, 2))
+    } else if (totalAttempted > 0) {
+      console.log(`\n🎉 All deletions completed successfully!`)
+    }
+
+    console.log(`\n=== END DELETION ===`)
   } catch (error) {
-    console.error('❌ Error fetching Tableland data:', error)
+    console.error('❌ Error fetching offchain data:', error)
     process.exit(1)
   }
 }
