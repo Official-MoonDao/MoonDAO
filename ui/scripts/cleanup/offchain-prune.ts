@@ -12,6 +12,7 @@ import {
   IPFS_GATEWAY,
 } from 'const/config'
 import dotenv from 'dotenv'
+import { GraphQLClient, gql } from 'graphql-request'
 import {
   createThirdwebClient,
   defineChain,
@@ -19,6 +20,7 @@ import {
   readContract,
 } from 'thirdweb'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
+import { Contribution } from '@/lib/coordinape/types'
 import { NANCE_SPACE_NAME, NANCE_API_URL } from '@/lib/nance/constants'
 import queryTable from '@/lib/tableland/queryTable'
 
@@ -28,6 +30,17 @@ dotenv.config({ path: '.env.local' })
 
 const infuraKey = process.env.NEXT_PUBLIC_INFURA_KEY
 const etherscanApiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
+const coordinapeApiKey = process.env.COORDINAPE_API_KEY
+
+// Coordinape GraphQL client setup
+const coordinapeEndpoint = 'https://coordinape-prod.hasura.app/v1/graphql'
+const coordinapeClient = coordinapeApiKey
+  ? new GraphQLClient(coordinapeEndpoint, {
+      headers: {
+        Authorization: `Bearer ${coordinapeApiKey}`,
+      },
+    })
+  : undefined
 
 export const arbitrum = defineChain({
   id: 42161,
@@ -332,25 +345,6 @@ function extractIPFSHashesFromHat(
 }
 
 async function fetchAllHatMetadataCIDs() {
-  function createDeepHatProps(depth: number = 4): any {
-    if (depth <= 0) {
-      return {
-        imageUri: true,
-        details: true,
-        id: true,
-      }
-    }
-
-    return {
-      imageUri: true,
-      details: true,
-      id: true,
-      subHats: {
-        props: createDeepHatProps(depth - 1),
-      },
-    }
-  }
-
   // Function to fetch all hats from a tree with direct GraphQL queries
   async function fetchAllHatsFromTree(chainId: number, treeId: string) {
     const allHats: any[] = []
@@ -536,9 +530,7 @@ async function fetchAllNanceProposals() {
     }
 
     const proposals = data?.data?.proposals || []
-    console.log(
-      `📋 Successfully fetched ${proposals.length} proposals from Nance`
-    )
+    console.log(`Nance proposals: ${proposals.length}`)
 
     return proposals
   } catch (error) {
@@ -665,6 +657,151 @@ async function fetchAllNanceProposalIPFSHashes() {
   }
 
   return Array.from(proposalIPFSHashes)
+}
+
+// Function to extract IPFS hashes from Coordinape contribution descriptions
+function extractIPFSHashesFromContribution(
+  contribution: Contribution,
+  usedIPFSHashes: Set<string>
+): string[] {
+  if (!contribution.description || typeof contribution.description !== 'string')
+    return []
+
+  const hashes: string[] = []
+
+  // Extract raw IPFS hashes (both v0 and v1)
+  const ipfsMatches = contribution.description.match(
+    /Qm[1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]{56}/g
+  )
+  if (ipfsMatches) {
+    hashes.push(...ipfsMatches)
+  }
+
+  // Extract from ipfs:// URIs
+  const ipfsUriMatches = contribution.description.match(
+    /ipfs:\/\/([Qm][1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]{56})/g
+  )
+  if (ipfsUriMatches) {
+    ipfsUriMatches.forEach((uri) => {
+      const hash = uri.replace('ipfs://', '')
+      hashes.push(hash)
+    })
+  }
+
+  // Extract from IPFS gateway URLs
+  const gatewayMatches = contribution.description.match(
+    /https?:\/\/[^\/]*ipfs[^\/]*\/(?:ipfs\/)?([Qm][1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]{56})/g
+  )
+  if (gatewayMatches) {
+    gatewayMatches.forEach((url) => {
+      const match = url.match(/([Qm][1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]{56})/)
+      if (match) {
+        hashes.push(match[1])
+      }
+    })
+  }
+
+  // Extract from markdown image syntax ![alt](ipfs://hash) or ![alt](https://gateway/ipfs/hash)
+  const markdownImageMatches = contribution.description.match(
+    /!\[.*?\]\((?:ipfs:\/\/|https?:\/\/[^\/]*ipfs[^\/]*\/(?:ipfs\/)?)([Qm][1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]{56})[^\)]*\)/g
+  )
+  if (markdownImageMatches) {
+    markdownImageMatches.forEach((match) => {
+      const hashMatch = match.match(
+        /([Qm][1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]{56})/
+      )
+      if (hashMatch) {
+        hashes.push(hashMatch[1])
+      }
+    })
+  }
+
+  // Log and add unique hashes
+  const uniqueHashes = [...new Set(hashes)]
+  uniqueHashes.forEach((hash) => {
+    usedIPFSHashes.add(hash)
+  })
+
+  return uniqueHashes
+}
+
+// Inline getContributions function
+async function getContributions(): Promise<Contribution[]> {
+  const circleId = 29837
+
+  // GraphQL query to get all contributions in the circle
+  const getContributionsQuery = gql`
+    query GetContributions($circle_id: bigint!) {
+      contributions(
+        where: { circle_id: { _eq: $circle_id } }
+        order_by: { created_at: desc }
+      ) {
+        id
+        description
+        created_at
+        user_id
+        circle_id
+        profile_id
+      }
+    }
+  `
+
+  if (!coordinapeClient) {
+    throw new Error('COORDINAPE_API_KEY environment variable is not set')
+  }
+
+  try {
+    const res = await coordinapeClient.request<{
+      contributions: Contribution[]
+    }>(getContributionsQuery, { circle_id: circleId })
+    return res.contributions
+  } catch (error: any) {
+    console.error('getContributions: Error:', error)
+    if (error.response?.errors) {
+      console.error('getContributions: GraphQL errors:', error.response.errors)
+      const errors = error.response.errors
+      if (errors.some((e: any) => e.message.includes('permission'))) {
+        throw new Error(
+          "You don't have permission to view circle contributions."
+        )
+      } else if (errors.some((e: any) => e.message.includes('circle'))) {
+        throw new Error(
+          'Unable to access the Coordinape circle. Please contact support.'
+        )
+      }
+    }
+    throw error
+  }
+}
+
+// Function to process all Coordinape contributions and extract IPFS hashes
+async function fetchAllCoordinapeContributionIPFSHashes() {
+  try {
+    const contributions = await getContributions()
+    const contributionIPFSHashes = new Set<string>()
+
+    let totalHashesFound = 0
+
+    for (const contribution of contributions) {
+      const hashes = extractIPFSHashesFromContribution(
+        contribution,
+        contributionIPFSHashes
+      )
+      totalHashesFound += hashes.length
+    }
+
+    console.log(`Coordinape contributions: ${contributions.length}`)
+    console.log(
+      `Coordinape contribution CIDs: ${totalHashesFound} (${contributionIPFSHashes.size} unique)`
+    )
+
+    return Array.from(contributionIPFSHashes)
+  } catch (error) {
+    console.error('❌ Error fetching Coordinape contributions:', error)
+    // Don't fail the entire process if Coordinape is unavailable
+    // Just log the error and return empty array
+    return []
+  }
 }
 
 async function main() {
@@ -886,6 +1023,7 @@ async function main() {
       marketplaceListingsWithImages: 0,
       marketplaceListingsMissingImages: 0,
       nanceProposalHashesFound: 0,
+      coordinapeContributionHashesFound: 0,
     }
 
     // Function to extract and validate Typeform response IDs
@@ -1218,8 +1356,17 @@ async function main() {
       usedIPFSHashes.add(hash)
     })
     validationStats.nanceProposalHashesFound = nanceProposalHashes.length
+    console.log(`Nance proposal CIDs: ${nanceProposalHashes.length}`)
+
+    const coordinapeContributionHashes =
+      await fetchAllCoordinapeContributionIPFSHashes()
+    coordinapeContributionHashes.forEach((hash) => {
+      usedIPFSHashes.add(hash)
+    })
+    validationStats.coordinapeContributionHashesFound =
+      coordinapeContributionHashes.length
     console.log(
-      `📋 Added ${nanceProposalHashes.length} IPFS hashes from Nance proposals`
+      `Coordinape contribution CIDs: ${coordinapeContributionHashes.length}`
     )
 
     // Extract IPFS hashes and Typeform IDs from all data sources
