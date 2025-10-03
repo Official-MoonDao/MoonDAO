@@ -767,6 +767,55 @@ async function main() {
             )
           }
         }
+
+        // Validate Citizens and Teams have images (REQUIRED for all records)
+        if (source.includes('Citizens') || source.includes('Teams')) {
+          let recordsWithImages = 0
+          let recordsWithoutImages = 0
+
+          for (const item of data) {
+            let hasValidImage = false
+
+            // Check for image field with IPFS hash
+            if (
+              item.image &&
+              typeof item.image === 'string' &&
+              item.image.trim()
+            ) {
+              const imageValue = item.image.trim()
+              // Check if it's a valid IPFS hash (with or without ipfs:// prefix)
+              const cleanHash = imageValue.startsWith('ipfs://')
+                ? imageValue.replace('ipfs://', '')
+                : imageValue
+
+              if (
+                cleanHash.match(/^Qm[1-9A-HJ-NP-Za-km-z]{44}$/) ||
+                cleanHash.match(/^baf[a-z0-9]{56}$/)
+              ) {
+                hasValidImage = true
+                recordsWithImages++
+                // Make sure it's added to our used set
+                usedIPFSHashes.add(cleanHash)
+              }
+            }
+
+            if (!hasValidImage) {
+              recordsWithoutImages++
+              console.warn(
+                `❌ ${source} record missing valid image: ${JSON.stringify(
+                  item
+                )}`
+              )
+            }
+          }
+
+          // CRITICAL: All Citizens and Teams must have images
+          if (recordsWithoutImages > 0) {
+            criticalIssues.push(
+              `${recordsWithoutImages} ${source} records are missing valid images - ALL should have images!`
+            )
+          }
+        }
       }
     }
 
