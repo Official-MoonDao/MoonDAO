@@ -99,6 +99,13 @@ const hatsSubgraphClient = new HatsSubgraphClient({
   },
 })
 
+function isValidIPFSHash(hash: string): boolean {
+  return (
+    hash.match(/^Qm[1-9A-HJ-NP-Za-km-z]{44}$/) !== null ||
+    hash.match(/^baf[a-z0-9]{56}$/) !== null
+  )
+}
+
 async function upinFromPinata(ipfsHash: string) {
   try {
     const res = await fetch(
@@ -239,10 +246,7 @@ async function fetchJuiceBoxProjectMetadata(
     let url = metadataURI
     if (metadataURI.startsWith('ipfs://')) {
       url = `${IPFS_GATEWAY}${metadataURI.replace('ipfs://', '')}`
-    } else if (
-      metadataURI.match(/^Qm[1-9A-HJ-NP-Za-km-z]{44}$/) ||
-      metadataURI.match(/^baf[0-9a-z]{56}$/)
-    ) {
+    } else if (isValidIPFSHash(metadataURI)) {
       // Raw IPFS hash (either v0 starting with Qm or v1 starting with baf)
       url = `${IPFS_GATEWAY}${metadataURI}`
     }
@@ -727,10 +731,7 @@ async function main() {
                     logoHash = metadata.logoUri.substring(ipfsIndex + 6)
                   } else if (metadata.logoUri.startsWith('ipfs://')) {
                     logoHash = metadata.logoUri.replace('ipfs://', '')
-                  } else if (
-                    metadata.logoUri.match(/^Qm[1-9A-HJ-NP-Za-km-z]{44}$/) ||
-                    metadata.logoUri.match(/^baf[a-z0-9]{56}$/)
-                  ) {
+                  } else if (isValidIPFSHash(metadata.logoUri)) {
                     logoHash = metadata.logoUri
                   }
 
@@ -802,10 +803,7 @@ async function main() {
                 ? imageValue.replace('ipfs://', '')
                 : imageValue
 
-              if (
-                cleanHash.match(/^Qm[1-9A-HJ-NP-Za-km-z]{44}$/) ||
-                cleanHash.match(/^baf[a-z0-9]{56}$/)
-              ) {
+              if (isValidIPFSHash(cleanHash)) {
                 hasValidImage = true
                 recordsWithImages++
                 // Make sure it's added to our used set
