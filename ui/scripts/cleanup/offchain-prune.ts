@@ -19,6 +19,7 @@ import {
   getContract,
   readContract,
 } from 'thirdweb'
+import { cacheExchange, createClient, fetchExchange } from 'urql'
 import queryTable from '@/lib/tableland/queryTable'
 
 dotenv.config({ path: '.env.local' })
@@ -109,17 +110,6 @@ const marketplaceTableContractSepolia = getContract({
   chain: sepolia,
   address: MARKETPLACE_TABLE_ADDRESSES['sepolia'],
   abi: MarketplaceTableABI as any,
-})
-
-const hatsSubgraphClient = new HatsSubgraphClient({
-  config: {
-    [42161]: {
-      endpoint: `https://gateway-arbitrum.network.thegraph.com/api/${process.env.THE_GRAPH_API_KEY}/subgraphs/id/4CiXQPjzKshBbyK2dgJiknTNWcj8cGUJsopTsXfm5HEk`,
-    },
-    [11155111]: {
-      endpoint: `https://api.studio.thegraph.com/query/55784/hats-v1-sepolia/version/latest`,
-    },
-  },
 })
 
 function isValidIPFSHash(hash: string): boolean {
@@ -359,42 +349,116 @@ async function fetchAllHatMetadataCIDs() {
     }
   }
 
-  const queryProps = {
-    hats: {
-      props: createDeepHatProps(4),
-    },
+  // Function to fetch all hats from a tree with direct GraphQL queries
+  async function fetchAllHatsFromTree(chainId: number, treeId: string) {
+    const allHats: any[] = []
+    let lastId =
+      '0x0000000000000000000000000000000000000000000000000000000000000000'
+    const batchSize = 100
+    let hasMore = true
+
+    // Get the subgraph endpoint for this chain
+    const subgraphUrl =
+      chainId === arbitrum.id
+        ? `https://gateway-arbitrum.network.thegraph.com/api/${process.env.THE_GRAPH_API_KEY}/subgraphs/id/4CiXQPjzKshBbyK2dgJiknTNWcj8cGUJsopTsXfm5HEk`
+        : `https://api.studio.thegraph.com/query/55784/hats-v1-sepolia/version/latest`
+
+    const subgraphClient = createClient({
+      url: subgraphUrl,
+      exchanges: [fetchExchange, cacheExchange],
+    })
+
+    while (hasMore) {
+      try {
+        const query = `
+          query GetTreeHats($treeId: String!, $first: Int!, $lastId: String!) {
+            tree(id: $treeId) {
+              hats(
+                first: $first, 
+                where: { id_gt: $lastId }, 
+                orderBy: id, 
+                orderDirection: asc
+              ) {
+                id
+                imageUri
+                details
+                subHats {
+                  id
+                  imageUri
+                  details
+                  subHats {
+                    id
+                    imageUri
+                    details
+                    subHats {
+                      id
+                      imageUri
+                      details
+                      subHats {
+                        id
+                        imageUri
+                        details
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `
+
+        const result = await subgraphClient
+          .query(query, {
+            treeId: treeId.toString(),
+            first: batchSize,
+            lastId: lastId,
+          })
+          .toPromise()
+
+        if (result.error) {
+          console.error('GraphQL errors:', result.error)
+          break
+        }
+
+        const hats = result.data?.tree?.hats || []
+
+        if (hats.length > 0) {
+          allHats.push(...hats)
+          lastId = hats[hats.length - 1].id
+          // If we got less than the batch size, we've reached the end
+          if (hats.length < batchSize) {
+            hasMore = false
+          }
+        } else {
+          hasMore = false
+        }
+      } catch (error) {
+        console.error(`Error fetching hats for tree ${treeId}:`, error)
+        hasMore = false
+      }
+    }
+    return { hats: allHats }
   }
 
-  // Fetch both MoonDAO and Project hat trees
+  // Fetch all hat trees with pagination
   const [
     moonDAOArbitrumHats,
     moonDAOSepoliaHats,
     projectArbitrumHats,
     projectSepoliaHats,
   ] = await Promise.all([
-    // MoonDAO hat trees
-    hatsSubgraphClient.getTree({
-      chainId: arbitrum.id,
-      treeId: +MOONDAO_HAT_TREE_IDS['arbitrum'],
-      props: queryProps,
-    }),
-    hatsSubgraphClient.getTree({
-      chainId: sepolia.id,
-      treeId: +MOONDAO_HAT_TREE_IDS['sepolia'],
-      props: queryProps,
-    }),
-    // Project hat trees
-    hatsSubgraphClient.getTree({
-      chainId: arbitrum.id,
-      treeId: +PROJECT_HAT_TREE_IDS['arbitrum'],
-      props: queryProps,
-    }),
-    hatsSubgraphClient.getTree({
-      chainId: sepolia.id,
-      treeId: +PROJECT_HAT_TREE_IDS['sepolia'],
-      props: queryProps,
-    }),
+    fetchAllHatsFromTree(arbitrum.id, MOONDAO_HAT_TREE_IDS['arbitrum']),
+    fetchAllHatsFromTree(sepolia.id, MOONDAO_HAT_TREE_IDS['sepolia']),
+    fetchAllHatsFromTree(arbitrum.id, PROJECT_HAT_TREE_IDS['arbitrum']),
+    fetchAllHatsFromTree(sepolia.id, PROJECT_HAT_TREE_IDS['sepolia']),
   ])
+
+  // Log the number of hats fetched from each tree
+  console.log('Hat counts:')
+  console.log('- MoonDAO Arbitrum:', moonDAOArbitrumHats.hats?.length || 0)
+  console.log('- MoonDAO Sepolia:', moonDAOSepoliaHats.hats?.length || 0)
+  console.log('- Project Arbitrum:', projectArbitrumHats.hats?.length || 0)
+  console.log('- Project Sepolia:', projectSepoliaHats.hats?.length || 0)
 
   const usedIPFSHashes = new Set<string>()
 
@@ -426,6 +490,7 @@ async function fetchAllHatMetadataCIDs() {
     })
   }
 
+  console.log(`Found ${usedIPFSHashes.size} unique IPFS hashes from hats`)
   return usedIPFSHashes
 }
 
@@ -449,7 +514,7 @@ async function getMarketplaceTableName(chain: 'arbitrum' | 'sepolia') {
 }
 
 async function main() {
-  const allHats = await fetchAllHatMetadataCIDs()
+  const allHatCIDs = await fetchAllHatMetadataCIDs()
   // Get all pinned CIDs from Pinata
   const allPinnedCIDs = await listAllPinnedCIDs()
 
@@ -646,7 +711,7 @@ async function main() {
     console.log(`Sepolia Projects: ${sepoliaProjects?.length || 0}`)
     console.log(`Arbitrum Marketplace: ${arbitrumMarketplace?.length || 0}`)
     console.log(`Sepolia Marketplace: ${sepoliaMarketplace?.length || 0}`)
-    console.log(`Hats: ${allHats?.size || 0}`)
+    console.log(`Hats CIDs: ${allHatCIDs?.size || 0}`)
     console.log(`Pinned CIDs: ${allPinnedCIDs?.length || 0}`)
 
     const usedIPFSHashes = new Set<string>()
@@ -983,7 +1048,7 @@ async function main() {
       }
     }
 
-    allHats.forEach((hash) => {
+    allHatCIDs.forEach((hash) => {
       usedIPFSHashes.add(hash)
       validationStats.hatHashesFound++
     })
