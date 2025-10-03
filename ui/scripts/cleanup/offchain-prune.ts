@@ -1,4 +1,3 @@
-import { HatsSubgraphClient } from '@hatsprotocol/sdk-v1-subgraph'
 import JBV5ControllerABI from 'const/abis/JBV5Controller.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
 import {
@@ -20,9 +19,12 @@ import {
   readContract,
 } from 'thirdweb'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
+import { NANCE_SPACE_NAME, NANCE_API_URL } from '@/lib/nance/constants'
 import queryTable from '@/lib/tableland/queryTable'
 
 dotenv.config({ path: '.env.local' })
+
+// Note: We don't need the Nance SDK - direct API calls work better
 
 const infuraKey = process.env.NEXT_PUBLIC_INFURA_KEY
 const etherscanApiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
@@ -513,6 +515,158 @@ async function getMarketplaceTableName(chain: 'arbitrum' | 'sepolia') {
   }
 }
 
+// Function to fetch all proposals from Nance API
+async function fetchAllNanceProposals() {
+  const url = `${NANCE_API_URL}/${NANCE_SPACE_NAME}/proposals?cycle=All&limit=1000`
+
+  try {
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch proposals: ${response.status} ${response.statusText}`
+      )
+    }
+
+    const data = await response.json()
+
+    // Check if the API returned an error
+    if (data.success === false) {
+      throw new Error(`API error: ${data.error || 'Unknown error'}`)
+    }
+
+    const proposals = data?.data?.proposals || []
+    console.log(
+      `📋 Successfully fetched ${proposals.length} proposals from Nance`
+    )
+
+    return proposals
+  } catch (error) {
+    console.error('❌ Error fetching Nance proposals:', error)
+    return []
+  }
+}
+
+// Function to extract IPFS hashes from proposal body text
+function extractIPFSHashesFromProposalBody(
+  proposalBody: string,
+  proposalId: string,
+  usedIPFSHashes: Set<string>
+): string[] {
+  if (!proposalBody || typeof proposalBody !== 'string') return []
+
+  const hashes: string[] = []
+
+  // Extract raw IPFS hashes (both v0 and v1)
+  const ipfsMatches = proposalBody.match(
+    /Qm[1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]{56}/g
+  )
+  if (ipfsMatches) {
+    hashes.push(...ipfsMatches)
+  }
+
+  // Extract from ipfs:// URIs
+  const ipfsUriMatches = proposalBody.match(
+    /ipfs:\/\/([Qm][1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]{56})/g
+  )
+  if (ipfsUriMatches) {
+    ipfsUriMatches.forEach((uri) => {
+      const hash = uri.replace('ipfs://', '')
+      hashes.push(hash)
+    })
+  }
+
+  // Extract from IPFS gateway URLs
+  const gatewayMatches = proposalBody.match(
+    /https?:\/\/[^\/]*ipfs[^\/]*\/(?:ipfs\/)?([Qm][1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]{56})/g
+  )
+  if (gatewayMatches) {
+    gatewayMatches.forEach((url) => {
+      const match = url.match(/([Qm][1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]{56})/)
+      if (match) {
+        hashes.push(match[1])
+      }
+    })
+  }
+
+  // Extract from markdown image syntax ![alt](ipfs://hash) or ![alt](https://gateway/ipfs/hash)
+  const markdownImageMatches = proposalBody.match(
+    /!\[.*?\]\((?:ipfs:\/\/|https?:\/\/[^\/]*ipfs[^\/]*\/(?:ipfs\/)?)([Qm][1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]{56})[^\)]*\)/g
+  )
+  if (markdownImageMatches) {
+    markdownImageMatches.forEach((match) => {
+      const hashMatch = match.match(
+        /([Qm][1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]{56})/
+      )
+      if (hashMatch) {
+        hashes.push(hashMatch[1])
+      }
+    })
+  }
+
+  // Log and add unique hashes
+  const uniqueHashes = [...new Set(hashes)]
+  uniqueHashes.forEach((hash) => {
+    usedIPFSHashes.add(hash)
+  })
+
+  return uniqueHashes
+}
+
+// Function to process all Nance proposals and extract IPFS hashes
+async function fetchAllNanceProposalIPFSHashes() {
+  const proposals = await fetchAllNanceProposals()
+  const proposalIPFSHashes = new Set<string>()
+
+  let totalHashesFound = 0
+
+  for (const proposal of proposals) {
+    const proposalId = proposal.proposalId || proposal.uuid || 'unknown'
+
+    // Check proposal body
+    if (proposal.body) {
+      const hashes = extractIPFSHashesFromProposalBody(
+        proposal.body,
+        proposalId,
+        proposalIPFSHashes
+      )
+      totalHashesFound += hashes.length
+    }
+
+    // Check proposal title
+    if (proposal.title) {
+      const titleHashes = extractIPFSHashesFromProposalBody(
+        proposal.title,
+        `${proposalId}-title`,
+        proposalIPFSHashes
+      )
+      totalHashesFound += titleHashes.length
+    }
+
+    // Check ipfsURL field (specific to Nance proposals)
+    if (proposal.ipfsURL) {
+      const ipfsUrlHashes = extractIPFSHashesFromProposalBody(
+        proposal.ipfsURL,
+        `${proposalId}-ipfsURL`,
+        proposalIPFSHashes
+      )
+      totalHashesFound += ipfsUrlHashes.length
+    }
+
+    // Check discussionThreadURL if it contains IPFS
+    if (proposal.discussionThreadURL) {
+      const discussionHashes = extractIPFSHashesFromProposalBody(
+        proposal.discussionThreadURL,
+        `${proposalId}-discussionURL`,
+        proposalIPFSHashes
+      )
+      totalHashesFound += discussionHashes.length
+    }
+  }
+
+  return Array.from(proposalIPFSHashes)
+}
+
 async function main() {
   const allHatCIDs = await fetchAllHatMetadataCIDs()
   // Get all pinned CIDs from Pinata
@@ -731,6 +885,7 @@ async function main() {
       websiteMetadataIPFSHashesFound: 0,
       marketplaceListingsWithImages: 0,
       marketplaceListingsMissingImages: 0,
+      nanceProposalHashesFound: 0,
     }
 
     // Function to extract and validate Typeform response IDs
@@ -1057,6 +1212,15 @@ async function main() {
       usedIPFSHashes.add(hash)
       validationStats.websiteMetadataIPFSHashesFound++
     })
+
+    const nanceProposalHashes = await fetchAllNanceProposalIPFSHashes()
+    nanceProposalHashes.forEach((hash) => {
+      usedIPFSHashes.add(hash)
+    })
+    validationStats.nanceProposalHashesFound = nanceProposalHashes.length
+    console.log(
+      `📋 Added ${nanceProposalHashes.length} IPFS hashes from Nance proposals`
+    )
 
     // Extract IPFS hashes and Typeform IDs from all data sources
     console.log('\n=== 🔍 EXTRACTING IPFS HASHES AND TYPEFORM IDS ===')
