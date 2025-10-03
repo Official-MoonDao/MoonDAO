@@ -970,12 +970,12 @@ async function main() {
     // for (const cid of unusedCIDs) {
     //   console.log(`Unpinning CID ${cid}`)
     //   await upinFromPinata(cid)
+    //   await new Promise((resolve) => setTimeout(resolve, 1000))
     // }
     // for (const { responseId, formId } of unusedTypeformResponses) {
     //   console.log(`Deleting response ${responseId} from form ${formId}`)
     //   await deleteResponseFromTypeform(formId, responseId)
-    //   // Add a small delay to be polite to the API
-    //   await new Promise((resolve) => setTimeout(resolve, 100))
+    //   await new Promise((resolve) => setTimeout(resolve, 1000))
     // }
     // console.log(`\n=== END DELETION ===`)
   } catch (error) {
