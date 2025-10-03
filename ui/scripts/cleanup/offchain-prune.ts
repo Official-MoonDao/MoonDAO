@@ -60,6 +60,11 @@ export const sepolia = defineChain({
   testnet: true,
 })
 
+const websiteMetadataIPFSHashes = new Set<string>([
+  'bafybeifkfe5t6ihnqxwr4uksiiphj2obshr5baslkl4v36yo2jxbxigazu',
+  'QmdTYGGb5ayHor23WeCsNeT61Qzj8JK9EQmxKWeuGTQhYq',
+])
+
 const FORM_IDS = [
   process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
   process.env.NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string,
@@ -550,6 +555,7 @@ async function main() {
       citizensWithTypeformIds: 0,
       teamsWithTypeformIds: 0,
       missingTypeformIds: 0,
+      websiteMetadataIPFSHashesFound: 0,
     }
 
     // Function to extract and validate Typeform response IDs
@@ -836,6 +842,11 @@ async function main() {
       validationStats.hatHashesFound++
     })
 
+    websiteMetadataIPFSHashes.forEach((hash) => {
+      usedIPFSHashes.add(hash)
+      validationStats.websiteMetadataIPFSHashesFound++
+    })
+
     // Extract IPFS hashes and Typeform IDs from all data sources
     console.log('\n=== 🔍 EXTRACTING IPFS HASHES AND TYPEFORM IDS ===')
     await extractIPFSHashes(arbitrumCitizens, 'arbitrumCitizens')
@@ -894,9 +905,7 @@ async function main() {
     }
 
     console.log(`\n=== 📈 ANALYSIS SUMMARY ===`)
-    console.log(
-      `Total unique IPFS hashes found in tables: ${usedIPFSHashes.size}`
-    )
+    console.log(`Total unique IPFS hashes found: ${usedIPFSHashes.size}`)
     console.log(`Total pinned CIDs in Pinata: ${allPinnedCIDs?.length || 0}`)
     console.log(
       `Total unique Typeform response IDs found: ${usedTypeformResponseIds.size}`
@@ -905,6 +914,44 @@ async function main() {
     // Find unused CIDs (pinned but not referenced in any table)
     const unusedCIDs =
       allPinnedCIDs?.filter((cid) => !usedIPFSHashes.has(cid)) || []
+
+    // Debug: Expected vs actual math
+    const expectedUnused = (allPinnedCIDs?.length || 0) - usedIPFSHashes.size
+
+    if (expectedUnused !== unusedCIDs.length) {
+      console.log(
+        `⚠️  MISMATCH: Expected ${expectedUnused} but got ${unusedCIDs.length}`
+      )
+      // Check if there are duplicate CIDs in allPinnedCIDs
+      const uniquePinnedCIDs = new Set(allPinnedCIDs || [])
+      if (uniquePinnedCIDs.size !== (allPinnedCIDs?.length || 0)) {
+        console.log(
+          `Found ${
+            (allPinnedCIDs?.length || 0) - uniquePinnedCIDs.size
+          } duplicate CIDs in Pinata`
+        )
+      }
+
+      // Debug: Find the overlap between usedIPFSHashes and pinnedCIDs
+      const pinnedSet = new Set(allPinnedCIDs || [])
+      const foundInBoth = Array.from(usedIPFSHashes).filter((hash) =>
+        pinnedSet.has(hash)
+      )
+      console.log(
+        `Missing overlap: ${
+          usedIPFSHashes.size - foundInBoth.length
+        } hashes in usedIPFSHashes but not in Pinata`
+      )
+
+      // Show some examples of the mismatch
+      const notInPinata = Array.from(usedIPFSHashes)
+        .filter((hash) => !pinnedSet.has(hash))
+        .slice(0, 5)
+      if (notInPinata.length > 0) {
+        console.log(`Examples of hashes not in Pinata:`, notInPinata)
+      }
+    }
+
     console.log(`Unused CIDs (candidates for unpinning): ${unusedCIDs.length}`)
 
     // Find unused Typeform responses (all responses minus used ones)
