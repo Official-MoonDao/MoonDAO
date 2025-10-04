@@ -170,7 +170,7 @@ async function listAllPinnedCIDs() {
 
 async function deleteResponseFromTypeform(formId: string, responseId: string) {
   try {
-    const res = await fetch(
+    await fetch(
       `https://api.typeform.com/forms/${formId}/responses?included_response_ids=${responseId}`,
       {
         method: 'DELETE',
@@ -179,11 +179,10 @@ async function deleteResponseFromTypeform(formId: string, responseId: string) {
         },
       }
     )
-    const data = await res.json()
-    return data
+    return { success: true }
   } catch (error) {
     console.error('Error deleting response from Typeform:', error)
-    return null
+    return { error: error }
   }
 }
 
@@ -1617,10 +1616,6 @@ async function main() {
 
         try {
           const result = await deleteResponseFromTypeform(formId, responseId)
-          console.log(
-            `Successfully deleted response ${responseId} from form ${formId}`
-          )
-
           if (result && result.error) {
             // Typeform returned an error response
             deletionResults.typeformResponses.failed++
@@ -1633,19 +1628,10 @@ async function main() {
             console.error(
               `❌ Failed to delete response ${responseId}: ${result.error}`
             )
-          } else if (result === null) {
-            // Network/request error (caught in deleteResponseFromTypeform)
-            deletionResults.typeformResponses.failed++
-            deletionResults.typeformResponses.failures.push({
-              responseId,
-              formId,
-              reason: 'Network or request error (check logs above)',
-            })
-            console.error(
-              `❌ Failed to delete response ${responseId}: Network/request error`
-            )
           } else {
-            // Success
+            console.log(
+              `Successfully deleted response ${responseId} from form ${formId}`
+            )
             deletionResults.typeformResponses.successful++
           }
         } catch (error) {
