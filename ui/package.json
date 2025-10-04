@@ -13,7 +13,8 @@
     "lint": "next lint",
     "cy:open": "cypress open",
     "cy:run": "cypress run",
-    "cy:run-ct": "cypress run --component"
+    "cy:run-ct": "cypress run --component",
+    "cleanup:offchain-prune": "ts-node -r tsconfig-paths/register scripts/cleanup/offchain-prune.ts"
   },
   "dependencies": {
     "@arbitrum/sdk": "^3.3.3",

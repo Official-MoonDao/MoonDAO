@@ -304,9 +304,9 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 }
 
 //Projects Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/729
-//ProjectsArbitrum Hat Tree :
+//ProjectsArbitrum Hat Tree : https://app.hatsprotocol.xyz/trees/42161/70
 export const PROJECT_HAT_TREE_IDS: Index = {
-  arbitrum: '0x00000045',
+  arbitrum: '0x00000046',
   sepolia: '0x000002d9',
 }
 
