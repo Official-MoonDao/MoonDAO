@@ -61,6 +61,19 @@ const FinalistCardContent = memo(
                 >
                   <p className="text-[14px]">Video{!isMobile && ' Response'}</p>
                 </StandardButton>
+                <StandardButton
+                  className={`gradient-2 w-fit font-[14px] mr-4`}
+                  link={finalist?.writtenUrl}
+                  onClick={(e: any) => {
+                    e.stopPropagation()
+                  }}
+                  hoverEffect={false}
+                  target={'_blank'}
+                >
+                  <p className="text-[14px]">
+                    Written{!isMobile && ' Response'}
+                  </p>
+                </StandardButton>
               </div>
             </div>
           </div>

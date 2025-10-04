@@ -54,6 +54,12 @@ export default function ArtRocket({ distributions, finalists }: BaikonurProps) {
             project for MoonDAO, while joining an unforgettable trip to witness
             the Soyuz Art Rocket launch live at Baikonur Cosmodrome in
             Kazakhstan!
+            <br />
+            <br />
+            View finalists and vote for the candidate or candidates you believe
+            should get the chance to attend the launch. Distribute your voting
+            power (square root of vMOONEY balance) as a percentage between the
+            candidates. You can vote for multiple people.
           </p>
         }
         headerSize="max(20px, 3vw)"
@@ -241,72 +247,96 @@ export async function getStaticProps() {
         id: 0,
         name: 'Leandro Kästrup',
         videoUrl: 'https://www.instagram.com/p/DPRp-iDEayw/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.c5l9c171gzkc',
         citizenId: 150,
       },
       {
         id: 1,
         name: 'Faber Burgos Sarmiento',
         videoUrl: 'https://www.instagram.com/p/DPRxPNLkdnE/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.hblee6psc01c',
         citizenId: 63,
       },
       {
         id: 2,
         name: 'Moonshot',
         videoUrl: 'https://x.com/MaldivesSpace/status/1973493014791397493',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.wt59usbk25c',
         citizenId: 147,
       },
       {
         id: 3,
         name: 'justtheletterk',
         videoUrl: 'https://www.instagram.com/reel/DPSOyL6gZPQ/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.9khtknpviv64',
         citizenId: 103,
       },
       {
         id: 4,
         name: 'Jagriti',
         videoUrl: 'https://www.youtube.com/watch?v=8kvkhSaRS3o',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.5hmp6quo0uto',
         citizenId: 149,
       },
       {
         id: 5,
         name: 'AstroJuris',
         videoUrl: 'https://www.instagram.com/p/DPUViBWD2DQ/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.nc7z3lvjcs7n',
         citizenId: 95,
       },
       {
         id: 6,
         name: 'Julio Rezende',
         videoUrl: 'https://www.instagram.com/p/DPUD9dykY-2/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.4hpch123mot0',
         citizenId: 73,
       },
       {
         id: 7,
         name: 'Marina Freitas',
         videoUrl: 'https://www.instagram.com/p/DPUbU5qEb0G/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.ycs1v45b44f3',
         citizenId: 145,
       },
       {
         id: 8,
         name: 'William S. Rabelo',
         videoUrl: 'https://www.instagram.com/p/DPUcipYD5iH/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.ces2sgynmk1z',
         citizenId: 148,
       },
       {
         id: 9,
         name: 'AstroShoh',
         videoUrl: 'https://www.instagram.com/p/DPUjlmMjNvX/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.ctxlckmzj2ps',
         citizenId: 135,
       },
       {
         id: 10,
         name: 'Maria Alejandra Botero Botero',
         videoUrl: 'https://www.instagram.com/reel/DPU7YZoDYJs/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.j3ko2gimyimu',
         citizenId: 79,
       },
       {
         id: 11,
         name: 'Astronautgio',
         videoUrl: 'https://www.instagram.com/reel/DPVTPRtAT95/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.gewonlpcyzwa',
         citizenId: 24,
       },
       {
@@ -314,12 +344,16 @@ export async function getStaticProps() {
         name: 'florencepauline',
         videoUrl:
           'https://drive.google.com/open?id=1BRFf2Q5TJgLol7ngDEyRXR-T8L9SNnRu',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.z5eefp370lyb',
         citizenId: 133,
       },
       {
         id: 13,
         name: 'Bera S. Badareva',
         videoUrl: 'https://www.youtube.com/watch?v=-vcaeg2BvmA',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.xmg5v4svxoi4',
         citizenId: 151,
       },
     ]
