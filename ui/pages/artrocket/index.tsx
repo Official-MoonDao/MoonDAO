@@ -20,6 +20,7 @@ import WebsiteHead from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 export default function ArtRocket({ distributions, finalists }: BaikonurProps) {
+  const router = useRouter()
   return (
     <Container>
       <WebsiteHead
