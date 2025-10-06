@@ -407,7 +407,7 @@ export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
 
 // Shared across chains
 export const MISSION_CROSS_CHAIN_PAY_ADDRESS =
-  '0x0761D8CB98CAf0f6bcabbCdd19295bCe2E051cB8'
+  '0xa2ca498075Ec3a57cd1E407aFF88A495F838Bd5E'
 
 export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   [key: string]: number
