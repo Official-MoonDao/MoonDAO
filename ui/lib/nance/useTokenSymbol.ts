@@ -34,14 +34,10 @@ export function useTokenSymbol(address: string | undefined) {
           abi: ERC20ABI as any,
         })
 
-        console.log('contract', contract)
-
         const tokenSymbol = await readContract({
           contract,
           method: 'symbol',
         })
-
-        console.log('tokenSymbol', tokenSymbol)
 
         setValue(tokenSymbol)
       } catch (e: any) {
