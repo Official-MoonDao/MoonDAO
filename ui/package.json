@@ -42,6 +42,7 @@
     "@shutter-network/shutter-crypto": "1.0.1",
     "@snapshot-labs/snapshot.js": "^0.11.23",
     "@solana/web3.js": "^1.98.0",
+    "@synthetixio/synpress": "^4.1.1",
     "@tableland/sdk": "^7.2.1",
     "@tanstack/react-query": "^5.49.2",
     "@typeform/embed": "^4.5.0",
@@ -119,6 +120,7 @@
   "devDependencies": {
     "@bygdle/javascript-lp-solver": "^0.4.26",
     "@cypress/webpack-preprocessor": "^6.0.2",
+    "@playwright/test": "^1.56.0",
     "@tailwindcss/typography": "^0.5.16",
     "@trivago/prettier-plugin-sort-imports": "^3.2.0",
     "@types/ethereum-block-by-date": "^1.4.1",
