@@ -2,59 +2,60 @@ import CitizenABI from 'const/abis/Citizen.json'
 import TeamABI from 'const/abis/Team.json'
 import { TEAM_ADDRESSES, CITIZEN_ADDRESSES } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
-import {
-  getAllNetworkTransfers,
-  CitizenTransfer,
-  TeamTransfer,
-} from '@/lib/network/networkSubgraph'
+import { CitizenTransfer, TeamTransfer } from '@/lib/network/networkSubgraph'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { arbitrum } from '../infura/infuraChains'
 
 export interface ARRDataPoint {
   timestamp: number
-  arr: number
+  totalARR: number
   citizenARR: number
   teamARR: number
   ethPrice?: number
 }
 
-export interface ARRHistoryResult {
+export interface ARRResult {
   arrHistory: ARRDataPoint[]
   currentARR: number
   citizenARR: number
   teamARR: number
 }
 
-interface SubscriptionEvent {
+interface SANSubscription {
   timestamp: number
   type: 'citizen' | 'team'
-  annualValue: number // USD per year
+  annualValue: number
   tokenId: string
+}
+
+interface DeFiData {
+  balance: number
+  protocols: Array<{
+    investments: Array<{
+      poolAddress?: string
+    }>
+  }>
 }
 
 const TEAM_DISCOUNT = 0.067
 
 async function getEthPrice(): Promise<number> {
   try {
-    // For server-side rendering, directly call the Etherscan API
     const response = await fetch(
       `https://api.etherscan.io/v2/api?module=stats&action=ethprice&chainId=1&apikey=${process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY}`
     )
     const data = await response.json()
-    if (data.message !== 'OK') {
-      throw new Error('Failed to fetch ETH price')
-    }
+    if (data.message !== 'OK') throw new Error('Failed to fetch ETH price')
     const price = parseFloat(data.result?.ethusd)
     return isNaN(price) ? 0 : price
   } catch (error) {
     console.error('Failed to fetch ETH price:', error)
-    return 0 // Fallback price
+    return 0
   }
 }
 
-// Helper function to get price per second from contracts
-async function getContractPrices() {
+async function getSANContractPrices() {
   const chain = arbitrum
   const chainSlug = getChainSlug(chain)
 
@@ -74,18 +75,12 @@ async function getContractPrices() {
     })
 
     const [citizenPricePerSecond, teamPricePerSecond] = await Promise.all([
-      readContract({
-        contract: citizenContract,
-        method: 'pricePerSecond',
-      }),
-      readContract({
-        contract: teamContract,
-        method: 'pricePerSecond',
-      }),
+      readContract({ contract: citizenContract, method: 'pricePerSecond' }),
+      readContract({ contract: teamContract, method: 'pricePerSecond' }),
     ])
 
     const citizenPrice = Number(citizenPricePerSecond)
-    const teamPrice = Number(teamPricePerSecond) * TEAM_DISCOUNT // always apply discount to team price
+    const teamPrice = Number(teamPricePerSecond) * TEAM_DISCOUNT
 
     return {
       citizenPricePerSecond: isNaN(citizenPrice) ? 351978691 : citizenPrice,
@@ -94,28 +89,25 @@ async function getContractPrices() {
         : teamPrice,
     }
   } catch (error) {
-    console.error('Failed to fetch contract prices:', error)
-    // Fallback prices with discount already applied for teams
+    console.error('Failed to fetch SAN contract prices:', error)
     return {
-      citizenPricePerSecond: 351978691, // ~0.0111 ETH / year
-      teamPricePerSecond: 15854895991 * TEAM_DISCOUNT, // ~0.0333 ETH / year after discount
+      citizenPricePerSecond: 351978691,
+      teamPricePerSecond: 15854895991 * TEAM_DISCOUNT,
     }
   }
 }
 
-// Convert transfers to subscription events (each transfer = new subscription)
-function convertTransfersToEvents(
+function convertTransfersToSANSubscriptions(
   transfers: (CitizenTransfer | TeamTransfer)[],
   type: 'citizen' | 'team',
   pricePerSecond: number,
   ethPrice: number
-): SubscriptionEvent[] {
-  const events: SubscriptionEvent[] = []
+): SANSubscription[] {
+  const subscriptions: SANSubscription[] = []
 
   transfers.forEach((transfer, index) => {
     try {
-      const timestamp = parseInt(transfer.blockTimestamp) * 1000 // Convert to milliseconds
-
+      const timestamp = parseInt(transfer.blockTimestamp) * 1000
       if (isNaN(timestamp) || !transfer.blockTimestamp) {
         console.warn(
           `Invalid timestamp for ${type} transfer ${index}:`,
@@ -124,18 +116,15 @@ function convertTransfersToEvents(
         return
       }
 
-      // Calculate annual value: pricePerSecond * seconds per year * ETH price
-      const annualValueETH = (pricePerSecond * 365.25 * 24 * 60 * 60) / 1e18 // Convert to ETH
+      const annualValueETH = (pricePerSecond * 365.25 * 24 * 60 * 60) / 1e18
       const annualValueUSD = annualValueETH * ethPrice
 
-      const event: SubscriptionEvent = {
+      subscriptions.push({
         timestamp,
         type,
         annualValue: annualValueUSD,
         tokenId: transfer.tokenId,
-      }
-
-      events.push(event)
+      })
     } catch (error) {
       console.warn(
         `Error processing ${type} transfer ${index}:`,
@@ -145,13 +134,12 @@ function convertTransfersToEvents(
     }
   })
 
-  return events
+  return subscriptions
 }
 
-// Calculate cumulative ARR at a specific timestamp
-function calculateCumulativeARR(
+function calculateSANARRAtTimestamp(
   timestamp: number,
-  allEvents: SubscriptionEvent[]
+  subscriptions: SANSubscription[]
 ): {
   totalARR: number
   citizenARR: number
@@ -164,14 +152,13 @@ function calculateCumulativeARR(
   let citizenCount = 0
   let teamCount = 0
 
-  // Sum up all subscriptions that started before or at this timestamp
-  allEvents.forEach((event) => {
-    if (event.timestamp <= timestamp) {
-      if (event.type === 'citizen') {
-        citizenARR += event.annualValue
+  subscriptions.forEach((subscription) => {
+    if (subscription.timestamp <= timestamp) {
+      if (subscription.type === 'citizen') {
+        citizenARR += subscription.annualValue
         citizenCount++
       } else {
-        teamARR += event.annualValue
+        teamARR += subscription.annualValue
         teamCount++
       }
     }
@@ -186,22 +173,14 @@ function calculateCumulativeARR(
   }
 }
 
-// New function that accepts transfer data as parameters
-export async function calculateARRFromTransfers(
+export async function getHistoricalARR(
   citizenTransfers: CitizenTransfer[],
   teamTransfers: TeamTransfer[],
+  defiData: DeFiData,
   days: number = 365
-): Promise<ARRHistoryResult> {
+): Promise<ARRResult> {
   try {
-    console.log('Starting ARR calculation with provided transfers...')
-
-    console.log(
-      `Found ${citizenTransfers.length} citizen transfers and ${teamTransfers.length} team transfers`
-    )
-
-    // If no transfers, return empty result
     if (citizenTransfers.length === 0 && teamTransfers.length === 0) {
-      console.log('No transfers found, returning empty ARR data')
       return {
         arrHistory: [],
         currentARR: 0,
@@ -211,7 +190,6 @@ export async function calculateARRFromTransfers(
     }
 
     if (citizenTransfers.length < 148 || teamTransfers.length < 18) {
-      console.log('Not enough transfers found, returning empty ARR data')
       return {
         arrHistory: [],
         currentARR: 0,
@@ -220,14 +198,12 @@ export async function calculateARRFromTransfers(
       }
     }
 
-    // Get contract prices and ETH price
     const [contractPrices, ethPrice] = await Promise.all([
-      getContractPrices(),
+      getSANContractPrices(),
       getEthPrice(),
     ])
 
     if (ethPrice === 0) {
-      console.log('ETH price is 0, returning empty ARR data')
       return {
         arrHistory: [],
         currentARR: 0,
@@ -236,69 +212,53 @@ export async function calculateARRFromTransfers(
       }
     }
 
-    // Convert transfers to subscription events
-    const citizenEvents = convertTransfersToEvents(
+    const citizenSubscriptions = convertTransfersToSANSubscriptions(
       citizenTransfers,
       'citizen',
       contractPrices.citizenPricePerSecond,
       ethPrice
     )
 
-    const teamEvents = convertTransfersToEvents(
+    const teamSubscriptions = convertTransfersToSANSubscriptions(
       teamTransfers,
       'team',
       contractPrices.teamPricePerSecond,
       ethPrice
     )
 
-    const allEvents = [...citizenEvents, ...teamEvents]
-    // Sort events by timestamp
-    allEvents.sort((a, b) => a.timestamp - b.timestamp)
+    const allSubscriptions = [...citizenSubscriptions, ...teamSubscriptions]
+    allSubscriptions.sort((a, b) => a.timestamp - b.timestamp)
 
-    console.log(
-      `Total subscription events: ${allEvents.length} (${citizenEvents.length} citizens, ${teamEvents.length} teams)`
-    )
-
-    // Generate ARR history data points
     const arrHistory: ARRDataPoint[] = []
     const endDate = new Date()
     const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000)
 
-    // Generate weekly data points
     for (
       let date = new Date(startDate);
       date <= endDate;
       date.setDate(date.getDate() + 7)
     ) {
       const timestamp = date.getTime()
-      const arrData = calculateCumulativeARR(timestamp, allEvents)
+      const arrData = calculateSANARRAtTimestamp(timestamp, allSubscriptions)
 
       arrHistory.push({
         timestamp: timestamp,
-        arr: arrData.totalARR,
+        totalARR: arrData.totalARR,
         citizenARR: arrData.citizenARR,
         teamARR: arrData.teamARR,
         ethPrice,
       })
 
-      // Log significant milestones
-      if (
-        arrData.totalARR > 0 &&
-        (arrData.citizenCount + arrData.teamCount) % 10 === 0
-      ) {
-        console.log(
-          `Week ${
-            date.toISOString().split('T')[0]
-          }: Total ARR=$${arrData.totalARR.toFixed(0)}, Subscribers: ${
-            arrData.citizenCount + arrData.teamCount
-          } (${arrData.citizenCount} citizens, ${arrData.teamCount} teams)`
-        )
-      }
+      console.log(
+        `ARR History Point: totalARR=${arrData.totalARR}, citizenARR=${arrData.citizenARR}, teamARR=${arrData.teamARR}`
+      )
     }
 
-    // Calculate current ARR
     const currentTimestamp = Date.now()
-    const currentARRData = calculateCumulativeARR(currentTimestamp, allEvents)
+    const currentARRData = calculateSANARRAtTimestamp(
+      currentTimestamp,
+      allSubscriptions
+    )
 
     return {
       arrHistory,
@@ -307,88 +267,12 @@ export async function calculateARRFromTransfers(
       teamARR: currentARRData.teamARR,
     }
   } catch (error) {
-    console.error('Failed to calculate ARR from transfers:', error)
-
-    // Return fallback data
+    console.error('Failed to calculate SAN ARR:', error)
     return {
       arrHistory: [],
       currentARR: 0,
       citizenARR: 0,
       teamARR: 0,
     }
-  }
-}
-
-// Original function that fetches its own data (for backward compatibility)
-export async function getARRHistoryFromSubgraph(
-  days: number = 365
-): Promise<ARRHistoryResult> {
-  try {
-    console.log('Starting ARR calculation from subgraph...')
-
-    // Get all transfers from subgraph
-    const { citizenTransfers, teamTransfers } = await getAllNetworkTransfers()
-
-    return calculateARRFromTransfers(citizenTransfers, teamTransfers, days)
-  } catch (error) {
-    console.error('Failed to calculate ARR from subgraph:', error)
-
-    // Return fallback data
-    return {
-      arrHistory: [],
-      currentARR: 0,
-      citizenARR: 0,
-      teamARR: 0,
-    }
-  }
-}
-
-// Enhanced function that provides more detailed analytics
-export async function getDetailedARRAnalytics(days: number = 365) {
-  const result = await getARRHistoryFromSubgraph(days)
-
-  try {
-    const { citizenTransfers, teamTransfers } = await getAllNetworkTransfers()
-
-    const citizenTotal =
-      citizenTransfers.reduce((sum, t) => sum + parseFloat(t.ethValue), 0) /
-      1e18
-    const teamTotal =
-      teamTransfers.reduce((sum, t) => sum + parseFloat(t.ethValue), 0) / 1e18
-
-    return {
-      ...result,
-      analytics: {
-        totalCitizenTransfers: citizenTransfers.length,
-        totalTeamTransfers: teamTransfers.length,
-        totalRevenue: {
-          citizen: citizenTotal,
-          team: teamTotal,
-          combined: citizenTotal + teamTotal,
-        },
-        averageTransactionValue: {
-          citizen:
-            citizenTransfers.length > 0
-              ? citizenTotal / citizenTransfers.length
-              : 0,
-          team: teamTransfers.length > 0 ? teamTotal / teamTransfers.length : 0,
-        },
-        growth: {
-          weeklyGrowthRate:
-            result.arrHistory.length > 1
-              ? ((result.arrHistory[result.arrHistory.length - 1].arr -
-                  result.arrHistory[result.arrHistory.length - 2].arr) /
-                  Math.max(
-                    result.arrHistory[result.arrHistory.length - 2].arr,
-                    1
-                  )) *
-                100
-              : 0,
-        },
-      },
-    }
-  } catch (error) {
-    console.error('Failed to calculate analytics:', error)
-    return result
   }
 }

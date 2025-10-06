@@ -17,12 +17,12 @@ export function ARRChart({
   isLoading = false,
   defaultRange,
 }: ARRChartProps) {
-  // Transform ARR data to LineChart format
   // Convert timestamps from milliseconds to seconds for LineChart compatibility
   const chartData: LineChartData[] =
     data?.map((point) => ({
-      timestamp: Math.floor(point.timestamp / 1000), // Convert to seconds
-      arr: Math.round(point.arr), // Round to nearest dollar for cleaner display
+      timestamp: Math.floor(point.timestamp / 1000),
+      subscriptionARR: Math.round(point.citizenARR + point.teamARR),
+      totalARR: Math.round(point.totalARR),
     })) || []
 
   return (
@@ -34,11 +34,11 @@ export function ARRChart({
       defaultRange={defaultRange}
       config={{
         timestampField: 'timestamp',
-        valueField: 'arr',
+        valueField: 'totalARR',
         dataProcessing: 'direct',
         labels: {
           title: 'Estimated Annual Recurring Revenue',
-          valueLabel: compact ? '' : 'USD', // Hide label in compact mode
+          valueLabel: compact ? '' : 'USD',
           emptyMessage: 'No ARR Data',
         },
         styling: {
