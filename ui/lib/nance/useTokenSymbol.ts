@@ -41,6 +41,7 @@ export function useTokenSymbol(address: string | undefined) {
 
         setValue(tokenSymbol)
       } catch (e: any) {
+        console.log('error', e)
         setError(e.message || e.reason)
       } finally {
         setIsLoading(false)

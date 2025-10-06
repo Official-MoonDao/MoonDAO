@@ -1,5 +1,5 @@
 import { useProposals } from '@nance/nance-hooks'
-import { ProposalsPacket } from '@nance/nance-sdk'
+import { ProposalsPacket, getActionsFromBody } from '@nance/nance-sdk'
 import {
   BooleanParam,
   NumberParam,
@@ -32,7 +32,20 @@ export default function useNewestProposals(proposalLimit: number) {
     router.isReady
   )
 
-  const proposals = proposalData?.data.proposals
+  // Process proposals to extract actions from body if not already present
+  const proposals = useMemo(() => {
+    if (!proposalData?.data.proposals) return undefined
+    
+    return proposalData.data.proposals.map((p: any) => {
+      return {
+        ...p,
+        actions:
+          p.actions && p.actions.length > 0
+            ? p.actions
+            : getActionsFromBody(p.body) || [],
+      }
+    })
+  }, [proposalData])
 
   const packet = useMemo(() => {
     return {
