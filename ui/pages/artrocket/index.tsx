@@ -1,12 +1,26 @@
-import { IPFS_GATEWAY } from 'const/config'
+import {
+  IPFS_GATEWAY,
+  CITIZEN_TABLE_NAMES,
+  DEFAULT_CHAIN_V5,
+  VOTES_TABLE_NAMES,
+  BAIKONUR_VOTE_ID,
+} from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { arbitrum } from '@/lib/infura/infuraChains'
+import queryTable from '@/lib/tableland/queryTable'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { Baikonur, BaikonurProps } from '@/components/baikonur/Baikonur'
+import { Finalist } from '@/components/baikonur/Finalist'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import WebsiteHead from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
-export default function ArtRocket() {
+export default function ArtRocket({ distributions, finalists }: BaikonurProps) {
+  const router = useRouter()
   return (
     <Container>
       <WebsiteHead
@@ -41,6 +55,12 @@ export default function ArtRocket() {
             project for MoonDAO, while joining an unforgettable trip to witness
             the Soyuz Art Rocket launch live at Baikonur Cosmodrome in
             Kazakhstan!
+            <br />
+            <br />
+            View finalists and vote for the candidate or candidates you believe
+            should get the chance to attend the launch. Distribute your voting
+            power (square root of vMOONEY balance) as a percentage between the
+            candidates. You can vote for multiple people.
           </p>
         }
         headerSize="max(20px, 3vw)"
@@ -50,6 +70,11 @@ export default function ArtRocket() {
         popOverEffect={false}
         isProfile
       >
+        <Baikonur
+          finalists={finalists}
+          distributions={distributions}
+          refresh={() => router.reload()}
+        />
         <div className="space-y-6">
           <div className="space-y-6">
             <section className="bg-gradient-to-br from-gray-900/40 via-blue-900/20 to-purple-900/10 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:border-white/20 transition-all duration-300">
@@ -207,4 +232,161 @@ export default function ArtRocket() {
       </ContentLayout>
     </Container>
   )
+}
+
+export async function getStaticProps() {
+  try {
+    const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
+    const prodChain = arbitrum
+    const prodChainSlug = getChainSlug(prodChain)
+
+    const distributionStatement = `SELECT * FROM ${VOTES_TABLE_NAMES[chainSlug]} WHERE voteId = ${BAIKONUR_VOTE_ID}`
+    const distributions = await queryTable(chain, distributionStatement)
+    let finalists: Finalist[] = [
+      {
+        id: 0,
+        name: 'Leandro Kästrup',
+        videoUrl: 'https://www.instagram.com/p/DPRp-iDEayw/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.c5l9c171gzkc',
+        citizenId: 150,
+      },
+      {
+        id: 1,
+        name: 'Faber Burgos Sarmiento',
+        videoUrl: 'https://www.instagram.com/p/DPRxPNLkdnE/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.hblee6psc01c',
+        citizenId: 63,
+      },
+      {
+        id: 2,
+        name: 'Moonshot',
+        videoUrl: 'https://x.com/MaldivesSpace/status/1973493014791397493',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.wt59usbk25c',
+        citizenId: 147,
+      },
+      {
+        id: 3,
+        name: 'justtheletterk',
+        videoUrl: 'https://www.instagram.com/reel/DPSOyL6gZPQ/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.9khtknpviv64',
+        citizenId: 103,
+      },
+      {
+        id: 4,
+        name: 'Jagriti',
+        videoUrl: 'https://www.youtube.com/watch?v=8kvkhSaRS3o',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.5hmp6quo0uto',
+        citizenId: 149,
+      },
+      {
+        id: 5,
+        name: 'AstroJuris',
+        videoUrl: 'https://www.instagram.com/p/DPUViBWD2DQ/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.nc7z3lvjcs7n',
+        citizenId: 95,
+      },
+      {
+        id: 6,
+        name: 'Julio Rezende',
+        videoUrl: 'https://www.instagram.com/p/DPUD9dykY-2/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.4hpch123mot0',
+        citizenId: 73,
+      },
+      {
+        id: 7,
+        name: 'Marina Freitas',
+        videoUrl: 'https://www.instagram.com/p/DPUbU5qEb0G/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.ycs1v45b44f3',
+        citizenId: 145,
+      },
+      {
+        id: 8,
+        name: 'William S. Rabelo',
+        videoUrl: 'https://www.instagram.com/p/DPUcipYD5iH/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.ces2sgynmk1z',
+        citizenId: 148,
+      },
+      {
+        id: 9,
+        name: 'AstroShoh',
+        videoUrl: 'https://www.instagram.com/p/DPUjlmMjNvX/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.ctxlckmzj2ps',
+        citizenId: 135,
+      },
+      {
+        id: 10,
+        name: 'Maria Alejandra Botero Botero',
+        videoUrl: 'https://www.instagram.com/reel/DPU7YZoDYJs/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.j3ko2gimyimu',
+        citizenId: 79,
+      },
+      {
+        id: 11,
+        name: 'Astronautgio',
+        videoUrl: 'https://www.instagram.com/reel/DPVTPRtAT95/',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.gewonlpcyzwa',
+        citizenId: 24,
+      },
+      {
+        id: 12,
+        name: 'florencepauline',
+        videoUrl:
+          'https://drive.google.com/open?id=1BRFf2Q5TJgLol7ngDEyRXR-T8L9SNnRu',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.z5eefp370lyb',
+        citizenId: 133,
+      },
+      {
+        id: 13,
+        name: 'Bera S. Badareva',
+        videoUrl: 'https://www.youtube.com/watch?v=-vcaeg2BvmA',
+        writtenUrl:
+          'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.xmg5v4svxoi4',
+        citizenId: 151,
+      },
+    ]
+    const statement = `SELECT * FROM ${
+      CITIZEN_TABLE_NAMES[prodChainSlug]
+    } WHERE id IN (${finalists
+      .map((finalist) => finalist.citizenId)
+      .join(',')})`
+    const allCitizens = (await queryTable(prodChain, statement)) as any
+
+    finalists.forEach((finalist) => {
+      const citizen = allCitizens.find(
+        (citizen: any) => +citizen.id === finalist.citizenId
+      )
+      finalist.address = citizen.owner
+      finalist.image = citizen.image
+    })
+    return {
+      props: {
+        distributions,
+        finalists,
+      },
+      revalidate: 60,
+    }
+  } catch (error) {
+    console.error('Error fetching distributions:', error)
+    return {
+      props: {
+        distributions: [],
+        finalists: [],
+      },
+      revalidate: 60,
+    }
+  }
 }
