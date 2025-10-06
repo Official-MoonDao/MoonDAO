@@ -28,7 +28,7 @@ export default function MarketplaceListing({
 
   useEffect(() => {
     async function fetchTeamNFT() {
-      if (!teamContract || !listing.teamId) return
+      if (!teamContract || listing.teamId === undefined) return
 
       setIsLoadingNFT(true)
       setNftError(null)
@@ -68,9 +68,7 @@ export default function MarketplaceListing({
     e.stopPropagation()
     router.push(
       `/team/${
-        teamNFT?.metadata?.name
-          ? generatePrettyLink(teamNFT.metadata.name)
-          : listing.teamId
+        listing.teamName ? generatePrettyLink(listing.teamName) : listing.teamId
       }`
     )
   }
@@ -85,7 +83,7 @@ export default function MarketplaceListing({
               className="text-slate-300 hover:underline transition-colors text-left text-sm"
               onClick={handleTeamClick}
             >
-              {teamNFT?.metadata?.name || `Team ${listing.teamId}`}
+              {listing.teamName || `Team ${listing.teamId}`}
             </button>
           }
           paragraph={listing.description}

@@ -4,6 +4,7 @@ import {
   DEFAULT_CHAIN_V5,
   MARKETPLACE_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
+  TEAM_TABLE_NAMES,
 } from 'const/config'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
@@ -230,9 +231,22 @@ export async function getStaticProps() {
       return +teamExpiration.toString() > now
     })
 
+    const allTeamNames = await queryTable(
+      chain,
+      `SELECT id, name FROM ${TEAM_TABLE_NAMES[chainSlug]}`
+    )
+
+    const listingsWithTeamNames = validListings.map((listing: any) => {
+      return {
+        ...listing,
+        teamName: allTeamNames.find((team: any) => team.id === listing.teamId)
+          ?.name,
+      }
+    })
+
     return {
       props: {
-        listings: validListings,
+        listings: listingsWithTeamNames,
       },
       revalidate: 60,
     }
