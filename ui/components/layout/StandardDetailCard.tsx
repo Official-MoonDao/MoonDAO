@@ -1,12 +1,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { truncateTokenValue } from '@/lib/utils/numbers'
 import Frame from '@/components/layout/Frame'
 import IPFSRenderer from './IPFSRenderer'
-import { truncateTokenValue } from '@/lib/utils/numbers'
 
 type StandardDetailCardProps = {
   title?: string
+  subheader?: any
   paragraph?: string
   image?: string
   link?: string
@@ -18,6 +19,7 @@ type StandardDetailCardProps = {
 
 export default function StandardDetailCard({
   title,
+  subheader,
   paragraph,
   image,
   link,
@@ -43,16 +45,17 @@ export default function StandardDetailCard({
         )}
         <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
           <div>
-            <h1 className="font-bold font-GoodTimes text-xl text-white mb-3 break-words group-hover:text-slate-200 transition-colors text-left">
+            <h1 className="font-bold font-GoodTimes text-xl text-white break-words group-hover:text-slate-200 transition-colors text-left">
               {title}
             </h1>
+            <div className="break-words text-left mb-3">{subheader}</div>
             <p className="text-sm text-slate-300 leading-relaxed break-words text-left">
               {paragraph && paragraph?.length > 200
                 ? paragraph.slice(0, 200) + '...'
                 : paragraph}
             </p>
           </div>
-          
+
           {/* Pricing Information */}
           {price && currency && (
             <div className="mt-3 text-sm">
@@ -67,7 +70,10 @@ export default function StandardDetailCard({
                   </p>
                   {isCitizen && (
                     <p className="line-through text-xs opacity-70 text-slate-400">
-                      {`${truncateTokenValue(+price * 1.1, currency)} ${currency}`}
+                      {`${truncateTokenValue(
+                        +price * 1.1,
+                        currency
+                      )} ${currency}`}
                     </p>
                   )}
                 </div>
@@ -104,9 +110,7 @@ export default function StandardDetailCard({
           {CardContent}
         </Link>
       ) : (
-        <div className="w-full h-full">
-          {CardContent}
-        </div>
+        <div className="w-full h-full">{CardContent}</div>
       )}
     </div>
   )
