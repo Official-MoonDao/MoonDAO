@@ -7,7 +7,7 @@ import {
   PROJECT_TABLE_NAMES,
   DISTRIBUTION_TABLE_NAMES,
 } from 'const/config'
-import { blockedProjects } from 'const/whitelist'
+import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
 import queryTable from '@/lib/tableland/queryTable'
@@ -52,7 +52,7 @@ export async function getStaticProps() {
     const currentProjects = []
     const pastProjects = []
     for (let i = 0; i < projects.length; i++) {
-      if (!blockedProjects.includes(projects[i].id)) {
+      if (!BLOCKED_PROJECTS.has(projects[i].id)) {
         const current = projects[i].active
         if (!current) {
           pastProjects.push(projects[i])

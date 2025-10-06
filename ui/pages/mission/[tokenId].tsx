@@ -16,7 +16,7 @@ import {
   MISSION_TABLE_NAMES,
   TEAM_ADDRESSES,
 } from 'const/config'
-import { blockedMissions } from 'const/whitelist'
+import { BLOCKED_MISSIONS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
@@ -173,7 +173,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
     const missionRow = missionRows?.[0]
 
-    if (!missionRow || blockedMissions.includes(Number(tokenId))) {
+    if (!missionRow || BLOCKED_MISSIONS.has(Number(tokenId))) {
       return {
         notFound: true,
       }

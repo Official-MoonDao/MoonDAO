@@ -1,6 +1,6 @@
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES, CITIZEN_TABLE_NAMES } from 'const/config'
-import { blockedCitizens } from 'const/whitelist'
+import { BLOCKED_CITIZENS } from 'const/whitelist'
 import { getContract, NFT, readContract } from 'thirdweb'
 import { arbitrum } from '@/lib/infura/infuraChains'
 import { CitizenRow, citizenRowToNFT } from '@/lib/tableland/convertRow'
@@ -12,25 +12,25 @@ import { getAttribute } from '@/lib/utils/nft'
 // Function to extract country from formatted address
 function extractCountryFromAddress(formattedAddress: string): string {
   if (!formattedAddress) return 'Unknown'
-  
+
   // Handle special case of Antarctica
   if (formattedAddress === 'Antarctica') return 'Antarctica'
-  
+
   // Split by comma and get the last part, which is typically the country
-  const parts = formattedAddress.split(',').map(part => part.trim())
+  const parts = formattedAddress.split(',').map((part) => part.trim())
   if (parts.length === 0) return 'Unknown'
-  
+
   // Return the last part as the country
   const country = parts[parts.length - 1]
-  
+
   // Handle common country code mappings
   const countryMappings: { [key: string]: string } = {
-    'USA': 'United States',
-    'US': 'United States',
-    'UK': 'United Kingdom',
-    'UAE': 'United Arab Emirates'
+    USA: 'United States',
+    US: 'United States',
+    UK: 'United Kingdom',
+    UAE: 'United Arab Emirates',
   }
-  
+
   return countryMappings[country] || country
 }
 
@@ -54,10 +54,11 @@ export async function getCitizensLocationData() {
 
       const citizens: NFT[] = []
       const citizenStatement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`
-      const citizenRows = await queryTable(chain, citizenStatement)
+      const citizenRows: any = await queryTable(chain, citizenStatement)
 
       for (const citizen of citizenRows) {
-        citizens.push(citizenRowToNFT(citizen as CitizenRow))
+        if (!BLOCKED_CITIZENS.has(citizen.id))
+          citizens.push(citizenRowToNFT(citizen as CitizenRow))
       }
 
       const filteredValidCitizens = citizens.filter(async (c: any) => {
@@ -71,7 +72,7 @@ export async function getCitizensLocationData() {
         return (
           +expiresAt.toString() > now &&
           view === 'public' &&
-          !blockedCitizens.includes(c.metadata.id)
+          !BLOCKED_CITIZENS.has(c.metadata.id)
         )
       })
 

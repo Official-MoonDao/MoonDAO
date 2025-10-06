@@ -11,7 +11,7 @@ import {
   PROJECT_CREATOR_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
 } from 'const/config'
-import { blockedProjects } from 'const/whitelist'
+import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -360,7 +360,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const projects = await queryTable(chain, statement)
   const project = projects[0]
 
-  if (!project || blockedProjects.includes(Number(tokenId))) {
+  if (!project || BLOCKED_PROJECTS.has(Number(tokenId))) {
     return {
       notFound: true,
     }

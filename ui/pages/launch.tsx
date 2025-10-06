@@ -18,7 +18,7 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { LAUNCHPAD_WHITELISTED_CITIZENS } from 'const/missions'
-import { blockedMissions } from 'const/whitelist'
+import { BLOCKED_MISSIONS } from 'const/whitelist'
 import { GetStaticProps, GetStaticPropsResult } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -1319,7 +1319,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
     const missionRows = await queryTable(chain, statement)
 
     const filteredMissionRows = missionRows.filter((mission) => {
-      return !blockedMissions.includes(mission.id) && mission && mission.id
+      return !BLOCKED_MISSIONS.has(mission.id) && mission && mission.id
     })
 
     const jbV5ControllerContract = getContract({

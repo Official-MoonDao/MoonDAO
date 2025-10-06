@@ -35,10 +35,9 @@ import {
   PROJECT_TABLE_NAMES,
   TEAM_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
+
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
 } from 'const/config'
-import { blockedTeams, featuredTeams } from 'const/whitelist'
-import { blockedProjects } from 'const/whitelist'
 import { BigNumber } from 'ethers'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
@@ -76,6 +75,7 @@ import { getBudget } from '@/lib/utils/rewards'
 import { daysUntilTimestamp } from '@/lib/utils/timestamp'
 import { ARRChart } from '@/components/dashboard/treasury/ARRChart'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
+import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
 import ChartModal from '@/components/layout/ChartModal'
 import Container from '@/components/layout/Container'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
@@ -88,7 +88,6 @@ import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
 import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import CitizensChart from '@/components/subscription/CitizensChart'
-import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
