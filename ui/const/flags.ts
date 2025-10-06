@@ -1,10 +1,8 @@
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
-export const PAGE_FLAGS =
-  process.env.NEXT_PUBLIC_ENV === 'dev'
-    ? []
-    : ['/launch', '/mission', '/missions']
+export const PAGE_FLAGS: string[] =
+  process.env.NEXT_PUBLIC_ENV === 'dev' ? [] : []
 
 export function FlagProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
