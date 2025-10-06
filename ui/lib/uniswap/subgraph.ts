@@ -39,10 +39,18 @@ export type PoolSubgraphQueryData = {
   chain: string
 }
 
+export interface PoolDayData {
+  date: number
+  tvlUSD: string
+  feesUSD: string
+  volumeUSD: string
+  pool: { id: string }
+}
+
 export async function getUniswapHistoricalPoolData(
   pools: PoolSubgraphQueryData[],
   days: number
-) {
+): Promise<PoolDayData[]> {
   const query = `
     query PoolDailyContext(
         $pools: [String!]!,
@@ -70,6 +78,8 @@ export async function getUniswapHistoricalPoolData(
   const dateFrom = Math.floor(Date.now() / 1000) - days * 24 * 60 * 60
   const dateTo = Math.floor(Date.now() / 1000)
 
+  let allPoolData: PoolDayData[] = []
+
   try {
     const ethRes = await ethSubgraphClient
       .query(query, {
@@ -81,8 +91,9 @@ export async function getUniswapHistoricalPoolData(
       })
       .toPromise()
 
-    const ethData = ethRes?.data
-    console.log('UNISWAP V3 ETH DATA', ethData)
+    if (ethRes?.data?.poolDayDatas) {
+      allPoolData = [...allPoolData, ...ethRes.data.poolDayDatas]
+    }
   } catch (error) {
     console.error('Error fetching Uniswap V3 ETH subgraph data:', error)
   }
@@ -98,9 +109,12 @@ export async function getUniswapHistoricalPoolData(
       })
       .toPromise()
 
-    const polygonData = polygonRes?.data
-    console.log('UNISWAP V3 POLYGON DATA', polygonData)
+    if (polygonRes?.data?.poolDayDatas) {
+      allPoolData = [...allPoolData, ...polygonRes.data.poolDayDatas]
+    }
   } catch (error) {
     console.error('Error fetching Uniswap V3 POLYGON subgraph data:', error)
   }
+
+  return allPoolData
 }
