@@ -1,29 +1,13 @@
 import { GlobeAmericasIcon, MoonIcon } from '@heroicons/react/24/outline'
-import CitizenABI from 'const/abis/Citizen.json'
-import {
-  CITIZEN_ADDRESSES,
-  CITIZEN_TABLE_NAMES,
-  DEFAULT_CHAIN_V5,
-} from 'const/config'
-import { blockedCitizens } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { getContract, NFT, readContract } from 'thirdweb'
-import { arbitrum } from '@/lib/infura/infuraChains'
 import { getCitizensLocationData } from '@/lib/map'
-import { CitizenRow, citizenRowToNFT } from '@/lib/tableland/convertRow'
-import queryTable from '@/lib/tableland/queryTable'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
-import { getAttribute } from '@/lib/utils/nft'
 import IconOrg from '@/components/assets/IconOrg'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
-import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import StandardButton from '@/components/layout/StandardButton'
 import Tab from '@/components/layout/Tab'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
