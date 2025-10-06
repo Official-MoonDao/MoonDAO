@@ -1,5 +1,5 @@
 import { arbitrum, sepolia, arbitrumSepolia } from '../lib/infura/infuraChains'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getChainSlug } from '../lib/thirdweb/chain'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -179,6 +179,7 @@ export const VOTES_TABLE_NAMES: Index = {
   sepolia: 'Votes_11155111_1971',
 }
 export const WBA_VOTE_ID = 0
+export const BAIKONUR_VOTE_ID = 1
 export const VOTING_ESCROW_DEPOSITOR_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.VotingEscrowDepositor,
   sepolia: sepoliaConfig.VotingEscrowDepositor,
@@ -304,9 +305,9 @@ export const MOONDAO_HAT_TREE_IDS: Index = {
 }
 
 //Projects Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/729
-//ProjectsArbitrum Hat Tree :
+//ProjectsArbitrum Hat Tree : https://app.hatsprotocol.xyz/trees/42161/70
 export const PROJECT_HAT_TREE_IDS: Index = {
-  arbitrum: '0x00000045',
+  arbitrum: '0x00000046',
   sepolia: '0x000002d9',
 }
 
@@ -406,7 +407,7 @@ export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
 
 // Shared across chains
 export const MISSION_CROSS_CHAIN_PAY_ADDRESS =
-  '0x0761D8CB98CAf0f6bcabbCdd19295bCe2E051cB8'
+  '0xa2ca498075Ec3a57cd1E407aFF88A495F838Bd5E'
 
 export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   [key: string]: number

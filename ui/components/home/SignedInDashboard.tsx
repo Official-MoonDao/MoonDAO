@@ -91,38 +91,117 @@ import CitizensChart from '@/components/subscription/CitizensChart'
 import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
+import ProposalList from '../nance/ProposalList'
 import Quests from '../xp/Quests'
 
 // import Quests from '@/components/xp/Quests'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
-// Function to extract ETH amount from proposal actions
-function getTokensFromProposal(
-  actions: Action[] | undefined
-): JSX.Element | string {
-  if (!actions) return 'No funding'
-
-  const transferMap: { [key: string]: number } = {}
-  actions
-    .filter((action) => action.type === 'Request Budget')
-    .flatMap((action) => (action.payload as RequestBudget).budget)
-    .forEach(
-      (transfer) =>
-        (transferMap[transfer.token] =
-          (transferMap[transfer.token] || 0) + Number(transfer.amount))
-    )
-
-  if (Object.entries(transferMap).length === 0) return 'No funding'
-
-  return <TokensOfProposal actions={actions} />
-}
-
 function getDaysLeft(proposal: any): number {
   if (proposal?.end) {
     return daysUntilTimestamp(proposal.end)
   }
   return 0
+}
+
+// Function to get the proper status display for a proposal
+function getProposalStatusDisplay(
+  proposal: any,
+  votingInfo: any,
+  daysLeft: number
+): string {
+  // If we have voting info from Snapshot, use it for more accurate status
+  if (votingInfo) {
+    if (votingInfo.state === 'active') {
+      return `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left to vote`
+    } else if (votingInfo.state === 'closed') {
+      return 'Voting closed'
+    }
+  }
+
+  // Fall back to proposal status
+  switch (proposal.status) {
+    case 'Temperature Check':
+      return 'Temperature Check'
+    case 'Voting':
+      return daysLeft > 0
+        ? `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left to vote`
+        : 'Voting closed'
+    case 'Discussion':
+      return 'In Discussion'
+    case 'Approved':
+      return 'Approved'
+    case 'Cancelled':
+      return 'Cancelled'
+    case 'Archived':
+      return 'Archived'
+    default:
+      return proposal.status || 'Unknown status'
+  }
+}
+
+// Function to determine if a proposal has requested funding
+function getProposalFundingDisplay(proposal: any): JSX.Element | string {
+  // Try to parse budget from table format as fallback
+  let budgetFromTable: { amount: number; token: string }[] = []
+  if (proposal.body && proposal.actions?.length === 0) {
+    // Look for table with Transaction Type, Amount, Token Type pattern
+    // More flexible regex to handle various table formats
+    const tablePattern =
+      /\|\s*Transaction Type[^|]*\|\s*Amount[^|]*\|\s*Token Type[^|]*\|[\s\S]*?\|\s*Send[^|]*\|\s*\$?([0-9,]+)[^|]*\|\s*([A-Z]+)[^|]*\|/i
+    const tableMatch = proposal.body.match(tablePattern)
+
+    if (tableMatch) {
+      const amountStr = tableMatch[1].replace(/,/g, '')
+      const amount = parseFloat(amountStr)
+      const token = tableMatch[2].trim()
+      budgetFromTable = [{ amount, token }]
+    } else {
+      // Try alternative patterns for different table formats
+      const altPattern =
+        /\|\s*Send[^|]*\|\s*\$?([0-9,]+)[^|]*\|\s*([A-Z]+)[^|]*\|/i
+      const altMatch = proposal.body.match(altPattern)
+
+      if (altMatch) {
+        const amountStr = altMatch[1].replace(/,/g, '')
+        const amount = parseFloat(amountStr)
+        const token = altMatch[2].trim()
+        budgetFromTable = [{ amount, token }]
+      }
+    }
+  }
+
+  // Check if there are any budget request actions or parsed table data
+  if (
+    (!proposal.actions || proposal.actions.length === 0) &&
+    budgetFromTable.length === 0
+  ) {
+    return 'No funding requested'
+  }
+
+  const budgetActions =
+    proposal.actions?.filter(
+      (action: any) => action.type === 'Request Budget'
+    ) || []
+
+  // If we have budget actions, use the existing TokensOfProposal component
+  if (budgetActions.length > 0) {
+    return <TokensOfProposal actions={proposal.actions} />
+  }
+
+  // If we only have table-parsed budget, create mock actions for TokensOfProposal
+  if (budgetFromTable.length > 0) {
+    const mockActions = budgetFromTable.map(({ amount, token }) => ({
+      type: 'Request Budget',
+      payload: {
+        budget: [{ amount: amount.toString(), token }],
+      },
+    }))
+    return <TokensOfProposal actions={mockActions as any} />
+  }
+
+  return 'Budget requested (details TBD)'
 }
 
 // Function to count unique countries from location data
@@ -781,93 +860,7 @@ export default function SingedInDashboard({
                 </StandardButton>
               </div>
 
-              <div className="space-y-4 h-full overflow-y-auto">
-                {proposals &&
-                  proposals.slice(0, 3).map((proposal: any, i: number) => {
-                    const tokensRequested = getTokensFromProposal(
-                      proposal.actions
-                    )
-                    const daysLeft = getDaysLeft(proposal)
-
-                    return (
-                      <Link
-                        key={proposal.uuid || i}
-                        href={`/proposal/${proposal.uuid}`}
-                        className="block"
-                      >
-                        <div className="bg-white/5 rounded-xl p-5 border border-white/5 hover:border-white/20 transition-all cursor-pointer">
-                          <div className="flex justify-between items-start mb-3">
-                            <h4 className="text-white font-semibold">
-                              {proposal.title ||
-                                `MDP-${
-                                  179 - i
-                                }: Study on Lunar Surface Selection For Settlement`}
-                            </h4>
-                            {proposal.status === 'Voting' && (
-                              <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
-                                Active
-                              </span>
-                            )}
-                            {proposal.status === 'Approved' && (
-                              <span className="bg-green-500/20 text-green-300 text-xs px-3 py-1 rounded-full border border-green-500/30">
-                                Approved
-                              </span>
-                            )}
-                            {proposal.status === 'Cancelled' && (
-                              <span className="bg-red-500/20 text-red-300 text-xs px-3 py-1 rounded-full border border-red-500/30">
-                                Cancelled
-                              </span>
-                            )}
-                            {proposal.status === 'Rejected' && (
-                              <span className="bg-red-500/20 text-red-300 text-xs px-3 py-1 rounded-full border border-red-500/30">
-                                Rejected
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-300">
-                              <div className="flex items-center gap-1">
-                                <span className="font-medium text-white">
-                                  {tokensRequested}
-                                </span>
-                                {typeof tokensRequested !== 'string' && (
-                                  <span>requested</span>
-                                )}
-                              </div>
-
-                              <div className="">
-                                {daysLeft > 0 ? (
-                                  <div className="flex gap-4">
-                                    <span className="hidden sm:inline">•</span>
-                                    <span className="font-medium text-white">
-                                      {daysLeft}{' '}
-                                      {daysLeft === 1 ? 'day' : 'days'}
-                                    </span>
-                                    <span>left</span>
-                                  </div>
-                                ) : proposal.status === 'Voting' ? (
-                                  <></>
-                                ) : (
-                                  <div className="flex gap-4">
-                                    <span className="hidden sm:inline">•</span>
-                                    <span className="font-medium text-white">
-                                      Voting closed
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            {proposal.status === 'Voting' && (
-                              <div className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 py-2 rounded-lg transition-all self-start sm:self-auto">
-                                Vote
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </Link>
-                    )
-                  })}
-              </div>
+              <ProposalList noPagination compact proposalLimit={2} />
             </div>
           </div>
 
@@ -1233,7 +1226,10 @@ export default function SingedInDashboard({
           {newestJobs && newestJobs.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {newestJobs.slice(0, 6).map((job: any, i: number) => (
-                <div key={`job-${i}`} className="bg-black/30 rounded-xl p-5 border border-purple-500/10 hover:border-purple-500/20 transition-all duration-200">
+                <div
+                  key={`job-${i}`}
+                  className="bg-black/30 rounded-xl p-5 border border-purple-500/10 hover:border-purple-500/20 transition-all duration-200"
+                >
                   <div className="flex justify-between items-start mb-3">
                     <h4 className="font-semibold text-white text-lg">
                       {job.title}
@@ -1249,7 +1245,9 @@ export default function SingedInDashboard({
                   </p>
                   <div className="flex justify-between items-center">
                     <span className="text-purple-200 text-xs">
-                      Posted {Math.floor((Date.now() / 1000 - job.timestamp) / 86400)} days ago
+                      Posted{' '}
+                      {Math.floor((Date.now() / 1000 - job.timestamp) / 86400)}{' '}
+                      days ago
                     </span>
                     {job.contactInfo && (
                       <StandardButton

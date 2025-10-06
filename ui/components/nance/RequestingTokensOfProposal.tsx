@@ -49,11 +49,16 @@ export function TokensOfProposal({ actions }: { actions: Action[] }) {
 
   const tokens: (JSX.Element | string)[] = []
   Object.entries(transferMap).forEach((val) => {
-    const [contract, amount] = val
+    const [contractOrSymbol, amount] = val
     if (tokens.length > 0) tokens.push(' + ')
     tokens.push(
-      <span key={contract}>
-        {formatNumberUSStyle(amount)} <TokenSymbol address={contract} />
+      <span key={'proposal-token-' + contractOrSymbol}>
+        {formatNumberUSStyle(amount)}{' '}
+        {contractOrSymbol.startsWith('0x') ? (
+          <TokenSymbol address={contractOrSymbol} />
+        ) : (
+          contractOrSymbol.toUpperCase()
+        )}
       </span>
     )
   })
