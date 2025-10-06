@@ -12,7 +12,7 @@ require("dotenv").config();
 process.env.NEXT_PUBLIC_CHAIN = "mainnet";
 
 import { CITIZEN_ADDRESSES, CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from "../../ui/const/config";
-import { blockedCitizens } from "../../ui/const/whitelist";
+import { BLOCKED_CITIZENS } from "../../ui/const/whitelist";
 import queryTable from "../../ui/lib/tableland/queryTable";
 import { getChainSlug } from "../../ui/lib/thirdweb/chain";
 import { getVMOONEYData } from "../../ui/lib/tokens/ve-subgraph";
@@ -80,7 +80,7 @@ async function main() {
   const citizenStatement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}`;
   const citizenRows = await queryTable(chain, citizenStatement);
 
-  const validCitizens = citizenRows.filter((c: any) => !blockedCitizens.includes(c.id));
+  const validCitizens = citizenRows.filter((c: any) => !BLOCKED_CITIZENS.has(c.id));
 
   // Payout each mooney holder 50k vMOONEY
   const citizenPayouts = validCitizens.map((c: any) => {
