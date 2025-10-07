@@ -3,7 +3,8 @@ import { defineWalletSetup } from '@synthetixio/synpress'
 import { MetaMask } from '@synthetixio/synpress/playwright'
 
 // Define a test seed phrase and password
-const SEED_PHRASE = 'test test test test test test test test test test test junk'
+const SEED_PHRASE =
+  'test test test test test test test test test test test junk'
 const PASSWORD = 'Tester@1234'
 
 // Define the basic wallet setup

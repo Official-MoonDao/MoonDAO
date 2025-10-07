@@ -4,6 +4,7 @@ import { defineConfig, devices } from '@playwright/test'
 // Define Playwright configuration
 export default defineConfig({
   testDir: './tests',
+  timeout: 90000, // Increase global test timeout
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

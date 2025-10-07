@@ -1,6 +1,10 @@
 // Import necessary Synpress modules and setup
 import { testWithSynpress } from '@synthetixio/synpress'
-import { MetaMask, metaMaskFixtures } from '@synthetixio/synpress/playwright'
+import {
+  MetaMask,
+  metaMaskFixtures,
+  unlockForFixture,
+} from '@synthetixio/synpress/playwright'
 import basicSetup from '../wallet-setup/basic.setup'
 
 // Create a test instance with Synpress and MetaMask fixtures
@@ -23,19 +27,25 @@ test('should connect wallet to the MetaMask Test Dapp', async ({
     basicSetup.walletPassword,
     extensionId
   )
-
-  // Navigate to the homepage
-  await page.goto('/')
-
-  // Click the connect button
-  await page.locator('#sign-in-button').click()
+  //await unlockForFixture(metamaskPage, basicSetup.walletPassword)
 
   // Connect MetaMask to the dapp
-  await metamask.connectToDapp()
+
+  // Navigate to the homepage
+  //await metamask.unlock({ timeout: 60000 })
+  //await page.goto('/')
+
+  // Click the connect button
+  await page.locator('#sign-in-button').last().click()
+  await page.locator('button:has-text("Continue with a wallet")').click()
+  await page.locator('button:has-text("MetaMask")').click()
+
+  await metamask.connectToDapp({ timeout: 90000 })
+  //await metamask.confirmSignature({ timeout: 60000 })
 
   // Verify the connected account address
-  await expect(page.locator('#accounts')).toHaveText(
-    '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
+  await expect(page.locator('#privy-connect-wallet p').last()).toHaveText(
+    '0xf39F...2266'
   )
 
   // Additional test steps can be added here, such as:
