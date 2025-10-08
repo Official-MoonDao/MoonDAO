@@ -48,6 +48,15 @@ export default function Proposal({
                 Voting
               </p>
             </div>
+          ) : votingInfo && votingInfo.state === 'closed' ? (
+            <div className="mt-1 flex items-center gap-x-1.5">
+              <div className="flex-none rounded-full bg-blue-500/20 p-1">
+                <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+              </div>
+              <p className="text-xs leading-5 text-gray-400 font-RobotoMono">
+                Results Available
+              </p>
+            </div>
           ) : (
             <p className="mt-1 text-xs leading-5 text-gray-400 font-RobotoMono">
               <span className="sr-only">Last edited</span>

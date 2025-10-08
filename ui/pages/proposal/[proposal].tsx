@@ -9,6 +9,7 @@ import DropDownMenu from '@/components/nance/DropdownMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 import ProposalInfo from '@/components/nance/ProposalInfo'
 import ProposalVotes from '@/components/nance/ProposalVotes'
+import VotingResults from '@/components/nance/VotingResults'
 import WebsiteHead from '@/components/layout/Head'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -33,7 +34,8 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
     proposalPacket?.voteURL !== undefined &&
     (proposalPacket?.status === 'Voting' ||
       proposalPacket?.status === 'Approved' ||
-      proposalPacket?.status === 'Cancelled')
+      proposalPacket?.status === 'Cancelled' ||
+      proposalPacket?.status === 'Archived')
 
   const { data: votes, mutate } = useVotesOfProposal(
     proposalPacket?.voteURL,
@@ -82,22 +84,34 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
             </div>
 
             {proposalPacket.voteURL && votes && (
-              <div className="mt-[-40px] md:max-h-[95vh] pb-5 md:mt-0 px-[40px] p-5 bg-dark-cool lg:bg-darkest-cool rounded-[20px]">
-                <button
-                  className="text-lg font-semibold leading-6 text-gray-900 dark:text-white"
-                  id="votes"
-                  onClick={() => {
-                    setQuery({ sortBy: query.sortBy === 'time' ? 'vp' : 'time' })
-                  }}
-                >
-                  <h3 className="font-GoodTimes pb-2 text-gray-400">Votes</h3>
-                  <span className="ml-2 text-center text-xs text-gray-300">
-                    sort by {query.sortBy === 'vp' ? 'voting power' : 'time'}
-                  </span>
-                </button>
-                <div className="pb-5">
-                <ProposalVotes votesOfProposal={votes} refetch={() => mutate()} />
-                </div>
+              <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] overflow-hidden">
+                {/* Show voting results if proposal voting is closed */}
+                {votes.proposal.state === 'closed' ? (
+                  <VotingResults 
+                    votingInfo={votes.proposal} 
+                    votesData={votes}
+                    threshold={votes.proposal.quorum}
+                    onRefetch={() => mutate()}
+                  />
+                ) : (
+                  <div className="px-[40px] p-5">
+                    <button
+                      className="text-lg font-semibold leading-6 text-gray-900 dark:text-white"
+                      id="votes"
+                      onClick={() => {
+                        setQuery({ sortBy: query.sortBy === 'time' ? 'vp' : 'time' })
+                      }}
+                    >
+                      <h3 className="font-GoodTimes pb-2 text-gray-400">Votes</h3>
+                      <span className="ml-2 text-center text-xs text-gray-300">
+                        sort by {query.sortBy === 'vp' ? 'voting power' : 'time'}
+                      </span>
+                    </button>
+                    <div className="pb-5">
+                      <ProposalVotes votesOfProposal={votes} refetch={() => mutate()} />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
