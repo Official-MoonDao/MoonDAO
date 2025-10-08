@@ -7,6 +7,7 @@ interface DashboardSettingsModalProps {
   preferences: DashboardPreferences
   updatePreferences: (preferences: Partial<DashboardPreferences>) => void
   resetPreferences: () => void
+  isSaving?: boolean
 }
 
 const PREFERENCE_ITEMS = [
@@ -24,6 +25,7 @@ export default function DashboardSettingsModal({
   preferences,
   updatePreferences,
   resetPreferences,
+  isSaving = false,
 }: DashboardSettingsModalProps) {
   if (!isOpen) return null
 
@@ -98,17 +100,26 @@ export default function DashboardSettingsModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t border-white/10 bg-gray-900/50">
-          <button
-            onClick={resetPreferences}
-            className="text-sm text-gray-400 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/5"
-          >
-            Reset All
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={resetPreferences}
+              disabled={isSaving}
+              className="text-sm text-gray-400 hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Reset All
+            </button>
+            {isSaving && (
+              <div className="flex items-center gap-2 text-xs text-blue-400">
+                <div className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                Saving to blockchain...
+              </div>
+            )}
+          </div>
           <button
             onClick={() => setIsOpen(false)}
             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2.5 rounded-lg font-medium transition-all shadow-lg"
           >
-            Save & Close
+            Close
           </button>
         </div>
       </div>

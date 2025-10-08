@@ -184,7 +184,7 @@ export default function SingedInDashboard({
     useState(false)
 
   // Dashboard preferences
-  const { preferences, updatePreferences, resetPreferences, isLoading: prefsLoading } = useDashboardPreferences()
+  const { preferences, updatePreferences, resetPreferences, isLoading: prefsLoading, isSaving } = useDashboardPreferences()
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
 
   // Client-side newsletter state
@@ -1516,6 +1516,7 @@ export default function SingedInDashboard({
         preferences={preferences}
         updatePreferences={updatePreferences}
         resetPreferences={resetPreferences}
+        isSaving={isSaving}
       />
 
       {/* Extended Footer */}
