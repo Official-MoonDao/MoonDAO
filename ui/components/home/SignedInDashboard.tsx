@@ -490,17 +490,21 @@ export default function SingedInDashboard({
         {/* Quest System - Horizontal Section */}
         {address && preferences.showQuests && <Quests />}
 
-        {/* Main Content - Facebook Style Three Column Layout */}
+        {/* Main Content - Smart Dynamic Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
-          {/* Left Sidebar - Key Metrics & Quick Actions */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-2 lg:order-1">
-            {/* Weekly Reward Pool - Enhanced UI */}
-            <div className="order-2">
-              <WeeklyRewardPool />
-            </div>
+          {/* Left Sidebar - Conditional with Smart Sizing */}
+          {(preferences.showWeeklyRewards || preferences.showMetrics) && (
+            <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-2 lg:order-1">
+              {/* Weekly Reward Pool - Conditional */}
+              {preferences.showWeeklyRewards && (
+                <div className="order-2">
+                  <WeeklyRewardPool />
+                </div>
+              )}
 
-            {/* Key Metrics Card */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
+              {/* Key Metrics Card - Conditional */}
+              {preferences.showMetrics && (
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
               <h3 className="font-semibold text-white mb-8 text-lg">
                 DAO Metrics
               </h3>
@@ -578,11 +582,27 @@ export default function SingedInDashboard({
                   </div>
                 )}
               </div>
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
-          {/* Center Column - Main Feed */}
-          <div className="lg:col-span-6 flex flex-col space-y-6 h-full min-h-[800px] order-1 lg:order-2">
+          {/* Center Column - Smart Sizing Based on Visible Sidebars */}
+          <div className={`${
+            // Calculate column span based on visible sidebars
+            (() => {
+              const hasLeftSidebar = preferences.showWeeklyRewards || preferences.showMetrics
+              const hasRightSidebar = preferences.showClaimRewards || preferences.showCitizens || preferences.showTeams || preferences.showMarketplace
+              
+              if (!hasLeftSidebar && !hasRightSidebar) {
+                return 'lg:col-span-12' // Full width
+              } else if (!hasLeftSidebar || !hasRightSidebar) {
+                return 'lg:col-span-9'  // Two-thirds
+              } else {
+                return 'lg:col-span-6'  // Half width
+              }
+            })()
+          } flex flex-col space-y-6 h-full min-h-[800px] order-1 lg:order-2`}>
             {/* Quick Actions */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
               <div className="flex items-center gap-4 mb-4">
@@ -886,13 +906,15 @@ export default function SingedInDashboard({
             </div>
           </div>
 
-          {/* Right Sidebar - Community & Stats */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3">
-            {/* Claim Rewards Section */}
-            {address && <ClaimRewardsSection />}
+          {/* Right Sidebar - Conditional with Smart Sizing */}
+          {(preferences.showClaimRewards || preferences.showCitizens || preferences.showTeams || preferences.showMarketplace) && (
+            <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3">
+              {/* Claim Rewards Section - Conditional */}
+              {address && preferences.showClaimRewards && <ClaimRewardsSection />}
 
-            {/* Recent Citizens */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              {/* Recent Citizens - Conditional */}
+              {preferences.showCitizens && (
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-white text-lg">
                   New Citizens
@@ -945,10 +967,12 @@ export default function SingedInDashboard({
                   </div>
                 )}
               </div>
-            </div>
+                </div>
+              )}
 
-            {/* Featured Teams */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            {/* Featured Teams - Conditional */}
+            {preferences.showTeams && (
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-white text-lg">
                   Featured Teams
@@ -1005,10 +1029,12 @@ export default function SingedInDashboard({
                   </div>
                 )}
               </div>
-            </div>
+              </div>
+            )}
 
-            {/* Marketplace */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
+            {/* Marketplace - Conditional with Dynamic Sizing */}
+            {preferences.showMarketplace && (
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-white text-lg">
                   Marketplace
@@ -1022,10 +1048,18 @@ export default function SingedInDashboard({
               </div>
 
               <div className="space-y-3 h-full overflow-y-auto">
-                {newestListings && newestListings.length > 0 ? (
-                  newestListings
-                    .slice(0, 3)
-                    .map((listing: any, index: number) => (
+                {(() => {
+                  // Calculate how many items to show based on available sections
+                  const visibleSections = [
+                    preferences.showClaimRewards && address,
+                    preferences.showCitizens,
+                    preferences.showTeams
+                  ].filter(Boolean).length
+                  
+                  const maxItems = visibleSections === 0 ? 8 : visibleSections === 1 ? 6 : visibleSections === 2 ? 4 : 3
+                  
+                  if (newestListings && newestListings.length > 0) {
+                    return newestListings.slice(0, maxItems).map((listing: any, index: number) => (
                       <Link
                         key={listing.id || index}
                         href={`/team/${listing.teamId}?listing=${listing.id}`}
@@ -1051,54 +1085,27 @@ export default function SingedInDashboard({
                               {listing.title || 'Marketplace Item'}
                             </h4>
                             <p className="text-gray-400 text-xs">
-                              {listing.price && listing.currency
-                                ? `${listing.price} ${listing.currency}`
-                                : 'View details'}
+                              {listing.price && listing.currency ? `${listing.price} ${listing.currency}` : 'View details'}
                             </p>
                           </div>
                         </div>
                       </Link>
                     ))
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white">
-                        <ShoppingBagIcon className="w-5 h-5" />
+                  } else {
+                    return (
+                      <div className="text-center py-8">
+                        <ShoppingBagIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+                        <p className="text-gray-400 text-sm">No marketplace items yet</p>
+                        <p className="text-gray-500 text-xs mt-1">Check back soon for new listings</p>
                       </div>
-                      <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm">
-                          Moon Rock Sample
-                        </h4>
-                        <p className="text-gray-400 text-xs">2.5 ETH</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white">
-                        <ShoppingBagIcon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm">
-                          Space Suit NFT
-                        </h4>
-                        <p className="text-gray-400 text-xs">1.8 ETH</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white">
-                        <ShoppingBagIcon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm">
-                          Lunar Map Print
-                        </h4>
-                        <p className="text-gray-400 text-xs">0.5 ETH</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                    )
+                  }
+                })()}
               </div>
+              </div>
+            )}
             </div>
-          </div>
+          )}
         </div>
 
         {/* Active Projects Section - Full Width */}

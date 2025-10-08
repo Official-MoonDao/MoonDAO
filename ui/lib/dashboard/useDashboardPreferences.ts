@@ -8,6 +8,12 @@ import CitizenTableABI from 'const/abis/CitizenTable.json'
 
 export interface DashboardPreferences {
   showQuests: boolean
+  showWeeklyRewards: boolean
+  showMetrics: boolean
+  showClaimRewards: boolean
+  showCitizens: boolean
+  showTeams: boolean
+  showMarketplace: boolean
   showProjects: boolean
   showJobs: boolean
   showLaunchpad: boolean
@@ -17,6 +23,12 @@ export interface DashboardPreferences {
 
 const DEFAULT_PREFERENCES: DashboardPreferences = {
   showQuests: true,
+  showWeeklyRewards: true,
+  showMetrics: true,
+  showClaimRewards: true,
+  showCitizens: true,
+  showTeams: true,
+  showMarketplace: true,
   showProjects: true,
   showJobs: true,
   showLaunchpad: true,

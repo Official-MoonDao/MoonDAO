@@ -1,4 +1,4 @@
-import { XMarkIcon, Cog6ToothIcon, RocketLaunchIcon, BriefcaseIcon, GlobeAmericasIcon, CalendarIcon, TrophyIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon, Cog6ToothIcon, RocketLaunchIcon, BriefcaseIcon, GlobeAmericasIcon, CalendarIcon, TrophyIcon, BanknotesIcon, ChartBarIcon, GiftIcon, UserGroupIcon, ShoppingBagIcon } from '@heroicons/react/24/outline'
 import { DashboardPreferences } from '@/lib/dashboard/useDashboardPreferences'
 
 interface DashboardSettingsModalProps {
@@ -10,13 +10,43 @@ interface DashboardSettingsModalProps {
   isSaving?: boolean
 }
 
-const PREFERENCE_ITEMS = [
-  { key: 'showQuests', label: 'Quests', icon: TrophyIcon, color: 'text-yellow-400' },
-  { key: 'showProjects', label: 'Projects', icon: RocketLaunchIcon, color: 'text-green-400' },
-  { key: 'showJobs', label: 'Jobs', icon: BriefcaseIcon, color: 'text-purple-400' },
-  { key: 'showLaunchpad', label: 'Launchpad', icon: RocketLaunchIcon, color: 'text-blue-400' },
-  { key: 'showEvents', label: 'Events', icon: CalendarIcon, color: 'text-pink-400' },
-  { key: 'showGlobalMap', label: 'Global Map', icon: GlobeAmericasIcon, color: 'text-teal-400' },
+const PREFERENCE_SECTIONS = [
+  {
+    title: 'Core Features',
+    description: 'Essential dashboard components',
+    items: [
+      { key: 'showQuests', label: 'Quest System', icon: TrophyIcon, color: 'text-yellow-400' },
+    ],
+  },
+  {
+    title: 'Left Sidebar',
+    description: 'Analytics and rewards',
+    items: [
+      { key: 'showWeeklyRewards', label: 'Reward Pool', icon: BanknotesIcon, color: 'text-green-400' },
+      { key: 'showMetrics', label: 'DAO Metrics', icon: ChartBarIcon, color: 'text-blue-400' },
+    ],
+  },
+  {
+    title: 'Right Sidebar', 
+    description: 'Community and marketplace',
+    items: [
+      { key: 'showClaimRewards', label: 'Claim Rewards', icon: GiftIcon, color: 'text-purple-400' },
+      { key: 'showCitizens', label: 'New Citizens', icon: UserGroupIcon, color: 'text-teal-400' },
+      { key: 'showTeams', label: 'Featured Teams', icon: UserGroupIcon, color: 'text-orange-400' },
+      { key: 'showMarketplace', label: 'Marketplace', icon: ShoppingBagIcon, color: 'text-pink-400' },
+    ],
+  },
+  {
+    title: 'Full Width Sections',
+    description: 'Major content areas',
+    items: [
+      { key: 'showProjects', label: 'Projects', icon: RocketLaunchIcon, color: 'text-green-500' },
+      { key: 'showJobs', label: 'Jobs', icon: BriefcaseIcon, color: 'text-purple-500' },
+      { key: 'showLaunchpad', label: 'Launchpad', icon: RocketLaunchIcon, color: 'text-blue-500' },
+      { key: 'showEvents', label: 'Events', icon: CalendarIcon, color: 'text-pink-500' },
+      { key: 'showGlobalMap', label: 'Global Map', icon: GlobeAmericasIcon, color: 'text-teal-500' },
+    ],
+  },
 ]
 
 export default function DashboardSettingsModal({
@@ -56,46 +86,55 @@ export default function DashboardSettingsModal({
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6">
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-6">
+        <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6 space-y-6">
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
             <p className="text-blue-200 text-sm leading-relaxed">
-              <strong className="text-blue-100">Core Layout:</strong> The three-column dashboard is always visible. Toggle optional sections below.
+              <strong className="text-blue-100">Smart Layout:</strong> Columns adapt automatically based on your selections. Center feed is always visible.
             </p>
           </div>
 
-          {/* Grid of Toggle Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {PREFERENCE_ITEMS.map((item) => {
-              const Icon = item.icon
-              const isActive = preferences[item.key as keyof DashboardPreferences]
+          {/* Organized Sections */}
+          {PREFERENCE_SECTIONS.map((section) => (
+            <div key={section.title} className="space-y-3">
+              <div>
+                <h3 className="text-lg font-semibold text-white">{section.title}</h3>
+                <p className="text-xs text-gray-400">{section.description}</p>
+              </div>
               
-              return (
-                <button
-                  key={item.key}
-                  onClick={() => handleToggle(item.key)}
-                  className={`relative p-4 rounded-xl transition-all duration-200 border-2 ${
-                    isActive
-                      ? 'bg-white/10 border-blue-500/50 shadow-lg shadow-blue-500/20'
-                      : 'bg-white/5 border-white/10 hover:bg-white/8 hover:border-white/20'
-                  }`}
-                >
-                  <div className="flex flex-col items-center gap-2">
-                    <Icon className={`w-8 h-8 ${isActive ? item.color : 'text-gray-400'}`} />
-                    <span className={`text-sm font-medium ${isActive ? 'text-white' : 'text-gray-400'}`}>
-                      {item.label}
-                    </span>
-                  </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {section.items.map((item) => {
+                  const Icon = item.icon
+                  const isActive = preferences[item.key as keyof DashboardPreferences]
                   
-                  {/* Active Indicator */}
-                  {isActive && (
-                    <div className="absolute top-2 right-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                    </div>
-                  )}
-                </button>
-              )
-            })}
-          </div>
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => handleToggle(item.key)}
+                      className={`relative p-3 rounded-xl transition-all duration-200 border-2 ${
+                        isActive
+                          ? 'bg-white/10 border-blue-500/50 shadow-lg shadow-blue-500/20'
+                          : 'bg-white/5 border-white/10 hover:bg-white/8 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <Icon className={`w-6 h-6 ${isActive ? item.color : 'text-gray-400'}`} />
+                        <span className={`text-xs font-medium ${isActive ? 'text-white' : 'text-gray-400'} text-center leading-tight`}>
+                          {item.label}
+                        </span>
+                      </div>
+                      
+                      {/* Active Indicator */}
+                      {isActive && (
+                        <div className="absolute top-1.5 right-1.5">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Footer */}
