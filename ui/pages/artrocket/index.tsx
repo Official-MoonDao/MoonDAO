@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { arbitrum } from '@/lib/infura/infuraChains'
 import queryTable from '@/lib/tableland/queryTable'
+import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { Baikonur, BaikonurProps } from '@/components/baikonur/Baikonur'
@@ -18,6 +19,7 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import WebsiteHead from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import DistributionVotes from '@/components/tableland/DistributionVotes'
 
 export default function ArtRocket({ distributions, finalists }: BaikonurProps) {
   const router = useRouter()
@@ -70,12 +72,24 @@ export default function ArtRocket({ distributions, finalists }: BaikonurProps) {
         popOverEffect={false}
         isProfile
       >
-        <Baikonur
-          finalists={finalists}
-          distributions={distributions}
-          refresh={() => router.reload()}
-        />
-        <div className="space-y-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="w-full">
+            <Baikonur
+              finalists={finalists}
+              distributions={distributions}
+              refresh={() => router.reload()}
+            />
+          </div>
+          <div className="w-full">
+            <DistributionVotes
+              votes={distributions}
+              finalists={finalists}
+              title="Art Rocket Project Votes"
+              refetch={() => router.reload()}
+            />
+          </div>
+        </div>
+        <div className="mt-8 space-y-6">
           <div className="space-y-6">
             <section className="bg-gradient-to-br from-gray-900/40 via-blue-900/20 to-purple-900/10 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:border-white/20 transition-all duration-300">
               <div className="lg:float-left lg:w-1/2 lg:mr-6 lg:mb-4 mb-6">
@@ -242,7 +256,10 @@ export async function getStaticProps() {
     const prodChainSlug = getChainSlug(prodChain)
 
     const distributionStatement = `SELECT * FROM ${VOTES_TABLE_NAMES[chainSlug]} WHERE voteId = ${BAIKONUR_VOTE_ID}`
-    const distributions = await queryTable(chain, distributionStatement)
+    const distributions = (await queryTable(
+      chain,
+      distributionStatement
+    )) as DistributionVote[]
     let finalists: Finalist[] = [
       {
         id: 0,
@@ -358,20 +375,43 @@ export async function getStaticProps() {
         citizenId: 151,
       },
     ]
-    const statement = `SELECT * FROM ${
+    const finalistStatement = `SELECT * FROM ${
       CITIZEN_TABLE_NAMES[prodChainSlug]
     } WHERE id IN (${finalists
       .map((finalist) => finalist.citizenId)
       .join(',')})`
-    const allCitizens = (await queryTable(prodChain, statement)) as any
+    const finalistCitizens = (await queryTable(
+      prodChain,
+      finalistStatement
+    )) as any
 
     finalists.forEach((finalist) => {
-      const citizen = allCitizens.find(
+      const citizen = finalistCitizens.find(
         (citizen: any) => +citizen.id === finalist.citizenId
       )
       finalist.address = citizen.owner
       finalist.image = citizen.image
     })
+
+    const votingCitizensStatement = `SELECT id, name, owner FROM ${
+      CITIZEN_TABLE_NAMES[prodChainSlug]
+    } WHERE owner IN (${distributions
+      .map((distribution) => `'${distribution.address}'`)
+      .join(',')})`
+    const votingCitizens = (await queryTable(
+      prodChain,
+      votingCitizensStatement
+    )) as any
+
+    distributions.forEach((distribution: DistributionVote) => {
+      const citizen = votingCitizens.find(
+        (citizen: any) =>
+          citizen.owner.toLowerCase() === distribution.address.toLowerCase()
+      )
+      distribution.citizenName = citizen?.name || ''
+      distribution.citizenId = citizen?.id || ''
+    })
+
     return {
       props: {
         distributions,

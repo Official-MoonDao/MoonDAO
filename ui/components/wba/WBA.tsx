@@ -11,6 +11,7 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { DistributionVote } from '@/lib/tableland/types'
 import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -24,15 +25,11 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import { Finalist } from '@/components/wba/Finalist'
 import FinalistCard from '@/components/wba/FinalistCard'
-
-export type Distribution = {
-  address: string
-  vote: { [key: string]: number }
-}
+import DistributionVotes from '../tableland/DistributionVotes'
 
 export type WBAProps = {
   finalists: Finalist[]
-  distributions: Distribution[]
+  distributions: DistributionVote[]
   refresh: () => void
 }
 
@@ -178,39 +175,49 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
           isProfile
         >
           <div
-            className={`flex flex-col gap-6 px:40 md:p-8 md:px-40 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] ${
+            className={`flex flex-col gap-6 px:40 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] ${
               !isMobile && 'p-6'
             }`}
           >
-            <div>
-              {finalists && finalists.length > 0 ? (
-                finalists.map((finalist: any, i) => (
-                  <div
-                    key={`finalist-card-${i}`}
-                    className="m-2 bg-black/20 rounded-xl border border-white/10 overflow-hidden"
-                  >
-                    <FinalistCard
+            <div className="mt-6 w-full flex flex-col lg:flex-row justify-between">
+              <div className="w-full">
+                {finalists && finalists.length > 0 ? (
+                  finalists.map((finalist: any, i) => (
+                    <div
                       key={`finalist-card-${i}`}
-                      finalist={finalist}
-                      distribution={
-                        userHasVotingPower ? distribution : undefined
-                      }
-                      handleDistributionChange={
-                        userHasVotingPower
-                          ? handleDistributionChange
-                          : undefined
-                      }
-                      userHasVotingPower={userHasVotingPower}
-                      isVotingPeriod={isVotingPeriod}
-                      percentage={percentages[finalist.id]}
-                    />
+                      className="m-2 bg-black/20 rounded-xl border border-white/10 overflow-hidden max-w-[600px]"
+                    >
+                      <FinalistCard
+                        key={`finalist-card-${i}`}
+                        finalist={finalist}
+                        distribution={
+                          userHasVotingPower ? distribution : undefined
+                        }
+                        handleDistributionChange={
+                          userHasVotingPower
+                            ? handleDistributionChange
+                            : undefined
+                        }
+                        userHasVotingPower={userHasVotingPower}
+                        isVotingPeriod={isVotingPeriod}
+                        percentage={percentages[finalist.id]}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <p>There are no finalists.</p>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-400">
-                  <p>There are no finalists.</p>
-                </div>
-              )}
+                )}
+              </div>
+
+              <div className="mt-2 w-full flex justify-end">
+                <DistributionVotes
+                  title="WBA Distribution Votes"
+                  votes={distributions}
+                  finalists={finalists}
+                />
+              </div>
 
               {isVotingPeriod && finalists && finalists.length > 0 && (
                 <div className="mt-6 w-full flex justify-end">

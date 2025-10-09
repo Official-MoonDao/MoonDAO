@@ -1,92 +1,164 @@
-import { gsap } from 'gsap'
-import { useEffect, useRef } from 'react'
+import { ReactNode, useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { classNames } from '@/lib/utils/tailwind'
 
-interface ProgressBarProps {
-  progress: number // Value between 0 and 100
+export interface ProgressBarProps {
+  percentage: number
+  color?: string
+  backgroundColor?: string
   height?: string
-  label?: string
-  padding?: string
-  compact?: boolean
+  showTooltip?: boolean
+  tooltipContent?: ReactNode
+  className?: string
 }
 
 export default function ProgressBar({
-  progress,
-  height = '8px',
-  label,
-  padding = '2px',
-  compact = false,
+  percentage,
+  color = 'bg-green-500',
+  backgroundColor = 'bg-gray-200',
+  height = 'h-2',
+  showTooltip = false,
+  tooltipContent,
+  className = '',
 }: ProgressBarProps) {
-  const progressBarRef = useRef<HTMLDivElement>(null)
-  const labelRef = useRef<HTMLSpanElement>(null)
-  const previousProgress = useRef<number | null>(null)
-
-  useEffect(() => {
-    // Only animate if it's the first render or if progress changed significantly
-    const isFirstRender = previousProgress.current === null
-    const progressDiff = isFirstRender
-      ? Infinity
-      : Math.abs(progress - (previousProgress.current || 0))
-    const shouldAnimate = isFirstRender || progressDiff >= 0.1 // Only animate if change is >= 0.1%
-
-    if (shouldAnimate) {
-      if (progressBarRef.current) {
-        gsap.to(progressBarRef.current, {
-          width: `${Math.min(progress, 100)}%`,
-          duration: 2.5,
-          ease: 'power1.inOut',
-        })
-      }
-
-      if (labelRef.current) {
-        gsap.to(labelRef.current, {
-          opacity: 1,
-          duration: 2.5,
-          ease: 'power1.inOut',
-        })
-      }
-    }
-
-    // Update the previous progress value
-    previousProgress.current = progress
-  }, [progress, compact])
+  const clampedPercentage = Math.min(100, Math.max(0, percentage))
 
   return (
     <div
-      className="relative w-full rounded-full bg-slate-700/30 border border-white/10 overflow-hidden"
-      style={{ height: `calc(${height} + ${padding} * 2)` }}
+      className={classNames(
+        'w-full rounded-full',
+        backgroundColor,
+        height,
+        className
+      )}
     >
       <div
-        className="absolute inset-0 rounded-full overflow-hidden"
-        style={{ margin: padding }}
+        className={classNames(
+          'rounded-full transition-all duration-300',
+          color,
+          height
+        )}
+        style={{ width: `${clampedPercentage}%` }}
+        title={
+          showTooltip
+            ? String(tooltipContent || `${clampedPercentage.toFixed(1)}%`)
+            : undefined
+        }
+      />
+    </div>
+  )
+}
+export interface MultiProgressBarProps {
+  segments: {
+    percentage: number
+    color: string
+    label?: string
+  }[]
+  height?: string
+  backgroundColor?: string
+  className?: string
+}
+
+export function MultiProgressBar({
+  segments,
+  height = 'h-2',
+  backgroundColor = 'bg-gray-200',
+  className = '',
+}: MultiProgressBarProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
+  const [mounted, setMounted] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const totalPercentage = segments.reduce(
+    (sum, segment) => sum + segment.percentage,
+    0
+  )
+  const normalizedSegments = segments.map((segment) => ({
+    ...segment,
+    normalizedPercentage:
+      totalPercentage > 0 ? (segment.percentage / totalPercentage) * 100 : 0,
+  }))
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (hoveredIndex !== null && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      const segmentOffset = normalizedSegments
+        .slice(0, hoveredIndex)
+        .reduce((sum, seg) => sum + seg.normalizedPercentage, 0)
+      const segmentCenter =
+        segmentOffset +
+        normalizedSegments[hoveredIndex].normalizedPercentage / 2
+
+      setTooltipPosition({
+        x: rect.left + (rect.width * segmentCenter) / 100,
+        y: rect.top - 10,
+      })
+    }
+  }, [hoveredIndex, normalizedSegments])
+
+  const renderTooltip = () => {
+    if (
+      !mounted ||
+      hoveredIndex === null ||
+      !normalizedSegments[hoveredIndex] ||
+      !normalizedSegments[hoveredIndex].label
+    ) {
+      return null
+    }
+
+    return createPortal(
+      <div
+        className="fixed pointer-events-none z-[9999]"
+        style={{
+          left: tooltipPosition.x,
+          top: tooltipPosition.y,
+          transform: 'translateX(-50%) translateY(-100%)',
+        }}
       >
-        {/* Background with subtle pattern */}
-        <div className="h-full w-full bg-gradient-to-r from-slate-800/50 to-slate-700/50 relative">
-          {/* Progress fill with enhanced gradient */}
-          <div
-            ref={progressBarRef}
-            className="h-full bg-gradient-to-r from-blue-500 via-purple-600 to-blue-500 relative shadow-lg"
-            style={{ width: '0%' }} // Start at 0 and let GSAP animate it
-          >
-            {/* Shimmer effect overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
+        <div className="bg-white text-black px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg border">
+          {normalizedSegments[hoveredIndex].label}
+          {/* Tooltip arrow */}
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2">
+            <div className="border-l-4 border-r-4 border-t-4 border-transparent border-t-white"></div>
           </div>
-          
-          {/* Progress label */}
-          {label && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span
-                ref={labelRef}
-                className="text-sm font-medium text-white drop-shadow-lg opacity-0 px-2 py-1 bg-black/20 rounded-full backdrop-blur-sm"
-              >
-                {label}
-              </span>
-            </div>
-          )}
-          
-          {/* Subtle highlight on top edge */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
         </div>
+      </div>,
+      document.body
+    )
+  }
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <div
+        className={classNames(
+          'w-full rounded-full flex',
+          backgroundColor,
+          height,
+          className
+        )}
+      >
+        {normalizedSegments.map((segment, index) => (
+          <div
+            key={index}
+            className={classNames(
+              'transition-all duration-300 cursor-pointer',
+              segment.color,
+              index === 0 ? 'rounded-l-full' : '',
+              index === normalizedSegments.length - 1 ? 'rounded-r-full' : ''
+            )}
+            style={{ width: `${segment.normalizedPercentage}%` }}
+            onMouseEnter={() => setHoveredIndex(index)}
+            onMouseLeave={() => setHoveredIndex(null)}
+          />
+        ))}
       </div>
+
+      {renderTooltip()}
     </div>
   )
 }
