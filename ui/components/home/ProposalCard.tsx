@@ -13,7 +13,8 @@ export function ProposalCard({ proposal, index }: ProposalCardProps) {
     proposal?.voteURL !== undefined &&
     (proposal?.status === 'Voting' ||
       proposal?.status === 'Approved' ||
-      proposal?.status === 'Cancelled')
+      proposal?.status === 'Cancelled' ||
+      proposal?.status === 'Archived')
 
   const { data: votes } = useVotesOfProposal(
     proposal?.voteURL,
@@ -55,10 +56,16 @@ export function ProposalCard({ proposal, index }: ProposalCardProps) {
             <button className="flex-1 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 text-xs rounded transition-colors mr-2">
               {proposal.status}
             </button>
-            {proposal.status === 'Voting' && (
+                        {proposal.status === 'Voting' && (
               <div className="flex items-center text-xs">
                 <div className="w-2 h-2 bg-green-400 rounded-full mr-1"></div>
-                <span className="text-green-300">Live</span>
+                Live
+              </div>
+            )}
+            {votingInfo && votingInfo.state === 'closed' && (
+              <div className="flex items-center text-xs">
+                <div className="w-2 h-2 bg-blue-400 rounded-full mr-1"></div>
+                Results
               </div>
             )}
           </div>
