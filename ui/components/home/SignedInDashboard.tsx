@@ -6,85 +6,49 @@ import {
   ShoppingBagIcon,
   NewspaperIcon,
   GlobeAmericasIcon,
-  ChartBarIcon,
   BoltIcon,
-  TrophyIcon,
-  StarIcon,
-  FireIcon,
-  GiftIcon,
   PencilIcon,
   BriefcaseIcon,
 } from '@heroicons/react/24/outline'
-import { Action, RequestBudget } from '@nance/nance-sdk'
-import CitizenTableABI from 'const/abis/CitizenTable.json'
-import JobTableABI from 'const/abis/JobBoardTable.json'
-import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
-import ProjectTableABI from 'const/abis/ProjectTable.json'
 import TeamABI from 'const/abis/Team.json'
-import TeamTableABI from 'const/abis/TeamTable.json'
 import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
 import {
   ARBITRUM_ASSETS_URL,
   BASE_ASSETS_URL,
-  CITIZEN_TABLE_ADDRESSES,
   DEFAULT_CHAIN_V5,
-  JOBS_TABLE_ADDRESSES,
-  MARKETPLACE_TABLE_ADDRESSES,
   POLYGON_ASSETS_URL,
-  PROJECT_TABLE_ADDRESSES,
-  PROJECT_TABLE_NAMES,
   TEAM_ADDRESSES,
-  TEAM_TABLE_ADDRESSES,
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
 } from 'const/config'
-import { blockedTeams, featuredTeams } from 'const/whitelist'
-import { blockedProjects } from 'const/whitelist'
-import { BigNumber } from 'ethers'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useState, useEffect } from 'react'
-import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import { getAUMHistory } from '@/lib/coinstats'
-import { getMooneyPrice } from '@/lib/coinstats'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import { sepolia } from '@/lib/infura/infuraChains'
-import { formatNumberUSStyle } from '@/lib/nance'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
-import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
-import { Project } from '@/lib/project/useProjectData'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
 import {
   generatePrettyLink,
   generatePrettyLinkWithId,
 } from '@/lib/subscription/pretty-links'
-import { teamRowToNFT } from '@/lib/tableland/convertRow'
-import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import client, { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
-import useWithdrawAmount from '@/lib/utils/hooks/useWithdrawAmount'
 import { getBudget } from '@/lib/utils/rewards'
-import { daysUntilTimestamp } from '@/lib/utils/timestamp'
-import { ARRChart } from '@/components/dashboard/treasury/ARRChart'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
+import { RevenueChart } from '@/components/dashboard/treasury/RevenueChart'
 import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
 import ChartModal from '@/components/layout/ChartModal'
 import Container from '@/components/layout/Container'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
-import Frame from '@/components/layout/Frame'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import StandardButton from '@/components/layout/StandardButton'
-import StandardDetailCard from '@/components/layout/StandardDetailCard'
-import { TokensOfProposal } from '@/components/nance/RequestingTokensOfProposal'
-import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'
 import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import CitizensChart from '@/components/subscription/CitizensChart'
@@ -93,115 +57,7 @@ import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import Quests from '../xp/Quests'
 
-// import Quests from '@/components/xp/Quests'
-
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
-
-function getDaysLeft(proposal: any): number {
-  if (proposal?.end) {
-    return daysUntilTimestamp(proposal.end)
-  }
-  return 0
-}
-
-// Function to get the proper status display for a proposal
-function getProposalStatusDisplay(
-  proposal: any,
-  votingInfo: any,
-  daysLeft: number
-): string {
-  // If we have voting info from Snapshot, use it for more accurate status
-  if (votingInfo) {
-    if (votingInfo.state === 'active') {
-      return `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left to vote`
-    } else if (votingInfo.state === 'closed') {
-      return 'Voting closed'
-    }
-  }
-
-  // Fall back to proposal status
-  switch (proposal.status) {
-    case 'Temperature Check':
-      return 'Temperature Check'
-    case 'Voting':
-      return daysLeft > 0
-        ? `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left to vote`
-        : 'Voting closed'
-    case 'Discussion':
-      return 'In Discussion'
-    case 'Approved':
-      return 'Approved'
-    case 'Cancelled':
-      return 'Cancelled'
-    case 'Archived':
-      return 'Archived'
-    default:
-      return proposal.status || 'Unknown status'
-  }
-}
-
-// Function to determine if a proposal has requested funding
-function getProposalFundingDisplay(proposal: any): JSX.Element | string {
-  // Try to parse budget from table format as fallback
-  let budgetFromTable: { amount: number; token: string }[] = []
-  if (proposal.body && proposal.actions?.length === 0) {
-    // Look for table with Transaction Type, Amount, Token Type pattern
-    // More flexible regex to handle various table formats
-    const tablePattern =
-      /\|\s*Transaction Type[^|]*\|\s*Amount[^|]*\|\s*Token Type[^|]*\|[\s\S]*?\|\s*Send[^|]*\|\s*\$?([0-9,]+)[^|]*\|\s*([A-Z]+)[^|]*\|/i
-    const tableMatch = proposal.body.match(tablePattern)
-
-    if (tableMatch) {
-      const amountStr = tableMatch[1].replace(/,/g, '')
-      const amount = parseFloat(amountStr)
-      const token = tableMatch[2].trim()
-      budgetFromTable = [{ amount, token }]
-    } else {
-      // Try alternative patterns for different table formats
-      const altPattern =
-        /\|\s*Send[^|]*\|\s*\$?([0-9,]+)[^|]*\|\s*([A-Z]+)[^|]*\|/i
-      const altMatch = proposal.body.match(altPattern)
-
-      if (altMatch) {
-        const amountStr = altMatch[1].replace(/,/g, '')
-        const amount = parseFloat(amountStr)
-        const token = altMatch[2].trim()
-        budgetFromTable = [{ amount, token }]
-      }
-    }
-  }
-
-  // Check if there are any budget request actions or parsed table data
-  if (
-    (!proposal.actions || proposal.actions.length === 0) &&
-    budgetFromTable.length === 0
-  ) {
-    return 'No funding requested'
-  }
-
-  const budgetActions =
-    proposal.actions?.filter(
-      (action: any) => action.type === 'Request Budget'
-    ) || []
-
-  // If we have budget actions, use the existing TokensOfProposal component
-  if (budgetActions.length > 0) {
-    return <TokensOfProposal actions={proposal.actions} />
-  }
-
-  // If we only have table-parsed budget, create mock actions for TokensOfProposal
-  if (budgetFromTable.length > 0) {
-    const mockActions = budgetFromTable.map(({ amount, token }) => ({
-      type: 'Request Budget',
-      payload: {
-        budget: [{ amount: amount.toString(), token }],
-      },
-    }))
-    return <TokensOfProposal actions={mockActions as any} />
-  }
-
-  return 'Budget requested (details TBD)'
-}
 
 // Function to count unique countries from location data
 function countUniqueCountries(locations: any[]): number {
@@ -234,11 +90,10 @@ export default function SingedInDashboard({
   newestJobs,
   citizenSubgraphData,
   aumData,
-  arrData,
-  mooneyPrice, // Add this new prop
+  revenueData,
   citizensLocationData,
   filteredTeams,
-  currentProjects, // Add current projects
+  currentProjects,
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
@@ -314,17 +169,17 @@ export default function SingedInDashboard({
     setChartModalOpen(true)
   }
 
-  const openARRChart = () => {
+  const openRevenueChart = () => {
     setChartModalComponent(
-      <ARRChart
-        data={arrData?.arrHistory || []}
+      <RevenueChart
+        data={revenueData?.revenueHistory || []}
         compact={false}
         height={400}
         isLoading={false}
         defaultRange={365}
       />
     )
-    setChartModalTitle('ESTIMATED ANNUAL RECURRING REVENUE')
+    setChartModalTitle('ANNUAL REVENUE')
     setChartModalOpen(true)
   }
 
@@ -618,21 +473,26 @@ export default function SingedInDashboard({
                   </div>
                 )}
 
-                {arrData && arrData.arrHistory.length > 0 && (
+                {revenueData && revenueData.revenueHistory.length > 0 && (
                   <div
                     className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
-                    onClick={openARRChart}
+                    onClick={openRevenueChart}
                     title="Click to view full chart"
                   >
                     <div className="flex items-center justify-between mb-5">
-                      <span className="text-gray-300 font-medium">ARR</span>
+                      <span className="text-gray-300 font-medium">
+                        Annual Revenue
+                      </span>
                       <span className="text-white font-bold text-2xl">
-                        ${Math.round(arrData.currentARR).toLocaleString()}
+                        $
+                        {Math.round(
+                          revenueData.currentRevenue
+                        ).toLocaleString()}
                       </span>
                     </div>
                     <div className="h-20">
-                      <ARRChart
-                        data={arrData.arrHistory || []}
+                      <RevenueChart
+                        data={revenueData.revenueHistory}
                         compact={true}
                         height={80}
                         isLoading={false}

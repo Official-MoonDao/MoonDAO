@@ -1,3 +1,4 @@
+import { MOONDAO_ARBITRUM_TREASURY, MOONDAO_TREASURY } from 'const/config'
 import { v4 } from 'uuid'
 
 export function uuidGen(): string {
@@ -154,8 +155,8 @@ export const FINAL_REPORT_TEMPLATE = `
 
 *Link to Treasury with **unused funds returned to the [MoonDAO Treasury](https://app.safe.global/home?safe=eth:0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9).***
 
-*Arbitrum Address: arb1:0xAF26a002d716508b7e375f1f620338442F5470c0*  
-*Ethereum Address: eth:0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9*
+*Arbitrum Address: arb1:${MOONDAO_ARBITRUM_TREASURY}*  
+*Ethereum Address: eth:${MOONDAO_TREASURY}*
 
 | Txn Title | Reason | Amount | Recipient | Etherscan Link or Gnosis Link | Deliverable |
 | :---- | :---- | :---- | :---- | :---- | :---- |

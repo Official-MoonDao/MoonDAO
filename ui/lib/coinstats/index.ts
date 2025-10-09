@@ -1,19 +1,24 @@
-import { ethereum, arbitrum, polygon } from '@/lib/infura/infuraChains'
+import {
+  MOONDAO_ARBITRUM_TREASURY,
+  MOONDAO_POLYGON_TREASURY,
+  MOONDAO_TREASURY,
+} from 'const/config'
+import { ethereum, arbitrum, polygon, base } from '@/lib/infura/infuraChains'
 import { LineChartData } from '@/components/layout/LineChart'
 
 export const MOONDAO_SAFES = [
   {
-    address: '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9',
+    address: MOONDAO_TREASURY,
     chain: 'ethereum',
     name: 'ETH Treasury',
   },
   {
-    address: '0xAF26a002d716508b7e375f1f620338442F5470c0',
+    address: MOONDAO_ARBITRUM_TREASURY,
     chain: 'arbitrum',
     name: 'Arbitrum Treasury',
   },
   {
-    address: '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a',
+    address: MOONDAO_POLYGON_TREASURY,
     chain: 'polygon',
     name: 'Polygon Treasury',
   },
@@ -245,6 +250,8 @@ function getInfuraRpcUrl(chainName: string): string | null {
       return arbitrum.rpc
     case 'polygon':
       return polygon.rpc
+    case 'base':
+      return base.rpc
     default:
       console.warn(`Unknown chain: ${chainName}`)
       return null

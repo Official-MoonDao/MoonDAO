@@ -24,7 +24,7 @@ import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
-import { getHistoricalARR } from '@/lib/treasury/arr'
+import { getHistoricalRevenue } from '@/lib/treasury/revenue'
 import Callout1 from '../components/home/Callout1'
 import Callout2 from '../components/home/Callout2'
 import Callout3 from '../components/home/Callout3'
@@ -50,7 +50,7 @@ export default function Home({
   newestJobs,
   citizenSubgraphData,
   aumData,
-  arrData,
+  revenueData,
   mooneyPrice,
   filteredTeams,
   citizensLocationData,
@@ -73,7 +73,7 @@ export default function Home({
           newestJobs={newestJobs}
           citizenSubgraphData={citizenSubgraphData}
           aumData={aumData}
-          arrData={arrData}
+          revenueData={revenueData}
           mooneyPrice={mooneyPrice}
           filteredTeams={filteredTeams}
           citizensLocationData={citizensLocationData}
@@ -120,11 +120,13 @@ export default function Home({
 
 export async function getStaticProps() {
   let transferData: any = { citizenTransfers: [], teamTransfers: [] }
-  let arrData: any = {
-    arrHistory: [],
-    currentARR: 0,
-    citizenARR: 0,
-    teamARR: 0,
+  let revenueData: any = {
+    revenueHistory: [],
+    currentRevenue: 0,
+    citizenRevenue: 0,
+    teamRevenue: 0,
+    defiRevenue: 0,
+    stakingRevenue: 0,
   }
   let citizenSubgraphData: any = { transfers: [], createdAt: Date.now() }
   let aumData = null
@@ -281,19 +283,16 @@ export async function getStaticProps() {
       : { citizenTransfers: [], teamTransfers: [] }
   aumData = aumResult.status === 'fulfilled' ? aumResult.value : null
 
-  // Historical ARR
-  if (transferResult.status === 'fulfilled') {
+  // Historical Revenue
+  if (aumData?.defiData) {
     try {
-      arrData = await getHistoricalARR(
-        transferData.citizenTransfers,
-        transferData.teamTransfers,
-        aumData?.defiData || { balance: 0, protocols: [] },
-        365
-      )
+      revenueData = await getHistoricalRevenue(aumData.defiData, 365)
     } catch (error) {
-      console.error('ARR calculation failed:', error)
+      console.error('Error getting historical revenue:', error)
     }
+  }
 
+  if (transferResult.status === 'fulfilled') {
     citizenSubgraphData = {
       transfers: transferData.citizenTransfers.map((transfer: any) => ({
         id: transfer.id,
@@ -356,7 +355,7 @@ export async function getStaticProps() {
       newestJobs,
       citizenSubgraphData,
       aumData,
-      arrData,
+      revenueData,
       mooneyPrice,
       filteredTeams,
       citizensLocationData,

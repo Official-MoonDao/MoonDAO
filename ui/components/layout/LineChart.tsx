@@ -20,6 +20,7 @@ export type LineChartData = {
 
 export type LineChartProps = {
   data: LineChartData[]
+  dataCategories?: any[]
   isLoading: boolean
   height: number
   compact?: boolean
@@ -54,6 +55,7 @@ const now = Date.now().valueOf()
 
 export default function LineChart({
   data,
+  dataCategories,
   isLoading,
   height,
   compact = false,
@@ -341,10 +343,25 @@ export default function LineChart({
 
   return (
     <div id={`${valueField}-timeline-chart`}>
-      <div className="mt-8 w-full flex items-center justify-between gap-8">
+      <div className="mt-8 w-full flex flex-col md:flex-row items-center justify-between gap-8">
         <div id="range-selector">
           <RangeSelector range={range} setRange={setRange} />
         </div>
+        {dataCategories && (
+          <div className="flex flex-col md:flex-row items-center gap-2">
+            {dataCategories.map((category: any) => {
+              return (
+                <div
+                  key={category.name}
+                  className={`text-sm`}
+                  style={{ color: '#425eeb' }}
+                >
+                  {`◉ ${category.name}`}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
       <div className="mt-4 w-full relative">
         {!isLoading && data && allZeroValues && (
