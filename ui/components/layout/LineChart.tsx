@@ -53,6 +53,89 @@ export type LineChartProps = {
 
 const now = Date.now().valueOf()
 
+const getYPaddingForValue = (maxValue: number, dataRange: number) => {
+  if (dataRange === 0) {
+    const paddingRates = [
+      { threshold: 1000, rate: 0.05 },
+      { threshold: 100000, rate: 0.03 },
+      { threshold: 10000000, rate: 0.02 },
+      { threshold: Infinity, rate: 0.01 },
+    ]
+    return paddingRates.find((p) => maxValue <= p.threshold)!.rate * maxValue
+  }
+
+  const baseRate = maxValue <= 100000 ? 0.3 : 0.2
+  const minRate = maxValue <= 100000 ? 0.02 : 0.01
+  return Math.max(dataRange * baseRate, maxValue * minRate)
+}
+
+const getYRoundingConfig = (range: number) => {
+  const configs = [
+    { threshold: 10, divisor: 1 },
+    { threshold: 100, divisor: 5 },
+    { threshold: 1000, divisor: 25 },
+    { threshold: 10000, divisor: 100 },
+    { threshold: 100000, divisor: 1000 },
+    { threshold: 1000000, divisor: 10000 },
+    { threshold: Infinity, divisor: 100000 },
+  ]
+  return configs.find((c) => range <= c.threshold)!.divisor
+}
+
+const getYStandardMaxValue = (maxValue: number) => {
+  const configs = [
+    { threshold: 10, divisor: 1, multiplier: 1 },
+    { threshold: 100, divisor: 10, multiplier: 10 },
+    { threshold: 1000, divisor: 50, multiplier: 50 },
+    { threshold: 10000, divisor: 100, multiplier: 100 },
+    { threshold: 100000, divisor: 1000, multiplier: 1000 },
+    { threshold: 1000000, divisor: 10000, multiplier: 10000 },
+    { threshold: Infinity, divisor: 100000, multiplier: 100000 },
+  ]
+
+  const config = configs.find((c) => maxValue <= c.threshold)!
+  return maxValue <= 10
+    ? Math.ceil(maxValue)
+    : Math.ceil(maxValue / config.divisor) * config.multiplier
+}
+
+const calculateYAxisScale = (values: number[], compact: boolean) => {
+  const maxValue = Math.max(...values)
+  const minValue = Math.min(...values)
+  const dataRange = maxValue - minValue
+  const tickCount = compact ? 3 : 5
+
+  if (dataRange < maxValue * 0.15 || (dataRange === 0 && maxValue > 100)) {
+    const padding = getYPaddingForValue(maxValue, dataRange)
+    let yMin = Math.max(0, minValue - padding)
+    let yMax = maxValue + padding
+
+    const range = yMax - yMin
+    const divisor = getYRoundingConfig(range)
+
+    yMin = Math.floor(yMin / divisor) * divisor
+    yMax = Math.ceil(yMax / divisor) * divisor
+
+    const step = (yMax - yMin) / tickCount
+    return {
+      ticks: Array.from({ length: tickCount + 1 }, (_, i) =>
+        Math.round(yMin + step * i)
+      ),
+      domain: [yMin, yMax],
+    }
+  }
+
+  const yMax = getYStandardMaxValue(maxValue)
+  const step = yMax / tickCount
+
+  return {
+    ticks: Array.from({ length: tickCount + 1 }, (_, i) =>
+      Math.round(step * i)
+    ),
+    domain: [0, yMax],
+  }
+}
+
 export default function LineChart({
   data,
   dataCategories,
@@ -107,11 +190,13 @@ export default function LineChart({
   }
 
   const xDomain = useMemo(() => {
+    const nowInSeconds = Math.floor(now / 1000)
     const startOfToday =
-      Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60)
-    const endOfToday = startOfToday + 24 * 60 * 60 // Add 24 hours to get end of today
+      Math.floor(nowInSeconds / (24 * 60 * 60)) * (24 * 60 * 60)
+    const endOfToday = startOfToday + 24 * 60 * 60
     const days = compact ? timeRange.compactDays || 365 : +range
-    const startOfRange = endOfToday - days * 24 * 60 * 60
+
+    const startOfRange = startOfToday - (days - 1) * 24 * 60 * 60
 
     return [startOfRange, endOfToday] as [number, number]
   }, [range, compact, timeRange.compactDays])
@@ -150,7 +235,7 @@ export default function LineChart({
       // Use the default tick calculation for non-filled data
       return defaultXTicks
     }
-  }, [xDomain, fillMissingDays, compact, defaultXTicks])
+  }, [xDomain, fillMissingDays, defaultXTicks])
 
   // Process data based on configuration
   const processedPoints = useMemo(() => {
@@ -197,7 +282,7 @@ export default function LineChart({
       })
     } else {
       // Direct data processing - filter by time range and use values directly
-      points = data
+      const pointsInRange = data
         .filter((entry) => {
           const timestamp = parseInt(String(entry[timestampField]))
           return timestamp >= xDomain[0] && timestamp <= xDomain[1]
@@ -207,15 +292,36 @@ export default function LineChart({
           [valueField]: entry[valueField],
         }))
         .sort((a, b) => a.timestamp - b.timestamp)
+
+      // For fillMissingDays, also include the most recent point before the range
+      // This ensures proper context for filling missing days
+      if (fillMissingDays) {
+        const pointsBeforeRange = data
+          .filter((entry) => {
+            const timestamp = parseInt(String(entry[timestampField]))
+            return timestamp < xDomain[0]
+          })
+          .map((entry) => ({
+            timestamp: parseInt(String(entry[timestampField])),
+            [valueField]: entry[valueField],
+          }))
+          .sort((a, b) => a.timestamp - b.timestamp)
+
+        const lastPointBeforeRange =
+          pointsBeforeRange[pointsBeforeRange.length - 1]
+        points = lastPointBeforeRange
+          ? [lastPointBeforeRange, ...pointsInRange]
+          : pointsInRange
+      } else {
+        points = pointsInRange
+      }
     }
 
-    // Fill missing days if requested
     if (fillMissingDays && points.length > 0) {
       const filledPoints: any[] = []
       const startDay = Math.floor(xDomain[0] / (24 * 60 * 60)) * (24 * 60 * 60)
       const endDay = Math.floor(xDomain[1] / (24 * 60 * 60)) * (24 * 60 * 60)
 
-      // Create a map of existing data points by day
       const pointsByDay = new Map()
       points.forEach((point) => {
         const dayTimestamp =
@@ -223,20 +329,35 @@ export default function LineChart({
         pointsByDay.set(dayTimestamp, point[valueField])
       })
 
-      let lastValue = points[0][valueField] // Start with the first available value
+      // Find the last known value before the range starts
+      let lastValue = points[0][valueField]
+
+      // Look for any data points before the start of our range to get a better starting value
+      const pointsBeforeRange = points.filter(
+        (point) => point.timestamp < startDay
+      )
+      if (pointsBeforeRange.length > 0) {
+        // Use the most recent value before our range
+        lastValue = pointsBeforeRange[pointsBeforeRange.length - 1][valueField]
+      }
 
       // Generate all days in the range
       for (let day = startDay; day <= endDay; day += 24 * 60 * 60) {
         if (pointsByDay.has(day)) {
           // Use actual data point value and update lastValue
           lastValue = pointsByDay.get(day)
+          filledPoints.push({
+            timestamp: day,
+            [valueField]: lastValue,
+          })
+        } else {
+          // Use the last known value for missing days
+          const numericValue = Number(lastValue)
+          filledPoints.push({
+            timestamp: day,
+            [valueField]: isNaN(numericValue) ? 0 : numericValue,
+          })
         }
-        // Always add a point for this day (either with actual value or filled value)
-        const numericValue = Number(lastValue)
-        filledPoints.push({
-          timestamp: day,
-          [valueField]: isNaN(numericValue) ? 0 : numericValue, // Ensure it's a valid number
-        })
       }
 
       return filledPoints.sort((a, b) => a.timestamp - b.timestamp)
@@ -253,51 +374,36 @@ export default function LineChart({
     fillMissingDays,
   ])
 
-  const yTicks = useMemo(() => {
-    if (!processedPoints?.length) return [0, 1, 2, 3, 4, 5]
+  const yAxisScale = useMemo(() => {
+    if (!processedPoints?.length)
+      return { ticks: [0, 1, 2, 3, 4, 5], domain: [0, 5] }
 
-    const maxValue = Math.max(
-      ...processedPoints.map((point) => Number(point[valueField]))
-    )
-
-    let roundedMax: number
-    let tickCount = compact ? 3 : 5
-
-    if (maxValue <= 10) {
-      roundedMax = Math.ceil(maxValue)
-      tickCount = compact ? Math.min(3, roundedMax) : roundedMax
-    } else if (maxValue <= 100) {
-      roundedMax = Math.ceil(maxValue / 10) * 10
-    } else if (maxValue <= 1000) {
-      roundedMax = Math.ceil(maxValue / 50) * 50
-    } else {
-      roundedMax = Math.ceil(maxValue / 100) * 100
-    }
-
-    const step = roundedMax / tickCount
-
-    return Array.from({ length: tickCount + 1 }, (_, i) => Math.round(step * i))
+    const values = processedPoints.map((point) => Number(point[valueField]))
+    return calculateYAxisScale(values, compact)
   }, [processedPoints, compact, valueField])
 
-  const yDomain = useMemo(() => {
-    if (!processedPoints?.length) return [0, 5]
+  const yTicks = yAxisScale.ticks
 
-    const maxValue = Math.max(
-      ...processedPoints.map((point) => Number(point[valueField]))
-    )
-
-    // Ensure we have some padding at the top
-    const maxTick = yTicks[yTicks.length - 1]
-    return [0, Math.max(maxTick, maxValue * 1.1)]
-  }, [yTicks, processedPoints, valueField])
+  const yDomain = yAxisScale.domain
 
   const allZeroValues = useMemo(() => {
     if (!processedPoints?.length) return true
     return processedPoints.every((point) => Number(point[valueField]) === 0)
   }, [processedPoints, valueField])
 
-  const dateStringForBlockTime = (timestampSecs: number) =>
-    moment(timestampSecs * 1000).format('M/DD')
+  const dateStringForBlockTime = useMemo(() => {
+    const totalDays = (xDomain[1] - xDomain[0]) / (24 * 60 * 60)
+
+    const formatConfigs = [
+      { threshold: 30, format: 'M/D' },
+      { threshold: 365, format: 'MMM D' },
+      { threshold: Infinity, format: "MMM 'YY" },
+    ]
+
+    const config = formatConfigs.find((c) => totalDays <= c.threshold)!
+    return (timestampSecs: number) =>
+      moment.utc(timestampSecs * 1000).format(config.format)
+  }, [xDomain])
 
   if (compact) {
     return (
@@ -312,7 +418,7 @@ export default function LineChart({
           data={processedPoints}
         >
           {/* Add invisible axes for proper scaling */}
-          <YAxis hide domain={yDomain} type="number" />
+          <YAxis hide domain={[yDomain[0], yDomain[1]]} type="number" />
           <XAxis hide domain={xDomain} type="number" dataKey="timestamp" />
           <defs>
             <linearGradient
@@ -425,7 +531,8 @@ export default function LineChart({
                 )
               }}
               ticks={yTicks}
-              domain={yDomain}
+              domain={[yDomain[0], yDomain[1]]}
+              type="number"
               interval={0}
               mirror
             />
