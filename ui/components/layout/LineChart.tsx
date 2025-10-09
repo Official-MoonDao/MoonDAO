@@ -525,7 +525,7 @@ export default function LineChart({
                       fill={color}
                       transform={`translate(${props.x + 4},${props.y + 4})`}
                     >
-                      {value}
+                      {value.toLocaleString()}
                     </text>
                   </g>
                 )
