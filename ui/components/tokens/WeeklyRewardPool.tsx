@@ -43,7 +43,7 @@ export default function WeeklyRewardPool() {
   const { wallets } = useWallets()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains: Chain[] = useMemo(
-    () => (isTestnet ? [sepolia, arbitrumSepolia] : [arbitrum, base, ethereum]),
+    () => (isTestnet ? [sepolia, arbitrumSepolia] : [ethereum]),
     [isTestnet]
   )
 
@@ -345,9 +345,7 @@ export default function WeeklyRewardPool() {
       <div className="relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-bold">
-            Weekly Reward Pool
-          </h3>
+          <h3 className="text-lg font-bold">Weekly Reward Pool</h3>
         </div>
 
         {/* Pool Stats Cards */}
@@ -356,11 +354,17 @@ export default function WeeklyRewardPool() {
           <div className="bg-white/8 backdrop-blur-sm border border-white/15 rounded-xl p-4 hover:bg-white/12 transition-all duration-300">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
-                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z"/>
+                <svg
+                  className="w-5 h-5 text-white"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z" />
                 </svg>
               </div>
-              <span className="text-white/70 font-medium text-sm">Total Pool</span>
+              <span className="text-white/70 font-medium text-sm">
+                Total Pool
+              </span>
             </div>
             {feesAvailable !== null ? (
               <div>
@@ -385,7 +389,9 @@ export default function WeeklyRewardPool() {
               <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
                 <GiftIcon className="w-5 h-5 text-white" />
               </div>
-              <span className="text-white/70 font-medium text-sm">Your Reward</span>
+              <span className="text-white/70 font-medium text-sm">
+                Your Reward
+              </span>
             </div>
             {address && VMOONEYBalance && VMOONEYBalance > 0 ? (
               estimatedFees !== null ? (
@@ -405,7 +411,9 @@ export default function WeeklyRewardPool() {
               )
             ) : (
               <div>
-                <div className="text-orange-300 text-lg font-bold mb-1">Need vMOONEY</div>
+                <div className="text-orange-300 text-lg font-bold mb-1">
+                  Need vMOONEY
+                </div>
                 <div className="text-white/60 text-sm">Lock MOONEY first</div>
               </div>
             )}
@@ -429,10 +437,15 @@ export default function WeeklyRewardPool() {
               {checkedInCount !== null && checkedInCount > 0 && (
                 <div className="flex items-center gap-1">
                   {[...Array(Math.min(5, checkedInCount))].map((_, i) => (
-                    <div key={i} className="w-2.5 h-2.5 bg-yellow-400 rounded-full"></div>
+                    <div
+                      key={i}
+                      className="w-2.5 h-2.5 bg-yellow-400 rounded-full"
+                    ></div>
                   ))}
                   {checkedInCount > 5 && (
-                    <span className="text-xs text-yellow-400 ml-1 font-medium">+{checkedInCount - 5}</span>
+                    <span className="text-xs text-yellow-400 ml-1 font-medium">
+                      +{checkedInCount - 5}
+                    </span>
                   )}
                 </div>
               )}
@@ -445,9 +458,7 @@ export default function WeeklyRewardPool() {
           {!address || (VMOONEYBalance && VMOONEYBalance > 0) ? (
             <PrivyWeb3Button
               label={
-                isCheckedIn 
-                  ? 'Already Checked In' 
-                  : 'Check In & Claim Reward'
+                isCheckedIn ? 'Already Checked In' : 'Check In & Claim Reward'
               }
               action={handleCheckIn}
               isDisabled={isCheckedIn}
@@ -456,6 +467,7 @@ export default function WeeklyRewardPool() {
                   ? 'bg-gradient-to-r from-green-500 to-emerald-600 cursor-not-allowed shadow-green-500/25'
                   : 'bg-gradient-to-r from-blue-500 via-purple-600 to-pink-600 hover:from-blue-600 hover:via-purple-700 hover:to-pink-700 shadow-purple-500/25'
               }`}
+              requiredChain={ethereum}
             />
           ) : (
             <Link
@@ -473,8 +485,18 @@ export default function WeeklyRewardPool() {
               className="inline-flex items-center gap-2 text-sm text-blue-300 hover:text-blue-200 transition-colors duration-200 group"
             >
               <span>Learn about rewards</span>
-              <svg className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </div>

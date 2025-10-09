@@ -18,6 +18,7 @@ import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 export type TeamListing = {
   id: number
   teamId: number
+  teamName?: string
   title: string
   description: string
   image: string
@@ -200,7 +201,9 @@ export default function TeamListing({
     <div className="flex items-center gap-4">
       <ShareButton
         link={`${window.location.origin}/team/${
-          teamNFT?.metadata?.name ? generatePrettyLink(teamNFT.metadata.name) : listing.teamId
+          teamNFT?.metadata?.name
+            ? generatePrettyLink(teamNFT.metadata.name)
+            : listing.teamId
         }?listing=${listing.id}`}
       />
       {editable && (

@@ -14,7 +14,11 @@ import {
   TEAM_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
 } from 'const/config'
-import { blockedCitizens, blockedTeams, featuredTeams } from 'const/whitelist'
+import {
+  BLOCKED_CITIZENS,
+  BLOCKED_TEAMS,
+  FEATURED_TEAMS,
+} from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -206,7 +210,7 @@ export default function Network({
         nft?.metadata?.attributes as any[],
         'Team Tier'
       )?.value
-      const isFeatured = featuredTeams.includes(nft.metadata.name)
+      const isFeatured = FEATURED_TEAMS.includes(Number(nft.metadata.name))
       const link = `/${tab === 'teams' ? 'team' : 'citizen'}/${
         tab === 'teams'
           ? generatePrettyLink(nft.metadata.name)
@@ -532,7 +536,7 @@ export async function getServerSideProps() {
     const filteredPublicTeams: any = teamNFTs?.filter(
       (nft: any) =>
         nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          ?.value === 'public' && !blockedTeams.includes(nft.metadata.id)
+          ?.value === 'public' && !BLOCKED_TEAMS.has(nft.metadata.id)
     )
 
     // Filter for valid (non-expired) teams
@@ -559,13 +563,13 @@ export async function getServerSideProps() {
     const filteredTeams = filteredValidTeams
       .reverse()
       .sort((a: any, b: any) => {
-        const aIsFeatured = featuredTeams.includes(Number(a.metadata.id))
-        const bIsFeatured = featuredTeams.includes(Number(b.metadata.id))
+        const aIsFeatured = FEATURED_TEAMS.includes(Number(a.metadata.id))
+        const bIsFeatured = FEATURED_TEAMS.includes(Number(b.metadata.id))
 
         if (aIsFeatured && bIsFeatured) {
           return (
-            featuredTeams.indexOf(Number(a.metadata.id)) -
-            featuredTeams.indexOf(Number(b.metadata.id))
+            FEATURED_TEAMS.indexOf(Number(a.metadata.id)) -
+            FEATURED_TEAMS.indexOf(Number(b.metadata.id))
           )
         } else if (aIsFeatured) {
           return -1
@@ -601,7 +605,7 @@ export async function getServerSideProps() {
     const filteredPublicCitizens: any = citizenNFTs?.filter(
       (nft: any) =>
         nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          ?.value === 'public' && !blockedCitizens.includes(nft.metadata.id)
+          ?.value === 'public' && !BLOCKED_CITIZENS.has(nft.metadata.id)
     )
 
     // Filter for valid (non-expired) citizens

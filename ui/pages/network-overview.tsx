@@ -1,5 +1,9 @@
 import { PlusCircleIcon } from '@heroicons/react/20/solid'
-import { GlobeAmericasIcon, ListBulletIcon, MoonIcon } from '@heroicons/react/24/outline'
+import {
+  GlobeAmericasIcon,
+  ListBulletIcon,
+  MoonIcon,
+} from '@heroicons/react/24/outline'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
 import {
@@ -10,8 +14,11 @@ import {
   TEAM_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
 } from 'const/config'
-import useETHPrice from '@/lib/etherscan/useETHPrice'
-import { blockedCitizens, blockedTeams, featuredTeams } from 'const/whitelist'
+import {
+  BLOCKED_CITIZENS,
+  BLOCKED_TEAMS,
+  FEATURED_TEAMS,
+} from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -19,6 +26,7 @@ import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback, useContext } from 'react'
 import { getContract, NFT, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import {
   generatePrettyLink,
   generatePrettyLinkWithId,
@@ -30,10 +38,12 @@ import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import { getAttribute } from '@/lib/utils/nft'
+import Job, { Job as JobType } from '../components/jobs/Job'
 import Card from '../components/layout/Card'
 import Container from '../components/layout/Container'
 import Frame from '../components/layout/Frame'
 import Head from '../components/layout/Head'
+import NetworkSection from '@/components/home/NetworkSection'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
@@ -42,15 +52,13 @@ import Search from '@/components/layout/Search'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import Tab from '@/components/layout/Tab'
-import NetworkSection from '@/components/home/NetworkSection'
+import CitizenTier from '@/components/onboarding/CitizenTier'
 import CreateCitizen from '@/components/onboarding/CreateCitizen'
 import CreateTeam from '@/components/onboarding/CreateTeam'
-import CitizenTier from '@/components/onboarding/CitizenTier'
 import TeamTier from '@/components/onboarding/TeamTier'
-import Job, { Job as JobType } from '../components/jobs/Job'
 import CitizenABI from '../const/abis/Citizen.json'
-import TeamABI from '../const/abis/Team.json'
 import JobsABI from '../const/abis/JobBoardTable.json'
+import TeamABI from '../const/abis/Team.json'
 
 // Dynamic imports for globe components
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
@@ -91,7 +99,7 @@ export default function Network({
 
   const [tab, setTab] = useState<string>('citizens')
   const [mapView, setMapView] = useState<string>('earth') // For map sub-tabs
-  
+
   function loadByTab(tab: string) {
     if (tab === 'teams') {
       setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
@@ -128,7 +136,7 @@ export default function Network({
     (newPage: number) => {
       setPageIdx(newPage)
       shallowQueryRoute({ tab, page: newPage.toString() })
-      
+
       // Scroll to the controls section to keep the user focused on the network browsing area
       setTimeout(() => {
         const controls = document.getElementById('network-controls')
@@ -161,7 +169,10 @@ export default function Network({
 
   useEffect(() => {
     const { tab: urlTab, page: urlPage } = router.query
-    if (urlTab && (urlTab === 'teams' || urlTab === 'citizens' || urlTab === 'map')) {
+    if (
+      urlTab &&
+      (urlTab === 'teams' || urlTab === 'citizens' || urlTab === 'map')
+    ) {
       setTab(urlTab as string)
     }
     if (urlPage && !isNaN(Number(urlPage))) {
@@ -196,7 +207,13 @@ export default function Network({
                 className="w-full flex-grow"
                 input={input}
                 setInput={setInput}
-                placeholder={tab === 'teams' ? 'Search teams' : tab === 'citizens' ? 'Search citizens' : 'Search network'}
+                placeholder={
+                  tab === 'teams'
+                    ? 'Search teams'
+                    : tab === 'citizens'
+                    ? 'Search citizens'
+                    : 'Search network'
+                }
               />
             </div>
 
@@ -379,7 +396,9 @@ export default function Network({
                 Space Acceleration Network
               </h1>
               <p className="sub-header text-white/90 drop-shadow-lg">
-                The Space Acceleration Network is an onchain startup society focused on building a permanent settlement on the Moon and beyond
+                The Space Acceleration Network is an onchain startup society
+                focused on building a permanent settlement on the Moon and
+                beyond
               </p>
               <StandardButton
                 className="gradient-2 hover:opacity-90 transition-opacity"
@@ -396,115 +415,141 @@ export default function Network({
       </Container>
 
       <Container>
-      {/* Join MoonDAO Section */}
-      <div id="join-moondao" className="relative w-full py-12 md:py-14 lg:py-20 xl:py-24 2xl:py-32">
-        <div className="absolute inset-0">
-          <Image
-            src="/assets/JoinImage.webp"
-            alt="Join MoonDAO"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        </div>
-        
-        <div className="relative z-10 max-w-6xl mx-auto px-6">
-          <div className="text-center mb-8">
-            <h2 className="header font-GoodTimes text-white mb-4 drop-shadow-lg">
-              Join MoonDAO
-            </h2>
-            <p className="sub-header text-white/90 max-w-3xl mx-auto drop-shadow-lg">
-              Join our decentralized space collective and help accelerate humanity's expansion to the Moon and beyond
-            </p>
+        {/* Join MoonDAO Section */}
+        <div
+          id="join-moondao"
+          className="relative w-full py-12 md:py-14 lg:py-20 xl:py-24 2xl:py-32"
+        >
+          <div className="absolute inset-0">
+            <Image
+              src="/assets/JoinImage.webp"
+              alt="Join MoonDAO"
+              fill
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           </div>
-          
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="flex-1">
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 h-full">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
-                    <Image
-                      src="/assets/citizen-default.webp"
-                      width={96}
-                      height={96}
-                      alt="Become a Citizen"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-2xl font-GoodTimes text-white mb-4">Become a Citizen</h3>
-                  <p className="text-slate-300 mb-6 leading-relaxed">
-                    Citizens are the trailblazers supporting the creation of off-world settlements. Whether you're already part of a team or seeking to join one, everyone has a crucial role to play in this mission.
-                  </p>
-                  <div className="flex flex-col items-center mb-6">
-                    <div className="text-2xl font-semibold text-white">
-                      ~${Math.round(citizenUsdPrice)} / Year
+
+          <div className="relative z-10 max-w-6xl mx-auto px-6">
+            <div className="text-center mb-8">
+              <h2 className="header font-GoodTimes text-white mb-4 drop-shadow-lg">
+                Join MoonDAO
+              </h2>
+              <p className="sub-header text-white/90 max-w-3xl mx-auto drop-shadow-lg">
+                Join our decentralized space collective and help accelerate
+                humanity's expansion to the Moon and beyond
+              </p>
+            </div>
+
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div className="flex-1">
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 h-full">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
+                      <Image
+                        src="/assets/citizen-default.webp"
+                        width={96}
+                        height={96}
+                        alt="Become a Citizen"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                    <div className="text-sm text-slate-400">({CITIZEN_PRICE} Arbitrum ETH)</div>
-                    <div className="text-green-400 text-sm font-medium mt-2">✓ 12 Month Passport</div>
+                    <h3 className="text-2xl font-GoodTimes text-white mb-4">
+                      Become a Citizen
+                    </h3>
+                    <p className="text-slate-300 mb-6 leading-relaxed">
+                      Citizens are the trailblazers supporting the creation of
+                      off-world settlements. Whether you're already part of a
+                      team or seeking to join one, everyone has a crucial role
+                      to play in this mission.
+                    </p>
+                    <div className="flex flex-col items-center mb-6">
+                      <div className="text-2xl font-semibold text-white">
+                        ~${Math.round(citizenUsdPrice)} / Year
+                      </div>
+                      <div className="text-sm text-slate-400">
+                        ({CITIZEN_PRICE} Arbitrum ETH)
+                      </div>
+                      <div className="text-green-400 text-sm font-medium mt-2">
+                        ✓ 12 Month Passport
+                      </div>
+                    </div>
+                    <StandardButton
+                      className="gradient-2 hover:opacity-90 transition-opacity"
+                      textColor="text-white"
+                      borderRadius="rounded-xl"
+                      hoverEffect={false}
+                      link="/join"
+                    >
+                      Become a Citizen
+                    </StandardButton>
                   </div>
-                  <StandardButton
-                    className="gradient-2 hover:opacity-90 transition-opacity"
-                    textColor="text-white"
-                    borderRadius="rounded-xl"
-                    hoverEffect={false}
-                    link="/join"
-                  >
-                    Become a Citizen
-                  </StandardButton>
+                </div>
+              </div>
+
+              <div className="flex-1">
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 h-full">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
+                      <Image
+                        src="/assets/team_image.webp"
+                        width={96}
+                        height={96}
+                        alt="Create a Team"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <h3 className="text-2xl font-GoodTimes text-white mb-4">
+                      Create a Team
+                    </h3>
+                    <p className="text-slate-300 mb-6 leading-relaxed">
+                      Teams are driving innovation and tackling ambitious space
+                      challenges together. From non-profits to startups and
+                      university teams, every group has something to contribute
+                      to our multiplanetary future.
+                    </p>
+                    <div className="flex flex-col items-center mb-6">
+                      <div className="text-2xl font-semibold text-white">
+                        ~${Math.round(teamUsdPrice)} / Year
+                      </div>
+                      <div className="text-sm text-slate-400">
+                        ({TEAM_PRICE} Arbitrum ETH)
+                      </div>
+                      <div className="text-green-400 text-sm font-medium mt-2">
+                        ✓ 12 Month Passport
+                      </div>
+                    </div>
+                    <StandardButton
+                      className="gradient-2 hover:opacity-90 transition-opacity"
+                      textColor="text-white"
+                      borderRadius="rounded-xl"
+                      hoverEffect={false}
+                      link="/team"
+                    >
+                      Create a Team
+                    </StandardButton>
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <div className="flex-1">
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 h-full">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-24 h-24 mb-6 rounded-xl overflow-hidden">
-                    <Image
-                      src="/assets/team_image.webp"
-                      width={96}
-                      height={96}
-                      alt="Create a Team"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-2xl font-GoodTimes text-white mb-4">Create a Team</h3>
-                  <p className="text-slate-300 mb-6 leading-relaxed">
-                    Teams are driving innovation and tackling ambitious space challenges together. From non-profits to startups and university teams, every group has something to contribute to our multiplanetary future.
-                  </p>
-                  <div className="flex flex-col items-center mb-6">
-                    <div className="text-2xl font-semibold text-white">
-                      ~${Math.round(teamUsdPrice)} / Year
-                    </div>
-                    <div className="text-sm text-slate-400">({TEAM_PRICE} Arbitrum ETH)</div>
-                    <div className="text-green-400 text-sm font-medium mt-2">✓ 12 Month Passport</div>
-                  </div>
-                  <StandardButton
-                    className="gradient-2 hover:opacity-90 transition-opacity"
-                    textColor="text-white"
-                    borderRadius="rounded-xl"
-                    hoverEffect={false}
-                    link="/team"
-                  >
-                    Create a Team
-                  </StandardButton>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
-      </div>
-      
+
         {/* Network Explainer Section */}
         <NetworkSection />
 
         {/* Explore the Network Header */}
-        <div id="explore-network-header" className="max-w-6xl mx-auto mb-8 px-6 pt-12">
+        <div
+          id="explore-network-header"
+          className="max-w-6xl mx-auto mb-8 px-6 pt-12"
+        >
           <h2 className="header font-GoodTimes text-white text-center mb-4">
             Explore the Network
           </h2>
           <p className="sub-header text-white/80 text-center mb-8 max-w-3xl mx-auto">
-            Discover and connect with citizens and teams building the future of space exploration
+            Discover and connect with citizens and teams building the future of
+            space exploration
           </p>
         </div>
 
@@ -512,12 +557,22 @@ export default function Network({
         <div id="network-controls" className="max-w-6xl mx-auto mb-8 px-6">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             {/* Search Bar - Always present but invisible for map tab */}
-            <div className={`w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3 ${tab === 'map' ? 'invisible' : ''}`}>
+            <div
+              className={`w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3 ${
+                tab === 'map' ? 'invisible' : ''
+              }`}
+            >
               <Search
                 className="w-full"
                 input={input}
                 setInput={setInput}
-                placeholder={tab === 'teams' ? 'Search teams' : tab === 'citizens' ? 'Search citizens' : 'Search network'}
+                placeholder={
+                  tab === 'teams'
+                    ? 'Search teams'
+                    : tab === 'citizens'
+                    ? 'Search citizens'
+                    : 'Search network'
+                }
               />
             </div>
 
@@ -598,7 +653,11 @@ export default function Network({
               </div>
               <div className="w-full flex justify-center">
                 <div className="w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
-                  <div className={`flex items-center justify-center ${mapView !== 'earth' && 'hidden'}`}>
+                  <div
+                    className={`flex items-center justify-center ${
+                      mapView !== 'earth' && 'hidden'
+                    }`}
+                  >
                     <Earth pointsData={citizensLocationData || []} />
                   </div>
                   <div className={`${mapView !== 'moon' && 'hidden'}`}>
@@ -625,51 +684,51 @@ export default function Network({
               {tab !== 'map' && (
                 <div className="w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mt-8">
                   <div className="w-full flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8">
-                <button
-                  onClick={() => {
-                    if (pageIdx > 1) {
-                      handlePageChange(pageIdx - 1)
-                    }
-                  }}
-                  className={`pagination-button transition-opacity hover:scale-110 ${
-                    pageIdx === 1
-                      ? 'opacity-30'
-                      : 'cursor-pointer opacity-100'
-                  }`}
-                  disabled={pageIdx === 1}
-                >
-                  <Image
-                    src="/assets/icon-left.svg"
-                    alt="Left Arrow"
-                    width={35}
-                    height={35}
-                  />
-                </button>
-                <p id="page-number" className="px-5 font-bold text-white">
-                  Page {pageIdx} of {maxPage}
-                </p>
-                <button
-                  onClick={() => {
-                    if (pageIdx < maxPage) {
-                      handlePageChange(pageIdx + 1)
-                    }
-                  }}
-                  className={`pagination-button transition-opacity hover:scale-110 ${
-                    pageIdx === maxPage
-                      ? 'opacity-30'
-                      : 'cursor-pointer opacity-100'
-                  }`}
-                  disabled={pageIdx === maxPage}
-                >
-                  <Image
-                    src="/assets/icon-right.svg"
-                    alt="Right Arrow"
-                    width={35}
-                    height={35}
-                  />
-                </button>
-              </div>
-            </div>
+                    <button
+                      onClick={() => {
+                        if (pageIdx > 1) {
+                          handlePageChange(pageIdx - 1)
+                        }
+                      }}
+                      className={`pagination-button transition-opacity hover:scale-110 ${
+                        pageIdx === 1
+                          ? 'opacity-30'
+                          : 'cursor-pointer opacity-100'
+                      }`}
+                      disabled={pageIdx === 1}
+                    >
+                      <Image
+                        src="/assets/icon-left.svg"
+                        alt="Left Arrow"
+                        width={35}
+                        height={35}
+                      />
+                    </button>
+                    <p id="page-number" className="px-5 font-bold text-white">
+                      Page {pageIdx} of {maxPage}
+                    </p>
+                    <button
+                      onClick={() => {
+                        if (pageIdx < maxPage) {
+                          handlePageChange(pageIdx + 1)
+                        }
+                      }}
+                      className={`pagination-button transition-opacity hover:scale-110 ${
+                        pageIdx === maxPage
+                          ? 'opacity-30'
+                          : 'cursor-pointer opacity-100'
+                      }`}
+                      disabled={pageIdx === maxPage}
+                    >
+                      <Image
+                        src="/assets/icon-right.svg"
+                        alt="Right Arrow"
+                        width={35}
+                        height={35}
+                      />
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -682,7 +741,9 @@ export default function Network({
               Jobs Board
             </h2>
             <p className="sub-header text-white/80 max-w-3xl mx-auto mb-8">
-              Join the mission to expand humanity to the Moon and beyond. Explore opportunities with teams in the Space Acceleration Network.
+              Join the mission to expand humanity to the Moon and beyond.
+              Explore opportunities with teams in the Space Acceleration
+              Network.
             </p>
           </div>
 
@@ -691,11 +752,24 @@ export default function Network({
               {jobs && jobs.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {jobs.slice(0, 6).map((job: JobType, index: number) => (
-                    <div key={`job-${job.id}`} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300">
+                    <div
+                      key={`job-${job.id}`}
+                      className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300"
+                    >
                       <div className="flex items-start justify-between mb-4">
                         <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          <svg
+                            className="w-6 h-6 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                            />
                           </svg>
                         </div>
                         <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">
@@ -709,7 +783,9 @@ export default function Network({
                         {job.description}
                       </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-400">Team #{job.teamId}</span>
+                        <span className="text-sm text-slate-400">
+                          Team #{job.teamId}
+                        </span>
                         <StandardButton
                           backgroundColor="bg-blue-600 hover:bg-blue-700"
                           textColor="text-white"
@@ -727,13 +803,26 @@ export default function Network({
               ) : (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 bg-slate-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    <svg
+                      className="w-8 h-8 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                      />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-GoodTimes text-white mb-2">No Jobs Available</h3>
+                  <h3 className="text-xl font-GoodTimes text-white mb-2">
+                    No Jobs Available
+                  </h3>
                   <p className="text-slate-400 max-w-md mx-auto">
-                    There are currently no open positions. Check back soon for new opportunities to join the space mission!
+                    There are currently no open positions. Check back soon for
+                    new opportunities to join the space mission!
                   </p>
                 </div>
               )}
@@ -800,7 +889,7 @@ export async function getStaticProps() {
     const filteredPublicTeams: any = teams?.filter(
       (nft: any) =>
         nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          .value === 'public' && !blockedTeams.includes(nft.metadata.id)
+          .value === 'public' && !BLOCKED_TEAMS.has(nft.metadata.id)
     )
 
     const filteredValidTeams: any = filteredPublicTeams?.filter(
@@ -818,13 +907,13 @@ export async function getStaticProps() {
     const sortedValidTeams = filteredValidTeams
       .reverse()
       .sort((a: any, b: any) => {
-        const aIsFeatured = featuredTeams.includes(Number(a.metadata.id))
-        const bIsFeatured = featuredTeams.includes(Number(b.metadata.id))
+        const aIsFeatured = FEATURED_TEAMS.includes(Number(a.metadata.id))
+        const bIsFeatured = FEATURED_TEAMS.includes(Number(b.metadata.id))
 
         if (aIsFeatured && bIsFeatured) {
           return (
-            featuredTeams.indexOf(Number(a.metadata.id)) -
-            featuredTeams.indexOf(Number(b.metadata.id))
+            FEATURED_TEAMS.indexOf(Number(a.metadata.id)) -
+            FEATURED_TEAMS.indexOf(Number(b.metadata.id))
           )
         } else if (aIsFeatured) {
           return -1
@@ -866,7 +955,7 @@ export async function getStaticProps() {
     const filteredPublicCitizens: any = citizens?.filter(
       (nft: any) =>
         nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          .value === 'public' && !blockedCitizens.includes(nft.metadata.id)
+          .value === 'public' && !BLOCKED_CITIZENS.has(nft.metadata.id)
     )
 
     const filteredValidCitizens: any = filteredPublicCitizens?.filter(
@@ -883,8 +972,11 @@ export async function getStaticProps() {
 
     // Generate location data for map
     let citizensLocationData: any[] = []
-    
-    if (process.env.NEXT_PUBLIC_ENV === 'prod' || process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
+
+    if (
+      process.env.NEXT_PUBLIC_ENV === 'prod' ||
+      process.env.NEXT_PUBLIC_TEST_ENV === 'true'
+    ) {
       // Get location data for each citizen
       for (const citizen of filteredValidCitizens) {
         const citizenLocation = getAttribute(
@@ -994,7 +1086,12 @@ export async function getStaticProps() {
   } catch (error) {
     console.error(error)
     return {
-      props: { filteredTeams: [], filteredCitizens: [], jobs: [], citizensLocationData: [] },
+      props: {
+        filteredTeams: [],
+        filteredCitizens: [],
+        jobs: [],
+        citizensLocationData: [],
+      },
       revalidate: 60,
     }
   }

@@ -20,6 +20,7 @@ import {
   TEAM_ADDRESSES,
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
 } from 'const/config'
+import { BigNumber } from 'ethers'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'

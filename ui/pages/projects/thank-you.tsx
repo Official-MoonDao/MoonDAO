@@ -5,7 +5,7 @@ import {
   DISTRIBUTION_TABLE_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
 } from 'const/config'
-import { blockedProjects } from 'const/whitelist'
+import { BLOCKED_PROJECTS } from 'const/whitelist'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
@@ -122,7 +122,7 @@ export async function getStaticProps() {
     const projectStatement = `SELECT * FROM ${projectTableName} WHERE year = ${year} AND quarter = ${quarter} AND eligible != 0`
     const projects = await queryTable(chain, projectStatement)
     const filteredProjects = projects.filter(
-      (project: any) => !blockedProjects.includes(project?.id)
+      (project: any) => !BLOCKED_PROJECTS.has(project?.id)
     )
 
     const distributionTableContract = getContract({

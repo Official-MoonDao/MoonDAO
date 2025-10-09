@@ -150,11 +150,11 @@ contract Config is Script {
         V4_ROUTERS[ARB_SEP] = 0xeFd1D4bD4cf1e86Da286BB4CB1B8BcED9C10BA47;
         V4_ROUTERS[SEP] = sepJson.readAddress(".UniswapV4Router");
 
+        FEE_HOOK_ADDRESSES[MAINNET] = ethJson.readAddress(".FeeHook");
         FEE_HOOK_ADDRESSES[ARBITRUM] = arbJson.readAddress(".FeeHook");
         FEE_HOOK_ADDRESSES[BASE] = baseJson.readAddress(".FeeHook");
         FEE_HOOK_ADDRESSES[ARB_SEP] = arbSepJson.readAddress(".FeeHook");
         FEE_HOOK_ADDRESSES[SEP] = sepJson.readAddress(".FeeHook");
-        FEE_HOOK_ADDRESSES[ARBITRUM] = arbJson.readAddress(".FeeHook");
 
         TEST_TOKEN_ADDRESSES[ARB_SEP] = 0x1Bbb4C328874E9A41B435cC3f19fC916d1C4b7Fa;
         TEST_TOKEN_ADDRESSES[SEP] = 0x62075D143Bb826DA711d5211c06D2A95056733E1;

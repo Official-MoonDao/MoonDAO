@@ -34,7 +34,7 @@ import {
   JBV5_DIRECTORY_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
 } from 'const/config'
-import { blockedTeams } from 'const/whitelist'
+import { BLOCKED_TEAMS } from 'const/whitelist'
 import { ethers } from 'ethers'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
@@ -242,11 +242,11 @@ export default function TeamDetailPage({
                   <div className="text-slate-400 text-6xl">🏢</div>
                 </div>
               )}
-              <div id="team-name-container" className="flex-1 min-w-0 flex flex-col justify-center min-h-[200px] lg:min-h-[250px]">
-                <div
-                  id="team-name"
-                  className="flex flex-col gap-4 w-full"
-                >
+              <div
+                id="team-name-container"
+                className="flex-1 min-w-0 flex flex-col justify-center min-h-[200px] lg:min-h-[250px]"
+              >
+                <div id="team-name" className="flex flex-col gap-4 w-full">
                   <div
                     id="team-name-container"
                     className="flex flex-col w-full"
@@ -263,7 +263,11 @@ export default function TeamDetailPage({
                             )
                         }}
                       >
-                        <PencilIcon width={24} height={24} className="text-white" />
+                        <PencilIcon
+                          width={24}
+                          height={24}
+                          className="text-white"
+                        />
                       </button>
                     )}
                     {nft ? (
@@ -297,7 +301,11 @@ export default function TeamDetailPage({
                             target="_blank"
                             passHref
                           >
-                            <ChatBubbleLeftIcon height={20} width={20} className="text-slate-300" />
+                            <ChatBubbleLeftIcon
+                              height={20}
+                              width={20}
+                              className="text-slate-300"
+                            />
                           </Link>
                         )}
                         {socials.twitter && (
@@ -317,7 +325,11 @@ export default function TeamDetailPage({
                             target="_blank"
                             passHref
                           >
-                            <GlobeAltIcon height={20} width={20} className="text-slate-300" />
+                            <GlobeAltIcon
+                              height={20}
+                              width={20}
+                              className="text-slate-300"
+                            />
                           </Link>
                         )}
                       </div>
@@ -476,21 +488,37 @@ export default function TeamDetailPage({
                       <Action
                         title="Fund"
                         description="Launch a mission to raise funds."
-                        icon={<BanknotesIcon height={24} width={24} className="text-white" />}
+                        icon={
+                          <BanknotesIcon
+                            height={24}
+                            width={24}
+                            className="text-white"
+                          />
+                        }
                         onClick={() => router.push('/launch?status=create')}
                       />
                       <Action
                         title="Hire"
                         description="List job openings or contracts to a global talent pool."
                         icon={
-                          <ClipboardDocumentListIcon height={24} width={24} className="text-white" />
+                          <ClipboardDocumentListIcon
+                            height={24}
+                            width={24}
+                            className="text-white"
+                          />
                         }
                         onClick={() => setTeamJobModalEnabled(true)}
                       />
                       <Action
                         title="Sell"
                         description="List products, services, or ticketed events for sale."
-                        icon={<BuildingStorefrontIcon height={24} width={24} className="text-white" />}
+                        icon={
+                          <BuildingStorefrontIcon
+                            height={24}
+                            width={24}
+                            className="text-white"
+                          />
+                        }
                         onClick={() => setTeamListingModalEnabled(true)}
                       />
                     </div>
@@ -538,7 +566,9 @@ export default function TeamDetailPage({
                       height={30}
                       className="opacity-70"
                     />
-                    <h2 className="font-GoodTimes text-2xl text-white">Meet the Team</h2>
+                    <h2 className="font-GoodTimes text-2xl text-white">
+                      Meet the Team
+                    </h2>
                   </div>
                   {isManager && (
                     <div className="flex gap-2">
@@ -692,7 +722,7 @@ export const getServerSideProps: GetServerSideProps = async ({
   const nft = teamRowToNFT(allTeams.find((team: any) => +team.id === +tokenId))
   nft.owner = owner
 
-  if (!nft || blockedTeams.includes(Number(nft.metadata.id))) {
+  if (!nft || BLOCKED_TEAMS.has(Number(nft.metadata.id))) {
     return {
       notFound: true,
     }

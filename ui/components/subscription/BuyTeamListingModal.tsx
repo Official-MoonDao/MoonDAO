@@ -297,13 +297,13 @@ export default function BuyTeamListingModal({
             an email from the vendor.
           </p>
           <input
-            className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+            className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm text-black"
             placeholder="Enter your email"
             value={email}
             onChange={({ target }) => setEmail(target.value)}
           />
           {listing.shipping === 'true' && (
-            <div className="w-full flex flex-col gap-2">
+            <div className="w-full flex flex-col gap-2 text-black">
               <input
                 className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
                 placeholder="Street Address"

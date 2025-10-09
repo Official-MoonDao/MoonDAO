@@ -11,7 +11,7 @@ import {
   PROJECT_TABLE_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
 } from 'const/config'
-import { blockedProjects } from 'const/whitelist'
+import { BLOCKED_PROJECTS } from 'const/whitelist'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
@@ -317,7 +317,7 @@ export async function getStaticProps() {
         if (projects[i]) {
           const project = projects[i] as any
           // Use the 'active' field to determine current projects, excluding blocked ones
-          if (project.active && !blockedProjects.includes(project.id)) {
+          if (project.active && !BLOCKED_PROJECTS.has(project.id)) {
             activeProjects.push(project)
           }
         }
