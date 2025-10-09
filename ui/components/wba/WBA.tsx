@@ -213,7 +213,7 @@ export function WBA({ finalists, distributions, refresh }: WBAProps) {
 
               <div className="mt-2 w-full flex justify-end">
                 <DistributionVotes
-                  title="WBA Distribution Votes"
+                  title="WBA Votes"
                   votes={distributions}
                   finalists={finalists}
                 />
