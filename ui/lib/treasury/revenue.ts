@@ -86,7 +86,6 @@ interface DeFiData {
 
 const CITIZEN_ADDRESS = CITIZEN_ADDRESSES['arbitrum']
 const TEAM_ADDRESS = TEAM_ADDRESSES['arbitrum']
-const ETH_PER_DEPOSIT = 32
 
 async function getEthTransfersToTreasury(
   chain: Chain,
@@ -511,7 +510,6 @@ async function getStakingRevenue(): Promise<{
         })
         return {
           timestamp: Number(block.timestamp) * 1000,
-          value: ETH_PER_DEPOSIT,
           pubKey: event?.args?.publicKey,
         }
       })
@@ -558,29 +556,10 @@ async function getStakingRevenue(): Promise<{
       return { stakingRevenue: 0, revenueHistory: [] }
     }
 
-    let totalActualRewards = 0
     const revenueHistory: Array<{
       timestamp: number
       stakingRevenue: number
     }> = []
-
-    // Sum up rewards from all validators
-    for (const validator of performanceData) {
-      // Convert Gwei to ETH (beaconcha.in returns balance in Gwei)
-      const currentBalance = validator.balance / 1e9
-      const initialDeposit = ETH_PER_DEPOSIT
-
-      const totalRewards = Math.max(0, currentBalance - initialDeposit)
-      totalActualRewards += totalRewards
-
-      console.log(
-        `Validator ${
-          validator.validatorindex
-        }: Balance ${currentBalance.toFixed(
-          4
-        )} ETH, Rewards ${totalRewards.toFixed(4)} ETH`
-      )
-    }
 
     let annualizedRevenue = 0
 
@@ -594,7 +573,7 @@ async function getStakingRevenue(): Promise<{
         const annualRevenueFromAPI = validator.performance365d / 1e9
         annualizedRevenue += annualRevenueFromAPI
       } else {
-        console.log(`   ❌ No performance data available`)
+        console.log(`❌ No performance data available`)
       }
     }
 
@@ -619,44 +598,6 @@ async function getStakingRevenue(): Promise<{
         timestamp,
         stakingRevenue: scaledWeeklyRevenue,
       })
-    }
-
-    const totalStakedETH = performanceData.length * ETH_PER_DEPOSIT
-
-    // Calculate yield variability across different time periods
-    const totalPerf31d =
-      performanceData.reduce((sum, v) => sum + (v.performance31d || 0), 0) / 1e9
-    const totalPerf7d =
-      performanceData.reduce((sum, v) => sum + (v.performance7d || 0), 0) / 1e9
-    const totalPerf1d =
-      performanceData.reduce((sum, v) => sum + (v.performance1d || 0), 0) / 1e9
-
-    const avgYield31d = (totalPerf31d / totalStakedETH) * (365 / 31) * 100
-    const avgYield7d = (totalPerf7d / totalStakedETH) * (365 / 7) * 100
-    const avgYield1d = (totalPerf1d / totalStakedETH) * 365 * 100
-
-    const yieldVariance =
-      Math.max(avgYield31d, avgYield7d, avgYield1d) -
-      Math.min(avgYield31d, avgYield7d, avgYield1d)
-
-    if (yieldVariance > 1) {
-      console.log(
-        `   ⚠️ High yield volatility detected - yields fluctuating significantly`
-      )
-    } else {
-      console.log(`   ✅ Yield relatively stable across time periods`)
-    }
-
-    const apiBasedAnnualYield = (annualizedRevenue / totalStakedETH) * 100
-
-    if (apiBasedAnnualYield < 1 || apiBasedAnnualYield > 6) {
-      console.warn(
-        `   ⚠️ Yield seems ${
-          apiBasedAnnualYield < 1 ? 'unusually low' : 'unusually high'
-        } - please verify data`
-      )
-    } else {
-      console.log(`   ✅ Yield is within expected range for ETH staking`)
     }
 
     return {
