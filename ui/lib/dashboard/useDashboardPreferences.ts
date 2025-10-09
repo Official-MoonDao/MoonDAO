@@ -46,7 +46,7 @@ export function useDashboardPreferences() {
   
   const citizenTableContract = useContract({
     address: CITIZEN_TABLE_ADDRESSES[DEFAULT_CHAIN_V5.id],
-    abi: CitizenTableABI,
+    abi: CitizenTableABI as any,
     chain: DEFAULT_CHAIN_V5,
   })
 
