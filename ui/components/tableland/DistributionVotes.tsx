@@ -11,12 +11,12 @@ import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { DistributionVote } from '@/lib/tableland/types'
 import { useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
 import { classNames } from '@/lib/utils/tailwind'
-import { MultiProgressBar } from '../layout/ProgressBar'
 import Votes, {
   VoteItem,
   VoteItemHeader,
   VoteItemDetails,
 } from '../layout/Votes'
+import { MultiVotingProgressBar } from '../layout/VotingProgressBar'
 import { AddressLink } from '../nance/AddressLink'
 
 const getTotalVoteWeight = (vote: { [key: string]: number }) => {
@@ -218,7 +218,7 @@ export default function DistributionVotes({
               )
             }
 
-            return <MultiProgressBar segments={segments} height="h-4" />
+            return <MultiVotingProgressBar segments={segments} height="h-4" />
           })()}
         </div>
       )}
