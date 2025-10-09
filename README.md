@@ -1,10 +1,10 @@
 # MoonDAO.com Website
 
-[![](https://gray-main-toad-36.mypinata.cloud/ipfs/bafybeifj47o7trhnktsabduwuzbfodldot5es4dfhxajodup4kqgx2bntm)](https://www.moondao.com)
+[![](https://gray-main-toad-36.mypinata.cloud/ipfs/bafybeih5z7vuvnmzbt3c5ntb7mjw5q2baulgojsvghgijrcznlh3ur3xma)](https://www.moondao.com)
 
 [MoonDAO.com](https://www.moondao.com) is the hub for the Internet's Space Program, where users can become a MoonDAO member by buying $MOONEY, lock to participate in governance, become a Citizen in the Space Acceleration Network, submit proposals, vote, read news and updates, dive into the documentation, and purchase from the Marketplace with unique experiences such as the Ticket to Space sweepstakes or zero gravity astronaut training experiences and offerings from Teams in the Space Acceleration Network. To get started, users can connect their onchain wallet, or create one by email or social login, in order to interact with the MoonDAO smart contracts.
 
-> [![app](/ui/public/moondao_homepage.png)](https://www.moondao.com)
+> [![app](https://gray-main-toad-36.mypinata.cloud/ipfs/bafybeifj47o7trhnktsabduwuzbfodldot5es4dfhxajodup4kqgx2bntm)](https://www.moondao.com)](https://www.moondao.com)
 
 ## File Structure
 
