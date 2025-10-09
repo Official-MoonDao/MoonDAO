@@ -345,7 +345,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     let teamNFT: any = null
     let teamHats: any[] = []
 
-    if (mission.teamId) {
+    if (mission.teamId !== undefined) {
       try {
         // Create team contract
         const teamContract = getContract({
