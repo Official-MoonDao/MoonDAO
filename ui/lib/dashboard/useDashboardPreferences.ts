@@ -55,6 +55,20 @@ export function useDashboardPreferences() {
     loadPreferences()
   }, [citizen])
 
+  // Sync onchain data w/ local storage
+  useEffect(() => {
+    if (!citizen?.metadata?.dashPrefs) return;
+
+    const prefs =
+      typeof citizen.metadata.dashPrefs === 'string'
+        ? JSON.parse(citizen.metadata.dashPrefs)
+        : citizen.metadata.dashPrefs;
+
+    if (prefs && typeof prefs === 'object') {
+      localStorage.setItem('dashboardPreferences', JSON.stringify(prefs));
+    }
+  }, [citizen?.metadata?.dashPrefs]);
+
   const loadPreferences = async () => {
     setIsLoading(true)
     
