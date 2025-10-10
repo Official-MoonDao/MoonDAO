@@ -67,6 +67,7 @@ export default function MissionInfo({
   deadline,
   refreshBackers,
   refreshTotalFunding,
+  ruleset,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -292,6 +293,7 @@ export default function MissionInfo({
         <div className="hidden xl:block  min-w-[350px] lg:w-[400px]">
           <div ref={stickyRef}>
             <MissionPayRedeem
+              ruleset={ruleset}
               stage={stage}
               mission={mission}
               teamNFT={teamNFT}

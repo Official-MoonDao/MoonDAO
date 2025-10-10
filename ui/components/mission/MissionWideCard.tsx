@@ -98,7 +98,7 @@ export default function MissionWideCard({
 
   return (
     <>
-      {contribute && payModalEnabled && primaryTerminalAddress && (
+      {ruleset && contribute && payModalEnabled && primaryTerminalAddress && (
         <div id="pay-modal">
           <MissionPayRedeem
             stage={stage}
@@ -110,6 +110,7 @@ export default function MissionWideCard({
             modalEnabled={payModalEnabled}
             setModalEnabled={setPayModalEnabled}
             primaryTerminalAddress={primaryTerminalAddress}
+            ruleset={ruleset}
           />
         </div>
       )}
