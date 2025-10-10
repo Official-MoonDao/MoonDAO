@@ -10,6 +10,7 @@ import { formatNumberUSStyle } from '@/lib/nance'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { DistributionVote } from '@/lib/tableland/types'
 import { useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
+import { runQuadraticVoting } from '@/lib/utils/rewards'
 import { classNames } from '@/lib/utils/tailwind'
 import Votes, {
   VoteItem,
@@ -21,48 +22,6 @@ import { AddressLink } from '../nance/AddressLink'
 
 const getTotalVoteWeight = (vote: { [key: string]: number }) => {
   return Object.values(vote).reduce((sum, value) => sum + value, 0)
-}
-
-const getAllFinalistDistributions = (
-  votes: DistributionVote[],
-  finalists: any[]
-) => {
-  const totalVotingWeight = votes.reduce(
-    (sum, vote) => sum + getTotalVoteWeight(vote.vote),
-    0
-  )
-
-  const finalistTotals: { [key: string]: number } = {}
-
-  votes.forEach((vote) => {
-    const voterTotalWeight = getTotalVoteWeight(vote.vote)
-
-    Object.entries(vote.vote).forEach(([finalistId, percentage]) => {
-      if (!finalistTotals[finalistId]) {
-        finalistTotals[finalistId] = 0
-      }
-      finalistTotals[finalistId] += (percentage / 100) * voterTotalWeight
-    })
-  })
-
-  const distributions = Object.entries(finalistTotals)
-    .map(([finalistId, totalWeight]) => {
-      const finalist = finalists?.find((f) => f.id === +finalistId)
-      const percentage =
-        totalVotingWeight > 0 ? (totalWeight / totalVotingWeight) * 100 : 0
-
-      return {
-        finalistId: +finalistId,
-        finalist,
-        totalWeight,
-        percentage,
-        name: finalist?.name || `Finalist ${finalistId}`,
-        formattedPercentage: formatNumberUSStyle(percentage, true),
-      }
-    })
-    .sort((a, b) => b.totalWeight - a.totalWeight)
-
-  return distributions
 }
 
 export default function DistributionVotes({
@@ -195,20 +154,31 @@ export default function DistributionVotes({
               )
             }
 
-            // Use quadratic voting calculation
-            const distributions = getAllFinalistDistributions(
+            const quadraticResults = runQuadraticVoting(
               votes,
-              finalists || []
+              addressToQuadraticVotingPower,
+              100
             )
-            const colors = generateFinalistColors(distributions.length)
 
+            const distributions = Object.entries(quadraticResults)
+              .map(([finalistId, percentage]) => {
+                const finalist = finalists?.find((f) => f.id === +finalistId)
+                return {
+                  finalistId: +finalistId,
+                  finalist,
+                  percentage,
+                  name: finalist?.name || `Finalist ${finalistId}`,
+                  formattedPercentage: formatNumberUSStyle(percentage, true),
+                }
+              })
+              .sort((a, b) => b.percentage - a.percentage)
+
+            const colors = generateFinalistColors(distributions.length)
             const segments = distributions.map((dist, index) => ({
               percentage: dist.percentage,
               color: colors[index] || 'bg-gray-400',
               label: `${dist.name}: ${dist.formattedPercentage}%`,
             }))
-
-            console.log('Debug - segments for MultiProgressBar:', segments)
 
             if (segments.length === 0) {
               return (
