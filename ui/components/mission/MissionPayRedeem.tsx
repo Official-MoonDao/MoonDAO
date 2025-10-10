@@ -675,12 +675,11 @@ function MissionPayRedeemComponent({
             JB_NATIVE_TOKEN_ADDRESS,
             BigInt(Math.trunc(inputValue * 1e18)),
             address,
-            output * 1e18,
+            (output * 1e18 * 95) / 100,
             message,
             '0x00',
           ],
           value: BigInt(Math.trunc(inputValue * 1e18)),
-          gas: BigInt(500000),
         })
 
         const receipt = await sendAndConfirmTransaction({
