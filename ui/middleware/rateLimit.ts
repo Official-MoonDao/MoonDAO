@@ -9,17 +9,17 @@ const redis = new Redis({
 
 const rateLimitSecond = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(5, '1 s'), // 5 requests per second
+  limiter: Ratelimit.slidingWindow(10, '1 s'), // 10 requests per second
 })
 
 const rateLimitMinute = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(100, '1 m'), // 100 requests per minute
+  limiter: Ratelimit.slidingWindow(300, '1 m'), // 100 requests per minute
 })
 
 const rateLimitHour = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(500, '1 h'), // 500 requests per hour
+  limiter: Ratelimit.slidingWindow(1000, '1 h'), // 500 requests per hour
 })
 
 export async function rateLimit(
