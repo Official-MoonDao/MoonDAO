@@ -1,9 +1,9 @@
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
-import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
-import JBV5TerminalStore from 'const/abis/JBV5TerminalStore.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
+import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
+import JBV5TerminalStore from 'const/abis/JBV5TerminalStore.json'
 import JBV5Token from 'const/abis/JBV5Token.json'
 import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
@@ -88,6 +88,7 @@ type MissionProfileProps = {
   _token?: any
   _teamNFT?: any
   _teamHats?: any[]
+  _fundingGoal: number
 }
 
 export default function MissionProfile({
@@ -99,6 +100,7 @@ export default function MissionProfile({
   _token,
   _teamNFT,
   _teamHats,
+  _fundingGoal,
 }: MissionProfileProps) {
   const account = useActiveAccount()
 
@@ -192,6 +194,7 @@ export default function MissionProfile({
     _refundPeriod,
     _primaryTerminalAddress,
     _token,
+    _fundingGoal,
   })
 
   useEffect(() => {
@@ -516,6 +519,7 @@ export default function MissionProfile({
                     jbTokensContract={jbTokensContract}
                     refreshBackers={refreshBackers}
                     refreshTotalFunding={refreshTotalFunding}
+                    ruleset={ruleset}
                   />
                 </div>
               ) : (

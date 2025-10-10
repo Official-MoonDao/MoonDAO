@@ -1,9 +1,11 @@
-import { BENDYSTRAW_JB_VERSION } from 'const/config'
+import { BENDYSTRAW_JB_VERSION, DEFAULT_CHAIN_V5 } from 'const/config'
 
 export function projectQuery(projectId: number) {
   return `
      query {
-          projects(where: {projectId: ${+projectId}, version: ${BENDYSTRAW_JB_VERSION}}, limit: 1) {
+          projects(where: {projectId: ${+projectId}, version: ${BENDYSTRAW_JB_VERSION}, chainId: ${
+    DEFAULT_CHAIN_V5.id
+  }}, limit: 1) {
             items {
               id
               projectId
@@ -69,7 +71,9 @@ export function projectEventsQuery(
   timestampCursor?: number | null
 ) {
   // Build the where clause with timestamp filtering for pagination
-  let whereClause = `projectId: ${+projectId} version: ${BENDYSTRAW_JB_VERSION}`
+  let whereClause = `projectId: ${+projectId} version: ${BENDYSTRAW_JB_VERSION} chainId: ${
+    DEFAULT_CHAIN_V5.id
+  }`
 
   if (filter) {
     whereClause += `, ${filter}_not: null`

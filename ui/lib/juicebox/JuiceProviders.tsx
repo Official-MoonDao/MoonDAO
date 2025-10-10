@@ -2,20 +2,25 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { JBProjectProvider } from 'juice-sdk-react'
 import { createConfig, http, WagmiProvider } from 'wagmi'
 import { mainnet, arbitrum, base, sepolia } from 'wagmi/chains'
+import {
+  ethereum as ethereumInfura,
+  arbitrum as arbitrumInfura,
+  base as baseInfura,
+  sepolia as sepoliaInfura,
+} from '../infura/infuraChains'
 
-const thirdwebClientId = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID
 const bendystrawKey = process.env.BENDYSTRAW_API_KEY
 const bendystrawUrl = `https://${
-  process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' && 'testnet.'
+  process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' ? 'testnet.' : ''
 }bendystraw.xyz`
 
 const wagmiConfig = createConfig({
   chains: [mainnet, arbitrum, base, sepolia],
   transports: {
-    [mainnet.id]: http(`https://1.rpc.thirdweb.com/${thirdwebClientId}`),
-    [arbitrum.id]: http(`https://42161.rpc.thirdweb.com/${thirdwebClientId}`),
-    [base.id]: http(`https://8453.rpc.thirdweb.com/${thirdwebClientId}`),
-    [sepolia.id]: http(`https://11155111.rpc.thirdweb.com/${thirdwebClientId}`),
+    [mainnet.id]: http(ethereumInfura.rpc),
+    [arbitrum.id]: http(arbitrumInfura.rpc),
+    [base.id]: http(baseInfura.rpc),
+    [sepolia.id]: http(sepoliaInfura.rpc),
   },
 })
 

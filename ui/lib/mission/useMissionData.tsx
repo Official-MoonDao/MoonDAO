@@ -13,7 +13,7 @@ import ChainContextV5 from '../thirdweb/chain-context-v5'
 3: Refund
 4: Goal is not met and refund stage has expired
 */
-type MissionStage = 1 | 2 | 3
+type MissionStage = 1 | 2 | 3 | 4
 
 export default function useMissionData({
   mission,
@@ -29,10 +29,11 @@ export default function useMissionData({
   _refundPeriod,
   _primaryTerminalAddress,
   _token,
+  _fundingGoal,
 }: any) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
-  const [fundingGoal, setFundingGoal] = useState(0)
+  const [fundingGoal, setFundingGoal] = useState(_fundingGoal)
   const [stage, setStage] = useState<MissionStage>(_stage)
   const [backers, setBackers] = useState<any[]>([])
   const [deadline, setDeadline] = useState<number | undefined>(_deadline)
@@ -50,19 +51,8 @@ export default function useMissionData({
     projectSubgraphData,
     _primaryTerminalAddress,
     _token,
+    stage,
   })
-
-  useEffect(() => {
-    async function getFundingData() {
-      const statement = `SELECT * FROM ${MISSION_TABLE_NAMES[chainSlug]} WHERE id = ${mission.id}`
-      const res = await fetch(`/api/tableland/query?statement=${statement}`)
-      const rows = await res.json()
-      setFundingGoal(rows[0]?.fundingGoal)
-    }
-    if (mission?.id !== undefined) {
-      getFundingData()
-    }
-  }, [mission?.id])
 
   const refreshStage = useCallback(async () => {
     if (!missionCreatorContract || mission?.id === undefined) return
@@ -84,6 +74,18 @@ export default function useMissionData({
       console.error('Error fetching stage for mission:', mission.id, error)
     }
   }, [missionCreatorContract, mission?.id])
+
+  useEffect(() => {
+    async function getFundingData() {
+      const statement = `SELECT * FROM ${MISSION_TABLE_NAMES[chainSlug]} WHERE id = ${mission.id}`
+      const res = await fetch(`/api/tableland/query?statement=${statement}`)
+      const rows = await res.json()
+      setFundingGoal(rows[0]?.fundingGoal)
+    }
+    if (mission?.id !== undefined && !fundingGoal) {
+      getFundingData()
+    }
+  }, [chainSlug, mission?.id, _fundingGoal])
 
   useEffect(() => {
     if (missionCreatorContract && mission?.id !== undefined) {
@@ -158,7 +160,7 @@ export default function useMissionData({
     if (missionCreatorContract && mission?.id !== undefined) {
       getDeadline()
     }
-  }, [missionCreatorContract, mission?.id, _deadline, _refundPeriod]) // Add dependencies
+  }, [missionCreatorContract, mission?.id, _deadline, _refundPeriod])
 
   // Backers
   const refreshBackers = useCallback(async () => {
@@ -188,7 +190,7 @@ export default function useMissionData({
     stage,
     backers,
     deadline,
-    refundPeriod, // Make sure this is included
+    refundPeriod,
     poolDeployerAddress,
     refreshBackers,
     refreshStage,
