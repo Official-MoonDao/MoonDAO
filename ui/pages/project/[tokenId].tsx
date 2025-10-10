@@ -34,6 +34,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import SectionCard from '@/components/layout/SectionCard'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
@@ -181,141 +182,77 @@ export default function ProjectProfile({
       >
         <div
           id="page-container"
-          className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
+          className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]"
         >
           {/* Project Overview */}
-          <Frame
-            noPadding
-            bottomLeft="0px"
-            bottomRight="0px"
-            topRight="0px"
-            topLeft="0px"
-          >
-            <div
-              id="project-overview-container"
-              className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
-            >
-              <div className="p-5 pb-0 md:p-0 flex flex-col items-start gap-5 pr-12">
-                <div className="flex flex-col md:flex-row gap-4 md:items-center">
-                  <div className="flex gap-4 opacity-[50%]">
-                    <Image
-                      src={'/assets/icon-star.svg'}
-                      alt="Star Icon"
-                      width={30}
-                      height={30}
-                    />
-                    <h2 className="header font-GoodTimes">Proposal</h2>
-                  </div>
-
-                  <Link
-                    className="flex gap-2"
-                    href={`/proposal/${MDP}`}
-                    passHref
-                  >
-                    <Image
-                      src="/assets/report.png"
-                      alt="Report Icon"
-                      width={15}
-                      height={15}
-                    />
-                    <p className="opacity-60">{'Review Original Proposal'}</p>
-                  </Link>
-                </div>
-              </div>
-
-              <div className="py-4 px-4 md:px-0">
-                <MarkdownWithTOC body={nanceProposal?.body || ''} />
-              </div>
-            </div>
-          </Frame>
-          {finalReportMarkdown && (
-            <Frame
-              noPadding
-              bottomLeft="0px"
-              bottomRight="0px"
-              topRight="0px"
-              topLeft="0px"
-            >
-              <div
-                id="project-final-report-container"
-                className={`w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-14 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section transition-all duration-300`}
+          <SectionCard
+            header="Proposal"
+            iconSrc="/assets/icon-star.svg"
+            action={
+              <Link
+                className="flex gap-2 items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm"
+                href={`/proposal/${MDP}`}
+                passHref
               >
-                <div className="p-5 pb-0 md:p-0 flex items-center gap-5 pr-12 ">
-                  <div className="flex gap-4 opacity-[50%]">
-                    <Image
-                      src={'/assets/icon-star.svg'}
-                      alt="Star Icon"
-                      width={30}
-                      height={30}
-                    />
-                    <h2 className="header font-GoodTimes">Final Report</h2>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <MarkdownWithTOC body={finalReportMarkdown} />
-                </div>
+                <Image
+                  src="/assets/report.png"
+                  alt="Report Icon"
+                  width={16}
+                  height={16}
+                />
+                <span>Review Original Proposal</span>
+              </Link>
+            }
+          >
+            <div className="prose prose-invert max-w-none">
+              <MarkdownWithTOC body={nanceProposal?.body || ''} />
+            </div>
+          </SectionCard>
+          {finalReportMarkdown && (
+            <SectionCard
+              header="Final Report"
+              iconSrc="/assets/icon-star.svg"
+            >
+              <div className="prose prose-invert max-w-none">
+                <MarkdownWithTOC body={finalReportMarkdown} />
               </div>
-            </Frame>
+            </SectionCard>
           )}
 
-          <div className="z-50 flex flex-col gap-5 mb-[50px]">
-            <Frame
-              noPadding
-              bottomLeft="0px"
-              bottomRight="0px"
-              topRight="0px"
-              topLeft="0px"
-            >
-              <div
-                id="team-container"
-                className="w-full md:rounded-tl-[2vmax] md:p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
-              >
-                <div
-                  id="project-team-container"
-                  className="p-5 pb-0 md:p-0 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 pr-12 "
-                >
-                  <div className="flex gap-5 opacity-[50%]">
-                    <Image
-                      src={'/assets/icon-team.svg'}
-                      alt="Job icon"
-                      width={30}
-                      height={30}
+          <div className="z-50 flex flex-col gap-6 mb-[50px]">
+            <SectionCard
+              header="Meet the Team"
+              iconSrc="/assets/icon-team.svg"
+              action={
+                isManager && (
+                  <div className="flex flex-col md:flex-row justify-start items-center gap-2">
+                    <TeamManageMembers
+                      account={account}
+                      hats={hats}
+                      hatsContract={hatsContract}
+                      teamContract={projectContract}
+                      teamId={tokenId}
+                      selectedChain={selectedChain}
+                      multisigAddress={owner}
+                      adminHatId={adminHatId}
+                      managerHatId={managerHatId}
                     />
-                    <h2 className="header font-GoodTimes">Meet the Team</h2>
                   </div>
-                  {isManager && (
-                    <div
-                      id="button-container"
-                      className="pr-12 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
-                    >
-                      <TeamManageMembers
-                        account={account}
-                        hats={hats}
-                        hatsContract={hatsContract}
-                        teamContract={projectContract}
-                        teamId={tokenId}
-                        selectedChain={selectedChain}
-                        multisigAddress={owner}
-                        adminHatId={adminHatId}
-                        managerHatId={managerHatId}
-                      />
-                    </div>
+                )
+              }
+            >
+              <SlidingCardMenu>
+                <div className="flex gap-4">
+                  {hats?.[0].id && (
+                    <TeamMembers
+                      hats={hats}
+                      hatsContract={hatsContract}
+                      citizenContract={citizenContract}
+                    />
                   )}
                 </div>
-
-                <SlidingCardMenu>
-                  <div className="flex gap-4">
-                    {hats?.[0].id && (
-                      <TeamMembers
-                        hats={hats}
-                        hatsContract={hatsContract}
-                        citizenContract={citizenContract}
-                      />
-                    )}
-                  </div>
-                </SlidingCardMenu>
-              </div>
-            </Frame>
+              </SlidingCardMenu>
+            </SectionCard>
             {/* Mooney and Voting Power */}
             <TeamTreasury
               isSigner={isSigner}
