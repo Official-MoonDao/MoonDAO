@@ -56,25 +56,38 @@ export function useTotalVPs(addresses: string[]) {
 
   const { data, error } = useSWR(
     shouldFetch
-      ? addresses.map(
-          (address) => gql`
-        {
-          vp(voter: "${address}", space: "tomoondao.eth") {
-            vp
-          }
-        }`
-        )
+      ? `vps-${addresses.join(',')}-${process.env.NEXT_PUBLIC_CHAIN}`
       : null,
-    async (queries) => {
-      const promises = queries.map(fetcher)
-      const results = await Promise.all(promises)
-      return results.map((result: any) => result.vp.vp)
+    async () => {
+      const queries = addresses.map(
+        (address) => gql`
+            {
+              vp(voter: "${address}", space: "tomoondao.eth") {
+                vp
+              }
+            }`
+      )
+
+      const results = []
+      for (let i = 0; i < queries.length; i++) {
+        try {
+          const result = (await fetcher(queries[i])) as any
+          results.push(result.vp.vp)
+          if (i < queries.length - 1) {
+            await new Promise((resolve) => setTimeout(resolve, 100))
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch VP for address ${addresses[i]}:`, err)
+          results.push(0) // Fallback to 0 if individual request fails
+        }
+      }
+      return results
     }
   )
 
   return {
     walletVPs: data || [], // Return cached data or empty array while loading
-    isLoading: !error && !data, // Loading state
+    isLoading: !error && !data && shouldFetch, // Loading state
     isError: !!error, // Error state
   }
 }

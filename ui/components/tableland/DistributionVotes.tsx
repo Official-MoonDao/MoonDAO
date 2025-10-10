@@ -42,15 +42,8 @@ export default function DistributionVotes({
   const { walletVPs: _vps } = useTotalVPs(addresses)
 
   const addressToQuadraticVotingPower = useMemo(() => {
-    const hasValidVotingPowers =
-      _vps && _vps.some((vp) => vp !== undefined && vp > 0)
-
-    if (!hasValidVotingPowers) {
-      return Object.fromEntries(addresses.map((address) => [address, 1]))
-    }
-
     return Object.fromEntries(
-      addresses.map((address, index) => [address, _vps[index] || 0])
+      addresses.map((address, index) => [address, _vps[index]])
     )
   }, [addresses, _vps])
 
@@ -149,7 +142,7 @@ export default function DistributionVotes({
             if (!votingPowersReady) {
               return (
                 <div className="text-gray-400 text-sm">
-                  Loading voting powers...
+                  Loading distribution...
                 </div>
               )
             }
@@ -168,7 +161,7 @@ export default function DistributionVotes({
                   finalist,
                   percentage,
                   name: finalist?.name || `Finalist ${finalistId}`,
-                  formattedPercentage: formatNumberUSStyle(percentage, true),
+                  formattedPercentage: Math.round(percentage * 10) / 10,
                 }
               })
               .sort((a, b) => b.percentage - a.percentage)
