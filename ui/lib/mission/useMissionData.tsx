@@ -30,6 +30,7 @@ export default function useMissionData({
   _primaryTerminalAddress,
   _token,
   _fundingGoal,
+  _ruleset,
 }: any) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
@@ -51,6 +52,7 @@ export default function useMissionData({
     projectSubgraphData,
     _primaryTerminalAddress,
     _token,
+    _ruleset,
     stage,
   })
 
