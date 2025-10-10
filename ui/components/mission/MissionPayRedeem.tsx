@@ -1,5 +1,4 @@
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
-import MissionTokenSwapV4 from '@/components/uniswap/MissionTokenSwapV4'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
 import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
@@ -11,6 +10,13 @@ import {
   JB_NATIVE_TOKEN_ADDRESS,
   DEPLOYED_ORIGIN,
 } from 'const/config'
+import { FixedInt } from 'fpnum'
+import {
+  getTokenAToBQuote,
+  JBRuleset,
+  ReservedPercent,
+  RulesetWeight,
+} from 'juice-sdk-core'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -45,6 +51,7 @@ import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
+import MissionTokenSwapV4 from '@/components/uniswap/MissionTokenSwapV4'
 import { CopyIcon } from '../assets'
 import { CBOnramp } from '../coinbase/CBOnramp'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
@@ -302,6 +309,7 @@ export type MissionPayRedeemProps = {
   forwardClient?: any
   refreshBackers?: () => void
   refreshTotalFunding?: () => void
+  ruleset: JBRuleset
 }
 
 function MissionPayRedeemComponent({
@@ -319,6 +327,7 @@ function MissionPayRedeemComponent({
   forwardClient,
   refreshBackers,
   refreshTotalFunding,
+  ruleset,
 }: MissionPayRedeemProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -508,38 +517,13 @@ function MissionPayRedeemComponent({
   }, [refreshTotalFunding, refreshBackers, refreshTokenBalances])
 
   const getQuote = useCallback(async () => {
-    if (!address) return
-    if (!primaryTerminalContract) {
-      console.error('Primary terminal contract not initialized')
-      return
-    }
-
-    try {
-      const inputValue = parseFloat(input) || 0
-      const transaction = prepareContractCall({
-        contract: primaryTerminalContract,
-        method: 'pay' as string,
-        params: [
-          mission?.projectId,
-          JB_NATIVE_TOKEN_ADDRESS,
-          BigInt(Math.trunc(inputValue * 1e18)),
-          address || ZERO_ADDRESS,
-          0,
-          message,
-          '0x00',
-        ],
-        value: BigInt(Math.trunc(inputValue * 1e18)),
-      })
-
-      const q = await simulateTransaction({
-        transaction,
-      })
-      setOutput(q.toString() / 1e18)
-    } catch (error) {
-      console.error('Error getting quote:', error)
-      setOutput(0)
-    }
-  }, [primaryTerminalContract, input, address, mission?.projectId, message])
+    const inputValue = parseFloat(input) || 0
+    const q = getTokenAToBQuote(new FixedInt(BigInt(inputValue * 1e18), 18), {
+      weight: new RulesetWeight(ruleset[0].weight),
+      reservedPercent: new ReservedPercent(ruleset[1].reservedPercent),
+    })
+    setOutput(+q.payerTokens.toString() / 1e18)
+  }, [input, ruleset])
 
   const getRedeemQuote = useCallback(async () => {
     if (!address) return
@@ -1049,10 +1033,9 @@ function MissionPayRedeemComponent({
             {token?.tokenSymbol && (
               <div className="w-full flex justify-between">
                 <p>{'Receive'}</p>
-                <p id="token-output">{`${formatTokenAmount(
-                  output,
-                  2
-                )} ${token?.tokenSymbol}`}</p>
+                <p id="token-output">{`${formatTokenAmount(output, 2)} ${
+                  token?.tokenSymbol
+                }`}</p>
               </div>
             )}
 

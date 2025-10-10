@@ -29,10 +29,11 @@ export default function useMissionData({
   _refundPeriod,
   _primaryTerminalAddress,
   _token,
+  _fundingGoal,
 }: any) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
-  const [fundingGoal, setFundingGoal] = useState(0)
+  const [fundingGoal, setFundingGoal] = useState(_fundingGoal)
   const [stage, setStage] = useState<MissionStage>(_stage)
   const [backers, setBackers] = useState<any[]>([])
   const [deadline, setDeadline] = useState<number | undefined>(_deadline)
@@ -50,19 +51,8 @@ export default function useMissionData({
     projectSubgraphData,
     _primaryTerminalAddress,
     _token,
+    stage,
   })
-
-  useEffect(() => {
-    async function getFundingData() {
-      const statement = `SELECT * FROM ${MISSION_TABLE_NAMES[chainSlug]} WHERE id = ${mission.id}`
-      const res = await fetch(`/api/tableland/query?statement=${statement}`)
-      const rows = await res.json()
-      setFundingGoal(rows[0]?.fundingGoal)
-    }
-    if (mission?.id !== undefined) {
-      getFundingData()
-    }
-  }, [mission?.id])
 
   const refreshStage = useCallback(async () => {
     if (!missionCreatorContract || mission?.id === undefined) return

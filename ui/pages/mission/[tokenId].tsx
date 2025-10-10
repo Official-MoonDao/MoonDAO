@@ -93,6 +93,7 @@ type ProjectProfileProps = {
   _token?: any
   _teamNFT?: any
   _teamHats?: any[]
+  _fundingGoal: number
 }
 
 export default function MissionProfilePage({
@@ -104,6 +105,7 @@ export default function MissionProfilePage({
   _token,
   _teamNFT,
   _teamHats,
+  _fundingGoal,
 }: ProjectProfileProps) {
   const selectedChain = DEFAULT_CHAIN_V5
 
@@ -121,6 +123,7 @@ export default function MissionProfilePage({
         _token={_token}
         _teamNFT={_teamNFT}
         _teamHats={_teamHats}
+        _fundingGoal={_fundingGoal}
       />
     </JuiceProviders>
   )
@@ -427,6 +430,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
           id: teamNFT.id.toString(),
         },
         _teamHats: teamHats,
+        _fundingGoal: missionRow.fundingGoal,
       },
     }
   } catch (error) {
