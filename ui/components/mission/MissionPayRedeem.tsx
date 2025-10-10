@@ -518,10 +518,13 @@ function MissionPayRedeemComponent({
 
   const getQuote = useCallback(async () => {
     const inputValue = parseFloat(input) || 0
-    const q = getTokenAToBQuote(new FixedInt(BigInt(inputValue * 1e18), 18), {
-      weight: new RulesetWeight(ruleset[0].weight),
-      reservedPercent: new ReservedPercent(ruleset[1].reservedPercent),
-    })
+    const q = getTokenAToBQuote(
+      new FixedInt(BigInt(Math.trunc(inputValue * 1e18)), 18),
+      {
+        weight: new RulesetWeight(ruleset[0].weight),
+        reservedPercent: new ReservedPercent(ruleset[1].reservedPercent),
+      }
+    )
     setOutput(+q.payerTokens.toString() / 1e18)
   }, [input, ruleset])
 
