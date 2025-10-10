@@ -11,28 +11,19 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { DistributionVote } from '@/lib/tableland/types'
 import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
 import { runQuadraticVoting } from '@/lib/utils/rewards'
-import { computeRewardPercentages } from '@/lib/utils/rewards'
 import { Finalist } from '@/components/baikonur/Finalist'
 import FinalistCard from '@/components/baikonur/FinalistCard'
-import Container from '@/components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayout'
-import Head from '@/components/layout/Head'
-import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
-
-export type Distribution = {
-  address: string
-  vote: { [key: string]: number }
-}
 
 export type BaikonurProps = {
   finalists: Finalist[]
-  distributions: Distribution[]
+  distributions: DistributionVote[]
   refresh: () => void
 }
 
@@ -159,7 +150,7 @@ export function Baikonur({ finalists, distributions, refresh }: BaikonurProps) {
   }
   return (
     <div
-      className={`flex flex-col gap-6 px:40 md:p-8 md:px-40 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] ${
+      className={`w-full flex flex-col gap-6 px:40 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] ${
         !isMobile && 'p-6'
       }`}
     >

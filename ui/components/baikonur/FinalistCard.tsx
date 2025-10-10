@@ -49,7 +49,7 @@ const FinalistCardContent = memo(
                   {finalist?.name || ''}
                 </h1>
               </Link>
-              <div className="flex flex-row">
+              <div className="mt-2 flex">
                 <StandardButton
                   className={`gradient-2 w-fit font-[14px] mr-4`}
                   link={finalist?.videoUrl}
