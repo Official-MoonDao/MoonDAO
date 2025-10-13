@@ -199,9 +199,6 @@ function MissionPayRedeemContent({
                         >
                           {formatTokenAmount(output, 2)}
                         </p>
-                        {/* <p className="text-white font-medium">
-                          {token?.tokenSymbol}
-                        </p> */}
                       </div>
                     </div>
                   </div>
