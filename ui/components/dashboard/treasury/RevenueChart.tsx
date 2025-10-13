@@ -1,8 +1,9 @@
-import { ARRDataPoint } from '@/lib/treasury/arr'
+import { RevenueDataPoint } from '@/lib/treasury/revenue'
 import LineChart, { LineChartData } from '@/components/layout/LineChart'
 
-interface ARRChartProps {
-  data: ARRDataPoint[]
+interface RevenueChartProps {
+  data: RevenueDataPoint[]
+  dataCategories?: any[]
   compact?: boolean
   height?: number
   days?: number
@@ -10,39 +11,50 @@ interface ARRChartProps {
   defaultRange?: number
 }
 
-export function ARRChart({
+const DATA_CATEGORIES = [
+  { name: 'Citizens' },
+  { name: 'Teams' },
+  { name: 'Pool Fees' },
+  { name: 'Staked ETH Rewards' },
+]
+
+export function RevenueChart({
   data,
+  dataCategories,
   compact = false,
   height = 300,
   isLoading = false,
   defaultRange,
-}: ARRChartProps) {
-  // Convert timestamps from milliseconds to seconds for LineChart compatibility
+}: RevenueChartProps) {
   const chartData: LineChartData[] =
     data?.map((point) => ({
       timestamp: Math.floor(point.timestamp / 1000),
-      subscriptionARR: Math.round(point.citizenARR + point.teamARR),
-      totalARR: Math.round(point.totalARR),
+      citizenRevenue: Math.round(point.citizenRevenue),
+      teamRevenue: Math.round(point.teamRevenue),
+      defiRevenue: Math.round(point.defiRevenue),
+      stakingRevenue: Math.round(point.stakingRevenue),
+      totalRevenue: Math.round(point.totalRevenue),
     })) || []
 
   return (
     <LineChart
       data={chartData}
+      dataCategories={dataCategories || DATA_CATEGORIES}
       isLoading={isLoading}
       height={height}
       compact={compact}
       defaultRange={defaultRange}
       config={{
         timestampField: 'timestamp',
-        valueField: 'totalARR',
+        valueField: 'totalRevenue',
         dataProcessing: 'direct',
         labels: {
-          title: 'Estimated Annual Recurring Revenue',
+          title: 'Annual Revenue',
           valueLabel: compact ? '' : 'USD',
-          emptyMessage: 'No ARR Data',
+          emptyMessage: 'No Revenue Data',
         },
         styling: {
-          stroke: '#8B5CF6',
+          stroke: 'white',
           strokeWidth: compact ? 2 : 4,
           compactStrokeWidth: 2,
         },

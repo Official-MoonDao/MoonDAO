@@ -356,6 +356,10 @@ export const MOONDAO_TREASURY: string =
   '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
 export const MOONDAO_L2_TREASURY: string =
   '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
+export const MOONDAO_ARBITRUM_TREASURY: string =
+  '0xAF26a002d716508b7e375f1f620338442F5470c0'
+export const MOONDAO_POLYGON_TREASURY: string =
+  '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
 export const DEAD_ADDRESS: string =
   ' 0x000000000000000000000000000000000000dEaD'
 
@@ -517,10 +521,8 @@ export const CHAIN_TOKEN_NAMES: Index = {
 
 export const IPFS_GATEWAY = 'https://gray-main-toad-36.mypinata.cloud/ipfs/'
 
-export const ARBITRUM_ASSETS_URL =
-  'https://safe-client.safe.global/v1/chains/42161/safes/0xAF26a002d716508b7e375f1f620338442F5470c0/balances/usd?trusted=true'
-export const POLYGON_ASSETS_URL =
-  'https://safe-client.safe.global/v1/chains/137/safes/0x8C0252c3232A2c7379DDC2E44214697ae8fF097a/balances/usd?trusted=true'
+export const ARBITRUM_ASSETS_URL = `https://safe-client.safe.global/v1/chains/42161/safes/${MOONDAO_ARBITRUM_TREASURY}/balances/usd?trusted=true`
+export const POLYGON_ASSETS_URL = `https://safe-client.safe.global/v1/chains/137/safes/${MOONDAO_POLYGON_TREASURY}/balances/usd?trusted=true`
 export const BASE_ASSETS_URL =
   'https://safe-client.safe.global/v1/chains/8453/safes/0x871e232Eb935E54Eb90B812cf6fe0934D45e7354/balances/usd?trusted=true'
 export const STAKED_ETH_ADDRESS = '0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8'
@@ -537,3 +539,5 @@ export const MOONDAO_MISSIONS_SUBGRAPH_URL =
     ? 'https://api.studio.thegraph.com/query/38443/moondao-missions-arb/version/latest'
     : 'https://api.studio.thegraph.com/query/38443/moondao-missions-sepolia/version/latest'
 export const TICK_SPACING = 200
+
+export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'

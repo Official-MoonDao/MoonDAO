@@ -1,9 +1,17 @@
+import { NanceProvider } from '@nance/nance-hooks'
+import {
+  ProposalPacket,
+  getActionsFromBody,
+  getProposal,
+} from '@nance/nance-sdk'
 import { GetServerSideProps } from 'next'
 import { createEnumParam, useQueryParams, withDefault } from 'next-query-params'
-import { ProposalPacket, getActionsFromBody, getProposal } from '@nance/nance-sdk'
-import { NanceProvider } from '@nance/nance-hooks'
 import { NANCE_API_URL, NANCE_SPACE_NAME } from '@/lib/nance/constants'
 import { useVotesOfProposal } from '@/lib/snapshot'
+import Container from '@/components/layout/Container'
+import ContentLayout from '@/components/layout/ContentLayout'
+import WebsiteHead from '@/components/layout/Head'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import ActionLabel from '@/components/nance/ActionLabel'
 import DropDownMenu from '@/components/nance/DropdownMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
@@ -46,7 +54,10 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
   )
 
   // Determine the number of grid columns based on the presence of votes
-  const gridCols = proposalPacket.voteURL && votes ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2'
+  const gridCols =
+    proposalPacket.voteURL && votes
+      ? 'grid-cols-1 lg:grid-cols-3'
+      : 'grid-cols-1 lg:grid-cols-2'
 
   return (
     <Container>
@@ -73,13 +84,13 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
         <div className="mt-10 mb-10">
           <div className={`grid ${gridCols} gap-8`}>
             <div className="lg:col-span-2 relative">
-              <div className='absolute top-2 right-[20px]'>
+              <div className="absolute top-2 right-[20px]">
                 <DropDownMenu proposalPacket={proposalPacket} />
               </div>
               <div>
-              <MarkdownWithTOC
-                body={proposalPacket.body || '--- No content ---'}
-              />
+                <MarkdownWithTOC
+                  body={proposalPacket.body || '--- No content ---'}
+                />
               </div>
             </div>
 
@@ -118,8 +129,8 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
             )}
 
             <div className="lg:col-span-2 rounded-[20px]">
-                {proposalPacket.actions && proposalPacket.actions.length > 0 && (
-                  <div className="mb-4 break-words">
+              {proposalPacket.actions && proposalPacket.actions.length > 0 && (
+                <div className="mb-4 break-words">
                   <div className="text-sm">
                     {proposalPacket.actions?.map((action, index) => (
                       <ActionLabel action={action} key={index} />
@@ -128,7 +139,6 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
                 </div>
               )}
             </div>
-
           </div>
         </div>
       </ContentLayout>
@@ -136,7 +146,11 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
   )
 }
 
-export default function ProposalPage({ proposalPacket }: { proposalPacket: ProposalPacket }) {
+export default function ProposalPage({
+  proposalPacket,
+}: {
+  proposalPacket: ProposalPacket
+}) {
   return (
     <>
       <WebsiteHead title={proposalPacket.title} />
@@ -147,12 +161,17 @@ export default function ProposalPage({ proposalPacket }: { proposalPacket: Propo
   )
 }
 
-export const getServerSideProps: GetServerSideProps<{ proposalPacket: ProposalPacket }> = async (context) => {
+export const getServerSideProps: GetServerSideProps<{
+  proposalPacket: ProposalPacket
+}> = async (context) => {
   try {
     const params = context.params
     const uuid = params?.proposal as string
     if (!uuid) throw new Error('Proposal not found')
-    const proposalPacket = await getProposal({ space: NANCE_SPACE_NAME, uuid }, NANCE_API_URL)
+    const proposalPacket = await getProposal(
+      { space: NANCE_SPACE_NAME, uuid },
+      NANCE_API_URL
+    )
     return {
       props: {
         proposalPacket,

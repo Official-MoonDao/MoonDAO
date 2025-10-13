@@ -93,6 +93,7 @@ type ProjectProfileProps = {
   _token?: any
   _teamNFT?: any
   _teamHats?: any[]
+  _fundingGoal: number
 }
 
 export default function MissionProfilePage({
@@ -104,6 +105,7 @@ export default function MissionProfilePage({
   _token,
   _teamNFT,
   _teamHats,
+  _fundingGoal,
 }: ProjectProfileProps) {
   const selectedChain = DEFAULT_CHAIN_V5
 
@@ -121,6 +123,7 @@ export default function MissionProfilePage({
         _token={_token}
         _teamNFT={_teamNFT}
         _teamHats={_teamHats}
+        _fundingGoal={_fundingGoal}
       />
     </JuiceProviders>
   )
@@ -193,6 +196,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       payHookAddress,
       tokenAddress,
       primaryTerminalAddress,
+      ruleset,
     ] = await Promise.all([
       readContract({
         contract: jbControllerContract,
@@ -227,6 +231,11 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         method: 'primaryTerminalOf' as string,
         params: [missionRow.projectId, JB_NATIVE_TOKEN_ADDRESS],
       }).catch((e) => '0x0000000000000000000000000000000000000000'), // Default to zero address if fetch fails
+      readContract({
+        contract: jbControllerContract,
+        method: 'currentRulesetOf' as string,
+        params: [missionRow.projectId],
+      }).catch((e) => null), // Don't fail if this fails
     ])
 
     const ipfsHash = metadataURI.startsWith('ipfs://')
@@ -345,7 +354,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     let teamNFT: any = null
     let teamHats: any[] = []
 
-    if (mission.teamId) {
+    if (mission.teamId !== undefined) {
       try {
         // Create team contract
         const teamContract = getContract({
@@ -414,6 +423,11 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
+    const _ruleset = [
+      { weight: +ruleset[0].weight.toString() },
+      { reservedPercent: +ruleset[1].reservedPercent.toString() },
+    ]
+
     return {
       props: {
         mission,
@@ -427,6 +441,8 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
           id: teamNFT.id.toString(),
         },
         _teamHats: teamHats,
+        _fundingGoal: missionRow.fundingGoal,
+        _ruleset,
       },
     }
   } catch (error) {

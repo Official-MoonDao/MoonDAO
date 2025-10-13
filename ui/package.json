@@ -67,6 +67,7 @@
     "ethers": "5.7",
     "form-data": "^4.0.3",
     "formidable": "^3.5.1",
+    "fpnum": "^1.0.0",
     "google-spreadsheet": "^3.3.0",
     "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",

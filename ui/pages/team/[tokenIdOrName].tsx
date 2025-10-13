@@ -570,21 +570,6 @@ export default function TeamDetailPage({
                       Meet the Team
                     </h2>
                   </div>
-                  {isManager && (
-                    <div className="flex gap-2">
-                      <TeamManageMembers
-                        account={account}
-                        hats={hats}
-                        hatsContract={hatsContract}
-                        teamContract={teamContract}
-                        teamId={tokenId}
-                        selectedChain={selectedChain}
-                        multisigAddress={nft.owner}
-                        adminHatId={adminHatId}
-                        managerHatId={managerHatId}
-                      />
-                    </div>
-                  )}
                   {isManager && hats?.[0]?.id && (
                     <div
                       id="button-container"

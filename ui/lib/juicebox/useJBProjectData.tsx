@@ -14,11 +14,6 @@ import useContract from '../thirdweb/hooks/useContract'
 import { projectQuery } from './subgraph'
 import useJBProjectTrendingPercentageIncrease from './useJBProjectTrendingPercentageIncrease'
 
-const primaryTerminalSubgraphClient = createClient({
-  url: MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL,
-  exchanges: [fetchExchange, cacheExchange],
-})
-
 export default function useJBProjectData({
   projectId,
   jbControllerContract,
@@ -28,6 +23,8 @@ export default function useJBProjectData({
   projectSubgraphData,
   _primaryTerminalAddress,
   _token,
+  _ruleset,
+  stage,
 }: {
   projectId: number | undefined
   jbControllerContract: any
@@ -37,11 +34,13 @@ export default function useJBProjectData({
   projectSubgraphData?: any
   _primaryTerminalAddress?: string
   _token?: any
+  _ruleset?: any
+  stage?: number
 }) {
   const { selectedChain } = useContext(ChainContextV5)
 
   const [metadata, setMetadata] = useState<any>(projectMetadata)
-  const [ruleset, setRuleset] = useState<any>()
+  const [ruleset, setRuleset] = useState<any>(_ruleset)
   const [token, setToken] = useState<any>(
     _token || {
       tokenAddress: '',
@@ -68,7 +67,7 @@ export default function useJBProjectData({
     abi: JBV5Token,
   })
 
-  //Metadata and Ruleset
+  //Metadata
   useEffect(() => {
     async function getProjectMetadata() {
       const metadataURI: any = await readContract({
@@ -81,6 +80,12 @@ export default function useJBProjectData({
       setMetadata(data)
     }
 
+    if (jbControllerContract && !projectMetadata && projectId !== undefined)
+      getProjectMetadata()
+  }, [jbControllerContract, projectId, projectMetadata])
+
+  //Ruleset, refresh if stage changes
+  useEffect(() => {
     async function getProjectRuleset() {
       const rs: any = await readContract({
         contract: jbControllerContract,
@@ -89,11 +94,9 @@ export default function useJBProjectData({
       })
       setRuleset(rs)
     }
-
-    if (jbControllerContract && !projectMetadata && projectId !== undefined)
-      getProjectMetadata()
-    if (jbControllerContract && projectId) getProjectRuleset()
-  }, [jbControllerContract, projectId, projectMetadata])
+    if (jbControllerContract && projectId !== undefined && stage !== undefined)
+      getProjectRuleset()
+  }, [jbControllerContract, projectId, stage])
 
   //Token Address
   useEffect(() => {
