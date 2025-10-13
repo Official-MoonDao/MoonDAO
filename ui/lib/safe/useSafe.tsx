@@ -287,12 +287,13 @@ export default function useSafe(
 
     try {
       // Convert safeTx to compatible format for execution
+      // The API returns numbers but the SDK expects strings for these fields
       const safeTransaction = {
         ...safeTx,
-        safeTxGas: safeTx.safeTxGas.toString(),
-        baseGas: safeTx.baseGas.toString(),
-        gasPrice: safeTx.gasPrice.toString(),
-        nonce: safeTx.nonce.toString(),
+        safeTxGas: String(safeTx.safeTxGas),
+        baseGas: String(safeTx.baseGas),
+        gasPrice: String(safeTx.gasPrice),
+        nonce: String(safeTx.nonce),
       }
       
       // Execute the existing transaction directly
