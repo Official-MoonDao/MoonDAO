@@ -71,7 +71,6 @@ export default function ProposalVotes({
   >([])
 
   const fetchVotingCitizens = useCallback(async () => {
-    console.log('fetching voting citizens')
     const statement = `SELECT id, name, owner FROM ${
       CITIZEN_TABLE_NAMES[chainSlug]
     } WHERE owner IN (${votesOfProposal.votes
