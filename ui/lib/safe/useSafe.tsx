@@ -286,8 +286,17 @@ export default function useSafe(
     }
 
     try {
+      // Convert safeTx to compatible format for execution
+      const safeTransaction = {
+        ...safeTx,
+        safeTxGas: safeTx.safeTxGas.toString(),
+        baseGas: safeTx.baseGas.toString(),
+        gasPrice: safeTx.gasPrice.toString(),
+        nonce: safeTx.nonce.toString(),
+      }
+      
       // Execute the existing transaction directly
-      const executeTx = await safe.executeTransaction(safeTx, options)
+      const executeTx = await safe.executeTransaction(safeTransaction, options)
 
       // Get the transaction hash from the execution response
       const txHash = executeTx.hash
