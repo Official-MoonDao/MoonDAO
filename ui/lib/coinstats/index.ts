@@ -1,62 +1,53 @@
-// lib/coinstats/index.ts
-// Replace the contract creation functions with thirdweb-based versions:
-import { ethereum, arbitrum, polygon } from '@/lib/infura/infuraChains'
+import {
+  MOONDAO_ARBITRUM_TREASURY,
+  MOONDAO_POLYGON_TREASURY,
+  MOONDAO_TREASURY,
+} from 'const/config'
+import { ethereum, arbitrum, polygon, base } from '@/lib/infura/infuraChains'
 import { LineChartData } from '@/components/layout/LineChart'
 
-// Updated with correct 2025 CoinStats API blockchain connectionId values
 export const MOONDAO_SAFES = [
   {
-    address: '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9',
-    chain: 'ethereum', // ✅ EVM - Confirmed supported
+    address: MOONDAO_TREASURY,
+    chain: 'ethereum',
     name: 'ETH Treasury',
   },
   {
-    address: '0xAF26a002d716508b7e375f1f620338442F5470c0',
-    chain: 'arbitrum', // ✅ EVM - Listed in documentation
+    address: MOONDAO_ARBITRUM_TREASURY,
+    chain: 'arbitrum',
     name: 'Arbitrum Treasury',
   },
   {
-    address: '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a',
-    chain: 'polygon', // ✅ EVM - Listed as "Polygon (Matic)" in docs
+    address: MOONDAO_POLYGON_TREASURY,
+    chain: 'polygon',
     name: 'Polygon Treasury',
   },
   {
     address: '0x871e232Eb935E54Eb90B812cf6fe0934D45e7354',
-    chain: 'base', // ✅ EVM - Listed in documentation
+    chain: 'base',
     name: 'Base Treasury',
   },
   {
     address: '0x7CCa1d04C95e237d5C59DDFC6E8608F5E9cB45e4',
-    chain: 'optimism', // ✅ EVM - Listed in documentation
+    chain: 'optimism',
     name: 'Optimism Treasury',
   },
-  // Multichain safes - same address tracked across different networks
   {
     address: '0x7CCa1d04C95e237d5C59DDFC6E8608F5E9cB4537',
-    chain: 'arbitrum', // ✅ Now using correct Arbitrum connectionId
+    chain: 'arbitrum',
     name: 'Arbitrum Multichain',
   },
   {
     address: '0x7CCa1d04C95e237d5C59DDFC6E8608F5E9cB4537',
-    chain: 'polygon', // ✅ Now using correct Polygon connectionId
+    chain: 'polygon',
     name: 'Polygon Multichain',
   },
   {
     address: '0x7CCa1d04C95e237d5C59DDFC6E8608F5E9cB4537',
-    chain: 'base', // ✅ Now using correct Base connectionId
+    chain: 'base',
     name: 'Base Multichain',
   },
 ]
-
-// Alternative chain names to try if primary fails
-const CHAIN_ALTERNATIVES: Record<string, string[]> = {
-  arbitrum: ['arbitrum-one', 'arbitrum-nova'],
-  polygon: ['matic', 'polygon-matic'],
-  base: ['base-mainnet'],
-  optimism: ['optimistic-ethereum'],
-  ethereum: ['eth', 'mainnet'],
-}
-
 export interface AUMDataPoint {
   timestamp: number
   aum: number
@@ -78,11 +69,13 @@ interface TokenData {
 }
 
 interface DeFiData {
-  totalAssets: {
+  totalAssets?: {
     USD: number
     BTC: number
     ETH: number
   }
+  balance: number
+  firstPoolCreationTimestamp: number
   protocols: Array<{
     id: string
     name: string
@@ -108,50 +101,16 @@ interface DeFiData {
           USD: number
         }
       }>
-      poolAddress?: string // Added for new blockchain tracking
+      poolAddress?: string
     }>
   }>
 }
 
-// Helper function to calculate total portfolio value from token array
-function calculateTotalValue(tokens: TokenData[]): number {
-  if (!Array.isArray(tokens)) {
-    console.warn('Invalid tokens data - not an array:', tokens)
-    return 0
-  }
-
-  let totalValue = 0
-
-  for (const token of tokens) {
-    try {
-      // Convert raw amount using decimals: actualAmount = rawAmount / 10^decimals
-      const actualAmount =
-        parseFloat(token.amount) / Math.pow(10, token.decimals || 0)
-
-      // Calculate USD value: usdValue = actualAmount × price
-      const usdValue = actualAmount * (token.price || 0)
-
-      totalValue += usdValue
-    } catch (error) {
-      console.warn('Error calculating value for token:', token, error as Error)
-    }
-  }
-
-  return totalValue
-}
-
-// Update the getDeFiBalance function (keeping the existing API calls but adding pool creation logic):
-interface DeFiBalance {
-  balance: number
-  poolCreationTimestamp: number
-  protocols: DeFiData['protocols']
-}
-
-async function getDeFiBalance(): Promise<DeFiBalance> {
+async function getDeFiBalance(): Promise<DeFiData> {
   try {
     if (!process.env.COINSTATS_SHARE_TOKEN) {
       console.error('❌ COINSTATS_SHARE_TOKEN is required for DeFi API')
-      return { balance: 0, poolCreationTimestamp: 0, protocols: [] }
+      return { balance: 0, firstPoolCreationTimestamp: 0, protocols: [] }
     }
 
     const response = await fetch(
@@ -172,189 +131,31 @@ async function getDeFiBalance(): Promise<DeFiBalance> {
         console.warn('⚠️ DeFi API requires Degen plan subscription.')
       }
 
-      return { balance: 0, poolCreationTimestamp: 0, protocols: [] }
+      return { balance: 0, firstPoolCreationTimestamp: 0, protocols: [] }
     }
 
     const data: DeFiData = await response.json()
 
-    // Get accurate pool creation timestamps using blockchain data
     const poolCreationDates = await getPoolCreationTimestamps(data.protocols)
     const earliestPoolCreation = getEarliestPoolCreation(poolCreationDates)
 
     return {
       balance: data.totalAssets?.USD || 0,
-      poolCreationTimestamp: earliestPoolCreation,
+      firstPoolCreationTimestamp: earliestPoolCreation,
       protocols: data.protocols || [],
     }
   } catch (error) {
     console.error('❌ Error fetching DeFi balance:', error)
-    return { balance: 0, poolCreationTimestamp: 0, protocols: [] }
+    return { balance: 0, firstPoolCreationTimestamp: 0, protocols: [] }
   }
 }
 
-// Attempt to get wallet balance using the documented endpoint
-async function getWalletCurrentValue(safe: WalletConfig): Promise<number> {
-  try {
-    const url = `https://openapiv1.coinstats.app/wallet/balance?address=${safe.address}&connectionId=${safe.chain}`
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        accept: 'application/json',
-        'X-API-KEY': process.env.COINSTATS_API_KEY || '',
-      },
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-
-      // Try alternative chain names if the current one fails
-      if (
-        (errorText.includes('Invalid connectionId') ||
-          response.status === 400) &&
-        CHAIN_ALTERNATIVES[safe.chain]
-      ) {
-        for (const altChain of CHAIN_ALTERNATIVES[safe.chain]) {
-          try {
-            const altUrl = `https://openapiv1.coinstats.app/wallet/balance?address=${safe.address}&connectionId=${altChain}`
-            const altResponse = await fetch(altUrl, {
-              method: 'GET',
-              headers: {
-                accept: 'application/json',
-                'X-API-KEY': process.env.COINSTATS_API_KEY || '',
-              },
-            })
-
-            if (altResponse.ok) {
-              const altData = await altResponse.json()
-
-              if (Array.isArray(altData)) {
-                return calculateTotalValue(altData)
-              }
-              return 0
-            }
-          } catch (altError) {
-            // Alternative chain failed, continue to next
-          }
-        }
-      }
-
-      return 0
-    }
-
-    const data = await response.json()
-
-    // CoinStats returns an array of tokens directly (not wrapped in data object)
-    if (Array.isArray(data)) {
-      return calculateTotalValue(data)
-    } else {
-      return 0
-    }
-  } catch (error) {
-    console.error(`Error fetching ${safe.name}:`, error)
-    return 0
-  }
-}
-
-// Generate realistic historical data based on current value
-async function generateHistoricalData(
-  safe: WalletConfig,
-  currentValue: number,
-  days: number
-): Promise<LineChartData[]> {
-  const data: LineChartData[] = []
-  const now = Date.now()
-
-  // Only generate data if we have real current value
-  if (currentValue > 0) {
-    for (let i = days; i >= 0; i--) {
-      const timestampMs = now - i * 24 * 60 * 60 * 1000
-      const timestamp = Math.floor(timestampMs / 1000) // Convert to seconds for LineChart compatibility
-
-      // Generate realistic portfolio growth/decline
-      const daysFactor = (days - i) / days // 0 to 1 progression
-      const randomFactor = 0.7 + Math.random() * 0.6 // 0.7 to 1.3 multiplier
-      const growthFactor = 0.3 + daysFactor * 0.7 // Start at 30%, grow to 100%
-
-      const historicalValue = currentValue * growthFactor * randomFactor
-
-      data.push({
-        timestamp,
-        value: historicalValue,
-        date: new Date(timestampMs).toISOString().split('T')[0],
-      })
-    }
-  } else {
-    // Return empty array if no real data available
-  }
-
-  return data
-}
-
-// Add delay to prevent rate limiting
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
-// Helper function to combine historical data from multiple wallets
-function combineWalletHistories(
-  walletHistories: Array<{ name: string; history: LineChartData[] }>
-): LineChartData[] {
-  if (walletHistories.length === 0) return []
-
-  // Create a map to aggregate values by date
-  const combinedData = new Map<
-    string,
-    { timestamp: number; totalValue: number; count: number }
-  >()
-
-  // Process each wallet's historical data
-  walletHistories.forEach(({ name, history }) => {
-    console.log(`  📈 Processing ${history.length} data points from ${name}`)
-
-    history.forEach((dataPoint) => {
-      const dateKey = dataPoint.date
-
-      if (combinedData.has(dateKey)) {
-        const existing = combinedData.get(dateKey)!
-        existing.totalValue += dataPoint.value
-        existing.count += 1
-      } else {
-        combinedData.set(dateKey, {
-          timestamp: dataPoint.timestamp,
-          totalValue: dataPoint.value,
-          count: 1,
-        })
-      }
-    })
-  })
-
-  // Convert map back to array and sort by timestamp
-  const result: LineChartData[] = Array.from(combinedData.entries())
-    .map(([date, { timestamp, totalValue }]) => ({
-      timestamp,
-      value: totalValue, // Sum of all wallet values for this date
-      date,
-    }))
-    .sort((a, b) => a.timestamp - b.timestamp)
-
-  if (result.length > 0) {
-    console.log(
-      `📊 Combined value range: $${Math.min(
-        ...result.map((d) => d.value)
-      ).toFixed(2)} - $${Math.max(...result.map((d) => d.value)).toFixed(2)}`
-    )
-  }
-
-  return result
-}
-
-// Get contract creation events from blockchain using pool addresses
 async function getPoolCreationTimestamps(
   protocols: DeFiData['protocols']
 ): Promise<Map<string, number>> {
   const poolCreationDates = new Map<string, number>()
 
   try {
-    // Extract all pool addresses from the DeFi data
     const poolAddresses: Array<{
       address: string
       chain: string
@@ -379,7 +180,6 @@ async function getPoolCreationTimestamps(
       console.log(`  • ${pool.symbols} (${pool.chain}): ${pool.address}`)
     })
 
-    // For each pool address, get creation timestamp using thirdweb
     for (const pool of poolAddresses) {
       try {
         const creationTimestamp = await getContractCreationTimestamp(
@@ -412,7 +212,6 @@ async function getPoolCreationTimestamps(
   return poolCreationDates
 }
 
-// Helper function to make RPC calls directly to Infura
 async function makeRpcCall(
   rpcUrl: string,
   method: string,
@@ -443,7 +242,6 @@ async function makeRpcCall(
   return data.result
 }
 
-// Get Infura chain RPC URL from chain name
 function getInfuraRpcUrl(chainName: string): string | null {
   switch (chainName.toLowerCase()) {
     case 'ethereum':
@@ -452,26 +250,25 @@ function getInfuraRpcUrl(chainName: string): string | null {
       return arbitrum.rpc
     case 'polygon':
       return polygon.rpc
+    case 'base':
+      return base.rpc
     default:
       console.warn(`Unknown chain: ${chainName}`)
       return null
   }
 }
 
-// Get contract creation timestamp using Infura RPC
 async function getContractCreationTimestamp(
   contractAddress: string,
   chainName: string
 ): Promise<number> {
   try {
-    // Get the appropriate RPC URL
     const rpcUrl = getInfuraRpcUrl(chainName)
     if (!rpcUrl) {
       console.warn(`⚠️ Chain not supported: ${chainName}`)
       return getFallbackCreationDate(contractAddress)
     }
 
-    // Find the first transaction to this address (contract creation)
     const creationTimestamp = await findContractCreationBlock(
       rpcUrl,
       contractAddress
@@ -481,7 +278,6 @@ async function getContractCreationTimestamp(
       return creationTimestamp
     }
 
-    // Fallback to known creation dates
     return getFallbackCreationDate(contractAddress)
   } catch (error) {
     console.error(
@@ -492,13 +288,11 @@ async function getContractCreationTimestamp(
   }
 }
 
-// Find contract creation block using binary search
 async function findContractCreationBlock(
   rpcUrl: string,
   contractAddress: string
 ): Promise<number> {
   try {
-    // First check if address has any code
     const currentCode = await makeRpcCall(rpcUrl, 'eth_getCode', [
       contractAddress,
       'latest',
@@ -508,11 +302,9 @@ async function findContractCreationBlock(
       return 0
     }
 
-    // Get the current block number
     const latestBlockHex = await makeRpcCall(rpcUrl, 'eth_blockNumber', [])
     const latestBlock = parseInt(latestBlockHex, 16)
 
-    // Binary search to find creation block
     let low = 0
     let high = latestBlock
     let creationBlock = 0
@@ -542,7 +334,6 @@ async function findContractCreationBlock(
     }
 
     if (creationBlock > 0) {
-      // Get the timestamp of the creation block
       const blockHex = `0x${creationBlock.toString(16)}`
       const block = await makeRpcCall(rpcUrl, 'eth_getBlockByNumber', [
         blockHex,
@@ -550,7 +341,7 @@ async function findContractCreationBlock(
       ])
 
       if (block && block.timestamp) {
-        const timestamp = parseInt(block.timestamp, 16) * 1000 // Convert to milliseconds
+        const timestamp = parseInt(block.timestamp, 16) * 1000
         return timestamp
       }
     }
@@ -566,7 +357,6 @@ async function findContractCreationBlock(
 function getFallbackCreationDate(contractAddress: string): number {
   const address = contractAddress.toLowerCase()
 
-  // Known pool creation dates
   const knownPools: Record<string, string> = {
     '0x6de28f1176311b7408329a4d21c2bd1441be157f': '2023-08-15', // Ethereum MOONEY/WETH pool
     '0xfee18cc35c4aebc2359439f1ab9e8cc897be0363': '2023-09-01', // Polygon MOONEY/WPOL pool
@@ -598,10 +388,9 @@ function getEarliestPoolCreation(
   return earliest
 }
 
-// Main function to get AUM history for all MoonDAO treasuries
 export async function getAUMHistory(
   days: number = 365
-): Promise<{ aumHistory: LineChartData[]; aum: number; defiBalance: number }> {
+): Promise<{ aumHistory: LineChartData[]; aum: number; defiData: DeFiData }> {
   if (!process.env.COINSTATS_SHARE_TOKEN) {
     console.error(
       '❌ COINSTATS_SHARE_TOKEN is required for portfolio chart API'
@@ -609,7 +398,11 @@ export async function getAUMHistory(
     return {
       aumHistory: [],
       aum: 0,
-      defiBalance: 0,
+      defiData: {
+        balance: 0,
+        firstPoolCreationTimestamp: 0,
+        protocols: [],
+      },
     }
   }
 
@@ -622,7 +415,6 @@ export async function getAUMHistory(
     else if (days <= 90) timeRange = '3m'
     else if (days <= 365) timeRange = '1y'
 
-    // Fetch both portfolio chart and DeFi data in parallel
     const [chartResponse, defiData] = await Promise.all([
       fetch(
         `https://openapiv1.coinstats.app/portfolio/chart?shareToken=${process.env.COINSTATS_SHARE_TOKEN}&type=${timeRange}`,
@@ -640,7 +432,6 @@ export async function getAUMHistory(
     if (!chartResponse.ok) {
       const errorText = await chartResponse.text()
 
-      // Check if it's a subscription issue (Degen plan required)
       if (chartResponse.status === 403 || errorText.includes('subscription')) {
         console.warn('⚠️ Portfolio chart requires Degen plan subscription.')
       }
@@ -648,7 +439,7 @@ export async function getAUMHistory(
       return {
         aumHistory: [],
         aum: defiData.balance, // Return just DeFi balance if portfolio fails
-        defiBalance: defiData.balance,
+        defiData,
       }
     }
 
@@ -679,7 +470,7 @@ export async function getAUMHistory(
 
         // Only add DeFi balance if this data point is after pool creation
         const defiValue =
-          pointTimestamp >= defiData.poolCreationTimestamp
+          pointTimestamp >= defiData.firstPoolCreationTimestamp
             ? defiData.balance
             : 0
 
@@ -692,14 +483,14 @@ export async function getAUMHistory(
       return {
         aumHistory: enhancedChartData,
         aum: totalCurrentValue,
-        defiBalance: defiData.balance,
+        defiData,
       }
     } else {
       console.warn('Unexpected portfolio response format:', data)
       return {
         aumHistory: [],
         aum: defiData.balance, // Return just DeFi balance if portfolio data is invalid
-        defiBalance: defiData.balance,
+        defiData,
       }
     }
   } catch (error) {
@@ -711,50 +502,18 @@ export async function getAUMHistory(
       return {
         aumHistory: [],
         aum: defiData.balance,
-        defiBalance: defiData.balance,
+        defiData,
       }
     } catch (defiError) {
       return {
         aumHistory: [],
         aum: 0,
-        defiBalance: 0,
+        defiData: {
+          balance: 0,
+          firstPoolCreationTimestamp: 0,
+          protocols: [],
+        },
       }
-    }
-  }
-}
-
-// Function to get AUM history for a specific wallet
-export async function getWalletAUMHistory(
-  address: string,
-  chainString: string,
-  days: number = 365
-): Promise<{ aumHistory: LineChartData[]; aum: number; defiBalance: number }> {
-  try {
-    const safe = { address, chain: chainString, name: 'Custom Wallet' } as const
-    const currentValue = await getWalletCurrentValue(safe)
-
-    if (currentValue === 0) {
-      return {
-        aumHistory: [],
-        aum: 0,
-        defiBalance: 0,
-      }
-    }
-
-    await delay(2000)
-    const aumHistory = await generateHistoricalData(safe, currentValue, days)
-
-    return {
-      aumHistory,
-      aum: currentValue,
-      defiBalance: 0, // Individual wallets don't have DeFi data separate from portfolio
-    }
-  } catch (error) {
-    console.error('Error in getWalletAUMHistory:', error)
-    return {
-      aumHistory: [],
-      aum: 0,
-      defiBalance: 0,
     }
   }
 }
