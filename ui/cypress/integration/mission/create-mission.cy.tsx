@@ -23,7 +23,7 @@ describe('<CreateMission />', () => {
     }
     cy.mountNextRouter('/')
     cy.mount(
-      <TestnetProviders>
+      <TestnetProviders citizen={{ id: 1 }}>
         <CreateMission {...props} />
       </TestnetProviders>
     )
