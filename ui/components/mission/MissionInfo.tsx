@@ -90,7 +90,7 @@ export default function MissionInfo({
 
       const stickyTop = stickyRect.top
 
-      const stickyPoint = 20
+      const stickyPoint = 75
 
       const parentBottom = parentRect.bottom
 
@@ -237,7 +237,7 @@ export default function MissionInfo({
                 />
                 {mission?.metadata?.youtubeLink &&
                   mission?.metadata?.youtubeLink !== '' && (
-                    <div className="w-full p-4 2xl:p-0 max-w-[1200px]">
+                    <div className="mt-4 w-full p-4 2xl:p-0 max-w-[1200px]">
                       <iframe
                         src={mission?.metadata?.youtubeLink?.replace(
                           'watch?v=',

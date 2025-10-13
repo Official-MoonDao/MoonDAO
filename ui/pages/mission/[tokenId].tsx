@@ -94,6 +94,7 @@ type ProjectProfileProps = {
   _teamNFT?: any
   _teamHats?: any[]
   _fundingGoal: number
+  _ruleset: any[]
 }
 
 export default function MissionProfilePage({
@@ -106,6 +107,7 @@ export default function MissionProfilePage({
   _teamNFT,
   _teamHats,
   _fundingGoal,
+  _ruleset,
 }: ProjectProfileProps) {
   const selectedChain = DEFAULT_CHAIN_V5
 
@@ -124,6 +126,7 @@ export default function MissionProfilePage({
         _teamNFT={_teamNFT}
         _teamHats={_teamHats}
         _fundingGoal={_fundingGoal}
+        _ruleset={_ruleset}
       />
     </JuiceProviders>
   )

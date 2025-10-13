@@ -1,52 +1,60 @@
 import Image from 'next/image'
 
-function PaymentMethod({ icon, label }: { icon?: string; label?: string }) {
+function PaymentMethod({
+  icon,
+  label,
+  scale,
+  className,
+}: {
+  icon?: string
+  label?: string
+  scale?: number
+  className?: string
+}) {
   return (
-    <div className="flex items-center justify-center gap-2 h-[40px] w-[80px] md:h-[50px] md:w-[100px] xl:h-[30px] xl:w-[60px] rounded-lg p-1">
+    <div
+      className={`flex items-center justify-center gap-2 h-[45px] w-[90px] rounded-lg p-1 ${className}`}
+      style={{ transform: scale ? `scale(${scale})` : undefined }}
+    >
       {label ? (
         <p className=" text-black">{label}</p>
       ) : icon ? (
-        <Image src={icon} alt={''} width={100} height={100} />
+        <div
+          className={`relative w-full h-full flex items-center justify-center`}
+        >
+          <Image src={icon} alt={''} width={100} height={100} />
+        </div>
       ) : null}
     </div>
   )
 }
 /*
-MoonPay Onramp:
-- Apple Pay
-- PayPal
-- Venmo
-- Google Pay
-
 Coinbase Onramp:
 - Debit
-- PayPal
 - Apple Pay
-- Google Pay
+- Coinbase transfer
 */
 
 const PAYMENT_METHODS = [
   {
+    icon: '/assets/pay-method-coinbase.svg',
+    scale: 0.95,
+    className: 'mr-3',
+  },
+  {
     icon: '/assets/pay-method-debit.svg',
+    scale: 0.75,
   },
   {
     icon: '/assets/pay-method-apple-pay.svg',
-  },
-  {
-    icon: '/assets/pay-method-google-pay.svg',
-  },
-  {
-    icon: '/assets/pay-method-paypal.svg',
-  },
-  {
-    icon: '/assets/pay-method-venmo.svg',
+    scale: 0.7,
   },
 ]
 
 export default function AcceptedPaymentMethods() {
   return (
     <div>
-      <div className="p-1 h-full rounded-2xl flex items-center justify-center xl:justify-between flex-wrap gap-1">
+      <div className="p-1 h-full rounded-2xl flex items-center justify-center flex-wrap">
         {PAYMENT_METHODS.map((method: any, i) => (
           <PaymentMethod key={'payment-method' + i} {...method} />
         ))}
