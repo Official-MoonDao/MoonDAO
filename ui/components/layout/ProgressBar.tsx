@@ -70,7 +70,7 @@ export default function ProgressBar({
             {/* Shimmer effect overlay */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
           </div>
-          
+
           {/* Progress label */}
           {label && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -82,7 +82,7 @@ export default function ProgressBar({
               </span>
             </div>
           )}
-          
+
           {/* Subtle highlight on top edge */}
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
         </div>
