@@ -68,11 +68,8 @@ export async function getCitizensLocationData() {
           method: 'expiresAt',
           params: [c.metadata.id],
         })
-        const view = getAttribute(c?.metadata?.attributes, 'view')?.value
         return (
-          +expiresAt.toString() > now &&
-          view === 'public' &&
-          !BLOCKED_CITIZENS.has(c.metadata.id)
+          +expiresAt.toString() > now && !BLOCKED_CITIZENS.has(c.metadata.id)
         )
       })
 

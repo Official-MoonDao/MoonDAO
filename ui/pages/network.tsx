@@ -532,32 +532,23 @@ export async function getServerSideProps() {
       abi: TeamABI as any,
     })
 
-    // Filter for public teams
-    const filteredPublicTeams: any = teamNFTs?.filter(
-      (nft: any) =>
-        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          ?.value === 'public' && !BLOCKED_TEAMS.has(nft.metadata.id)
-    )
-
     // Filter for valid (non-expired) teams
-    const filteredValidTeams: any = filteredPublicTeams?.filter(
-      async (nft: any) => {
-        try {
-          const expiresAt = await readContract({
-            contract: teamContract,
-            method: 'expiresAt',
-            params: [nft?.metadata?.id],
-          })
-          return +expiresAt.toString() > now
-        } catch (error) {
-          console.error(
-            `Error checking expiration for team ${nft?.metadata?.id}:`,
-            error
-          )
-          return false
-        }
+    const filteredValidTeams: any = teamNFTs?.filter(async (nft: any) => {
+      try {
+        const expiresAt = await readContract({
+          contract: teamContract,
+          method: 'expiresAt',
+          params: [nft?.metadata?.id],
+        })
+        return +expiresAt.toString() > now
+      } catch (error) {
+        console.error(
+          `Error checking expiration for team ${nft?.metadata?.id}:`,
+          error
+        )
+        return false
       }
-    )
+    })
 
     // Sort teams with newest first and featured teams prioritized
     const filteredTeams = filteredValidTeams
@@ -601,32 +592,23 @@ export async function getServerSideProps() {
       abi: CitizenABI as any,
     })
 
-    // Filter for public citizens
-    const filteredPublicCitizens: any = citizenNFTs?.filter(
-      (nft: any) =>
-        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          ?.value === 'public' && !BLOCKED_CITIZENS.has(nft.metadata.id)
-    )
-
     // Filter for valid (non-expired) citizens
-    const filteredValidCitizens: any = filteredPublicCitizens?.filter(
-      async (nft: any) => {
-        try {
-          const expiresAt = await readContract({
-            contract: citizenContract,
-            method: 'expiresAt',
-            params: [nft?.metadata?.id],
-          })
-          return +expiresAt.toString() > now
-        } catch (error) {
-          console.error(
-            `Error checking expiration for citizen ${nft?.metadata?.id}:`,
-            error
-          )
-          return false
-        }
+    const filteredValidCitizens: any = citizenNFTs?.filter(async (nft: any) => {
+      try {
+        const expiresAt = await readContract({
+          contract: citizenContract,
+          method: 'expiresAt',
+          params: [nft?.metadata?.id],
+        })
+        return +expiresAt.toString() > now
+      } catch (error) {
+        console.error(
+          `Error checking expiration for citizen ${nft?.metadata?.id}:`,
+          error
+        )
+        return false
       }
-    )
+    })
 
     const filteredCitizens = filteredValidCitizens.reverse() // Show newest citizens first
 
