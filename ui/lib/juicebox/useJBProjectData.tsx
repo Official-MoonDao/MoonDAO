@@ -23,6 +23,7 @@ export default function useJBProjectData({
   projectSubgraphData,
   _primaryTerminalAddress,
   _token,
+  _ruleset,
   stage,
 }: {
   projectId: number | undefined
@@ -33,12 +34,13 @@ export default function useJBProjectData({
   projectSubgraphData?: any
   _primaryTerminalAddress?: string
   _token?: any
+  _ruleset?: any
   stage?: number
 }) {
   const { selectedChain } = useContext(ChainContextV5)
 
   const [metadata, setMetadata] = useState<any>(projectMetadata)
-  const [ruleset, setRuleset] = useState<any>()
+  const [ruleset, setRuleset] = useState<any>(_ruleset)
   const [token, setToken] = useState<any>(
     _token || {
       tokenAddress: '',
