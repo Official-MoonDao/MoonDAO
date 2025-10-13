@@ -886,23 +886,15 @@ export async function getStaticProps() {
       teams.push(teamRowToNFT(row))
     }
 
-    const filteredPublicTeams: any = teams?.filter(
-      (nft: any) =>
-        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          .value === 'public' && !BLOCKED_TEAMS.has(nft.metadata.id)
-    )
+    const filteredValidTeams: any = teams?.filter(async (nft: any) => {
+      const expiresAt = await readContract({
+        contract: teamContract,
+        method: 'expiresAt',
+        params: [nft?.metadata?.id],
+      })
 
-    const filteredValidTeams: any = filteredPublicTeams?.filter(
-      async (nft: any) => {
-        const expiresAt = await readContract({
-          contract: teamContract,
-          method: 'expiresAt',
-          params: [nft?.metadata?.id],
-        })
-
-        return +expiresAt.toString() > now
-      }
-    )
+      return +expiresAt.toString() > now
+    })
 
     const sortedValidTeams = filteredValidTeams
       .reverse()
@@ -952,23 +944,15 @@ export async function getStaticProps() {
       citizens.push(citizenRowToNFT(row))
     }
 
-    const filteredPublicCitizens: any = citizens?.filter(
-      (nft: any) =>
-        nft.metadata.attributes?.find((attr: any) => attr.trait_type === 'view')
-          .value === 'public' && !BLOCKED_CITIZENS.has(nft.metadata.id)
-    )
+    const filteredValidCitizens: any = citizens?.filter(async (nft: any) => {
+      const expiresAt = await readContract({
+        contract: citizenContract,
+        method: 'expiresAt',
+        params: [nft?.metadata?.id],
+      })
 
-    const filteredValidCitizens: any = filteredPublicCitizens?.filter(
-      async (nft: any) => {
-        const expiresAt = await readContract({
-          contract: citizenContract,
-          method: 'expiresAt',
-          params: [nft?.metadata?.id],
-        })
-
-        return +expiresAt.toString() > now
-      }
-    )
+      return +expiresAt.toString() > now
+    })
 
     // Generate location data for map
     let citizensLocationData: any[] = []
