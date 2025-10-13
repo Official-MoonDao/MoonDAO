@@ -6,6 +6,8 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { CITIZEN_TABLE_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 
+type CitizenTableABI = typeof CitizenTableABI
+
 export interface DashboardPreferences {
   showQuests: boolean
   showWeeklyRewards: boolean
@@ -46,7 +48,7 @@ export function useDashboardPreferences() {
   
   const citizenTableContract = useContract({
     address: CITIZEN_TABLE_ADDRESSES[DEFAULT_CHAIN_V5.id],
-    abi: CitizenTableABI as any,
+    abi: CitizenTableABI,
     chain: DEFAULT_CHAIN_V5,
   })
 
