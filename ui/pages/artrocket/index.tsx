@@ -80,14 +80,14 @@ export default function ArtRocket({ distributions, finalists }: BaikonurProps) {
               refresh={() => router.reload()}
             />
           </div>
-          <div className="w-full">
+          {/* <div className="w-full">
             <DistributionVotes
               votes={distributions}
               finalists={finalists}
               title="Art Rocket Project Votes"
               refetch={() => router.reload()}
             />
-          </div>
+          </div> */}
         </div>
         <div className="mt-8 space-y-6">
           <div className="space-y-6">
