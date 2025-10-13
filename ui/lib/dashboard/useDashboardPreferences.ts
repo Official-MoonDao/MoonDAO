@@ -125,7 +125,7 @@ export function useDashboardPreferences() {
           ]
         })
 
-        sendTransaction(transaction, {
+        sendTransaction(transaction as any, {
           onSuccess: () => {
             console.log('Dashboard preferences saved to blockchain')
           },
@@ -162,7 +162,7 @@ export function useDashboardPreferences() {
           ]
         })
 
-        sendTransaction(transaction, {
+        sendTransaction(transaction as any, {
           onSuccess: () => {
             console.log('Dashboard preferences reset on blockchain')
           },
