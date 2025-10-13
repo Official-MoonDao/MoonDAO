@@ -18,10 +18,6 @@ import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 import ProposalInfo from '@/components/nance/ProposalInfo'
 import ProposalVotes from '@/components/nance/ProposalVotes'
 import VotingResults from '@/components/nance/VotingResults'
-import WebsiteHead from '@/components/layout/Head'
-import Container from '@/components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayout'
-import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
   const [query, setQuery] = useQueryParams({
