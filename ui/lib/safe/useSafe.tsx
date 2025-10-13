@@ -286,18 +286,9 @@ export default function useSafe(
     }
 
     try {
-      // Convert safeTx to compatible format for execution
-      // The API returns numbers but the SDK expects strings for these fields
-      const safeTransaction = {
-        ...safeTx,
-        safeTxGas: String(safeTx.safeTxGas),
-        baseGas: String(safeTx.baseGas),
-        gasPrice: String(safeTx.gasPrice),
-        nonce: String(safeTx.nonce),
-      }
-      
       // Execute the existing transaction directly
-      const executeTx = await safe.executeTransaction(safeTransaction, options)
+      // Cast to SafeMultisigTransactionResponse to handle type conflicts between SDK versions
+      const executeTx = await safe.executeTransaction(safeTx as any, options)
 
       // Get the transaction hash from the execution response
       const txHash = executeTx.hash
