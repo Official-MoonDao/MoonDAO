@@ -1,6 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
-import { JBV5_CONTROLLER_ADDRESS } from 'const/config'
+import { DEFAULT_CHAIN_V5, JBV5_CONTROLLER_ADDRESS } from 'const/config'
 import { ethers } from 'ethers'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -177,6 +177,7 @@ export default function MissionDeployTokenModal({
           setAgreedToCondition={setAgreedToTokenNotSecurity}
         />
         <PrivyWeb3Button
+          requiredChain={DEFAULT_CHAIN_V5}
           className="rounded-full"
           label="Deploy Token"
           action={deployToken}
