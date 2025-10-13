@@ -60,6 +60,10 @@ interface ColorBarProps {
    * The min percent of greenScore/(greenScore+redScore) for the proposal to pass. Defaults to 0.66
    */
   approvalPercent?: number
+  /**
+   * Custom background color for the bar. Defaults to gray-200/gray-700
+   */
+  backgroundColor?: string
 }
 
 /**
@@ -76,6 +80,7 @@ export default function ColorBar({
   noTooltip = false,
   threshold = JB_THRESHOLD,
   approvalPercent = 0.66,
+  backgroundColor,
 }: ColorBarProps) {
   const totalScore = greenScore + redScore
   const hasPass =
@@ -93,7 +98,7 @@ export default function ColorBar({
 
   const renderBar = () => (
     <>
-      <div className="flex h-3 w-full min-w-[5rem] flex-row rounded-full bg-gray-200 dark:bg-gray-700">
+      <div className={`flex h-3 w-full min-w-[5rem] flex-row rounded-full ${backgroundColor || 'bg-gray-200 dark:bg-gray-700'}`}>
         <ColorDiv color="green" width={greenWidth} />
         <ColorDiv color="red" width={redWidth} />
         <ColorDiv color="gray" width={grayWidth} />
