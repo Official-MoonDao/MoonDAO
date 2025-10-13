@@ -91,33 +91,39 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
             </div>
 
             {proposalPacket.voteURL && votes && (
-              <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] overflow-hidden max-h-[calc(100vh-200px)] flex flex-col">
+              <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] flex flex-col h-fit">
                 {/* Show voting results if proposal voting is closed */}
                 {votes.proposal.state === 'closed' ? (
-                  <div className="flex-1 overflow-y-auto">
-                    <VotingResults 
-                      votingInfo={votes.proposal} 
-                      votesData={votes}
-                      threshold={votes.proposal.quorum}
-                      onRefetch={() => mutate()}
-                    />
-                  </div>
+                  <VotingResults
+                    votingInfo={votes.proposal}
+                    votesData={votes}
+                    threshold={votes.proposal.quorum}
+                    onRefetch={() => mutate()}
+                  />
                 ) : (
                   <div className="px-[40px] p-5">
                     <button
                       className="text-lg font-semibold leading-6 text-gray-900 dark:text-white"
                       id="votes"
                       onClick={() => {
-                        setQuery({ sortBy: query.sortBy === 'time' ? 'vp' : 'time' })
+                        setQuery({
+                          sortBy: query.sortBy === 'time' ? 'vp' : 'time',
+                        })
                       }}
                     >
-                      <h3 className="font-GoodTimes pb-2 text-gray-400">Votes</h3>
+                      <h3 className="font-GoodTimes pb-2 text-gray-400">
+                        Votes
+                      </h3>
                       <span className="ml-2 text-center text-xs text-gray-300">
-                        sort by {query.sortBy === 'vp' ? 'voting power' : 'time'}
+                        sort by{' '}
+                        {query.sortBy === 'vp' ? 'voting power' : 'time'}
                       </span>
                     </button>
                     <div className="pb-5">
-                      <ProposalVotes votesOfProposal={votes} refetch={() => mutate()} />
+                      <ProposalVotes
+                        votesOfProposal={votes}
+                        refetch={() => mutate()}
+                      />
                     </div>
                   </div>
                 )}
