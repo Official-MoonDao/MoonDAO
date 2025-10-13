@@ -84,15 +84,17 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
             </div>
 
             {proposalPacket.voteURL && votes && (
-              <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] overflow-hidden">
+              <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] overflow-hidden max-h-[calc(100vh-200px)] flex flex-col">
                 {/* Show voting results if proposal voting is closed */}
                 {votes.proposal.state === 'closed' ? (
-                  <VotingResults 
-                    votingInfo={votes.proposal} 
-                    votesData={votes}
-                    threshold={votes.proposal.quorum}
-                    onRefetch={() => mutate()}
-                  />
+                  <div className="flex-1 overflow-y-auto">
+                    <VotingResults 
+                      votingInfo={votes.proposal} 
+                      votesData={votes}
+                      threshold={votes.proposal.quorum}
+                      onRefetch={() => mutate()}
+                    />
+                  </div>
                 ) : (
                   <div className="px-[40px] p-5">
                     <button

@@ -1,7 +1,6 @@
 import { SnapshotGraphqlProposalVotingInfo, VotesOfProposal } from '@/lib/snapshot'
 import { formatNumberUSStyle } from '@/lib/nance'
-import { CheckCircleIcon, XCircleIcon, MinusCircleIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
-import { useState } from 'react'
+import { CheckCircleIcon, XCircleIcon, MinusCircleIcon } from '@heroicons/react/24/outline'
 import ColorBar from './ColorBar'
 import ProposalVotes from './ProposalVotes'
 
@@ -13,8 +12,6 @@ interface VotingResultsProps {
 }
 
 export default function VotingResults({ votingInfo, votesData, threshold = 0, onRefetch }: VotingResultsProps) {
-  const [showIndividualVotes, setShowIndividualVotes] = useState(false)
-  
   if (!votingInfo || votingInfo.state !== 'closed') return null
 
   const totalVotes = votingInfo.scores_total
@@ -32,7 +29,7 @@ export default function VotingResults({ votingInfo, votesData, threshold = 0, on
   return (
     <div className="p-6">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-white font-GoodTimes">
             Voting Results
           </h3>
@@ -47,6 +44,24 @@ export default function VotingResults({ votingInfo, votesData, threshold = 0, on
               <XCircleIcon className="w-4 h-4" />
             )}
             {passed && quorumMet ? 'PASSED' : 'FAILED'}
+          </div>
+        </div>
+
+        {/* Summary Stats - Moved to top */}
+        <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-white/5 rounded-lg">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-white">{votingInfo.votes}</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wide">Total Voters</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-white">{formatNumberUSStyle(totalVotes, true)}</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wide">Total VP</p>
+          </div>
+          <div className="text-center">
+            <p className={`text-2xl font-bold ${passed ? 'text-green-400' : 'text-red-400'}`}>
+              {forPercentage}%
+            </p>
+            <p className="text-xs text-gray-400 uppercase tracking-wide">Support</p>
           </div>
         </div>
         
@@ -74,8 +89,7 @@ export default function VotingResults({ votingInfo, votesData, threshold = 0, on
         ) : (
           <div className="mb-4">
             <p className="text-sm text-gray-400 mb-1">
-              No quorum requirement
-              <span className="text-green-400 ml-2">✓ All votes count</span>
+              No minimum threshold required - every vote contributes to the outcome
             </p>
           </div>
         )}
@@ -134,63 +148,28 @@ export default function VotingResults({ votingInfo, votesData, threshold = 0, on
           <div className="mb-2">
             <p className="text-sm text-gray-400 font-medium">Distribution</p>
           </div>
-          <ColorBar
-            greenScore={forVotes}
-            redScore={againstVotes}
-            threshold={threshold}
-            noTooltip={false}
-          />
-        </div>
-
-        {/* Summary Stats */}
-        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/10">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-white">{votingInfo.votes}</p>
-            <p className="text-xs text-gray-400 uppercase tracking-wide">Total Voters</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-white">{formatNumberUSStyle(totalVotes, true)}</p>
-            <p className="text-xs text-gray-400 uppercase tracking-wide">Total VP</p>
-          </div>
-          <div className="text-center">
-            <p className={`text-2xl font-bold ${passed ? 'text-green-400' : 'text-red-400'}`}>
-              {forPercentage}%
-            </p>
-            <p className="text-xs text-gray-400 uppercase tracking-wide">Support</p>
+          <div className="bg-slate-800 p-3 rounded-lg">
+            <ColorBar
+              greenScore={forVotes}
+              redScore={againstVotes}
+              threshold={threshold}
+              noTooltip={false}
+              backgroundColor="bg-slate-600"
+            />
           </div>
         </div>
 
         {/* Individual Votes Section */}
         {votesData && (
           <div className="mt-6 pt-6 border-t border-white/10">
-            <button
-              onClick={() => setShowIndividualVotes(!showIndividualVotes)}
-              className="flex items-center justify-between w-full text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors duration-200"
-            >
-              <div>
-                <h4 className="text-lg font-semibold text-white font-GoodTimes">
-                  Individual Votes
-                </h4>
-                <p className="text-sm text-gray-400">
-                  View detailed voting breakdown by address
-                </p>
-              </div>
-              {showIndividualVotes ? (
-                <ChevronUpIcon className="w-5 h-5 text-gray-400" />
-              ) : (
-                <ChevronDownIcon className="w-5 h-5 text-gray-400" />
-              )}
-            </button>
-            
-            {showIndividualVotes && (
-              <div className="mt-4">
-                <ProposalVotes 
-                  votesOfProposal={votesData} 
-                  refetch={onRefetch || (() => {})} 
-                  threshold={threshold}
-                />
-              </div>
-            )}
+            <h4 className="text-lg font-semibold text-white font-GoodTimes mb-4">
+              Individual Votes
+            </h4>
+            <ProposalVotes 
+              votesOfProposal={votesData} 
+              refetch={onRefetch || (() => {})} 
+              threshold={threshold}
+            />
           </div>
         )}
       </div>
