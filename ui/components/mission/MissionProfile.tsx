@@ -89,6 +89,7 @@ type MissionProfileProps = {
   _teamNFT?: any
   _teamHats?: any[]
   _fundingGoal: number
+  _ruleset: any[]
 }
 
 export default function MissionProfile({
@@ -101,6 +102,7 @@ export default function MissionProfile({
   _teamNFT,
   _teamHats,
   _fundingGoal,
+  _ruleset,
 }: MissionProfileProps) {
   const account = useActiveAccount()
 
@@ -195,6 +197,7 @@ export default function MissionProfile({
     _primaryTerminalAddress,
     _token,
     _fundingGoal,
+    _ruleset,
   })
 
   useEffect(() => {
@@ -514,6 +517,7 @@ export default function MissionProfile({
                     teamNFT={teamNFT}
                     token={token}
                     stage={stage}
+                    deadline={deadline || 0}
                     primaryTerminalAddress={primaryTerminalAddress}
                     jbControllerContract={jbControllerContract}
                     jbTokensContract={jbTokensContract}
