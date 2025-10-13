@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect, useRef } from 'react'
+import { ReactNode, useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { classNames } from '@/lib/utils/tailwind'
 
@@ -70,15 +70,17 @@ export function MultiVotingProgressBar({
   const [mounted, setMounted] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const totalPercentage = segments.reduce(
-    (sum, segment) => sum + segment.percentage,
-    0
-  )
-  const normalizedSegments = segments.map((segment) => ({
-    ...segment,
-    normalizedPercentage:
-      totalPercentage > 0 ? (segment.percentage / totalPercentage) * 100 : 0,
-  }))
+  const normalizedSegments = useMemo(() => {
+    const totalPercentage = segments.reduce(
+      (sum, segment) => sum + segment.percentage,
+      0
+    )
+    return segments.map((segment) => ({
+      ...segment,
+      normalizedPercentage:
+        totalPercentage > 0 ? (segment.percentage / totalPercentage) * 100 : 0,
+    }))
+  }, [segments])
 
   useEffect(() => {
     setMounted(true)
