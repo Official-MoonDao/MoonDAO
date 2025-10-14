@@ -36,7 +36,7 @@ export function Baikonur({ finalists, distributions, refresh }: BaikonurProps) {
   const { isMobile } = useWindowSize()
   const userAddress = account?.address
 
-  const isVotingPeriod = true
+  const isVotingPeriod = false
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>(
