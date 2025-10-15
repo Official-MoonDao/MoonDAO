@@ -210,62 +210,64 @@ const MissionProfileHeader = React.memo(
                   {/* Compact Manager Actions */}
                   {account && deadlinePassed && isManager && (
                     <div className="flex flex-wrap gap-3">
-                          <PrivyWeb3Button
-                            requiredChain={DEFAULT_CHAIN_V5}
-                            className="group relative bg-white/10 hover:bg-purple-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-purple-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
-                            label={
-                              <div className="flex items-center gap-2">
-                                <Image
-                                  src="/assets/icon-raised-tokens.svg"
-                                  alt="Send Tokens"
-                                  width={14}
-                                  height={14}
-                                  className="opacity-70 group-hover:opacity-100"
-                                />
-                                <span className="text-xs font-medium">Tokens</span>
-                              </div>
-                            }
-                            action={sendReservedTokens}
-                            isDisabled={!availableTokens}
-                          />
-                          <PrivyWeb3Button
-                            requiredChain={DEFAULT_CHAIN_V5}
-                            className="group relative bg-white/10 hover:bg-blue-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-blue-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
-                            label={
-                              <div className="flex items-center gap-2">
-                                <Image
-                                  src="/assets/icon-crowdfunding.svg"
-                                  alt="Send Payouts"
-                                  width={14}
-                                  height={14}
-                                  className="opacity-70 group-hover:opacity-100"
-                                />
-                                <span className="text-xs font-medium">Payouts</span>
-                              </div>
-                            }
-                            action={sendPayouts}
-                            isDisabled={!availablePayouts}
-                          />
-                          {stage === 2 && (
-                            <PrivyWeb3Button
-                              requiredChain={DEFAULT_CHAIN_V5}
-                              className="group relative bg-white/10 hover:bg-green-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-green-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
-                              label={
-                                <div className="flex items-center gap-2">
-                                  <Image
-                                    src="/assets/icon-ethereum.svg"
-                                    alt="Deploy Liquidity"
-                                    width={14}
-                                    height={14}
-                                    className="opacity-90 group-hover:opacity-100"
-                                  />
-                                  <span className="text-xs font-medium">Liquidity</span>
-                                </div>
-                              }
-                              action={deployLiquidityPool}
-                              isDisabled={!poolDeployerAddress}
+                      <PrivyWeb3Button
+                        requiredChain={DEFAULT_CHAIN_V5}
+                        className="group relative bg-white/10 hover:bg-purple-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-purple-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                        label={
+                          <div className="flex items-center gap-2">
+                            <Image
+                              src="/assets/icon-raised-tokens.svg"
+                              alt="Send Tokens"
+                              width={14}
+                              height={14}
+                              className="opacity-70 group-hover:opacity-100"
                             />
-                          )}
+                            <span className="text-xs font-medium">Tokens</span>
+                          </div>
+                        }
+                        action={sendReservedTokens}
+                        isDisabled={!availableTokens}
+                      />
+                      <PrivyWeb3Button
+                        requiredChain={DEFAULT_CHAIN_V5}
+                        className="group relative bg-white/10 hover:bg-blue-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-blue-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                        label={
+                          <div className="flex items-center gap-2">
+                            <Image
+                              src="/assets/icon-crowdfunding.svg"
+                              alt="Send Payouts"
+                              width={14}
+                              height={14}
+                              className="opacity-70 group-hover:opacity-100"
+                            />
+                            <span className="text-xs font-medium">Payouts</span>
+                          </div>
+                        }
+                        action={sendPayouts}
+                        isDisabled={!availablePayouts}
+                      />
+                      {stage === 2 && (
+                        <PrivyWeb3Button
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          className="group relative bg-white/10 hover:bg-green-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-green-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                          label={
+                            <div className="flex items-center gap-2">
+                              <Image
+                                src="/assets/icon-ethereum.svg"
+                                alt="Deploy Liquidity"
+                                width={14}
+                                height={14}
+                                className="opacity-90 group-hover:opacity-100"
+                              />
+                              <span className="text-xs font-medium">
+                                Liquidity
+                              </span>
+                            </div>
+                          }
+                          action={deployLiquidityPool}
+                          isDisabled={!poolDeployerAddress}
+                        />
+                      )}
                     </div>
                   )}
                 </div>
@@ -338,7 +340,7 @@ const MissionProfileHeader = React.memo(
                       </span>
                     </div>
                     <p className="text-white font-GoodTimes text-xs lg:text-sm">
-                      {refundPeriodPassed || stage === 4
+                      {refundPeriodPassed || stage === 4 || stage === 2
                         ? 'PASSED'
                         : stage === 3
                         ? 'REFUND'
