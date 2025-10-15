@@ -17,9 +17,14 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 type NetworkOptionProps = {
   chain: any
   selectChain: (chain: any) => void
+  recommended?: boolean
 }
 
-function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
+function NetworkOption({
+  chain,
+  selectChain,
+  recommended,
+}: NetworkOptionProps) {
   const name = chain.name.replace('Testnet', '').replace('Mainnet', '')
   return (
     <button
@@ -50,7 +55,12 @@ function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
           }
         }}
       />
-      <span className="text-white text-sm font-medium">{name}</span>
+      <span className="text-white text-sm font-medium text-left flex flex-col">
+        {name}
+        <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">
+          {chain === arbitrum ? '(Recommended)' : ''}
+        </span>
+      </span>
     </button>
   )
 }
@@ -113,8 +123,8 @@ export default function NetworkSelector({
         ))
       ) : (
         <>
-          <NetworkOption chain={ethereum} selectChain={selectChain} />
           <NetworkOption chain={arbitrum} selectChain={selectChain} />
+          <NetworkOption chain={ethereum} selectChain={selectChain} />
           <NetworkOption chain={base} selectChain={selectChain} />
           <NetworkOption chain={polygon} selectChain={selectChain} />
           {process.env.NEXT_PUBLIC_CHAIN === 'testnet' && (
@@ -159,7 +169,7 @@ export default function NetworkSelector({
         />
         {!iconsOnly && (
           <span className="text-white text-sm font-medium flex-1">
-            {selectedChain.name || ''}
+            {selectedChain.name}
           </span>
         )}
         {!iconsOnly && (
