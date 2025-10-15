@@ -28,7 +28,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const formData = new FormData()
       formData.append('pinataMetadata', JSON.stringify({ name: fileName }))
       formData.append('pinataOptions', JSON.stringify({ cidVersion: 0 }))
-      formData.append('file', new Blob([fileContent], { type: file.mimetype || 'application/octet-stream' }))
+      formData.append('file', new Blob([new Uint8Array(fileContent)], { type: file.mimetype || 'application/octet-stream' }))
 
       const imageRes = await fetch(
         'https://api.pinata.cloud/pinning/pinFileToIPFS',

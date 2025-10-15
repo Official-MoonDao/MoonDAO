@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import { useState } from 'react'
-import ReCaptcha from 'react-google-recaptcha'
+import React, { useState } from 'react'
+import ReCAPTCHA from 'react-google-recaptcha'
 import toast from 'react-hot-toast'
 
 export function ZeroGContact() {
@@ -87,14 +87,11 @@ export function ZeroGContact() {
           ></textarea>
         </div>
         <div className="mt-2">
-          {email.includes('@') && (
-            <ReCaptcha
-              sitekey={
-                process.env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY as string
-              }
-              onChange={(e: any) => setVerified(true)}
-            />
-          )}
+          {email.includes('@') &&
+            React.createElement(ReCAPTCHA as any, {
+              sitekey: process.env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY as string,
+              onChange: (e: any) => setVerified(true),
+            })}
         </div>
         <button
           className={`mt-4 py-3 text-white bg-moon-orange font-RobotoMono w-full duration-[0.6s] ease-in-ease-out text-1xl hover:scale-105`}
