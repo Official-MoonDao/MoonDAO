@@ -229,11 +229,6 @@ const MissionProfileHeader = React.memo(
                       <div className="scale-75 group-hover:scale-[0.80] transition-all duration-200">
                         <JuiceboxLogoWhite />
                       </div>
-                      {isManager && (
-                        <p className="text-xs opacity-90 uppercase group-hover:scale-105 transition-all duration-200">
-                          (Edit Project)
-                        </p>
-                      )}
                     </Link>
 
                     {/* Compact Manager Actions */}
