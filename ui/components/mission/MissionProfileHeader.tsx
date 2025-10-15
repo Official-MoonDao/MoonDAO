@@ -361,7 +361,7 @@ const MissionProfileHeader = React.memo(
                       </span>
                     </div>
                     <p className="text-white font-GoodTimes text-xs lg:text-sm">
-                      {refundPeriodPassed || stage === 4
+                      {refundPeriodPassed || stage === 4 || stage === 2
                         ? 'PASSED'
                         : stage === 3
                         ? 'REFUND'
