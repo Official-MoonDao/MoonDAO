@@ -105,9 +105,8 @@ describe('MissionPayRedeem Component', () => {
 
     cy.get('#open-contribute-modal').click()
     cy.get('#mission-pay-modal').should('exist')
-    cy.contains(`Contribute to ${mockMission.metadata.name}`).should(
-      'be.visible'
-    )
+    cy.contains('Contribute to Mission').should('be.visible')
+    cy.contains(mockMission.metadata.name).should('be.visible')
   })
 
   it('displays token balance when user has tokens', () => {
@@ -139,7 +138,8 @@ describe('MissionPayRedeem Component', () => {
 
     // Modal content may vary based on user state and balance
     // Just verify the modal opened successfully
-    cy.contains('Contribute to Test Mission').should('be.visible')
+    cy.contains('Contribute to Mission').should('be.visible')
+    cy.contains(mockMission.metadata.name).should('be.visible')
   })
 
   it('displays current supply when token exists', () => {

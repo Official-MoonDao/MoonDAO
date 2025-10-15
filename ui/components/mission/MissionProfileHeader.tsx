@@ -6,6 +6,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { truncateTokenValue } from '@/lib/utils/numbers'
+import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import Tooltip from '../layout/Tooltip'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -178,7 +179,7 @@ const MissionProfileHeader = React.memo(
               {/* Enhanced Funding Stats Card */}
               <div className="bg-gradient-to-br from-dark-cool to-darkest-cool backdrop-blur-lg rounded-xl p-4 lg:p-5 border border-white/10 shadow-xl w-full max-w-2xl">
                 {/* Raised Amount Badge with Manager Actions */}
-                <div className="mb-2 flex items-center justify-between">
+                <div className="mb-2 flex flex-col md:flex-row items-center justify-between">
                   <div className="inline-flex items-center bg-gradient-to-r from-blue-500 to-purple-600 text-white font-GoodTimes py-2 px-4 rounded-full shadow-lg">
                     <Image
                       src="/assets/icon-raised-tokens.svg"
@@ -206,68 +207,90 @@ const MissionProfileHeader = React.memo(
                       </>
                     )}
                   </div>
+                  <div className="mt-2 md:mt-0 flex flex-col items-center md:items-end gap-2">
+                    <Link
+                      className="flex flex-col items-center group"
+                      href={`https://juicebox.money/v5/arb:${mission?.projectId}`}
+                      target="_blank"
+                    >
+                      <div className="scale-75 group-hover:scale-[0.80] transition-all duration-200">
+                        <JuiceboxLogoWhite />
+                      </div>
+                      {isManager && (
+                        <p className="text-xs opacity-90 uppercase group-hover:scale-105 transition-all duration-200">
+                          (Edit Project)
+                        </p>
+                      )}
+                    </Link>
 
-                  {/* Compact Manager Actions */}
-                  {account && deadlinePassed && isManager && (
-                    <div className="flex flex-wrap gap-3">
+                    {/* Compact Manager Actions */}
+                    {account && deadlinePassed && isManager && (
+                      <div className="flex flex-wrap gap-3">
+                        <PrivyWeb3Button
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          className="group relative bg-white/10 hover:bg-purple-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-purple-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                          label={
+                            <div className="flex items-center gap-2">
+                              <Image
+                                src="/assets/icon-raised-tokens.svg"
+                                alt="Send Tokens"
+                                width={14}
+                                height={14}
+                                className="opacity-70 group-hover:opacity-100"
+                              />
+                              <span className="text-xs font-medium">
+                                Tokens
+                              </span>
+                            </div>
+                          }
+                          action={sendReservedTokens}
+                          isDisabled={!availableTokens}
+                        />
+                        <PrivyWeb3Button
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          className="group relative bg-white/10 hover:bg-blue-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-blue-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                          label={
+                            <div className="flex items-center gap-2">
+                              <Image
+                                src="/assets/icon-crowdfunding.svg"
+                                alt="Send Payouts"
+                                width={14}
+                                height={14}
+                                className="opacity-70 group-hover:opacity-100"
+                              />
+                              <span className="text-xs font-medium">
+                                Payouts
+                              </span>
+                            </div>
+                          }
+                          action={sendPayouts}
+                          isDisabled={!availablePayouts}
+                        />
+                        {stage === 2 && (
                           <PrivyWeb3Button
                             requiredChain={DEFAULT_CHAIN_V5}
-                            className="group relative bg-white/10 hover:bg-purple-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-purple-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="group relative bg-white/10 hover:bg-green-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-green-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
                             label={
                               <div className="flex items-center gap-2">
                                 <Image
-                                  src="/assets/icon-raised-tokens.svg"
-                                  alt="Send Tokens"
+                                  src="/assets/icon-ethereum.svg"
+                                  alt="Deploy Liquidity"
                                   width={14}
                                   height={14}
-                                  className="opacity-70 group-hover:opacity-100"
+                                  className="opacity-90 group-hover:opacity-100"
                                 />
-                                <span className="text-xs font-medium">Tokens</span>
+                                <span className="text-xs font-medium">
+                                  Liquidity
+                                </span>
                               </div>
                             }
-                            action={sendReservedTokens}
-                            isDisabled={!availableTokens}
+                            action={deployLiquidityPool}
+                            isDisabled={!poolDeployerAddress}
                           />
-                          <PrivyWeb3Button
-                            requiredChain={DEFAULT_CHAIN_V5}
-                            className="group relative bg-white/10 hover:bg-blue-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-blue-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
-                            label={
-                              <div className="flex items-center gap-2">
-                                <Image
-                                  src="/assets/icon-crowdfunding.svg"
-                                  alt="Send Payouts"
-                                  width={14}
-                                  height={14}
-                                  className="opacity-70 group-hover:opacity-100"
-                                />
-                                <span className="text-xs font-medium">Payouts</span>
-                              </div>
-                            }
-                            action={sendPayouts}
-                            isDisabled={!availablePayouts}
-                          />
-                          {stage === 2 && (
-                            <PrivyWeb3Button
-                              requiredChain={DEFAULT_CHAIN_V5}
-                              className="group relative bg-white/10 hover:bg-green-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-green-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
-                              label={
-                                <div className="flex items-center gap-2">
-                                  <Image
-                                    src="/assets/icon-ethereum.svg"
-                                    alt="Deploy Liquidity"
-                                    width={14}
-                                    height={14}
-                                    className="opacity-90 group-hover:opacity-100"
-                                  />
-                                  <span className="text-xs font-medium">Liquidity</span>
-                                </div>
-                              }
-                              action={deployLiquidityPool}
-                              isDisabled={!poolDeployerAddress}
-                            />
-                          )}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <p className="text-gray-400 text-xs mt-2 ml-4">
                   {isLoadingTotalFunding || isLoadingEthPrice ? (
