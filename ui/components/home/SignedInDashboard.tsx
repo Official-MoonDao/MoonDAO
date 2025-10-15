@@ -9,13 +9,25 @@ import {
   BoltIcon,
   PencilIcon,
   BriefcaseIcon,
+  TrophyIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
+import JBV5Controller from 'const/abis/JBV5Controller.json'
+import JBV5Directory from 'const/abis/JBV5Directory.json'
+import JBV5Tokens from 'const/abis/JBV5Tokens.json'
+import MissionCreator from 'const/abis/MissionCreator.json'
+import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
 import {
   ARBITRUM_ASSETS_URL,
   BASE_ASSETS_URL,
   DEFAULT_CHAIN_V5,
+  JBV5_CONTROLLER_ADDRESS,
+  JBV5_DIRECTORY_ADDRESS,
+  JBV5_TOKENS_ADDRESS,
+  MISSION_CREATOR_ADDRESSES,
+  MISSION_TABLE_ADDRESSES,
   POLYGON_ASSETS_URL,
   TEAM_ADDRESSES,
   VOTING_ESCROW_DEPOSITOR_ADDRESSES,
@@ -41,7 +53,9 @@ import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
+import { truncateTokenValue } from '@/lib/utils/numbers'
 import { getBudget } from '@/lib/utils/rewards'
+import useMissionData from '@/lib/mission/useMissionData'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { RevenueChart } from '@/components/dashboard/treasury/RevenueChart'
 import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
@@ -95,6 +109,7 @@ export default function SingedInDashboard({
   citizensLocationData,
   filteredTeams,
   currentProjects,
+  missions,
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
@@ -236,6 +251,62 @@ export default function SingedInDashboard({
     selectedChain,
     address
   )
+
+  // Mission contracts - exactly like launchpad
+  const missionTableContract = useContract({
+    address: MISSION_TABLE_ADDRESSES[chainSlug],
+    abi: MissionTableABI,
+    chain: selectedChain,
+  })
+
+  const missionCreatorContract = useContract({
+    address: MISSION_CREATOR_ADDRESSES[chainSlug],
+    abi: MissionCreator,
+    chain: selectedChain,
+  })
+
+  const jbControllerContract = useContract({
+    address: JBV5_CONTROLLER_ADDRESS,
+    abi: JBV5Controller.abi,
+    chain: selectedChain,
+  })
+
+  const jbDirectoryContract = useContract({
+    address: JBV5_DIRECTORY_ADDRESS,
+    abi: JBV5Directory.abi,
+    chain: selectedChain,
+  })
+
+  const jbTokensContract = useContract({
+    address: JBV5_TOKENS_ADDRESS,
+    abi: JBV5Tokens.abi,
+    chain: selectedChain,
+  })
+
+  // Find the best mission to feature - one with active funding, otherwise the newest one
+  const featuredMission =
+    missions?.find(
+      (mission: any) =>
+        mission.projectId &&
+        mission.projectId > 0 &&
+        mission.fundingGoal &&
+        mission.fundingGoal > 0,
+    ) || (missions?.length > 0 ? missions[0] : null)
+
+  // Featured mission data - exactly like launchpad
+  const {
+    subgraphData: featuredMissionSubgraphData,
+    fundingGoal: featuredMissionFundingGoal,
+    backers: featuredMissionBackers,
+    deadline: featuredMissionDeadline,
+  } = useMissionData({
+    mission: featuredMission,
+    missionTableContract,
+    missionCreatorContract,
+    jbControllerContract,
+    jbDirectoryContract,
+    jbTokensContract,
+  })
 
   return (
     <Container>
@@ -1150,33 +1221,210 @@ export default function SingedInDashboard({
               <div className="min-w-0 flex-1">
                 <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
                   <RocketLaunchIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
-                  <span className="leading-tight">Launchpad</span>
+                  <span className="leading-tight">Featured Mission</span>
                 </h3>
                 <p className="text-blue-200 text-sm sm:text-base leading-tight">
-                  Coming soon - Fund your next mission to space
+                  Support MoonDAO's latest space mission
                 </p>
               </div>
-              <div className="bg-gray-600 text-gray-300 px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold shadow-lg cursor-not-allowed text-sm sm:text-base whitespace-nowrap flex-shrink-0">
-                Coming Soon
-              </div>
+              <StandardButton
+                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
+                link="/launchpad"
+              >
+                View Launchpad
+              </StandardButton>
             </div>
 
             <div className="bg-black/20 rounded-xl p-6 border border-blue-500/20">
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 mx-auto mb-4">
-                  <RocketLaunchIcon className="w-8 h-8" />
+              {featuredMission ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full items-stretch">
+                  {/* Left Column - Mission Image */}
+                  <div className="flex justify-center lg:justify-start h-full">
+                    <div className="relative w-full max-w-sm h-full">
+                      <div className="relative rounded-2xl overflow-hidden shadow-xl h-full min-h-[300px]">
+                        {featuredMission.metadata?.logoUri ? (
+                          <IPFSRenderer
+                            src={featuredMission.metadata.logoUri}
+                            alt={featuredMission.metadata.name || 'Mission'}
+                            className="w-full h-full object-cover"
+                            width={400}
+                            height={400}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-600/30 to-purple-600/30 flex items-center justify-center">
+                            <RocketLaunchIcon className="w-16 h-16 text-blue-400/60" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                        
+                        {/* Mission Status Badge */}
+                        <div className="absolute top-3 right-3">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
+                            featuredMission.projectId && featuredMission.projectId > 0
+                              ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                              : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                          }`}>
+                            {featuredMission.projectId && featuredMission.projectId > 0 ? 'Active' : 'Completed'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column - Mission Info */}
+                  <div className="space-y-4">
+                    {/* Mission Title */}
+                    <div>
+                      <h4 className="font-bold text-white text-xl lg:text-2xl mb-2 leading-tight">
+                        {featuredMission.metadata.name}
+                      </h4>
+                      {featuredMission.metadata.tagline && (
+                        <p className="text-blue-200/80 text-sm mb-3">
+                          {featuredMission.metadata.tagline}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Mission Description */}
+                    <div>
+                      <p className="text-blue-200 text-sm leading-relaxed">
+                        {featuredMission.metadata.description?.length > 200
+                          ? `${featuredMission.metadata.description.substring(0, 200)}...`
+                          : featuredMission.metadata.description || 'Support MoonDAO\'s mission to democratize space exploration'}
+                      </p>
+                    </div>
+
+                    {/* Mission Stats - Exact same as launchpad */}
+                    {featuredMission.projectId && featuredMission.projectId > 0 ? (
+                      <div className="space-y-4">
+                        {/* Progress Bar */}
+                        {featuredMissionFundingGoal && featuredMissionFundingGoal > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-blue-200 text-xs font-medium">Funding Progress</span>
+                              <span className="text-white font-bold text-sm">
+                                {Math.round(
+                                  (Number(featuredMissionSubgraphData?.volume || 0) / featuredMissionFundingGoal) * 100
+                                )}%
+                              </span>
+                            </div>
+                            <div className="w-full bg-blue-900/30 rounded-full h-2 overflow-hidden">
+                              <div
+                                className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-1000"
+                                style={{
+                                  width: `${Math.min(100, Math.round(
+                                    (Number(featuredMissionSubgraphData?.volume || 0) / featuredMissionFundingGoal) * 100
+                                  ))}%`
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Raised - shown first like on launch page */}
+                          <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
+                            <div className="flex items-center gap-2 mb-2">
+                              <BanknotesIcon className="w-4 h-4 text-blue-400" />
+                              <span className="text-blue-200 text-xs font-medium">Raised</span>
+                            </div>
+                            <p className="text-white font-bold text-sm">
+                              {truncateTokenValue(
+                                Number(featuredMissionSubgraphData?.volume || 0) / 1e18,
+                                'ETH'
+                              )}{' '}
+                              ETH
+                            </p>
+                          </div>
+
+                          {/* Goal - shown second like on launch page */}
+                          <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
+                            <div className="flex items-center gap-2 mb-2">
+                              <TrophyIcon className="w-4 h-4 text-blue-400" />
+                              <span className="text-blue-200 text-xs font-medium">Goal</span>
+                            </div>
+                            <p className="text-white font-bold text-sm">
+                              {featuredMissionFundingGoal
+                                ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
+                                : '0'}{' '}
+                              ETH
+                            </p>
+                          </div>
+
+                          {/* Backers */}
+                          <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
+                            <div className="flex items-center gap-2 mb-2">
+                              <UserGroupIcon className="w-4 h-4 text-blue-400" />
+                              <span className="text-blue-200 text-xs font-medium">Backers</span>
+                            </div>
+                            <p className="text-white font-bold text-sm">{featuredMissionBackers?.length || 0}</p>
+                          </div>
+
+                          {/* Time */}
+                          <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
+                            <div className="flex items-center gap-2 mb-2">
+                              <CalendarDaysIcon className="w-4 h-4 text-blue-400" />
+                              <span className="text-blue-200 text-xs font-medium">Time</span>
+                            </div>
+                            <p className="text-white font-bold text-sm">
+                              {(() => {
+                                if (!featuredMissionDeadline) return 'No Deadline'
+                                
+                                const now = Date.now()
+                                if (featuredMissionDeadline <= now) return 'Expired'
+                                
+                                const daysLeft = Math.floor((featuredMissionDeadline - now) / (1000 * 60 * 60 * 24))
+                                return daysLeft > 0 ? `${daysLeft}d left` : 'Less than 1d left'
+                              })()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-blue-900/20 rounded-lg p-4 border border-blue-500/10 text-center">
+                        <p className="text-blue-200 text-sm mb-2">Mission in Planning</p>
+                        <p className="text-white font-medium text-xs">
+                          This mission is being prepared for launch
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 pt-2">
+                      <StandardButton
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1"
+                        link={`/mission/${featuredMission.id}`}
+                      >
+                        View Details
+                      </StandardButton>
+                      {featuredMission.projectId && featuredMission.projectId > 0 && (
+                        <StandardButton
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                          link={`/launch#mission-${featuredMission.id}`}
+                        >
+                          Fund Mission
+                        </StandardButton>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <h4 className="font-bold text-white text-xl mb-2">
-                  Launchpad Coming Soon
-                </h4>
-                <p className="text-blue-200 text-sm mb-4">
-                  We're preparing an exciting new way to fund space missions
-                  through decentralized crowdfunding.
-                </p>
-                <div className="text-blue-300 text-xs">
-                  Stay tuned for launch updates!
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 mx-auto mb-4">
+                    <RocketLaunchIcon className="w-8 h-8" />
+                  </div>
+                  <h4 className="font-bold text-white text-xl mb-2">
+                    Missions Loading
+                  </h4>
+                  <p className="text-blue-200 text-sm mb-4">
+                    We're preparing exciting new missions for space exploration.
+                  </p>
+                  <div className="text-blue-300 text-xs">
+                    Stay tuned for mission updates!
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 

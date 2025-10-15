@@ -1,23 +1,28 @@
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
+import JBV5Controller from 'const/abis/JBV5Controller.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
+import MissionTableABI from 'const/abis/MissionTable.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
 import {
   CITIZEN_TABLE_ADDRESSES,
   DEFAULT_CHAIN_V5,
+  JBV5_CONTROLLER_ADDRESS,
   JOBS_TABLE_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
+  MISSION_TABLE_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
 } from 'const/config'
-import { BLOCKED_PROJECTS } from 'const/whitelist'
+import { BLOCKED_MISSIONS, BLOCKED_PROJECTS } from 'const/whitelist'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { getAUMHistory, getMooneyPrice } from '@/lib/coinstats'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { getCitizensLocationData } from '@/lib/map'
 import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
 import { Project } from '@/lib/project/useProjectData'
@@ -55,6 +60,7 @@ export default function Home({
   filteredTeams,
   citizensLocationData,
   currentProjects,
+  missions,
 }: any) {
   const router = useRouter()
   const { citizen } = useContext(CitizenContext)
@@ -78,6 +84,7 @@ export default function Home({
           filteredTeams={filteredTeams}
           citizensLocationData={citizensLocationData}
           currentProjects={currentProjects}
+          missions={missions}
         />
       </>
     )
@@ -148,6 +155,7 @@ export async function getStaticProps() {
   let filteredTeams: any = []
   let currentProjects: Project[] = []
   let citizensLocationData: any = []
+  let missions: any = []
 
   const contractOperations = async () => {
     try {
@@ -189,6 +197,13 @@ export async function getStaticProps() {
         abi: ProjectTableABI as any,
       })
 
+      const missionTableContract = getContract({
+        client: serverClient,
+        address: MISSION_TABLE_ADDRESSES[chainSlug],
+        chain: chain,
+        abi: MissionTableABI as any,
+      })
+
       // Table queries
       const [
         citizenTableName,
@@ -196,6 +211,7 @@ export async function getStaticProps() {
         jobTableName,
         teamTableName,
         projectTableName,
+        missionTableName,
       ] = await Promise.all([
         readContract({
           contract: citizenTableContract,
@@ -211,9 +227,14 @@ export async function getStaticProps() {
           contract: projectTableContract,
           method: 'getTableName',
         }),
+        readContract({
+          contract: missionTableContract,
+          method: 'getTableName',
+        }),
       ])
 
-      const [citizens, listings, jobs, teams, projects] = await Promise.all([
+      const [citizens, listings, jobs, teams, projects, missionRows] =
+        await Promise.all([
         queryTable(
           chain,
           `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 10`
@@ -234,12 +255,23 @@ export async function getStaticProps() {
         ),
         queryTable(chain, `SELECT * FROM ${teamTableName} ORDER BY id DESC`),
         queryTable(chain, `SELECT * FROM ${projectTableName} ORDER BY id DESC`),
+        queryTable(
+          chain,
+          `SELECT * FROM ${missionTableName} ORDER BY id DESC LIMIT 10`
+        ),
       ])
 
-      return { citizens, listings, jobs, teams, projects }
+      return { citizens, listings, jobs, teams, projects, missionRows }
     } catch (error) {
       console.error('Contract operations failed:', error)
-      return { citizens: [], listings: [], jobs: [], teams: [], projects: [] }
+      return {
+        citizens: [],
+        listings: [],
+        jobs: [],
+        teams: [],
+        projects: [],
+        missionRows: [],
+      }
     }
   }
 
@@ -304,7 +336,8 @@ export async function getStaticProps() {
   }
 
   if (contractResult.status === 'fulfilled') {
-    const { citizens, listings, jobs, teams, projects } = contractResult.value
+    const { citizens, listings, jobs, teams, projects, missionRows } =
+      contractResult.value
     newestCitizens = citizens
     newestListings = listings
     newestJobs = jobs
@@ -334,6 +367,91 @@ export async function getStaticProps() {
       currentProjects = activeProjects.reverse() as Project[]
     }
 
+    // Process missions data with real metadata like the launchpad does
+    if (missionRows && missionRows.length > 0) {
+      const filteredMissionRows = missionRows.filter((mission: any) => {
+        return !BLOCKED_MISSIONS.has(mission.id) && mission && mission.id
+      })
+
+      const chain = DEFAULT_CHAIN_V5
+      const jbV5ControllerContract = getContract({
+        client: serverClient,
+        address: JBV5_CONTROLLER_ADDRESS,
+        abi: JBV5Controller.abi as any,
+        chain: chain,
+      })
+
+      // Process missions with proper metadata fetching (limit to 3 for performance)
+      try {
+        const processedMissions = await Promise.all(
+          filteredMissionRows
+            .slice(0, 3)
+            .map(async (missionRow: any, index: number) => {
+              try {
+                // Add delay between requests to avoid rate limiting
+                if (index > 0) {
+                  await new Promise((resolve) => setTimeout(resolve, 100))
+                }
+
+                if (!missionRow?.projectId) {
+                  return {
+                    id: missionRow?.id || `fallback-${index}`,
+                    teamId: missionRow?.teamId || null,
+                    projectId: null,
+                    metadata: {
+                      name: 'Mission Loading...',
+                      description: 'Mission data is being loaded.',
+                      image: '/assets/placeholder-mission.png',
+                    },
+                  }
+                }
+
+                const metadataURI = await readContract({
+                  contract: jbV5ControllerContract,
+                  method: 'uriOf' as string,
+                  params: [missionRow.projectId],
+                })
+
+                const metadataRes = await fetch(getIPFSGateway(metadataURI))
+                const metadata = await metadataRes.json()
+
+                return {
+                  id: missionRow.id,
+                  teamId: missionRow.teamId,
+                  projectId: missionRow.projectId,
+                  fundingGoal: missionRow.fundingGoal || 0,
+                  deadline: missionRow.deadline || null,
+                  stage: missionRow.stage || 1,
+                  metadata: metadata,
+                }
+              } catch (error) {
+                console.warn(
+                  `Failed to fetch mission ${missionRow?.id}:`,
+                  error
+                )
+                return {
+                  id: missionRow?.id || `fallback-${index}`,
+                  teamId: missionRow?.teamId || null,
+                  projectId: missionRow?.projectId || null,
+                  fundingGoal: missionRow?.fundingGoal || 0,
+                  deadline: missionRow?.deadline || null,
+                  stage: missionRow?.stage || 1,
+                  metadata: {
+                    name: 'Mission Unavailable',
+                    description: 'This mission is temporarily unavailable.',
+                    image: '/assets/placeholder-mission.png',
+                  },
+                }
+              }
+            })
+        )
+        missions = processedMissions.filter((mission) => mission !== null)
+      } catch (error) {
+        console.error('Failed to process missions:', error)
+        missions = []
+      }
+    }
+
     filteredTeams = teams || []
   }
 
@@ -360,6 +478,7 @@ export async function getStaticProps() {
       filteredTeams,
       citizensLocationData,
       currentProjects,
+      missions,
     },
     revalidate: 300,
   }
