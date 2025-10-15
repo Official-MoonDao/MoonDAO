@@ -1,3 +1,4 @@
+import { PencilIcon } from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -42,6 +43,7 @@ interface MissionProfileHeaderProps {
   // Direct props for total funding instead of callback
   totalFunding: bigint
   isLoadingTotalFunding: boolean
+  setMissionMetadataModalEnabled?: (enabled: boolean) => void
 }
 
 const MissionProfileHeader = React.memo(
@@ -65,6 +67,7 @@ const MissionProfileHeader = React.memo(
     deployLiquidityPool,
     totalFunding,
     isLoadingTotalFunding,
+    setMissionMetadataModalEnabled,
   }: MissionProfileHeaderProps) => {
     const account = useActiveAccount()
     const { data: ethPrice, isLoading: isLoadingEthPrice } = useETHPrice(
@@ -76,6 +79,16 @@ const MissionProfileHeader = React.memo(
 
     return (
       <div className="w-full bg-[#090d21] relative overflow-hidden">
+        {/* Edit Button for Managers */}
+        {isManager && setMissionMetadataModalEnabled && (
+          <button
+            className="absolute top-6 right-24 z-20 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
+            onClick={() => setMissionMetadataModalEnabled(true)}
+          >
+            <PencilIcon width={24} height={24} className="text-white" />
+          </button>
+        )}
+
         {/* Background decorative elements */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.1),transparent_50%)] pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(99,102,241,0.05),transparent_50%)] pointer-events-none" />
