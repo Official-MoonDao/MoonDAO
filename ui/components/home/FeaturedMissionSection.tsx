@@ -211,16 +211,16 @@ export default function FeaturedMissionSection({ missions }: any) {
               {/* Mission Stats Grid */}
               <div className="grid grid-cols-3 gap-1 md:gap-2 lg:gap-4 xl:gap-6">
                 {/* Amount Raised */}
-                <div className="bg-gradient-to-br from-[#6C407D]/20 to-[#5F4BA2]/20 backdrop-blur-sm rounded-xl md:rounded-2xl p-2 md:p-4 lg:p-6 border border-white/20 flex flex-col justify-center">
-                  <div className="flex items-center gap-1 md:gap-3 mb-1 md:mb-3">
+                <div className="bg-gradient-to-br from-[#6C407D]/20 to-[#5F4BA2]/20 backdrop-blur-sm rounded-xl md:rounded-2xl p-2 md:p-4 lg:p-6 border border-white/20 flex flex-col justify-between">
+                  <div className="flex items-center gap-1 md:gap-2 mb-2 md:mb-3">
                     <Image
                       src="/assets/icon-raised-tokens.svg"
                       alt="Raised"
                       width={24}
                       height={24}
-                      className="w-4 h-4 md:w-6 md:h-6"
+                      className="w-4 h-4 md:w-6 md:h-6 flex-shrink-0"
                     />
-                    <span className="text-white/70 text-xs md:text-sm font-medium">
+                    <span className="text-white/70 text-xs md:text-sm font-medium whitespace-nowrap">
                       Raised
                     </span>
                   </div>
@@ -234,16 +234,16 @@ export default function FeaturedMissionSection({ missions }: any) {
                 </div>
 
                 {/* Funding Goal */}
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-2 md:p-4 lg:p-6 border border-white/20 flex flex-col justify-center">
-                  <div className="flex items-center gap-1 md:gap-3 mb-1 md:mb-3">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-2 md:p-4 lg:p-6 border border-white/20 flex flex-col justify-between">
+                  <div className="flex items-center gap-1 md:gap-2 mb-2 md:mb-3">
                     <Image
                       src="/assets/target.png"
                       alt="Goal"
                       width={24}
                       height={24}
-                      className="w-4 h-4 md:w-6 md:h-6"
+                      className="w-4 h-4 md:w-6 md:h-6 flex-shrink-0"
                     />
-                    <span className="text-white/70 text-xs md:text-sm font-medium">
+                    <span className="text-white/70 text-xs md:text-sm font-medium whitespace-nowrap">
                       Goal
                     </span>
                   </div>
@@ -259,16 +259,16 @@ export default function FeaturedMissionSection({ missions }: any) {
                 </div>
 
                 {/* Backers */}
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-2 md:p-4 lg:p-6 border border-white/20 flex flex-col justify-center">
-                  <div className="flex items-center gap-1 md:gap-3 mb-1 md:mb-3">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-2 md:p-4 lg:p-6 border border-white/20 flex flex-col justify-between">
+                  <div className="flex items-center gap-1 md:gap-2 mb-2 md:mb-3">
                     <Image
                       src="/assets/icon-backers.svg"
                       alt="Backers"
                       width={24}
                       height={24}
-                      className="w-4 h-4 md:w-6 md:h-6"
+                      className="w-4 h-4 md:w-6 md:h-6 flex-shrink-0"
                     />
-                    <span className="text-white/70 text-xs md:text-sm font-medium">
+                    <span className="text-white/70 text-xs md:text-sm font-medium whitespace-nowrap">
                       Backers
                     </span>
                   </div>
