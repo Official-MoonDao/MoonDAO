@@ -246,7 +246,7 @@ function MissionPayRedeemContent({
       )}
       {/* Token stats */}
       {token?.tokenSupply > 0 && !isRefundable && (
-        <div className="px-4 space-y-1.5">
+        <div id="mission-token-stats" className="px-4 space-y-1.5">
           <label className="text-gray-300 font-medium text-xs uppercase tracking-wide">
             Token Stats
           </label>
