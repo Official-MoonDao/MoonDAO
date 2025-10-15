@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import { Toaster } from 'react-hot-toast'
 
 type ModalProps = {
   id: string
@@ -24,6 +25,7 @@ export default function Modal({ id, setEnabled, children }: ModalProps) {
       >
         <div className="mt-12 pb-12">{children}</div>
       </div>
+      <Toaster />
     </Portal>
   )
 }
