@@ -515,19 +515,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             ) : quoteData?.adjustedPurchaseAmount ? (
               <>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">
-                    Your Contribution:
-                  </span>
-                  <span className="text-white font-medium">
-                    $
-                    {parseFloat(usdInput).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{' '}
-                    USD
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
                   <span className="text-gray-400 text-sm">Coinbase Fees:</span>
                   <span className="text-orange-400 font-medium">
                     $
@@ -540,7 +527,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
                 </div>
                 <div className="border-t border-white/10 pt-3 flex items-center justify-between">
                   <span className="text-gray-400 text-sm font-semibold">
-                    Total to Buy:
+                    Total:
                   </span>
                   <span className="text-white font-bold">
                     $
@@ -645,7 +632,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             )}
           </button>
           {showLimits && (
-            <div className="px-3 pb-3 space-y-2 text-xs text-gray-300">
+            <div className="mt-2 px-3 pb-3 space-y-2 text-xs text-gray-300">
               <div className="flex items-start space-x-2">
                 <span className="text-gray-500 mt-0.5">•</span>
                 <p>

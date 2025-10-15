@@ -1071,13 +1071,6 @@ function MissionPayRedeemComponent({
             </div>
 
             <div className="p-4 space-y-4">
-              {/* Network Selector */}
-              <div className="space-y-2">
-                <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
-                  Network
-                </label>
-                <NetworkSelector chains={chains} compact={true} align="left" />
-              </div>
               {/* Total Amount Section */}
               <div className="space-y-2">
                 <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
@@ -1161,25 +1154,35 @@ function MissionPayRedeemComponent({
                 <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
                   Recipient Address
                 </label>
-                <div className="bg-black/20 border border-white/10 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <p className="text-white font-mono text-sm">
-                        {address?.slice(0, 6)}...{address?.slice(-4)}
-                      </p>
+                <div className="flex items-center justify-between w-full gap-2">
+                  <div className="bg-black/20 border border-white/10 rounded-lg p-3 w-full">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <p className="text-white font-mono text-sm">
+                          {address?.slice(0, 6)}...{address?.slice(-4)}
+                        </p>
+                      </div>
+                      <button
+                        className="p-1 hover:bg-white/10 rounded transition-colors duration-200 group"
+                        onClick={() => {
+                          navigator.clipboard.writeText(address || '')
+                          toast.success('Address copied to clipboard.', {
+                            style: toastStyle,
+                          })
+                        }}
+                      >
+                        <CopyIcon />
+                      </button>
                     </div>
-                    <button
-                      className="p-1 hover:bg-white/10 rounded transition-colors duration-200 group"
-                      onClick={() => {
-                        navigator.clipboard.writeText(address || '')
-                        toast.success('Address copied to clipboard.', {
-                          style: toastStyle,
-                        })
-                      }}
-                    >
-                      <CopyIcon />
-                    </button>
+                  </div>
+                  <div className="">
+                    <NetworkSelector
+                      chains={chains}
+                      compact={true}
+                      align="right"
+                      iconsOnly={true}
+                    />
                   </div>
                 </div>
               </div>
@@ -1288,7 +1291,9 @@ function MissionPayRedeemComponent({
                 // User needs more ETH - show CBOnramp
                 <div className="space-y-4">
                   {/* Show balance info if user has some ETH */}
-                  {nativeBalance &&
+                  {usdInput &&
+                    usdDeficit &&
+                    nativeBalance &&
                     Number(nativeBalance) > 0 &&
                     ethUsdPrice && (
                       <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 space-y-2">
@@ -1309,7 +1314,7 @@ function MissionPayRedeemComponent({
                             </>
                           ) : (
                             <>
-                              Only ${usdDeficit} more to complete your $
+                              ${usdDeficit} more of ETH to complete your $
                               {usdInput} contribution
                             </>
                           )}
@@ -1324,29 +1329,31 @@ function MissionPayRedeemComponent({
                       </div>
                     )}
 
-                  <CBOnramp
-                    address={address || ''}
-                    selectedChain={selectedChain}
-                    usdInput={usdDeficit}
-                    onSuccess={() => {
-                      setIsFiatPaymentProcessing(false)
-                      toast.success(
-                        'ETH purchase completed! You can now contribute to the mission.',
-                        {
-                          style: toastStyle,
-                        }
-                      )
-                    }}
-                    onBeforeNavigate={() => {
-                      // No cleanup needed - using React state instead of sessionStorage
-                    }}
-                    redirectUrl={`${DEPLOYED_ORIGIN}/mission/${
-                      mission?.id
-                    }?onrampSuccess=true&chain=${chainSlug}&usdAmount=${usdInput.replace(
-                      /,/g,
-                      ''
-                    )}`}
-                  />
+                  {usdInput && usdDeficit && (
+                    <CBOnramp
+                      address={address || ''}
+                      selectedChain={selectedChain}
+                      usdInput={usdDeficit}
+                      onSuccess={() => {
+                        setIsFiatPaymentProcessing(false)
+                        toast.success(
+                          'ETH purchase completed! You can now contribute to the mission.',
+                          {
+                            style: toastStyle,
+                          }
+                        )
+                      }}
+                      onBeforeNavigate={() => {
+                        // No cleanup needed - using React state instead of sessionStorage
+                      }}
+                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${
+                        mission?.id
+                      }?onrampSuccess=true&chain=${chainSlug}&usdAmount=${usdInput.replace(
+                        /,/g,
+                        ''
+                      )}`}
+                    />
+                  )}
 
                   {/* Show minimum adjustment warning for users with no balance */}
                   {(!nativeBalance || Number(nativeBalance) === 0) &&
