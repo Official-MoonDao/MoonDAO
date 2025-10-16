@@ -49,7 +49,7 @@ import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrol
 import CreateMission from '@/components/mission/CreateMission'
 import MissionWideCard from '@/components/mission/MissionWideCard'
 
-const FEATURED_MISSION_INDEX = 0
+const FEATURED_MISSION_INDEX = 3
 
 export default function Launch({ missions }: any) {
   const router = useRouter()

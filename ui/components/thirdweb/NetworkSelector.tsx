@@ -17,9 +17,14 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 type NetworkOptionProps = {
   chain: any
   selectChain: (chain: any) => void
+  recommended?: boolean
 }
 
-function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
+function NetworkOption({
+  chain,
+  selectChain,
+  recommended,
+}: NetworkOptionProps) {
   const name = chain.name.replace('Testnet', '').replace('Mainnet', '')
   return (
     <button
@@ -50,7 +55,12 @@ function NetworkOption({ chain, selectChain }: NetworkOptionProps) {
           }
         }}
       />
-      <span className="text-white text-sm font-medium">{name}</span>
+      <span className="text-white text-sm font-medium text-left flex flex-col">
+        {name}
+        <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">
+          {chain === arbitrum ? '(Recommended)' : ''}
+        </span>
+      </span>
     </button>
   )
 }
@@ -94,8 +104,8 @@ export default function NetworkSelector({
   const dropdownContent = dropdown && (
     <div
       id="network-selector-dropdown"
-      className={`absolute top-full mt-2 flex flex-col gap-2 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl z-[9999] animate-fadeIn w-full sm:w-[250px] max-w-[calc(100vw-2rem)] ${
-        align === 'right' ? 'left-0 sm:right-0 sm:left-auto' : 'left-0'
+      className={`absolute top-full mt-2 flex flex-col gap-2 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl z-[9999] animate-fadeIn min-w-[250px] md:w-auto max-w-[calc(100vw-2rem)] ${
+        align === 'right' ? 'right-0' : 'left-0'
       }`}
     >
       <div className="px-1 pb-2 border-b border-white/10 mb-1">
@@ -113,8 +123,8 @@ export default function NetworkSelector({
         ))
       ) : (
         <>
-          <NetworkOption chain={ethereum} selectChain={selectChain} />
           <NetworkOption chain={arbitrum} selectChain={selectChain} />
+          <NetworkOption chain={ethereum} selectChain={selectChain} />
           <NetworkOption chain={base} selectChain={selectChain} />
           <NetworkOption chain={polygon} selectChain={selectChain} />
           {process.env.NEXT_PUBLIC_CHAIN === 'testnet' && (
@@ -159,7 +169,7 @@ export default function NetworkSelector({
         />
         {!iconsOnly && (
           <span className="text-white text-sm font-medium flex-1">
-            {selectedChain.name || ''}
+            {selectedChain.name}
           </span>
         )}
         {!iconsOnly && (
