@@ -41,6 +41,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
+import useMissionData from '@/lib/mission/useMissionData'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
 import {
@@ -55,7 +56,6 @@ import { getRelativeQuarter } from '@/lib/utils/dates'
 import useStakedEth from '@/lib/utils/hooks/useStakedEth'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { getBudget } from '@/lib/utils/rewards'
-import useMissionData from '@/lib/mission/useMissionData'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { RevenueChart } from '@/components/dashboard/treasury/RevenueChart'
 import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
@@ -290,7 +290,7 @@ export default function SingedInDashboard({
         mission.projectId &&
         mission.projectId > 0 &&
         mission.fundingGoal &&
-        mission.fundingGoal > 0,
+        mission.fundingGoal > 0
     ) || (missions?.length > 0 ? missions[0] : null)
 
   // Featured mission data - exactly like launchpad
@@ -517,15 +517,21 @@ export default function SingedInDashboard({
                         </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                      
+
                       {/* Mission Status Badge */}
                       <div className="absolute top-3 right-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
-                          featuredMission.projectId && featuredMission.projectId > 0
-                            ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                            : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-                        }`}>
-                          {featuredMission.projectId && featuredMission.projectId > 0 ? 'Active' : 'Completed'}
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
+                            featuredMission.projectId &&
+                            featuredMission.projectId > 0
+                              ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                              : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                          }`}
+                        >
+                          {featuredMission.projectId &&
+                          featuredMission.projectId > 0
+                            ? 'Active'
+                            : 'Completed'}
                         </span>
                       </div>
                     </div>
@@ -545,45 +551,65 @@ export default function SingedInDashboard({
                       </p>
                     )}
                   </div>
-
-                    {/* Mission Description */}
-                    <div>
-                      <p className="text-blue-200 text-sm leading-relaxed">
-                        {(() => {
-                          // Strip HTML tags from description
-                          const description = featuredMission.metadata.description || 'Support MoonDAO\'s mission to democratize space exploration'
-                          const strippedDescription = description.replace(/<[^>]*>/g, '').trim()
-                          return strippedDescription.length > 200
-                            ? `${strippedDescription.substring(0, 200)}...`
-                            : strippedDescription
-                        })()}
-                      </p>
-                    </div>                  {/* Mission Stats - Exact same as launchpad */}
-                  {featuredMission.projectId && featuredMission.projectId > 0 ? (
+                  {/* Mission Description */}
+                  <div>
+                    <p className="text-blue-200 text-sm leading-relaxed">
+                      {(() => {
+                        // Strip HTML tags from description
+                        const description =
+                          featuredMission.metadata.description ||
+                          "Support MoonDAO's mission to democratize space exploration"
+                        const strippedDescription = description
+                          .replace(/<[^>]*>/g, '')
+                          .trim()
+                        return strippedDescription.length > 200
+                          ? `${strippedDescription.substring(0, 200)}...`
+                          : strippedDescription
+                      })()}
+                    </p>
+                  </div>{' '}
+                  {/* Mission Stats - Exact same as launchpad */}
+                  {featuredMission.projectId &&
+                  featuredMission.projectId > 0 ? (
                     <div className="space-y-4">
                       {/* Progress Bar */}
-                      {featuredMissionFundingGoal && featuredMissionFundingGoal > 0 && (
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-blue-200 text-xs font-medium">Funding Progress</span>
-                            <span className="text-white font-bold text-sm">
-                              {Math.round(
-                                (Number(featuredMissionSubgraphData?.volume || 0) / featuredMissionFundingGoal) * 100
-                              )}%
-                            </span>
+                      {featuredMissionFundingGoal &&
+                        featuredMissionFundingGoal > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-blue-200 text-xs font-medium">
+                                Funding Progress
+                              </span>
+                              <span className="text-white font-bold text-sm">
+                                {Math.round(
+                                  (Number(
+                                    featuredMissionSubgraphData?.volume || 0
+                                  ) /
+                                    featuredMissionFundingGoal) *
+                                    100
+                                )}
+                                %
+                              </span>
+                            </div>
+                            <div className="w-full bg-blue-900/30 rounded-full h-2 overflow-hidden">
+                              <div
+                                className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-1000"
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    Math.round(
+                                      (Number(
+                                        featuredMissionSubgraphData?.volume || 0
+                                      ) /
+                                        featuredMissionFundingGoal) *
+                                        100
+                                    )
+                                  )}%`,
+                                }}
+                              />
+                            </div>
                           </div>
-                          <div className="w-full bg-blue-900/30 rounded-full h-2 overflow-hidden">
-                            <div
-                              className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-1000"
-                              style={{
-                                width: `${Math.min(100, Math.round(
-                                  (Number(featuredMissionSubgraphData?.volume || 0) / featuredMissionFundingGoal) * 100
-                                ))}%`
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
+                        )}
 
                       {/* Stats Grid */}
                       <div className="grid grid-cols-2 gap-3">
@@ -591,11 +617,14 @@ export default function SingedInDashboard({
                         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
                           <div className="flex items-center gap-2 mb-2">
                             <BanknotesIcon className="w-4 h-4 text-blue-400" />
-                            <span className="text-blue-200 text-xs font-medium">Raised</span>
+                            <span className="text-blue-200 text-xs font-medium">
+                              Raised
+                            </span>
                           </div>
                           <p className="text-white font-bold text-sm">
                             {truncateTokenValue(
-                              Number(featuredMissionSubgraphData?.volume || 0) / 1e18,
+                              Number(featuredMissionSubgraphData?.volume || 0) /
+                                1e18,
                               'ETH'
                             )}{' '}
                             ETH
@@ -606,11 +635,16 @@ export default function SingedInDashboard({
                         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
                           <div className="flex items-center gap-2 mb-2">
                             <TrophyIcon className="w-4 h-4 text-blue-400" />
-                            <span className="text-blue-200 text-xs font-medium">Goal</span>
+                            <span className="text-blue-200 text-xs font-medium">
+                              Goal
+                            </span>
                           </div>
                           <p className="text-white font-bold text-sm">
                             {featuredMissionFundingGoal
-                              ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
+                              ? truncateTokenValue(
+                                  featuredMissionFundingGoal / 1e18,
+                                  'ETH'
+                                )
                               : '0'}{' '}
                             ETH
                           </p>
@@ -620,26 +654,38 @@ export default function SingedInDashboard({
                         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
                           <div className="flex items-center gap-2 mb-2">
                             <UserGroupIcon className="w-4 h-4 text-blue-400" />
-                            <span className="text-blue-200 text-xs font-medium">Backers</span>
+                            <span className="text-blue-200 text-xs font-medium">
+                              Backers
+                            </span>
                           </div>
-                          <p className="text-white font-bold text-sm">{featuredMissionBackers?.length || 0}</p>
+                          <p className="text-white font-bold text-sm">
+                            {featuredMissionBackers?.length || 0}
+                          </p>
                         </div>
 
                         {/* Time */}
                         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
                           <div className="flex items-center gap-2 mb-2">
                             <CalendarDaysIcon className="w-4 h-4 text-blue-400" />
-                            <span className="text-blue-200 text-xs font-medium">Time</span>
+                            <span className="text-blue-200 text-xs font-medium">
+                              Time
+                            </span>
                           </div>
                           <p className="text-white font-bold text-sm">
                             {(() => {
                               if (!featuredMissionDeadline) return 'No Deadline'
-                              
+
                               const now = Date.now()
-                              if (featuredMissionDeadline <= now) return 'Expired'
-                              
-                              const daysLeft = Math.floor((featuredMissionDeadline - now) / (1000 * 60 * 60 * 24))
-                              return daysLeft > 0 ? `${daysLeft}d left` : 'Less than 1d left'
+                              if (featuredMissionDeadline <= now)
+                                return 'Expired'
+
+                              const daysLeft = Math.floor(
+                                (featuredMissionDeadline - now) /
+                                  (1000 * 60 * 60 * 24)
+                              )
+                              return daysLeft > 0
+                                ? `${daysLeft}d left`
+                                : 'Less than 1d left'
                             })()}
                           </p>
                         </div>
@@ -647,13 +693,14 @@ export default function SingedInDashboard({
                     </div>
                   ) : (
                     <div className="bg-blue-900/20 rounded-lg p-4 border border-blue-500/10 text-center">
-                      <p className="text-blue-200 text-sm mb-2">Mission in Planning</p>
+                      <p className="text-blue-200 text-sm mb-2">
+                        Mission in Planning
+                      </p>
                       <p className="text-white font-medium text-xs">
                         This mission is being prepared for launch
                       </p>
                     </div>
                   )}
-
                   {/* Action Buttons */}
                   <div className="flex gap-3 pt-2">
                     <StandardButton
@@ -662,14 +709,15 @@ export default function SingedInDashboard({
                     >
                       View Details
                     </StandardButton>
-                    {featuredMission.projectId && featuredMission.projectId > 0 && (
-                      <StandardButton
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                        link={`/launch#mission-${featuredMission.id}`}
-                      >
-                        Fund Mission
-                      </StandardButton>
-                    )}
+                    {featuredMission.projectId &&
+                      featuredMission.projectId > 0 && (
+                        <StandardButton
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                          link={`/mission/${featuredMission.id}`}
+                        >
+                          Fund Mission
+                        </StandardButton>
+                      )}
                   </div>
                 </div>
               </div>
