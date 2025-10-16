@@ -25,6 +25,7 @@ import {
   JB_NATIVE_TOKEN_ID,
 } from 'const/config'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
 import React, {
   useCallback,
   useContext,
@@ -41,11 +42,19 @@ import {
 } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
+import {
+  arbitrum,
+  base,
+  ethereum,
+  optimismSepolia,
+  sepolia,
+} from '@/lib/infura/infuraChains'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import useMissionData from '@/lib/mission/useMissionData'
 import { useTeamData } from '@/lib/team/useTeamData'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -105,13 +114,28 @@ export default function MissionProfile({
   _ruleset,
 }: MissionProfileProps) {
   const account = useActiveAccount()
+  const router = useRouter()
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
 
-  const selectedChain = DEFAULT_CHAIN_V5
+  const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
+  const chains = useMemo(
+    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, base, ethereum]),
+    [isTestnet]
+  )
+  const chainSlugs = chains.map((chain) => getChainSlug(chain))
+
   const chainSlug = getChainSlug(selectedChain)
 
   const [teamNFT, setTeamNFT] = useState<any>(_teamNFT)
   const [availableTokens, setAvailableTokens] = useState<number>(0)
   const [availablePayouts, setAvailablePayouts] = useState<number>(0)
+
+  // Shared modal state for both mobile and desktop instances
+  const [payModalEnabled, setPayModalEnabled] = useState(false)
+  const [hasProcessedOnrampSuccess, setHasProcessedOnrampSuccess] =
+    useState(false)
+  const [hasReadInitialChainParam, setHasReadInitialChainParam] =
+    useState(false)
 
   const [duration, setDuration] = useState<any>()
   const [deadlinePassed, setDeadlinePassed] = useState(false)
@@ -199,6 +223,91 @@ export default function MissionProfile({
     _fundingGoal,
     _ruleset,
   })
+
+  // Handle onramp success from URL params and chain switching
+  useEffect(() => {
+    const onrampSuccess = router?.query?.onrampSuccess === 'true'
+    const chainToSwitchTo = router?.query?.chain as string | undefined
+
+    // Only process initial chain param once
+    if (!hasReadInitialChainParam) {
+      if (
+        chainToSwitchTo &&
+        chainToSwitchTo !== chainSlug &&
+        chainSlugs.includes(chainToSwitchTo)
+      ) {
+        const targetChain = v4SlugToV5Chain(chainToSwitchTo)
+        if (targetChain && setSelectedChain) {
+          setTimeout(() => {
+            setSelectedChain(targetChain)
+            setHasReadInitialChainParam(true)
+          }, 1000)
+        }
+      } else {
+        // No chain to switch to or already on correct chain, mark as read immediately
+        setHasReadInitialChainParam(true)
+        if (!chainToSwitchTo) {
+          setSelectedChain(DEFAULT_CHAIN_V5)
+        }
+      }
+    }
+
+    if (onrampSuccess && !payModalEnabled && !hasProcessedOnrampSuccess) {
+      setHasProcessedOnrampSuccess(true)
+      setTimeout(() => {
+        setPayModalEnabled(true)
+      }, 500)
+    }
+  }, [
+    router?.query?.onrampSuccess,
+    router?.query?.chain,
+    payModalEnabled,
+    hasProcessedOnrampSuccess,
+    hasReadInitialChainParam,
+    chainSlug,
+    setSelectedChain,
+  ])
+
+  // Callback to handle modal state changes - clear URL params when closing
+  const handlePayModalChange = useCallback(
+    (enabled: boolean) => {
+      setPayModalEnabled(enabled)
+
+      // Clear onrampSuccess from URL when closing
+      if (!enabled && router?.query?.onrampSuccess) {
+        const { onrampSuccess, usdAmount, chain, ...rest } = router.query
+        router.replace(
+          {
+            pathname: router.pathname,
+            query: chain ? { chain, ...rest } : rest,
+          },
+          undefined,
+          { shallow: true }
+        )
+      }
+    },
+    [router]
+  )
+
+  // Update URL when chain changes (but only after initial chain param has been read)
+  useEffect(() => {
+    const urlChain = router?.query?.chain as string | undefined
+
+    // Only update URL if we've read the initial chain param to avoid premature updates
+    if (hasReadInitialChainParam && urlChain && urlChain !== chainSlug) {
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: {
+            ...router.query,
+            chain: chainSlug,
+          },
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+  }, [chainSlug, hasReadInitialChainParam, router])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -448,8 +557,6 @@ export default function MissionProfile({
     }
   }, [teamContract, mission?.teamId, _teamNFT])
 
-  useChainDefault()
-
   return (
     <>
       {/* Full-width Mission Header outside Container */}
@@ -524,6 +631,8 @@ export default function MissionProfile({
                     refreshBackers={refreshBackers}
                     refreshTotalFunding={refreshTotalFunding}
                     ruleset={ruleset}
+                    modalEnabled={payModalEnabled}
+                    setModalEnabled={handlePayModalChange}
                   />
                 </div>
               ) : (
@@ -554,6 +663,9 @@ export default function MissionProfile({
                   refreshBackers={refreshBackers}
                   refreshStage={refreshStage}
                   refreshTotalFunding={refreshTotalFunding}
+                  deadline={deadline}
+                  modalEnabled={payModalEnabled}
+                  setModalEnabled={handlePayModalChange}
                 />
               </div>
             </div>

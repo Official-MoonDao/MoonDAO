@@ -28,11 +28,12 @@ function PaymentMethod({
     </div>
   )
 }
+
 /*
 Coinbase Onramp:
 - Debit
-- Apple Pay
 - Coinbase transfer
+- Apple Pay (only accepts certain debit cards)
 */
 
 const PAYMENT_METHODS = [
@@ -44,10 +45,6 @@ const PAYMENT_METHODS = [
   {
     icon: '/assets/pay-method-debit.svg',
     scale: 0.75,
-  },
-  {
-    icon: '/assets/pay-method-apple-pay.svg',
-    scale: 0.7,
   },
 ]
 

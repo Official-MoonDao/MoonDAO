@@ -68,6 +68,8 @@ export default function MissionInfo({
   refreshBackers,
   refreshTotalFunding,
   ruleset,
+  modalEnabled,
+  setModalEnabled,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -304,6 +306,8 @@ export default function MissionInfo({
               jbControllerContract={jbControllerContract}
               refreshBackers={refreshBackers}
               refreshTotalFunding={refreshTotalFunding}
+              modalEnabled={modalEnabled}
+              setModalEnabled={setModalEnabled}
             />
           </div>
         </div>
