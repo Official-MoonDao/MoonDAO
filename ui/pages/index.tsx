@@ -47,6 +47,7 @@ import { ExpandedFooter } from '../components/layout/ExpandedFooter'
 import WebsiteHead from '../components/layout/Head'
 import PageEnder from '../components/layout/PreFooter'
 import SignedInDashboard from '@/components/home/SignedInDashboard'
+import FeaturedMissionSection from '@/components/home/FeaturedMissionSection'
 
 export default function Home({
   newestNewsletters,
@@ -103,6 +104,7 @@ export default function Home({
       />
       <div>
         <Hero />
+        <FeaturedMissionSection missions={missions} />
         <Callout1 />
         <Callout2 />
         <Feature />
