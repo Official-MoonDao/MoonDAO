@@ -16,12 +16,12 @@ export default function MissionTokenInfo({
       <p>
         {`50% of the total tokens will go to the contributor when funding the project, and the other 50% are locked for at least one year, allocated as follows:`}
       </p>
-      <Image
+      {/* <Image
         src="/assets/launchpad/mission-tokenomics-distribution.svg"
         alt="Tokenomics"
         width={350}
         height={350}
-      />
+      /> */}
       <p>{`If funding is completed successfully, the locked tokens are treated as follows:`}</p>
       {[
         '2.5% of the token is locked indefinitely on an Automated Market Maker (AMM).',
