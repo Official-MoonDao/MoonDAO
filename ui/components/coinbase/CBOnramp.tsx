@@ -2,6 +2,7 @@ import { generateOnRampURL } from '@coinbase/cbpay-js'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid'
 import { DEPLOYED_ORIGIN } from 'const/config'
 import { useEffect, useState } from 'react'
+import { arbitrum } from '@/lib/infura/infuraChains'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -343,7 +344,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       const paymentAmount =
         quoteData?.adjustedPurchaseAmount || parseFloat(usdInput || '20')
 
-      if (paymentAmount > 0) {
+      if (paymentAmount > 0 && selectedChain !== arbitrum) {
         try {
           const quoteResponse = await fetch('/api/coinbase/buy-quote', {
             method: 'POST',
