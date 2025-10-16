@@ -31,12 +31,13 @@ export default function useMissionData({
   _token,
   _fundingGoal,
   _ruleset,
+  _backers,
 }: any) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const [fundingGoal, setFundingGoal] = useState(_fundingGoal)
   const [stage, setStage] = useState<MissionStage>(_stage)
-  const [backers, setBackers] = useState<any[]>([])
+  const [backers, setBackers] = useState<any[]>(_backers)
   const [deadline, setDeadline] = useState<number | undefined>(_deadline)
   const [refundPeriod, setRefundPeriod] = useState<number | undefined>(
     _refundPeriod
@@ -174,17 +175,6 @@ export default function useMissionData({
     const data = await res.json()
     setBackers(data.backers)
   }, [mission?.projectId])
-
-  useEffect(() => {
-    refreshBackers()
-
-    //Update backers every minute
-    const interval = setInterval(() => {
-      refreshBackers()
-    }, 60000)
-
-    return () => clearInterval(interval)
-  }, [refreshBackers])
 
   return {
     ...jbProjectData,
