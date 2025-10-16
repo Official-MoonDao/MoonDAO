@@ -11,6 +11,7 @@ export function useNativeBalance() {
   useEffect(() => {
     async function getNativeBalance() {
       const wallet = wallets[selectedWallet]
+      await wallet.switchChain(selectedChain.id)
       if (!wallet) return
       const provider = await wallet.getEthersProvider()
       const balance = await provider.getBalance(wallet.address)
