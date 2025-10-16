@@ -529,7 +529,7 @@ export const STAKED_ETH_ADDRESS = '0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8'
 
 export const MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? 'https://api.studio.thegraph.com/query/38443/moondao-missions-payment-terminal-arb/version/latest'
+    ? `https://api.studio.thegraph.com/query/38443/missions-payment-terminal-arb/version/latest`
     : 'https://api.studio.thegraph.com/query/38443/moondao-missions-payment-terminal-sepolia/version/latest'
 
 export const MOONDAO_NETWORK_SUBGRAPH_URL =

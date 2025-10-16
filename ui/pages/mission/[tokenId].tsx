@@ -22,6 +22,7 @@ import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
+import { getBackers } from '@/lib/mission'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
@@ -95,6 +96,7 @@ type ProjectProfileProps = {
   _teamHats?: any[]
   _fundingGoal: number
   _ruleset: any[]
+  _backers: any[]
 }
 
 export default function MissionProfilePage({
@@ -108,6 +110,7 @@ export default function MissionProfilePage({
   _teamHats,
   _fundingGoal,
   _ruleset,
+  _backers,
 }: ProjectProfileProps) {
   const selectedChain = DEFAULT_CHAIN_V5
 
@@ -127,6 +130,7 @@ export default function MissionProfilePage({
         _teamHats={_teamHats}
         _fundingGoal={_fundingGoal}
         _ruleset={_ruleset}
+        _backers={_backers}
       />
     </JuiceProviders>
   )
@@ -431,6 +435,14 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       { reservedPercent: +ruleset[1].reservedPercent.toString() },
     ]
 
+    let _backers: any[] = []
+    try {
+      _backers = await getBackers(mission.projectId, mission.id)
+    } catch (err) {
+      _backers = []
+      console.error('Failed to fetch backers:', err)
+    }
+
     return {
       props: {
         mission,
@@ -446,6 +458,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         _teamHats: teamHats,
         _fundingGoal: missionRow.fundingGoal,
         _ruleset,
+        _backers,
       },
     }
   } catch (error) {

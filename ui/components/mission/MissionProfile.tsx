@@ -99,6 +99,7 @@ type MissionProfileProps = {
   _teamHats?: any[]
   _fundingGoal: number
   _ruleset: any[]
+  _backers: any[]
 }
 
 export default function MissionProfile({
@@ -112,6 +113,7 @@ export default function MissionProfile({
   _teamHats,
   _fundingGoal,
   _ruleset,
+  _backers,
 }: MissionProfileProps) {
   const account = useActiveAccount()
   const router = useRouter()
@@ -222,6 +224,7 @@ export default function MissionProfile({
     _token,
     _fundingGoal,
     _ruleset,
+    _backers,
   })
 
   // Handle onramp success from URL params and chain switching
