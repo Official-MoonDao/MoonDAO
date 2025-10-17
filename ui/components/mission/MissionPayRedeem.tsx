@@ -201,19 +201,20 @@ function MissionPayRedeemContent({
               </div>
             )}
 
-            <StandardButton
+            <PrivyWeb3Button
+              label={
+                isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
+                  ? 'Loading ETH price...'
+                  : 'Contribute'
+              }
               id="open-contribute-modal"
               className="mt-4 rounded-full gradient-2 rounded-full w-full py-1"
-              onClick={() => setModalEnabled && setModalEnabled(true)}
-              hoverEffect={false}
-              disabled={
+              action={() => setModalEnabled && setModalEnabled(true)}
+              isDisabled={
                 isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
               }
-            >
-              {isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
-                ? 'Loading ETH price...'
-                : 'Contribute'}
-            </StandardButton>
+            />
+
             <div className="w-full space-y-2">
               <AcceptedPaymentMethods />
               <p className="text-xs text-center text-gray-300 leading-relaxed">
