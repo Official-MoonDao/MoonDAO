@@ -1,7 +1,7 @@
 import { generateOnRampURL } from '@coinbase/cbpay-js'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid'
 import { DEPLOYED_ORIGIN } from 'const/config'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { arbitrum } from '@/lib/infura/infuraChains'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -37,6 +37,15 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     adjustedPurchaseAmount?: number // Amount to buy including fees
   } | null>(null)
 
+  // Check if current chain is Arbitrum
+  const isArbitrum = useMemo(
+    () =>
+      selectedChain === arbitrum ||
+      selectedChain?.id === 42161 ||
+      selectedChain?.id === 421614,
+    [selectedChain]
+  )
+
   // Fetch quote on component load and calculate fees
   useEffect(() => {
     const fetchQuote = async () => {
@@ -58,6 +67,12 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       try {
         const desiredAmount = parseFloat(usdInput)
 
+        // For Arbitrum, use Ethereum quotes to estimate fees
+        // This helps us calculate how much to pay so user gets the desired ETH value
+        const quoteNetwork = isArbitrum
+          ? 'ethereum'
+          : getQuoteNetworkName(selectedChain)
+
         // Get quote
         const initialQuoteResponse = await fetch('/api/coinbase/buy-quote', {
           method: 'POST',
@@ -67,7 +82,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           body: JSON.stringify({
             paymentAmount: desiredAmount,
             destinationAddress: address,
-            purchaseNetwork: getQuoteNetworkName(selectedChain),
+            purchaseNetwork: quoteNetwork,
             purchaseCurrency: 'ETH',
           }),
         })
@@ -136,7 +151,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           body: JSON.stringify({
             paymentAmount: calculatedAdjustedAmount,
             destinationAddress: address,
-            purchaseNetwork: getQuoteNetworkName(selectedChain),
+            purchaseNetwork: quoteNetwork,
             purchaseCurrency: 'ETH',
           }),
         })
@@ -203,7 +218,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     }
 
     fetchQuote()
-  }, [address, usdInput, selectedChain])
+  }, [address, usdInput, selectedChain, isArbitrum])
 
   // Map chain to network name for Coinbase QUOTE API
   // Quote API only supports: ethereum, base, polygon
@@ -344,7 +359,9 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       const paymentAmount =
         quoteData?.adjustedPurchaseAmount || parseFloat(usdInput || '20')
 
-      if (paymentAmount > 0 && selectedChain !== arbitrum) {
+      // Only fetch quote for supported networks (not Arbitrum)
+      // Arbitrum isn't supported by Coinbase Quote API, so we skip directly to session token generation
+      if (paymentAmount > 0 && !isArbitrum) {
         try {
           const quoteResponse = await fetch('/api/coinbase/buy-quote', {
             method: 'POST',
@@ -422,11 +439,10 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
         addresses: {
           [address]: [getOnrampNetworkName(selectedChain)],
         },
-        ...(usdInput &&
-          parseFloat(usdInput) > 0 && {
-            presetFiatAmount: parseFloat(usdInput),
-            fiatCurrency: 'USD',
-          }),
+        ...(paymentAmount > 0 && {
+          presetFiatAmount: paymentAmount,
+          fiatCurrency: 'USD',
+        }),
         defaultNetwork: getOnrampNetworkName(selectedChain),
         defaultAsset: 'ETH',
         redirectUrl: redirectUrl || `${DEPLOYED_ORIGIN}/`,
@@ -516,7 +532,11 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             ) : quoteData?.adjustedPurchaseAmount ? (
               <>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">Coinbase Fees:</span>
+                  <span className="text-gray-400 text-sm">
+                    Coinbase Fees
+                    {isArbitrum && <span className="text-xs ml-1">(est.)</span>}
+                    :
+                  </span>
                   <span className="text-orange-400 font-medium">
                     $
                     {quoteData.fees.toLocaleString(undefined, {
@@ -526,9 +546,19 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
                     USD
                   </span>
                 </div>
+                {isArbitrum && (
+                  <div className="text-xs text-gray-500 italic">
+                    * Fees estimated using Ethereum rates. Actual fees may vary
+                    slightly.
+                  </div>
+                )}
                 <div className="border-t border-white/10 pt-3 flex items-center justify-between">
                   <span className="text-gray-400 text-sm font-semibold">
-                    Total:
+                    Total
+                    {isArbitrum && (
+                      <span className="text-xs ml-1 font-normal">(est.)</span>
+                    )}
+                    :
                   </span>
                   <span className="text-white font-bold">
                     $
