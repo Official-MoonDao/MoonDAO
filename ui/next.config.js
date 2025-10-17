@@ -325,7 +325,7 @@ module.exports = withTM(
         {
           source: '/mission',
           destination: `/mission/3`,
-          permanent: true,
+          permanent: false,
         },
       ]
     },
