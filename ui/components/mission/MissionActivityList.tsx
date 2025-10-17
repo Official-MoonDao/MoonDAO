@@ -59,6 +59,7 @@ export default function MissionActivityList({
             header={event?.header}
             subject={event?.subject}
             extra={event?.extra}
+            address={event?.address}
             event={event?.event}
           />
         ))}
@@ -106,9 +107,12 @@ function translateEventDataToPresenter(
         event,
         header: 'Minted tokens',
         subject: (
-          <span className="font-heading text-lg">To: {event.beneficiary}</span>
+          <span className="font-heading text-lg">
+            To: {event.beneficiary}
+          </span>
         ),
         extra: null,
+        address: event.beneficiary
       }
 
     case 'deployErc20Event':
