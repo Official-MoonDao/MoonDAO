@@ -753,6 +753,12 @@ function MissionPayRedeemComponent({
           transaction,
           account,
         })
+        toast.success(
+          'Payment recieved! Please wait a minute or two for settlement.',
+          {
+            style: toastStyle,
+          }
+        )
         const destinationMessage = await waitForMessageReceived(
           isTestnet ? 19999 : 1, // 19999 resolves to testnet, 1 to mainnet, see https://cdn.jsdelivr.net/npm/@layerzerolabs/scan-client@0.0.8/dist/client.mjs
           originReceipt.transactionHash
