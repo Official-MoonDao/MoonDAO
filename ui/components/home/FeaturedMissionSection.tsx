@@ -1,16 +1,9 @@
-import Image from 'next/image'
-import { useRouter } from 'next/router'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
-import { truncateTokenValue } from '@/lib/utils/numbers'
-import StandardButton from '@/components/layout/StandardButton'
-import JuiceProviders from '@/lib/juicebox/JuiceProviders'
-import { DEFAULT_CHAIN_V5 } from 'const/config'
-import useContract from '@/lib/thirdweb/hooks/useContract'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
 import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
+import { DEFAULT_CHAIN_V5, FEATURED_MISSION_INDEX } from 'const/config'
 import {
   JBV5_CONTROLLER_ADDRESS,
   JBV5_DIRECTORY_ADDRESS,
@@ -18,8 +11,15 @@ import {
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
 } from 'const/config'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import Image from 'next/image'
+import { useRouter } from 'next/router'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useMissionData from '@/lib/mission/useMissionData'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import { truncateTokenValue } from '@/lib/utils/numbers'
+import StandardButton from '@/components/layout/StandardButton'
 
 export default function FeaturedMissionSection({ missions }: any) {
   const router = useRouter()
@@ -57,7 +57,6 @@ export default function FeaturedMissionSection({ missions }: any) {
   })
 
   const featuredMission = missions?.[0] || null
-  const FEATURED_MISSION_INDEX = 0
 
   console.log('FeaturedMissionSection missions:', missions)
   console.log('FeaturedMissionSection featuredMission:', featuredMission)
@@ -170,8 +169,7 @@ export default function FeaturedMissionSection({ missions }: any) {
                     ?.description) && (
                   <p className="text-sm md:text-lg lg:text-xl xl:text-2xl text-white/80 font-light">
                     {missions?.[FEATURED_MISSION_INDEX]?.metadata?.tagline ||
-                      missions?.[FEATURED_MISSION_INDEX]?.metadata
-                        ?.description}
+                      missions?.[FEATURED_MISSION_INDEX]?.metadata?.description}
                   </p>
                 )}
               </div>
@@ -285,7 +283,8 @@ export default function FeaturedMissionSection({ missions }: any) {
                     Funding Progress
                   </span>
                   <span className="text-white font-bold text-sm md:text-base">
-                    {featuredMissionFundingGoal && featuredMissionFundingGoal > 0
+                    {featuredMissionFundingGoal &&
+                    featuredMissionFundingGoal > 0
                       ? Math.round(
                           (Number(featuredMissionSubgraphData?.volume || 0) /
                             featuredMissionFundingGoal) *
@@ -303,7 +302,9 @@ export default function FeaturedMissionSection({ missions }: any) {
                         featuredMissionFundingGoal &&
                         featuredMissionFundingGoal > 0
                           ? Math.min(
-                              (Number(featuredMissionSubgraphData?.volume || 0) /
+                              (Number(
+                                featuredMissionSubgraphData?.volume || 0
+                              ) /
                                 featuredMissionFundingGoal) *
                                 100,
                               100
@@ -320,7 +321,9 @@ export default function FeaturedMissionSection({ missions }: any) {
                 <StandardButton
                   className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white font-semibold text-xs md:text-sm px-3 md:px-4 lg:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border border-white/20 text-center flex-1 flex items-center justify-center"
                   onClick={() =>
-                    router.push(`/mission/${missions?.[FEATURED_MISSION_INDEX]?.id}`)
+                    router.push(
+                      `/mission/${missions?.[FEATURED_MISSION_INDEX]?.id}`
+                    )
                   }
                   hoverEffect={false}
                 >

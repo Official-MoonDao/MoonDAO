@@ -322,6 +322,11 @@ module.exports = withTM(
           destination: '/vote',
           permanent: true,
         },
+        {
+          source: '/mission',
+          destination: `/mission/3`,
+          permanent: true,
+        },
       ]
     },
     webpack: (config, { isServer }) => {
