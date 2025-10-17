@@ -487,11 +487,6 @@ function MissionPayRedeemComponent({
         setInput('0')
         return
       }
-      // Only update ETH input if price is available
-      if (ethUsdPrice && !isNaN(Number(finalNumericValue))) {
-        setInput((Number(finalNumericValue) / ethUsdPrice).toFixed(6))
-      }
-      // Don't set input to '0' if price isn't loaded yet - keep existing value
     },
     [ethUsdPrice, setInput, formatInputWithCommas]
   )
@@ -790,6 +785,13 @@ function MissionPayRedeemComponent({
         })
       }
 
+      setInput('0')
+      setUsdInput('0')
+
+      if (setModalEnabled) {
+        setModalEnabled(false)
+      }
+
       toast.success('Mission token purchased!', {
         style: toastStyle,
       })
@@ -962,7 +964,16 @@ function MissionPayRedeemComponent({
     } else if (input === '0' || input === '') {
       setOutput(0)
     }
-  }, [input, getQuote])
+  }, [input, getQuote, ruleset])
+
+  useEffect(() => {
+    if (usdInput && ethUsdPrice) {
+      const finalNumericValue = usdInput.replace(/,/g, '')
+      if (!isNaN(Number(finalNumericValue))) {
+        setInput((Number(finalNumericValue) / ethUsdPrice).toFixed(6))
+      }
+    }
+  }, [usdInput, ethUsdPrice])
 
   useEffect(() => {
     // Only try to get redeem quote when refunds are actually available (stage === 3)
