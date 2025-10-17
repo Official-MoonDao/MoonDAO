@@ -29,7 +29,17 @@ body {
   margin: 0;
   font-family: 'Lato';
   overflow: auto;
-  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch; /* Better iOS/Safari scrolling */
+}
+
+@supports (-webkit-appearance: none) {
+  body {
+    overscroll-behavior: auto !important;
+  }
+
+  #main-container {
+    overflow-y: visible;
+  }
 }
 
 .font-acme {
