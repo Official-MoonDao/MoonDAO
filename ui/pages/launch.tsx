@@ -17,6 +17,7 @@ import {
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
+import { FEATURED_MISSION_INDEX } from 'const/config'
 import { LAUNCHPAD_WHITELISTED_CITIZENS } from 'const/missions'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
 import { GetStaticProps, GetStaticPropsResult } from 'next'
@@ -48,8 +49,6 @@ import StandardButton from '@/components/layout/StandardButton'
 import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrollBar'
 import CreateMission from '@/components/mission/CreateMission'
 import MissionWideCard from '@/components/mission/MissionWideCard'
-
-const FEATURED_MISSION_INDEX = 3
 
 export default function Launch({ missions }: any) {
   const router = useRouter()
