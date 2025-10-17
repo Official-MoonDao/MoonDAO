@@ -31,9 +31,11 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import toast from 'react-hot-toast'
+import { useWindowSize } from 'react-use'
 import {
   getContract,
   readContract,
@@ -118,6 +120,44 @@ export default function MissionProfile({
   const account = useActiveAccount()
   const router = useRouter()
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
+
+  const fullComponentRef = useRef<HTMLDivElement>(null)
+
+  const [isFullComponentVisible, setIsFullComponentVisible] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  const { width: windowWidth, height: windowHeight } = useWindowSize()
+
+  // Track when component has mounted to avoid hydration issues
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Add Intersection Observer to detect when full component is visible
+  useEffect(() => {
+    const currentRef = fullComponentRef.current
+    console.log('currentRef', currentRef)
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // When the full component is more than 20% visible, hide the fixed button
+        setIsFullComponentVisible(entry.intersectionRatio > 0.75)
+      },
+      {
+        threshold: [0, 0.2, 0.5, 1.0], // Multiple thresholds for smoother detection
+        rootMargin: '-100px 0px 0px 0px', // Adjust when fade starts
+      }
+    )
+
+    if (currentRef) {
+      observer.observe(currentRef)
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef)
+      }
+    }
+  }, [fullComponentRef])
 
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains = useMemo(
@@ -560,6 +600,30 @@ export default function MissionProfile({
     }
   }, [teamContract, mission?.teamId, _teamNFT])
 
+  // Add Intersection Observer to detect when full component is visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // When the full component is more than 20% visible, hide the fixed button
+        setIsFullComponentVisible(entry.intersectionRatio > 0.2)
+      },
+      {
+        threshold: [0, 0.2, 0.5, 1.0], // Multiple thresholds for smoother detection
+        rootMargin: '-100px 0px 0px 0px', // Adjust this to control when fade starts
+      }
+    )
+
+    if (fullComponentRef.current) {
+      observer.observe(fullComponentRef.current)
+    }
+
+    return () => {
+      if (fullComponentRef.current) {
+        observer.unobserve(fullComponentRef.current)
+      }
+    }
+  }, [])
+
   return (
     <>
       {/* Full-width Mission Header outside Container */}
@@ -610,11 +674,38 @@ export default function MissionProfile({
             />
           }
         >
+          {/* Fixed contribute button for mobile with fade effect */}
+          {isMounted && (
+            <div
+              className={`fixed bottom-8 transition-opacity duration-300 animate-fadeIn`}
+            >
+              <MissionPayRedeem
+                mission={mission}
+                teamNFT={teamNFT}
+                token={token}
+                stage={stage}
+                deadline={deadline || 0}
+                primaryTerminalAddress={primaryTerminalAddress}
+                jbControllerContract={jbControllerContract}
+                jbTokensContract={jbTokensContract}
+                refreshBackers={refreshBackers}
+                refreshTotalFunding={refreshTotalFunding}
+                ruleset={ruleset}
+                modalEnabled={payModalEnabled}
+                setModalEnabled={handlePayModalChange}
+                onlyButton
+                visibleButton={!isFullComponentVisible && windowWidth < 768}
+              />
+            </div>
+          )}
           <div
             id="page-container"
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
-            <div className="flex z-20 xl:hidden w-full px-[5vw]">
+            <div
+              ref={fullComponentRef} // Add ref to the full component container
+              className="flex z-20 xl:hidden w-full px-[5vw]"
+            >
               {primaryTerminalAddress &&
               primaryTerminalAddress !==
                 '0x0000000000000000000000000000000000000000' ? (

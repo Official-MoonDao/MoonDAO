@@ -72,7 +72,7 @@ export function PrivyWeb3Button({
   v5 = false,
   noPadding = false,
   noGradient = false,
-  showSignInLabel = true,
+  showSignInLabel = false,
 }: PrivyWeb3BtnProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet } = useContext(PrivyWalletContext)
