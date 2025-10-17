@@ -1,4 +1,4 @@
-import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
@@ -27,6 +27,7 @@ type PrivyWeb3BtnProps = {
   v5?: boolean
   noPadding?: boolean
   noGradient?: boolean
+  showSignInLabel?: boolean
 }
 
 function Button({
@@ -71,10 +72,18 @@ export function PrivyWeb3Button({
   v5 = false,
   noPadding = false,
   noGradient = false,
+  showSignInLabel = true,
 }: PrivyWeb3BtnProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const { user, login } = usePrivy()
+  const { user, authenticated } = usePrivy()
+  const { login } = useLogin({
+    onComplete: (user, isNewUser, wasAlreadyAuthenticated) => {
+      if (user && !wasAlreadyAuthenticated) {
+        action && action()
+      }
+    },
+  })
   const { wallets } = useWallets()
 
   const [isLoading, setIsLoading] = useState(false)
@@ -110,6 +119,7 @@ export function PrivyWeb3Button({
     selectedChain,
     selectedWallet,
     user,
+    authenticated,
     skipNetworkCheck,
     requiredChain,
     v5,
@@ -126,7 +136,7 @@ export function PrivyWeb3Button({
           noPadding={noPadding}
           noGradient={noGradient}
         >
-          Connect
+          {showSignInLabel ? 'Sign In' : label}
         </Button>
       )}
       {btnState === 1 && (
