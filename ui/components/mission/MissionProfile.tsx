@@ -588,7 +588,6 @@ export default function MissionProfile({
       <Container containerwidth={true}>
         <Head
           title={mission?.metadata?.name}
-          description={mission?.metadata?.description}
           image={mission?.metadata?.logoUri}
         />
         <ContentLayout
