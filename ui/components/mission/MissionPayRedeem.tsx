@@ -1031,7 +1031,7 @@ function MissionPayRedeemComponent({
             <Modal
               id="fixed-contribute-button"
               setEnabled={() => {}}
-              className={`fixed bottom-0 py-2 z-[9999] w-full flex items-center justify-center bg-gradient-to-r from-gray-900/95 via-blue-900/80 to-purple-900/70 backdrop-blur-xl ${
+              className={`fixed bottom-0 pb-2 pt-4 z-[9999] w-full flex items-center justify-center bg-gradient-to-r from-gray-900/95 via-blue-900/80 to-purple-900/70 backdrop-blur-xl ${
                 visibleButton ? 'opacity-100' : 'opacity-0'
               } transition-opacity duration-300 animate-fadeIn`}
             >

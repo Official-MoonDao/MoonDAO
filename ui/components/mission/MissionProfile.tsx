@@ -675,10 +675,8 @@ export default function MissionProfile({
           }
         >
           {/* Fixed contribute button for mobile with fade effect */}
-          {isMounted && (
-            <div
-              className={`fixed bottom-8 transition-opacity duration-300 animate-fadeIn`}
-            >
+          {isMounted && windowWidth > 0 && windowWidth < 768 && (
+            <div className={`fixed bottom-8 transition-opacity duration-300`}>
               <MissionPayRedeem
                 mission={mission}
                 teamNFT={teamNFT}
@@ -694,7 +692,11 @@ export default function MissionProfile({
                 modalEnabled={payModalEnabled}
                 setModalEnabled={handlePayModalChange}
                 onlyButton
-                visibleButton={!isFullComponentVisible && windowWidth < 768}
+                visibleButton={
+                  windowWidth > 0 &&
+                  windowWidth < 768 &&
+                  !isFullComponentVisible
+                }
               />
             </div>
           )}
