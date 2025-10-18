@@ -70,7 +70,10 @@ export default function Launch({ missions }: any) {
   })
 
   const { citizen } = useContext(CitizenContext)
-  const citizenHasAccess = LAUNCHPAD_WHITELISTED_CITIZENS.includes(citizen?.id)
+  const citizenHasAccess =
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+      ? LAUNCHPAD_WHITELISTED_CITIZENS.includes(citizen?.id)
+      : true
 
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)

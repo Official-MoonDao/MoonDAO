@@ -292,7 +292,7 @@ const MissionProfileHeader = React.memo(
                     )}
                   </div>
                 </div>
-                <p className="text-gray-400 text-xs mt-2 ml-4">
+                <div className="text-gray-400 text-xs mt-2 ml-4">
                   {isLoadingTotalFunding || isLoadingEthPrice ? (
                     <TextSkeleton width="w-16" height="h-4" />
                   ) : (
@@ -304,7 +304,7 @@ const MissionProfileHeader = React.memo(
                       USD
                     </>
                   )}
-                </p>
+                </div>
                 {/* Progress Bar */}
                 <div className="mb-3">
                   <MissionFundingProgressBar

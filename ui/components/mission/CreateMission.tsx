@@ -310,36 +310,24 @@ export default function CreateMission({
 
       // Calculate deadline timestamp
       let deadlineTimestamp: number
-      if (missionData.deadline && process.env.NEXT_PUBLIC_CHAIN === 'mainnet') {
+      if (missionData.deadline) {
         // User defined deadline - use end of selected day
         deadlineTimestamp = Math.floor(
           new Date(missionData.deadline + 'T23:59:59').getTime() / 1000
         )
       } else {
         // No deadline defined - use defaults based on environment
-        if (process.env.NEXT_PUBLIC_CHAIN === 'mainnet') {
-          deadlineTimestamp =
-            Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60 // 28 days
-        } else {
-          deadlineTimestamp = Math.floor(new Date().getTime() / 1000) + 10 * 60 // 10 minutes
-        }
+        deadlineTimestamp =
+          Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60 // 28 days
       }
 
       // Calculate refund period
       let refundPeriod: number
       if (!missionData.refundsEnabled) {
         refundPeriod = 0 // No refunds
-      } else if (
-        missionData.deadline &&
-        process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-      ) {
-        refundPeriod = 28 * 24 * 60 * 60 // 28 days when user sets deadline
       } else {
         // Use defaults based on environment when no deadline set
-        refundPeriod =
-          process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-            ? 28 * 24 * 60 * 60 // 28 days
-            : 10 * 60 // 10 minutes
+        refundPeriod = 28 * 24 * 60 * 60 // 28 days
       }
 
       const teamMultisig = await readContract({
@@ -546,7 +534,10 @@ export default function CreateMission({
     }
   }, [userTeamsAsManager, address])
 
-  if (!LAUNCHPAD_WHITELISTED_CITIZENS.includes(citizen?.id)) {
+  if (
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' &&
+    !LAUNCHPAD_WHITELISTED_CITIZENS.includes(citizen?.id)
+  ) {
     return null
   }
 
