@@ -26,14 +26,15 @@ const ankrRpcs = {
   base: `${ankrRpcBase}/base/${ankrApiKey}`,
 }
 
-const rpcs = process.env.NEXT_PUBLIC_RPC === 'ankr' ? ankrRpcs : infuraRpcs
+const mainnetRpc =
+  process.env.NEXT_PUBLIC_RPC === 'ankr' ? ankrRpcs : infuraRpcs
 
 export type Chain = ThirdwebChain
 
 export const ethereum = defineChain({
   id: 1,
   name: 'Ethereum',
-  rpc: rpcs.ethereum,
+  rpc: mainnetRpc.ethereum,
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
@@ -51,7 +52,7 @@ export const ethereum = defineChain({
 export const arbitrum = defineChain({
   id: 42161,
   name: 'Arbitrum One',
-  rpc: rpcs.arbitrum,
+  rpc: mainnetRpc.arbitrum,
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
@@ -69,7 +70,7 @@ export const arbitrum = defineChain({
 export const base = defineChain({
   id: 8453,
   name: 'Base',
-  rpc: rpcs.base,
+  rpc: mainnetRpc.base,
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
@@ -87,7 +88,7 @@ export const base = defineChain({
 export const polygon = defineChain({
   id: 137,
   name: 'Polygon',
-  rpc: rpcs.polygon,
+  rpc: mainnetRpc.polygon,
   nativeCurrency: {
     name: 'Matic',
     symbol: 'MATIC',
