@@ -201,19 +201,23 @@ function MissionPayRedeemContent({
               </div>
             )}
 
-            <StandardButton
-              id="open-contribute-modal"
-              className="mt-4 rounded-full gradient-2 rounded-full w-full py-1"
-              onClick={() => setModalEnabled && setModalEnabled(true)}
-              hoverEffect={false}
-              disabled={
-                isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
-              }
-            >
-              {isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
-                ? 'Loading ETH price...'
-                : 'Contribute'}
-            </StandardButton>
+            <div className="flex flex-col items-center justify-center">
+              <PrivyWeb3Button
+                label={
+                  isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
+                    ? 'Loading ETH price...'
+                    : 'Contribute'
+                }
+                id="open-contribute-modal"
+                className="mt-4 rounded-full gradient-2 rounded-full w-full py-1"
+                action={() => setModalEnabled && setModalEnabled(true)}
+                isDisabled={
+                  isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
+                }
+              />
+              <p className="text-sm text-gray-300 italic">{`Sign In ● Fund ● Contribute`}</p>
+            </div>
+
             <div className="w-full space-y-2">
               <AcceptedPaymentMethods />
               <p className="text-xs text-center text-gray-300 leading-relaxed">
@@ -329,6 +333,10 @@ export type MissionPayRedeemProps = {
   refreshBackers?: () => void
   refreshTotalFunding?: () => void
   ruleset: JBRuleset
+  onlyButton?: boolean
+  visibleButton?: boolean
+  buttonMode?: 'fixed' | 'standard'
+  buttonClassName?: string
 }
 
 function MissionPayRedeemComponent({
@@ -347,6 +355,10 @@ function MissionPayRedeemComponent({
   refreshBackers,
   refreshTotalFunding,
   ruleset,
+  onlyButton = false,
+  visibleButton = true,
+  buttonMode = 'standard',
+  buttonClassName = '',
 }: MissionPayRedeemProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -1002,7 +1014,7 @@ function MissionPayRedeemComponent({
     <>
       {!onlyModal && (
         <>
-          {deployTokenModalEnabled && isTeamSigner && (
+          {!onlyButton && deployTokenModalEnabled && isTeamSigner && (
             <MissionDeployTokenModal
               setEnabled={setDeployTokenModalEnabled}
               isTeamSigner={isTeamSigner}
@@ -1013,7 +1025,8 @@ function MissionPayRedeemComponent({
               lastSafeTxExecuted={lastSafeTxExecuted}
             />
           )}
-          {token &&
+          {!onlyButton &&
+            token &&
             (!token?.tokenAddress || token.tokenAddress === ZERO_ADDRESS) &&
             isTeamSigner &&
             stage < 3 && (
@@ -1029,29 +1042,74 @@ function MissionPayRedeemComponent({
               </div>
             )}
 
-          <div className="mt-2">
-            <MissionPayRedeemContent
-              token={token}
-              output={output}
-              redeem={redeemMissionToken}
-              setModalEnabled={setModalEnabled}
-              tokenBalance={tokenBalance}
-              tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
-              claimTokenCredit={claimTokenCredit}
-              currentStage={currentStage}
-              stage={stage}
-              deadline={deadline}
-              handleUsdInputChange={handleUsdInputChange}
-              calculateEthAmount={calculateEthAmount}
-              formattedUsdInput={formattedUsdInput}
-              formatTokenAmount={formatTokenAmount}
-              redeemAmount={redeemAmount}
-              isLoadingRedeemAmount={isLoadingRedeemAmount}
-              isLoadingEthUsdPrice={isLoadingEthUsdPrice}
-              usdInput={usdInput}
-              formatInputWithCommas={formatInputWithCommas}
-            />
-          </div>
+          {onlyButton && buttonMode === 'fixed' ? (
+            <Modal
+              id="fixed-contribute-button"
+              setEnabled={() => {}}
+              className={`fixed bottom-0 pb-2 pt-4 z-[9999] w-full flex items-center justify-center bg-gradient-to-r from-gray-900/95 via-blue-900/80 to-purple-900/70 backdrop-blur-xl ${
+                visibleButton ? 'opacity-100' : 'opacity-0'
+              } transition-opacity duration-300 animate-fadeIn`}
+            >
+              <div className="flex flex-col items-center justify-center">
+                <PrivyWeb3Button
+                  label={
+                    isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
+                      ? 'Loading ETH price...'
+                      : 'Contribute'
+                  }
+                  id="open-contribute-modal"
+                  className={`rounded-full gradient-2 rounded-full w-[80vw] py-1 ${buttonClassName}`}
+                  action={() => setModalEnabled && setModalEnabled(true)}
+                  isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}
+                  showSignInLabel={false}
+                />
+                <p className="text-sm text-gray-300 italic">{`Sign In ● Fund ● Contribute`}</p>
+              </div>
+            </Modal>
+          ) : onlyButton && buttonMode === 'standard' ? (
+            <div
+              className={`${
+                visibleButton ? 'opacity-100' : 'opacity-0 hidden'
+              } transition-opacity duration-300 animate-fadeIn`}
+            >
+              <PrivyWeb3Button
+                label="Contribute"
+                id="open-contribute-modal"
+                className={
+                  buttonClassName
+                    ? buttonClassName
+                    : 'rounded-full gradient-2 rounded-full'
+                }
+                action={() => setModalEnabled && setModalEnabled(true)}
+                isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}
+                showSignInLabel={false}
+              />
+            </div>
+          ) : (
+            <div className="mt-2">
+              <MissionPayRedeemContent
+                token={token}
+                output={output}
+                redeem={redeemMissionToken}
+                setModalEnabled={setModalEnabled}
+                tokenBalance={tokenBalance}
+                tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
+                claimTokenCredit={claimTokenCredit}
+                currentStage={currentStage}
+                stage={stage}
+                deadline={deadline}
+                handleUsdInputChange={handleUsdInputChange}
+                calculateEthAmount={calculateEthAmount}
+                formattedUsdInput={formattedUsdInput}
+                formatTokenAmount={formatTokenAmount}
+                redeemAmount={redeemAmount}
+                isLoadingRedeemAmount={isLoadingRedeemAmount}
+                isLoadingEthUsdPrice={isLoadingEthUsdPrice}
+                usdInput={usdInput}
+                formatInputWithCommas={formatInputWithCommas}
+              />
+            </div>
+          )}
         </>
       )}
       {modalEnabled && (

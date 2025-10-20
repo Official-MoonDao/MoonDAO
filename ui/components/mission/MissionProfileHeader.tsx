@@ -42,6 +42,7 @@ interface MissionProfileHeaderProps {
   // Direct props for total funding instead of callback
   totalFunding: bigint
   isLoadingTotalFunding: boolean
+  contributeButton: React.ReactNode
 }
 
 const MissionProfileHeader = React.memo(
@@ -65,6 +66,7 @@ const MissionProfileHeader = React.memo(
     deployLiquidityPool,
     totalFunding,
     isLoadingTotalFunding,
+    contributeButton,
   }: MissionProfileHeaderProps) => {
     const account = useActiveAccount()
     const { data: ethPrice, isLoading: isLoadingEthPrice } = useETHPrice(
@@ -180,7 +182,7 @@ const MissionProfileHeader = React.memo(
               <div className="bg-gradient-to-br from-dark-cool to-darkest-cool backdrop-blur-lg rounded-xl p-4 lg:p-5 border border-white/10 shadow-xl w-full max-w-2xl">
                 {/* Raised Amount Badge with Manager Actions */}
                 <div className="mb-2 flex flex-col md:flex-row items-center justify-between">
-                  <div className="inline-flex items-center bg-gradient-to-r from-blue-500 to-purple-600 text-white font-GoodTimes py-2 px-4 rounded-full shadow-lg">
+                  <div className="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-700 text-white font-GoodTimes py-2 px-4 rounded-full shadow-lg">
                     <Image
                       src="/assets/icon-raised-tokens.svg"
                       alt="Raised"
@@ -208,20 +210,7 @@ const MissionProfileHeader = React.memo(
                     )}
                   </div>
                   <div className="mt-2 md:mt-0 flex flex-col items-center md:items-end gap-2">
-                    <Link
-                      className="flex flex-col items-center group"
-                      href={`https://juicebox.money/v5/arb:${mission?.projectId}`}
-                      target="_blank"
-                    >
-                      <div className="scale-75 group-hover:scale-[0.80] transition-all duration-200">
-                        <JuiceboxLogoWhite />
-                      </div>
-                      {isManager && (
-                        <p className="text-xs opacity-90 uppercase group-hover:scale-105 transition-all duration-200">
-                          (Edit Project)
-                        </p>
-                      )}
-                    </Link>
+                    {contributeButton}
 
                     {/* Compact Manager Actions */}
                     {account && deadlinePassed && isManager && (
@@ -292,7 +281,7 @@ const MissionProfileHeader = React.memo(
                     )}
                   </div>
                 </div>
-                <p className="text-gray-400 text-xs mt-2 ml-4">
+                <div className="text-gray-400 text-xs mt-2 ml-4">
                   {isLoadingTotalFunding || isLoadingEthPrice ? (
                     <TextSkeleton width="w-16" height="h-4" />
                   ) : (
@@ -304,7 +293,7 @@ const MissionProfileHeader = React.memo(
                       USD
                     </>
                   )}
-                </p>
+                </div>
                 {/* Progress Bar */}
                 <div className="mb-3">
                   <MissionFundingProgressBar
