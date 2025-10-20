@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import { readContract } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { getRpcClient, eth_getBlockByNumber } from 'thirdweb/rpc'
-import { ethereum } from '@/lib/infura/infuraChains'
+import { ethereum } from '@/lib/rpc/chains'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { keccak256 } from 'ethers/lib/utils'
 

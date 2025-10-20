@@ -11,8 +11,8 @@ import {
 } from 'thirdweb'
 import { useActiveAccount, useActiveWallet } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import { sepolia } from '@/lib/infura/infuraChains'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { sepolia } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -64,7 +64,7 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
     abi: TeamABI as any,
   })
 
-  const {userTeams} = useTeamWearer(teamContract, selectedChain, userAddress)
+  const { userTeams } = useTeamWearer(teamContract, selectedChain, userAddress)
 
   const isCompetitor = userTeams?.some((team: any) =>
     competitors.some(

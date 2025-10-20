@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import { arbitrum, sepolia, Chain } from '@/lib/infura/infuraChains'
+import { arbitrum, sepolia, Chain } from '@/lib/rpc/chains'
 
 const ChainContextV5 = createContext({
   selectedChain:

@@ -8,7 +8,7 @@ import {
   optimismSepolia,
   polygon,
   sepolia,
-} from '../../lib/infura/infuraChains'
+} from '../rpc/chains'
 
 export function getChainSlug(chain: Chain) {
   let slug

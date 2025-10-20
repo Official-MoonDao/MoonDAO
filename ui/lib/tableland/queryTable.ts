@@ -1,7 +1,7 @@
 //server-side function only
 import { Database } from '@tableland/sdk'
 import { ethers } from 'ethers'
-import { Chain } from '@/lib/infura/infuraChains'
+import { Chain } from '@/lib/rpc/chains'
 
 // Signer adapter for Tableland SDK
 function createTablelandSigner(wallet: ethers.Wallet, chainId: number) {

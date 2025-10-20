@@ -5,7 +5,7 @@ import { getContract, readContract } from 'thirdweb'
 import { CitizenTransfer, TeamTransfer } from '@/lib/network/networkSubgraph'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
-import { arbitrum } from '../infura/infuraChains'
+import { arbitrum } from '../rpc/chains'
 
 export interface ARRDataPoint {
   timestamp: number
