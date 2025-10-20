@@ -335,6 +335,8 @@ export type MissionPayRedeemProps = {
   ruleset: JBRuleset
   onlyButton?: boolean
   visibleButton?: boolean
+  buttonMode?: 'fixed' | 'standard'
+  buttonClassName?: string
 }
 
 function MissionPayRedeemComponent({
@@ -355,6 +357,8 @@ function MissionPayRedeemComponent({
   ruleset,
   onlyButton = false,
   visibleButton = true,
+  buttonMode = 'standard',
+  buttonClassName = '',
 }: MissionPayRedeemProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -1027,7 +1031,7 @@ function MissionPayRedeemComponent({
               </div>
             )}
 
-          {onlyButton ? (
+          {onlyButton && buttonMode === 'fixed' ? (
             <Modal
               id="fixed-contribute-button"
               setEnabled={() => {}}
@@ -1043,7 +1047,7 @@ function MissionPayRedeemComponent({
                       : 'Contribute'
                   }
                   id="open-contribute-modal"
-                  className="rounded-full gradient-2 rounded-full w-[80vw] py-1"
+                  className={`rounded-full gradient-2 rounded-full w-[80vw] py-1 ${buttonClassName}`}
                   action={() => setModalEnabled && setModalEnabled(true)}
                   isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}
                   showSignInLabel={false}
@@ -1051,6 +1055,25 @@ function MissionPayRedeemComponent({
                 <p className="text-sm text-gray-300 italic">{`Sign In ● Fund ● Contribute`}</p>
               </div>
             </Modal>
+          ) : onlyButton && buttonMode === 'standard' ? (
+            <div
+              className={`${
+                visibleButton ? 'opacity-100' : 'opacity-0 hidden'
+              } transition-opacity duration-300 animate-fadeIn`}
+            >
+              <PrivyWeb3Button
+                label="Contribute"
+                id="open-contribute-modal"
+                className={
+                  buttonClassName
+                    ? buttonClassName
+                    : 'rounded-full gradient-2 rounded-full'
+                }
+                action={() => setModalEnabled && setModalEnabled(true)}
+                isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}
+                showSignInLabel={false}
+              />
+            </div>
           ) : (
             <div className="mt-2">
               <MissionPayRedeemContent

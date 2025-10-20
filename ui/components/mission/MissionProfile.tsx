@@ -647,6 +647,26 @@ export default function MissionProfile({
         deployLiquidityPool={deployLiquidityPool}
         totalFunding={totalFunding}
         isLoadingTotalFunding={isLoadingTotalFunding}
+        contributeButton={
+          <MissionPayRedeem
+            mission={mission}
+            teamNFT={teamNFT}
+            token={token}
+            stage={stage}
+            deadline={deadline || 0}
+            primaryTerminalAddress={primaryTerminalAddress}
+            jbControllerContract={jbControllerContract}
+            jbTokensContract={jbTokensContract}
+            refreshBackers={refreshBackers}
+            refreshTotalFunding={refreshTotalFunding}
+            ruleset={ruleset}
+            modalEnabled={payModalEnabled}
+            setModalEnabled={handlePayModalChange}
+            onlyButton
+            visibleButton={windowWidth > 0 && windowWidth > 768}
+            buttonClassName="max-h-1/2 rounded-full text-sm flex justify-center items-center"
+          />
+        }
       />
 
       <Container containerwidth={true}>
@@ -697,6 +717,7 @@ export default function MissionProfile({
                   windowWidth < 768 &&
                   !isFullComponentVisible
                 }
+                buttonMode="fixed"
               />
             </div>
           )}

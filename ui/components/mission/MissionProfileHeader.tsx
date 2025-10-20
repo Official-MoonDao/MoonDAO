@@ -42,6 +42,7 @@ interface MissionProfileHeaderProps {
   // Direct props for total funding instead of callback
   totalFunding: bigint
   isLoadingTotalFunding: boolean
+  contributeButton: React.ReactNode
 }
 
 const MissionProfileHeader = React.memo(
@@ -65,6 +66,7 @@ const MissionProfileHeader = React.memo(
     deployLiquidityPool,
     totalFunding,
     isLoadingTotalFunding,
+    contributeButton,
   }: MissionProfileHeaderProps) => {
     const account = useActiveAccount()
     const { data: ethPrice, isLoading: isLoadingEthPrice } = useETHPrice(
@@ -207,6 +209,7 @@ const MissionProfileHeader = React.memo(
                       </>
                     )}
                   </div>
+                  {contributeButton}
                   <div className="mt-2 md:mt-0 flex flex-col items-center md:items-end gap-2">
                     <Link
                       className="flex flex-col items-center group"
