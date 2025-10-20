@@ -25,6 +25,7 @@ import {
   JB_NATIVE_TOKEN_ID,
 } from 'const/config'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, {
   useCallback,
@@ -72,6 +73,7 @@ import MissionInfo from '@/components/mission/MissionInfo'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import TeamMembers from '@/components/subscription/TeamMembers'
+import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
 
 const CHAIN = DEFAULT_CHAIN_V5
 const CHAIN_SLUG = getChainSlug(CHAIN)
@@ -664,7 +666,7 @@ export default function MissionProfile({
             setModalEnabled={handlePayModalChange}
             onlyButton
             visibleButton={windowWidth > 0 && windowWidth > 768}
-            buttonClassName="max-h-1/2 rounded-full text-sm flex justify-center items-center"
+            buttonClassName="max-h-1/2 w-full  rounded-full text-sm flex justify-center items-center"
           />
         }
       />
@@ -786,7 +788,7 @@ export default function MissionProfile({
                 />
               </div>
             </div>
-            <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] flex justify-center">
+            <div className="w-full px-[5vw] flex justify-center">
               <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 pb-[5vw] md:pb-[2vw]">
                 <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex w-full gap-2 text-light-cool">
                   <Image
@@ -809,6 +811,34 @@ export default function MissionProfile({
                     />
                   )}
                 </SlidingCardMenu>
+              </div>
+            </div>
+            <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] flex justify-center">
+              <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 py-4">
+                <div className="flex items-center relative rounded-tl-[20px] rounded-bl-[5vmax] p-4">
+                  <div
+                    className="pl-4 pr-8 flex overflow-x-auto overflow-y-hidden"
+                    style={{
+                      msOverflowStyle: 'none',
+                      WebkitOverflowScrolling: 'touch',
+                    }}
+                  >
+                    <Link
+                      className="flex flex-col group"
+                      href={`https://juicebox.money/v5/arb:${mission?.projectId}`}
+                      target="_blank"
+                    >
+                      <div className="group-hover:scale-[1.05] transition-all duration-200">
+                        <JuiceboxLogoWhite />
+                      </div>
+                      {isManager && (
+                        <p className="text-xs opacity-90 uppercase group-hover:scale-105 transition-all duration-200">
+                          (Edit Project)
+                        </p>
+                      )}
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
