@@ -6,7 +6,7 @@ import {
 } from 'const/config'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
-import { sepolia } from '@/lib/infura/infuraChains'
+import { sepolia } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'

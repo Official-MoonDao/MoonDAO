@@ -29,9 +29,10 @@ import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import { sepolia } from '@/lib/infura/infuraChains'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
+import useMissionData from '@/lib/mission/useMissionData'
+import { sepolia } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -352,7 +353,7 @@ export default function Launch({ missions }: any) {
           </div>
         </div>
       </section>
-      
+
       {/* Featured Mission Section */}
       <FeaturedMissionSection missions={missions} />
 

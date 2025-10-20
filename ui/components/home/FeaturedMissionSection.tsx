@@ -58,9 +58,6 @@ export default function FeaturedMissionSection({ missions }: any) {
 
   const featuredMission = missions?.[0] || null
 
-  console.log('FeaturedMissionSection missions:', missions)
-  console.log('FeaturedMissionSection featuredMission:', featuredMission)
-
   const {
     subgraphData: featuredMissionSubgraphData,
     fundingGoal: featuredMissionFundingGoal,
@@ -320,21 +317,17 @@ export default function FeaturedMissionSection({ missions }: any) {
               <div className="flex flex-row gap-2 md:gap-4 pt-4">
                 <StandardButton
                   className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white font-semibold text-xs md:text-sm px-3 md:px-4 lg:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border border-white/20 text-center flex-1 flex items-center justify-center"
-                  onClick={() =>
-                    router.push(
-                      `/mission/${missions?.[FEATURED_MISSION_INDEX]?.id}`
-                    )
-                  }
+                  link={`/mission/${missions?.[FEATURED_MISSION_INDEX]?.id}`}
                   hoverEffect={false}
                 >
-                  <span className="ml-1 md:ml-2">Learn More</span>
+                  <span className="ml-1 md:ml-2">Contribute</span>
                 </StandardButton>
                 <StandardButton
                   className="bg-white/10 backdrop-blur-sm text-white font-semibold text-xs md:text-sm px-3 md:px-4 lg:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:bg-white/20 transition-all duration-300 border border-white/20 text-center flex-1 flex items-center justify-center"
-                  onClick={() => router.push('/launchpad')}
+                  link="/launch"
                   hoverEffect={false}
                 >
-                  <span className="ml-1 md:ml-2">View All Missions</span>
+                  <span className="ml-1 md:ml-2">Explore</span>
                 </StandardButton>
               </div>
             </div>

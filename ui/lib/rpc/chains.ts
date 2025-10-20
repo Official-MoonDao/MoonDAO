@@ -4,12 +4,37 @@ import { Chain as ThirdwebChain } from 'thirdweb/chains'
 const infuraKey = process.env.NEXT_PUBLIC_INFURA_KEY
 const etherscanApiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
 
+const ankrApiKey = process.env.NEXT_PUBLIC_ANKR_API_KEY
+
+const infuraRpcs = {
+  arbitrum: `https://arbitrum-mainnet.infura.io/v3/${infuraKey}`,
+  ethereum: `https://mainnet.infura.io/v3/${infuraKey}`,
+  base: `https://base-mainnet.infura.io/v3/${infuraKey}`,
+  polygon: `https://polygon-mainnet.infura.io/v3/${infuraKey}`,
+  sepolia: `https://sepolia.infura.io/v3/${infuraKey}`,
+  arbitrumSepolia: `https://arbitrum-sepolia.infura.io/v3/${infuraKey}`,
+  optimismSepolia: `https://optimism-sepolia.infura.io/v3/${infuraKey}`,
+  baseSepolia: `https://base-sepolia.infura.io/v3/${infuraKey}`,
+}
+
+const ankrRpcBase = `https://rpc.ankr.com`
+
+const ankrRpcs = {
+  polygon: `${ankrRpcBase}/polygon/${ankrApiKey}`,
+  ethereum: `${ankrRpcBase}/eth/${ankrApiKey}`,
+  arbitrum: `${ankrRpcBase}/arbitrum/${ankrApiKey}`,
+  base: `${ankrRpcBase}/base/${ankrApiKey}`,
+}
+
+const mainnetRpc =
+  process.env.NEXT_PUBLIC_RPC === 'ankr' ? ankrRpcs : infuraRpcs
+
 export type Chain = ThirdwebChain
 
 export const ethereum = defineChain({
   id: 1,
   name: 'Ethereum',
-  rpc: `https://mainnet.infura.io/v3/${infuraKey}`,
+  rpc: mainnetRpc.ethereum,
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
@@ -27,7 +52,7 @@ export const ethereum = defineChain({
 export const arbitrum = defineChain({
   id: 42161,
   name: 'Arbitrum One',
-  rpc: `https://arbitrum-mainnet.infura.io/v3/${infuraKey}`,
+  rpc: mainnetRpc.arbitrum,
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
@@ -45,7 +70,7 @@ export const arbitrum = defineChain({
 export const base = defineChain({
   id: 8453,
   name: 'Base',
-  rpc: `https://base-mainnet.infura.io/v3/${infuraKey}`,
+  rpc: mainnetRpc.base,
   nativeCurrency: {
     name: 'Ether',
     symbol: 'ETH',
@@ -63,7 +88,7 @@ export const base = defineChain({
 export const polygon = defineChain({
   id: 137,
   name: 'Polygon',
-  rpc: `https://polygon-mainnet.infura.io/v3/${infuraKey}`,
+  rpc: mainnetRpc.polygon,
   nativeCurrency: {
     name: 'Matic',
     symbol: 'MATIC',

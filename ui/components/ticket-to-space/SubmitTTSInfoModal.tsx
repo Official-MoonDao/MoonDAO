@@ -6,7 +6,7 @@ import { readContract } from 'thirdweb'
 import { getOwnedNFTs } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import { polygon } from '@/lib/infura/infuraChains'
+import { polygon } from '@/lib/rpc/chains'
 
 type SubmitInfoModalProps = {
   balance: any

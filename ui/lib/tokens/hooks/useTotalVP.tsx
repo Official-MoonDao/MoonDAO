@@ -3,7 +3,7 @@ import { VMOONEY_ADDRESSES } from 'const/config'
 import request, { gql } from 'graphql-request'
 import useSWR from 'swr'
 import { getContract, readContract } from 'thirdweb'
-import { sepolia } from '@/lib/infura/infuraChains'
+import { sepolia } from '@/lib/rpc/chains'
 import client from '@/lib/thirdweb/client'
 
 export function useTotalVP(address: string) {

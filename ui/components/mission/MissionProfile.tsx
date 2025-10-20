@@ -42,16 +42,16 @@ import {
 } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
+import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
+import useTotalFunding from '@/lib/juicebox/useTotalFunding'
+import useMissionData from '@/lib/mission/useMissionData'
 import {
   arbitrum,
   base,
   ethereum,
   optimismSepolia,
   sepolia,
-} from '@/lib/infura/infuraChains'
-import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
-import useTotalFunding from '@/lib/juicebox/useTotalFunding'
-import useMissionData from '@/lib/mission/useMissionData'
+} from '@/lib/rpc/chains'
 import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
