@@ -58,9 +58,6 @@ export default function FeaturedMissionSection({ missions }: any) {
 
   const featuredMission = missions?.[0] || null
 
-  console.log('FeaturedMissionSection missions:', missions)
-  console.log('FeaturedMissionSection featuredMission:', featuredMission)
-
   const {
     subgraphData: featuredMissionSubgraphData,
     fundingGoal: featuredMissionFundingGoal,
@@ -327,7 +324,7 @@ export default function FeaturedMissionSection({ missions }: any) {
                 </StandardButton>
                 <StandardButton
                   className="bg-white/10 backdrop-blur-sm text-white font-semibold text-xs md:text-sm px-3 md:px-4 lg:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:bg-white/20 transition-all duration-300 border border-white/20 text-center flex-1 flex items-center justify-center"
-                  link="/launchpad"
+                  link="/launch"
                   hoverEffect={false}
                 >
                   <span className="ml-1 md:ml-2">Explore</span>
