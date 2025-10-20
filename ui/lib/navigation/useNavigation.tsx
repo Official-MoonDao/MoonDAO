@@ -115,7 +115,7 @@ export default function useNavigation(citizen: any) {
         icon: BuildingStorefrontIcon,
         href: '/marketplace',
       },
-      process.env.NEXT_PUBLIC_CHAIN === 'testnet' && {
+      {
         name: 'Launchpad',
         icon: RocketLaunchIcon,
         href: '/launch',
