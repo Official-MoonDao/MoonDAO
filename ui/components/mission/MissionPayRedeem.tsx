@@ -30,6 +30,7 @@ import {
   ZERO_ADDRESS,
   readContract,
   waitForReceipt,
+  estimateGas,
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
@@ -42,6 +43,7 @@ import {
 } from '@/lib/infura/infuraChains'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
+import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import useSafe from '@/lib/safe/useSafe'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -372,6 +374,7 @@ function MissionPayRedeemComponent({
   const [message, setMessage] = useState('')
   const [redeemAmount, setRedeemAmount] = useState(0)
   const [isLoadingRedeemAmount, setIsLoadingRedeemAmount] = useState(true)
+  const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
 
   // USD input state and handlers
   const [usdInput, setUsdInput] = useState(() => {
@@ -522,11 +525,190 @@ function MissionPayRedeemComponent({
 
   const nativeBalance = useNativeBalance()
 
+  // Fetch current gas price from the network
+  const { gasPrice } = useGasPrice(selectedChain, {
+    bufferPercent: 20, // Add 20% buffer for safety
+  })
+
+  // Calculate gas cost in ETH and USD
+  const gasCostDisplay = useMemo(() => {
+    if (
+      !estimatedGas ||
+      estimatedGas === BigInt(0) ||
+      !gasPrice ||
+      gasPrice === BigInt(0)
+    ) {
+      return { eth: '0.0000', usd: '0.00' }
+    }
+
+    const gasCostWei = estimatedGas * gasPrice
+    const gasCostEth = Number(gasCostWei) / 1e18
+
+    const gasCostUsd = ethUsdPrice ? gasCostEth * ethUsdPrice : 0
+
+    return {
+      eth: gasCostEth.toFixed(4),
+      usd: gasCostUsd.toFixed(2),
+    }
+  }, [estimatedGas, gasPrice, ethUsdPrice])
+
+  // Estimate gas for the contribution transaction
+  const estimateContributionGas = useCallback(async () => {
+    if (!account || !address) return
+
+    const inputValue = parseFloat(input) || 0
+    if (inputValue <= 0) {
+      setEstimatedGas(BigInt(0))
+      return
+    }
+
+    // Check if we have the required contracts based on transaction type
+    const isCrossChain = chainSlug !== defaultChainSlug
+
+    if (isCrossChain && !crossChainPayContract) return
+    if (!isCrossChain && !primaryTerminalContract) return
+
+    try {
+      let gasEstimate: bigint
+
+      if (isCrossChain) {
+        // Cross-chain transaction - estimate crossChainPay
+        const quoteCrossChainPay: any = await readContract({
+          contract: crossChainPayContract,
+          method: 'quoteCrossChainPay' as string,
+          params: [
+            LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
+            BigInt(Math.trunc(inputValue * 1e18)),
+            mission?.projectId,
+            address || ZERO_ADDRESS,
+            output * 1e18,
+            message,
+            '0x00',
+          ],
+        })
+
+        const transaction = prepareContractCall({
+          contract: crossChainPayContract,
+          method: 'crossChainPay' as string,
+          params: [
+            LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
+            mission?.projectId,
+            BigInt(Math.trunc(inputValue * 1e18)),
+            address || ZERO_ADDRESS,
+            output * 0,
+            message,
+            '0x00',
+          ],
+          value: BigInt(quoteCrossChainPay),
+        })
+
+        // Use API route to estimate gas (avoids CORS issues)
+        try {
+          const estimateResponse = await fetch('/api/rpc/estimate-gas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chainId: selectedChain.id,
+              from: address,
+              to: MISSION_CROSS_CHAIN_PAY_ADDRESS,
+              data: transaction.data,
+              value: `0x${BigInt(quoteCrossChainPay).toString(16)}`,
+            }),
+          })
+
+          const estimateData = await estimateResponse.json()
+
+          if (estimateData.error) {
+            throw new Error(estimateData.error)
+          }
+
+          gasEstimate = BigInt(estimateData.gasEstimate)
+        } catch (estimationError: any) {
+          // LayerZero cross-chain transactions typically use 250k-350k gas
+          // Use 300k as a conservative middle ground
+          gasEstimate = BigInt(300000)
+        }
+      } else {
+        // Same-chain transaction - estimate pay
+        const transaction = prepareContractCall({
+          contract: primaryTerminalContract,
+          method: 'pay' as string,
+          params: [
+            mission?.projectId,
+            JB_NATIVE_TOKEN_ADDRESS,
+            BigInt(Math.trunc(inputValue * 1e18)),
+            address,
+            (output * 1e18 * 95) / 100,
+            message,
+            '0x00',
+          ],
+          value: BigInt(Math.trunc(inputValue * 1e18)),
+        })
+
+        try {
+          const estimateResponse = await fetch('/api/rpc/estimate-gas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chainId: selectedChain.id,
+              from: address,
+              to: primaryTerminalAddress,
+              data: transaction.data,
+              value: `0x${BigInt(Math.trunc(inputValue * 1e18)).toString(16)}`,
+            }),
+          })
+
+          const estimateData = await estimateResponse.json()
+
+          if (estimateData.error) {
+            throw new Error(estimateData.error)
+          }
+
+          gasEstimate = BigInt(estimateData.gasEstimate)
+        } catch (estimationError: any) {
+          // Same-chain JB pay transactions typically use 150k-200k gas
+          // Use 180k as a conservative estimate
+          gasEstimate = BigInt(180000)
+        }
+      }
+
+      // Add 20% buffer to account for gas price fluctuations
+      const gasWithBuffer = (gasEstimate * BigInt(120)) / BigInt(100)
+      setEstimatedGas(gasWithBuffer)
+    } catch (error) {
+      console.error(
+        `Error estimating gas for ${chainSlug}:`,
+        error instanceof Error ? error.message : error
+      )
+      setEstimatedGas(BigInt(300000))
+    }
+  }, [
+    account,
+    address,
+    primaryTerminalContract,
+    crossChainPayContract,
+    input,
+    chainSlug,
+    defaultChainSlug,
+    mission?.projectId,
+    output,
+    message,
+    primaryTerminalAddress,
+    selectedChain,
+  ])
+
   // Calculate required ETH amount and determine if user has enough balance
   const requiredEth = useMemo(() => {
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
-    return usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
-  }, [usdInput, ethUsdPrice])
+    const contributionEth =
+      usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
+
+    // Add estimated gas cost (convert from wei to ETH)
+    const gasCostWei = estimatedGas * gasPrice
+    const gasCostEth = Number(gasCostWei) / 1e18
+
+    return contributionEth + gasCostEth
+  }, [usdInput, ethUsdPrice, estimatedGas, gasPrice])
 
   const hasEnoughBalance = useMemo(() => {
     return (
@@ -978,6 +1160,18 @@ function MissionPayRedeemComponent({
     }
   }, [jbTokenBalance, tokenCredit, stage, getRedeemQuote])
 
+  // Estimate gas when contribution inputs change
+  useEffect(() => {
+    const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
+    const usdValue = parseFloat(cleanUsdInput)
+
+    if (usdValue > 0 && input && parseFloat(input) > 0) {
+      estimateContributionGas()
+    } else {
+      setEstimatedGas(BigInt(0))
+    }
+  }, [usdInput, input, selectedChain, estimateContributionGas])
+
   // Clear parameter when modal is closed
   const handleModalClose = useCallback(() => {
     if (setModalEnabled) {
@@ -1236,6 +1430,25 @@ function MissionPayRedeemComponent({
                     />
                   </div>
 
+                  {/* Gas Fee Display */}
+                  {estimatedGas > 0 && (
+                    <div className="bg-gray-500/10 border border-gray-500/20 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-gray-300 text-sm">
+                          Estimated Gas Fee
+                        </p>
+                        <div className="text-right">
+                          <p className="text-white text-sm font-medium">
+                            ~{gasCostDisplay.eth} ETH
+                          </p>
+                          <p className="text-gray-400 text-xs">
+                            ~${gasCostDisplay.usd} USD
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <MissionTokenNotice />
 
                   {/* Terms Checkbox */}
@@ -1324,6 +1537,15 @@ function MissionPayRedeemComponent({
                               {usdInput} contribution
                             </>
                           )}
+                          {estimatedGas > 0 && (
+                            <>
+                              <br />
+                              <span className="font-semibold">
+                                Estimated Gas:
+                              </span>{' '}
+                              ~${gasCostDisplay.usd} ({gasCostDisplay.eth} ETH)
+                            </>
+                          )}
                         </p>
                         {isAdjustedForMinimum && (
                           <p className="text-blue-200 text-xs">
@@ -1361,20 +1583,32 @@ function MissionPayRedeemComponent({
                     />
                   )}
 
-                  {/* Show minimum adjustment warning for users with no balance */}
+                  {/* Show gas info and minimum adjustment warning for users with no balance */}
                   {(!nativeBalance || Number(nativeBalance) === 0) &&
                     usdInput &&
-                    parseFloat(usdInput.replace(/,/g, '')) > 0 &&
-                    parseFloat(usdInput.replace(/,/g, '')) < 2 && (
-                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                        <p className="text-blue-300 text-sm">
-                          <span className="font-semibold">Note:</span> Coinbase
-                          requires a minimum purchase of $2. You'll receive ${' '}
-                          {(2 - parseFloat(usdInput.replace(/,/g, ''))).toFixed(
-                            2
-                          )}{' '}
-                          extra in ETH that you can use for future transactions.
-                        </p>
+                    parseFloat(usdInput.replace(/,/g, '')) > 0 && (
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 space-y-2">
+                        {estimatedGas > 0 && (
+                          <p className="text-blue-300 text-sm">
+                            <span className="font-semibold">
+                              Estimated Gas:
+                            </span>{' '}
+                            ~${gasCostDisplay.usd} ({gasCostDisplay.eth} ETH)
+                            included
+                          </p>
+                        )}
+                        {parseFloat(usdInput.replace(/,/g, '')) < 2 && (
+                          <p className="text-blue-300 text-sm">
+                            <span className="font-semibold">Note:</span>{' '}
+                            Coinbase requires a minimum purchase of $2. You'll
+                            receive ${' '}
+                            {(
+                              2 - parseFloat(usdInput.replace(/,/g, ''))
+                            ).toFixed(2)}{' '}
+                            extra in ETH that you can use for future
+                            transactions.
+                          </p>
+                        )}
                       </div>
                     )}
 
