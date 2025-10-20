@@ -19,7 +19,7 @@ import {
   toUtf8Bytes,
   joinSignature,
 } from 'ethers/lib/utils'
-import { arbitrum, sepolia } from '../infura/infuraChains'
+import { arbitrum, sepolia } from '../rpc/chains'
 
 // -----------------------------
 // Types

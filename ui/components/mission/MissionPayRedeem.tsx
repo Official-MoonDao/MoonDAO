@@ -33,15 +33,15 @@ import {
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
 import {
   arbitrum,
   base,
   ethereum,
   sepolia,
   optimismSepolia,
-} from '@/lib/infura/infuraChains'
-import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
+} from '@/lib/rpc/chains'
 import useSafe from '@/lib/safe/useSafe'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'

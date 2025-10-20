@@ -10,7 +10,7 @@ import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount, useActiveWallet } from 'thirdweb/react'
 import { EIP1193 } from 'thirdweb/wallets'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import { arbitrum, ethereum } from '@/lib/infura/infuraChains'
+import { arbitrum, ethereum } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -243,11 +243,7 @@ export default function ArbitrumBridge() {
     } else if (inputToken === 'mooney') {
       setBalance(ethMooneyBalance)
     }
-  }, [
-    ethMooneyBalance,
-    nativeBalance,
-    inputToken,
-  ])
+  }, [ethMooneyBalance, nativeBalance, inputToken])
 
   useEffect(() => {
     temporarilySkipNetworkCheck()
@@ -258,26 +254,27 @@ export default function ArbitrumBridge() {
     <div className="w-full max-w-2xl">
       <div className="mb-4">
         <p className="text-gray-400 text-sm">
-          This bridge transfers your ETH and MOONEY tokens from Ethereum mainnet to Arbitrum. 
-          Arbitrum offers faster transactions and lower fees while maintaining full security.
+          This bridge transfers your ETH and MOONEY tokens from Ethereum mainnet
+          to Arbitrum. Arbitrum offers faster transactions and lower fees while
+          maintaining full security.
         </p>
       </div>
-      
+
       <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
-        
         {/* Header */}
         <div className="p-5 border-b border-white/10 bg-black/20">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-white">Bridge Assets</h2>
-              <p className="text-gray-400 text-xs mt-0.5">Transfer from Ethereum to Arbitrum</p>
+              <p className="text-gray-400 text-xs mt-0.5">
+                Transfer from Ethereum to Arbitrum
+              </p>
             </div>
           </div>
         </div>
 
         {/* Bridge Interface */}
         <div className="p-5 space-y-5">
-          
           {/* You Pay Section */}
           <div className="space-y-3">
             <label className="text-gray-300 text-sm font-medium">You Pay</label>
@@ -289,19 +286,23 @@ export default function ArbitrumBridge() {
                   placeholder="0.0"
                   className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   onChange={({ target }) => {
-                    let value = target.value;
+                    let value = target.value
                     // Prevent negative values
                     if (parseFloat(value) < 0) {
-                      value = '0';
+                      value = '0'
                     }
                     // Remove leading zero if user types a number after it
-                    if (value.startsWith('0') && value.length > 1 && value[1] !== '.') {
-                      value = value.substring(1);
+                    if (
+                      value.startsWith('0') &&
+                      value.length > 1 &&
+                      value[1] !== '.'
+                    ) {
+                      value = value.substring(1)
                     }
-                    setAmount(value);
+                    setAmount(value)
                   }}
                 />
-                
+
                 {/* Token Selector */}
                 <button
                   className="flex items-center gap-2 bg-black/50 hover:bg-black/70 transition-colors px-3 py-2 rounded-xl border border-white/10"
@@ -310,14 +311,22 @@ export default function ArbitrumBridge() {
                   }}
                 >
                   <TokenSymbol />
-                  <span className="text-white font-medium">{inputToken.toUpperCase()}</span>
-                  <ChevronUpDownIcon width={16} height={16} className="text-gray-400" />
+                  <span className="text-white font-medium">
+                    {inputToken.toUpperCase()}
+                  </span>
+                  <ChevronUpDownIcon
+                    width={16}
+                    height={16}
+                    className="text-gray-400"
+                  />
                 </button>
               </div>
-              
+
               {address && (
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">Balance: {Number(balance).toFixed(5)}</span>
+                  <span className="text-gray-400 text-sm">
+                    Balance: {Number(balance).toFixed(5)}
+                  </span>
                   <button
                     className="text-blue-400 hover:text-blue-300 font-medium transition-colors px-2 py-1 bg-blue-400/10 hover:bg-blue-400/20 rounded text-xs"
                     onClick={() => setAmount(balance)}
@@ -338,13 +347,15 @@ export default function ArbitrumBridge() {
 
           {/* You Receive Section */}
           <div className="space-y-3">
-            <label className="text-gray-300 text-sm font-medium">You Receive</label>
+            <label className="text-gray-300 text-sm font-medium">
+              You Receive
+            </label>
             <div className="bg-black/30 rounded-xl p-4 border border-white/10">
               <div className="flex items-center justify-between">
                 <span className="text-white text-2xl font-RobotoMono">
                   {amount || '0.0'}
                 </span>
-                
+
                 <div className="flex items-center gap-2 bg-black/50 px-3 py-2 rounded-xl border border-white/10">
                   <Image
                     src="/icons/networks/arbitrum.svg"
@@ -353,7 +364,9 @@ export default function ArbitrumBridge() {
                     alt="Arbitrum"
                   />
                   <TokenSymbol />
-                  <span className="text-white font-medium">{inputToken.toUpperCase()}</span>
+                  <span className="text-white font-medium">
+                    {inputToken.toUpperCase()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -362,7 +375,8 @@ export default function ArbitrumBridge() {
           {/* Info Box */}
           <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-xl p-3 border border-amber-400/20">
             <p className="text-amber-200 text-xs">
-              Bridging can take up to 15 minutes after the transaction has been confirmed.
+              Bridging can take up to 15 minutes after the transaction has been
+              confirmed.
             </p>
           </div>
         </div>

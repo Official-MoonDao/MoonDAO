@@ -33,7 +33,7 @@ import {
   sepolia,
   arbitrumSepolia,
   optimismSepolia,
-} from '@/lib/infura/infuraChains'
+} from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'

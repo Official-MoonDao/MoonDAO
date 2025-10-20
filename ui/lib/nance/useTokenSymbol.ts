@@ -1,7 +1,7 @@
 import ERC20ABI from 'const/abis/ERC20.json'
 import { useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import { ethereum } from '@/lib/infura/infuraChains'
+import { ethereum } from '@/lib/rpc/chains'
 import client from '@/lib/thirdweb/client'
 import { isAddress } from 'ethers/lib/utils'
 import { ETH_MOCK_ADDRESS } from '@/components/nance/form/SafeTokenForm'

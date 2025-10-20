@@ -2,7 +2,7 @@ import { generateOnRampURL } from '@coinbase/cbpay-js'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid'
 import { DEPLOYED_ORIGIN } from 'const/config'
 import { useEffect, useState, useMemo } from 'react'
-import { arbitrum } from '@/lib/infura/infuraChains'
+import { arbitrum } from '@/lib/rpc/chains'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
