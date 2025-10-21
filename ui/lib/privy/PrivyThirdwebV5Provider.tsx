@@ -24,15 +24,20 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
           return
         }
 
+        try {
+          const walletClientType = wallet?.walletClientType
+          if (
+            walletClientType === 'coinbase_wallet' ||
+            walletClientType === 'privy'
+          )
+            await wallet?.switchChain(selectedChain.id)
+        } catch (switchError: any) {
+          console.warn('Chain switch failed:', switchError.message)
+        }
+
+        // Get provider and signer AFTER chain switch
         const provider = await wallet?.getEthersProvider()
         const signer = provider?.getSigner()
-
-        const walletClientType = wallet?.walletClientType
-        if (
-          walletClientType === 'coinbase_wallet' ||
-          walletClientType === 'privy'
-        )
-          await wallet?.switchChain(selectedChain.id)
 
         const adaptedAccount = await ethers5Adapter.signer.fromEthers({
           signer,
