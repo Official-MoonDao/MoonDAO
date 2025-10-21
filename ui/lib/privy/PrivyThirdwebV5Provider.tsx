@@ -25,7 +25,12 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
         }
 
         try {
-          await wallet?.switchChain(selectedChain.id)
+          const walletClientType = wallet?.walletClientType
+          if (
+            walletClientType === 'coinbase_wallet' ||
+            walletClientType === 'privy'
+          )
+            await wallet?.switchChain(selectedChain.id)
         } catch (switchError: any) {
           console.warn('Chain switch failed:', switchError.message)
         }
