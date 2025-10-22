@@ -1,11 +1,11 @@
 import { useFundWallet } from '@privy-io/react-auth'
 import useTranslation from 'next-translate/useTranslation'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useContext, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
-import Link from 'next/link'
-import { ethereum } from '@/lib/infura/infuraChains'
+import { ethereum } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import viemChains from '@/lib/viem/viemChains'
@@ -30,11 +30,13 @@ export default function GetMooney() {
 
   return (
     <>
-      <WebsiteHead title="Buy MOONEY - MoonDAO" description="Buy MOONEY tokens to participate in MoonDAO governance. Swap from various cryptocurrencies across multiple networks." />
-      
+      <WebsiteHead
+        title="Buy MOONEY - MoonDAO"
+        description="Buy MOONEY tokens to participate in MoonDAO governance. Swap from various cryptocurrencies across multiple networks."
+      />
+
       <Container is_fullwidth={true}>
         <div className="min-h-screen bg-dark-cool text-white w-full">
-          
           {/* Buy MOONEY Section */}
           <section className="py-12 px-6 bg-gradient-to-br from-gray-900/50 to-blue-900/20 w-full min-h-screen flex items-center">
             <div className="max-w-4xl mx-auto w-full">
@@ -43,7 +45,8 @@ export default function GetMooney() {
                   Buy MOONEY
                 </h1>
                 <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-                  Get MOONEY tokens to participate in MoonDAO governance. After buying, you can lock them for voting power.
+                  Get MOONEY tokens to participate in MoonDAO governance. After
+                  buying, you can lock them for voting power.
                 </p>
               </div>
 
@@ -63,7 +66,7 @@ export default function GetMooney() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Centered Buy MOONEY */}
               <div className="max-w-xl mx-auto mb-12">
                 <div>
@@ -78,18 +81,19 @@ export default function GetMooney() {
                     Next Steps
                   </h3>
                   <p className="text-gray-300 text-sm">
-                    After buying MOONEY, lock them to gain voting power in governance.
+                    After buying MOONEY, lock them to gain voting power in
+                    governance.
                   </p>
                 </div>
                 <div className="bg-gradient-to-br from-gray-900/50 to-purple-900/20 rounded-xl p-6 border border-white/10">
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <Link 
+                    <Link
                       href="/lock"
                       className="block bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 text-center"
                     >
                       Lock for Voting Power
                     </Link>
-                    <Link 
+                    <Link
                       href="/vote"
                       className="block bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 text-center"
                     >

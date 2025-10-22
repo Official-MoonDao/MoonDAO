@@ -2,7 +2,7 @@ import { generateOnRampURL } from '@coinbase/cbpay-js'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid'
 import { DEPLOYED_ORIGIN } from 'const/config'
 import { useEffect, useState, useMemo } from 'react'
-import { arbitrum } from '@/lib/infura/infuraChains'
+import { arbitrum } from '@/lib/rpc/chains'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -619,6 +619,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
                   usdInput ? parseFloat(usdInput).toLocaleString() : '20'
                 } of ETH with Coinbase`
           }
+          showSignInLabel={false}
           action={handleOpenOnramp}
           className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           skipNetworkCheck={true}

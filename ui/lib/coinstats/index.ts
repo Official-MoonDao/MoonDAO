@@ -3,7 +3,7 @@ import {
   MOONDAO_POLYGON_TREASURY,
   MOONDAO_TREASURY,
 } from 'const/config'
-import { ethereum, arbitrum, polygon, base } from '@/lib/infura/infuraChains'
+import { ethereum, arbitrum, polygon, base } from '@/lib/rpc/chains'
 import { LineChartData } from '@/components/layout/LineChart'
 
 export const MOONDAO_SAFES = [

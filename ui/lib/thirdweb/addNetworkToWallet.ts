@@ -7,7 +7,7 @@ import {
   arbitrumSepolia,
   optimismSepolia,
   Chain,
-} from '@/lib/infura/infuraChains'
+} from '@/lib/rpc/chains'
 
 type ChainConfig = {
   chainId: string

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { waitForReceipt } from 'thirdweb'
-import { sepolia } from '@/lib/infura/infuraChains'
+import { sepolia } from '@/lib/rpc/chains'
 import client from '@/lib/thirdweb/client'
 
 interface TestReceiptProps {
