@@ -19,19 +19,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const {
       paymentAmount,
-      purchaseAmount,
       destinationAddress,
       purchaseNetwork = 'ethereum',
       paymentCurrency = 'USD',
       purchaseCurrency = 'ETH',
       country = 'US',
-      subdivision = 'NY',
+      subdivision,
       paymentMethod = 'CARD',
+      channelId,
     }: BuyQuoteRequest = req.body
 
-    if ((!paymentAmount && !purchaseAmount) || !destinationAddress) {
+    if (!paymentAmount || !destinationAddress) {
       return res.status(400).json({
-        error: 'Payment amount or purchase amount and destination address are required',
+        error:
+          'Payment amount or purchase amount and destination address are required',
       })
     }
 
@@ -49,14 +50,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       subdivision,
     }
 
-    if (purchaseAmount) {
-      // Request by crypto amount (preferred for accuracy)
-      requestBody.purchaseAmount = purchaseAmount.toString()
-    } else {
-      // Request by fiat amount
-      requestBody.paymentAmount = paymentAmount.toString()
-      requestBody.paymentCurrency = paymentCurrency
-    }
+    requestBody.paymentAmount = paymentAmount.toString()
+    requestBody.paymentCurrency = paymentCurrency
 
     // Call CDP buy quote endpoint
     const response = await makeCDPRequest(

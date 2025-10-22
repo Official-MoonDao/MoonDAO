@@ -1,3 +1,10 @@
+import {
+  MOONDAO_ARBITRUM_TREASURY,
+  MOONDAO_POLYGON_TREASURY,
+  MOONDAO_TREASURY,
+} from 'const/config'
+import { rateLimit } from 'middleware/rateLimit'
+import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 type EstimateGasResponse = {
@@ -7,7 +14,6 @@ type EstimateGasResponse = {
   error?: string
 }
 
-// Construct RPC URLs directly to ensure env vars work in API routes
 const infuraKey = process.env.NEXT_PUBLIC_INFURA_KEY
 
 const CHAIN_RPC_URLS: { [key: number]: string } = {
@@ -19,7 +25,15 @@ const CHAIN_RPC_URLS: { [key: number]: string } = {
   11155420: `https://optimism-sepolia.infura.io/v3/${infuraKey}`,
 }
 
-export default async function handler(
+const FROM_ADDRESSES: { [key: number]: string } = {
+  1: MOONDAO_TREASURY, // Ethereum
+  42161: MOONDAO_ARBITRUM_TREASURY, // Arbitrum
+  8453: MOONDAO_TREASURY, // Base
+  137: MOONDAO_POLYGON_TREASURY, // Polygon
+  10: MOONDAO_TREASURY, // Optimism
+}
+
+export async function handler(
   req: NextApiRequest,
   res: NextApiResponse<EstimateGasResponse>
 ) {
@@ -32,7 +46,9 @@ export default async function handler(
     })
   }
 
-  const { chainId, from, to, data, value } = req.body
+  const { chainId, to, data, value } = req.body
+
+  const from = FROM_ADDRESSES[chainId]
 
   if (!chainId) {
     return res.status(400).json({
@@ -47,7 +63,7 @@ export default async function handler(
       gasEstimate: '0x0',
       gasEstimateDecimal: '0',
       chainId,
-      error: 'Missing from address (wallet not connected?)',
+      error: 'Chain not supported',
     })
   }
   if (!to) {
@@ -89,7 +105,6 @@ export default async function handler(
   }
 
   try {
-    // First attempt: try with the full value
     let response = await fetch(rpcUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -113,57 +128,6 @@ export default async function handler(
     }
 
     let responseData = await response.json()
-
-    // If estimation fails due to insufficient funds, retry without value
-    // Gas usage is the same regardless of the value sent (for most contracts)
-    if (
-      responseData.error &&
-      responseData.error.message &&
-      (responseData.error.message.includes('insufficient funds') ||
-        responseData.error.message.includes('insufficient balance'))
-    ) {
-      console.log(
-        'Gas estimation failed due to insufficient funds, retrying without value...'
-      )
-
-      // Retry without the value parameter
-      response = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'eth_estimateGas',
-          params: [
-            {
-              from,
-              to,
-              data,
-              // Don't include value - we just want gas estimate
-            },
-          ],
-          id: 1,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`RPC request failed: ${response.status}`)
-      }
-
-      responseData = await response.json()
-
-      // If retry also fails with "Insufficient ETH sent", it means the contract
-      // requires a specific value (like LayerZero). Return error to use fallback estimate.
-      if (
-        responseData.error &&
-        responseData.error.message &&
-        responseData.error.message.includes('Insufficient ETH sent')
-      ) {
-        console.log(
-          'Contract requires specific ETH value, frontend will use fallback estimate'
-        )
-        throw new Error(responseData.error.message)
-      }
-    }
 
     if (responseData.error) {
       throw new Error(responseData.error.message || 'RPC error')
@@ -190,3 +154,5 @@ export default async function handler(
     })
   }
 }
+
+export default withMiddleware(handler, rateLimit)

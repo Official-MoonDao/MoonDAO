@@ -22,7 +22,6 @@ export interface SessionTokenRequest {
 
 export interface BuyQuoteRequest {
   paymentAmount?: number // USD amount to spend (use this OR purchaseAmount)
-  purchaseAmount?: number // Crypto amount to receive (preferred for accuracy)
   destinationAddress: string
   purchaseNetwork?: string
   paymentCurrency?: string
@@ -30,6 +29,7 @@ export interface BuyQuoteRequest {
   country?: string
   subdivision?: string
   paymentMethod?: string
+  channelId?: string
 }
 
 // Environment validation

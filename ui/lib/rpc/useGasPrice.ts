@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Chain } from '../infura/infuraChains'
+import { Chain } from '../rpc/chains'
 
-interface UseGasPriceReturn {
+type UseGasPriceReturn = {
   gasPrice: bigint
   isLoading: boolean
   error: Error | null
   refetch: () => void
 }
 
-interface UseGasPriceOptions {
+type UseGasPriceOptions = {
   bufferPercent?: number
 }
 
@@ -16,7 +16,7 @@ export function useGasPrice(
   chain: Chain | undefined,
   options: UseGasPriceOptions = {}
 ): UseGasPriceReturn {
-  const { bufferPercent = 20 } = options
+  const { bufferPercent = 0 } = options
 
   const [gasPrice, setGasPrice] = useState<bigint>(BigInt(0))
   const [isLoading, setIsLoading] = useState<boolean>(true)
@@ -33,7 +33,6 @@ export function useGasPrice(
     setError(null)
 
     try {
-      // Use API route to avoid CORS issues
       const response = await fetch(`/api/rpc/gas-price?chainId=${chain.id}`)
 
       if (!response.ok) {
@@ -60,13 +59,7 @@ export function useGasPrice(
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       console.error('Error fetching gas price:', errorMessage)
       setError(err instanceof Error ? err : new Error(errorMessage))
-
-      // Use empirical fallback when fetch fails (network issues, etc.)
-      // 20 gwei is a reasonable conservative estimate for most chains
-      const fallbackGasPrice = BigInt(20 * 1e9) // 20 gwei
-      const fallbackWithBuffer =
-        (fallbackGasPrice * BigInt(100 + bufferPercent)) / BigInt(100)
-      setGasPrice(fallbackWithBuffer)
+      setGasPrice(BigInt(0))
     } finally {
       setIsLoading(false)
     }

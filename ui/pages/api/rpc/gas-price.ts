@@ -1,3 +1,5 @@
+import { rateLimit } from 'middleware/rateLimit'
+import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 type GasPriceResponse = {
@@ -19,7 +21,7 @@ const CHAIN_RPC_URLS: { [key: number]: string } = {
   11155420: `https://optimism-sepolia.infura.io/v3/${infuraKey}`,
 }
 
-export default async function handler(
+export async function handler(
   req: NextApiRequest,
   res: NextApiResponse<GasPriceResponse>
 ) {
@@ -112,3 +114,5 @@ export default async function handler(
     })
   }
 }
+
+export default withMiddleware(handler, rateLimit)

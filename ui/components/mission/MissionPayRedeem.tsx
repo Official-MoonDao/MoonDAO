@@ -37,7 +37,6 @@ import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
-import { formatNumberUSStyle } from '@/lib/nance'
 import {
   arbitrum,
   base,
@@ -81,18 +80,11 @@ function MissionPayRedeemContent({
   claimTokenCredit,
   handleUsdInputChange,
   calculateEthAmount,
-  formattedUsdInput,
   formatTokenAmount,
   redeemAmount,
   isLoadingRedeemAmount,
   isLoadingEthUsdPrice,
   usdInput,
-  formatInputWithCommas,
-  layerZeroLimitExceeded,
-  chainSlug,
-  ethUsdPrice,
-  LAYERZERO_MAX_ETH,
-  LAYERZERO_MAX_CONTRIBUTION_ETH,
 }: any) {
   const isRefundable = stage === 3
   const deadlineHasPassed = deadline ? deadline < Date.now() : false
@@ -397,7 +389,6 @@ function MissionPayRedeemComponent({
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
   const [crossChainQuote, setCrossChainQuote] = useState<bigint>(BigInt(0))
 
-  // USD input state and handlers
   const [usdInput, setUsdInput] = useState(() => {
     const urlAmount = router?.query?.usdAmount
     return typeof urlAmount === 'string' ? urlAmount : ''
@@ -407,13 +398,13 @@ function MissionPayRedeemComponent({
     'ETH_TO_USD'
   )
 
-  // Store the actual ETH amount user will receive from Coinbase (calculated by CBOnramp)
   const [coinbaseEthReceive, setCoinbaseEthReceive] = useState<number | null>(
     null
   )
-  const [coinbaseAdjustedPurchase, setCoinbaseAdjustedPurchase] = useState<
-    number | null
-  >(null)
+
+  const [coinbasePaymentSubtotal, setCoinbasePaymentSubtotal] =
+    useState<number>()
+  const [coinbasePaymentTotal, setCoinbasePaymentTotal] = useState<number>()
   const [coinbaseEthInsufficient, setCoinbaseEthInsufficient] =
     useState<boolean>(false)
 
@@ -566,10 +557,7 @@ function MissionPayRedeemComponent({
 
   const nativeBalance = useNativeBalance()
 
-  // Fetch current gas price from the network
-  const { gasPrice } = useGasPrice(selectedChain, {
-    bufferPercent: 20, // Add 20% buffer for safety
-  })
+  const { gasPrice } = useGasPrice(selectedChain)
 
   // Calculate gas cost in ETH and USD
   const gasCostDisplay = useMemo(() => {
@@ -587,7 +575,6 @@ function MissionPayRedeemComponent({
 
     const gasCostUsd = ethUsdPrice ? gasCostEth * ethUsdPrice : 0
 
-    // Format ETH with appropriate precision - use more decimals for small amounts
     let formattedGasCostEth
     if (gasCostEth >= 0.01) {
       formattedGasCostEth = gasCostEth.toFixed(4)
@@ -608,9 +595,8 @@ function MissionPayRedeemComponent({
     // Convert to string and remove any scientific notation
     let valueStr = value.toString()
 
-    // Handle scientific notation (e.g., 1e-7)
     if (valueStr.includes('e')) {
-      valueStr = value.toFixed(20) // Use more decimals to avoid precision loss
+      valueStr = value.toFixed(20)
     }
 
     // Split into integer and decimal parts
@@ -637,12 +623,9 @@ function MissionPayRedeemComponent({
       return
     }
 
-    // Check if we have the required contracts based on transaction type
     const isCrossChain = chainSlug !== defaultChainSlug
 
-    // EARLY CHECK: For LayerZero chains, check if USD input would exceed contribution limit
-    // This prevents trying to get a quote that will fail
-    // We check against 0.20 ETH (not 0.24) to account for LayerZero fees
+    // Check if USD input would exceed contribution limit
     if (
       isCrossChain &&
       (chainSlug === 'ethereum' || chainSlug === 'base') &&
@@ -653,8 +636,7 @@ function MissionPayRedeemComponent({
       if (usdValue > 0) {
         const ethAmount = usdValue / ethUsdPrice
         if (ethAmount > LAYERZERO_MAX_CONTRIBUTION_ETH) {
-          // Don't even try to get a quote - it will fail
-          // Set a flag value so the UI shows the error
+          // Don't try to get a quote, it will fail, Stargate's infrastructure caps transactions at 0.24 ETH
           setCrossChainQuote(BigInt(Math.floor(0.25 * 1e18))) // Slightly over limit to trigger error
           setEstimatedGas(BigInt(300000)) // Set a fallback gas estimate
           setIsLoadingGasEstimate(false)
@@ -670,12 +652,7 @@ function MissionPayRedeemComponent({
       let gasEstimate: bigint = BigInt(0)
 
       if (isCrossChain) {
-        // Cross-chain transaction - estimate crossChainPay
-
-        // Wait for output calculation to complete
-        // For large amounts, the getQuote useEffect might still be running
         if (!output || output <= 0) {
-          // Set loading state and exit - will retry when output is ready
           setIsLoadingGasEstimate(true)
           return
         }
@@ -699,11 +676,9 @@ function MissionPayRedeemComponent({
             ],
           })
 
-          // Store the cross-chain quote for balance calculations
           setCrossChainQuote(BigInt(quoteCrossChainPay))
         } catch (quoteError: any) {
           console.error('❌ LayerZero quote failed:', quoteError)
-          // If quote fails, we can't proceed with cross-chain estimation
           throw quoteError
         }
 
@@ -722,9 +697,7 @@ function MissionPayRedeemComponent({
           value: BigInt(quoteCrossChainPay),
         })
 
-        // Use API route to estimate gas (avoids CORS issues)
         try {
-          // Get the transaction data - it can be a string or a function that returns a promise
           const txData =
             typeof transaction.data === 'function'
               ? await transaction.data()
@@ -752,16 +725,13 @@ function MissionPayRedeemComponent({
           gasEstimate = BigInt(estimateData.gasEstimate)
         } catch (estimationError: any) {
           console.error('❌ Gas estimation error:', estimationError)
-          // LayerZero cross-chain transactions typically use 250k-350k gas
-          // Use 300k as a conservative middle ground
           gasEstimate = BigInt(300000)
         }
       } else {
-        // Same-chain transaction - estimate pay
-        // Reset cross-chain quote since this is same-chain
+        //Direct pay on Arbitrum w/out LayerZero
+
         setCrossChainQuote(BigInt(0))
 
-        // Wait for output calculation to complete
         if (!output || output <= 0) {
           setIsLoadingGasEstimate(true)
           return
@@ -783,7 +753,6 @@ function MissionPayRedeemComponent({
         })
 
         try {
-          // Get the transaction data - it can be a string or a function that returns a promise
           const txData =
             typeof transaction.data === 'function'
               ? await transaction.data()
@@ -811,18 +780,13 @@ function MissionPayRedeemComponent({
           gasEstimate = BigInt(estimateData.gasEstimate)
         } catch (estimationError: any) {
           console.error('❌ Gas estimation error:', estimationError)
-          // Same-chain JB pay transactions typically use 150k-200k gas
-          // Use 180k as a conservative estimate
           gasEstimate = BigInt(180000)
         }
       }
 
       // Add buffer to account for gas price fluctuations
-      // Cross-chain LayerZero transactions need a much higher buffer (80%) due to:
-      // - Complex multi-step operations
-      // - Variable LayerZero fees
-      // - Network congestion effects
-      // Same-chain transactions use a conservative 30% buffer
+      // Cross-chain LayerZero transactions need a much higher buffer (80%) due to variable LayerZero fees
+      // Same-chain transactions use a 30% buffer
       const bufferPercent = isCrossChain ? 180 : 130 // 80% or 30% buffer
       const gasWithBuffer = (gasEstimate * BigInt(bufferPercent)) / BigInt(100)
       setEstimatedGas(gasWithBuffer)
@@ -859,7 +823,6 @@ function MissionPayRedeemComponent({
 
     // For cross-chain, use the quote (includes contribution + LayerZero fee)
     // For same-chain, calculate from USD input
-    // Don't use crossChainQuote if limit is exceeded (it's a flag value)
     let transactionValueEth: number
     if (
       isCrossChain &&
@@ -905,12 +868,10 @@ function MissionPayRedeemComponent({
       return { eth: '0', usd: '0.00' }
     }
 
-    // Don't calculate fee if limit is exceeded (crossChainQuote was set as a flag)
     if (layerZeroLimitExceeded) {
       return { eth: '0', usd: '0.00' }
     }
 
-    // LayerZero fee = total quote - contribution amount
     const contributionEth =
       usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
     const quoteEth = Number(crossChainQuote) / 1e18
@@ -930,15 +891,11 @@ function MissionPayRedeemComponent({
     layerZeroLimitExceeded,
   ])
 
-  // Calculate how much ETH the user needs to buy (difference between required and current balance)
+  // Calculate how much ETH the user needs to buy
   const ethDeficit = useMemo(() => {
     if (!nativeBalance || !requiredEth) return 0
 
-    const deficit = Math.max(0, requiredEth - Number(nativeBalance))
-    // Add 2% buffer for minor price fluctuations and rounding differences
-    const deficitWithBuffer = deficit * 1.02
-
-    return deficitWithBuffer
+    return Math.max(0, requiredEth - Number(nativeBalance))
   }, [nativeBalance, requiredEth])
 
   // Calculate USD equivalent (for display only)
@@ -960,7 +917,7 @@ function MissionPayRedeemComponent({
     return (
       parseFloat(usdDeficit) === 2.0 &&
       ethDeficit > 0 &&
-      ethDeficit * (ethUsdPrice || 4000) < 2
+      ethDeficit * ethUsdPrice < 2
     )
   }, [usdDeficit, ethDeficit, ethUsdPrice])
 
@@ -978,7 +935,6 @@ function MissionPayRedeemComponent({
     deps: [tokenBalanceRefresh],
   })
 
-  // Get the proper JB token balance instead of ERC20 balance
   const { data: jbTokenBalance } = useRead({
     contract: jbTokensContract,
     method: 'totalBalanceOf' as string,
@@ -1391,43 +1347,37 @@ function MissionPayRedeemComponent({
     }
   }, [jbTokenBalance, tokenCredit, stage, getRedeemQuote])
 
-  // Estimate gas when contribution inputs change (debounced)
+  // Estimate gas after 1 second of inactivity
   useEffect(() => {
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
     const usdValue = parseFloat(cleanUsdInput)
 
-    // Set loading state immediately when input changes
     if (usdValue > 0 && input && parseFloat(input) > 0) {
+      setLastGasEstimation(Date.now())
       setIsLoadingGasEstimate(true)
+      estimateContributionGas()
     } else {
       setIsLoadingGasEstimate(false)
       setEstimatedGas(BigInt(0))
       setCrossChainQuote(BigInt(0))
     }
-
-    // Set a timeout to delay the gas estimation
-    const debounceTimer = setTimeout(() => {
-      if (usdValue > 0 && input && parseFloat(input) > 0) {
-        estimateContributionGas()
-      }
-    }, 500) // Wait 500ms after user stops typing
-
-    // Cleanup function - clear the timeout if dependencies change before it fires
-    return () => clearTimeout(debounceTimer)
   }, [usdInput, input, selectedChain, estimateContributionGas])
 
   // Callback to receive quote data from CBOnramp
   const handleCoinbaseQuote = useCallback(
-    (ethAmount: number, adjustedPurchaseAmount: number) => {
+    (ethAmount: number, paymentSubtotal: number, paymentTotal: number) => {
       setCoinbaseEthReceive(ethAmount)
-      setCoinbaseAdjustedPurchase(adjustedPurchaseAmount)
+      setCoinbasePaymentSubtotal(paymentSubtotal)
+      setCoinbasePaymentTotal(paymentTotal) // total w/ fees
 
-      // With 2% ethDeficit buffer + 80% gas buffer + Ethereum rate estimation
-      // for Arbitrum, small discrepancies are expected and acceptable
-      // Disable the warning since we have multiple safety buffers
-      setCoinbaseEthInsufficient(false)
+      // Validate that coinbaseEthReceive + current balance >= requiredEth
+      const currentBalance = nativeBalance ? Number(nativeBalance) : 0
+      const totalAfterPurchase = ethAmount + currentBalance
+      const isInsufficient = totalAfterPurchase < requiredEth
+
+      setCoinbaseEthInsufficient(isInsufficient)
     },
-    []
+    [nativeBalance, requiredEth]
   )
 
   // Clear parameter when modal is closed
@@ -1533,18 +1483,13 @@ function MissionPayRedeemComponent({
                 deadline={deadline}
                 handleUsdInputChange={handleUsdInputChange}
                 calculateEthAmount={calculateEthAmount}
-                formattedUsdInput={formattedUsdInput}
                 formatTokenAmount={formatTokenAmount}
                 redeemAmount={redeemAmount}
                 isLoadingRedeemAmount={isLoadingRedeemAmount}
                 isLoadingEthUsdPrice={isLoadingEthUsdPrice}
                 usdInput={usdInput}
-                formatInputWithCommas={formatInputWithCommas}
-                layerZeroLimitExceeded={layerZeroLimitExceeded}
                 chainSlug={chainSlug}
                 ethUsdPrice={ethUsdPrice}
-                LAYERZERO_MAX_ETH={LAYERZERO_MAX_ETH}
-                LAYERZERO_MAX_CONTRIBUTION_ETH={LAYERZERO_MAX_CONTRIBUTION_ETH}
               />
             </div>
           )}
@@ -1761,7 +1706,7 @@ function MissionPayRedeemComponent({
                   </div>
                 </div>
               ) : hasEnoughBalance ? (
-                // User has enough balance - show crypto pay form
+                // User has enough balance - show pay form
                 <>
                   {/* Message Input */}
                   <div className="space-y-2">
@@ -1961,12 +1906,12 @@ function MissionPayRedeemComponent({
                             !layerZeroLimitExceeded && (
                               <div className="flex items-center justify-between text-sm">
                                 <p className="text-orange-300">
-                                  Cross-Chain Fees
+                                  Cross-Chain Fee
                                 </p>
                                 {!isLoadingGasEstimate &&
                                 layerZeroFeeDisplay.usd !== '0.00' ? (
                                   <p className="text-orange-400 font-medium">
-                                    ~${layerZeroFeeDisplay.usd} USD
+                                    ${layerZeroFeeDisplay.usd} USD
                                   </p>
                                 ) : (
                                   <LoadingSpinner className="scale-50" />
@@ -1989,6 +1934,19 @@ function MissionPayRedeemComponent({
                             </div>
                           )}
 
+                          {/* Total Required */}
+                          <div className="flex items-center justify-between text-sm">
+                            <p className="text-blue-300">Total Required</p>
+                            <p className="text-blue-400">
+                              $
+                              {(
+                                requiredEth * ethUsdPrice +
+                                Number(layerZeroFeeDisplay.usd)
+                              ).toFixed(2)}{' '}
+                              USD
+                            </p>
+                          </div>
+
                           {/* Divider */}
                           <div className="border-t border-gray-500/30 my-2"></div>
 
@@ -2008,21 +1966,21 @@ function MissionPayRedeemComponent({
                           {/* Total Required */}
                           <div className="flex items-center justify-between">
                             <p className="text-white text-base font-semibold">
-                              Total Required
+                              Need to Buy
                             </p>
                             <div className="text-right">
                               <p className="text-green-400 text-base font-bold">
                                 $
-                                {coinbaseAdjustedPurchase
-                                  ? coinbaseAdjustedPurchase.toFixed(2)
+                                {coinbasePaymentSubtotal
+                                  ? coinbasePaymentSubtotal.toFixed(2)
                                   : usdDeficit}{' '}
                                 USD
                               </p>
                               <p className="text-green-300 text-xs">
                                 {coinbaseEthReceive ? (
                                   <>
-                                    You'll receive ~
-                                    {coinbaseEthReceive.toFixed(5)} ETH
+                                    You'll receive{' '}
+                                    {coinbaseEthReceive.toFixed(8)} ETH
                                   </>
                                 ) : (
                                   <>
@@ -2045,12 +2003,15 @@ function MissionPayRedeemComponent({
                           )}
 
                           {coinbaseEthInsufficient && (
-                            <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                              <p className="text-yellow-300 text-xs">
-                                ⚠️ Warning: The ETH you'll receive may be
-                                slightly less than required due to price
-                                fluctuations. Consider increasing your
-                                contribution amount by $1-2.
+                            <div className="mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                              <p className="text-red-300 text-xs">
+                                ⚠️ Warning: Your current balance + purchased ETH
+                                won't be enough to complete this transaction
+                                (including gas fees
+                                {chainSlug !== defaultChainSlug &&
+                                  ' and cross-chain fees'}
+                                ). Please increase your contribution amount or
+                                reduce your purchase.
                               </p>
                             </div>
                           )}
@@ -2062,7 +2023,7 @@ function MissionPayRedeemComponent({
                     <CBOnramp
                       address={address || ''}
                       selectedChain={selectedChain}
-                      ethAmount={ethDeficit * 1.05}
+                      ethAmount={ethDeficit}
                       onQuoteCalculated={handleCoinbaseQuote}
                       onSuccess={() => {
                         setIsFiatPaymentProcessing(false)
@@ -2073,9 +2034,7 @@ function MissionPayRedeemComponent({
                           }
                         )
                       }}
-                      onBeforeNavigate={() => {
-                        // No cleanup needed - using React state instead of sessionStorage
-                      }}
+                      onBeforeNavigate={() => {}}
                       redirectUrl={`${DEPLOYED_ORIGIN}/mission/${
                         mission?.id
                       }?onrampSuccess=true&chain=${chainSlug}&usdAmount=${usdInput.replace(
