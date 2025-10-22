@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import Modal from './Modal'
 
 export default function CookieBanner() {
   const [cookieConsent, setCookieConsent] = useState<any>(false)
@@ -27,16 +28,15 @@ export default function CookieBanner() {
     }
   }, [cookieConsent, hasLoadedLocalStorage])
 
+  if (cookieConsent != null) return null
+
   return (
-    <div
-      className={`my-10 mx-auto max-w-max md:max-w-screen-sm fixed -bottom-5 left-0 right-0 z-[100] ${
-        cookieConsent != null ? 'hidden' : 'flex'
-      } px-4 md:px-6 py-4 justify-between items-center flex-col gap-4 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white`}
-      style={{
-        backgroundColor: 'rgba(17, 24, 39, 0.95)',
-      }}
+    <Modal
+      id="cookie-banner"
+      setEnabled={() => {}}
+      className={`mx-auto max-w-max md:max-w-screen-sm fixed -bottom-0 md:bottom-8 left-0 right-0 px-4 md:px-6 py-4 justify-between items-center flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white z-[999]`}
     >
-      <div className="text-left">
+      <div className="">
         <p className="text-sm text-gray-300">
           {`We use cookies to enhance your experience. By clicking "Allow
             Cookies" you agree to the use of cookies for analytics,
@@ -51,7 +51,7 @@ export default function CookieBanner() {
         </p>
       </div>
 
-      <div className="flex gap-3">
+      <div className="mt-2 flex gap-3 items-center justify-center">
         <button
           className="px-5 py-2 rounded-lg bg-black/20 border border-white/10 text-white hover:bg-black/30 hover:border-white/20 transition-all duration-200 font-medium"
           onClick={() => setCookieConsent(false)}
@@ -65,6 +65,6 @@ export default function CookieBanner() {
           Allow Cookies
         </button>
       </div>
-    </div>
+    </Modal>
   )
 }
