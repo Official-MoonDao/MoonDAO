@@ -114,6 +114,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             setError(`Unable to get quote from Coinbase. Please try again.`)
           }
           setIsLoadingQuote(false)
+          onQuoteCalculated?.(0, 0, 0)
           return
         }
 
@@ -218,11 +219,13 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           onQuoteCalculated?.(receivedEthAmount, paymentSubtotal, paymentTotal)
           setIsLoadingQuote(false)
         } else {
+          onQuoteCalculated?.(0, 0, 0)
           setError('Invalid final quote data from Coinbase')
           setIsLoadingQuote(false)
         }
       } catch (error) {
         console.error('Error fetching quote:', error)
+        onQuoteCalculated?.(0, 0, 0)
         setError('Failed to fetch quote from Coinbase. Please try again.')
         setIsLoadingQuote(false)
       }

@@ -1347,20 +1347,24 @@ function MissionPayRedeemComponent({
     }
   }, [jbTokenBalance, tokenCredit, stage, getRedeemQuote])
 
-  // Estimate gas after 1 second of inactivity
+  // Estimate gas on input change
   useEffect(() => {
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
     const usdValue = parseFloat(cleanUsdInput)
 
-    if (usdValue > 0 && input && parseFloat(input) > 0) {
-      setLastGasEstimation(Date.now())
-      setIsLoadingGasEstimate(true)
-      estimateContributionGas()
-    } else {
-      setIsLoadingGasEstimate(false)
-      setEstimatedGas(BigInt(0))
-      setCrossChainQuote(BigInt(0))
-    }
+    // Set up a timer to delay the gas estimation
+    const timeoutId = setTimeout(() => {
+      if (usdValue > 0 && input && parseFloat(input) > 0) {
+        setIsLoadingGasEstimate(true)
+        estimateContributionGas()
+      } else {
+        setIsLoadingGasEstimate(false)
+        setEstimatedGas(BigInt(0))
+        setCrossChainQuote(BigInt(0))
+      }
+    }, 2000)
+
+    return () => clearTimeout(timeoutId)
   }, [usdInput, input, selectedChain, estimateContributionGas])
 
   // Callback to receive quote data from CBOnramp
