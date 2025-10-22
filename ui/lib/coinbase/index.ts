@@ -21,7 +21,8 @@ export interface SessionTokenRequest {
 }
 
 export interface BuyQuoteRequest {
-  paymentAmount: number
+  paymentAmount?: number // USD amount to spend (use this OR purchaseAmount)
+  purchaseAmount?: number // Crypto amount to receive (preferred for accuracy)
   destinationAddress: string
   purchaseNetwork?: string
   paymentCurrency?: string
