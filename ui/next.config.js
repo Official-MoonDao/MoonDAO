@@ -327,6 +327,11 @@ module.exports = withTM(
           destination: `/mission/3`,
           permanent: false,
         },
+        {
+          source: '/spacecamp',
+          destination: '/mission/3',
+          permanent: false,
+        },
       ]
     },
     webpack: (config, { isServer }) => {
