@@ -1,3 +1,4 @@
+import { ChatBubbleLeftIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
@@ -63,6 +64,7 @@ import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import { formatTimeUntilDeadline } from '@/lib/utils/dates'
+import { getAttribute } from '@/lib/utils/nft'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayoutMission'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
@@ -73,6 +75,7 @@ import MissionInfo from '@/components/mission/MissionInfo'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import TeamMembers from '@/components/subscription/TeamMembers'
+import { TwitterIcon } from '../assets'
 import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
 
 const CHAIN = DEFAULT_CHAIN_V5
@@ -583,6 +586,18 @@ export default function MissionProfile({
     }
   }
 
+  const teamSocials = useMemo(() => {
+    return {
+      communications: getAttribute(
+        teamNFT?.metadata?.attributes,
+        'communications'
+      )?.value,
+      twitter: getAttribute(teamNFT?.metadata?.attributes, 'twitter')?.value,
+      website: getAttribute(teamNFT?.metadata?.attributes, 'website')?.value,
+      discord: getAttribute(teamNFT?.metadata?.attributes, 'discord')?.value,
+    }
+  }, [teamNFT?.metadata?.attributes])
+
   useEffect(() => {
     async function getTeamNFT() {
       if (mission?.teamId === undefined || !teamContract) return
@@ -790,16 +805,52 @@ export default function MissionProfile({
             </div>
             <div className="w-full px-[5vw] flex justify-center">
               <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 pb-[5vw] md:pb-[2vw]">
-                <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex w-full gap-2 text-light-cool">
-                  <Image
-                    src={'/assets/icon-star-blue.svg'}
-                    alt="Job icon"
-                    width={30}
-                    height={30}
-                  />
-                  <h2 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">
-                    Meet the Team
-                  </h2>
+                <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex justify-between w-full gap-2 text-light-cool">
+                  <div className="flex items-center gap-2 w-full">
+                    <Image
+                      src={'/assets/icon-star-blue.svg'}
+                      alt="Job icon"
+                      width={30}
+                      height={30}
+                    />
+                    <h2 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">
+                      Meet the Team
+                    </h2>
+                  </div>
+                  <div className="flex justify-end gap-2 w-full text-white mr-[5vw]">
+                    <div className="flex gap-2 justify-start justify-end">
+                      {teamSocials.communications && (
+                        <Link
+                          className="flex gap-2 hover:scale-105 transition-all duration-200"
+                          href={teamSocials.communications}
+                          target="_blank"
+                          passHref
+                        >
+                          <ChatBubbleLeftIcon height={25} width={25} />
+                        </Link>
+                      )}
+                      {teamSocials.twitter && (
+                        <Link
+                          className="flex gap-2 hover:scale-105 transition-all duration-200"
+                          href={teamSocials.twitter}
+                          target="_blank"
+                          passHref
+                        >
+                          <TwitterIcon />
+                        </Link>
+                      )}
+                      {teamSocials.website && (
+                        <Link
+                          className="flex gap-2 hover:scale-105 transition-all duration-200"
+                          href={teamSocials.website}
+                          target="_blank"
+                          passHref
+                        >
+                          <GlobeAltIcon height={25} width={25} />
+                        </Link>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <SlidingCardMenu>
                   <div className="flex gap-4"></div>
