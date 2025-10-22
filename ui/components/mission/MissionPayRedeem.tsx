@@ -66,6 +66,7 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionDeployTokenModal from './MissionDeployTokenModal'
 import MissionTokenExchangeRates from './MissionTokenExchangeRates'
 import MissionTokenNotice from './MissionTokenNotice'
+import { PaymentBreakdown } from './PaymentBreakdown'
 
 function MissionPayRedeemContent({
   token,
@@ -1730,69 +1731,25 @@ function MissionPayRedeemComponent({
 
                   {/* Payment Breakdown */}
                   {ethUsdPrice && usdInput && (
-                    <div className="bg-gray-500/5 border border-gray-500/20 rounded-lg p-4">
-                      <p className="text-white text-sm font-semibold mb-3">
-                        Payment Breakdown
-                      </p>
-                      <div className="space-y-2">
-                        {/* Contribution */}
-                        <div className="flex items-center justify-between text-sm">
-                          <p className="text-gray-300">Contribution</p>
-                          <p className="text-white">${usdInput} USD</p>
-                        </div>
-
-                        {/* Cross-Chain Fee */}
-                        {chainSlug !== defaultChainSlug &&
-                          !layerZeroLimitExceeded && (
-                            <div className="flex items-center justify-between text-sm">
-                              <p className="text-orange-300">Cross-Chain Fee</p>
-                              {!isLoadingGasEstimate &&
-                              layerZeroFeeDisplay.usd !== '0.00' ? (
-                                <p className="text-orange-400 font-medium">
-                                  ~${layerZeroFeeDisplay.usd} USD
-                                </p>
-                              ) : (
-                                <LoadingSpinner className="scale-50" />
-                              )}
-                            </div>
-                          )}
-
-                        {/* Gas Fee */}
-                        {showEstimatedGas && (
-                          <div className="flex items-center justify-between text-sm">
-                            <p className="text-gray-300">Gas Fee</p>
-                            {!isLoadingGasEstimate &&
-                            gasCostDisplay.eth !== '0.0000' ? (
-                              <p className="text-gray-400">
-                                ~${gasCostDisplay.usd} USD
-                              </p>
-                            ) : (
-                              <LoadingSpinner className="scale-50" />
-                            )}
-                          </div>
-                        )}
-
-                        {/* Divider */}
-                        <div className="border-t border-gray-500/30 my-2"></div>
-
-                        {/* Total */}
-                        {requiredEth > 0 && (
-                          <div className="flex items-center justify-between">
-                            <p className="text-white text-base font-semibold">
-                              Total Required
-                            </p>
-                            <div className="text-right">
-                              <p className="text-blue-400 text-base font-bold">
-                                ~${(requiredEth * ethUsdPrice).toFixed(2)} USD
-                              </p>
-                              <p className="text-blue-300 text-xs">
-                                ~{requiredEth.toFixed(6)} ETH
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <PaymentBreakdown
+                      usdInput={usdInput}
+                      chainSlug={chainSlug}
+                      defaultChainSlug={defaultChainSlug}
+                      layerZeroLimitExceeded={layerZeroLimitExceeded}
+                      isLoadingGasEstimate={isLoadingGasEstimate}
+                      layerZeroFeeDisplay={layerZeroFeeDisplay}
+                      showEstimatedGas={showEstimatedGas as boolean}
+                      gasCostDisplay={gasCostDisplay}
+                      requiredEth={requiredEth}
+                      ethUsdPrice={ethUsdPrice}
+                      nativeBalance={nativeBalance}
+                      showCurrentBalance={true}
+                      showNeedToBuy={true}
+                      coinbasePaymentSubtotal={coinbasePaymentSubtotal}
+                      coinbaseEthReceive={coinbaseEthReceive}
+                      isAdjustedForMinimum={isAdjustedForMinimum}
+                      coinbaseEthInsufficient={coinbaseEthInsufficient}
+                    />
                   )}
 
                   <MissionTokenNotice />
@@ -1889,139 +1846,27 @@ function MissionPayRedeemComponent({
                 // User needs more ETH - show CBOnramp
                 <div className="space-y-4">
                   {/* Show balance breakdown if user has some ETH */}
-                  {usdInput &&
-                    usdDeficit &&
-                    nativeBalance &&
-                    Number(nativeBalance) > 0 &&
-                    ethUsdPrice && (
-                      <div className="bg-gray-500/5 border border-gray-500/20 rounded-lg p-4">
-                        <p className="text-white text-sm font-semibold mb-3">
-                          Payment Breakdown
-                        </p>
-                        <div className="space-y-2">
-                          {/* Contribution */}
-                          <div className="flex items-center justify-between text-sm">
-                            <p className="text-gray-300">Contribution</p>
-                            <p className="text-white">${usdInput} USD</p>
-                          </div>
-
-                          {/* Cross-Chain Fees */}
-                          {chainSlug !== defaultChainSlug &&
-                            !layerZeroLimitExceeded && (
-                              <div className="flex items-center justify-between text-sm">
-                                <p className="text-orange-300">
-                                  Cross-Chain Fee
-                                </p>
-                                {!isLoadingGasEstimate &&
-                                layerZeroFeeDisplay.usd !== '0.00' ? (
-                                  <p className="text-orange-400 font-medium">
-                                    ${layerZeroFeeDisplay.usd} USD
-                                  </p>
-                                ) : (
-                                  <LoadingSpinner className="scale-50" />
-                                )}
-                              </div>
-                            )}
-
-                          {/* Gas Fees */}
-                          {showEstimatedGas && (
-                            <div className="flex items-center justify-between text-sm">
-                              <p className="text-gray-300">Gas Fee</p>
-                              {!isLoadingGasEstimate &&
-                              gasCostDisplay.eth !== '0.0000' ? (
-                                <p className="text-gray-400">
-                                  ~${gasCostDisplay.usd} USD
-                                </p>
-                              ) : (
-                                <LoadingSpinner className="scale-50" />
-                              )}
-                            </div>
-                          )}
-
-                          {/* Total Required */}
-                          <div className="flex items-center justify-between text-sm">
-                            <p className="text-blue-300">Total Required</p>
-                            <p className="text-blue-400">
-                              $
-                              {(
-                                requiredEth * ethUsdPrice +
-                                Number(layerZeroFeeDisplay.usd)
-                              ).toFixed(2)}{' '}
-                              USD
-                            </p>
-                          </div>
-
-                          {/* Divider */}
-                          <div className="border-t border-gray-500/30 my-2"></div>
-
-                          {/* Current Balance */}
-                          <div className="flex items-center justify-between text-sm">
-                            <p className="text-blue-300">Current Balance</p>
-                            <p className="text-blue-400">
-                              $
-                              {(Number(nativeBalance) * ethUsdPrice).toFixed(2)}{' '}
-                              USD
-                            </p>
-                          </div>
-
-                          {/* Divider */}
-                          <div className="border-t border-gray-500/30 my-2"></div>
-
-                          {/* Total Required */}
-                          <div className="flex items-center justify-between">
-                            <p className="text-white text-base font-semibold">
-                              Need to Buy
-                            </p>
-                            <div className="text-right">
-                              <p className="text-green-400 text-base font-bold">
-                                $
-                                {coinbasePaymentSubtotal
-                                  ? coinbasePaymentSubtotal.toFixed(2)
-                                  : usdDeficit}{' '}
-                                USD
-                              </p>
-                              <p className="text-green-300 text-xs">
-                                {coinbaseEthReceive ? (
-                                  <>
-                                    You'll receive{' '}
-                                    {coinbaseEthReceive.toFixed(8)} ETH
-                                  </>
-                                ) : (
-                                  <>
-                                    ~
-                                    {(
-                                      parseFloat(usdDeficit) / ethUsdPrice
-                                    ).toFixed(6)}{' '}
-                                    ETH
-                                  </>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-
-                          {isAdjustedForMinimum && (
-                            <p className="text-blue-300 text-xs pt-2">
-                              * Adjusted to Coinbase's $2 minimum. Extra ETH can
-                              be used for future transactions.
-                            </p>
-                          )}
-
-                          {coinbaseEthInsufficient && (
-                            <div className="mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                              <p className="text-red-300 text-xs">
-                                ⚠️ Warning: Your current balance + purchased ETH
-                                won't be enough to complete this transaction
-                                (including gas fees
-                                {chainSlug !== defaultChainSlug &&
-                                  ' and cross-chain fees'}
-                                ). Please increase your contribution amount or
-                                reduce your purchase.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                  {usdInput && ethUsdPrice && (
+                    <PaymentBreakdown
+                      usdInput={usdInput}
+                      chainSlug={chainSlug}
+                      defaultChainSlug={defaultChainSlug}
+                      layerZeroLimitExceeded={layerZeroLimitExceeded}
+                      isLoadingGasEstimate={isLoadingGasEstimate}
+                      layerZeroFeeDisplay={layerZeroFeeDisplay}
+                      showEstimatedGas={showEstimatedGas as boolean}
+                      gasCostDisplay={gasCostDisplay}
+                      requiredEth={requiredEth}
+                      ethUsdPrice={ethUsdPrice}
+                      nativeBalance={nativeBalance}
+                      showCurrentBalance={true}
+                      showNeedToBuy={true}
+                      coinbasePaymentSubtotal={coinbasePaymentSubtotal}
+                      coinbaseEthReceive={coinbaseEthReceive}
+                      isAdjustedForMinimum={isAdjustedForMinimum}
+                      coinbaseEthInsufficient={coinbaseEthInsufficient}
+                    />
+                  )}
 
                   {usdInput && ethDeficit > 0 && (
                     <CBOnramp
@@ -2047,91 +1892,6 @@ function MissionPayRedeemComponent({
                       )}`}
                     />
                   )}
-
-                  {/* Show fee breakdown for users with no balance */}
-                  {(!nativeBalance || Number(nativeBalance) === 0) &&
-                    usdInput &&
-                    parseFloat(usdInput.replace(/,/g, '')) > 0 &&
-                    ethUsdPrice && (
-                      <div className="bg-gray-500/5 border border-gray-500/20 rounded-lg p-4">
-                        <p className="text-white text-sm font-semibold mb-3">
-                          Payment Breakdown
-                        </p>
-                        <div className="space-y-2">
-                          {/* Contribution */}
-                          <div className="flex items-center justify-between text-sm">
-                            <p className="text-gray-300">Contribution</p>
-                            <p className="text-white">${usdInput} USD</p>
-                          </div>
-
-                          {/* Cross-Chain Fees */}
-                          {chainSlug !== defaultChainSlug &&
-                            !layerZeroLimitExceeded && (
-                              <div className="flex items-center justify-between text-sm">
-                                <p className="text-orange-300">
-                                  Cross-Chain Fee
-                                </p>
-                                {!isLoadingGasEstimate &&
-                                layerZeroFeeDisplay.usd !== '0.00' ? (
-                                  <p className="text-orange-400 font-medium">
-                                    ~${layerZeroFeeDisplay.usd} USD
-                                  </p>
-                                ) : (
-                                  <LoadingSpinner className="scale-50" />
-                                )}
-                              </div>
-                            )}
-
-                          {/* Gas Fees */}
-                          {showEstimatedGas && (
-                            <div className="flex items-center justify-between text-sm">
-                              <p className="text-gray-300">Gas Fee</p>
-                              {!isLoadingGasEstimate &&
-                              gasCostDisplay.eth !== '0.0000' ? (
-                                <p className="text-gray-400">
-                                  ~${gasCostDisplay.usd} USD
-                                </p>
-                              ) : (
-                                <LoadingSpinner className="scale-50" />
-                              )}
-                            </div>
-                          )}
-
-                          {/* Divider */}
-                          <div className="border-t border-gray-500/30 my-2"></div>
-
-                          {/* Total to Buy */}
-                          <div className="flex items-center justify-between">
-                            <p className="text-white text-base font-semibold">
-                              Total to Buy
-                            </p>
-                            <div className="text-right">
-                              <p className="text-green-400 text-base font-bold">
-                                ~$
-                                {requiredEth && ethUsdPrice
-                                  ? (requiredEth * ethUsdPrice).toFixed(2)
-                                  : '0.00'}{' '}
-                                USD
-                              </p>
-                              <p className="text-green-300 text-xs">
-                                ~
-                                {requiredEth
-                                  ? requiredEth.toFixed(6)
-                                  : '0.000000'}{' '}
-                                ETH
-                              </p>
-                            </div>
-                          </div>
-
-                          {parseFloat(usdInput.replace(/,/g, '')) < 2 && (
-                            <p className="text-blue-300 text-xs pt-2">
-                              * Adjusted to Coinbase's $2 minimum. Extra ETH can
-                              be used for future transactions.
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
 
                   {usdInput && (
                     <>
