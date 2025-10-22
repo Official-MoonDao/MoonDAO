@@ -1693,7 +1693,7 @@ function MissionPayRedeemComponent({
                               LAYERZERO_MAX_CONTRIBUTION_ETH *
                               (ethUsdPrice || 0)
                             ).toFixed(0)}{' '}
-                            USD (0.20 ETH + fees)
+                            USD ( + fees)
                           </p>
                           <p>
                             <strong className="text-blue-300">Option 2:</strong>{' '}
