@@ -6,6 +6,7 @@ export type TooltipProps = {
   children: React.ReactNode
   disabled?: boolean
   buttonClassName?: string
+  wrap?: boolean
 }
 
 export default function Tooltip({
@@ -13,6 +14,7 @@ export default function Tooltip({
   children,
   disabled,
   buttonClassName,
+  wrap = false,
 }: TooltipProps) {
   const [isHovered, setIsHovered] = useState(false)
 
@@ -40,22 +42,34 @@ export default function Tooltip({
   }, [isHovered])
 
   return (
-    <div className="relative">
-      <div
-        id="tooltip-icon"
-        ref={triggerRef}
-        className={`flex justify-center items-center h-6 w-6 bg-white rounded-full font-GoodTimes text-black pl-[1.5px] ${buttonClassName} ${
-          !disabled && isHovered ? 'opacity-100' : 'opacity-50'
-        } ${!disabled && 'cursor-pointer'}`}
-        onMouseEnter={() => {
-          setIsHovered(true)
-        }}
-        onMouseLeave={() => {
-          setIsHovered(false)
-        }}
-      >
-        {children}
-      </div>
+    <div
+      className={`relative ${wrap ? 'cursor-pointer' : ''}`}
+      onMouseEnter={() => {
+        if (!wrap) return
+        setIsHovered(true)
+      }}
+      onMouseLeave={() => {
+        if (!wrap) return
+        setIsHovered(false)
+      }}
+    >
+      {!wrap && (
+        <div
+          id="tooltip-icon"
+          ref={triggerRef}
+          className={`flex justify-center items-center h-6 w-6 bg-white rounded-full font-GoodTimes text-black pl-[1.5px] ${buttonClassName} ${
+            !disabled && isHovered ? 'opacity-100' : 'opacity-50'
+          } ${!disabled && 'cursor-pointer'}`}
+          onMouseEnter={() => {
+            setIsHovered(true)
+          }}
+          onMouseLeave={() => {
+            setIsHovered(false)
+          }}
+        >
+          {children}
+        </div>
+      )}
 
       {!disabled && isHovered && (
         <div
@@ -88,6 +102,7 @@ export default function Tooltip({
           </div>
         </div>
       )}
+      {wrap && children}
     </div>
   )
 }

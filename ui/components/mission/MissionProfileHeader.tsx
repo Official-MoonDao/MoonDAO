@@ -195,33 +195,44 @@ const MissionProfileHeader = React.memo(
               <div className="bg-gradient-to-br from-dark-cool to-darkest-cool backdrop-blur-lg rounded-xl p-4 lg:p-5 border border-white/10 shadow-xl w-full max-w-2xl">
                 {/* Raised Amount Badge with Manager Actions */}
                 <div className="mb-2 flex flex-col md:flex-row items-center justify-between">
-                  <div className="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-700 text-white font-GoodTimes py-2 px-4 rounded-full shadow-lg">
-                    <Image
-                      src="/assets/icon-raised-tokens.svg"
-                      alt="Raised"
-                      width={20}
-                      height={20}
-                      className="mr-2"
-                    />
-                    {isLoadingTotalFunding ? (
-                      <div className="flex items-center">
-                        <TextSkeleton width="w-16" height="h-5" />
-                        <span className="text-xs opacity-90 ml-2">
-                          ETH RAISED
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="text-base lg:text-lg mr-2">
-                          {truncateTokenValue(
-                            Number(totalFunding || 0) / 1e18,
+                  <Tooltip
+                    text={
+                      isLoadingTotalFunding
+                        ? 'Loading...'
+                        : `$${Math.round(
+                            (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
+                          ).toLocaleString()} USD`
+                    }
+                    buttonClassName="scale-75"
+                    wrap
+                  >
+                    <div className="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-700 text-white font-GoodTimes py-2 px-4 rounded-full shadow-lg">
+                      <Image
+                        src="/assets/icon-raised-tokens.svg"
+                        alt="Raised"
+                        width={20}
+                        height={20}
+                        className="mr-2"
+                      />
+                      {isLoadingTotalFunding ? (
+                        <div className="flex items-center">
+                          <TextSkeleton width="w-16" height="h-5" />
+                          <span className="text-xs opacity-90 ml-2">
+                            ETH RAISED
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          {`${truncateTokenValue(
+                            Number(totalFunding || 0) / 1e18 || 0,
                             'ETH'
-                          )}
-                        </span>
-                        <span className="text-xs opacity-90">ETH RAISED</span>
-                      </>
-                    )}
-                  </div>
+                          ).toLocaleString()} ETH`}
+                          <span className="text-base lg:text-lg mr-2"></span>
+                          <span className="text-xs opacity-90">RAISED</span>
+                        </>
+                      )}
+                    </div>
+                  </Tooltip>
                   <div className="mt-2 md:mt-0 flex flex-col items-center md:items-end gap-2">
                     <Link
                       className="flex flex-col items-center group"
@@ -302,19 +313,6 @@ const MissionProfileHeader = React.memo(
                       </div>
                     )}
                   </div>
-                </div>
-                <div className="text-gray-400 text-xs mt-2 ml-4">
-                  {isLoadingTotalFunding || isLoadingEthPrice ? (
-                    <TextSkeleton width="w-16" height="h-4" />
-                  ) : (
-                    <>
-                      ≈ $
-                      {Math.round(
-                        (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
-                      ).toLocaleString()}{' '}
-                      USD
-                    </>
-                  )}
                 </div>
                 {/* Progress Bar */}
                 <div className="mb-3">
