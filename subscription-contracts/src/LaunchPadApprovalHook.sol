@@ -6,6 +6,7 @@ import "@nana-core-v5/interfaces/IJBRulesetApprovalHook.sol";
 import "@nana-core-v5/interfaces/IJBTerminalStore.sol";
 import "@nana-core-v5/libraries/JBConstants.sol";
 import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
+import {FundingOracle} from "./FundingOracle.sol";
 
 // Hook to enable payouts after a funding goal is reached and a deadline is passed.
 contract LaunchPadApprovalHook is IJBRulesetApprovalHook {
@@ -14,30 +15,40 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook {
     uint256 public immutable refundPeriod;
     IJBTerminalStore public immutable jbTerminalStore;
     address public immutable terminal;
+    address public fundingOracleAddress;
+    uint256 missionId;
 
     constructor(
         uint256 _fundingGoal,
         uint256 _deadline,
         uint256 _refundPeriod,
         address _jbTerminalStoreAddress,
-        address _terminal
+        address _terminal,
+        address _fundingOracleAddress,
     ) {
         fundingGoal = _fundingGoal;
         deadline = _deadline;
         refundPeriod = _refundPeriod;
         jbTerminalStore = IJBTerminalStore(_jbTerminalStoreAddress);
         terminal = _terminal;
+        fundingOracleAddress = _fundingOracleAddress;
     }
 
     function DURATION() external view override returns (uint256) {
         return 0;
     }
 
+    function setMissionId(uint256 _missionId) external {
+        require(missionId != 0, "Mission ID already set!");
+        missionId = _missionId;
+    }
+
     function approvalStatusOf(
         uint256 projectId,
         JBRuleset memory ruleset
     ) external view override returns (JBApprovalStatus) {
-        uint256 currentFunding = _totalFunding(terminal, projectId);
+        require(missionId != 0, "Mission ID not set!");
+        uint256 currentFunding = FundingOracle(fundingOracleAddress).missionIdToFunding(missionId);
         if (currentFunding >= fundingGoal && block.timestamp >= deadline) {
             return JBApprovalStatus.Approved;
         } else if (currentFunding < fundingGoal && block.timestamp >= deadline + refundPeriod) {
@@ -56,25 +67,5 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook {
         return
             interfaceId == type(IJBRulesetApprovalHook).interfaceId ||
             interfaceId == type(IERC165).interfaceId;
-    }
-
-    function _totalFunding(address _terminal, uint256 projectId)
-        internal
-        view
-        returns (uint256)
-    {
-        uint256 balance = jbTerminalStore.balanceOf(
-            _terminal,
-            projectId,
-            JBConstants.NATIVE_TOKEN
-        );
-        uint256 withdrawn = jbTerminalStore.usedPayoutLimitOf(
-          address(terminal),
-          projectId,
-          JBConstants.NATIVE_TOKEN,
-          2, // payout cycle
-          uint32(uint160(JBConstants.NATIVE_TOKEN))
-        );
-        return balance + withdrawn;
     }
 }

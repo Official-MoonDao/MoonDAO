@@ -17,7 +17,7 @@ import { JBConstants } from "@nana-core-v5/libraries/JBConstants.sol";
 // LaunchPadPayHook
 //   • Stores minFundingRequired, fundingGoal and deadline.
 //   • Holdes references to the IJBTerminalStore contract.
-//   • A helper function (_totalFunding) to read total funding.
+//   • A helper function (_totalLocalFunding) to read total funding.
 //   • An Ownable toggle (setFundingTurnedOff) for the fundingTurnedOff flag.
 //   • The beforePayRecordedWith function manipulates the weight to change number
 //     of tokens received per ETH based on the funding status.
@@ -27,6 +27,8 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
     uint256 public immutable deadline;
     uint256 public immutable refundPeriod;
     uint256 cashedOutCount;
+    address public fundingOracleAddress;
+    uint256 missionId;
 
     // fundingTurnedOff can be toggled by the owner.
     bool public fundingTurnedOff;
@@ -40,6 +42,7 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         uint256 _refundPeriod,
         address _jbTerminalStoreAddress,
         address _jbRulesetAddress,
+        address _fundingOracleAddress,
         address owner
     ) Ownable(owner) {
         fundingGoal = _fundingGoal;
@@ -47,13 +50,19 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         refundPeriod = _refundPeriod;
         jbTerminalStore = IJBTerminalStore(_jbTerminalStoreAddress);
         jbRulesets = IJBRulesets(_jbRulesetAddress);
+        fundingOracleAddress = _fundingOracleAddress;
+    }
+
+    function setMissionId(uint256 _missionId) external {
+        require(missionId != 0, "Mission ID already set!");
+        missionId = _missionId;
     }
 
     function setFundingTurnedOff(bool _fundingTurnedOff) external onlyOwner {
         fundingTurnedOff = _fundingTurnedOff;
     }
 
-    function _totalFunding(address terminal, uint256 projectId) internal view returns (uint256) {
+    function _totalLocalFunding(address terminal, uint256 projectId) internal view returns (uint256) {
         uint256 balance = jbTerminalStore.balanceOf(
             terminal,
             projectId,
@@ -73,9 +82,10 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         if (fundingTurnedOff) {
             revert("Funding has been turned off.");
         }
-        uint256 currentFunding = _totalFunding(context.terminal, context.projectId);
+        require(missionId != 0, "Mission ID not set!");
+        uint256 totalFunding = FundingOracle(fundingOracleAddress).missionIdToFunding(missionId);
         require(context.amount.token == JBConstants.NATIVE_TOKEN);
-        if (currentFunding < fundingGoal && block.timestamp >= deadline) {
+        if (totalFunding < fundingGoal && block.timestamp >= deadline) {
             revert("Project funding deadline has passed and funding goal requirement has not been met.");
         }
         weight = context.weight;
@@ -88,8 +98,9 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         uint256 totalSupply,
         JBCashOutHookSpecification[] memory hookSpecifications
     ){
-        uint256 currentFunding = _totalFunding(context.terminal, context.projectId);
-        if (currentFunding >= fundingGoal){
+        require(missionId != 0, "Mission ID not set!");
+        uint256 totalFunding = FundingOracle(fundingOracleAddress).missionIdToFunding(missionId);
+        if (totalFunding >= fundingGoal){
             revert("Project has passed funding goal requirement. Refunds are disabled.");
         }
         if (block.timestamp < deadline) {
@@ -98,6 +109,7 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         if (block.timestamp >= deadline + refundPeriod) {
             revert("Refund period has passed. Refunds are disabled.");
         }
+        uint256 localFunding = _totalLocalFunding(context.terminal, context.projectId);
         // Refund amount = currentFunds * (userTokenCount / currentTokenSupply)
         // Since reserved tokens are not eligible for refunds, and the reserve rate
         // is 50%, we need to divide the currentTokenSupply by 2.
@@ -105,7 +117,7 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         // totalSupply as currentFunding * rateTier1.
         uint256 weight = jbRulesets.getRulesetOf(context.projectId, context.rulesetId).weight;
         cashOutCount = context.cashOutCount;
-        totalSupply = (currentFunding * weight) / (2 * 1e18);
+        totalSupply = (localFunding * weight) / (2 * 1e18);
     }
 
     function hasMintPermissionFor(uint256 projectId, JBRuleset memory ruleset, address addr) external view override returns (bool flag){
@@ -119,8 +131,9 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
 
     // return a stage number based on what tier the project is in.
     function stage(address terminal, uint256 projectId) public view returns (uint256) {
-        uint256 currentFunding = _totalFunding(terminal, projectId);
-        if (currentFunding < fundingGoal) {
+        require(missionId != 0, "Mission ID not set!");
+        uint256 totalFunding = FundingOracle(fundingOracleAddress).missionIdToFunding(missionId);
+        if (totalFunding < fundingGoal) {
             if (block.timestamp >= deadline) {
                 if (block.timestamp < deadline + refundPeriod) {
                     return 3; // Refund stage

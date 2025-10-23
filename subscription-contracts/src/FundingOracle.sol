@@ -7,63 +7,58 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 
-contract FeeHook is FunctionsClient, Ownable {
+contract FundingOracle is FunctionsClient, Ownable {
     mapping(uint256 => uint256) public missionIdToFunding;
     mapping(uint256 => mapping(uint256 => uint256)) public missionIdToChainIdToProjectId;
     uint256[] chainIds;
 
-    // Chainlink
     mapping(bytes32 => uint256) public requestIdToMissionId;
     uint32 gasLimit = 300000;
     uint64 subscriptionId; // Chainlink subscription ID
     bytes32 donID; // DON ID for Chainlink Functions
-    // Event to log responses
     event FundingUpdate(
         bytes32 indexed requestId,
         uint256 totalFunding,
         uint256 missionId
     );
     string source =
-        "const tokens = ["
-        "{ chain: 'mainnet', address: '0xCc71C80d803381FD6Ee984FAff408f8501DB1740' },"
-        "{"
-        "chain: 'arbitrum-mainnet',"
-        "address: '0xB255c74F8576f18357cE6184DA033c6d93C71899',"
-        "},"
-        "{"
-        "chain: 'base-mainnet',"
-        "address: '0x7f8f1B45c3FD6Be4F467520Fc1Cf030d5CaBAcF5',"
-        "},"
-        "];"
+        "const CHAINS = ['mainnet', 'arbitrum-mainnet', 'base-mainnet'];"
+        "const JB_V5_MULTI_TERMINAL = '0x2dB6d704058E552DeFE415753465df8dF0361846';"
+        "const JB_V5_TERMINAL_STORE = '0xfE33B439Ec53748C87DcEDACb83f05aDd5014744';"
+        "const JB_NATIVE_TOKEN_ADDRESS = '0x000000000000000000000000000000000000EEEe';"
         "const u256ToBytes = (n) =>"
         "Array.from({ length: 32 }, (_, i) =>"
         "Number((n >> (8n * BigInt(31 - i))) & 0xffn)"
         ");"
-        "const buildCalls = (addr, usr) =>"
-        "['0x18160ddd', `0x70a08231${usr.slice(2).padStart(64, '0')}`].map("
-        "(data, id) => ({"
-        "jsonrpc: '2.0',"
-        "id,"
-        "method: 'eth_call',"
-        "params: [{ to: addr, data }, 'latest'],"
-        "})"
-        ");"
-        "const responses = await Promise.all("
-        "tokens.map((t) =>"
+        "const totalFunding = ("
+        "await Promise.all("
+        "CHAINS.map((chain, i) =>"
         "Functions.makeHttpRequest({"
-        "url: `https://${t.chain}.infura.io/v3/357d367444db45688746488a06064e7c`,"
+        "url: `https://${chain}.infura.io/v3/357d367444db45688746488a06064e7c`,"
         "method: 'POST',"
-        "data: buildCalls(t.address, args[0]),"
+        "data: {"
+        "jsonrpc: '2.0',"
+        "id: 0,"
+        "method: 'eth_call',"
+        "params: ["
+        "{"
+        "to: JB_V5_TERMINAL_STORE,"
+        "data: `0x467f4cb9${JB_V5_MULTI_TERMINAL.slice(2).padStart("
+        "64,"
+        "'0'"
+        ")}${args[i].slice(2)}${JB_NATIVE_TOKEN_ADDRESS.slice(2).padStart("
+        "64,"
+        "'0'"
+        ")}`,"
+        "},"
+        "'latest',"
+        "],"
+        "},"
         "})"
         ")"
-        ");"
-        "const [totalSupplySum, balanceSum] = [0, 1].map((callIdx) =>"
-        "responses.reduce((sum, r) => sum + BigInt(r.data[callIdx].result || 0n), 0n)"
-        ");"
-        "return new Uint8Array(["
-        "...u256ToBytes(totalSupplySum),"
-        "...u256ToBytes(balanceSum),"
-        "]);";
+        ")"
+        ").reduce((sum, r) => sum + BigInt(r.data.result || 0n), 0n);"
+        "return new Uint8Array([...u256ToBytes(totalFunding)]);";
 
     constructor(address owner, uint256[] _chainIds, address _router, bytes32 _donID, uint64 _subscriptionId) BaseHook(_poolManager) OApp(_lzEndpoint, owner) Ownable(owner) FunctionsClient(_router) {
         donID = _donID;
