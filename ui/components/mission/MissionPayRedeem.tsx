@@ -245,52 +245,51 @@ function MissionPayRedeemContent({
           </div>
         )
       )}
-      {/* Token stats */}
-      {token?.tokenSupply > 0 && !isRefundable && (
-        <div id="mission-token-stats" className="px-4 space-y-1.5">
+      {/* Token Section - Consolidated */}
+      {(token?.tokenSupply > 0 || tokenBalance > 0 || isRefundable) && (
+        <div id="mission-token-section" className="px-4 pb-4 space-y-1.5">
           <label className="text-gray-300 font-medium text-xs uppercase tracking-wide">
-            Token Stats
-          </label>
-          <div className="bg-black/20 border border-white/10 rounded-lg p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-xs">Current Supply</p>
-                <p className="font-semibold text-white">
-                  {formatTokenAmount(+token?.tokenSupply.toString() / 1e18, 2)}{' '}
-                  <span className="text-gray-400">${token?.tokenSymbol}</span>
-                </p>
-              </div>
-              <div>
-                <MissionTokenExchangeRates
-                  currentStage={currentStage}
-                  tokenSymbol={token?.tokenSymbol}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Your Balance & Redeem */}
-      {tokenBalance > 0 || isRefundable ? (
-        <div className="px-4 pb-4 space-y-1.5">
-          <label className="text-gray-300 font-medium text-xs uppercase tracking-wide">
-            {isRefundable ? 'Refund Available' : 'Your Balance'}
+            Token
           </label>
           <div className="bg-black/20 border border-white/10 rounded-lg p-3 space-y-3">
+            {/* Your Balance */}
             {tokenBalance > 0 && (
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-xs">Token Balance</p>
+              <div>
+                <p className="text-gray-400 text-xs">Your Balance</p>
+                <p className="font-semibold text-white text-lg">
+                  {formatTokenAmount(tokenBalance, 2)}{' '}
+                  <span className="text-gray-400">${token?.tokenSymbol}</span>
+                  {token?.tokenSupply > 0 && (
+                    <span className="text-gray-500 text-sm ml-2">
+                      ({((tokenBalance / (+token?.tokenSupply.toString() / 1e18)) * 100).toFixed(1)}% of Supply)
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+
+            {/* Current Supply and Exchange Rate */}
+            {token?.tokenSupply > 0 && !isRefundable && (
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <p className="text-gray-400 text-xs">Current Supply</p>
                   <p className="font-semibold text-white">
-                    {formatTokenAmount(tokenBalance, 2)}{' '}
+                    {formatTokenAmount(+token?.tokenSupply.toString() / 1e18, 2)}{' '}
                     <span className="text-gray-400">${token?.tokenSymbol}</span>
                   </p>
                 </div>
+                <div className="flex-1">
+                  <MissionTokenExchangeRates
+                    currentStage={currentStage}
+                    tokenSymbol={token?.tokenSymbol}
+                  />
+                </div>
               </div>
             )}
+
+            {/* Refund Section */}
             {isRefundable && (tokenBalance > 0 || tokenCredit > 0) && (
-              <div className="space-y-3">
+              <div className="space-y-3 pt-2">
                 <PrivyWeb3Button
                   requiredChain={DEFAULT_CHAIN_V5}
                   id="redeem-button"
@@ -314,7 +313,7 @@ function MissionPayRedeemContent({
             )}
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   )
 }
