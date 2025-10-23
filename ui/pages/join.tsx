@@ -20,7 +20,7 @@ export default function Join() {
   const { selectedChain } = useContext(ChainContextV5)
 
   // State to manage selected tier for onboarding flow
-  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>(tier)
+  const [selectedTier, setSelectedTier] = useState(tier)
   if (!selectedTier && tier) {
     setSelectedTier(tier)
   }

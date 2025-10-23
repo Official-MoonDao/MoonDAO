@@ -690,6 +690,7 @@ export default function MissionProfile({
             jbControllerContract={jbControllerContract}
             jbTokensContract={jbTokensContract}
             refreshBackers={refreshBackers}
+            backers={backers}
             refreshTotalFunding={refreshTotalFunding}
             ruleset={ruleset}
             modalEnabled={payModalEnabled}
@@ -738,6 +739,7 @@ export default function MissionProfile({
                 jbControllerContract={jbControllerContract}
                 jbTokensContract={jbTokensContract}
                 refreshBackers={refreshBackers}
+                backers={backers}
                 refreshTotalFunding={refreshTotalFunding}
                 ruleset={ruleset}
                 modalEnabled={payModalEnabled}

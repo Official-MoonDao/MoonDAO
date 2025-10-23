@@ -6,7 +6,7 @@ import {
   CITIZEN_ADDRESSES,
   MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL,
   FREE_MINT_THRESHOLD,
-} from 'const/config.ts'
+} from 'const/config'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
@@ -19,7 +19,7 @@ import { serverClient } from '@/lib/thirdweb/client'
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
 const privateKey = process.env.XP_ORACLE_SIGNER_PK
-const sdk = ThirdwebSDK.fromPrivateKey(privateKey, chainSlug, {
+const sdk = ThirdwebSDK.fromPrivateKey(privateKey || '', chainSlug, {
   secretKey: '',
 })
 const subgraphClient = createClient({
@@ -47,7 +47,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     method: 'balanceOf' as string,
     params: [address],
   })
-  if (balance !== 0n) {
+  if (balance !== 0) {
     return res.status(400).json({ error: 'You are already a citizen!' })
   }
   const fetchPayments = async () => {
@@ -74,7 +74,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     return subgraphRes.data.backers
   }
   const payments = await fetchPayments()
-  const totalPaid = payments.reduce((acc, payment) => {
+  const totalPaid = payments.reduce((acc: any, payment: any) => {
     return acc + parseInt(payment.totalAmountContributed)
   }, 0)
   if (totalPaid < FREE_MINT_THRESHOLD) {
@@ -83,7 +83,6 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     })
   }
   const cost: any = await readContract({
-    client: serverClient,
     contract: citizenReadContract,
     method: 'getRenewalPrice' as string,
     params: [address, 365 * 24 * 60 * 60],

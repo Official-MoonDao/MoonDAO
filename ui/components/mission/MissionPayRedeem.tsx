@@ -263,7 +263,13 @@ function MissionPayRedeemContent({
                   <span className="text-gray-400">${token?.tokenSymbol}</span>
                   {token?.tokenSupply > 0 && (
                     <span className="text-gray-500 text-sm ml-2">
-                      ({((tokenBalance / (+token?.tokenSupply.toString() / 1e18)) * 100).toFixed(1)}% of Supply)
+                      (
+                      {(
+                        (tokenBalance /
+                          (+token?.tokenSupply.toString() / 1e18)) *
+                        100
+                      ).toFixed(1)}
+                      % of Supply)
                     </span>
                   )}
                 </p>
@@ -276,7 +282,10 @@ function MissionPayRedeemContent({
                 <div className="flex-1">
                   <p className="text-gray-400 text-xs">Current Supply</p>
                   <p className="font-semibold text-white">
-                    {formatTokenAmount(+token?.tokenSupply.toString() / 1e18, 2)}{' '}
+                    {formatTokenAmount(
+                      +token?.tokenSupply.toString() / 1e18,
+                      2
+                    )}{' '}
                     <span className="text-gray-400">${token?.tokenSymbol}</span>
                   </p>
                 </div>
@@ -1171,7 +1180,7 @@ function MissionPayRedeemComponent({
       }
       if (!isCitizen) {
         const totalPaid =
-          backers.reduce((acc, payment) => {
+          backers.reduce((acc: any, payment: any) => {
             return acc + payment.backer.toLowerCase() == address.toLowerCase()
               ? parseInt(payment.totalAmountContributed)
               : 0
@@ -1909,9 +1918,7 @@ function MissionPayRedeemComponent({
                         )
                       }}
                       onBeforeNavigate={() => {}}
-                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${
-                        mission?.id
-                      }?onrampSuccess=true&chain=${chainSlug}&usdAmount=${usdInput.replace(
+                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true&chain=${chainSlug}&usdAmount=${usdInput.replace(
                         /,/g,
                         ''
                       )}`}
