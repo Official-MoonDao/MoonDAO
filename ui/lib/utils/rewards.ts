@@ -112,8 +112,6 @@ export function runIterativeNormalization(distributions: any, projects: any) {
       }
     }
   }
-  console.log('votes')
-  console.log(JSON.stringify(votes))
 
   let newVotes: number[][] = []
   let newDistributionSums: number[] = []
@@ -197,8 +195,6 @@ export function runQuadraticVoting(
       projectIdToListOfPercentage[key].push(Number(value))
     }
   }
-  console.log('projectIdToEstimatedPercentage')
-  console.log(projectIdToEstimatedPercentage)
   const votingPowerSum = _.sum(Object.values(addressToQuadraticVotingPower))
   if (votingPowerSum > 0) {
     for (const [projectId, percentages] of Object.entries(
@@ -439,12 +435,7 @@ export function getPayouts(
             upfrontPayments['vMOONEY'][utils.getAddress(contributerAddress)] >
               marginalPayoutProportion * mooneyBudget))
       ) {
-        console.log(
-          'no vMOONEY payment for ',
-          contributerAddress,
-          ' for project ',
-          project.name
-        )
+        // skip mooney payment
       } else {
         addressToMooneyPayout[contributerAddress] +=
           marginalPayoutProportion * mooneyBudget
@@ -501,8 +492,6 @@ export function getPayouts(
     }
     humanFormat[address.toLowerCase()]['ETH'] += ethPayout
   }
-  console.log('addressToPercent')
-  console.log(addressToPercent)
 
   return {
     addressToEthPayout,
