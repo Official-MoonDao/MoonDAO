@@ -22,7 +22,7 @@ export default function useNavigation(citizen: any) {
       },
       {
         name: 'Network',
-        href: '/network-overview',
+        href: '/network',
         icon: IconOrg,
         children: [
           { name: 'Network Overview', href: '/network-overview' },
