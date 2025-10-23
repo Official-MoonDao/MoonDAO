@@ -337,7 +337,6 @@ export function getBudget(tokens: any, year: number, quarter: number) {
   )
   if (tokens && ethToken) {
     ethPrice = ethToken.usd / ethToken.balance
-    ethPrice = 4314
     for (const token of tokens) {
       if (token.symbol !== 'MOONEY') {
         if (token.symbol == 'stETH') {
@@ -408,7 +407,6 @@ export function getPayouts(
     const upfrontPayments: { [key: string]: number } = normalizeJsonString(
       project.upfrontPayments
     )
-    //{"0xB2d3900807094D4Fe47405871B0C8AdB58E10D42":10.1090,"0x679d87D8640e66778c3419D164998E720D7495f6":14.3211,"0x08B3e694caA2F1fcF8eF71095CED1326f3454B89":11.7938,"0x9fDf876a50EA8f95017dCFC7709356887025B5BB":8.4242,"0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6":10.1090,"0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da":5.3915, "vMOONEY": {"0xB2d3900807094D4Fe47405871B0C8AdB58E10D42":12500000,"0x679d87D8640e66778c3419D164998E720D7495f6":7500000,"0x08B3e694caA2F1fcF8eF71095CED1326f3454B89":7500000,"0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6":7500000}}
     for (const [contributerAddress, contributorPercentage] of Object.entries(
       contributors
     )) {
