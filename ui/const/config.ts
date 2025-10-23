@@ -24,11 +24,13 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig =
-  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
+const ethConfig = require(
+  `../../contracts/deployments/ethereum`
+) as DeploymentConfig
 
-const polygonConfig =
-  require(`../../contracts/deployments/polygon`) as DeploymentConfig
+const polygonConfig = require(
+  `../../contracts/deployments/polygon`
+) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
@@ -36,11 +38,13 @@ const arbitrumConfig =
 const baseConfig =
   require('../../contracts/deployments/base') as DeploymentConfig
 
-const goerliConfig =
-  require(`../../contracts/deployments/goerli`) as DeploymentConfig
+const goerliConfig = require(
+  `../../contracts/deployments/goerli`
+) as DeploymentConfig
 
-const sepoliaConfig =
-  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
+const sepoliaConfig = require(
+  `../../contracts/deployments/sepolia`
+) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -547,3 +551,4 @@ export const MOONDAO_MISSIONS_SUBGRAPH_URL =
 export const TICK_SPACING = 200
 
 export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
+export const FREE_MINT_THRESHOLD = 1e16

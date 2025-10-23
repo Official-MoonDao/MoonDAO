@@ -66,6 +66,7 @@ export default function MissionInfo({
   stage,
   deadline,
   refreshBackers,
+  backers,
   refreshTotalFunding,
   ruleset,
   modalEnabled,
@@ -305,6 +306,7 @@ export default function MissionInfo({
               jbTokensContract={jbTokensContract}
               jbControllerContract={jbControllerContract}
               refreshBackers={refreshBackers}
+              backers={backers}
               refreshTotalFunding={refreshTotalFunding}
               modalEnabled={modalEnabled}
               setModalEnabled={setModalEnabled}

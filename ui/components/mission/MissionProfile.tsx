@@ -251,11 +251,11 @@ export default function MissionProfile({
     subgraphData,
     fundingGoal,
     primaryTerminalAddress,
-    backers,
     stage,
     deadline,
     refundPeriod,
     refreshBackers,
+    backers,
     refreshStage,
     poolDeployerAddress,
   } = useMissionData({
@@ -777,6 +777,7 @@ export default function MissionProfile({
                     jbControllerContract={jbControllerContract}
                     jbTokensContract={jbTokensContract}
                     refreshBackers={refreshBackers}
+                    backers={backers}
                     refreshTotalFunding={refreshTotalFunding}
                     ruleset={ruleset}
                     modalEnabled={payModalEnabled}
@@ -809,6 +810,7 @@ export default function MissionProfile({
                   token={token}
                   primaryTerminalAddress={primaryTerminalAddress}
                   refreshBackers={refreshBackers}
+                  backers={backers}
                   refreshStage={refreshStage}
                   refreshTotalFunding={refreshTotalFunding}
                   deadline={deadline}

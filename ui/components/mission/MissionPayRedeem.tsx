@@ -1,5 +1,6 @@
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
+import { useCitizen } from '@/lib/citizen/useCitizen'
 import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
@@ -9,6 +10,7 @@ import {
   LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID,
   JB_NATIVE_TOKEN_ADDRESS,
   DEPLOYED_ORIGIN,
+  FREE_MINT_THRESHOLD,
   LAYERZERO_MAX_CONTRIBUTION_ETH,
   LAYERZERO_MAX_ETH,
 } from 'const/config'
@@ -332,6 +334,7 @@ export type MissionPayRedeemProps = {
   jbTokensContract?: any
   forwardClient?: any
   refreshBackers?: () => void
+  backers: any
   refreshTotalFunding?: () => void
   ruleset: JBRuleset
   onlyButton?: boolean
@@ -354,6 +357,7 @@ function MissionPayRedeemComponent({
   jbTokensContract,
   forwardClient,
   refreshBackers,
+  backers,
   refreshTotalFunding,
   ruleset,
   onlyButton = false,
@@ -364,6 +368,7 @@ function MissionPayRedeemComponent({
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const chainSlug = getChainSlug(selectedChain)
+  const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains = useMemo(
@@ -1161,9 +1166,34 @@ function MissionPayRedeemComponent({
         colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
       })
 
-      refreshMissionData()
       if (setModalEnabled) {
         setModalEnabled(false)
+      }
+      if (!isCitizen) {
+        const totalPaid =
+          backers.reduce((acc, payment) => {
+            return acc + payment.backer.toLowerCase() == address.toLowerCase()
+              ? parseInt(payment.totalAmountContributed)
+              : 0
+          }, 0) +
+          inputValue * 1e18
+        if (totalPaid > FREE_MINT_THRESHOLD) {
+          toast.success(
+            <div>
+              <Link href={'/join?tier=citizen&freeMint=true'}>
+                Mission token purchased! Click to claim free citizenship!
+              </Link>
+            </div>,
+            {
+              style: toastStyle,
+            }
+          )
+        }
+      } else {
+        toast.success('Mission token purchased!', {
+          style: toastStyle,
+        })
+        refreshMissionData()
       }
     } catch (error) {
       console.error('Error purchasing tokens:', error)
