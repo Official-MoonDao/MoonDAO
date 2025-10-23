@@ -233,32 +233,69 @@ export function ProjectRewards({
   const isCitizens = isCitizenAddresses.map(
     (isCitizen, i) => isCitizen || isCitizenVotingAddresses[i]
   )
+  console.log('isCitizens', isCitizens)
 
+  //console.log('distributions')
+  //console.log(distributions)
   let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
   const nonCitizenDistributions = distributions?.filter(
     (_, i) => !isCitizens[i]
   )
+
+  const eligibleProjects = useMemo(
+    () => currentProjects.filter((p) => p.eligible),
+    [currentProjects]
+  )
+
+  const ineligibleProjects = useMemo(
+    () => currentProjects.filter((p) => !p.eligible),
+    [currentProjects]
+  )
+  //console.log('eligible', eligibleProjects)
   // All projects need at least one citizen distribution to do iterative normalization
-  const allProjectsHaveCitizenDistribution = currentProjects?.every(({ id }) =>
+  const allProjectsHaveCitizenDistribution = eligibleProjects?.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
   )
-  const allProjectsHaveRewardDistribution = currentProjects?.every(
+  console.log('citizenDistributions', citizenDistributions)
+  const allProjectsHaveRewardDistribution = eligibleProjects?.every(
     (project) => project.rewardDistribution !== undefined
   )
   // Map from address to percentage of commnity rewards
-  const communityCircle = {}
+  const communityCircle = {
+    '0x78b9faab8fb5de5c7902f0b0cf1d1c17340ce207': 7.5,
+    '0x918b323401671450909e4ea5d0ac29be61850f8f': 6.6,
+    '0x9927bbb9e6c412fe7d3368c8d20bff121193816d': 3.555,
+    '0x3f41c444c29d0141b2b84aaff618033ade3dfb36': 5.855,
+    '0xBDB3D482d87A803B9c43f4739EF46579410bED52': 7.693,
+    '0x7f79a7aaf569f350806813d41aeba544cbd017f4': 3.892,
+    '0x79d0b453dd5d694da4685fbb94798335d5f77760': 2.178,
+    '0x95593cbbcc29239e02178d7b3272a83eab26a046': 4.491,
+    '0x04877685e94e0694944d08a43d021e5768b595f0': 7.689,
+    '0x08cb6bdf2f905c86beb529eedbb960e840397972': 3.417,
+    '0x08e424b69851b7b210ba3e5e4233ca6fcc1adedb': 5.172,
+    '0x96547c68554d5060ea86fd9061104fad2fbf9a47': 2.341,
+    '0x977e3f778d1afce209fa0d2299374b1875f5238a': 5.236,
+    '0x665e17970455ea7137162274be840c7807d54ef2': 4.736,
+    '0x4cbf10c36b481d6aff063070e35b4f42e7aad201': 7.583,
+    '0x6bfd9e435cf6194c967094959626ddff4473a836': 5.3,
+    '0xc9592be2224dd7a9ed8078ce18e3edc909d55085': 3.045,
+    '0xe2d3ac725e6ffe2b28a9ed83bedaaf6672f2c801': 7.876,
+    '0x529bd2351476ba114f9d60e71a020a9f0b99f047': 5.838,
+  }
   const communityCirclePopulated = Object.keys(communityCircle).length > 0
   const readyToRunVoting =
     allProjectsHaveCitizenDistribution &&
     allProjectsHaveRewardDistribution &&
     communityCirclePopulated
-
+  console.log('addressToQuadraticVotingPower', addressToQuadraticVotingPower)
+  //console.log('citizenDistributions', citizenDistributions)
+  //console.log('readyToRunVoting', readyToRunVoting)
   const projectIdToEstimatedPercentage: { [key: string]: number } =
     readyToRunVoting
       ? computeRewardPercentages(
           citizenDistributions,
           nonCitizenDistributions,
-          currentProjects,
+          eligibleProjects,
           addressToQuadraticVotingPower
         )
       : {}
@@ -276,29 +313,44 @@ export function ProjectRewards({
       .concat(polygonTokens)
       .concat(baseTokens)
       .filter((token: any) => token.usd > 1)
-      .concat([{ symbol: 'stETH', balance: stakedEth }])
+      .concat([{ symbol: 'stETH', balance: 96 }])
   }, [mainnetTokens, arbitrumTokens, polygonTokens, baseTokens, stakedEth])
+  //console.log('tokens')
+  //console.log(tokens)
 
   const {
     ethBudget: ethBudgetCurrent,
     mooneyBudget,
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
+  //console.log('ethBudgetCurrent')
+  //console.log(ethBudgetCurrent)
   const ethBudget = 17.09
 
   const usdBudget = ethBudget * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
-  const eligibleProjects = useMemo(
-    () => currentProjects.filter((p) => p.eligible),
-    [currentProjects]
+  const {
+    projectIdToMooneyPayout,
+    addressToEthPayout,
+    addressToMooneyPayout,
+    ethPayoutCSV,
+    mooneyPayoutCSV,
+    humanFormat,
+  } = getPayouts(
+    projectIdToEstimatedPercentage,
+    eligibleProjects,
+    communityCircle,
+    ethBudget,
+    mooneyBudget
   )
-
-  const ineligibleProjects = useMemo(
-    () => currentProjects.filter((p) => !p.eligible),
-    [currentProjects]
-  )
+  //console.log('ethBudget', ethBudget)
+  //console.log('projectIdToEstimatedPercentage', projectIdToEstimatedPercentage)
+  //console.log('addressToEthPayout', addressToEthPayout)
+  console.log('addressToMooneyPayout', addressToMooneyPayout)
+  //console.log('humanFormat', JSON.stringify(humanFormat))
+  //console.log('ethPayoutCSV', ethPayoutCSV)
 
   useEffect(() => {
     let isCancelled = false
