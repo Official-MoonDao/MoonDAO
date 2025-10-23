@@ -7,7 +7,7 @@ import {
   arbitrum as arbitrumInfura,
   base as baseInfura,
   sepolia as sepoliaInfura,
-} from '../infura/infuraChains'
+} from '../rpc/chains'
 
 const bendystrawKey = process.env.BENDYSTRAW_API_KEY
 const bendystrawUrl = `https://${

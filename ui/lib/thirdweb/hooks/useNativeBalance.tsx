@@ -12,6 +12,7 @@ export function useNativeBalance() {
     async function getNativeBalance() {
       const wallet = wallets[selectedWallet]
       if (!wallet) return
+      await wallet.switchChain(selectedChain.id)
       const provider = await wallet.getEthersProvider()
       const balance = await provider.getBalance(wallet.address)
       setNativeBalance(Number(+balance?.toString() / 10 ** 18).toFixed(7))

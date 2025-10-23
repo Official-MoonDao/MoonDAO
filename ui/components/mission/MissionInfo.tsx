@@ -68,6 +68,8 @@ export default function MissionInfo({
   refreshBackers,
   refreshTotalFunding,
   ruleset,
+  modalEnabled,
+  setModalEnabled,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -239,10 +241,9 @@ export default function MissionInfo({
                   mission?.metadata?.youtubeLink !== '' && (
                     <div className="mt-4 w-full p-4 2xl:p-0 max-w-[1200px]">
                       <iframe
-                        src={mission?.metadata?.youtubeLink?.replace(
-                          'watch?v=',
-                          'embed/'
-                        )}
+                        src={mission?.metadata?.youtubeLink
+                          ?.replace('watch?v=', 'embed/')
+                          ?.replace('youtu.be/', 'www.youtube.com/embed/')}
                         width="100%"
                         height="500"
                         allowFullScreen
@@ -304,6 +305,8 @@ export default function MissionInfo({
               jbControllerContract={jbControllerContract}
               refreshBackers={refreshBackers}
               refreshTotalFunding={refreshTotalFunding}
+              modalEnabled={modalEnabled}
+              setModalEnabled={setModalEnabled}
             />
           </div>
         </div>

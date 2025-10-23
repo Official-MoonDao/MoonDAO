@@ -8,11 +8,7 @@ import {
   WalletIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import {
-  useLogin,
-  usePrivy,
-  useWallets,
-} from '@privy-io/react-auth'
+import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
 import { COIN_ICONS } from 'const/icons'
 import { ethers } from 'ethers'
 import Image from 'next/image'
@@ -37,7 +33,7 @@ import {
   sepolia,
   arbitrumSepolia,
   optimismSepolia,
-} from '@/lib/infura/infuraChains'
+} from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -149,8 +145,8 @@ function SendModal({
 
   // Available chains for the network selector
   const availableChains = [
-    ethereum,
     arbitrum,
+    ethereum,
     base,
     polygon,
     sepolia,
@@ -427,6 +423,9 @@ function SendModal({
                       />
                       <span className="font-medium text-white">
                         {chain.name || 'Unknown Network'}
+                        <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">
+                          {chain === arbitrum ? '(Recommended)' : ''}
+                        </span>
                       </span>
                       {chain.id === sendModalChain.id && (
                         <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -609,8 +608,8 @@ export function PrivyConnectWallet({
 
   // Available chains for the network selector
   const availableChains = [
-    ethereum,
     arbitrum,
+    ethereum,
     base,
     polygon,
     sepolia,
@@ -1089,6 +1088,9 @@ export function PrivyConnectWallet({
                           </div>
                           <span className="font-medium text-white flex-1">
                             {chain.name || 'Unknown Network'}
+                            <span className="ml-2 text-gray-400 text-xs font-medium uppercase tracking-wide">
+                              {chain === arbitrum ? '(Recommended)' : ''}
+                            </span>
                           </span>
                           {chain.id === selectedChain.id && (
                             <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>

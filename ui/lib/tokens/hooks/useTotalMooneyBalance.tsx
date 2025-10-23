@@ -1,7 +1,7 @@
 //Get total mooney balance for an address on L1 and L2
 import { useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import { arbitrum, base, ethereum, polygon } from '@/lib/infura/infuraChains'
+import { arbitrum, base, ethereum, polygon } from '@/lib/rpc/chains'
 import client from '@/lib/thirdweb/client'
 import ERC20 from '../../../const/abis/ERC20.json'
 import { MOONEY_ADDRESSES } from '../../../const/config'

@@ -31,6 +31,7 @@ import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import useTag from '@/lib/convert-kit/useTag'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
+import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import {
   arbitrum,
   base,
@@ -38,8 +39,7 @@ import {
   sepolia,
   arbitrumSepolia,
   Chain,
-} from '@/lib/infura/infuraChains'
-import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+} from '@/lib/rpc/chains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'

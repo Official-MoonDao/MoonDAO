@@ -26,13 +26,7 @@ import {
 import { Address, Hex } from 'thirdweb'
 import { privateKeyToAccount as twPrivateKeyToAccount } from 'thirdweb/wallets'
 import { isHSMAvailable, createHSMWallet } from '@/lib/google/hsm-signer'
-import {
-  arbitrum,
-  base,
-  ethereum,
-  polygon,
-  sepolia,
-} from '@/lib/infura/infuraChains'
+import { arbitrum, base, ethereum, polygon, sepolia } from '@/lib/rpc/chains'
 import { serverClient } from '@/lib/thirdweb/client'
 import { XP_VERIFIERS } from '@/lib/xp/config'
 import { signOracleProof } from '../oracle'

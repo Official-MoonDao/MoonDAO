@@ -33,15 +33,15 @@ import {
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
 import {
   arbitrum,
   base,
   ethereum,
   sepolia,
   optimismSepolia,
-} from '@/lib/infura/infuraChains'
-import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
+} from '@/lib/rpc/chains'
 import useSafe from '@/lib/safe/useSafe'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -64,16 +64,11 @@ import MissionDeployTokenModal from './MissionDeployTokenModal'
 import MissionTokenExchangeRates from './MissionTokenExchangeRates'
 import MissionTokenNotice from './MissionTokenNotice'
 
-const REQUIRED_CHAINS = [arbitrum, ethereum, base, optimismSepolia, sepolia]
-const REQUIRED_CHAINS_SLUGS = REQUIRED_CHAINS.map((chain) =>
-  getChainSlug(chain)
-)
-
 function MissionPayRedeemContent({
   token,
   output,
   redeem,
-  setMissionPayModalEnabled,
+  setModalEnabled,
   tokenBalance,
   currentStage,
   stage,
@@ -206,19 +201,23 @@ function MissionPayRedeemContent({
               </div>
             )}
 
-            <StandardButton
-              id="open-contribute-modal"
-              className="mt-4 rounded-full gradient-2 rounded-full w-full py-1"
-              onClick={() => setMissionPayModalEnabled(true)}
-              hoverEffect={false}
-              disabled={
-                isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
-              }
-            >
-              {isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
-                ? 'Loading ETH price...'
-                : 'Contribute'}
-            </StandardButton>
+            <div className="flex flex-col items-center justify-center">
+              <PrivyWeb3Button
+                label={
+                  isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
+                    ? 'Loading ETH price...'
+                    : 'Contribute'
+                }
+                id="open-contribute-modal"
+                className="mt-4 rounded-full gradient-2 rounded-full w-full py-1"
+                action={() => setModalEnabled && setModalEnabled(true)}
+                isDisabled={
+                  isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
+                }
+              />
+              <p className="text-sm text-gray-300 italic">{`Sign In ● Fund ● Contribute`}</p>
+            </div>
+
             <div className="w-full space-y-2">
               <AcceptedPaymentMethods />
               <p className="text-xs text-center text-gray-300 leading-relaxed">
@@ -334,6 +333,10 @@ export type MissionPayRedeemProps = {
   refreshBackers?: () => void
   refreshTotalFunding?: () => void
   ruleset: JBRuleset
+  onlyButton?: boolean
+  visibleButton?: boolean
+  buttonMode?: 'fixed' | 'standard'
+  buttonClassName?: string
 }
 
 function MissionPayRedeemComponent({
@@ -352,27 +355,26 @@ function MissionPayRedeemComponent({
   refreshBackers,
   refreshTotalFunding,
   ruleset,
+  onlyButton = false,
+  visibleButton = true,
+  buttonMode = 'standard',
+  buttonClassName = '',
 }: MissionPayRedeemProps) {
-  const { selectedChain } = useContext(ChainContextV5)
+  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const chainSlug = getChainSlug(selectedChain)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
-  const chains = isTestnet
-    ? [sepolia, optimismSepolia]
-    : [arbitrum, base, ethereum]
+  const chains = useMemo(
+    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, base, ethereum]),
+    [isTestnet]
+  )
+  const chainSlugs = chains.map((chain) => getChainSlug(chain))
 
-  const onrampSuccess = router?.query?.onrampSuccess === 'true'
-
-  const [missionPayModalEnabled, setMissionPayModalEnabled] = useState(false)
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
 
   // Payment processing state
   const [isFiatPaymentProcessing, setIsFiatPaymentProcessing] = useState(false)
-
-  // Add state to track if we've processed the onramp success
-  const [hasProcessedOnrampSuccess, setHasProcessedOnrampSuccess] =
-    useState(false)
 
   const account = useActiveAccount()
   const address = account?.address
@@ -497,11 +499,6 @@ function MissionPayRedeemComponent({
         setInput('0')
         return
       }
-      // Only update ETH input if price is available
-      if (ethUsdPrice && !isNaN(Number(finalNumericValue))) {
-        setInput((Number(finalNumericValue) / ethUsdPrice).toFixed(6))
-      }
-      // Don't set input to '0' if price isn't loaded yet - keep existing value
     },
     [ethUsdPrice, setInput, formatInputWithCommas]
   )
@@ -534,7 +531,8 @@ function MissionPayRedeemComponent({
 
   // Calculate required ETH amount and determine if user has enough balance
   const requiredEth = useMemo(() => {
-    return usdInput && ethUsdPrice ? Number(usdInput) / ethUsdPrice : 0
+    const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
+    return usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
   }, [usdInput, ethUsdPrice])
 
   const hasEnoughBalance = useMemo(() => {
@@ -542,6 +540,36 @@ function MissionPayRedeemComponent({
       nativeBalance && Number(nativeBalance) >= requiredEth && requiredEth > 0
     )
   }, [nativeBalance, requiredEth])
+
+  // Calculate how much USD the user needs to buy (difference between required and current balance)
+  // Account for Coinbase's $2 minimum
+  const usdDeficit = useMemo(() => {
+    const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
+    const inputAmount = parseFloat(cleanUsdInput)
+
+    // If no balance data, use full input amount but enforce $2 minimum
+    if (!nativeBalance || !requiredEth || !ethUsdPrice) {
+      return inputAmount > 0 && inputAmount < 2 ? '2.00' : cleanUsdInput
+    }
+
+    const ethDeficit = Math.max(0, requiredEth - Number(nativeBalance))
+    const deficit = ethDeficit * ethUsdPrice
+
+    // If they need any amount less than $2, round up to $2 (Coinbase minimum)
+    if (deficit > 0 && deficit < 2) {
+      return '2.00'
+    }
+
+    return deficit.toFixed(2)
+  }, [nativeBalance, requiredEth, ethUsdPrice, usdInput])
+
+  // Check if we had to adjust the amount to meet Coinbase minimum
+  const isAdjustedForMinimum = useMemo(() => {
+    if (!nativeBalance || !requiredEth || !ethUsdPrice) return false
+    const ethDeficit = Math.max(0, requiredEth - Number(nativeBalance))
+    const actualDeficit = ethDeficit * ethUsdPrice
+    return actualDeficit > 0 && actualDeficit < 2
+  }, [nativeBalance, requiredEth, ethUsdPrice])
 
   const tokenBalance = useWatchTokenBalance(
     selectedChain,
@@ -692,7 +720,7 @@ function MissionPayRedeemComponent({
       return
     }
 
-    if (!REQUIRED_CHAINS_SLUGS.includes(chainSlug)) {
+    if (!chainSlugs.includes(chainSlug)) {
       return toast.error('Mission tokens are not supported on this network.', {
         style: toastStyle,
       })
@@ -732,6 +760,12 @@ function MissionPayRedeemComponent({
           transaction,
           account,
         })
+        toast.success(
+          'Payment recieved! Please wait a minute or two for settlement.',
+          {
+            style: toastStyle,
+          }
+        )
         const destinationMessage = await waitForMessageReceived(
           isTestnet ? 19999 : 1, // 19999 resolves to testnet, 1 to mainnet, see https://cdn.jsdelivr.net/npm/@layerzerolabs/scan-client@0.0.8/dist/client.mjs
           originReceipt.transactionHash
@@ -763,6 +797,13 @@ function MissionPayRedeemComponent({
         })
       }
 
+      setInput('0')
+      setUsdInput('0')
+
+      if (setModalEnabled) {
+        setModalEnabled(false)
+      }
+
       toast.success('Mission token purchased!', {
         style: toastStyle,
       })
@@ -775,7 +816,9 @@ function MissionPayRedeemComponent({
       })
 
       refreshMissionData()
-      setMissionPayModalEnabled(false)
+      if (setModalEnabled) {
+        setModalEnabled(false)
+      }
     } catch (error) {
       console.error('Error purchasing tokens:', error)
       toast.error('Failed to purchase tokens', {
@@ -792,6 +835,7 @@ function MissionPayRedeemComponent({
     message,
     refreshMissionData,
     chainSlug,
+    chainSlugs,
     agreedToCondition,
     defaultChainSlug,
     crossChainPayContract,
@@ -799,6 +843,7 @@ function MissionPayRedeemComponent({
     isLoadingEthUsdPrice,
     ethUsdPrice,
     usdInput,
+    setModalEnabled,
   ])
 
   //Redeem (stage 3 refund) all mission tokens for the connected wallet
@@ -931,7 +976,16 @@ function MissionPayRedeemComponent({
     } else if (input === '0' || input === '') {
       setOutput(0)
     }
-  }, [input, getQuote])
+  }, [input, getQuote, ruleset])
+
+  useEffect(() => {
+    if (usdInput && ethUsdPrice) {
+      const finalNumericValue = usdInput.replace(/,/g, '')
+      if (!isNaN(Number(finalNumericValue))) {
+        setInput((Number(finalNumericValue) / ethUsdPrice).toFixed(6))
+      }
+    }
+  }, [usdInput, ethUsdPrice])
 
   useEffect(() => {
     // Only try to get redeem quote when refunds are actually available (stage === 3)
@@ -947,64 +1001,12 @@ function MissionPayRedeemComponent({
     }
   }, [jbTokenBalance, tokenCredit, stage, getRedeemQuote])
 
-  // Add a function to clear the parameter only when needed
-  const clearOnrampSuccessParam = useCallback(() => {
-    if (router?.query?.onrampSuccess) {
-      router.replace(
-        {
-          pathname: router.pathname,
-          query: {
-            ...router.query,
-            onrampSuccess: undefined,
-          },
-        },
-        undefined,
-        { shallow: true }
-      )
-    }
-  }, [router])
-
   // Clear parameter when modal is closed
   const handleModalClose = useCallback(() => {
-    setMissionPayModalEnabled(false)
-    clearOnrampSuccessParam() // Only clear when modal closes
-  }, [clearOnrampSuccessParam])
-
-  // Open modal after onramp success
-  useEffect(() => {
-    if (onrampSuccess && account?.address && !hasProcessedOnrampSuccess) {
-      setHasProcessedOnrampSuccess(true)
-      setTimeout(() => {
-        setMissionPayModalEnabled(true)
-      }, 500)
+    if (setModalEnabled) {
+      setModalEnabled(false)
     }
-  }, [onrampSuccess, account?.address, hasProcessedOnrampSuccess])
-
-  // Cleanup when component unmounts
-  useEffect(() => {
-    return () => {
-      setHasProcessedOnrampSuccess(false)
-    }
-  }, [])
-
-  // Auto-populate USD input with wallet balance value after onramp success
-  useEffect(() => {
-    if (
-      onrampSuccess &&
-      account?.address &&
-      nativeBalance &&
-      ethUsdPrice &&
-      !usdInput
-    ) {
-      // Show the USD value of their current ETH balance as a suggestion
-      const balanceUsd = (Number(nativeBalance) * ethUsdPrice).toFixed(0)
-      if (Number(balanceUsd) > 1) {
-        // Only if meaningful amount
-        setUsdInput(balanceUsd)
-        setInput(Number(nativeBalance).toFixed(6))
-      }
-    }
-  }, [onrampSuccess, account?.address, nativeBalance, ethUsdPrice, usdInput])
+  }, [setModalEnabled])
 
   if (stage === 4) return null
 
@@ -1012,7 +1014,7 @@ function MissionPayRedeemComponent({
     <>
       {!onlyModal && (
         <>
-          {deployTokenModalEnabled && isTeamSigner && (
+          {!onlyButton && deployTokenModalEnabled && isTeamSigner && (
             <MissionDeployTokenModal
               setEnabled={setDeployTokenModalEnabled}
               isTeamSigner={isTeamSigner}
@@ -1023,7 +1025,8 @@ function MissionPayRedeemComponent({
               lastSafeTxExecuted={lastSafeTxExecuted}
             />
           )}
-          {token &&
+          {!onlyButton &&
+            token &&
             (!token?.tokenAddress || token.tokenAddress === ZERO_ADDRESS) &&
             isTeamSigner &&
             stage < 3 && (
@@ -1039,33 +1042,78 @@ function MissionPayRedeemComponent({
               </div>
             )}
 
-          <div className="mt-2">
-            <MissionPayRedeemContent
-              token={token}
-              output={output}
-              redeem={redeemMissionToken}
-              setMissionPayModalEnabled={setMissionPayModalEnabled}
-              tokenBalance={tokenBalance}
-              tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
-              claimTokenCredit={claimTokenCredit}
-              currentStage={currentStage}
-              stage={stage}
-              deadline={deadline}
-              handleUsdInputChange={handleUsdInputChange}
-              calculateEthAmount={calculateEthAmount}
-              formattedUsdInput={formattedUsdInput}
-              formatTokenAmount={formatTokenAmount}
-              redeemAmount={redeemAmount}
-              isLoadingRedeemAmount={isLoadingRedeemAmount}
-              isLoadingEthUsdPrice={isLoadingEthUsdPrice}
-              usdInput={usdInput}
-              formatInputWithCommas={formatInputWithCommas}
-            />
-          </div>
+          {onlyButton && buttonMode === 'fixed' ? (
+            <Modal
+              id="fixed-contribute-button"
+              setEnabled={() => {}}
+              className={`fixed bottom-0 pb-2 pt-4 z-[100] w-full flex items-center justify-center bg-gradient-to-r from-gray-900/95 via-blue-900/80 to-purple-900/70 backdrop-blur-xl ${
+                visibleButton ? 'opacity-100' : 'opacity-0'
+              } transition-opacity duration-300 animate-fadeIn`}
+            >
+              <div className="flex flex-col items-center justify-center">
+                <PrivyWeb3Button
+                  label={
+                    isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
+                      ? 'Loading ETH price...'
+                      : 'Contribute'
+                  }
+                  id="open-contribute-modal"
+                  className={`rounded-full gradient-2 rounded-full w-[80vw] py-1 ${buttonClassName}`}
+                  action={() => setModalEnabled && setModalEnabled(true)}
+                  isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}
+                  showSignInLabel={false}
+                />
+                <p className="text-sm text-gray-300 italic">{`Sign In ● Fund ● Contribute`}</p>
+              </div>
+            </Modal>
+          ) : onlyButton && buttonMode === 'standard' ? (
+            <div
+              className={`${
+                visibleButton ? 'opacity-100' : 'opacity-0 hidden'
+              } transition-opacity duration-300 animate-fadeIn`}
+            >
+              <PrivyWeb3Button
+                label="Contribute"
+                id="open-contribute-modal"
+                className={
+                  buttonClassName
+                    ? buttonClassName
+                    : 'rounded-full gradient-2 rounded-full'
+                }
+                action={() => setModalEnabled && setModalEnabled(true)}
+                isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}
+                showSignInLabel={false}
+              />
+            </div>
+          ) : (
+            <div className="mt-2">
+              <MissionPayRedeemContent
+                token={token}
+                output={output}
+                redeem={redeemMissionToken}
+                setModalEnabled={setModalEnabled}
+                tokenBalance={tokenBalance}
+                tokenCredit={tokenCredit !== undefined ? tokenCredit : 0}
+                claimTokenCredit={claimTokenCredit}
+                currentStage={currentStage}
+                stage={stage}
+                deadline={deadline}
+                handleUsdInputChange={handleUsdInputChange}
+                calculateEthAmount={calculateEthAmount}
+                formattedUsdInput={formattedUsdInput}
+                formatTokenAmount={formatTokenAmount}
+                redeemAmount={redeemAmount}
+                isLoadingRedeemAmount={isLoadingRedeemAmount}
+                isLoadingEthUsdPrice={isLoadingEthUsdPrice}
+                usdInput={usdInput}
+                formatInputWithCommas={formatInputWithCommas}
+              />
+            </div>
+          )}
         </>
       )}
-      {(modalEnabled || missionPayModalEnabled) && (
-        <Modal id="mission-pay-modal" setEnabled={setMissionPayModalEnabled}>
+      {modalEnabled && (
+        <Modal id="mission-pay-modal" setEnabled={handleModalClose}>
           <div className="w-screen md:w-[550px] mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/10">
@@ -1181,25 +1229,35 @@ function MissionPayRedeemComponent({
                 <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
                   Recipient Address
                 </label>
-                <div className="bg-black/20 border border-white/10 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <p className="text-white font-mono text-sm">
-                        {address?.slice(0, 6)}...{address?.slice(-4)}
-                      </p>
+                <div className="flex items-center justify-between w-full gap-2">
+                  <div className="bg-black/20 border border-white/10 rounded-lg p-3 w-full">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <p className="text-white font-mono text-sm">
+                          {address?.slice(0, 6)}...{address?.slice(-4)}
+                        </p>
+                      </div>
+                      <button
+                        className="p-1 hover:bg-white/10 rounded transition-colors duration-200 group"
+                        onClick={() => {
+                          navigator.clipboard.writeText(address || '')
+                          toast.success('Address copied to clipboard.', {
+                            style: toastStyle,
+                          })
+                        }}
+                      >
+                        <CopyIcon />
+                      </button>
                     </div>
-                    <button
-                      className="p-1 hover:bg-white/10 rounded transition-colors duration-200 group"
-                      onClick={() => {
-                        navigator.clipboard.writeText(address || '')
-                        toast.success('Address copied to clipboard.', {
-                          style: toastStyle,
-                        })
-                      }}
-                    >
-                      <CopyIcon />
-                    </button>
+                  </div>
+                  <div className="">
+                    <NetworkSelector
+                      chains={chains}
+                      compact={true}
+                      align="right"
+                      iconsOnly={true}
+                    />
                   </div>
                 </div>
               </div>
@@ -1254,8 +1312,10 @@ function MissionPayRedeemComponent({
                     <ConditionCheckbox
                       id="contribution-terms-checkbox"
                       label={
-                        <p className="text-sm text-gray-300">
-                          {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
+                        <>
+                          <p className="text-sm text-gray-300">
+                            {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
+                          </p>
                           <Link
                             href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
                             className="text-blue-400 hover:text-blue-300"
@@ -1264,28 +1324,18 @@ function MissionPayRedeemComponent({
                           >
                             risks
                           </Link>{' '}
-                          {`associated with participation in the MoonDAO Launchpad.`}
-                        </p>
+                          <p className="text-sm text-gray-300">
+                            {`associated with participation in the MoonDAO Launchpad.`}
+                          </p>
+                        </>
                       }
                       agreedToCondition={agreedToCondition}
                       setAgreedToCondition={setAgreedToCondition}
                     />
                   </div>
 
-                  {/* Network Selector */}
-                  <div className="space-y-2">
-                    <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
-                      Network
-                    </label>
-                    <NetworkSelector
-                      chains={chains}
-                      compact={true}
-                      align="left"
-                    />
-                  </div>
-
                   {/* Action Buttons */}
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex flex-col md:flex-row gap-3 pt-4">
                     <button
                       type="button"
                       className="flex-1 bg-black/20 border border-white/10 hover:bg-black/30 hover:border-white/20 text-white py-4 px-6 rounded-lg font-medium transition-all duration-200"
@@ -1297,7 +1347,7 @@ function MissionPayRedeemComponent({
                       id="contribute-button"
                       className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50"
                       label={
-                        !REQUIRED_CHAINS_SLUGS.includes(chainSlug)
+                        !chainSlugs.includes(chainSlug)
                           ? `Switch Network`
                           : `Contribute $${formattedUsdInput || '0'} USD`
                       }
@@ -1307,7 +1357,7 @@ function MissionPayRedeemComponent({
                         !usdInput ||
                         parseFloat((usdInput as string).replace(/,/g, '')) <=
                           0 ||
-                        !REQUIRED_CHAINS_SLUGS.includes(chainSlug)
+                        !chainSlugs.includes(chainSlug)
                       }
                     />
                   </div>
@@ -1315,29 +1365,107 @@ function MissionPayRedeemComponent({
               ) : (
                 // User needs more ETH - show CBOnramp
                 <div className="space-y-4">
-                  <CBOnramp
-                    address={address || ''}
-                    selectedChain={selectedChain}
-                    usdInput={usdInput.replace(/,/g, '')}
-                    onSuccess={() => {
-                      setIsFiatPaymentProcessing(false)
-                      toast.success(
-                        'ETH purchase completed! You can now contribute to the mission.',
-                        {
-                          style: toastStyle,
-                        }
-                      )
-                    }}
-                    redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
-                  />
+                  {/* Show balance info if user has some ETH */}
+                  {usdInput &&
+                    usdDeficit &&
+                    nativeBalance &&
+                    Number(nativeBalance) > 0 &&
+                    ethUsdPrice && (
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 space-y-2">
+                        <p className="text-blue-300 text-sm">
+                          <span className="font-semibold">
+                            Current Balance:
+                          </span>{' '}
+                          {Number(nativeBalance).toFixed(4)} ETH ($
+                          {(Number(nativeBalance) * ethUsdPrice).toFixed(2)})
+                          <br />
+                          <span className="font-semibold">
+                            Need to Buy:
+                          </span>{' '}
+                          {isAdjustedForMinimum ? (
+                            <>
+                              ${usdDeficit} (adjusted to meet Coinbase's $2
+                              minimum)
+                            </>
+                          ) : (
+                            <>
+                              ${usdDeficit} more of ETH to complete your $
+                              {usdInput} contribution
+                            </>
+                          )}
+                        </p>
+                        {isAdjustedForMinimum && (
+                          <p className="text-blue-200 text-xs">
+                            Note: You'll receive a bit more ETH than needed for
+                            this contribution, which you can use for future
+                            transactions.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                  {usdInput && usdDeficit && (
+                    <CBOnramp
+                      address={address || ''}
+                      selectedChain={selectedChain}
+                      usdInput={usdDeficit}
+                      onSuccess={() => {
+                        setIsFiatPaymentProcessing(false)
+                        toast.success(
+                          'ETH purchase completed! You can now contribute to the mission.',
+                          {
+                            style: toastStyle,
+                          }
+                        )
+                      }}
+                      onBeforeNavigate={() => {
+                        // No cleanup needed - using React state instead of sessionStorage
+                      }}
+                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${
+                        mission?.id
+                      }?onrampSuccess=true&chain=${chainSlug}&usdAmount=${usdInput.replace(
+                        /,/g,
+                        ''
+                      )}`}
+                    />
+                  )}
+
+                  {/* Show minimum adjustment warning for users with no balance */}
+                  {(!nativeBalance || Number(nativeBalance) === 0) &&
+                    usdInput &&
+                    parseFloat(usdInput.replace(/,/g, '')) > 0 &&
+                    parseFloat(usdInput.replace(/,/g, '')) < 2 && (
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                        <p className="text-blue-300 text-sm">
+                          <span className="font-semibold">Note:</span> Coinbase
+                          requires a minimum purchase of $2. You'll receive ${' '}
+                          {(2 - parseFloat(usdInput.replace(/,/g, ''))).toFixed(
+                            2
+                          )}{' '}
+                          extra in ETH that you can use for future transactions.
+                        </p>
+                      </div>
+                    )}
 
                   {usdInput && (
-                    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                      <p className="text-yellow-400 text-sm">
-                        You need more ETH to contribute ${usdInput} USD. Use
-                        Coinbase above to purchase ETH.
-                      </p>
-                    </div>
+                    <>
+                      {parseFloat(usdInput.replace(/,/g, '')) > 5000 && (
+                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                          <p className="text-orange-300 text-sm">
+                            <span className="font-semibold">Large Amount:</span>{' '}
+                            Coinbase has purchase limits around $5,000-$7,500.
+                            For larger contributions, please contact{' '}
+                            <a
+                              href="mailto:info@moondao.com"
+                              className="text-orange-200 underline hover:text-orange-100"
+                            >
+                              info@moondao.com
+                            </a>{' '}
+                            about wire transfer options.
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   <button
