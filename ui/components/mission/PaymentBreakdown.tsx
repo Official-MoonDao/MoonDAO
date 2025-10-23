@@ -130,7 +130,7 @@ export function PaymentBreakdown({
             <div className="border-t border-gray-500/30 my-2"></div>
 
             {/* Need to Buy */}
-            {showNeedToBuy && (
+            {showNeedToBuy && requiredEth > nativeBalance && (
               <div className="flex items-center justify-between">
                 <p className="text-white text-base font-semibold">
                   Need to Buy
