@@ -70,6 +70,7 @@ import Head from '@/components/layout/Head'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionInfo from '@/components/mission/MissionInfo'
+import MissionMetadataModal from '@/components/mission/MissionMetadataModal'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import TeamMembers from '@/components/subscription/TeamMembers'
@@ -173,6 +174,8 @@ export default function MissionProfile({
   const [teamNFT, setTeamNFT] = useState<any>(_teamNFT)
   const [availableTokens, setAvailableTokens] = useState<number>(0)
   const [availablePayouts, setAvailablePayouts] = useState<number>(0)
+  const [missionMetadataModalEnabled, setMissionMetadataModalEnabled] =
+    useState(false)
 
   // Shared modal state for both mobile and desktop instances
   const [payModalEnabled, setPayModalEnabled] = useState(false)
@@ -628,6 +631,17 @@ export default function MissionProfile({
 
   return (
     <>
+      {/* Mission Metadata Modal */}
+      {missionMetadataModalEnabled && (
+        <MissionMetadataModal
+          mission={mission}
+          teamNFT={teamNFT}
+          selectedChain={selectedChain}
+          setEnabled={setMissionMetadataModalEnabled}
+          jbControllerContract={jbControllerContract}
+        />
+      )}
+
       {/* Full-width Mission Header outside Container */}
       <MissionProfileHeader
         mission={mission}
@@ -649,6 +663,7 @@ export default function MissionProfile({
         deployLiquidityPool={deployLiquidityPool}
         totalFunding={totalFunding}
         isLoadingTotalFunding={isLoadingTotalFunding}
+        setMissionMetadataModalEnabled={setMissionMetadataModalEnabled}
         contributeButton={
           <MissionPayRedeem
             mission={mission}

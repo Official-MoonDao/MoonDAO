@@ -1,3 +1,4 @@
+import { PencilIcon } from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -42,6 +43,7 @@ interface MissionProfileHeaderProps {
   // Direct props for total funding instead of callback
   totalFunding: bigint
   isLoadingTotalFunding: boolean
+  setMissionMetadataModalEnabled?: (enabled: boolean) => void
   contributeButton: React.ReactNode
 }
 
@@ -66,6 +68,7 @@ const MissionProfileHeader = React.memo(
     deployLiquidityPool,
     totalFunding,
     isLoadingTotalFunding,
+    setMissionMetadataModalEnabled,
     contributeButton,
   }: MissionProfileHeaderProps) => {
     const account = useActiveAccount()
@@ -78,6 +81,16 @@ const MissionProfileHeader = React.memo(
 
     return (
       <div className="w-full bg-[#090d21] relative overflow-hidden">
+        {/* Edit Button for Managers */}
+        {isManager && setMissionMetadataModalEnabled && (
+          <button
+            className="absolute top-6 right-24 z-20 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
+            onClick={() => setMissionMetadataModalEnabled(true)}
+          >
+            <PencilIcon width={24} height={24} className="text-white" />
+          </button>
+        )}
+
         {/* Background decorative elements */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.1),transparent_50%)] pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(99,102,241,0.05),transparent_50%)] pointer-events-none" />
@@ -210,6 +223,15 @@ const MissionProfileHeader = React.memo(
                     )}
                   </div>
                   <div className="mt-2 md:mt-0 flex flex-col items-center md:items-end gap-2">
+                    <Link
+                      className="flex flex-col items-center group"
+                      href={`https://juicebox.money/v5/arb:${mission?.projectId}`}
+                      target="_blank"
+                    >
+                      <div className="scale-75 group-hover:scale-[0.80] transition-all duration-200">
+                        <JuiceboxLogoWhite />
+                      </div>
+                    </Link>
                     {contributeButton}
 
                     {/* Compact Manager Actions */}
