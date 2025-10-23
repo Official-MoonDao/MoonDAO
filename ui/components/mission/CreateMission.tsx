@@ -357,9 +357,8 @@ export default function CreateMission({
         }
       )
 
-      const { cid: missionMetadataIpfsHash } = await pinBlobOrFile(
-        missionMetadataBlob
-      )
+      const { cid: missionMetadataIpfsHash } =
+        await pinBlobOrFile(missionMetadataBlob)
 
       // Single contract call using calculated values
       const transaction = prepareContractCall({
@@ -782,9 +781,8 @@ export default function CreateMission({
                         file,
                         `${missionData.name} Mission Image`
                       )
-                      const { cid: missionLogoIpfsHash } = await pinBlobOrFile(
-                        renamedMissionImage
-                      )
+                      const { cid: missionLogoIpfsHash } =
+                        await pinBlobOrFile(renamedMissionImage)
                       setMissionLogoUri(`${IPFS_GATEWAY}${missionLogoIpfsHash}`)
                     }}
                     dimensions={[1024, 1024]}
