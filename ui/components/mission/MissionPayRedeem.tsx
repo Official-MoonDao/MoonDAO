@@ -1786,10 +1786,8 @@ function MissionPayRedeemComponent({
                     <ConditionCheckbox
                       id="contribution-terms-checkbox"
                       label={
-                        <>
-                          <p className="text-sm text-gray-300">
-                            {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
-                          </p>
+                        <p className="text-sm text-gray-300">
+                          {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
                           <Link
                             href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
                             className="text-blue-400 hover:text-blue-300"
@@ -1797,11 +1795,9 @@ function MissionPayRedeemComponent({
                             rel="noopener noreferrer"
                           >
                             risks
-                          </Link>{' '}
-                          <p className="text-sm text-gray-300">
-                            {`associated with participation in the MoonDAO Launchpad.`}
-                          </p>
-                        </>
+                          </Link>
+                          {` associated with participation in the MoonDAO Launchpad.`}
+                        </p>
                       }
                       agreedToCondition={agreedToCondition}
                       setAgreedToCondition={setAgreedToCondition}
