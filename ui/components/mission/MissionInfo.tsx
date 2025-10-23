@@ -141,18 +141,6 @@ export default function MissionInfo({
     }
   }, [])
 
-  const teamSocials = useMemo(() => {
-    return {
-      communications: getAttribute(
-        teamNFT?.metadata?.attributes,
-        'communications'
-      )?.value,
-      twitter: getAttribute(teamNFT?.metadata?.attributes, 'twitter')?.value,
-      website: getAttribute(teamNFT?.metadata?.attributes, 'website')?.value,
-      discord: getAttribute(teamNFT?.metadata?.attributes, 'discord')?.value,
-    }
-  }, [teamNFT?.metadata?.attributes])
-
   useEffect(() => {
     if (router.query.tab) {
       setTab(router.query.tab as MissionInfoTabType)
@@ -182,43 +170,56 @@ export default function MissionInfo({
 
   return (
     <div className="w-full">
+      <div className="-ml-3 block md:hidden flex items-center justify-center gap-2 w-full">
+        <div className="flex gap-2 justify-center w-full">
+          {mission?.metadata?.socialLink && (
+            <Link
+              className="flex gap-2 hover:scale-105 transition-all duration-200"
+              href={mission?.metadata?.socialLink}
+              target="_blank"
+              passHref
+            >
+              <ChatBubbleLeftIcon height={25} width={25} />
+            </Link>
+          )}
+          {mission?.metadata?.infoUri && (
+            <Link
+              className="flex gap-2 hover:scale-105 transition-all duration-200"
+              href={mission?.metadata?.infoUri}
+              target="_blank"
+              passHref
+            >
+              <GlobeAltIcon height={25} width={25} />
+            </Link>
+          )}
+        </div>
+      </div>
       <div className="w-full pl-[2vw] flex flex-col md:flex-row gap-10 md:gap-2 justify-between max-w-[1200px]">
         <div
           id="mission-info-tabs"
-          className="flex px-10 sm:px-4 md:px-0 justify-between sm:justify-start mt-4 flex gap-10 md:gap-20 w-full"
+          className="px-10 sm:px-4 md:px-0 justify-between sm:justify-start mt-4 flex gap-10 md:gap-20 w-full"
         >
           <MissionInfoTab tab="about" currentTab={tab} setTab={setTab} />
           <MissionInfoTab tab="activity" currentTab={tab} setTab={setTab} />
           <MissionInfoTab tab="tokenomics" currentTab={tab} setTab={setTab} />
         </div>
 
-        <div className="flex items-center md:justify-end gap-2 w-full">
-          <div className="text-sm text-gray-400">{'CONNECT WITH THE TEAM'}</div>
-          <div className="flex gap-2 justify-start justify-end">
-            {teamSocials.communications && (
+        <div className="hidden md:block md:mt-4 flex items-center md:justify-end gap-2 w-full">
+          <div className="flex gap-2 justify-end w-full">
+            {mission?.metadata?.socialLink && (
               <Link
-                className="flex gap-2"
-                href={teamSocials.communications}
+                className="flex gap-2 hover:scale-105 transition-all duration-200"
+                href={mission?.metadata?.socialLink}
                 target="_blank"
                 passHref
               >
                 <ChatBubbleLeftIcon height={25} width={25} />
               </Link>
             )}
-            {teamSocials.twitter && (
+            {mission?.metadata?.infoUri && (
               <Link
-                className="flex gap-2"
-                href={teamSocials.twitter}
-                target="_blank"
-                passHref
-              >
-                <TwitterIcon />
-              </Link>
-            )}
-            {teamSocials.website && (
-              <Link
-                className="flex gap-2"
-                href={teamSocials.website}
+                className="flex gap-2 hover:scale-105 transition-all duration-200"
+                href={mission?.metadata?.infoUri}
                 target="_blank"
                 passHref
               >

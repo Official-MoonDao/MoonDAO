@@ -428,6 +428,10 @@ export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   ethereum: 30110, //arbitrum eid
 }
 
+// LayerZero limit: 0.24 ETH maximum per transaction (total including fees)
+export const LAYERZERO_MAX_ETH = 0.24
+export const LAYERZERO_MAX_CONTRIBUTION_ETH = 0.1038
+
 //GCP HSM Signer used for XP oracle verification, citizen referrals and gasless transactions
 export const GCP_HSM_SIGNER_ADDRESS =
   '0xb206325e6562517532686dfeeead4c104d9f5d32'
