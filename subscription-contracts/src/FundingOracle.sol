@@ -4,22 +4,24 @@ pragma solidity ^0.8.24;
 import {FunctionsClient} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/FunctionsClient.sol";
 import {FunctionsRequest} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
 
 contract FeeHook is FunctionsClient, Ownable {
-    mapping(uint256 => uint256) public projectIdToFunding;
+    mapping(uint256 => uint256) public missionIdToFunding;
+    mapping(uint256 => mapping(uint256 => uint256)) public missionIdToChainIdToProjectId;
+    uint256[] chainIds;
 
     // Chainlink
-    mapping(bytes32 => address) public requestIdToSender;
+    mapping(bytes32 => uint256) public requestIdToMissionId;
     uint32 gasLimit = 300000;
     uint64 subscriptionId; // Chainlink subscription ID
     bytes32 donID; // DON ID for Chainlink Functions
     // Event to log responses
-    event Withdraw(
+    event FundingUpdate(
         bytes32 indexed requestId,
-        uint256 totalSupply,
-        uint256 userBalance,
-        address user,
-        uint256 withdrawAmount
+        uint256 totalFunding,
+        uint256 missionId
     );
     string source =
         "const tokens = ["
@@ -27,10 +29,6 @@ contract FeeHook is FunctionsClient, Ownable {
         "{"
         "chain: 'arbitrum-mainnet',"
         "address: '0xB255c74F8576f18357cE6184DA033c6d93C71899',"
-        "},"
-        "{"
-        "chain: 'polygon-mainnet',"
-        "address: '0xe2d1BFef0A642B717d294711356b468ccE68BEa6',"
         "},"
         "{"
         "chain: 'base-mainnet',"
@@ -67,9 +65,10 @@ contract FeeHook is FunctionsClient, Ownable {
         "...u256ToBytes(balanceSum),"
         "]);";
 
-    constructor(address owner, address _router, bytes32 _donID, uint64 _subscriptionId) BaseHook(_poolManager) OApp(_lzEndpoint, owner) Ownable(owner) FunctionsClient(_router) {
+    constructor(address owner, uint256[] _chainIds, address _router, bytes32 _donID, uint64 _subscriptionId) BaseHook(_poolManager) OApp(_lzEndpoint, owner) Ownable(owner) FunctionsClient(_router) {
         donID = _donID;
         subscriptionId = _subscriptionId;
+        chainIds = _chainIds;
     }
 
     function setSource(string memory _source) external onlyOwner {
@@ -80,30 +79,25 @@ contract FeeHook is FunctionsClient, Ownable {
         subscriptionId = _subscriptionId;
     }
 
-    /**
-    * @notice Sends a request to withdraw fees, to be fulfilled by chainlink's decentralized oracle network
-    * @return requestId The ID of the request
-    */
-    function withdrawFees() external returns (bytes32 requestId) {
-        if (block.chainid != destinationChainId) {
-            revert("Withdraw: not on destination chain");
-        }
-        FunctionsRequest.Request memory req;
-        req.initializeRequestForInlineJavaScript(source); // Initialize the request with JS code
-        string memory addressString = uint256(uint160(msg.sender)).toHexString(20);
-        string[] memory args = new string[](1);
-        args[0] = addressString; // Set the address argument
-        req.setArgs(args); // Set the arguments for the request
+    function setProjectId(uint256 missionId, uint256 chainId, uint256 projectId) external onlyOwner{
+        missionIdToChainIdToProjectId[missionId][chainId] = projectId;
+    }
 
-        // Send the request and store the request ID
+    function updateFunding(uint256 missionId) external returns (bytes32 requestId) {
+        FunctionsRequest.Request memory req;
+        req.initializeRequestForInlineJavaScript(source);
+        string[] memory args = new string[](chainIds.length);
+        for (uint i = 0; i < chainIds.length; i++) {
+            args[i] = missionIdToChainIdToProjectId[missionId][chainIds[i]].toHexString();
+        }
+        req.setArgs(args);
         requestId = _sendRequest(
             req.encodeCBOR(),
             subscriptionId,
             gasLimit,
             donID
         );
-        requestIdToSender[requestId] = msg.sender;
-
+        requestIdToMissionId[requestId] = missionId;
         return requestId;
     }
 
@@ -119,22 +113,14 @@ contract FeeHook is FunctionsClient, Ownable {
         bytes memory err
     ) internal override {
         if (err.length > 0) {
-            revert(string(err));  // bubble up the actual error
+            revert(string(err));
         }
-        // Update the contract's state variables with the response and any errors
-        (uint256 totalSupply, uint256 userBalance) = abi.decode(response, (uint256, uint256));
-        address withdrawAddress = requestIdToSender[requestId];
-        require(withdrawAddress != address(0), "Unknown requestId");
-        uint256 withdrawnByUser = totalWithdrawnPerUser[withdrawAddress];
-        uint256 withdrawAmount = allocated - withdrawnByUser;
-        require(withdrawAmount > 0, "Nothing to withdraw");
-        totalWithdrawnPerUser[withdrawAddress] += withdrawAmount;
-        totalWithdrawn += withdrawAmount;
-        transferETH(withdrawAddress, withdrawAmount);
-        delete requestIdToSender[requestId];
-
-        // Emit an event to log the response
-        emit Withdraw(requestId, totalSupply, userBalance, withdrawAddress, withdrawAmount);
+        (uint256 totalFunding, uint256 missionId) = abi.decode(response, (uint256, uint256));
+        address requestMissionId = requestIdToMissionId[requestId];
+        require(missionId == requestMissionId, "Mission ID mismatch");
+        missionIdToFunding[missionId] = totalFunding
+        delete requestIdToMissionId[requestId];
+        emit FundingUpdate(requestId, totalFunding, missionId);
     }
 }
 
