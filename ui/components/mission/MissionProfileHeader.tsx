@@ -186,10 +186,9 @@ const MissionProfileHeader = React.memo(
                     text={
                       isLoadingTotalFunding
                         ? 'Loading...'
-                        : `${truncateTokenValue(
-                            Number(totalFunding || 0) / 1e18 || 0,
-                            'ETH'
-                          ).toLocaleString()} ETH`
+                        : `$${Math.round(
+                            (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
+                          ).toLocaleString()} USD`
                     }
                     buttonClassName="scale-75"
                     wrap
@@ -211,12 +210,11 @@ const MissionProfileHeader = React.memo(
                         </div>
                       ) : (
                         <>
-                          <span className="text-base lg:text-lg mr-2">
-                            $
-                            {Math.round(
-                              (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
-                            )}
-                          </span>
+                          {`${truncateTokenValue(
+                            Number(totalFunding || 0) / 1e18 || 0,
+                            'ETH'
+                          ).toLocaleString()} ETH`}
+                          <span className="text-base lg:text-lg mr-2"></span>
                           <span className="text-xs opacity-90">RAISED</span>
                         </>
                       )}
