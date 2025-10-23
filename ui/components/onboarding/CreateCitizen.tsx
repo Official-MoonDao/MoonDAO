@@ -72,7 +72,6 @@ export default function CreateCitizen({
   freeMint,
 }: any) {
   const router = useRouter()
-  //console.log('freeMint', freeMint)
 
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const selectedChainSlug = getChainSlug(selectedChain)

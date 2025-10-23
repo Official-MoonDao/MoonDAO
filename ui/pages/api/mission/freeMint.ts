@@ -1,4 +1,3 @@
-//from("dotenv").config();
 import { ThirdwebSDK } from '@thirdweb-dev/sdk'
 import CitizenABI from 'const/abis/Citizen.json'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
@@ -19,7 +18,7 @@ import { serverClient } from '@/lib/thirdweb/client'
 // Configuration constants
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
-const privateKey = process.env.OPERATOR_PRIVATE_KEY
+const privateKey = process.env.XP_ORACLE_SIGNER_PK
 const sdk = ThirdwebSDK.fromPrivateKey(privateKey, chainSlug, {
   secretKey: '',
 })
@@ -48,9 +47,9 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     method: 'balanceOf' as string,
     params: [address],
   })
-  //if (balance !== 0n) {
-  //return res.status(400).json({ error: 'You are already a citizen!' })
-  //}
+  if (balance !== 0n) {
+    return res.status(400).json({ error: 'You are already a citizen!' })
+  }
   const fetchPayments = async () => {
     const query = `
       query {
@@ -78,11 +77,11 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   const totalPaid = payments.reduce((acc, payment) => {
     return acc + parseInt(payment.totalAmountContributed)
   }, 0)
-  //if (totalPaid < FREE_MINT_THRESHOLD) {
-  //return res.status(400).json({
-  //error: 'You have not contributed enough to earn a free citizen NFT!',
-  //})
-  //}
+  if (totalPaid < FREE_MINT_THRESHOLD) {
+    return res.status(400).json({
+      error: 'You have not contributed enough to earn a free citizen NFT!',
+    })
+  }
   const cost: any = await readContract({
     client: serverClient,
     contract: citizenReadContract,
