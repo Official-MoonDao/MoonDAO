@@ -300,7 +300,6 @@ export function ProjectRewards({
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
   const {
-    projectIdToMooneyPayout,
     addressToEthPayout,
     addressToMooneyPayout,
     ethPayoutCSV,
