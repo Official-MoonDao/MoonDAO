@@ -2,15 +2,22 @@
 pragma solidity ^0.8.24;
 
 import {FunctionsClient} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/FunctionsClient.sol";
+import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
 import {FunctionsRequest} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import {IJBTerminalStore} from "@nana-core-v5/interfaces/IJBTerminalStore.sol";
+import {MissionCreator} from "./MissionCreator.sol";
 
 
 contract FundingOracle is FunctionsClient, Ownable {
+    using FunctionsRequest for FunctionsRequest.Request;
+    using Strings for uint256;
+
     mapping(uint256 => uint256) public missionIdToFunding;
-    mapping(uint256 => mapping(uint256 => uint256)) public missionIdToChainIdToProjectId;
-    uint256[] chainIds;
+    address public missionCreatorAddress;
+    address public jbTerminalStoreAddress;
+    address public jbMultiTerminalAddress;
 
     mapping(bytes32 => uint256) public requestIdToMissionId;
     uint32 gasLimit = 300000;
@@ -43,7 +50,7 @@ contract FundingOracle is FunctionsClient, Ownable {
         "params: ["
         "{"
         "to: JB_V5_TERMINAL_STORE,"
-        "data: `0x467f4cb9${JB_V5_MULTI_TERMINAL.slice(2).padStart("
+        "data: `0x9cc7f708${JB_V5_MULTI_TERMINAL.slice(2).padStart("
         "64,"
         "'0'"
         ")}${args[i].slice(2)}${JB_NATIVE_TOKEN_ADDRESS.slice(2).padStart("
@@ -60,10 +67,11 @@ contract FundingOracle is FunctionsClient, Ownable {
         ").reduce((sum, r) => sum + BigInt(r.data.result || 0n), 0n);"
         "return new Uint8Array([...u256ToBytes(totalFunding)]);";
 
-    constructor(address owner, uint256[] _chainIds, address _router, bytes32 _donID, uint64 _subscriptionId) BaseHook(_poolManager) OApp(_lzEndpoint, owner) Ownable(owner) FunctionsClient(_router) {
+    constructor(address owner, address _jbMultiTerminal, address _jbTerminalStore, address _router, bytes32 _donID, uint64 _subscriptionId) Ownable(owner) FunctionsClient(_router) {
+        jbMultiTerminalAddress = _jbMultiTerminal;
+        jbTerminalStoreAddress = _jbTerminalStore;
         donID = _donID;
         subscriptionId = _subscriptionId;
-        chainIds = _chainIds;
     }
 
     function setSource(string memory _source) external onlyOwner {
@@ -74,17 +82,16 @@ contract FundingOracle is FunctionsClient, Ownable {
         subscriptionId = _subscriptionId;
     }
 
-    function setProjectId(uint256 missionId, uint256 chainId, uint256 projectId) external onlyOwner{
-        missionIdToChainIdToProjectId[missionId][chainId] = projectId;
+    function setMissionCreatorAddress(address _missionCreatorAddress) external onlyOwner {
+        missionCreatorAddress = _missionCreatorAddress;
     }
 
     function updateFunding(uint256 missionId) external returns (bytes32 requestId) {
         FunctionsRequest.Request memory req;
         req.initializeRequestForInlineJavaScript(source);
-        string[] memory args = new string[](chainIds.length);
-        for (uint i = 0; i < chainIds.length; i++) {
-            args[i] = missionIdToChainIdToProjectId[missionId][chainIds[i]].toHexString();
-        }
+        string[] memory args = new string[](2);
+        args[0] = missionId.toHexString(20);
+        args[1] = uint256(uint160(missionCreatorAddress)).toHexString(20);
         req.setArgs(args);
         requestId = _sendRequest(
             req.encodeCBOR(),
@@ -111,11 +118,23 @@ contract FundingOracle is FunctionsClient, Ownable {
             revert(string(err));
         }
         (uint256 totalFunding, uint256 missionId) = abi.decode(response, (uint256, uint256));
-        address requestMissionId = requestIdToMissionId[requestId];
+        uint256 requestMissionId = requestIdToMissionId[requestId];
         require(missionId == requestMissionId, "Mission ID mismatch");
-        missionIdToFunding[missionId] = totalFunding
+        missionIdToFunding[missionId] = totalFunding;
         delete requestIdToMissionId[requestId];
         emit FundingUpdate(requestId, totalFunding, missionId);
+    }
+
+    function balanceOf(
+        uint256 missionId
+    ) external view returns (uint256){
+        uint256 projectId = MissionCreator(missionCreatorAddress).missionIdToProjectId(missionId);
+        uint256 balance = IJBTerminalStore(jbTerminalStoreAddress).balanceOf(
+            jbMultiTerminalAddress,
+            projectId,
+            JBConstants.NATIVE_TOKEN
+        );
+        return balance;
     }
 }
 

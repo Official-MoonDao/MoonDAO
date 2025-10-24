@@ -12,6 +12,7 @@ import {JBCashOutHookSpecification} from "@nana-core-v5/structs/JBCashOutHookSpe
 import {IJBTerminalStore} from "@nana-core-v5/interfaces/IJBTerminalStore.sol";
 import {IJBRulesetDataHook} from "@nana-core-v5/interfaces/IJBRulesetDataHook.sol";
 import { JBConstants } from "@nana-core-v5/libraries/JBConstants.sol";
+import {FundingOracle} from "./FundingOracle.sol";
 
 
 // LaunchPadPayHook

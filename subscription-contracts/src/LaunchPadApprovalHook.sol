@@ -24,7 +24,7 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook {
         uint256 _refundPeriod,
         address _jbTerminalStoreAddress,
         address _terminal,
-        address _fundingOracleAddress,
+        address _fundingOracleAddress
     ) {
         fundingGoal = _fundingGoal;
         deadline = _deadline;

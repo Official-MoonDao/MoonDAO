@@ -46,6 +46,8 @@ contract Config is Script {
     address constant JB_V5_DIRECTORY = address(0x0061E516886A0540F63157f112C0588eE0651dCF);
     address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
     address payable constant CROSS_CHAIN_PAY_ADDRESS = payable(address(0xb9Ce576bec5D36F89275eb9bE6C1057B3bD3572C));
+    // FIXME deploy and update
+    address constant FUNDING_ORACLE_ADDRESS = address(0x0000000000000000000000000000000000000000);
 
     constructor() {
         string memory ethJson = vm.readFile("../contracts/deployments/ethereum.json");

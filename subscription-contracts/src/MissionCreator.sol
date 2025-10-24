@@ -35,6 +35,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
     MissionTable public missionTable;
     address public moonDAOTreasury;
     address public feeHookAddress;
+    address public fundingOracleAddress;
     address positionManagerAddress;
     mapping(uint256 => uint256) public missionIdToProjectId;
     mapping(uint256 => address) public missionIdToPayHook;
@@ -102,7 +103,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
         PoolDeployer poolDeployer = new PoolDeployer(feeHookAddress, positionManagerAddress, owner());
 
 
-        LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, to);
+        LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, fundingOracleAddress, to);
         LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, address(terminal), fundingOracleAddress);
         // Ruleset 0 is funding/refunds
         // Ruleset 0 has a cashout hook that will only allow refunds if the deadline has passed and the funding goal has not been met.
@@ -299,8 +300,6 @@ contract MissionCreator is Ownable, IERC721Receiver {
         missionIdToPoolDeployer[missionId] = address(poolDeployer);
         missionIdToFundingGoal[missionId] = fundingGoal;
         missionIdToTerminal[missionId] = address(terminal);
-
-        emit MissionCreated(missionId, teamId, projectId, tokenAddress, fundingGoal);
 
         return missionId;
     }
