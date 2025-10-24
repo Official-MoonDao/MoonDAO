@@ -413,7 +413,7 @@ export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
 
 // Shared across chains
 export const MISSION_CROSS_CHAIN_PAY_ADDRESS =
-  '0xa2ca498075Ec3a57cd1E407aFF88A495F838Bd5E'
+  '0x32D7ceD515A27CB60c6dcAd47225A7f300134983'
 
 export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   [key: string]: number
@@ -425,8 +425,8 @@ export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
 }
 
 // LayerZero limit: 0.24 ETH maximum per transaction (total including fees)
-export const LAYERZERO_MAX_ETH = 0.24
-export const LAYERZERO_MAX_CONTRIBUTION_ETH = 0.1038
+export const LAYERZERO_MAX_ETH = 100
+export const LAYERZERO_MAX_CONTRIBUTION_ETH = 100
 
 //GCP HSM Signer used for XP oracle verification, citizen referrals and gasless transactions
 export const GCP_HSM_SIGNER_ADDRESS =
