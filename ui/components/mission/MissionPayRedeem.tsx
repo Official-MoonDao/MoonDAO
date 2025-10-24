@@ -1,6 +1,5 @@
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
-import { useCitizen } from '@/lib/citizen/useCitizen'
 import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
@@ -36,6 +35,7 @@ import {
   waitForReceipt,
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import { useCitizen } from '@/lib/citizen/useCitizen'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
@@ -419,6 +419,7 @@ function MissionPayRedeemComponent({
   const [coinbasePaymentSubtotal, setCoinbasePaymentSubtotal] =
     useState<number>()
   const [coinbasePaymentTotal, setCoinbasePaymentTotal] = useState<number>()
+  const [coinbaseTotalFees, setCoinbaseTotalFees] = useState<number>()
   const [coinbaseEthInsufficient, setCoinbaseEthInsufficient] =
     useState<boolean>(false)
 
@@ -1408,10 +1409,16 @@ function MissionPayRedeemComponent({
 
   // Callback to receive quote data from CBOnramp
   const handleCoinbaseQuote = useCallback(
-    (ethAmount: number, paymentSubtotal: number, paymentTotal: number) => {
+    (
+      ethAmount: number,
+      paymentSubtotal: number,
+      paymentTotal: number,
+      totalFees: number
+    ) => {
       setCoinbaseEthReceive(ethAmount)
       setCoinbasePaymentSubtotal(paymentSubtotal)
       setCoinbasePaymentTotal(paymentTotal) // total w/ fees
+      setCoinbaseTotalFees(totalFees)
 
       // Validate that coinbaseEthReceive + current balance >= requiredEth
       const currentBalance = nativeBalance ? Number(nativeBalance) : 0
@@ -1766,7 +1773,6 @@ function MissionPayRedeemComponent({
                       maxLength={100}
                     />
                   </div>
-
                   {/* Payment Breakdown */}
                   {ethUsdPrice && usdInput && (
                     <PaymentBreakdown
@@ -1784,6 +1790,8 @@ function MissionPayRedeemComponent({
                       showCurrentBalance={true}
                       showNeedToBuy={true}
                       coinbasePaymentSubtotal={coinbasePaymentSubtotal}
+                      coinbaseTotalFees={coinbaseTotalFees}
+                      coinbasePaymentTotal={coinbasePaymentTotal}
                       coinbaseEthReceive={coinbaseEthReceive}
                       isAdjustedForMinimum={isAdjustedForMinimum}
                       coinbaseEthInsufficient={coinbaseEthInsufficient}
@@ -1899,6 +1907,8 @@ function MissionPayRedeemComponent({
                       coinbaseEthReceive={coinbaseEthReceive}
                       isAdjustedForMinimum={isAdjustedForMinimum}
                       coinbaseEthInsufficient={coinbaseEthInsufficient}
+                      coinbaseTotalFees={coinbaseTotalFees}
+                      coinbasePaymentTotal={coinbasePaymentTotal}
                     />
                   )}
 
@@ -1918,7 +1928,9 @@ function MissionPayRedeemComponent({
                         )
                       }}
                       onBeforeNavigate={() => {}}
-                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true&chain=${chainSlug}&usdAmount=${usdInput.replace(
+                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${
+                        mission?.id
+                      }?onrampSuccess=true&chain=${chainSlug}&usdAmount=${usdInput.replace(
                         /,/g,
                         ''
                       )}`}
