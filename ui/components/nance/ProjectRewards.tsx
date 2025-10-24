@@ -238,11 +238,21 @@ export function ProjectRewards({
   const nonCitizenDistributions = distributions?.filter(
     (_, i) => !isCitizens[i]
   )
+
+  const eligibleProjects = useMemo(
+    () => currentProjects.filter((p) => p.eligible),
+    [currentProjects]
+  )
+
+  const ineligibleProjects = useMemo(
+    () => currentProjects.filter((p) => !p.eligible),
+    [currentProjects]
+  )
   // All projects need at least one citizen distribution to do iterative normalization
-  const allProjectsHaveCitizenDistribution = currentProjects?.every(({ id }) =>
+  const allProjectsHaveCitizenDistribution = eligibleProjects?.every(({ id }) =>
     citizenDistributions.some(({ distribution }) => id in distribution)
   )
-  const allProjectsHaveRewardDistribution = currentProjects?.every(
+  const allProjectsHaveRewardDistribution = eligibleProjects?.every(
     (project) => project.rewardDistribution !== undefined
   )
   // Map from address to percentage of commnity rewards
@@ -252,13 +262,12 @@ export function ProjectRewards({
     allProjectsHaveCitizenDistribution &&
     allProjectsHaveRewardDistribution &&
     communityCirclePopulated
-
   const projectIdToEstimatedPercentage: { [key: string]: number } =
     readyToRunVoting
       ? computeRewardPercentages(
           citizenDistributions,
           nonCitizenDistributions,
-          currentProjects,
+          eligibleProjects,
           addressToQuadraticVotingPower
         )
       : {}
@@ -290,14 +299,18 @@ export function ProjectRewards({
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
-  const eligibleProjects = useMemo(
-    () => currentProjects.filter((p) => p.eligible),
-    [currentProjects]
-  )
-
-  const ineligibleProjects = useMemo(
-    () => currentProjects.filter((p) => !p.eligible),
-    [currentProjects]
+  const {
+    addressToEthPayout,
+    addressToMooneyPayout,
+    ethPayoutCSV,
+    mooneyPayoutCSV,
+    humanFormat,
+  } = getPayouts(
+    projectIdToEstimatedPercentage,
+    eligibleProjects,
+    communityCircle,
+    ethBudget,
+    mooneyBudget
   )
 
   useEffect(() => {
