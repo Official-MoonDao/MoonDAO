@@ -45,7 +45,6 @@ export function PaymentBreakdown({
   coinbaseTotalFees,
   coinbasePaymentTotal,
 }: PaymentBreakdownProps) {
-  console.log('coinbaseTotalFees', coinbaseTotalFees)
   return (
     <div className="bg-gray-500/5 border border-gray-500/20 rounded-lg p-4">
       <p className="text-white text-sm font-semibold mb-3">Payment Breakdown</p>
