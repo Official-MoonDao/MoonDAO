@@ -12,15 +12,15 @@ type PaymentBreakdownProps = {
   requiredEth: number
   ethUsdPrice: number
   nativeBalance?: number | null
-  // Optional props for different contexts
   showCurrentBalance?: boolean
   showNeedToBuy?: boolean
   coinbasePaymentSubtotal?: number
   coinbaseEthReceive?: number | null
   isAdjustedForMinimum?: boolean
   coinbaseEthInsufficient?: boolean
-  // For users with no balance
   showTotalToBuy?: boolean
+  coinbaseTotalFees?: number
+  coinbasePaymentTotal?: number
 }
 
 export function PaymentBreakdown({
@@ -42,7 +42,10 @@ export function PaymentBreakdown({
   isAdjustedForMinimum = false,
   coinbaseEthInsufficient = false,
   showTotalToBuy = false,
+  coinbaseTotalFees,
+  coinbasePaymentTotal,
 }: PaymentBreakdownProps) {
+  console.log('coinbaseTotalFees', coinbaseTotalFees)
   return (
     <div className="bg-gray-500/5 border border-gray-500/20 rounded-lg p-4">
       <p className="text-white text-sm font-semibold mb-3">Payment Breakdown</p>
@@ -79,7 +82,16 @@ export function PaymentBreakdown({
           </div>
         )}
 
-        {/* Show different totals based on context */}
+        {/* Coinbase Fees */}
+        {coinbaseTotalFees && (
+          <div className="flex items-center justify-between text-sm">
+            <p className="text-gray-300">Coinbase Fees</p>
+            <p className="text-gray-400">
+              ~${coinbaseTotalFees.toFixed(2)} USD
+            </p>
+          </div>
+        )}
+
         {!showCurrentBalance && !showTotalToBuy && (
           <>
             {/* Divider */}
@@ -107,17 +119,6 @@ export function PaymentBreakdown({
         {/* For users with some balance who need to buy more */}
         {showCurrentBalance && (
           <>
-            {/* Total Required */}
-            <div className="flex items-center justify-between text-sm">
-              <p className="text-blue-300">Total Required</p>
-              <p className="text-blue-400">
-                ${(requiredEth * ethUsdPrice).toFixed(2)} USD
-              </p>
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-gray-500/30 my-2"></div>
-
             {/* Current Balance */}
             <div className="flex items-center justify-between text-sm">
               <p className="text-blue-300">Current Balance</p>
@@ -133,13 +134,13 @@ export function PaymentBreakdown({
             {showNeedToBuy && requiredEth > (nativeBalance || 0) && (
               <div className="flex items-center justify-between">
                 <p className="text-white text-base font-semibold">
-                  Need to Buy
+                  Need to Pay
                 </p>
                 <div className="text-right">
                   <p className="text-green-400 text-base font-bold">
                     $
-                    {coinbasePaymentSubtotal
-                      ? coinbasePaymentSubtotal.toFixed(2)
+                    {coinbasePaymentTotal
+                      ? coinbasePaymentTotal.toFixed(2)
                       : (
                           requiredEth * ethUsdPrice -
                           (nativeBalance || 0) * ethUsdPrice
@@ -148,7 +149,10 @@ export function PaymentBreakdown({
                   </p>
                   <p className="text-green-300 text-xs">
                     {coinbaseEthReceive ? (
-                      <>You'll receive {coinbaseEthReceive.toFixed(8)} ETH</>
+                      <>
+                        You'll receive at least {coinbaseEthReceive.toFixed(8)}{' '}
+                        ETH
+                      </>
                     ) : (
                       <>
                         ~

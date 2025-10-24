@@ -17,7 +17,8 @@ interface CBOnrampProps {
   onQuoteCalculated?: (
     ethAmount: number,
     paymentSubtotal: number,
-    paymentTotal: number
+    paymentTotal: number,
+    totalFees: number
   ) => void
 }
 
@@ -82,7 +83,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
         // Coinbase's actual rate includes spread (~3-5% above spot)
         // Add 4% buffer to account for spread and get closer on first attempt
         const { channelId } = await generateSessionToken()
-        const initialEstimateUSD = ethAmount * spotPrice * 1.04
+        const initialEstimateUSD = ethAmount * spotPrice * 1.05
 
         let currentResponse = await fetch('/api/coinbase/buy-quote', {
           method: 'POST',
@@ -114,7 +115,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             setError(`Unable to get quote from Coinbase. Please try again.`)
           }
           setIsLoadingQuote(false)
-          onQuoteCalculated?.(0, 0, 0)
+          onQuoteCalculated?.(0, 0, 0, 0)
           return
         }
 
@@ -148,7 +149,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           const additionalUsdTotal = ethShortfall * effectiveRateTotal
 
           // Add 1% buffer for non-linear spread scaling
-          let adjustedUsd = paymentTotal + additionalUsdTotal * 1.01
+          let adjustedUsd = paymentTotal + additionalUsdTotal * 1.02
 
           if (adjustedUsd <= paymentTotal) {
             adjustedUsd = paymentTotal + Math.max(1, paymentTotal * 0.005) // +0.5%
@@ -211,21 +212,26 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
         if (receivedEthAmount > 0 && paymentTotal > 0) {
           setQuoteData({
             ethAmount: receivedEthAmount,
-            purchaseAmount: paymentSubtotal,
+            purchaseAmount: paymentTotal,
             totalAmount: paymentTotal,
             fees: totalFees,
             quoteId,
           })
-          onQuoteCalculated?.(receivedEthAmount, paymentSubtotal, paymentTotal)
+          onQuoteCalculated?.(
+            receivedEthAmount,
+            paymentSubtotal,
+            paymentTotal,
+            totalFees
+          )
           setIsLoadingQuote(false)
         } else {
-          onQuoteCalculated?.(0, 0, 0)
+          onQuoteCalculated?.(0, 0, 0, 0)
           setError('Invalid final quote data from Coinbase')
           setIsLoadingQuote(false)
         }
       } catch (error) {
         console.error('Error fetching quote:', error)
-        onQuoteCalculated?.(0, 0, 0)
+        onQuoteCalculated?.(0, 0, 0, 0)
         setError('Failed to fetch quote from Coinbase. Please try again.')
         setIsLoadingQuote(false)
       }
@@ -450,7 +456,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             </svg>
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-white">Buy Crypto</h2>
+            <h2 className="text-lg font-semibold text-white">Fund</h2>
             <p className="text-gray-300 text-xs">
               {selectedChain?.name || 'Ethereum'}
             </p>
@@ -474,44 +480,12 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
               </div>
             ) : quoteData?.purchaseAmount ? (
               <>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">
-                    Coinbase Fees
-                    {isArbitrum && <span className="text-xs ml-1">(est.)</span>}
-                    :
-                  </span>
-                  <span className="text-orange-400 font-medium">
-                    $
-                    {quoteData.fees.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{' '}
-                    USD
-                  </span>
-                </div>
                 {isArbitrum && (
                   <div className="text-xs text-gray-500 italic">
                     * Fees estimated using Ethereum rates. Actual fees may vary
                     slightly.
                   </div>
                 )}
-                <div className="border-t border-white/10 pt-3 flex items-center justify-between">
-                  <span className="text-gray-400 text-sm font-semibold">
-                    Total
-                    {isArbitrum && (
-                      <span className="text-xs ml-1 font-normal">(est.)</span>
-                    )}
-                    :
-                  </span>
-                  <span className="text-white font-bold">
-                    $
-                    {quoteData.totalAmount.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{' '}
-                    USD
-                  </span>
-                </div>
               </>
             ) : (
               <div className="flex items-center justify-between">
@@ -539,10 +513,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
               : isLoadingQuote
               ? 'Getting quote...'
               : quoteData?.purchaseAmount
-              ? `Buy $${quoteData.purchaseAmount.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })} of ETH with Coinbase`
+              ? `Buy ${quoteData.ethAmount} ETH with Coinbase`
               : `Buy ETH with Coinbase`
           }
           showSignInLabel={false}
