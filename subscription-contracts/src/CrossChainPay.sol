@@ -108,7 +108,7 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
             _metadata
         );
         bytes memory extraOptions = composeMsg.length > 0
-            ? OptionsBuilder.newOptions().addExecutorLzComposeOption(0, 800_000, uint128(_amount * 998 / 1_000)) // compose gas limit
+            ? OptionsBuilder.newOptions().addExecutorLzComposeOption(0, 800_000, 0) // compose gas limit
             : bytes("");
         IStargate.SendParam memory sendParam = IStargate.SendParam({
             dstEid: _dstEid,
@@ -150,7 +150,7 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
         );
 
         bytes memory extraOptions = composeMsg.length > 0
-            ? OptionsBuilder.newOptions().addExecutorLzComposeOption(0, 800_000, uint128(_amount * 998 / 1_000)) // compose gas limit
+            ? OptionsBuilder.newOptions().addExecutorLzComposeOption(0, 800_000, 0) // compose gas limit
             : bytes("");
         IStargate.SendParam memory sendParam = IStargate.SendParam({
             dstEid: _dstEid,
@@ -181,8 +181,8 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
             string memory memo,
             bytes memory metadata
         ) = abi.decode(_composeMessage, (uint256, address, uint256, string, bytes));
-
-        uint256 tokenCount = jbMultiTerminal.pay{value: msg.value}(
+        uint contractBalance = address(this).balance;
+        uint256 tokenCount = jbMultiTerminal.pay{value: contractBalance}(
             projectId,
             JBConstants.NATIVE_TOKEN,
             0,
@@ -191,7 +191,7 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
             memo,
             metadata
         );
-        emit CrossChainPayReceived(projectId, msg.value, beneficiary);
+        emit CrossChainPayReceived(projectId, contractBalance, beneficiary);
     }
 
     // Admin functions
