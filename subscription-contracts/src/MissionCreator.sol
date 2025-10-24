@@ -35,6 +35,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
     MissionTable public missionTable;
     address public moonDAOTreasury;
     address public feeHookAddress;
+    address public fundingOracleAddress;
     address positionManagerAddress;
     mapping(uint256 => uint256) public missionIdToProjectId;
     mapping(uint256 => address) public missionIdToPayHook;
@@ -46,7 +47,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
 
     event MissionCreated(uint256 indexed id, uint256 indexed teamId, uint256 indexed projectId, address tokenAddress, uint256 fundingGoal);
 
-    constructor(address _jbController, address _jbMultiTerminal, address _jbProjects, address _jbTerminalStore, address _jbRulesets, address _moonDAOTeam, address _missionTable, address _moonDAOTreasury, address _feeHookAddress, address _positionManagerAddress) Ownable(msg.sender) {
+    constructor(address _jbController, address _jbMultiTerminal, address _jbProjects, address _jbTerminalStore, address _jbRulesets, address _moonDAOTeam, address _missionTable, address _moonDAOTreasury, address _feeHookAddress, address _positionManagerAddress, address _fundingOracleAddress) Ownable(msg.sender) {
         jbController = IJBController(_jbController);
         jbProjects = IJBProjects(_jbProjects);
         jbMultiTerminalAddress = _jbMultiTerminal;
@@ -57,6 +58,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
         moonDAOTreasury = payable(_moonDAOTreasury);
         feeHookAddress = _feeHookAddress;
         positionManagerAddress = _positionManagerAddress;
+        fundingOracleAddress = _fundingOracleAddress;
     }
 
     function setJBController(address _jbController) external onlyOwner {
@@ -101,8 +103,8 @@ contract MissionCreator is Ownable, IERC721Receiver {
         PoolDeployer poolDeployer = new PoolDeployer(feeHookAddress, positionManagerAddress, owner());
 
 
-        LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, to);
-        LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, address(terminal));
+        LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, fundingOracleAddress, to);
+        LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, address(terminal), fundingOracleAddress);
         // Ruleset 0 is funding/refunds
         // Ruleset 0 has a cashout hook that will only allow refunds if the deadline has passed and the funding goal has not been met.
         // Ruleset 0 has an approval hook that will automatically move to ruleset 1 if the funding goal is met and if the deadline has passed.
@@ -289,6 +291,8 @@ contract MissionCreator is Ownable, IERC721Receiver {
         jbProjects.safeTransferFrom(address(this), to, projectId);
 
         uint256 missionId = missionTable.insertIntoTable(teamId, projectId, fundingGoal);
+        launchPadApprovalHook.setMissionId(missionId);
+        launchPadPayHook.setMissionId(missionId);
         missionIdToProjectId[missionId] = projectId;
         missionIdToPayHook[missionId] = address(launchPadPayHook);
         missionIdToTeamVesting[missionId] = address(teamVesting);
@@ -296,8 +300,6 @@ contract MissionCreator is Ownable, IERC721Receiver {
         missionIdToPoolDeployer[missionId] = address(poolDeployer);
         missionIdToFundingGoal[missionId] = fundingGoal;
         missionIdToTerminal[missionId] = address(terminal);
-
-        emit MissionCreated(missionId, teamId, projectId, tokenAddress, fundingGoal);
 
         return missionId;
     }
