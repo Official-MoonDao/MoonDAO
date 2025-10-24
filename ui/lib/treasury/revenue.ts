@@ -17,7 +17,7 @@ import {
   getValidatorPerformance,
 } from '../beaconchain'
 import { fetchInternalTransactions, getETHPrice } from '../etherscan'
-import { arbitrum, ethereum } from '../infura/infuraChains'
+import { arbitrum, ethereum } from '../rpc/chains'
 import {
   getUniswapHistoricalPoolData,
   PoolSubgraphQueryData,

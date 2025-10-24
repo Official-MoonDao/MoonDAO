@@ -21,9 +21,9 @@ import { useActiveAccount } from 'thirdweb/react'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
 import { useAssets } from '@/lib/dashboard/hooks'
-import { ethereum } from '@/lib/infura/infuraChains'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { Project } from '@/lib/project/useProjectData'
+import { ethereum } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
@@ -284,7 +284,7 @@ export function ProjectRewards({
     mooneyBudget,
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
-  const ethBudget = 17.09
+  const ethBudget = 14.15
 
   const usdBudget = ethBudget * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)

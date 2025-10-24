@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
-import { ethereum, polygon } from '@/lib/infura/infuraChains'
+import { ethereum, polygon } from '@/lib/rpc/chains'
 
 type SubmitInfoModalPropsETH = {
   quantity: any

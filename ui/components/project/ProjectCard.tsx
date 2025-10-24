@@ -41,14 +41,14 @@ const ProjectCardContent = memo(
       ? project.description
       : proposalJSON?.abstract || project?.description || ''
     
-    // Set character limits that better match the compact card height
-    const [characterLimit, setCharacterLimit] = useState(400)
+    // Set character limits that better match the new card height
+    const [characterLimit, setCharacterLimit] = useState(380)
     
     useEffect(() => {
       const handleResize = () => {
         if (typeof window !== 'undefined') {
-          // Adjust limits for the more compact 240px height
-          setCharacterLimit(window.innerWidth >= 1024 ? 450 : 400)
+          // Adjust limits for the new 280px height with better spacing
+          setCharacterLimit(window.innerWidth >= 1024 ? 420 : 380)
         }
       }
       
@@ -68,16 +68,16 @@ const ProjectCardContent = memo(
     return (
       <div
         id="card-container"
-        className="p-4 pb-6 flex flex-col gap-2 relative w-full h-[260px] min-h-[260px] max-h-[260px] overflow-hidden"
+        className="p-6 pb-6 flex flex-col gap-3 relative w-full h-[280px] min-h-[280px] max-h-[280px] overflow-hidden bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg transition-all duration-300 hover:bg-gradient-to-br hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl hover:scale-[1.02]"
       >
-        <div className="flex justify-between">
-          <div className="w-full flex flex-col gap-2">
+        <div className="flex justify-between items-start">
+          <div className="w-full flex flex-col gap-3">
             <Link href={`/project/${project?.id}`} passHref>
-              <h1 className="font-GoodTimes">{project?.name || ''}</h1>
+              <h1 className="font-GoodTimes text-white text-xl hover:text-moon-gold transition-colors cursor-pointer">{project?.name || ''}</h1>
             </Link>
             {project?.finalReportLink || project?.finalReportIPFS ? (
               <StandardButton
-                className={`gradient-2 w-fit font-[14px] ${
+                className={`bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-fit text-sm px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${
                   distribute && 'mr-4'
                 }`}
                 link={
@@ -91,10 +91,12 @@ const ProjectCardContent = memo(
                 hoverEffect={false}
                 target={project?.finalReportIPFS ? '_self' : '_blank'}
               >
-                <p className="text-[14px]">Review Final Report</p>
+                <p className="text-sm font-medium">📋 Final Report</p>
               </StandardButton>
             ) : (
-              <></>
+              <div className="px-3 py-2 bg-green-600/20 border border-green-500/30 rounded-lg">
+                <p className="text-sm text-green-400 font-medium">🚀 Active Project</p>
+              </div>
             )}
           </div>
           {distribute &&
@@ -129,19 +131,19 @@ const ProjectCardContent = memo(
         </div>
         <div className="flex gap-2"></div>
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="pr-4 break-words flex-1 flex flex-col justify-between">
-            <div className="description-container flex-1 overflow-hidden min-h-[60px] max-h-[140px]">
+          <div className="pr-2 break-words flex-1 flex flex-col justify-between">
+            <div className="description-container flex-1 overflow-hidden min-h-[80px] max-h-[140px]">
               <ReactMarkdown
                 components={{
                   p: ({ node, ...props }) => (
                     <p
-                      className="font-Lato text-[16px] break-words m-0 leading-snug mb-1"
+                      className="font-Lato text-[15px] text-gray-200 break-words m-0 leading-relaxed mb-2"
                       {...props}
                     />
                   ),
                   a: ({ node, ...props }) => (
                     <a
-                      className="font-Lato text-[14px] text-moon-blue hover:text-moon-gold underline"
+                      className="font-Lato text-[14px] text-blue-400 hover:text-blue-300 underline transition-colors"
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
@@ -153,16 +155,16 @@ const ProjectCardContent = memo(
                 {shouldTruncate ? truncatedDescription : description}
               </ReactMarkdown>
             </div>
-            <div className="flex-shrink-0 mt-2 min-h-[28px] pb-1">
+            <div className="flex-shrink-0 mt-3 min-h-[28px] pb-1">
               {isLongText && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
                     setIsExpanded(!isExpanded)
                   }}
-                  className="text-blue-400 hover:text-blue-300 text-sm underline transition-colors"
+                  className="text-blue-400 hover:text-blue-300 text-sm underline transition-colors font-medium"
                 >
-                  {isExpanded ? 'Read less' : 'Read more'}
+                  {isExpanded ? '↑ Read less' : '↓ Read more'}
                 </button>
               )}
             </div>

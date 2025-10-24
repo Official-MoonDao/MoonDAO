@@ -1,4 +1,5 @@
-import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
+import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
@@ -27,6 +28,7 @@ type PrivyWeb3BtnProps = {
   v5?: boolean
   noPadding?: boolean
   noGradient?: boolean
+  showSignInLabel?: boolean
 }
 
 function Button({
@@ -71,10 +73,39 @@ export function PrivyWeb3Button({
   v5 = false,
   noPadding = false,
   noGradient = false,
+  showSignInLabel = false,
 }: PrivyWeb3BtnProps) {
+  const router = useRouter()
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const { user, login } = usePrivy()
+  const { user, authenticated } = usePrivy()
+  const { login } = useLogin({
+    onComplete: (user, isNewUser, wasAlreadyAuthenticated) => {
+      const isLoggingInViaWeb3Button =
+        router.query.loggingInViaWeb3Button === 'true'
+      if (user && !wasAlreadyAuthenticated && isLoggingInViaWeb3Button) {
+        const { loggingInViaWeb3Button, ...restQuery } = router.query
+        router.replace(
+          {
+            query: restQuery,
+          },
+          undefined,
+          { shallow: true }
+        )
+        action && action()
+      }
+    },
+    onError(error) {
+      const { loggingInViaWeb3Button, ...restQuery } = router.query
+      router.replace(
+        {
+          query: restQuery,
+        },
+        undefined,
+        { shallow: true }
+      )
+    },
+  })
   const { wallets } = useWallets()
 
   const [isLoading, setIsLoading] = useState(false)
@@ -110,6 +141,7 @@ export function PrivyWeb3Button({
     selectedChain,
     selectedWallet,
     user,
+    authenticated,
     skipNetworkCheck,
     requiredChain,
     v5,
@@ -122,11 +154,23 @@ export function PrivyWeb3Button({
           id={id}
           dataTestId={dataTestId}
           className={className}
-          onClick={login}
+          onClick={async () => {
+            await router.replace(
+              {
+                query: {
+                  ...router.query,
+                  loggingInViaWeb3Button: true,
+                },
+              },
+              undefined,
+              { shallow: true }
+            )
+            login()
+          }}
           noPadding={noPadding}
           noGradient={noGradient}
         >
-          Connect
+          {showSignInLabel ? 'Sign In' : label}
         </Button>
       )}
       {btnState === 1 && (

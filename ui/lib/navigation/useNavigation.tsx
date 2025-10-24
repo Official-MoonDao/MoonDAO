@@ -22,7 +22,7 @@ export default function useNavigation(citizen: any) {
       },
       {
         name: 'Network',
-        href: '/network-overview',
+        href: '/network',
         icon: IconOrg,
         children: [
           { name: 'Network Overview', href: '/network-overview' },
@@ -115,7 +115,7 @@ export default function useNavigation(citizen: any) {
         icon: BuildingStorefrontIcon,
         href: '/marketplace',
       },
-      process.env.NEXT_PUBLIC_CHAIN === 'testnet' && {
+      {
         name: 'Launchpad',
         icon: RocketLaunchIcon,
         href: '/launch',

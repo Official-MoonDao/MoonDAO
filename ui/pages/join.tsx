@@ -9,13 +9,21 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import CreateCitizen from '@/components/onboarding/CreateCitizen'
 import CreateTeam from '@/components/onboarding/CreateTeam'
 import Pricing from '@/components/onboarding/Pricing'
+import { StringParam, useQueryParams, withDefault } from 'next-query-params'
 
 export default function Join() {
+  const [{ tier, freeMint }] = useQueryParams({
+    tier: withDefault(StringParam, undefined),
+    freeMint: withDefault(StringParam, undefined),
+  })
   const { t } = useTranslation('common')
   const { selectedChain } = useContext(ChainContextV5)
 
   // State to manage selected tier for onboarding flow
-  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
+  const [selectedTier, setSelectedTier] = useState(tier)
+  if (!selectedTier && tier) {
+    setSelectedTier(tier)
+  }
 
   useChainDefault()
 
@@ -25,6 +33,7 @@ export default function Join() {
       <CreateCitizen
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
+        freeMint={freeMint}
       />
     )
   }

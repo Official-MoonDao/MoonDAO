@@ -1,4 +1,4 @@
-import { arbitrum, sepolia, arbitrumSepolia } from '../lib/infura/infuraChains'
+import { arbitrum, sepolia, arbitrumSepolia } from '../lib/rpc/chains'
 import { getChainSlug } from '../lib/thirdweb/chain'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
@@ -251,6 +251,8 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
   sepolia: '0x1e638C6120d7eF07e0978b68e22CD80bf5E70986',
 }
 
+export const FEATURED_MISSION_INDEX = 0
+
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: '0x1B50781A23e32d70Be36116aAe9a21C8B4706E22',
   sepolia: '0x6ac6a697C7f8F99bF2779aa8e0B4597311771101',
@@ -411,7 +413,7 @@ export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
 
 // Shared across chains
 export const MISSION_CROSS_CHAIN_PAY_ADDRESS =
-  '0xa2ca498075Ec3a57cd1E407aFF88A495F838Bd5E'
+  '0x32D7ceD515A27CB60c6dcAd47225A7f300134983'
 
 export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   [key: string]: number
@@ -421,6 +423,10 @@ export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   base: 30110, //arbitrum eid
   ethereum: 30110, //arbitrum eid
 }
+
+// LayerZero limit: 0.24 ETH maximum per transaction (total including fees)
+export const LAYERZERO_MAX_ETH = 100
+export const LAYERZERO_MAX_CONTRIBUTION_ETH = 100
 
 //GCP HSM Signer used for XP oracle verification, citizen referrals and gasless transactions
 export const GCP_HSM_SIGNER_ADDRESS =
@@ -529,7 +535,7 @@ export const STAKED_ETH_ADDRESS = '0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8'
 
 export const MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? 'https://api.studio.thegraph.com/query/38443/moondao-missions-payment-terminal-arb/version/latest'
+    ? `https://api.studio.thegraph.com/query/38443/missions-payment-terminal-arb/version/latest`
     : 'https://api.studio.thegraph.com/query/38443/moondao-missions-payment-terminal-sepolia/version/latest'
 
 export const MOONDAO_NETWORK_SUBGRAPH_URL =
@@ -541,3 +547,4 @@ export const MOONDAO_MISSIONS_SUBGRAPH_URL =
 export const TICK_SPACING = 200
 
 export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
+export const FREE_MINT_THRESHOLD = 1e16

@@ -1,3 +1,4 @@
+import { ChatBubbleLeftIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
@@ -25,15 +26,18 @@ import {
   JB_NATIVE_TOKEN_ID,
 } from 'const/config'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, {
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import toast from 'react-hot-toast'
+import { useWindowSize } from 'react-use'
 import {
   getContract,
   readContract,
@@ -42,16 +46,16 @@ import {
 } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
+import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
+import useTotalFunding from '@/lib/juicebox/useTotalFunding'
+import useMissionData from '@/lib/mission/useMissionData'
 import {
   arbitrum,
   base,
   ethereum,
   optimismSepolia,
   sepolia,
-} from '@/lib/infura/infuraChains'
-import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
-import useTotalFunding from '@/lib/juicebox/useTotalFunding'
-import useMissionData from '@/lib/mission/useMissionData'
+} from '@/lib/rpc/chains'
 import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -60,6 +64,7 @@ import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import { formatTimeUntilDeadline } from '@/lib/utils/dates'
+import { getAttribute } from '@/lib/utils/nft'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayoutMission'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
@@ -67,9 +72,12 @@ import Head from '@/components/layout/Head'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionInfo from '@/components/mission/MissionInfo'
+import MissionMetadataModal from '@/components/mission/MissionMetadataModal'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import TeamMembers from '@/components/subscription/TeamMembers'
+import { TwitterIcon } from '../assets'
+import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
 
 const CHAIN = DEFAULT_CHAIN_V5
 const CHAIN_SLUG = getChainSlug(CHAIN)
@@ -99,6 +107,7 @@ type MissionProfileProps = {
   _teamHats?: any[]
   _fundingGoal: number
   _ruleset: any[]
+  _backers: any[]
 }
 
 export default function MissionProfile({
@@ -112,10 +121,49 @@ export default function MissionProfile({
   _teamHats,
   _fundingGoal,
   _ruleset,
+  _backers,
 }: MissionProfileProps) {
   const account = useActiveAccount()
   const router = useRouter()
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
+
+  const fullComponentRef = useRef<HTMLDivElement>(null)
+
+  const [isFullComponentVisible, setIsFullComponentVisible] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  const { width: windowWidth, height: windowHeight } = useWindowSize()
+
+  // Track when component has mounted to avoid hydration issues
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Add Intersection Observer to detect when full component is visible
+  useEffect(() => {
+    const currentRef = fullComponentRef.current
+    console.log('currentRef', currentRef)
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // When the full component is more than 20% visible, hide the fixed button
+        setIsFullComponentVisible(entry.intersectionRatio > 0.75)
+      },
+      {
+        threshold: [0, 0.2, 0.5, 1.0], // Multiple thresholds for smoother detection
+        rootMargin: '-100px 0px 0px 0px', // Adjust when fade starts
+      }
+    )
+
+    if (currentRef) {
+      observer.observe(currentRef)
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef)
+      }
+    }
+  }, [fullComponentRef])
 
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains = useMemo(
@@ -129,6 +177,8 @@ export default function MissionProfile({
   const [teamNFT, setTeamNFT] = useState<any>(_teamNFT)
   const [availableTokens, setAvailableTokens] = useState<number>(0)
   const [availablePayouts, setAvailablePayouts] = useState<number>(0)
+  const [missionMetadataModalEnabled, setMissionMetadataModalEnabled] =
+    useState(false)
 
   // Shared modal state for both mobile and desktop instances
   const [payModalEnabled, setPayModalEnabled] = useState(false)
@@ -201,11 +251,11 @@ export default function MissionProfile({
     subgraphData,
     fundingGoal,
     primaryTerminalAddress,
-    backers,
     stage,
     deadline,
     refundPeriod,
     refreshBackers,
+    backers,
     refreshStage,
     poolDeployerAddress,
   } = useMissionData({
@@ -222,6 +272,7 @@ export default function MissionProfile({
     _token,
     _fundingGoal,
     _ruleset,
+    _backers,
   })
 
   // Handle onramp success from URL params and chain switching
@@ -538,6 +589,18 @@ export default function MissionProfile({
     }
   }
 
+  const teamSocials = useMemo(() => {
+    return {
+      communications: getAttribute(
+        teamNFT?.metadata?.attributes,
+        'communications'
+      )?.value,
+      twitter: getAttribute(teamNFT?.metadata?.attributes, 'twitter')?.value,
+      website: getAttribute(teamNFT?.metadata?.attributes, 'website')?.value,
+      discord: getAttribute(teamNFT?.metadata?.attributes, 'discord')?.value,
+    }
+  }, [teamNFT?.metadata?.attributes])
+
   useEffect(() => {
     async function getTeamNFT() {
       if (mission?.teamId === undefined || !teamContract) return
@@ -557,8 +620,43 @@ export default function MissionProfile({
     }
   }, [teamContract, mission?.teamId, _teamNFT])
 
+  // Add Intersection Observer to detect when full component is visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // When the full component is more than 20% visible, hide the fixed button
+        setIsFullComponentVisible(entry.intersectionRatio > 0.2)
+      },
+      {
+        threshold: [0, 0.2, 0.5, 1.0], // Multiple thresholds for smoother detection
+        rootMargin: '-100px 0px 0px 0px', // Adjust this to control when fade starts
+      }
+    )
+
+    if (fullComponentRef.current) {
+      observer.observe(fullComponentRef.current)
+    }
+
+    return () => {
+      if (fullComponentRef.current) {
+        observer.unobserve(fullComponentRef.current)
+      }
+    }
+  }, [])
+
   return (
     <>
+      {/* Mission Metadata Modal */}
+      {missionMetadataModalEnabled && (
+        <MissionMetadataModal
+          mission={mission}
+          teamNFT={teamNFT}
+          selectedChain={selectedChain}
+          setEnabled={setMissionMetadataModalEnabled}
+          jbControllerContract={jbControllerContract}
+        />
+      )}
+
       {/* Full-width Mission Header outside Container */}
       <MissionProfileHeader
         mission={mission}
@@ -580,12 +678,33 @@ export default function MissionProfile({
         deployLiquidityPool={deployLiquidityPool}
         totalFunding={totalFunding}
         isLoadingTotalFunding={isLoadingTotalFunding}
+        setMissionMetadataModalEnabled={setMissionMetadataModalEnabled}
+        contributeButton={
+          <MissionPayRedeem
+            mission={mission}
+            teamNFT={teamNFT}
+            token={token}
+            stage={stage}
+            deadline={deadline || 0}
+            primaryTerminalAddress={primaryTerminalAddress}
+            jbControllerContract={jbControllerContract}
+            jbTokensContract={jbTokensContract}
+            refreshBackers={refreshBackers}
+            backers={backers}
+            refreshTotalFunding={refreshTotalFunding}
+            ruleset={ruleset}
+            modalEnabled={payModalEnabled}
+            setModalEnabled={handlePayModalChange}
+            onlyButton
+            visibleButton={windowWidth > 0 && windowWidth > 768}
+            buttonClassName="max-h-1/2 w-full  rounded-full text-sm flex justify-center items-center"
+          />
+        }
       />
 
       <Container containerwidth={true}>
         <Head
           title={mission?.metadata?.name}
-          description={mission?.metadata?.description}
           image={mission?.metadata?.logoUri}
         />
         <ContentLayout
@@ -607,11 +726,42 @@ export default function MissionProfile({
             />
           }
         >
+          {/* Fixed contribute button for mobile with fade effect */}
+          {isMounted && windowWidth > 0 && windowWidth < 768 && (
+            <div className={`fixed bottom-8 transition-opacity duration-300`}>
+              <MissionPayRedeem
+                mission={mission}
+                teamNFT={teamNFT}
+                token={token}
+                stage={stage}
+                deadline={deadline || 0}
+                primaryTerminalAddress={primaryTerminalAddress}
+                jbControllerContract={jbControllerContract}
+                jbTokensContract={jbTokensContract}
+                refreshBackers={refreshBackers}
+                backers={backers}
+                refreshTotalFunding={refreshTotalFunding}
+                ruleset={ruleset}
+                modalEnabled={payModalEnabled}
+                setModalEnabled={handlePayModalChange}
+                onlyButton
+                visibleButton={
+                  windowWidth > 0 &&
+                  windowWidth < 768 &&
+                  !isFullComponentVisible
+                }
+                buttonMode="fixed"
+              />
+            </div>
+          )}
           <div
             id="page-container"
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
-            <div className="flex z-20 xl:hidden w-full px-[5vw]">
+            <div
+              ref={fullComponentRef} // Add ref to the full component container
+              className="flex z-20 xl:hidden w-full px-[5vw]"
+            >
               {primaryTerminalAddress &&
               primaryTerminalAddress !==
                 '0x0000000000000000000000000000000000000000' ? (
@@ -629,6 +779,7 @@ export default function MissionProfile({
                     jbControllerContract={jbControllerContract}
                     jbTokensContract={jbTokensContract}
                     refreshBackers={refreshBackers}
+                    backers={backers}
                     refreshTotalFunding={refreshTotalFunding}
                     ruleset={ruleset}
                     modalEnabled={payModalEnabled}
@@ -661,6 +812,7 @@ export default function MissionProfile({
                   token={token}
                   primaryTerminalAddress={primaryTerminalAddress}
                   refreshBackers={refreshBackers}
+                  backers={backers}
                   refreshStage={refreshStage}
                   refreshTotalFunding={refreshTotalFunding}
                   deadline={deadline}
@@ -669,18 +821,54 @@ export default function MissionProfile({
                 />
               </div>
             </div>
-            <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] flex justify-center">
+            <div className="w-full px-[5vw] flex justify-center">
               <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 pb-[5vw] md:pb-[2vw]">
-                <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex w-full gap-2 text-light-cool">
-                  <Image
-                    src={'/assets/icon-star-blue.svg'}
-                    alt="Job icon"
-                    width={30}
-                    height={30}
-                  />
-                  <h2 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">
-                    Meet the Team
-                  </h2>
+                <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex justify-between w-full gap-2 text-light-cool">
+                  <div className="flex items-center gap-2 w-full">
+                    <Image
+                      src={'/assets/icon-star-blue.svg'}
+                      alt="Job icon"
+                      width={30}
+                      height={30}
+                    />
+                    <h2 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">
+                      Meet the Team
+                    </h2>
+                  </div>
+                  <div className="flex justify-end gap-2 w-full text-white mr-[5vw]">
+                    <div className="flex gap-2 justify-start justify-end">
+                      {teamSocials.communications && (
+                        <Link
+                          className="flex gap-2 hover:scale-105 transition-all duration-200"
+                          href={teamSocials.communications}
+                          target="_blank"
+                          passHref
+                        >
+                          <ChatBubbleLeftIcon height={25} width={25} />
+                        </Link>
+                      )}
+                      {teamSocials.twitter && (
+                        <Link
+                          className="flex gap-2 hover:scale-105 transition-all duration-200"
+                          href={teamSocials.twitter}
+                          target="_blank"
+                          passHref
+                        >
+                          <TwitterIcon />
+                        </Link>
+                      )}
+                      {teamSocials.website && (
+                        <Link
+                          className="flex gap-2 hover:scale-105 transition-all duration-200"
+                          href={teamSocials.website}
+                          target="_blank"
+                          passHref
+                        >
+                          <GlobeAltIcon height={25} width={25} />
+                        </Link>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <SlidingCardMenu>
                   <div className="flex gap-4"></div>
@@ -692,6 +880,34 @@ export default function MissionProfile({
                     />
                   )}
                 </SlidingCardMenu>
+              </div>
+            </div>
+            <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] flex justify-center">
+              <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 py-4">
+                <div className="flex items-center relative rounded-tl-[20px] rounded-bl-[5vmax] p-4">
+                  <div
+                    className="pl-4 pr-8 flex overflow-x-auto overflow-y-hidden"
+                    style={{
+                      msOverflowStyle: 'none',
+                      WebkitOverflowScrolling: 'touch',
+                    }}
+                  >
+                    <Link
+                      className="flex flex-col group"
+                      href={`https://juicebox.money/v5/arb:${mission?.projectId}`}
+                      target="_blank"
+                    >
+                      <div className="group-hover:scale-[1.05] transition-all duration-200">
+                        <JuiceboxLogoWhite />
+                      </div>
+                      {isManager && (
+                        <p className="text-xs opacity-90 uppercase group-hover:scale-105 transition-all duration-200">
+                          (Edit Project)
+                        </p>
+                      )}
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -31,6 +31,7 @@ import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import useTag from '@/lib/convert-kit/useTag'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
+import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import {
   arbitrum,
   base,
@@ -38,8 +39,7 @@ import {
   sepolia,
   arbitrumSepolia,
   Chain,
-} from '@/lib/infura/infuraChains'
-import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+} from '@/lib/rpc/chains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -66,7 +66,11 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { ImageGenerator } from './CitizenImageGenerator'
 import { StageContainer } from './StageContainer'
 
-export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
+export default function CreateCitizen({
+  selectedChain,
+  setSelectedTier,
+  freeMint,
+}: any) {
   const router = useRouter()
 
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -205,7 +209,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         totalCost += Number(LAYER_ZERO_TRANSFER_COST) / 1e18
       }
 
-      if (+nativeBalance < totalCost) {
+      if (!freeMint && +nativeBalance < totalCost) {
         const roundedCost = Math.ceil(+totalCost * 1000000) / 1000000
 
         setIsLoadingMint(false)
@@ -229,7 +233,28 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       //mint
       let receipt: any
-      if (selectedChainSlug !== defaultChainSlug) {
+      if (freeMint) {
+        const res = await fetch(`/api/mission/freeMint`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json', // Important: Specify the content type
+          },
+          body: JSON.stringify({
+            address: address,
+            name: citizenData.name,
+            image: `ipfs://${newImageIpfsHash}`,
+            privacy: 'public',
+            formId: citizenData.formResponseId,
+          }),
+        })
+        if (!res.ok) {
+          const errorText = await res.text() // Or response.json()
+          console.error(errorText)
+          setIsLoadingMint(false)
+        } else {
+          receipt = await res.json()
+        }
+      } else if (selectedChainSlug !== defaultChainSlug) {
         const GAS_LIMIT = 300000 // Gas limit for the executor
         const MSG_VALUE = cost // msg.value for the lzReceive() function on destination in wei
 

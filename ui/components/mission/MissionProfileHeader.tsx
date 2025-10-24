@@ -1,3 +1,4 @@
+import { PencilIcon } from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -42,6 +43,8 @@ interface MissionProfileHeaderProps {
   // Direct props for total funding instead of callback
   totalFunding: bigint
   isLoadingTotalFunding: boolean
+  setMissionMetadataModalEnabled?: (enabled: boolean) => void
+  contributeButton: React.ReactNode
 }
 
 const MissionProfileHeader = React.memo(
@@ -65,6 +68,8 @@ const MissionProfileHeader = React.memo(
     deployLiquidityPool,
     totalFunding,
     isLoadingTotalFunding,
+    setMissionMetadataModalEnabled,
+    contributeButton,
   }: MissionProfileHeaderProps) => {
     const account = useActiveAccount()
     const { data: ethPrice, isLoading: isLoadingEthPrice } = useETHPrice(
@@ -76,6 +81,16 @@ const MissionProfileHeader = React.memo(
 
     return (
       <div className="w-full bg-[#090d21] relative overflow-hidden">
+        {/* Edit Button for Managers */}
+        {isManager && setMissionMetadataModalEnabled && (
+          <button
+            className="absolute top-6 right-24 z-20 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
+            onClick={() => setMissionMetadataModalEnabled(true)}
+          >
+            <PencilIcon width={24} height={24} className="text-white" />
+          </button>
+        )}
+
         {/* Background decorative elements */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.1),transparent_50%)] pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(99,102,241,0.05),transparent_50%)] pointer-events-none" />
@@ -180,48 +195,46 @@ const MissionProfileHeader = React.memo(
               <div className="bg-gradient-to-br from-dark-cool to-darkest-cool backdrop-blur-lg rounded-xl p-4 lg:p-5 border border-white/10 shadow-xl w-full max-w-2xl">
                 {/* Raised Amount Badge with Manager Actions */}
                 <div className="mb-2 flex flex-col md:flex-row items-center justify-between">
-                  <div className="inline-flex items-center bg-gradient-to-r from-blue-500 to-purple-600 text-white font-GoodTimes py-2 px-4 rounded-full shadow-lg">
-                    <Image
-                      src="/assets/icon-raised-tokens.svg"
-                      alt="Raised"
-                      width={20}
-                      height={20}
-                      className="mr-2"
-                    />
-                    {isLoadingTotalFunding ? (
-                      <div className="flex items-center">
-                        <TextSkeleton width="w-16" height="h-5" />
-                        <span className="text-xs opacity-90 ml-2">
-                          ETH RAISED
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="text-base lg:text-lg mr-2">
-                          {truncateTokenValue(
-                            Number(totalFunding || 0) / 1e18,
+                  <Tooltip
+                    text={
+                      isLoadingTotalFunding
+                        ? 'Loading...'
+                        : `${truncateTokenValue(
+                            Number(totalFunding || 0) / 1e18 || 0,
                             'ETH'
-                          )}
-                        </span>
-                        <span className="text-xs opacity-90">ETH RAISED</span>
-                      </>
-                    )}
-                  </div>
-                  <div className="mt-2 md:mt-0 flex flex-col items-center md:items-end gap-2">
-                    <Link
-                      className="flex flex-col items-center group"
-                      href={`https://juicebox.money/v5/arb:${mission?.projectId}`}
-                      target="_blank"
-                    >
-                      <div className="scale-75 group-hover:scale-[0.80] transition-all duration-200">
-                        <JuiceboxLogoWhite />
-                      </div>
-                      {isManager && (
-                        <p className="text-xs opacity-90 uppercase group-hover:scale-105 transition-all duration-200">
-                          (Edit Project)
-                        </p>
+                          ).toLocaleString()} ETH`
+                    }
+                    buttonClassName="scale-75"
+                    wrap
+                  >
+                    <div className="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-700 text-white font-GoodTimes py-2 px-4 rounded-full shadow-lg">
+                      <Image
+                        src="/assets/icon-raised-tokens.svg"
+                        alt="Raised"
+                        width={20}
+                        height={20}
+                        className="mr-2"
+                      />
+                      {isLoadingTotalFunding ? (
+                        <div className="flex items-center">
+                          <TextSkeleton width="w-16" height="h-5" />
+                          <span className="text-xs opacity-90 ml-2">
+                            ETH RAISED
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          {`$${Math.round(
+                            (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
+                          ).toLocaleString()}`}
+                          <span className="text-base lg:text-lg mr-2"></span>
+                          <span className="text-xs opacity-90">RAISED</span>
+                        </>
                       )}
-                    </Link>
+                    </div>
+                  </Tooltip>
+                  <div className="mt-2 md:mt-0 flex flex-col items-center md:items-end gap-2">
+                    {contributeButton}
 
                     {/* Compact Manager Actions */}
                     {account && deadlinePassed && isManager && (
@@ -292,19 +305,6 @@ const MissionProfileHeader = React.memo(
                     )}
                   </div>
                 </div>
-                <p className="text-gray-400 text-xs mt-2 ml-4">
-                  {isLoadingTotalFunding || isLoadingEthPrice ? (
-                    <TextSkeleton width="w-16" height="h-4" />
-                  ) : (
-                    <>
-                      ≈ $
-                      {Math.round(
-                        (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
-                      ).toLocaleString()}{' '}
-                      USD
-                    </>
-                  )}
-                </p>
                 {/* Progress Bar */}
                 <div className="mb-3">
                   <MissionFundingProgressBar
@@ -330,18 +330,25 @@ const MissionProfileHeader = React.memo(
                           Goal
                         </span>
                         <Tooltip
-                          text={`≈ $${Math.round(
-                            (fundingGoal / 1e18) * ethPrice
-                          ).toLocaleString()} USD`}
+                          text={`This is an all or nothing mission and the minimum amount that must be reached to launch. Refunds will be made available to all contributors if the goal is not met.`}
                           buttonClassName="scale-75"
                         >
                           ?
                         </Tooltip>
                       </div>
                     </div>
-                    <p className="text-white font-GoodTimes text-xs lg:text-sm">
-                      {+(fundingGoal / 1e18).toFixed(3)} ETH
-                    </p>
+                    <div className="w-fit">
+                      <Tooltip
+                        text={`$${Math.round(
+                          (fundingGoal / 1e18) * ethPrice
+                        ).toLocaleString()}`}
+                        wrap
+                      >
+                        <p className="w-fit text-white font-GoodTimes text-xs lg:text-sm">
+                          {+(fundingGoal / 1e18).toFixed(3)} ETH
+                        </p>
+                      </Tooltip>
+                    </div>
                   </div>
 
                   {/* Deadline */}
