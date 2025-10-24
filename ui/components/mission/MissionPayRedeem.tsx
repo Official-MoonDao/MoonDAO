@@ -936,6 +936,19 @@ function MissionPayRedeemComponent({
     )
   }, [usdDeficit, ethDeficit, ethUsdPrice])
 
+  // Calculate adjusted ETH amount to respect Coinbase's $2 minimum
+  const adjustedEthDeficit = useMemo(() => {
+    if (!ethUsdPrice || ethDeficit === 0) return 0
+
+    const usdAmount = ethDeficit * ethUsdPrice
+
+    if (usdAmount > 0 && usdAmount < 2) {
+      return 2 / ethUsdPrice
+    }
+
+    return ethDeficit
+  }, [ethDeficit, ethUsdPrice])
+
   const tokenBalance = useWatchTokenBalance(
     selectedChain,
     token?.tokenAddress || JB_NATIVE_TOKEN_ADDRESS
@@ -1392,10 +1405,13 @@ function MissionPayRedeemComponent({
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
     const usdValue = parseFloat(cleanUsdInput)
 
+    if (usdValue > 0 && input && parseFloat(input) > 0) {
+      setIsLoadingGasEstimate(true)
+    }
+
     // Set up a timer to delay the gas estimation
     const timeoutId = setTimeout(() => {
       if (usdValue > 0 && input && parseFloat(input) > 0) {
-        setIsLoadingGasEstimate(true)
         estimateContributionGas()
       } else {
         setIsLoadingGasEstimate(false)
@@ -1916,7 +1932,8 @@ function MissionPayRedeemComponent({
                     <CBOnramp
                       address={address || ''}
                       selectedChain={selectedChain}
-                      ethAmount={ethDeficit}
+                      ethAmount={adjustedEthDeficit}
+                      isWaitingForGasEstimate={isLoadingGasEstimate}
                       onQuoteCalculated={handleCoinbaseQuote}
                       onSuccess={() => {
                         setIsFiatPaymentProcessing(false)
