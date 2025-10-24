@@ -199,9 +199,10 @@ const MissionProfileHeader = React.memo(
                     text={
                       isLoadingTotalFunding
                         ? 'Loading...'
-                        : `$${Math.round(
-                            (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
-                          ).toLocaleString()} USD`
+                        : `${truncateTokenValue(
+                            Number(totalFunding || 0) / 1e18 || 0,
+                            'ETH'
+                          ).toLocaleString()} ETH`
                     }
                     buttonClassName="scale-75"
                     wrap
@@ -223,10 +224,9 @@ const MissionProfileHeader = React.memo(
                         </div>
                       ) : (
                         <>
-                          {`${truncateTokenValue(
-                            Number(totalFunding || 0) / 1e18 || 0,
-                            'ETH'
-                          ).toLocaleString()} ETH`}
+                          {`$${Math.round(
+                            (Number(totalFunding || 0) / 1e18 || 0) * ethPrice
+                          ).toLocaleString()}`}
                           <span className="text-base lg:text-lg mr-2"></span>
                           <span className="text-xs opacity-90">RAISED</span>
                         </>
@@ -234,15 +234,6 @@ const MissionProfileHeader = React.memo(
                     </div>
                   </Tooltip>
                   <div className="mt-2 md:mt-0 flex flex-col items-center md:items-end gap-2">
-                    <Link
-                      className="flex flex-col items-center group"
-                      href={`https://juicebox.money/v5/arb:${mission?.projectId}`}
-                      target="_blank"
-                    >
-                      <div className="scale-75 group-hover:scale-[0.80] transition-all duration-200">
-                        <JuiceboxLogoWhite />
-                      </div>
-                    </Link>
                     {contributeButton}
 
                     {/* Compact Manager Actions */}
@@ -339,18 +330,25 @@ const MissionProfileHeader = React.memo(
                           Goal
                         </span>
                         <Tooltip
-                          text={`≈ $${Math.round(
-                            (fundingGoal / 1e18) * ethPrice
-                          ).toLocaleString()} USD`}
+                          text={`This is an all or nothing mission and the minimum amount that must be reached to launch. Refunds will be made available to all contributors if the goal is not met.`}
                           buttonClassName="scale-75"
                         >
                           ?
                         </Tooltip>
                       </div>
                     </div>
-                    <p className="text-white font-GoodTimes text-xs lg:text-sm">
-                      {+(fundingGoal / 1e18).toFixed(3)} ETH
-                    </p>
+                    <div className="w-fit">
+                      <Tooltip
+                        text={`$${Math.round(
+                          (fundingGoal / 1e18) * ethPrice
+                        ).toLocaleString()}`}
+                        wrap
+                      >
+                        <p className="w-fit text-white font-GoodTimes text-xs lg:text-sm">
+                          {+(fundingGoal / 1e18).toFixed(3)} ETH
+                        </p>
+                      </Tooltip>
+                    </div>
                   </div>
 
                   {/* Deadline */}
