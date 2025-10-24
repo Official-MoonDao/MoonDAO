@@ -108,6 +108,7 @@ type MissionProfileProps = {
   _fundingGoal: number
   _ruleset: any[]
   _backers: any[]
+  _citizens: any[]
 }
 
 export default function MissionProfile({
@@ -122,6 +123,7 @@ export default function MissionProfile({
   _fundingGoal,
   _ruleset,
   _backers,
+  _citizens,
 }: MissionProfileProps) {
   const account = useActiveAccount()
   const router = useRouter()
@@ -813,6 +815,7 @@ export default function MissionProfile({
                   primaryTerminalAddress={primaryTerminalAddress}
                   refreshBackers={refreshBackers}
                   backers={backers}
+                  citizens={_citizens}
                   refreshStage={refreshStage}
                   refreshTotalFunding={refreshTotalFunding}
                   deadline={deadline}
