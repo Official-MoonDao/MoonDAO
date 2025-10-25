@@ -261,7 +261,7 @@ export default function SingedInDashboard({
 
   const missionCreatorContract = useContract({
     address: MISSION_CREATOR_ADDRESSES[chainSlug],
-    abi: MissionCreator,
+    abi: MissionCreator.abi,
     chain: selectedChain,
   })
 
