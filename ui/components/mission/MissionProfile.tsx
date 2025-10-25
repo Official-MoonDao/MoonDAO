@@ -71,6 +71,8 @@ import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import Head from '@/components/layout/Head'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import { Mission } from '@/components/mission/MissionCard'
+import MissionContributeModal from '@/components/mission/MissionContributeModal'
+import MissionDeployTokenModal from '@/components/mission/MissionDeployTokenModal'
 import MissionInfo from '@/components/mission/MissionInfo'
 import MissionMetadataModal from '@/components/mission/MissionMetadataModal'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
@@ -78,6 +80,7 @@ import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import { TwitterIcon } from '../assets'
 import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
+import StandardButton from '../layout/StandardButton'
 
 const CHAIN = DEFAULT_CHAIN_V5
 const CHAIN_SLUG = getChainSlug(CHAIN)
@@ -179,11 +182,11 @@ export default function MissionProfile({
   const [availablePayouts, setAvailablePayouts] = useState<number>(0)
   const [missionMetadataModalEnabled, setMissionMetadataModalEnabled] =
     useState(false)
+  const [contributeModalEnabled, setContributeModalEnabled] = useState(false)
+  const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
+  const [initialUsdInput, setInitialUsdInput] = useState('')
+  const hasProcessedOnrampRef = useRef(false)
 
-  // Shared modal state for both mobile and desktop instances
-  const [payModalEnabled, setPayModalEnabled] = useState(false)
-  const [hasProcessedOnrampSuccess, setHasProcessedOnrampSuccess] =
-    useState(false)
   const [hasReadInitialChainParam, setHasReadInitialChainParam] =
     useState(false)
 
@@ -302,43 +305,43 @@ export default function MissionProfile({
         }
       }
     }
-
-    if (onrampSuccess && !payModalEnabled && !hasProcessedOnrampSuccess) {
-      setHasProcessedOnrampSuccess(true)
-      setTimeout(() => {
-        setPayModalEnabled(true)
-      }, 500)
-    }
   }, [
-    router?.query?.onrampSuccess,
     router?.query?.chain,
-    payModalEnabled,
-    hasProcessedOnrampSuccess,
     hasReadInitialChainParam,
     chainSlug,
     setSelectedChain,
+    chainSlugs,
   ])
 
-  // Callback to handle modal state changes - clear URL params when closing
-  const handlePayModalChange = useCallback(
-    (enabled: boolean) => {
-      setPayModalEnabled(enabled)
+  // Handle post-onramp modal opening
+  useEffect(() => {
+    if (hasProcessedOnrampRef.current) return
+    if (!router?.isReady) return
 
-      // Clear onrampSuccess from URL when closing
-      if (!enabled && router?.query?.onrampSuccess) {
-        const { onrampSuccess, usdAmount, chain, ...rest } = router.query
-        router.replace(
-          {
-            pathname: router.pathname,
-            query: chain ? { chain, ...rest } : rest,
-          },
-          undefined,
-          { shallow: true }
-        )
-      }
-    },
-    [router]
-  )
+    const onrampSuccess = router?.query?.onrampSuccess === 'true'
+    const agreedFromUrl = router?.query?.agreed === 'true'
+    const usdAmountFromUrl = router?.query?.usdAmount as string | undefined
+
+    if (!onrampSuccess || !agreedFromUrl || !usdAmountFromUrl) return
+
+    // Verify referrer for security
+    const referrer = document.referrer.toLowerCase()
+    const isCoinbaseReferrer =
+      referrer.includes('coinbase.com') || referrer.includes('pay.coinbase.com')
+
+    if (!isCoinbaseReferrer && process.env.NEXT_PUBLIC_ENV !== 'dev') return
+
+    // Mark as processed immediately to prevent re-runs
+    hasProcessedOnrampRef.current = true
+
+    setInitialUsdInput(usdAmountFromUrl)
+    setContributeModalEnabled(true)
+  }, [
+    router?.isReady,
+    router?.query?.onrampSuccess,
+    router?.query?.agreed,
+    router?.query?.usdAmount,
+  ])
 
   // Update URL when chain changes (but only after initial chain param has been read)
   useEffect(() => {
@@ -657,6 +660,19 @@ export default function MissionProfile({
         />
       )}
 
+      {/* Deploy Token Modal */}
+      {deployTokenModalEnabled && (
+        <MissionDeployTokenModal
+          setEnabled={setDeployTokenModalEnabled}
+          isTeamSigner={isManager}
+          queueSafeTx={() => {}}
+          mission={mission}
+          chainSlug={chainSlug}
+          teamMutlisigAddress=""
+          lastSafeTxExecuted={false}
+        />
+      )}
+
       {/* Full-width Mission Header outside Container */}
       <MissionProfileHeader
         mission={mission}
@@ -679,6 +695,8 @@ export default function MissionProfile({
         totalFunding={totalFunding}
         isLoadingTotalFunding={isLoadingTotalFunding}
         setMissionMetadataModalEnabled={setMissionMetadataModalEnabled}
+        setDeployTokenModalEnabled={setDeployTokenModalEnabled}
+        token={token}
         contributeButton={
           <MissionPayRedeem
             mission={mission}
@@ -693,8 +711,10 @@ export default function MissionProfile({
             backers={backers}
             refreshTotalFunding={refreshTotalFunding}
             ruleset={ruleset}
-            modalEnabled={payModalEnabled}
-            setModalEnabled={handlePayModalChange}
+            onOpenModal={(usdInput) => {
+              setInitialUsdInput(usdInput || '')
+              setContributeModalEnabled(true)
+            }}
             onlyButton
             visibleButton={windowWidth > 0 && windowWidth > 768}
             buttonClassName="max-h-1/2 w-full  rounded-full text-sm flex justify-center items-center"
@@ -742,8 +762,10 @@ export default function MissionProfile({
                 backers={backers}
                 refreshTotalFunding={refreshTotalFunding}
                 ruleset={ruleset}
-                modalEnabled={payModalEnabled}
-                setModalEnabled={handlePayModalChange}
+                onOpenModal={(usdInput) => {
+                  setInitialUsdInput(usdInput || '')
+                  setContributeModalEnabled(true)
+                }}
                 onlyButton
                 visibleButton={
                   windowWidth > 0 &&
@@ -782,8 +804,10 @@ export default function MissionProfile({
                     backers={backers}
                     refreshTotalFunding={refreshTotalFunding}
                     ruleset={ruleset}
-                    modalEnabled={payModalEnabled}
-                    setModalEnabled={handlePayModalChange}
+                    onOpenModal={(usdInput) => {
+                      setInitialUsdInput(usdInput || '')
+                      setContributeModalEnabled(true)
+                    }}
                   />
                 </div>
               ) : (
@@ -816,8 +840,10 @@ export default function MissionProfile({
                   refreshStage={refreshStage}
                   refreshTotalFunding={refreshTotalFunding}
                   deadline={deadline}
-                  modalEnabled={payModalEnabled}
-                  setModalEnabled={handlePayModalChange}
+                  onOpenContributeModal={(usdInput: any) => {
+                    setInitialUsdInput(usdInput || '')
+                    setContributeModalEnabled(true)
+                  }}
                 />
               </div>
             </div>
@@ -913,6 +939,21 @@ export default function MissionProfile({
           </div>
         </ContentLayout>
       </Container>
+
+      {/* Single modal instance for all contribute buttons */}
+      <MissionContributeModal
+        mission={mission}
+        token={token}
+        modalEnabled={contributeModalEnabled}
+        setModalEnabled={setContributeModalEnabled}
+        primaryTerminalAddress={primaryTerminalAddress}
+        jbControllerContract={jbControllerContract}
+        refreshBackers={refreshBackers}
+        backers={backers}
+        refreshTotalFunding={refreshTotalFunding}
+        ruleset={ruleset}
+        initialUsdInput={initialUsdInput}
+      />
     </>
   )
 }

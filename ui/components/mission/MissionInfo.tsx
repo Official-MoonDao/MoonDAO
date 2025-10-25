@@ -69,8 +69,7 @@ export default function MissionInfo({
   backers,
   refreshTotalFunding,
   ruleset,
-  modalEnabled,
-  setModalEnabled,
+  onOpenContributeModal,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -308,8 +307,7 @@ export default function MissionInfo({
               refreshBackers={refreshBackers}
               backers={backers}
               refreshTotalFunding={refreshTotalFunding}
-              modalEnabled={modalEnabled}
-              setModalEnabled={setModalEnabled}
+              onOpenModal={() => onOpenContributeModal?.()}
             />
           </div>
         </div>
