@@ -1,5 +1,6 @@
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
+import { getAccessToken } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
@@ -34,6 +35,7 @@ import {
   readContract,
   waitForReceipt,
 } from 'thirdweb'
+import { TransactionReceipt } from 'thirdweb/dist/types/transaction/types'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
@@ -1088,6 +1090,7 @@ function MissionPayRedeemComponent({
     }
 
     try {
+      let receipt: TransactionReceipt
       if (chainSlug !== defaultChainSlug) {
         const quoteCrossChainPay: any = await readContract({
           contract: crossChainPayContract,
@@ -1131,7 +1134,7 @@ function MissionPayRedeemComponent({
           isTestnet ? 19999 : 1, // 19999 resolves to testnet, 1 to mainnet, see https://cdn.jsdelivr.net/npm/@layerzerolabs/scan-client@0.0.8/dist/client.mjs
           originReceipt.transactionHash
         )
-        const receipt = await waitForReceipt({
+        receipt = await waitForReceipt({
           client: client,
           chain: DEFAULT_CHAIN_V5,
           transactionHash: destinationMessage.dstTxHash as `0x${string}`,
@@ -1152,7 +1155,7 @@ function MissionPayRedeemComponent({
           value: toWei(inputValue),
         })
 
-        const receipt = await sendAndConfirmTransaction({
+        receipt = await sendAndConfirmTransaction({
           transaction,
           account,
         })
@@ -1163,6 +1166,23 @@ function MissionPayRedeemComponent({
 
       if (setModalEnabled) {
         setModalEnabled(false)
+      }
+
+      const contributionNotification: any = await fetch(
+        '/api/mission/contribution-notification',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            txHash: receipt.transactionHash,
+            accessToken: await getAccessToken(),
+            txChainSlug: chainSlug,
+            projectId: mission?.projectId,
+          }),
+        }
+      )
+
+      if (contributionNotification?.error) {
+        console.error(contributionNotification.error)
       }
 
       toast.success('Mission token purchased!', {
