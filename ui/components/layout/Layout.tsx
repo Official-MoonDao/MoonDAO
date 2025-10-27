@@ -18,6 +18,7 @@ import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import CookieBanner from './CookieBanner'
 import GlobalSearch from './GlobalSearch'
+import MissionBanner from './MissionBanner'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import LanguageChange from './Sidebar/LanguageChange'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
@@ -29,9 +30,10 @@ interface Layout {
   children: JSX.Element
   lightMode: boolean
   setLightMode: (mode: boolean) => void
+  missions?: any[]
 }
 
-export default function Layout({ children, lightMode, setLightMode }: Layout) {
+export default function Layout({ children, lightMode, setLightMode, missions }: Layout) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
@@ -111,7 +113,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         </div>
 
         {/* Main Content - Full width with top nav */}
-        <main className={`pt-16 w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'flex justify-center'}`}>
+        <main className={`pt-16 pb-20 w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'flex justify-center'}`}>
           <div className={`w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'max-w-7xl px-4 sm:px-6 lg:px-8'}`}>
             {children}
           </div>
@@ -119,6 +121,9 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
 
         {/* Global Search - Sticky on all pages */}
         <GlobalSearch />
+
+        {/* Mission Banner - Fixed at bottom */}
+        <MissionBanner missions={missions} />
       </>
 
       <CookieBanner />
