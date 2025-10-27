@@ -22,7 +22,7 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook, Ownable {
         uint256 _deadline,
         uint256 _refundPeriod,
         address _jbTerminalStoreAddress,
-        address _terminal
+        address _terminal,
         address owner
     ) Ownable(owner) {
         fundingGoal = _fundingGoal;
