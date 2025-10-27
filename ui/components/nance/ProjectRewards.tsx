@@ -305,6 +305,8 @@ export function ProjectRewards({
     ethPayoutCSV,
     mooneyPayoutCSV,
     humanFormat,
+    vMooneyAddresses,
+    vMooneyAmounts,
   } = getPayouts(
     projectIdToEstimatedPercentage,
     eligibleProjects,
