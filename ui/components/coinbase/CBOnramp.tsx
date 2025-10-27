@@ -337,7 +337,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       case 'ethereum':
       case 'mainnet':
       case 'sepolia':
-        return 'ethereum'
+        return 'arbitrum'
       default:
         // Handle by chain ID
         switch (chainId) {
