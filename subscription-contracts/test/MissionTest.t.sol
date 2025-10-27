@@ -964,8 +964,9 @@ contract MissionTest is Test, Config {
         skip(28 days);
         address approvalHookAddress = missionCreator.missionIdToApprovalHook(missionId);
         LaunchPadApprovalHook approvalHook = LaunchPadApprovalHook(approvalHookAddress);
-        vm.prank(user1);
+        vm.startPrank(teamAddress);
         approvalHook.enableRefunds(true);
+        vm.stopPrank();
 
         assertEq(missionCreator.stage(missionId), 3);
 
