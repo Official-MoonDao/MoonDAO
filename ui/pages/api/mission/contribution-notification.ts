@@ -193,16 +193,20 @@ async function handler(req: any, res: any) {
         }
       }
 
-      const citizenRows: any = await queryTable(
-        txChain,
-        `SELECT name, id, image, owner FROM ${
-          CITIZEN_TABLE_NAMES[chainSlug]
-        } WHERE owner = '${txReceipt.from.toLowerCase()}'`
-      )
-
       let citizen: any = null
-      if (citizenRows.length > 0) {
-        citizen = citizenRows[0]
+      try {
+        const citizenRows: any = await queryTable(
+          txChain,
+          `SELECT name, id, image, owner FROM ${
+            CITIZEN_TABLE_NAMES[chainSlug]
+          } WHERE owner = '${txReceipt.from.toLowerCase()}'`
+        )
+
+        if (citizenRows.length > 0) {
+          citizen = citizenRows[0]
+        }
+      } catch (err: any) {
+        console.log(err)
       }
 
       //Contribution amount in ETH and USD
@@ -223,7 +227,7 @@ async function handler(req: any, res: any) {
 
       if (missionRows.length === 0) {
         return res.status(400).json({
-          error: 'Mission not found in mission table',
+          message: 'Mission not found in mission table',
         })
       }
       const mission = missionRows[0]
@@ -321,7 +325,6 @@ async function handler(req: any, res: any) {
             ? `**Deadline**: <t:${missionDeadline.toString()}:R>`
             : ''
         }`
-        messageData.content = content
 
         if (citizen) {
           messageData.embeds = [
@@ -332,7 +335,12 @@ async function handler(req: any, res: any) {
               },
             },
           ]
-          messageData.content = null
+        } else {
+          messageData.embeds = [
+            {
+              description: content,
+            },
+          ]
         }
 
         const response = await fetch(

@@ -1168,21 +1168,24 @@ function MissionPayRedeemComponent({
         setModalEnabled(false)
       }
 
+      const accessToken = await getAccessToken()
+
       const contributionNotification: any = await fetch(
         '/api/mission/contribution-notification',
         {
           method: 'POST',
           body: JSON.stringify({
             txHash: receipt.transactionHash,
-            accessToken: await getAccessToken(),
+            accessToken: accessToken,
             txChainSlug: chainSlug,
             projectId: mission?.projectId,
           }),
         }
       )
+      const contributionNotificationData = await contributionNotification.json()
 
-      if (contributionNotification?.error) {
-        console.error(contributionNotification.error)
+      if (contributionNotificationData?.message) {
+        console.log(contributionNotificationData.message)
       }
 
       toast.success('Mission token purchased!', {
