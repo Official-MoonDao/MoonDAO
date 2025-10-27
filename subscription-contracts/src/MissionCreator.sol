@@ -38,6 +38,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
     address positionManagerAddress;
     mapping(uint256 => uint256) public missionIdToProjectId;
     mapping(uint256 => address) public missionIdToPayHook;
+    mapping(uint256 => address) public missionIdToApprovalHook;
     mapping(uint256 => address) public missionIdToTeamVesting;
     mapping(uint256 => address) public missionIdToMoonDAOVesting;
     mapping(uint256 => address) public missionIdToPoolDeployer;
@@ -115,7 +116,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
             duration: 0, // A duration of 0 means the ruleset will last indefinitely until the next ruleset is queued. Any non-zero value would be the number of seconds this ruleset will last before the next ruleset is queued. If no new rulesets are queued, this ruleset will cycle over to another period with the same duration.
             weight: 2_000_000_000_000_000_000_000, // Standard rate is 2,000 tokens issued per unit of `baseCurrency` set below, 1,000 going to the funder and 1,000 going to the project. Note that this will be modified by the payhook based on current amount of funds raised, min funding required, and funding goal.
             weightCutPercent: 0, // 0% weight cut. If the `duration` property above is set to a non-zero value, the `weightCutPercent` property will be used to determine how much of the weight is cut from this ruleset to the next cycle.
-            approvalHook: IJBRulesetApprovalHook(address(launchPadApprovalHook)), // No approval hook contract is attached to this ruleset, meaning new rulesets can be queued at any time and will take effect as soon as possible given the current ruleset's `duration`.
+            approvalHook: IJBRulesetApprovalHook(address(launchPadApprovalHook)),
             metadata: JBRulesetMetadata({
                 reservedPercent: 5_000, // 50% of tokens are reserved, to be split according to the `splitGroups` property below.
                 cashOutTaxRate: 0, // 0% tax on cashouts.
@@ -291,6 +292,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
         uint256 missionId = missionTable.insertIntoTable(teamId, projectId, fundingGoal);
         missionIdToProjectId[missionId] = projectId;
         missionIdToPayHook[missionId] = address(launchPadPayHook);
+        missionIdToApprovalHook[missionId] = address(launchPadApprovalHook);
         missionIdToTeamVesting[missionId] = address(teamVesting);
         missionIdToMoonDAOVesting[missionId] = address(moonDAOVesting);
         missionIdToPoolDeployer[missionId] = address(poolDeployer);
