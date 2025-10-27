@@ -91,7 +91,7 @@ contract MissionTest is Test, Config {
         jbTokens = IJBTokens(JB_V5_TOKENS);
         jbController = IJBController(JB_V5_CONTROLLER);
 
-        missionCreator = new MissionCreator(JB_V5_CONTROLLER, JB_V5_MULTI_TERMINAL, JB_V5_PROJECTS, JB_V5_TERMINAL_STORE, JB_V5_RULESETS, address(moonDAOTeam), zero, TREASURY, FEE_HOOK_ADDRESSES[block.chainid], POSITION_MANAGERS[block.chainid]);
+        missionCreator = new MissionCreator(JB_V5_CONTROLLER, JB_V5_MULTI_TERMINAL, JB_V5_PROJECTS, JB_V5_TERMINAL_STORE, JB_V5_RULESETS, address(moonDAOTeam), zero, TREASURY, FEE_HOOK_ADDRESSES[block.chainid], POSITION_MANAGERS[block.chainid], FUNDING_ORACLE_ADDRESS);
         missionTable = new MissionTable("TestMissionTable", address(missionCreator));
         missionCreator.setMissionTable(address(missionTable));
 
