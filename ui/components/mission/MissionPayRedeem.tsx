@@ -50,6 +50,7 @@ function MissionPayRedeemContent({
   isLoadingRedeemAmount,
   isLoadingEthUsdPrice,
   usdInput,
+  setUsdInput,
 }: any) {
   const isRefundable = stage === 3
   const deadlineHasPassed = deadline ? deadline < Date.now() : false
@@ -297,6 +298,8 @@ export type MissionPayRedeemProps = {
   teamNFT: any
   stage: any
   deadline: number
+  usdInput: string
+  setUsdInput: (usdInput: string) => void
   onlyModal?: boolean
   primaryTerminalAddress: string
   jbControllerContract?: any
@@ -328,6 +331,8 @@ function MissionPayRedeemComponent({
   refreshTotalFunding,
   ruleset,
   onOpenModal,
+  usdInput,
+  setUsdInput,
   onlyButton = false,
   visibleButton = true,
   buttonMode = 'standard',
@@ -341,7 +346,6 @@ function MissionPayRedeemComponent({
   const [redeemAmount, setRedeemAmount] = useState(0)
   const [isLoadingRedeemAmount, setIsLoadingRedeemAmount] = useState(true)
 
-  const [usdInput, setUsdInput] = useState('')
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(
     1,
     'ETH_TO_USD'
@@ -391,6 +395,7 @@ function MissionPayRedeemComponent({
 
   // Calculate ETH amount from USD for display
   const calculateEthAmount = useCallback(() => {
+    if (!usdInput) return '0.0000'
     const numericValue = usdInput.replace(/,/g, '')
 
     if (!usdInput || isNaN(Number(numericValue))) {
@@ -792,6 +797,7 @@ function MissionPayRedeemComponent({
                 redeemAmount={redeemAmount}
                 isLoadingRedeemAmount={isLoadingRedeemAmount}
                 isLoadingEthUsdPrice={isLoadingEthUsdPrice}
+                setUsdInput={setUsdInput}
                 usdInput={usdInput}
               />
             </div>

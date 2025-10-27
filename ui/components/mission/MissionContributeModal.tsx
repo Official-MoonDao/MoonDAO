@@ -64,6 +64,7 @@ import ConditionCheckbox from '../layout/ConditionCheckbox'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import Modal from '../layout/Modal'
 import ProgressBar from '../layout/ProgressBar'
+import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionTokenNotice from './MissionTokenNotice'
 import { PaymentBreakdown } from './PaymentBreakdown'
 
@@ -79,7 +80,8 @@ type MissionContributeModalProps = {
   backers: any
   refreshTotalFunding?: () => void
   ruleset: JBRuleset
-  initialUsdInput?: string
+  usdInput: string
+  setUsdInput: (usdInput: string) => void
 }
 
 export default function MissionContributeModal({
@@ -93,7 +95,8 @@ export default function MissionContributeModal({
   backers,
   refreshTotalFunding,
   ruleset,
-  initialUsdInput,
+  usdInput,
+  setUsdInput,
 }: MissionContributeModalProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
@@ -121,7 +124,6 @@ export default function MissionContributeModal({
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
   const [crossChainQuote, setCrossChainQuote] = useState<bigint>(BigInt(0))
 
-  const [usdInput, setUsdInput] = useState('')
   const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(
     1,
     'ETH_TO_USD'
@@ -970,29 +972,11 @@ export default function MissionContributeModal({
     const selectedWalletFromUrl = router?.query?.selectedWallet
     if (selectedWalletFromUrl) {
       const walletIndex = parseInt(selectedWalletFromUrl as string, 10)
-      if (!isNaN(walletIndex)) {
+      if (!isNaN(walletIndex) && walletIndex !== selectedWallet) {
         setSelectedWallet(walletIndex)
       }
     }
   }, [router?.query?.selectedWallet, router?.isReady, setSelectedWallet])
-
-  // Set initial USD input when modal opens (from button click or URL params)
-  useEffect(() => {
-    if (!modalEnabled) return
-
-    // Priority 1: URL param from onramp redirect (checked after router is ready)
-    const urlAmount = router?.query?.usdAmount
-    if (router?.isReady && urlAmount && typeof urlAmount === 'string') {
-      setUsdInput(urlAmount)
-      return
-    }
-
-    // Priority 2: Passed from MissionPayRedeem button click
-    if (initialUsdInput) {
-      setUsdInput(initialUsdInput)
-      return
-    }
-  }, [modalEnabled, initialUsdInput, router?.query?.usdAmount, router?.isReady])
 
   // Auto-trigger transaction after successful onramp
   useEffect(() => {
@@ -1002,10 +986,10 @@ export default function MissionContributeModal({
     // Check if this is a post-onramp scenario
     const isPostOnramp = router?.query?.onrampSuccess === 'true'
 
+    const referrer = document ? document.referrer.toLowerCase() : ''
     // verify referrer is coinbase
     const isCoinbaseReferrer =
-      router?.query?.referrer?.includes('coinbase.com') ||
-      router?.query?.referrer?.includes('pay.coinbase.com')
+      referrer.includes('coinbase.com') || referrer.includes('pay.coinbase.com')
     if (!isCoinbaseReferrer && process.env.NEXT_PUBLIC_ENV !== 'dev') {
       setIsAutoTriggering(false)
       setTransactionRejected(false)
@@ -1547,7 +1531,6 @@ export default function MissionContributeModal({
                       }
                       agreedToCondition={agreedToCondition}
                       setAgreedToCondition={setAgreedToCondition}
-                      disabled={router?.query?.onrampSuccess === 'true'}
                     />
                   </div>
 
@@ -1560,11 +1543,18 @@ export default function MissionContributeModal({
                     >
                       Cancel
                     </button>
-                    <button
+                    <PrivyWeb3Button
+                      label={
+                        layerZeroLimitExceeded
+                          ? 'Contribution Limit Exceeded'
+                          : !chainSlugs.includes(chainSlug)
+                          ? `Switch Network`
+                          : `Contribute $${formattedUsdInput || '0'} USD`
+                      }
                       id="contribute-button"
                       className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={buyMissionToken}
-                      disabled={
+                      action={buyMissionToken}
+                      isDisabled={
                         !agreedToCondition ||
                         !usdInput ||
                         parseFloat((usdInput as string).replace(/,/g, '')) <=
@@ -1574,13 +1564,7 @@ export default function MissionContributeModal({
                         isLoadingEthUsdPrice ||
                         layerZeroLimitExceeded
                       }
-                    >
-                      {layerZeroLimitExceeded
-                        ? 'Contribution Limit Exceeded'
-                        : !chainSlugs.includes(chainSlug)
-                        ? `Switch Network`
-                        : `Contribute $${formattedUsdInput || '0'} USD`}
-                    </button>
+                    />
                   </div>
                 </>
               ) : (

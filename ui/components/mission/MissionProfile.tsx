@@ -184,7 +184,7 @@ export default function MissionProfile({
     useState(false)
   const [contributeModalEnabled, setContributeModalEnabled] = useState(false)
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
-  const [initialUsdInput, setInitialUsdInput] = useState('')
+  const [usdInput, setUsdInput] = useState<string>('')
   const hasProcessedOnrampRef = useRef(false)
 
   const [hasReadInitialChainParam, setHasReadInitialChainParam] =
@@ -334,7 +334,7 @@ export default function MissionProfile({
     // Mark as processed immediately to prevent re-runs
     hasProcessedOnrampRef.current = true
 
-    setInitialUsdInput(usdAmountFromUrl)
+    setUsdInput(usdAmountFromUrl)
     setContributeModalEnabled(true)
   }, [
     router?.isReady,
@@ -711,10 +711,11 @@ export default function MissionProfile({
             backers={backers}
             refreshTotalFunding={refreshTotalFunding}
             ruleset={ruleset}
-            onOpenModal={(usdInput) => {
-              setInitialUsdInput(usdInput || '')
+            onOpenModal={() => {
               setContributeModalEnabled(true)
             }}
+            usdInput={usdInput || ''}
+            setUsdInput={setUsdInput}
             onlyButton
             visibleButton={windowWidth > 0 && windowWidth > 768}
             buttonClassName="max-h-1/2 w-full  rounded-full text-sm flex justify-center items-center"
@@ -762,10 +763,11 @@ export default function MissionProfile({
                 backers={backers}
                 refreshTotalFunding={refreshTotalFunding}
                 ruleset={ruleset}
-                onOpenModal={(usdInput) => {
-                  setInitialUsdInput(usdInput || '')
+                onOpenModal={() => {
                   setContributeModalEnabled(true)
                 }}
+                usdInput={usdInput || ''}
+                setUsdInput={setUsdInput}
                 onlyButton
                 visibleButton={
                   windowWidth > 0 &&
@@ -804,10 +806,11 @@ export default function MissionProfile({
                     backers={backers}
                     refreshTotalFunding={refreshTotalFunding}
                     ruleset={ruleset}
-                    onOpenModal={(usdInput) => {
-                      setInitialUsdInput(usdInput || '')
+                    onOpenModal={() => {
                       setContributeModalEnabled(true)
                     }}
+                    usdInput={usdInput || ''}
+                    setUsdInput={setUsdInput}
                   />
                 </div>
               ) : (
@@ -840,10 +843,9 @@ export default function MissionProfile({
                   refreshStage={refreshStage}
                   refreshTotalFunding={refreshTotalFunding}
                   deadline={deadline}
-                  onOpenContributeModal={(usdInput: any) => {
-                    setInitialUsdInput(usdInput || '')
-                    setContributeModalEnabled(true)
-                  }}
+                  setContributeModalEnabled={setContributeModalEnabled}
+                  usdInput={usdInput || ''}
+                  setUsdInput={setUsdInput}
                 />
               </div>
             </div>
@@ -952,7 +954,8 @@ export default function MissionProfile({
         backers={backers}
         refreshTotalFunding={refreshTotalFunding}
         ruleset={ruleset}
-        initialUsdInput={initialUsdInput}
+        usdInput={usdInput || ''}
+        setUsdInput={setUsdInput}
       />
     </>
   )
