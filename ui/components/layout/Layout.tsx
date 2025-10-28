@@ -33,7 +33,7 @@ interface Layout {
   missions?: any[]
 }
 
-export default function Layout({ children, lightMode, setLightMode, missions }: Layout) {
+export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
@@ -123,7 +123,7 @@ export default function Layout({ children, lightMode, setLightMode, missions }: 
         <GlobalSearch />
 
         {/* Mission Banner - Fixed at bottom */}
-        <MissionBanner missions={missions} />
+        <MissionBanner />
       </>
 
       <CookieBanner />
