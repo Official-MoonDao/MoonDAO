@@ -305,7 +305,7 @@ async function handler(req: any, res: any) {
           citizen?.name
             ? `[${
                 citizen.name
-              }](${DEPLOYED_ORIGIN}citizen/${generatePrettyLinkWithId(
+              }](${DEPLOYED_ORIGIN}/citizen/${generatePrettyLinkWithId(
                 citizen.name,
                 citizen.id
               )})`
