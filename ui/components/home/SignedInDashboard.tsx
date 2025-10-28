@@ -762,8 +762,7 @@ export default function SingedInDashboard({
             </div>
 
             {/* Key Metrics Card */}
-
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col order-5">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
               <h3 className="font-semibold text-white mb-8 text-lg">
                 DAO Metrics
               </h3>
@@ -1050,21 +1049,6 @@ export default function SingedInDashboard({
               </div>
             </div>
 
-            {/* Citizen Teams */}
-            <div className="flex-grow order-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">Your Teams</h3>
-              </div>
-
-              <div className="space-y-3">
-                <DashboardTeams
-                  selectedChain={selectedChain}
-                  hatsContract={hatsContract}
-                  teamContract={teamContract}
-                />
-              </div>
-            </div>
-
             {/* Active Proposals Card */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-4">
               <div className="flex items-center justify-between mb-6">
@@ -1205,7 +1189,7 @@ export default function SingedInDashboard({
             </div>
 
             {/* Marketplace */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-white text-lg">
                   Marketplace
@@ -1293,6 +1277,28 @@ export default function SingedInDashboard({
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Citizen Teams */}
+        <div className="flex-grow order-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <UserGroupIcon className="w-7 h-7" />
+                  Your Teams
+                </h3>
+              </div>
+
+              <div className="space-y-3">
+                <DashboardTeams
+                  selectedChain={selectedChain}
+                  hatsContract={hatsContract}
+                  teamContract={teamContract}
+                />
               </div>
             </div>
           </div>

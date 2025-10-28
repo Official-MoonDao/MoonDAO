@@ -83,8 +83,8 @@ export function Hat({
   return (
     <button
       className={`text-left px-4 flex flex-col w-full ${
-        vertical ? 'items-center text-center' : ''
-      }`}
+        compact && 'lg:max-w-[200px]'
+      } ${vertical ? 'items-center text-center' : ''}`}
       onClick={() => {
         if (hat.teamId && !isDisabled) {
           router.push(`/team/${hat.teamId}`)
@@ -121,7 +121,7 @@ export function Hat({
         )}
 
         {/* Hat Data or Loading State */}
-        <div className="flex-1">
+        <div className="flex-1 w-full">
           {isHatLoading ? (
             <>
               <TextSkeleton width="w-32" height="h-5" />
@@ -137,7 +137,9 @@ export function Hat({
             </div>
           ) : (
             <>
-              <p className={`font-GoodTimes ${compact ? 'text-xs' : ''}`}>
+              <p
+                className={`w-full font-GoodTimes ${compact ? 'text-xs' : ''}`}
+              >
                 {compact
                   ? teamNFT?.metadata?.name || hatData.name
                   : hatData.name}

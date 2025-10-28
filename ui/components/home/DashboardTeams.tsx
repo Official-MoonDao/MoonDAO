@@ -23,18 +23,23 @@ export default function DashboardTeams({
 
   if (!isLoading && !hats)
     return (
-      <p className="text-gray-400 text-sm text-center py-4">
-        You are not a member of any teams.
-      </p>
+      <div>
+        <p className="text-gray-400 text-sm text-center py-2">
+          You are not a member of any teams.
+        </p>
+        <StandardButton link="/team" className="w-full">
+          Create a Team
+        </StandardButton>
+      </div>
     )
   return (
     <>
       {!isLoading && hats ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto auto-rows-auto">
+        <div className="flex flex-col lg:flex-row gap-4 max-h-[400px] overflow-y-auto md:overflow-y-hidden md:overflow-x-auto">
           {hats?.map((hat: any) => (
             <div
               key={hat.id}
-              className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors"
+              className="bg-slate-600/20 rounded-xl p-2 hover:bg-slate-600/30 transition-colors"
             >
               <Hat
                 selectedChain={selectedChain}
@@ -42,7 +47,6 @@ export default function DashboardTeams({
                 hatsContract={hatsContract}
                 teamImage
                 teamContract={teamContract}
-                vertical
                 compact
               />
             </div>
