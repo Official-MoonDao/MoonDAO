@@ -1652,11 +1652,11 @@ function MissionPayRedeemComponent({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <Image
-                          src="/assets/icon-star.svg"
-                          alt="Token"
-                          width={20}
-                          height={20}
-                          className="bg-orange-500 rounded-full p-1 w-6 h-6"
+                          src={mission?.metadata.logoUri}
+                          width={40}
+                          height={40}
+                          className="rounded-full"
+                          alt={`${token?.tokenSymbol} logo`}
                         />
                         <div>
                           <p className="font-medium text-white">
@@ -1717,29 +1717,6 @@ function MissionPayRedeemComponent({
                   </div>
                 </div>
               </div>
-
-              {/* Token Info */}
-              {token?.tokenSymbol && token?.tokenName && (
-                <div className="bg-black/20 border border-white/10 rounded-lg p-3">
-                  <div className="flex items-center space-x-3">
-                    <Image
-                      src={mission?.metadata.logoUri}
-                      width={40}
-                      height={40}
-                      className="rounded-full"
-                      alt={`${token?.tokenSymbol} logo`}
-                    />
-                    <div>
-                      <p className="font-medium text-white">
-                        {token?.tokenSymbol}
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        {token?.tokenName}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Conditional Content Based on Balance */}
               {layerZeroLimitExceeded ? (
