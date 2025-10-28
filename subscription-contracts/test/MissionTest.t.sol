@@ -964,8 +964,11 @@ contract MissionTest is Test, Config {
         skip(28 days);
         address approvalHookAddress = missionCreator.missionIdToApprovalHook(missionId);
         LaunchPadApprovalHook approvalHook = LaunchPadApprovalHook(approvalHookAddress);
+        address payhookAddress = missionCreator.missionIdToPayHook(missionId);
+        LaunchPadPayHook payhook = LaunchPadPayHook(payhookAddress);
         vm.startPrank(teamAddress);
         approvalHook.enableRefunds(true);
+        payhook.enableRefunds(true);
         vm.stopPrank();
 
         assertEq(missionCreator.stage(missionId), 3);

@@ -30,6 +30,7 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
 
     // fundingTurnedOff can be toggled by the owner.
     bool public fundingTurnedOff;
+    bool public refundsEnabled;
 
     IJBTerminalStore public jbTerminalStore;
     IJBRulesets jbRulesets;
@@ -52,6 +53,11 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
     function setFundingTurnedOff(bool _fundingTurnedOff) external onlyOwner {
         fundingTurnedOff = _fundingTurnedOff;
     }
+
+    function enableRefunds(bool _refundsEnabled) external onlyOwner {
+        refundsEnabled = _refundsEnabled;
+    }
+
 
     function _totalFunding(address terminal, uint256 projectId) internal view returns (uint256) {
         uint256 balance = jbTerminalStore.balanceOf(
@@ -89,7 +95,7 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         JBCashOutHookSpecification[] memory hookSpecifications
     ){
         uint256 currentFunding = _totalFunding(context.terminal, context.projectId);
-        if (currentFunding >= fundingGoal){
+        if (!refundsEnabled && currentFunding >= fundingGoal){
             revert("Project has passed funding goal requirement. Refunds are disabled.");
         }
         if (block.timestamp < deadline) {
