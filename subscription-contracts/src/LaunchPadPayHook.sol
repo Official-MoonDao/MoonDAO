@@ -131,12 +131,19 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
                 if (block.timestamp < deadline + refundPeriod) {
                     return 3; // Refund stage
                 } else {
-                return 4; // Refund stage passed
+                    return 4; // Refund stage passed
                 }
             } else {
                 return 1; // Stage 1
             }
         } else {
+            if (refundsEnabled && block.timestamp >= deadline) {
+                if (block.timestamp < deadline + refundPeriod) {
+                    return 3; // Refund stage
+                } else {
+                    return 4; // Refund stage passed
+                }
+            }
             return 2; // Stage 2
         }
     }

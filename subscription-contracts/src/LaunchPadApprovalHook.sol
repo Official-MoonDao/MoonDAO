@@ -45,7 +45,7 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook, Ownable {
         JBRuleset memory ruleset
     ) external view override returns (JBApprovalStatus) {
         uint256 currentFunding = _totalFunding(terminal, projectId);
-        if (refundsEnabled) {
+        if (refundsEnabled && block.timestamp >= deadline) {
             return JBApprovalStatus.Approved;
         } else if (currentFunding >= fundingGoal && block.timestamp >= deadline) {
             return JBApprovalStatus.Approved;
