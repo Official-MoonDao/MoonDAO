@@ -964,6 +964,7 @@ contract MissionTest is Test, Config {
         uint256 user1BalanceBefore = address(user1).balance;
         uint256 user2BalanceBefore = address(user2).balance;
         skip(28 days);
+        assertEq(missionCreator.stage(missionId), 2);
         address approvalHookAddress = missionCreator.missionIdToApprovalHook(missionId);
         LaunchPadApprovalHook approvalHook = LaunchPadApprovalHook(approvalHookAddress);
         address payhookAddress = missionCreator.missionIdToPayHook(missionId);
@@ -986,6 +987,7 @@ contract MissionTest is Test, Config {
             payable(user1),
             bytes(""));
         uint256 user1BalanceAfter = address(user1).balance;
+        console.log("balance after", user1BalanceAfter);
         assertEq(user1CashOutAmount, payAmount);
         assertEq(user1BalanceAfter - user1BalanceBefore, payAmount);
         assertEq(jbTokens.totalBalanceOf(user1, projectId), 0);
