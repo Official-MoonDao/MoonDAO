@@ -30,6 +30,7 @@ import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { getBlocksInTimeframe } from '@/lib/utils/blocks'
+import { formatNumberWithCommasAndDecimals } from '@/lib/utils/numbers'
 
 const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
 
@@ -310,13 +311,17 @@ async function handler(req: any, res: any) {
                 citizen.id
               )})`
             : txReceipt.from.slice(0, 6) + '...' + txReceipt.from.slice(-4)
-        }** has contributed ${contributionAmountETH.toFixed(
-          5
-        )} ETH ($${contributionAmountUSD.toFixed(
-          2
-        )}) to the **${`[${missionMetadata.name}](${DEPLOYED_ORIGIN}mission/${mission.id})`}** mission!\n\n**Total Raised**: ${missionTotalRaised.toFixed(
-          5
-        )} ETH ($${missionTotalRaisedUSD.toFixed(2)})\n**Progress to Goal**: ${
+        }** has contributed ${formatNumberWithCommasAndDecimals(
+          contributionAmountETH,
+          contributionAmountETH >= 1 ? 3 : 5
+        )} ETH ($${formatNumberWithCommasAndDecimals(
+          contributionAmountUSD
+        )}) to the **${`[${missionMetadata.name}](${DEPLOYED_ORIGIN}mission/${mission.id})`}** mission!\n\n**Total Raised**: ${formatNumberWithCommasAndDecimals(
+          missionTotalRaised,
+          missionTotalRaised >= 1 ? 3 : 5
+        )} ETH ($${formatNumberWithCommasAndDecimals(
+          missionTotalRaisedUSD
+        )})\n**Progress to Goal**: ${
           percentOfGoalRaised < 1
             ? percentOfGoalRaised.toFixed(4)
             : percentOfGoalRaised.toFixed(0)
