@@ -542,7 +542,7 @@ export const MOONDAO_NETWORK_SUBGRAPH_URL =
   'https://api.studio.thegraph.com/query/38443/moondao-network/version/latest'
 export const MOONDAO_MISSIONS_SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? 'https://api.studio.thegraph.com/query/38443/moondao-missions-arb/version/latest'
+    ? 'https://api.studio.thegraph.com/query/38443/moon-dao-missions-arb/version/latest'
     : 'https://api.studio.thegraph.com/query/38443/moondao-missions-sepolia/version/latest'
 export const TICK_SPACING = 200
 
