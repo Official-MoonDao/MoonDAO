@@ -708,6 +708,7 @@ export default function MissionProfile({
         <Head
           title={mission?.metadata?.name}
           image={mission?.metadata?.logoUri}
+          description={mission?.metadata?.tagline}
         />
         <ContentLayout
           header={''}
