@@ -46,6 +46,7 @@ import {
 } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
+import useOnrampJWT, { OnrampJwtPayload } from '@/lib/coinbase/useOnrampJWT'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import useMissionData from '@/lib/mission/useMissionData'
@@ -278,6 +279,15 @@ export default function MissionProfile({
     _backers,
   })
 
+  const {
+    verifyJWT: verifyOnrampJWT,
+    clearJWT: clearOnrampJWT,
+    getStoredJWT: getStoredOnrampJWT,
+  } = useOnrampJWT()
+
+  const [onrampJWTPayload, setOnrampJWTPayload] =
+    useState<OnrampJwtPayload | null>(null)
+
   // Handle onramp success from URL params and chain switching
   useEffect(() => {
     const onrampSuccess = router?.query?.onrampSuccess === 'true'
@@ -311,36 +321,70 @@ export default function MissionProfile({
     chainSlug,
     setSelectedChain,
     chainSlugs,
+    router?.query?.onrampSuccess,
   ])
 
   // Handle post-onramp modal opening
-  useEffect(() => {
-    if (hasProcessedOnrampRef.current) return
-    if (!router?.isReady) return
-
+  const handlePostOnrampModal = useCallback(async () => {
     const onrampSuccess = router?.query?.onrampSuccess === 'true'
     const agreedFromUrl = router?.query?.agreed === 'true'
     const usdAmountFromUrl = router?.query?.usdAmount as string | undefined
-
     if (!onrampSuccess || !agreedFromUrl || !usdAmountFromUrl) return
 
-    // Verify referrer for security
-    const referrer = document.referrer.toLowerCase()
-    const isCoinbaseReferrer =
-      referrer.includes('coinbase.com') || referrer.includes('pay.coinbase.com')
+    try {
+      if (hasProcessedOnrampRef.current)
+        throw new Error('Already processed onramp')
+      if (!router?.isReady) throw new Error('Router not ready')
 
-    if (!isCoinbaseReferrer && process.env.NEXT_PUBLIC_ENV !== 'dev') return
+      // Mark as processed immediately to prevent re-runs
+      hasProcessedOnrampRef.current = true
 
-    // Mark as processed immediately to prevent re-runs
-    hasProcessedOnrampRef.current = true
+      const storedJWT = getStoredOnrampJWT()
+      if (!storedJWT) throw new Error('No stored JWT found')
+      const payload = await verifyOnrampJWT(storedJWT, account?.address || '')
+      if (
+        !payload ||
+        !payload.address ||
+        !payload.chainSlug ||
+        payload.address.toLowerCase() !== account?.address?.toLowerCase() ||
+        payload.chainSlug !== chainSlug
+      ) {
+        throw new Error('Invalid JWT')
+      }
 
-    setUsdInput(usdAmountFromUrl)
-    setContributeModalEnabled(true)
+      setOnrampJWTPayload(payload)
+
+      setUsdInput(usdAmountFromUrl)
+      setContributeModalEnabled(true)
+    } catch (error) {
+      console.error('Error handling post-onramp modal:', error)
+      clearOnrampJWT()
+      const { onrampSuccess: _, ...restQuery } = router.query
+      router.replace(
+        { pathname: router.pathname, query: restQuery },
+        undefined,
+        {
+          shallow: true,
+        }
+      )
+    }
+  }, [
+    getStoredOnrampJWT,
+    verifyOnrampJWT,
+    account?.address,
+    chainSlug,
+    clearOnrampJWT,
+    router,
+  ])
+
+  useEffect(() => {
+    handlePostOnrampModal()
   }, [
     router?.isReady,
     router?.query?.onrampSuccess,
     router?.query?.agreed,
     router?.query?.usdAmount,
+    handlePostOnrampModal,
   ])
 
   // Update URL when chain changes (but only after initial chain param has been read)
@@ -949,6 +993,7 @@ export default function MissionProfile({
         modalEnabled={contributeModalEnabled}
         setModalEnabled={setContributeModalEnabled}
         primaryTerminalAddress={primaryTerminalAddress}
+        onrampJWTPayload={onrampJWTPayload}
         jbControllerContract={jbControllerContract}
         refreshBackers={refreshBackers}
         backers={backers}

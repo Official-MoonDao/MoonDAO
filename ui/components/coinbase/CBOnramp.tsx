@@ -13,7 +13,7 @@ interface CBOnrampProps {
   redirectUrl?: string
   onSuccess?: () => void
   onExit?: () => void
-  onBeforeNavigate?: () => void
+  onBeforeNavigate?: () => Promise<void>
   isWaitingForGasEstimate?: boolean
   onQuoteCalculated?: (
     ethAmount: number,
@@ -442,7 +442,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
 
       const url = generateOnRampURL(widgetParams)
 
-      onBeforeNavigate?.()
+      await onBeforeNavigate?.()
       window.location.href = url
     } catch (error: any) {
       setError('Failed to initialize payment system: ' + error.message)

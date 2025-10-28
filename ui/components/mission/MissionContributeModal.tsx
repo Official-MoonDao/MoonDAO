@@ -41,6 +41,7 @@ import {
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
+import useOnrampJWT, { OnrampJwtPayload } from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
@@ -74,6 +75,7 @@ type MissionContributeModalProps = {
   modalEnabled: boolean
   setModalEnabled: (enabled: boolean) => void
   primaryTerminalAddress: string
+  onrampJWTPayload: OnrampJwtPayload | null
   jbControllerContract?: any
   forwardClient?: any
   refreshBackers?: () => void
@@ -90,6 +92,7 @@ export default function MissionContributeModal({
   modalEnabled,
   setModalEnabled,
   primaryTerminalAddress,
+  onrampJWTPayload,
   forwardClient,
   refreshBackers,
   backers,
@@ -138,6 +141,9 @@ export default function MissionContributeModal({
   const [coinbaseTotalFees, setCoinbaseTotalFees] = useState<number>()
   const [coinbaseEthInsufficient, setCoinbaseEthInsufficient] =
     useState<boolean>(false)
+
+  const { generateJWT: generateOnrampJWT, clearJWT: clearOnrampJWT } =
+    useOnrampJWT()
 
   const [agreedToCondition, setAgreedToCondition] = useState(() => {
     return router?.query?.agreed === 'true'
@@ -986,14 +992,10 @@ export default function MissionContributeModal({
     // Check if this is a post-onramp scenario
     const isPostOnramp = router?.query?.onrampSuccess === 'true'
 
-    const referrer = document ? document.referrer.toLowerCase() : ''
-    // verify referrer is coinbase
-    const isCoinbaseReferrer =
-      referrer.includes('coinbase.com') || referrer.includes('pay.coinbase.com')
-    if (!isCoinbaseReferrer && process.env.NEXT_PUBLIC_ENV !== 'dev') {
+    if (!isPostOnramp) {
       setIsAutoTriggering(false)
       setTransactionRejected(false)
-      hasTriggeredTransaction.current = true
+      hasTriggeredTransaction.current = false
       return
     }
 
@@ -1013,27 +1015,33 @@ export default function MissionContributeModal({
       const timeoutId = setTimeout(() => {
         setTimeout(async () => {
           try {
+            if (!address) throw new Error('No wallet found')
+            if (
+              !onrampJWTPayload ||
+              !onrampJWTPayload.address ||
+              !onrampJWTPayload.chainSlug ||
+              onrampJWTPayload.address.toLowerCase() !==
+                address.toLowerCase() ||
+              onrampJWTPayload.chainSlug !== chainSlug
+            ) {
+              throw new Error('Invalid JWT')
+            }
             await buyMissionToken()
           } catch (error: any) {
             console.error('Error in auto-trigger contribution:', error)
-            // DON'T reset hasTriggeredTransaction - we only want to auto-trigger once
+            // DON'T reset hasTriggeredTransaction, only auto-trigger once
             // User must manually click the button to retry
-
-            // Check if user rejected the transaction
-            const errorMessage =
-              error?.message?.toLowerCase() ||
-              error?.toString()?.toLowerCase() ||
-              ''
-
-            const isUserRejection = errorMessage.includes(
-              'Error purchasing tokens: Error: user rejected transaction'
-            )
-
-            if (isUserRejection) {
-              setTransactionRejected(true)
-            }
+            setTransactionRejected(true)
 
             setIsAutoTriggering(false) // Show full UI on error
+            const { onrampSuccess: _, ...restQuery } = router.query
+            router.replace(
+              { pathname: router.pathname, query: restQuery },
+              undefined,
+              { shallow: true }
+            )
+          } finally {
+            clearOnrampJWT()
           }
         }, 500)
       }, 1500)
@@ -1052,6 +1060,11 @@ export default function MissionContributeModal({
     router?.query?.referrer,
     router?.isReady,
     account,
+    clearOnrampJWT,
+    address,
+    chainSlug,
+    router,
+    onrampJWTPayload,
   ])
 
   // Callback to receive quote data from CBOnramp
@@ -1087,6 +1100,8 @@ export default function MissionContributeModal({
     setIsAutoTriggering(false)
     hasTriggeredTransaction.current = false
 
+    clearOnrampJWT()
+
     // Clean up onramp URL params when modal closes
     if (router?.query?.onrampSuccess === 'true') {
       const {
@@ -1105,7 +1120,7 @@ export default function MissionContributeModal({
         { shallow: true }
       )
     }
-  }, [setModalEnabled, router])
+  }, [setModalEnabled, router, clearOnrampJWT])
 
   const showEstimatedGas = useMemo(() => {
     return usdInput && parseFloat(usdInput) > 0
@@ -1649,7 +1664,16 @@ export default function MissionContributeModal({
                           }
                         )
                       }}
-                      onBeforeNavigate={() => {}}
+                      onBeforeNavigate={async () => {
+                        await generateOnrampJWT({
+                          address: address || '',
+                          chainSlug: chainSlug,
+                          usdAmount: usdInput.replace(/,/g, ''),
+                          agreed: agreedToCondition,
+                          message: message || '',
+                          selectedWallet: selectedWallet,
+                        })
+                      }}
                       redirectUrl={`${DEPLOYED_ORIGIN}/mission/${
                         mission?.id
                       }?onrampSuccess=true&chain=${chainSlug}&usdAmount=${usdInput.replace(
