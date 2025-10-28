@@ -126,7 +126,7 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
     // return a stage number based on what tier the project is in.
     function stage(address terminal, uint256 projectId) public view returns (uint256) {
         uint256 currentFunding = _totalFunding(terminal, projectId);
-        if (currentFunding < fundingGoal) {
+        if (currentFunding < fundingGoal || refundsEnabled) {
             if (block.timestamp >= deadline) {
                 if (block.timestamp < deadline + refundPeriod) {
                     return 3; // Refund stage
@@ -137,13 +137,6 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
                 return 1; // Stage 1
             }
         } else {
-            if (refundsEnabled && block.timestamp >= deadline) {
-                if (block.timestamp < deadline + refundPeriod) {
-                    return 3; // Refund stage
-                } else {
-                    return 4; // Refund stage passed
-                }
-            }
             return 2; // Stage 2
         }
     }

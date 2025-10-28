@@ -931,6 +931,7 @@ contract MissionTest is Test, Config {
         assertEq(balance, 0);
 
         uint256 payAmount = 1_000_000_000_000_000_000;
+        vm.prank(user1);
         terminal.pay{value: payAmount}(
             projectId,
             JBConstants.NATIVE_TOKEN,
