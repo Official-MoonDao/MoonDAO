@@ -923,6 +923,7 @@ contract MissionTest is Test, Config {
         _createTeam();
         vm.startPrank(user1);
         uint256 missionId = _createMission(500_000_000_000_000_000, false);
+        vm.stopPrank();
         assertEq(missionCreator.stage(missionId), 1);
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
 
