@@ -14,6 +14,7 @@ type HatProps = {
   teamContract?: any
   compact?: boolean
   isDisabled?: boolean
+  vertical?: boolean
 }
 
 // Loading skeleton components
@@ -39,6 +40,7 @@ export function Hat({
   teamImage,
   teamContract,
   compact,
+  vertical,
   isDisabled,
 }: HatProps) {
   const router = useRouter()
@@ -80,14 +82,20 @@ export function Hat({
 
   return (
     <button
-      className="text-left px-4 flex flex-col"
+      className={`text-left px-4 flex flex-col w-full ${
+        compact && 'lg:max-w-[200px]'
+      } ${vertical ? 'items-center text-center' : ''}`}
       onClick={() => {
         if (hat.teamId && !isDisabled) {
           router.push(`/team/${hat.teamId}`)
         }
       }}
     >
-      <div className="flex items-center gap-5">
+      <div
+        className={`flex items-center gap-5 ${
+          vertical ? 'flex-col justify-center' : ''
+        }`}
+      >
         {/* Team NFT Image or Loading State */}
         {teamContract && hat?.teamId && (
           <div className="rounded-[2.5vmax] rounded-tl-[10px] overflow-hidden">
@@ -113,7 +121,7 @@ export function Hat({
         )}
 
         {/* Hat Data or Loading State */}
-        <div className="flex-1">
+        <div className="flex-1 w-full">
           {isHatLoading ? (
             <>
               <TextSkeleton width="w-32" height="h-5" />
@@ -129,7 +137,9 @@ export function Hat({
             </div>
           ) : (
             <>
-              <p className="font-GoodTimes">
+              <p
+                className={`w-full font-GoodTimes ${compact ? 'text-xs' : ''}`}
+              >
                 {compact
                   ? teamNFT?.metadata?.name || hatData.name
                   : hatData.name}

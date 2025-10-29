@@ -12,6 +12,7 @@ import {
   TrophyIcon,
   CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
+import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
 import JBV5Tokens from 'const/abis/JBV5Tokens.json'
@@ -23,6 +24,7 @@ import {
   ARBITRUM_ASSETS_URL,
   BASE_ASSETS_URL,
   DEFAULT_CHAIN_V5,
+  HATS_ADDRESS,
   JBV5_CONTROLLER_ADDRESS,
   JBV5_DIRECTORY_ADDRESS,
   JBV5_TOKENS_ADDRESS,
@@ -71,6 +73,7 @@ import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import Quests from '../xp/Quests'
+import DashboardTeams from './DashboardTeams'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
@@ -280,6 +283,12 @@ export default function SingedInDashboard({
   const jbTokensContract = useContract({
     address: JBV5_TOKENS_ADDRESS,
     abi: JBV5Tokens.abi,
+    chain: selectedChain,
+  })
+
+  const hatsContract = useContract({
+    address: HATS_ADDRESS,
+    abi: HatsABI as any,
     chain: selectedChain,
   })
 
@@ -753,7 +762,6 @@ export default function SingedInDashboard({
             </div>
 
             {/* Key Metrics Card */}
-
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
               <h3 className="font-semibold text-white mb-8 text-lg">
                 DAO Metrics
@@ -1269,6 +1277,28 @@ export default function SingedInDashboard({
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Citizen Teams */}
+        <div className="flex-grow order-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <UserGroupIcon className="w-7 h-7" />
+                  Your Teams
+                </h3>
+              </div>
+
+              <div className="space-y-3">
+                <DashboardTeams
+                  selectedChain={selectedChain}
+                  hatsContract={hatsContract}
+                  teamContract={teamContract}
+                />
               </div>
             </div>
           </div>
