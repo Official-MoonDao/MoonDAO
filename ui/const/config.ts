@@ -5,7 +5,7 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 export const DEPLOYED_ORIGIN =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? 'https://moondao-git-mission-onramp-improvements-moondao.vercel.app' //'https://moondao.com'
+    ? 'https://onramp.preview.moondao.com' //'https://moondao.com'
     : 'https://moondao-git-mission-onramp-improvements-moondao.vercel.app'
 
 interface DeploymentConfig {
