@@ -1079,7 +1079,13 @@ export default function MissionContributeModal({
         }, 500)
       }, 1500)
 
-      return () => clearTimeout(timeoutId)
+      return () => {
+        // Only cleanup if transaction hasn't been triggered yet
+        const wasTriggered = hasTriggeredTransaction.current
+        if (!wasTriggered) {
+          clearTimeout(timeoutId)
+        }
+      }
     }
   }, [
     modalEnabled,
