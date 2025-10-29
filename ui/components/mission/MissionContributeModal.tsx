@@ -987,7 +987,9 @@ export default function MissionContributeModal({
       account &&
       address &&
       onrampJWTPayload.address.toLowerCase() === address.toLowerCase() &&
-      onrampJWTPayload.chainSlug === chainSlug
+      onrampJWTPayload.chainSlug === chainSlug &&
+      (!onrampJWTPayload.missionId ||
+        onrampJWTPayload.missionId === mission?.id?.toString())
     ) {
       setIsAutoTriggering(true)
     } else {
@@ -999,6 +1001,7 @@ export default function MissionContributeModal({
     account,
     address,
     chainSlug,
+    mission?.id,
   ])
 
   // Auto-trigger transaction after successful onramp
@@ -1024,7 +1027,9 @@ export default function MissionContributeModal({
       !account ||
       !address ||
       onrampJWTPayload.address.toLowerCase() !== address.toLowerCase() ||
-      onrampJWTPayload.chainSlug !== chainSlug
+      onrampJWTPayload.chainSlug !== chainSlug ||
+      (onrampJWTPayload.missionId &&
+        onrampJWTPayload.missionId !== mission?.id?.toString())
     ) {
       setIsAutoTriggering(false)
       setTransactionRejected(false)
@@ -1055,7 +1060,9 @@ export default function MissionContributeModal({
               !onrampJWTPayload.chainSlug ||
               onrampJWTPayload.address.toLowerCase() !==
                 address.toLowerCase() ||
-              onrampJWTPayload.chainSlug !== chainSlug
+              onrampJWTPayload.chainSlug !== chainSlug ||
+              (onrampJWTPayload.missionId &&
+                onrampJWTPayload.missionId !== mission?.id?.toString())
             ) {
               throw new Error('Invalid JWT')
             }
@@ -1104,6 +1111,7 @@ export default function MissionContributeModal({
     chainSlug,
     router,
     onrampJWTPayload,
+    mission?.id,
   ])
 
   // Callback to receive quote data from CBOnramp
@@ -1711,6 +1719,7 @@ export default function MissionContributeModal({
                           agreed: agreedToCondition,
                           message: message || '',
                           selectedWallet: selectedWallet,
+                          missionId: mission?.id?.toString(),
                         })
                       }}
                       redirectUrl={`${DEPLOYED_ORIGIN}/mission/${

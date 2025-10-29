@@ -384,7 +384,7 @@ export default function MissionProfile({
         throw new Error('No stored JWT found')
       }
 
-      const payload = await verifyOnrampJWT(storedJWT, account.address)
+      const payload = await verifyOnrampJWT(storedJWT, account.address, mission.id?.toString())
       if (!payload) {
         throw new Error('Failed to verify JWT - payload is null')
       }
@@ -393,9 +393,10 @@ export default function MissionProfile({
         !payload.address ||
         !payload.chainSlug ||
         payload.address.toLowerCase() !== account.address?.toLowerCase() ||
-        payload.chainSlug !== chainSlug
+        payload.chainSlug !== chainSlug ||
+        (payload.missionId && payload.missionId !== mission.id?.toString())
       ) {
-        throw new Error('Invalid JWT - address or chain mismatch')
+        throw new Error('Invalid JWT - address, chain, or mission mismatch')
       }
 
       setOnrampJWTPayload(payload)

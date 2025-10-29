@@ -7,6 +7,7 @@ export interface OnrampJwtPayload {
   agreed?: boolean
   message?: string
   selectedWallet?: number
+  missionId?: string
   timestamp: number
 }
 
@@ -16,7 +17,8 @@ export interface UseOnrampJWTReturn {
   ) => Promise<string | null>
   verifyJWT: (
     token: string,
-    expectedAddress: string
+    expectedAddress: string,
+    expectedMissionId?: string
   ) => Promise<OnrampJwtPayload | null>
   clearJWT: () => void
   getStoredJWT: () => string | null
@@ -84,7 +86,8 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
   const verifyJWT = useCallback(
     async (
       token: string,
-      expectedAddress: string
+      expectedAddress: string,
+      expectedMissionId?: string
     ): Promise<OnrampJwtPayload | null> => {
       setIsVerifying(true)
       setError(null)
@@ -112,6 +115,12 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
         // Verify address matches
         if (payload.address.toLowerCase() !== expectedAddress.toLowerCase()) {
           setError('Wallet address mismatch')
+          return null
+        }
+
+        // Verify missionId matches if expected
+        if (expectedMissionId && payload.missionId !== expectedMissionId) {
+          setError('Mission ID mismatch')
           return null
         }
 
