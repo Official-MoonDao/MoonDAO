@@ -36,6 +36,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
     address public moonDAOTreasury;
     address public feeHookAddress;
     address positionManagerAddress;
+    uint256[] public missionIds;
     mapping(uint256 => uint256) public missionIdToProjectId;
     mapping(uint256 => address) public missionIdToPayHook;
     mapping(uint256 => address) public missionIdToApprovalHook;
@@ -86,6 +87,17 @@ contract MissionCreator is Ownable, IERC721Receiver {
 
     function setFeeHookAddress(address _feeHookAddress) external onlyOwner {
         feeHookAddress = _feeHookAddress;
+    }
+
+    function setMissionData(uint256 missionId, uint256 projectId, address payHook, address approvalHook, address teamVesting, address moonDAOVesting, address poolDeployer, uint256 fundingGoal, address terminal) external onlyOwner {
+        missionIdToProjectId[missionId] = projectId;
+        missionIdToPayHook[missionId] = payHook;
+        missionIdToApprovalHook[missionId] = approvalHook;
+        missionIdToTeamVesting[missionId] = teamVesting;
+        missionIdToMoonDAOVesting[missionId] = moonDAOVesting;
+        missionIdToPoolDeployer[missionId] = poolDeployer;
+        missionIdToFundingGoal[missionId] = fundingGoal;
+        missionIdToTerminal[missionId] = terminal;
     }
 
     function createMission(uint256 teamId, address to, string calldata projectUri, uint256 fundingGoal, uint256 deadline, uint256 refundPeriod, bool token, string calldata tokenName, string calldata tokenSymbol, string calldata memo) external returns (uint256) {
@@ -290,6 +302,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
         jbProjects.safeTransferFrom(address(this), to, projectId);
 
         uint256 missionId = missionTable.insertIntoTable(teamId, projectId, fundingGoal);
+        missionIds.push(missionId);
         missionIdToProjectId[missionId] = projectId;
         missionIdToPayHook[missionId] = address(launchPadPayHook);
         missionIdToApprovalHook[missionId] = address(launchPadApprovalHook);
