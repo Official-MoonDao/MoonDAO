@@ -118,22 +118,14 @@ async function handler(req: any, res: any) {
         })
       }
 
-      // Verify transaction is from user's wallet
-      let txIsFromUsersWallet = false
-      for (const walletAddress of walletAddresses) {
-        if (txReceipt.from.toLowerCase() === walletAddress.toLowerCase()) {
-          txIsFromUsersWallet = true
-          break
-        }
-      }
-      if (!txIsFromUsersWallet) {
-        return res
-          .status(400)
-          .send({ message: "Transaction is not from the user's wallet" })
-      }
-
       // Check if transaction is recent (within 10 minutes)
-      const txBlockNumber = Number(txReceipt.blockNumber)
+      const txBlockNumber = parseInt(
+        typeof txReceipt.blockNumber === 'object' &&
+          txReceipt.blockNumber &&
+          'toString' in txReceipt.blockNumber
+          ? (txReceipt.blockNumber as any).toString()
+          : String(txReceipt.blockNumber)
+      )
       const provider = ethers5Adapter.provider.toEthers({
         client: serverClient,
         chain: txChain,
@@ -217,7 +209,7 @@ async function handler(req: any, res: any) {
           error: 'Failed to get ETH price',
         })
       }
-      const contributionAmountETH = txValue.toNumber() / 1e18
+      const contributionAmountETH = parseFloat(txValue.toString()) / 1e18
       const contributionAmountUSD = contributionAmountETH * ethPrice
 
       //Mission table data
@@ -233,8 +225,8 @@ async function handler(req: any, res: any) {
       }
       const mission = missionRows[0]
 
-      const missionFundingGoal = (+mission.fundingGoal.toString() /
-        1e18) as number
+      const missionFundingGoal =
+        parseFloat(mission.fundingGoal.toString()) / 1e18
 
       //Mission total raised
       const missionBalance = await readContract({
@@ -259,9 +251,8 @@ async function handler(req: any, res: any) {
       })
 
       const missionTotalRaised =
-        +missionBalance.toString() / 1e18 ||
-        0 + +missionUsedPayoutLimit.toString() / 1e18 ||
-        0
+        (parseFloat(missionBalance.toString()) / 1e18 || 0) +
+        (parseFloat(missionUsedPayoutLimit.toString()) / 1e18 || 0)
       const missionTotalRaisedUSD = missionTotalRaised * ethPrice
       const percentOfGoalRaised =
         (missionTotalRaised / missionFundingGoal) * 100
