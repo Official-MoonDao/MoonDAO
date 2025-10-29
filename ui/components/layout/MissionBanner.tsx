@@ -1,103 +1,27 @@
-import MissionTableABI from 'const/abis/MissionTable.json'
-import JBV5Controller from 'const/abis/JBV5Controller.json'
-import { DEFAULT_CHAIN_V5, FEATURED_MISSION_INDEX, MISSION_TABLE_ADDRESSES, JBV5_CONTROLLER_ADDRESS } from 'const/config'
+import { FEATURED_MISSION_NAME, FEATURED_MISSION_DESCRIPTION, FEATURED_MISSION_ID } from 'const/config'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import useContract from '@/lib/thirdweb/hooks/useContract'
-import { readContract } from 'thirdweb'
-
-type MissionData = {
-  id: string
-  name: string
-  description: string
-}
+import { useRouter } from 'next/router'
+import { useState } from 'react'
 
 export default function MissionBanner() {
-  const [featuredMission, setFeaturedMission] = useState<MissionData | null>(null)
+  const router = useRouter()
   const [isVisible, setIsVisible] = useState(true)
-  const [isLoading, setIsLoading] = useState(false)
 
-  const selectedChain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(selectedChain)
+  // Hide banner if user is on the featured mission page
+  const isOnFeaturedMissionPage = router.pathname === '/mission/[tokenId]' && router.query.tokenId === FEATURED_MISSION_ID
 
-  const missionTableContract = useContract({
-    address: MISSION_TABLE_ADDRESSES[chainSlug],
-    abi: MissionTableABI,
-    chain: selectedChain,
-  })
-
-  const jbControllerContract = useContract({
-    address: JBV5_CONTROLLER_ADDRESS,
-    abi: JBV5Controller.abi,
-    chain: selectedChain,
-  })
-
-  useEffect(() => {
-    async function fetchFeaturedMission() {
-      if (!missionTableContract || !jbControllerContract || isLoading) return
-
-      try {
-        setIsLoading(true)
-
-        // Get mission table name
-        const missionTableName = await readContract({
-          contract: missionTableContract,
-          method: 'getTableName' as string,
-          params: [],
-        })
-
-        // Query missions ordered by ID desc to get latest
-        const statement = `SELECT * FROM ${missionTableName} ORDER BY id DESC LIMIT ${FEATURED_MISSION_INDEX + 1}`
-        const response = await fetch(`/api/tableland/query?statement=${encodeURIComponent(statement)}`)
-        const missionRows = await response.json()
-
-        if (missionRows && missionRows.length > FEATURED_MISSION_INDEX) {
-          const mission = missionRows[FEATURED_MISSION_INDEX]
-
-          // Get mission metadata
-          const metadataURIResult = await readContract({
-            contract: jbControllerContract,
-            method: 'uriOf' as string,
-            params: [mission.projectId],
-          })
-
-          let missionName = 'Featured Mission'
-          // Handle the result - it might be an array or string
-          const metadataURI = Array.isArray(metadataURIResult) ? metadataURIResult[0] : metadataURIResult
-          
-          if (metadataURI && typeof metadataURI === 'string') {
-            try {
-              const metadataResponse = await fetch(`https://ipfs.io/ipfs/${metadataURI.replace('ipfs://', '')}`)
-              const metadata = await metadataResponse.json()
-              missionName = metadata.name || 'Featured Mission'
-            } catch (error) {
-              console.error('Failed to fetch mission metadata:', error)
-            }
-          }
-
-          setFeaturedMission({
-            id: String(mission.id),
-            name: missionName,
-            description: 'Contribute to MoonDAO\'s featured mission today and help advance humanity\'s future in space',
-          })
-        }
-      } catch (error) {
-        console.error('Failed to fetch featured mission:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchFeaturedMission()
-  }, [missionTableContract, jbControllerContract])
-
-  if (!featuredMission || !isVisible) {
+  if (!isVisible || isOnFeaturedMissionPage) {
     return null
   }
 
+  const featuredMission = {
+    id: FEATURED_MISSION_ID,
+    name: FEATURED_MISSION_NAME,
+    description: FEATURED_MISSION_DESCRIPTION,
+  }
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-2xl border-t border-slate-700/50 backdrop-blur-sm">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-2xl border-t border-slate-700/50 backdrop-blur-sm">
       <div className="relative overflow-hidden h-16 flex items-center w-full px-4">
         {/* Close button */}
         <button
@@ -178,7 +102,7 @@ export default function MissionBanner() {
 
         .marquee-content {
           display: inline-flex;
-          animation: marquee 120s linear infinite;
+          animation: marquee 90s linear infinite;
         }
 
         @keyframes marquee {

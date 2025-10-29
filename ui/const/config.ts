@@ -252,6 +252,9 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 }
 
 export const FEATURED_MISSION_INDEX = 0
+export const FEATURED_MISSION_NAME = 'Support the Inspiration4 Complex at Space Camp'
+export const FEATURED_MISSION_DESCRIPTION = 'Donate to support real training hardware and inspire future astronauts at Space Camp, USA'
+export const FEATURED_MISSION_ID = '1'
 
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: '0x1B50781A23e32d70Be36116aAe9a21C8B4706E22',
