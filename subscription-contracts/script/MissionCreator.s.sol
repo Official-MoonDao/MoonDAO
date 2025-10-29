@@ -16,15 +16,17 @@ contract MyScript is Script, Config {
 
         missionTable.setMissionCreator(address(missionCreator));
         missionCreator.setMissionTable(address(missionTable));
-        uint256[] memory missionIds = new uint256[](1);
-        missionIds[0] = 1;
+        uint256[] memory missionIds = new uint256[](4);
+        missionIds[0] = 0;
+        missionIds[1] = 1;
+        missionIds[2] = 2;
+        missionIds[3] = 3;
         for (uint i = 0; i < missionIds.length; i++){
             uint256 missionId = missionIds[i];
             missionCreator.setMissionData(
                 missionId,
                 oldMissionCreator.missionIdToProjectId(missionId),
                 oldMissionCreator.missionIdToPayHook(missionId),
-                oldMissionCreator.missionIdToApprovalHook(missionId),
                 oldMissionCreator.missionIdToTeamVesting(missionId),
                 oldMissionCreator.missionIdToMoonDAOVesting(missionId),
                 oldMissionCreator.missionIdToPoolDeployer(missionId),
