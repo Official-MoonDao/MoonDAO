@@ -307,7 +307,7 @@ async function handler(req: any, res: any) {
           contributionAmountETH >= 1 ? 3 : 5
         )} ETH ($${formatNumberWithCommasAndDecimals(
           contributionAmountUSD
-        )}) to the **${`[${missionMetadata.name}](${DEPLOYED_ORIGIN}mission/${mission.id})`}** mission!\n\n**Total Raised**: ${formatNumberWithCommasAndDecimals(
+        )}) to the **${`[${missionMetadata.name}](${DEPLOYED_ORIGIN}/mission/${mission.id})`}** mission!\n\n**Total Raised**: ${formatNumberWithCommasAndDecimals(
           missionTotalRaised,
           missionTotalRaised >= 1 ? 3 : 5
         )} ETH ($${formatNumberWithCommasAndDecimals(
