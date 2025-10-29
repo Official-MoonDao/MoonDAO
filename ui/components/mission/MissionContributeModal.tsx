@@ -971,19 +971,6 @@ export default function MissionContributeModal({
     return () => clearTimeout(timeoutId)
   }, [usdInput, input, selectedChain, estimateContributionGas])
 
-  // Restore selected wallet from URL params after onramp redirect
-  useEffect(() => {
-    if (!router?.isReady) return
-
-    const selectedWalletFromUrl = router?.query?.selectedWallet
-    if (selectedWalletFromUrl) {
-      const walletIndex = parseInt(selectedWalletFromUrl as string, 10)
-      if (!isNaN(walletIndex) && walletIndex !== selectedWallet) {
-        setSelectedWallet(walletIndex)
-      }
-    }
-  }, [router?.query?.selectedWallet, router?.isReady, setSelectedWallet])
-
   // Auto-trigger transaction after successful onramp
   useEffect(() => {
     if (hasTriggeredTransaction.current) return
@@ -1681,7 +1668,7 @@ export default function MissionContributeModal({
                         ''
                       )}&agreed=${agreedToCondition}&message=${encodeURIComponent(
                         message || ''
-                      )}&selectedWallet=${selectedWallet}`}
+                      )}&selectedWalletAddress=${address}`}
                     />
                   )}
 

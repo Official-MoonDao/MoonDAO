@@ -1,4 +1,5 @@
 import { ChatBubbleLeftIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
+import { useWallets } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
@@ -50,6 +51,7 @@ import useOnrampJWT, { OnrampJwtPayload } from '@/lib/coinbase/useOnrampJWT'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import useMissionData from '@/lib/mission/useMissionData'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import {
   arbitrum,
   base,
@@ -128,8 +130,10 @@ export default function MissionProfile({
   _backers,
 }: MissionProfileProps) {
   const account = useActiveAccount()
+  const { wallets } = useWallets()
   const router = useRouter()
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
+  const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
 
   const fullComponentRef = useRef<HTMLDivElement>(null)
 
@@ -326,21 +330,50 @@ export default function MissionProfile({
 
   // Handle post-onramp modal opening
   const handlePostOnrampModal = useCallback(async () => {
+    if (!router?.isReady) return
+
     const onrampSuccess = router?.query?.onrampSuccess === 'true'
     const agreedFromUrl = router?.query?.agreed === 'true'
     const usdAmountFromUrl = router?.query?.usdAmount as string | undefined
+    const selectedWalletFromUrl = router?.query?.selectedWalletAddress as
+      | string
+      | undefined
 
     // Early return if not an onramp success scenario
-    if (!onrampSuccess || !agreedFromUrl || !usdAmountFromUrl) {
+    if (
+      !onrampSuccess ||
+      !agreedFromUrl ||
+      !usdAmountFromUrl ||
+      !selectedWalletFromUrl
+    ) {
       hasProcessedOnrampRef.current = false
       return
     }
 
-    if (hasProcessedOnrampRef.current) {
-      return
+    // Wait for account to be available
+    if (!wallets?.[0] || !account?.address) {
+      return console.error('No wallets or accounts found')
     }
 
-    if (!router?.isReady) return
+    if (hasProcessedOnrampRef.current) {
+      return console.error('Already processed onramp')
+    }
+
+    const selectedWalletToSetIndex = wallets.findIndex(
+      (wallet) =>
+        wallet.address.toLowerCase() === selectedWalletFromUrl?.toLowerCase()
+    )
+
+    if (
+      selectedWalletToSetIndex === undefined ||
+      selectedWalletToSetIndex === null
+    ) {
+      return console.error('No selected wallet found')
+    }
+
+    if (selectedWalletToSetIndex !== selectedWallet) {
+      setSelectedWallet(selectedWalletToSetIndex)
+    }
 
     // Mark as processed immediately to prevent re-runs
     hasProcessedOnrampRef.current = true
@@ -351,15 +384,18 @@ export default function MissionProfile({
         throw new Error('No stored JWT found')
       }
 
-      const payload = await verifyOnrampJWT(storedJWT, account?.address || '')
+      const payload = await verifyOnrampJWT(storedJWT, account.address)
+      if (!payload) {
+        throw new Error('Failed to verify JWT - payload is null')
+      }
+
       if (
-        !payload ||
         !payload.address ||
         !payload.chainSlug ||
-        payload.address.toLowerCase() !== account?.address?.toLowerCase() ||
+        payload.address.toLowerCase() !== account.address?.toLowerCase() ||
         payload.chainSlug !== chainSlug
       ) {
-        throw new Error('Invalid JWT')
+        throw new Error('Invalid JWT - address or chain mismatch')
       }
 
       setOnrampJWTPayload(payload)
@@ -380,16 +416,15 @@ export default function MissionProfile({
       )
     }
   }, [
-    router?.isReady,
-    router?.query?.onrampSuccess,
-    router?.query?.agreed,
-    router?.query?.usdAmount,
     getStoredOnrampJWT,
     verifyOnrampJWT,
-    account?.address,
+    wallets,
     chainSlug,
     clearOnrampJWT,
     router,
+    account?.address,
+    setSelectedWallet,
+    selectedWallet,
   ])
 
   useEffect(() => {
@@ -400,7 +435,12 @@ export default function MissionProfile({
     const usdAmountFromUrl = router?.query?.usdAmount as string | undefined
 
     if (onrampSuccess && agreedFromUrl && usdAmountFromUrl) {
-      handlePostOnrampModal()
+      // Add a small delay to ensure account is loaded
+      const timeoutId = setTimeout(() => {
+        handlePostOnrampModal()
+      }, 500)
+
+      return () => clearTimeout(timeoutId)
     } else {
       // Reset when not in onramp success scenario
       hasProcessedOnrampRef.current = false
@@ -410,6 +450,7 @@ export default function MissionProfile({
     router?.query?.onrampSuccess,
     router?.query?.agreed,
     router?.query?.usdAmount,
+    account?.address,
     handlePostOnrampModal,
   ])
 
