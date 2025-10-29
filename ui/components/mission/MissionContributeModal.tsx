@@ -149,8 +149,8 @@ export default function MissionContributeModal({
     return router?.query?.agreed === 'true'
   })
   const [isAutoTriggering, setIsAutoTriggering] = useState(() => {
-    // Start in auto-trigger mode if coming from onramp
-    return router?.query?.onrampSuccess === 'true'
+    // Only start in auto-trigger mode if coming from onramp AND have valid JWT payload
+    return router?.query?.onrampSuccess === 'true' && !!onrampJWTPayload
   })
   const [transactionRejected, setTransactionRejected] = useState(false)
   const hasTriggeredTransaction = useRef(false)
@@ -971,6 +971,36 @@ export default function MissionContributeModal({
     return () => clearTimeout(timeoutId)
   }, [usdInput, input, selectedChain, estimateContributionGas])
 
+  // Sync isAutoTriggering with JWT payload availability
+  useEffect(() => {
+    const isPostOnramp = router?.query?.onrampSuccess === 'true'
+    if (!isPostOnramp) {
+      setIsAutoTriggering(false)
+      return
+    }
+
+    // Only set auto-triggering if we have a valid JWT payload
+    if (
+      onrampJWTPayload &&
+      onrampJWTPayload.address &&
+      onrampJWTPayload.chainSlug &&
+      account &&
+      address &&
+      onrampJWTPayload.address.toLowerCase() === address.toLowerCase() &&
+      onrampJWTPayload.chainSlug === chainSlug
+    ) {
+      setIsAutoTriggering(true)
+    } else {
+      setIsAutoTriggering(false)
+    }
+  }, [
+    router?.query?.onrampSuccess,
+    onrampJWTPayload,
+    account,
+    address,
+    chainSlug,
+  ])
+
   // Auto-trigger transaction after successful onramp
   useEffect(() => {
     if (hasTriggeredTransaction.current) return
@@ -980,6 +1010,22 @@ export default function MissionContributeModal({
     const isPostOnramp = router?.query?.onrampSuccess === 'true'
 
     if (!isPostOnramp) {
+      setIsAutoTriggering(false)
+      setTransactionRejected(false)
+      hasTriggeredTransaction.current = false
+      return
+    }
+
+    // Validate JWT early - if no valid JWT, don't auto-trigger
+    if (
+      !onrampJWTPayload ||
+      !onrampJWTPayload.address ||
+      !onrampJWTPayload.chainSlug ||
+      !account ||
+      !address ||
+      onrampJWTPayload.address.toLowerCase() !== address.toLowerCase() ||
+      onrampJWTPayload.chainSlug !== chainSlug
+    ) {
       setIsAutoTriggering(false)
       setTransactionRejected(false)
       hasTriggeredTransaction.current = false
