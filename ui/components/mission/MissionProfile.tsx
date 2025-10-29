@@ -329,18 +329,28 @@ export default function MissionProfile({
     const onrampSuccess = router?.query?.onrampSuccess === 'true'
     const agreedFromUrl = router?.query?.agreed === 'true'
     const usdAmountFromUrl = router?.query?.usdAmount as string | undefined
-    if (!onrampSuccess || !agreedFromUrl || !usdAmountFromUrl) return
+
+    // Early return if not an onramp success scenario
+    if (!onrampSuccess || !agreedFromUrl || !usdAmountFromUrl) {
+      hasProcessedOnrampRef.current = false
+      return
+    }
+
+    if (hasProcessedOnrampRef.current) {
+      return
+    }
+
+    if (!router?.isReady) return
+
+    // Mark as processed immediately to prevent re-runs
+    hasProcessedOnrampRef.current = true
 
     try {
-      if (hasProcessedOnrampRef.current)
-        throw new Error('Already processed onramp')
-      if (!router?.isReady) throw new Error('Router not ready')
-
-      // Mark as processed immediately to prevent re-runs
-      hasProcessedOnrampRef.current = true
-
       const storedJWT = getStoredOnrampJWT()
-      if (!storedJWT) throw new Error('No stored JWT found')
+      if (!storedJWT) {
+        throw new Error('No stored JWT found')
+      }
+
       const payload = await verifyOnrampJWT(storedJWT, account?.address || '')
       if (
         !payload ||
@@ -353,11 +363,12 @@ export default function MissionProfile({
       }
 
       setOnrampJWTPayload(payload)
-
       setUsdInput(usdAmountFromUrl)
       setContributeModalEnabled(true)
     } catch (error) {
       console.error('Error handling post-onramp modal:', error)
+      // Reset ref on error so user can retry
+      hasProcessedOnrampRef.current = false
       clearOnrampJWT()
       const { onrampSuccess: _, ...restQuery } = router.query
       router.replace(
@@ -369,6 +380,10 @@ export default function MissionProfile({
       )
     }
   }, [
+    router?.isReady,
+    router?.query?.onrampSuccess,
+    router?.query?.agreed,
+    router?.query?.usdAmount,
     getStoredOnrampJWT,
     verifyOnrampJWT,
     account?.address,
@@ -378,7 +393,18 @@ export default function MissionProfile({
   ])
 
   useEffect(() => {
-    handlePostOnrampModal()
+    if (!router?.isReady) return
+
+    const onrampSuccess = router?.query?.onrampSuccess === 'true'
+    const agreedFromUrl = router?.query?.agreed === 'true'
+    const usdAmountFromUrl = router?.query?.usdAmount as string | undefined
+
+    if (onrampSuccess && agreedFromUrl && usdAmountFromUrl) {
+      handlePostOnrampModal()
+    } else {
+      // Reset when not in onramp success scenario
+      hasProcessedOnrampRef.current = false
+    }
   }, [
     router?.isReady,
     router?.query?.onrampSuccess,
@@ -386,6 +412,15 @@ export default function MissionProfile({
     router?.query?.usdAmount,
     handlePostOnrampModal,
   ])
+
+  // Reset ref when component unmounts or onrampSuccess is removed
+  useEffect(() => {
+    return () => {
+      if (!router?.query?.onrampSuccess) {
+        hasProcessedOnrampRef.current = false
+      }
+    }
+  }, [router?.query?.onrampSuccess])
 
   // Update URL when chain changes (but only after initial chain param has been read)
   useEffect(() => {
