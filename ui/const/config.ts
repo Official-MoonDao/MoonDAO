@@ -19,16 +19,19 @@ interface DeploymentConfig {
   FeeHook: string
   MissionCreator: string
   UniswapV4Router: string
+  MissionTable: string
 }
 
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig =
-  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
+const ethConfig = require(
+  `../../contracts/deployments/ethereum`
+) as DeploymentConfig
 
-const polygonConfig =
-  require(`../../contracts/deployments/polygon`) as DeploymentConfig
+const polygonConfig = require(
+  `../../contracts/deployments/polygon`
+) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
@@ -36,11 +39,13 @@ const arbitrumConfig =
 const baseConfig =
   require('../../contracts/deployments/base') as DeploymentConfig
 
-const goerliConfig =
-  require(`../../contracts/deployments/goerli`) as DeploymentConfig
+const goerliConfig = require(
+  `../../contracts/deployments/goerli`
+) as DeploymentConfig
 
-const sepoliaConfig =
-  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
+const sepoliaConfig = require(
+  `../../contracts/deployments/sepolia`
+) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -254,13 +259,13 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 export const FEATURED_MISSION_INDEX = 0
 
 export const MISSION_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x1B50781A23e32d70Be36116aAe9a21C8B4706E22',
-  sepolia: '0x6ac6a697C7f8F99bF2779aa8e0B4597311771101',
+  arbitrum: arbitrumConfig.MissionTable,
+  sepolia: sepoliaConfig.MissionTable,
 }
 
 export const MISSION_TABLE_NAMES: Index = {
   arbitrum: 'MissionTable_42161_151',
-  sepolia: 'MissionTable_11155111_1974',
+  sepolia: 'MissionTable_11155111_2026',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
