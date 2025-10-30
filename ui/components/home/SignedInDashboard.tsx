@@ -235,7 +235,7 @@ export default function SingedInDashboard({
     mooneyBudget,
     ethPrice,
   } = getBudget(tokens, year, quarter)
-  const ethBudget = 17.09
+  const ethBudget = 14.15
 
   const votingEscrowDepositorContract = useContract({
     address: VOTING_ESCROW_DEPOSITOR_ADDRESSES[chainSlug],
