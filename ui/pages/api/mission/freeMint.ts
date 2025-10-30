@@ -9,8 +9,8 @@ import {
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import {
-  useContract,
   readContract,
   sendAndConfirmTransaction,
   sendTransaction,
