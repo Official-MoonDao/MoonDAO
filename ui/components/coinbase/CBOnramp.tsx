@@ -9,21 +9,28 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 interface CBOnrampProps {
   address: string
   selectedChain: any
-  usdInput: string
+  ethAmount: number
   redirectUrl?: string
   onSuccess?: () => void
   onExit?: () => void
   onBeforeNavigate?: () => void
+  onQuoteCalculated?: (
+    ethAmount: number,
+    paymentSubtotal: number,
+    paymentTotal: number,
+    totalFees: number
+  ) => void
 }
 
 export const CBOnramp: React.FC<CBOnrampProps> = ({
   address,
   selectedChain,
-  usdInput,
+  ethAmount,
   redirectUrl,
   onSuccess,
   onExit,
   onBeforeNavigate,
+  onQuoteCalculated,
 }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingQuote, setIsLoadingQuote] = useState(false)
@@ -31,10 +38,11 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   const [showLimits, setShowLimits] = useState(false)
   const [quoteData, setQuoteData] = useState<{
     ethAmount: number
-    actualUsdValue: number
+    purchaseAmount: number
+    totalAmount: number
     fees: number
     onrampUrl?: string
-    adjustedPurchaseAmount?: number // Amount to buy including fees
+    quoteId?: string | null
   } | null>(null)
 
   // Check if current chain is Arbitrum
@@ -49,15 +57,8 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   // Fetch quote on component load and calculate fees
   useEffect(() => {
     const fetchQuote = async () => {
-      if (!address || !usdInput || parseFloat(usdInput) <= 0) {
+      if (!address || !ethAmount || ethAmount <= 0) {
         setIsLoadingQuote(false)
-        return
-      }
-
-      // Skip quote for amounts less than $2 minimum
-      if (parseFloat(usdInput) < 2) {
-        setIsLoadingQuote(false)
-        setQuoteData(null)
         return
       }
 
@@ -65,160 +66,179 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       setIsLoadingQuote(true)
 
       try {
-        const desiredAmount = parseFloat(usdInput)
-
         // For Arbitrum, use Ethereum quotes to estimate fees
-        // This helps us calculate how much to pay so user gets the desired ETH value
         const quoteNetwork = isArbitrum
           ? 'ethereum'
           : getQuoteNetworkName(selectedChain)
 
-        // Get quote
-        const initialQuoteResponse = await fetch('/api/coinbase/buy-quote', {
+        // Step 1: Get spot price as initial estimate
+        const priceResponse = await fetch('/api/coinbase/eth-price')
+        if (!priceResponse.ok) {
+          throw new Error('Failed to fetch ETH price from Coinbase')
+        }
+        const priceData = await priceResponse.json()
+        const spotPrice = priceData.price
+
+        // Step 2: Request initial quote with FULL amount + buffer
+        // Coinbase's actual rate includes spread (~3-5% above spot)
+        // Add 4% buffer to account for spread and get closer on first attempt
+        const { channelId } = await generateSessionToken()
+        const initialEstimateUSD = ethAmount * spotPrice * 1.05
+
+        let currentResponse = await fetch('/api/coinbase/buy-quote', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            paymentAmount: desiredAmount,
+            paymentAmount: initialEstimateUSD,
             destinationAddress: address,
             purchaseNetwork: quoteNetwork,
             purchaseCurrency: 'ETH',
+            channelId,
           }),
         })
 
-        if (!initialQuoteResponse.ok) {
-          // Handle API errors (like amount too large)
-          const errorData = await initialQuoteResponse.json().catch(() => ({}))
+        if (!currentResponse.ok) {
+          const errorData = await currentResponse.json().catch(() => ({}))
           console.error('Coinbase quote error:', {
-            status: initialQuoteResponse.status,
-            statusText: initialQuoteResponse.statusText,
+            status: currentResponse.status,
+            statusText: currentResponse.statusText,
             error: errorData,
           })
 
-          if (initialQuoteResponse.status === 400) {
-            // Amount likely exceeds Coinbase's limits
-            // Coinbase typically has a ~$7,500 limit but doesn't tell us the exact amount
-            const amountRequested = parseFloat(usdInput)
-            if (amountRequested > 5000) {
-              setError(
-                `The amount you're trying to purchase ($${amountRequested.toLocaleString()}) exceeds Coinbase's purchase limits.`
-              )
-            } else {
-              setError(
-                `Unable to process this amount through Coinbase. Please try a smaller amount or contact info@moondao.com for alternative payment methods.`
-              )
-            }
+          if (currentResponse.status === 400) {
+            setError(
+              `Unable to process this amount through Coinbase. Please try a smaller amount or contact info@moondao.com for alternative payment methods.`
+            )
           } else {
             setError(`Unable to get quote from Coinbase. Please try again.`)
           }
           setIsLoadingQuote(false)
+          onQuoteCalculated?.(0, 0, 0, 0)
           return
         }
 
-        const initialData = await initialQuoteResponse.json()
-        const initialQuote = initialData.quote
+        let currentData = await currentResponse.json()
+        let currentQuote = currentData.quote
 
-        if (!initialQuote || typeof initialQuote !== 'object') {
+        if (!currentQuote || typeof currentQuote !== 'object') {
           setError('Invalid quote response from Coinbase')
           setIsLoadingQuote(false)
           return
         }
 
-        const initialPaymentTotal = parseFloat(
-          initialQuote?.payment_total?.value || '0'
+        // Step 3: Check if we got enough ETH, if not adjust iteratively (max 3 attempts)
+        let receivedEthAmount = parseFloat(
+          currentQuote?.purchase_amount?.value || '0'
         )
-        const initialPaymentSubtotal = parseFloat(
-          initialQuote?.payment_subtotal?.value || '0'
+        let paymentSubtotal = parseFloat(
+          currentQuote?.payment_subtotal?.value || '0'
         )
+        let paymentTotal = parseFloat(currentQuote?.payment_total?.value || '0')
+        let quoteId = currentQuote?.quote_id || null
 
-        const feeRate =
-          initialPaymentSubtotal > 0
-            ? (initialPaymentTotal - initialPaymentSubtotal) /
-              initialPaymentSubtotal
-            : 0 // Default 0% if we can't calculate
+        let attempts = 0
+        const maxAttempts = 3
 
-        // Round to 2 decimal places to match currency precision
-        const calculatedAdjustedAmount =
-          Math.round(desiredAmount * (1 + feeRate) * 100) / 100
+        while (receivedEthAmount < ethAmount && attempts < maxAttempts) {
+          attempts++
 
-        // Get a new quote with the adjusted amount
-        const adjustedQuoteResponse = await fetch('/api/coinbase/buy-quote', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            paymentAmount: calculatedAdjustedAmount,
-            destinationAddress: address,
-            purchaseNetwork: quoteNetwork,
-            purchaseCurrency: 'ETH',
-          }),
-        })
+          const ethShortfall = ethAmount - receivedEthAmount
+          const effectiveRateTotal = paymentTotal / receivedEthAmount // USD (total) per ETH
+          const additionalUsdTotal = ethShortfall * effectiveRateTotal
 
-        if (adjustedQuoteResponse.ok) {
-          const adjustedData = await adjustedQuoteResponse.json()
+          // Add 1% buffer for non-linear spread scaling
+          let adjustedUsd = paymentTotal + additionalUsdTotal * 1.02
+
+          if (adjustedUsd <= paymentTotal) {
+            adjustedUsd = paymentTotal + Math.max(1, paymentTotal * 0.005) // +0.5%
+          }
+
+          const adjustedResponse = await fetch('/api/coinbase/buy-quote', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              paymentAmount: adjustedUsd,
+              destinationAddress: address,
+              purchaseNetwork: quoteNetwork,
+              purchaseCurrency: 'ETH',
+            }),
+          })
+
+          if (!adjustedResponse.ok) {
+            console.warn('Adjusted quote failed, using previous quote')
+            break
+          }
+
+          const adjustedData = await adjustedResponse.json()
           const adjustedQuote = adjustedData.quote
 
-          // Check if quote is valid
-          if (!adjustedQuote || typeof adjustedQuote !== 'object') {
-            // Fall through to use initial quote
-          } else {
-            const ethAmount = parseFloat(
-              adjustedQuote?.purchase_amount?.value || '0'
-            )
-            const paymentSubtotal = parseFloat(
-              adjustedQuote?.payment_subtotal?.value || '0'
-            )
-            const paymentTotal = parseFloat(
-              adjustedQuote?.payment_total?.value || '0'
-            )
-
-            const totalFees = paymentTotal - paymentSubtotal
-
-            if (ethAmount > 0 && paymentTotal > 0) {
-              setQuoteData({
-                ethAmount,
-                actualUsdValue: paymentSubtotal,
-                fees: totalFees,
-                adjustedPurchaseAmount: paymentTotal,
-              })
-              setIsLoadingQuote(false)
-              return
-            }
+          if (!adjustedQuote) {
+            console.warn('Invalid adjusted quote, using previous quote')
+            break
           }
-        }
 
-        // Fallback to initial quote if adjustment failed
-        const ethAmount = parseFloat(
-          initialQuote?.purchase_amount?.value || '0'
-        )
-        const paymentSubtotal = parseFloat(
-          initialQuote?.payment_subtotal?.value || '0'
-        )
-        const paymentTotal = parseFloat(
-          initialQuote?.payment_total?.value || '0'
-        )
+          // Update with new quote values
+          receivedEthAmount = parseFloat(
+            adjustedQuote?.purchase_amount?.value || receivedEthAmount
+          )
+          const newPaymentSubtotal = parseFloat(
+            adjustedQuote?.payment_subtotal?.value || paymentSubtotal
+          )
+          const newPaymentTotal = parseFloat(
+            adjustedQuote?.payment_total?.value || paymentTotal
+          )
+          // Only move forward if totals increased
+          if (
+            newPaymentTotal <= paymentTotal &&
+            receivedEthAmount <=
+              parseFloat((paymentTotal / effectiveRateTotal).toFixed(8))
+          ) {
+            console.warn(
+              'No improvement from adjusted quote, stopping iterations'
+            )
+            break
+          }
+          paymentSubtotal = newPaymentSubtotal
+          paymentTotal = newPaymentTotal
+          quoteId = adjustedQuote?.quote_id || quoteId
+        }
 
         const totalFees = paymentTotal - paymentSubtotal
 
-        if (ethAmount > 0) {
+        if (receivedEthAmount > 0 && paymentTotal > 0) {
           setQuoteData({
-            ethAmount,
-            actualUsdValue: paymentSubtotal,
+            ethAmount: receivedEthAmount,
+            purchaseAmount: paymentTotal,
+            totalAmount: paymentTotal,
             fees: totalFees,
+            quoteId,
           })
+          onQuoteCalculated?.(
+            receivedEthAmount,
+            paymentSubtotal,
+            paymentTotal,
+            totalFees
+          )
+          setIsLoadingQuote(false)
+        } else {
+          onQuoteCalculated?.(0, 0, 0, 0)
+          setError('Invalid final quote data from Coinbase')
+          setIsLoadingQuote(false)
         }
-        setIsLoadingQuote(false)
       } catch (error) {
         console.error('Error fetching quote:', error)
+        onQuoteCalculated?.(0, 0, 0, 0)
         setError('Failed to fetch quote from Coinbase. Please try again.')
         setIsLoadingQuote(false)
       }
     }
 
     fetchQuote()
-  }, [address, usdInput, selectedChain, isArbitrum])
+  }, [address, ethAmount, selectedChain, isArbitrum, onQuoteCalculated])
 
   // Map chain to network name for Coinbase QUOTE API
   // Quote API only supports: ethereum, base, polygon
@@ -326,7 +346,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       if (!data.sessionToken) {
         throw new Error('No session token received from API')
       }
-      return data.sessionToken
+      return { token: data.sessionToken, channelId: data.channelId }
     } catch (error: any) {
       throw error
     }
@@ -344,10 +364,8 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       return
     }
 
-    // Validate minimum amount
-    const amount = parseFloat(usdInput || '0')
-    if (amount < 2) {
-      setError('Minimum purchase amount is $2')
+    if (!quoteData?.purchaseAmount) {
+      setError('Please wait for quote to load')
       return
     }
 
@@ -355,98 +373,29 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       setIsLoading(true)
       setError(null)
 
-      // Use adjusted purchase amount if available, otherwise use the input amount
-      const paymentAmount =
-        quoteData?.adjustedPurchaseAmount || parseFloat(usdInput || '20')
+      const { token } = await generateSessionToken()
 
-      // Only fetch quote for supported networks (not Arbitrum)
-      // Arbitrum isn't supported by Coinbase Quote API, so we skip directly to session token generation
-      if (paymentAmount > 0 && !isArbitrum) {
-        try {
-          const quoteResponse = await fetch('/api/coinbase/buy-quote', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              paymentAmount,
-              destinationAddress: address,
-              purchaseNetwork: getQuoteNetworkName(selectedChain),
-              purchaseCurrency: 'ETH',
-            }),
-          })
-
-          if (quoteResponse.ok) {
-            const data = await quoteResponse.json()
-
-            // Extract values from Coinbase quote response (nested under 'quote')
-            const quote = data.quote
-
-            const ethAmount = parseFloat(quote?.purchase_amount?.value || '0')
-            const paymentTotal = parseFloat(quote?.payment_total?.value || '0')
-            const paymentSubtotal = parseFloat(
-              quote?.payment_subtotal?.value || '0'
-            )
-
-            // Calculate fees directly from the difference to avoid rounding issues
-            const totalFees = paymentTotal - paymentSubtotal
-
-            // Store the onramp URL from Coinbase for direct use
-            const coinbaseOnrampUrl = quote?.onramp_url
-
-            if (ethAmount > 0) {
-              // Store quote data for display
-              const newQuoteData = {
-                ethAmount,
-                actualUsdValue: paymentSubtotal,
-                fees: totalFees,
-                onrampUrl: coinbaseOnrampUrl,
-              }
-
-              setQuoteData(newQuoteData)
-
-              // If we have a pre-built onramp URL from the quote, use it directly
-              if (coinbaseOnrampUrl) {
-                let finalUrl = coinbaseOnrampUrl
-
-                // Add redirect URL
-                if (redirectUrl) {
-                  const separator = finalUrl.includes('?') ? '&' : '?'
-                  finalUrl += `${separator}redirectUrl=${encodeURIComponent(
-                    redirectUrl
-                  )}`
-                }
-
-                onBeforeNavigate?.()
-                window.location.href = finalUrl
-                return
-              }
-            }
-          } else {
-            // Failed to get buy quote, using original amount
-          }
-        } catch (quoteError) {
-          // Quote calculation failed, using original amount
-        }
-      }
-
-      // Fallback: Generate session token and create URL manually
-      const token = await generateSessionToken()
-
-      const url = generateOnRampURL({
+      const widgetParams: any = {
         appId: projectId,
         sessionToken: token,
         addresses: {
           [address]: [getOnrampNetworkName(selectedChain)],
         },
-        ...(paymentAmount > 0 && {
-          presetFiatAmount: paymentAmount,
-          fiatCurrency: 'USD',
-        }),
         defaultNetwork: getOnrampNetworkName(selectedChain),
         defaultAsset: 'ETH',
         redirectUrl: redirectUrl || `${DEPLOYED_ORIGIN}/`,
-      })
+      }
+
+      const paymentTotal = quoteData.purchaseAmount || 0
+      if (paymentTotal > 0) {
+        widgetParams.presetFiatAmount = quoteData.purchaseAmount
+        widgetParams.fiatCurrency = 'USD'
+      } else {
+        widgetParams.presetFiatAmount = 20
+        widgetParams.fiatCurrency = 'USD'
+      }
+
+      const url = generateOnRampURL(widgetParams)
 
       onBeforeNavigate?.()
       window.location.href = url
@@ -507,7 +456,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             </svg>
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-white">Buy Crypto</h2>
+            <h2 className="text-lg font-semibold text-white">Fund</h2>
             <p className="text-gray-300 text-xs">
               {selectedChain?.name || 'Ethereum'}
             </p>
@@ -529,67 +478,23 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
                   Getting quote...
                 </span>
               </div>
-            ) : quoteData?.adjustedPurchaseAmount ? (
+            ) : quoteData?.purchaseAmount ? (
               <>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">
-                    Coinbase Fees
-                    {isArbitrum && <span className="text-xs ml-1">(est.)</span>}
-                    :
-                  </span>
-                  <span className="text-orange-400 font-medium">
-                    $
-                    {quoteData.fees.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{' '}
-                    USD
-                  </span>
-                </div>
                 {isArbitrum && (
                   <div className="text-xs text-gray-500 italic">
                     * Fees estimated using Ethereum rates. Actual fees may vary
                     slightly.
                   </div>
                 )}
-                <div className="border-t border-white/10 pt-3 flex items-center justify-between">
-                  <span className="text-gray-400 text-sm font-semibold">
-                    Total
-                    {isArbitrum && (
-                      <span className="text-xs ml-1 font-normal">(est.)</span>
-                    )}
-                    :
-                  </span>
-                  <span className="text-white font-bold">
-                    $
-                    {quoteData.adjustedPurchaseAmount.toLocaleString(
-                      undefined,
-                      {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }
-                    )}{' '}
-                    USD
-                  </span>
-                </div>
               </>
             ) : (
               <div className="flex items-center justify-between">
-                <span className="text-gray-400 text-sm">Payment Amount:</span>
+                <span className="text-gray-400 text-sm">ETH Amount:</span>
                 <span className="text-white font-medium">
-                  $
-                  {usdInput && !isNaN(parseFloat(usdInput))
-                    ? parseFloat(usdInput).toLocaleString()
-                    : '20'}{' '}
-                  USD
+                  {ethAmount.toFixed(6)} ETH
                 </span>
               </div>
             )}
-
-            <div className="flex items-center justify-between">
-              <span className="text-gray-400 text-sm">Asset:</span>
-              <span className="text-white font-medium">ETH</span>
-            </div>
 
             <div className="flex items-center justify-between">
               <span className="text-gray-400 text-sm">Network:</span>
@@ -607,35 +512,16 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
               ? 'Launching Coinbase...'
               : isLoadingQuote
               ? 'Getting quote...'
-              : quoteData?.adjustedPurchaseAmount
-              ? `Buy $${quoteData.adjustedPurchaseAmount.toLocaleString(
-                  undefined,
-                  {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  }
-                )} of ETH with Coinbase`
-              : `Buy $${
-                  usdInput ? parseFloat(usdInput).toLocaleString() : '20'
-                } of ETH with Coinbase`
+              : quoteData?.purchaseAmount
+              ? `Buy ${quoteData.ethAmount} ETH with Coinbase`
+              : `Buy ETH with Coinbase`
           }
           showSignInLabel={false}
           action={handleOpenOnramp}
           className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           skipNetworkCheck={true}
-          isDisabled={
-            isLoading || isLoadingQuote || !usdInput || parseFloat(usdInput) < 2
-          }
+          isDisabled={isLoading || isLoadingQuote || !quoteData?.purchaseAmount}
         />
-
-        {/* Minimum amount warning */}
-        {usdInput && parseFloat(usdInput) > 0 && parseFloat(usdInput) < 2 && (
-          <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
-            <p className="text-orange-300 text-sm text-center">
-              Minimum purchase amount is $2
-            </p>
-          </div>
-        )}
 
         {/* Loading indicator */}
         {isLoading && (

@@ -21,7 +21,7 @@ export interface SessionTokenRequest {
 }
 
 export interface BuyQuoteRequest {
-  paymentAmount: number
+  paymentAmount: number // USD amount
   destinationAddress: string
   purchaseNetwork?: string
   paymentCurrency?: string
@@ -29,6 +29,7 @@ export interface BuyQuoteRequest {
   country?: string
   subdivision?: string
   paymentMethod?: string
+  channelId?: string
 }
 
 // Environment validation

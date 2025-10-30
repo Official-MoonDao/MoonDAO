@@ -6,7 +6,7 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 export const DEPLOYED_ORIGIN =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
     ? 'https://moondao.com'
-    : 'https://moondao-git-mission-onramp-moondao.vercel.app/'
+    : 'https://moondao-git-mission-onramp-moondao.vercel.app'
 
 interface DeploymentConfig {
   MOONEYToken: string
@@ -413,7 +413,7 @@ export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
 
 // Shared across chains
 export const MISSION_CROSS_CHAIN_PAY_ADDRESS =
-  '0xa2ca498075Ec3a57cd1E407aFF88A495F838Bd5E'
+  '0x32D7ceD515A27CB60c6dcAd47225A7f300134983'
 
 export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   [key: string]: number
@@ -423,6 +423,10 @@ export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   base: 30110, //arbitrum eid
   ethereum: 30110, //arbitrum eid
 }
+
+// LayerZero limit: 0.24 ETH maximum per transaction (total including fees)
+export const LAYERZERO_MAX_ETH = 100
+export const LAYERZERO_MAX_CONTRIBUTION_ETH = 100
 
 //GCP HSM Signer used for XP oracle verification, citizen referrals and gasless transactions
 export const GCP_HSM_SIGNER_ADDRESS =
@@ -538,8 +542,9 @@ export const MOONDAO_NETWORK_SUBGRAPH_URL =
   'https://api.studio.thegraph.com/query/38443/moondao-network/version/latest'
 export const MOONDAO_MISSIONS_SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? 'https://api.studio.thegraph.com/query/38443/moondao-missions-arb/version/latest'
+    ? 'https://api.studio.thegraph.com/query/38443/moon-dao-missions-arb/version/latest'
     : 'https://api.studio.thegraph.com/query/38443/moondao-missions-sepolia/version/latest'
 export const TICK_SPACING = 200
 
 export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
+export const FREE_MINT_THRESHOLD = 1e16

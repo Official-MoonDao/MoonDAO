@@ -1,5 +1,6 @@
 import { ArrowDownIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
+import { getAccessToken } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
@@ -9,6 +10,9 @@ import {
   LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID,
   JB_NATIVE_TOKEN_ADDRESS,
   DEPLOYED_ORIGIN,
+  FREE_MINT_THRESHOLD,
+  LAYERZERO_MAX_CONTRIBUTION_ETH,
+  LAYERZERO_MAX_ETH,
 } from 'const/config'
 import { FixedInt } from 'fpnum'
 import {
@@ -31,7 +35,9 @@ import {
   readContract,
   waitForReceipt,
 } from 'thirdweb'
+import { TransactionReceipt } from 'thirdweb/dist/types/transaction/types'
 import { useActiveAccount } from 'thirdweb/react'
+import { useCitizen } from '@/lib/citizen/useCitizen'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
@@ -42,6 +48,7 @@ import {
   sepolia,
   optimismSepolia,
 } from '@/lib/rpc/chains'
+import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import useSafe from '@/lib/safe/useSafe'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -63,6 +70,7 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionDeployTokenModal from './MissionDeployTokenModal'
 import MissionTokenExchangeRates from './MissionTokenExchangeRates'
 import MissionTokenNotice from './MissionTokenNotice'
+import { PaymentBreakdown } from './PaymentBreakdown'
 
 function MissionPayRedeemContent({
   token,
@@ -77,13 +85,11 @@ function MissionPayRedeemContent({
   claimTokenCredit,
   handleUsdInputChange,
   calculateEthAmount,
-  formattedUsdInput,
   formatTokenAmount,
   redeemAmount,
   isLoadingRedeemAmount,
   isLoadingEthUsdPrice,
   usdInput,
-  formatInputWithCommas,
 }: any) {
   const isRefundable = stage === 3
   const deadlineHasPassed = deadline ? deadline < Date.now() : false
@@ -243,52 +249,60 @@ function MissionPayRedeemContent({
           </div>
         )
       )}
-      {/* Token stats */}
-      {token?.tokenSupply > 0 && !isRefundable && (
-        <div id="mission-token-stats" className="px-4 space-y-1.5">
+      {/* Token Section - Consolidated */}
+      {(token?.tokenSupply > 0 || tokenBalance > 0 || isRefundable) && (
+        <div id="mission-token-section" className="px-4 pb-4 space-y-1.5">
           <label className="text-gray-300 font-medium text-xs uppercase tracking-wide">
-            Token Stats
-          </label>
-          <div className="bg-black/20 border border-white/10 rounded-lg p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-xs">Current Supply</p>
-                <p className="font-semibold text-white">
-                  {formatTokenAmount(+token?.tokenSupply.toString() / 1e18, 2)}{' '}
-                  <span className="text-gray-400">${token?.tokenSymbol}</span>
-                </p>
-              </div>
-              <div>
-                <MissionTokenExchangeRates
-                  currentStage={currentStage}
-                  tokenSymbol={token?.tokenSymbol}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Your Balance & Redeem */}
-      {tokenBalance > 0 || isRefundable ? (
-        <div className="px-4 pb-4 space-y-1.5">
-          <label className="text-gray-300 font-medium text-xs uppercase tracking-wide">
-            {isRefundable ? 'Refund Available' : 'Your Balance'}
+            Token
           </label>
           <div className="bg-black/20 border border-white/10 rounded-lg p-3 space-y-3">
+            {/* Your Balance */}
             {tokenBalance > 0 && (
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-xs">Token Balance</p>
+              <div>
+                <p className="text-gray-400 text-xs">Your Balance</p>
+                <p className="font-semibold text-white text-lg">
+                  {formatTokenAmount(tokenBalance, 2)}{' '}
+                  <span className="text-gray-400">${token?.tokenSymbol}</span>
+                  {token?.tokenSupply > 0 && (
+                    <span className="text-gray-500 text-sm ml-2">
+                      (
+                      {(
+                        (tokenBalance /
+                          (+token?.tokenSupply.toString() / 1e18)) *
+                        100
+                      ).toFixed(1)}
+                      % of Supply)
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+
+            {/* Current Supply and Exchange Rate */}
+            {token?.tokenSupply > 0 && !isRefundable && (
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <p className="text-gray-400 text-xs">Current Supply</p>
                   <p className="font-semibold text-white">
-                    {formatTokenAmount(tokenBalance, 2)}{' '}
+                    {formatTokenAmount(
+                      +token?.tokenSupply.toString() / 1e18,
+                      2
+                    )}{' '}
                     <span className="text-gray-400">${token?.tokenSymbol}</span>
                   </p>
                 </div>
+                <div className="flex-1">
+                  <MissionTokenExchangeRates
+                    currentStage={currentStage}
+                    tokenSymbol={token?.tokenSymbol}
+                  />
+                </div>
               </div>
             )}
+
+            {/* Refund Section */}
             {isRefundable && (tokenBalance > 0 || tokenCredit > 0) && (
-              <div className="space-y-3">
+              <div className="space-y-3 pt-2">
                 <PrivyWeb3Button
                   requiredChain={DEFAULT_CHAIN_V5}
                   id="redeem-button"
@@ -312,7 +326,7 @@ function MissionPayRedeemContent({
             )}
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   )
 }
@@ -331,6 +345,7 @@ export type MissionPayRedeemProps = {
   jbTokensContract?: any
   forwardClient?: any
   refreshBackers?: () => void
+  backers: any
   refreshTotalFunding?: () => void
   ruleset: JBRuleset
   onlyButton?: boolean
@@ -353,6 +368,7 @@ function MissionPayRedeemComponent({
   jbTokensContract,
   forwardClient,
   refreshBackers,
+  backers,
   refreshTotalFunding,
   ruleset,
   onlyButton = false,
@@ -363,6 +379,7 @@ function MissionPayRedeemComponent({
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const chainSlug = getChainSlug(selectedChain)
+  const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
   const router = useRouter()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains = useMemo(
@@ -384,8 +401,10 @@ function MissionPayRedeemComponent({
   const [message, setMessage] = useState('')
   const [redeemAmount, setRedeemAmount] = useState(0)
   const [isLoadingRedeemAmount, setIsLoadingRedeemAmount] = useState(true)
+  const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
+  const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
+  const [crossChainQuote, setCrossChainQuote] = useState<bigint>(BigInt(0))
 
-  // USD input state and handlers
   const [usdInput, setUsdInput] = useState(() => {
     const urlAmount = router?.query?.usdAmount
     return typeof urlAmount === 'string' ? urlAmount : ''
@@ -394,6 +413,32 @@ function MissionPayRedeemComponent({
     1,
     'ETH_TO_USD'
   )
+
+  const [coinbaseEthReceive, setCoinbaseEthReceive] = useState<number | null>(
+    null
+  )
+
+  const [coinbasePaymentSubtotal, setCoinbasePaymentSubtotal] =
+    useState<number>()
+  const [coinbasePaymentTotal, setCoinbasePaymentTotal] = useState<number>()
+  const [coinbaseTotalFees, setCoinbaseTotalFees] = useState<number>()
+  const [coinbaseEthInsufficient, setCoinbaseEthInsufficient] =
+    useState<boolean>(false)
+
+  // Check if LayerZero quote exceeds the protocol limit (for Ethereum and Base)
+  const layerZeroLimitExceeded = useMemo(() => {
+    const isCrossChain = chainSlug !== defaultChainSlug
+    if (!isCrossChain) return false
+
+    // Only apply to Ethereum and Base (which use LayerZero)
+    if (chainSlug !== 'ethereum' && chainSlug !== 'base') return false
+
+    // Check if the total LayerZero quote (contribution + fees) exceeds limit
+    if (crossChainQuote === BigInt(0)) return false
+
+    const LAYERZERO_MAX_WEI = BigInt(Math.floor(LAYERZERO_MAX_ETH * 1e18))
+    return crossChainQuote > LAYERZERO_MAX_WEI
+  }, [chainSlug, defaultChainSlug, crossChainQuote])
 
   // Calculate ETH amount from USD for display
   const calculateEthAmount = useCallback(() => {
@@ -500,7 +545,7 @@ function MissionPayRedeemComponent({
         return
       }
     },
-    [ethUsdPrice, setInput, formatInputWithCommas]
+    [setInput, formatInputWithCommas]
   )
 
   // Use default chain for safe so that cross chain payments don't update safe chain
@@ -529,47 +574,369 @@ function MissionPayRedeemComponent({
 
   const nativeBalance = useNativeBalance()
 
+  const { gasPrice } = useGasPrice(selectedChain)
+
+  // Calculate gas cost in ETH and USD
+  const gasCostDisplay = useMemo(() => {
+    if (
+      !estimatedGas ||
+      estimatedGas === BigInt(0) ||
+      !gasPrice ||
+      gasPrice === BigInt(0)
+    ) {
+      return { eth: '0.0000', usd: '0.00' }
+    }
+
+    const gasCostWei = estimatedGas * gasPrice
+    const gasCostEth = Number(gasCostWei) / 1e18
+
+    const gasCostUsd = ethUsdPrice ? gasCostEth * ethUsdPrice : 0
+
+    let formattedGasCostEth
+    if (gasCostEth >= 0.01) {
+      formattedGasCostEth = gasCostEth.toFixed(4)
+    } else if (gasCostEth >= 0.0001) {
+      formattedGasCostEth = gasCostEth.toFixed(6)
+    } else {
+      formattedGasCostEth = gasCostEth.toFixed(8)
+    }
+
+    return {
+      eth: formattedGasCostEth,
+      usd: gasCostUsd.toFixed(2),
+    }
+  }, [estimatedGas, gasPrice, ethUsdPrice])
+
+  // Helper function to safely convert a number to wei (BigInt) without precision loss
+  const toWei = (value: number): bigint => {
+    // Convert to string and remove any scientific notation
+    let valueStr = value.toString()
+
+    if (valueStr.includes('e')) {
+      valueStr = value.toFixed(20)
+    }
+
+    // Split into integer and decimal parts
+    const [intPart = '0', decPart = ''] = valueStr.split('.')
+
+    // Integer part in wei (multiply by 10^18)
+    const intWei = BigInt(intPart) * BigInt(10) ** BigInt(18)
+
+    // Decimal part in wei (take up to 18 digits, pad with zeros if needed)
+    const decimalDigits = decPart.slice(0, 18).padEnd(18, '0')
+    const decWei = BigInt(decimalDigits)
+
+    return intWei + decWei
+  }
+
+  // Estimate gas for the contribution transaction
+  const estimateContributionGas = useCallback(async () => {
+    if (!account || !address) return
+
+    const inputValue = parseFloat(input) || 0
+    if (inputValue <= 0) {
+      setEstimatedGas(BigInt(0))
+      setCrossChainQuote(BigInt(0))
+      return
+    }
+
+    const isCrossChain = chainSlug !== defaultChainSlug
+
+    // Check if USD input would exceed contribution limit
+    if (
+      isCrossChain &&
+      (chainSlug === 'ethereum' || chainSlug === 'base') &&
+      ethUsdPrice
+    ) {
+      const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
+      const usdValue = parseFloat(cleanUsdInput)
+      if (usdValue > 0) {
+        const ethAmount = usdValue / ethUsdPrice
+        if (ethAmount > LAYERZERO_MAX_CONTRIBUTION_ETH) {
+          // Don't try to get a quote, it will fail, Stargate's infrastructure caps transactions at 0.24 ETH
+          setCrossChainQuote(BigInt(Math.floor(0.25 * 1e18))) // Slightly over limit to trigger error
+          setEstimatedGas(BigInt(300000)) // Set a fallback gas estimate
+          setIsLoadingGasEstimate(false)
+          return
+        }
+      }
+    }
+
+    if (isCrossChain && !crossChainPayContract) return
+    if (!isCrossChain && !primaryTerminalContract) return
+
+    try {
+      let gasEstimate: bigint = BigInt(0)
+
+      if (isCrossChain) {
+        if (!output || output <= 0) {
+          setIsLoadingGasEstimate(true)
+          return
+        }
+
+        let quoteCrossChainPay: any
+        try {
+          const inputValueWei = toWei(inputValue)
+          const outputTokens = toWei(output)
+
+          quoteCrossChainPay = await readContract({
+            contract: crossChainPayContract,
+            method: 'quoteCrossChainPay' as string,
+            params: [
+              LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
+              inputValueWei,
+              mission?.projectId,
+              address || ZERO_ADDRESS,
+              outputTokens,
+              message,
+              '0x00',
+            ],
+          })
+
+          setCrossChainQuote(BigInt(quoteCrossChainPay))
+        } catch (quoteError: any) {
+          console.error('❌ LayerZero quote failed:', quoteError)
+          throw quoteError
+        }
+
+        const transaction = prepareContractCall({
+          contract: crossChainPayContract,
+          method: 'crossChainPay' as string,
+          params: [
+            LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
+            mission?.projectId,
+            toWei(inputValue),
+            address || ZERO_ADDRESS,
+            output * 0,
+            message,
+            '0x00',
+          ],
+          value: BigInt(quoteCrossChainPay),
+        })
+
+        try {
+          const txData =
+            typeof transaction.data === 'function'
+              ? await transaction.data()
+              : transaction.data
+
+          const estimateResponse = await fetch('/api/rpc/estimate-gas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chainId: selectedChain.id,
+              from: address,
+              to: MISSION_CROSS_CHAIN_PAY_ADDRESS,
+              data: txData,
+              value: `0x${BigInt(quoteCrossChainPay).toString(16)}`,
+            }),
+          })
+
+          const estimateData = await estimateResponse.json()
+
+          if (estimateData.error) {
+            console.error('❌ Gas estimation API error:', estimateData.error)
+            throw new Error(estimateData.error)
+          }
+
+          gasEstimate = BigInt(estimateData.gasEstimate)
+        } catch (estimationError: any) {
+          console.error('❌ Gas estimation error:', estimationError)
+          gasEstimate = BigInt(300000)
+        }
+      } else {
+        //Direct pay on Arbitrum w/out LayerZero
+
+        setCrossChainQuote(BigInt(0))
+
+        if (!output || output <= 0) {
+          setIsLoadingGasEstimate(true)
+          return
+        }
+
+        const transaction = prepareContractCall({
+          contract: primaryTerminalContract,
+          method: 'pay' as string,
+          params: [
+            mission?.projectId,
+            JB_NATIVE_TOKEN_ADDRESS,
+            toWei(inputValue),
+            address,
+            (toWei(output) * BigInt(95)) / BigInt(100),
+            message,
+            '0x00',
+          ],
+          value: toWei(inputValue),
+        })
+
+        try {
+          const txData =
+            typeof transaction.data === 'function'
+              ? await transaction.data()
+              : transaction.data
+
+          const estimateResponse = await fetch('/api/rpc/estimate-gas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chainId: selectedChain.id,
+              from: address,
+              to: primaryTerminalAddress,
+              data: txData,
+              value: `0x${toWei(inputValue).toString(16)}`,
+            }),
+          })
+
+          const estimateData = await estimateResponse.json()
+
+          if (estimateData.error) {
+            console.error('❌ Gas estimation API error:', estimateData.error)
+            throw new Error(estimateData.error)
+          }
+
+          gasEstimate = BigInt(estimateData.gasEstimate)
+        } catch (estimationError: any) {
+          console.error('❌ Gas estimation error:', estimationError)
+          gasEstimate = BigInt(180000)
+        }
+      }
+
+      // Add buffer to account for gas price fluctuations
+      // Cross-chain LayerZero transactions need a much higher buffer (80%) due to variable LayerZero fees
+      // Same-chain transactions use a 30% buffer
+      const bufferPercent = isCrossChain ? 180 : 130 // 80% or 30% buffer
+      const gasWithBuffer = (gasEstimate * BigInt(bufferPercent)) / BigInt(100)
+      setEstimatedGas(gasWithBuffer)
+      setIsLoadingGasEstimate(false)
+    } catch (error) {
+      console.error(
+        `Error estimating gas for ${chainSlug}:`,
+        error instanceof Error ? error.message : error
+      )
+      setEstimatedGas(BigInt(300000))
+      setIsLoadingGasEstimate(false)
+    }
+  }, [
+    account,
+    address,
+    primaryTerminalContract,
+    crossChainPayContract,
+    input,
+    chainSlug,
+    defaultChainSlug,
+    mission?.projectId,
+    output,
+    message,
+    primaryTerminalAddress,
+    selectedChain,
+    ethUsdPrice,
+    usdInput,
+  ])
+
   // Calculate required ETH amount and determine if user has enough balance
   const requiredEth = useMemo(() => {
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
-    return usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
-  }, [usdInput, ethUsdPrice])
+    const isCrossChain = chainSlug !== defaultChainSlug
 
-  const hasEnoughBalance = useMemo(() => {
-    return (
-      nativeBalance && Number(nativeBalance) >= requiredEth && requiredEth > 0
-    )
-  }, [nativeBalance, requiredEth])
-
-  // Calculate how much USD the user needs to buy (difference between required and current balance)
-  // Account for Coinbase's $2 minimum
-  const usdDeficit = useMemo(() => {
-    const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
-    const inputAmount = parseFloat(cleanUsdInput)
-
-    // If no balance data, use full input amount but enforce $2 minimum
-    if (!nativeBalance || !requiredEth || !ethUsdPrice) {
-      return inputAmount > 0 && inputAmount < 2 ? '2.00' : cleanUsdInput
+    // For cross-chain, use the quote (includes contribution + LayerZero fee)
+    // For same-chain, calculate from USD input
+    let transactionValueEth: number
+    if (
+      isCrossChain &&
+      crossChainQuote > BigInt(0) &&
+      !layerZeroLimitExceeded
+    ) {
+      transactionValueEth = Number(crossChainQuote) / 1e18
+    } else {
+      transactionValueEth =
+        usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
     }
 
-    const ethDeficit = Math.max(0, requiredEth - Number(nativeBalance))
-    const deficit = ethDeficit * ethUsdPrice
+    // Add estimated gas cost (convert from wei to ETH)
+    const gasCostWei = estimatedGas * gasPrice
+    const gasCostEth = Number(gasCostWei) / 1e18
+
+    const total = transactionValueEth + gasCostEth
+
+    return total
+  }, [
+    usdInput,
+    ethUsdPrice,
+    estimatedGas,
+    gasPrice,
+    crossChainQuote,
+    chainSlug,
+    defaultChainSlug,
+    layerZeroLimitExceeded,
+  ])
+
+  const hasEnoughBalance = useMemo(() => {
+    const hasEnough =
+      nativeBalance && Number(nativeBalance) >= requiredEth && requiredEth > 0
+    return hasEnough
+  }, [nativeBalance, requiredEth])
+
+  // Calculate LayerZero cross-chain fee for display
+  const layerZeroFeeDisplay = useMemo(() => {
+    const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
+    const isCrossChain = chainSlug !== defaultChainSlug
+
+    if (!isCrossChain || crossChainQuote === BigInt(0)) {
+      return { eth: '0', usd: '0.00' }
+    }
+
+    if (layerZeroLimitExceeded) {
+      return { eth: '0', usd: '0.00' }
+    }
+
+    const contributionEth =
+      usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
+    const quoteEth = Number(crossChainQuote) / 1e18
+    const layerZeroFeeEth = quoteEth - contributionEth
+    const layerZeroFeeUsd = ethUsdPrice ? layerZeroFeeEth * ethUsdPrice : 0
+
+    return {
+      eth: layerZeroFeeEth.toFixed(6),
+      usd: layerZeroFeeUsd.toFixed(2),
+    }
+  }, [
+    crossChainQuote,
+    usdInput,
+    ethUsdPrice,
+    chainSlug,
+    defaultChainSlug,
+    layerZeroLimitExceeded,
+  ])
+
+  // Calculate how much ETH the user needs to buy
+  const ethDeficit = useMemo(() => {
+    if (!nativeBalance || !requiredEth) return 0
+
+    return Math.max(0, requiredEth - Number(nativeBalance))
+  }, [nativeBalance, requiredEth])
+
+  // Calculate USD equivalent (for display only)
+  const usdDeficit = useMemo(() => {
+    if (!ethUsdPrice || ethDeficit === 0) return '0.00'
+
+    const usdAmount = ethDeficit * ethUsdPrice
 
     // If they need any amount less than $2, round up to $2 (Coinbase minimum)
-    if (deficit > 0 && deficit < 2) {
+    if (usdAmount > 0 && usdAmount < 2) {
       return '2.00'
     }
 
-    return deficit.toFixed(2)
-  }, [nativeBalance, requiredEth, ethUsdPrice, usdInput])
+    return usdAmount.toFixed(2)
+  }, [ethDeficit, ethUsdPrice])
 
   // Check if we had to adjust the amount to meet Coinbase minimum
   const isAdjustedForMinimum = useMemo(() => {
-    if (!nativeBalance || !requiredEth || !ethUsdPrice) return false
-    const ethDeficit = Math.max(0, requiredEth - Number(nativeBalance))
-    const actualDeficit = ethDeficit * ethUsdPrice
-    return actualDeficit > 0 && actualDeficit < 2
-  }, [nativeBalance, requiredEth, ethUsdPrice])
+    return (
+      parseFloat(usdDeficit) === 2.0 &&
+      ethDeficit > 0 &&
+      ethDeficit * ethUsdPrice < 2
+    )
+  }, [usdDeficit, ethDeficit, ethUsdPrice])
 
   const tokenBalance = useWatchTokenBalance(
     selectedChain,
@@ -585,7 +952,6 @@ function MissionPayRedeemComponent({
     deps: [tokenBalanceRefresh],
   })
 
-  // Get the proper JB token balance instead of ERC20 balance
   const { data: jbTokenBalance } = useRead({
     contract: jbTokensContract,
     method: 'totalBalanceOf' as string,
@@ -615,13 +981,10 @@ function MissionPayRedeemComponent({
 
   const getQuote = useCallback(async () => {
     const inputValue = parseFloat(input) || 0
-    const q = getTokenAToBQuote(
-      new FixedInt(BigInt(Math.trunc(inputValue * 1e18)), 18),
-      {
-        weight: new RulesetWeight(ruleset[0].weight),
-        reservedPercent: new ReservedPercent(ruleset[1].reservedPercent),
-      }
-    )
+    const q = getTokenAToBQuote(new FixedInt(toWei(inputValue), 18), {
+      weight: new RulesetWeight(ruleset[0].weight),
+      reservedPercent: new ReservedPercent(ruleset[1].reservedPercent),
+    })
     setOutput(+q.payerTokens.toString() / 1e18)
   }, [input, ruleset])
 
@@ -727,16 +1090,17 @@ function MissionPayRedeemComponent({
     }
 
     try {
+      let receipt: TransactionReceipt
       if (chainSlug !== defaultChainSlug) {
         const quoteCrossChainPay: any = await readContract({
           contract: crossChainPayContract,
           method: 'quoteCrossChainPay' as string,
           params: [
             LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
-            BigInt(Math.trunc(inputValue * 1e18)),
+            toWei(inputValue),
             mission?.projectId,
             address || ZERO_ADDRESS,
-            output * 1e18,
+            toWei(output),
             message,
             '0x00',
           ],
@@ -747,7 +1111,7 @@ function MissionPayRedeemComponent({
           params: [
             LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[chainSlug].toString(),
             mission?.projectId,
-            BigInt(Math.trunc(inputValue * 1e18)),
+            toWei(inputValue),
             address || ZERO_ADDRESS,
             output * 0, // Don't put in mininum output for cross-chain pay to account for slippage
             message,
@@ -770,7 +1134,7 @@ function MissionPayRedeemComponent({
           isTestnet ? 19999 : 1, // 19999 resolves to testnet, 1 to mainnet, see https://cdn.jsdelivr.net/npm/@layerzerolabs/scan-client@0.0.8/dist/client.mjs
           originReceipt.transactionHash
         )
-        const receipt = await waitForReceipt({
+        receipt = await waitForReceipt({
           client: client,
           chain: DEFAULT_CHAIN_V5,
           transactionHash: destinationMessage.dstTxHash as `0x${string}`,
@@ -782,16 +1146,16 @@ function MissionPayRedeemComponent({
           params: [
             mission?.projectId,
             JB_NATIVE_TOKEN_ADDRESS,
-            BigInt(Math.trunc(inputValue * 1e18)),
+            toWei(inputValue),
             address,
-            (output * 1e18 * 95) / 100,
+            (toWei(output) * BigInt(95)) / BigInt(100),
             message,
             '0x00',
           ],
-          value: BigInt(Math.trunc(inputValue * 1e18)),
+          value: toWei(inputValue),
         })
 
-        const receipt = await sendAndConfirmTransaction({
+        receipt = await sendAndConfirmTransaction({
           transaction,
           account,
         })
@@ -802,6 +1166,26 @@ function MissionPayRedeemComponent({
 
       if (setModalEnabled) {
         setModalEnabled(false)
+      }
+
+      const accessToken = await getAccessToken()
+
+      const contributionNotification: any = await fetch(
+        '/api/mission/contribution-notification',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            txHash: receipt.transactionHash,
+            accessToken: accessToken,
+            txChainSlug: chainSlug,
+            projectId: mission?.projectId,
+          }),
+        }
+      )
+      const contributionNotificationData = await contributionNotification.json()
+
+      if (contributionNotificationData?.message) {
+        console.log(contributionNotificationData.message)
       }
 
       toast.success('Mission token purchased!', {
@@ -815,9 +1199,34 @@ function MissionPayRedeemComponent({
         colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
       })
 
-      refreshMissionData()
       if (setModalEnabled) {
         setModalEnabled(false)
+      }
+      if (!isCitizen) {
+        const totalPaid =
+          backers.reduce((acc: any, payment: any) => {
+            return acc + payment.backer.toLowerCase() == address.toLowerCase()
+              ? parseInt(payment.totalAmountContributed)
+              : 0
+          }, 0) +
+          inputValue * 1e18
+        if (totalPaid > FREE_MINT_THRESHOLD) {
+          toast.success(
+            <div>
+              <Link href={'/join?tier=citizen&freeMint=true'}>
+                Mission token purchased! Click to claim free citizenship!
+              </Link>
+            </div>,
+            {
+              style: toastStyle,
+            }
+          )
+        }
+      } else {
+        toast.success('Mission token purchased!', {
+          style: toastStyle,
+        })
+        refreshMissionData()
       }
     } catch (error) {
       console.error('Error purchasing tokens:', error)
@@ -1001,12 +1410,59 @@ function MissionPayRedeemComponent({
     }
   }, [jbTokenBalance, tokenCredit, stage, getRedeemQuote])
 
+  // Estimate gas on input change
+  useEffect(() => {
+    const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
+    const usdValue = parseFloat(cleanUsdInput)
+
+    // Set up a timer to delay the gas estimation
+    const timeoutId = setTimeout(() => {
+      if (usdValue > 0 && input && parseFloat(input) > 0) {
+        setIsLoadingGasEstimate(true)
+        estimateContributionGas()
+      } else {
+        setIsLoadingGasEstimate(false)
+        setEstimatedGas(BigInt(0))
+        setCrossChainQuote(BigInt(0))
+      }
+    }, 2000)
+
+    return () => clearTimeout(timeoutId)
+  }, [usdInput, input, selectedChain, estimateContributionGas])
+
+  // Callback to receive quote data from CBOnramp
+  const handleCoinbaseQuote = useCallback(
+    (
+      ethAmount: number,
+      paymentSubtotal: number,
+      paymentTotal: number,
+      totalFees: number
+    ) => {
+      setCoinbaseEthReceive(ethAmount)
+      setCoinbasePaymentSubtotal(paymentSubtotal)
+      setCoinbasePaymentTotal(paymentTotal) // total w/ fees
+      setCoinbaseTotalFees(totalFees)
+
+      // Validate that coinbaseEthReceive + current balance >= requiredEth
+      const currentBalance = nativeBalance ? Number(nativeBalance) : 0
+      const totalAfterPurchase = ethAmount + currentBalance
+      const isInsufficient = totalAfterPurchase < requiredEth
+
+      setCoinbaseEthInsufficient(isInsufficient)
+    },
+    [nativeBalance, requiredEth]
+  )
+
   // Clear parameter when modal is closed
   const handleModalClose = useCallback(() => {
     if (setModalEnabled) {
       setModalEnabled(false)
     }
   }, [setModalEnabled])
+
+  const showEstimatedGas = useMemo(() => {
+    return usdInput && parseFloat(usdInput) > 0
+  }, [usdInput])
 
   if (stage === 4) return null
 
@@ -1100,13 +1556,13 @@ function MissionPayRedeemComponent({
                 deadline={deadline}
                 handleUsdInputChange={handleUsdInputChange}
                 calculateEthAmount={calculateEthAmount}
-                formattedUsdInput={formattedUsdInput}
                 formatTokenAmount={formatTokenAmount}
                 redeemAmount={redeemAmount}
                 isLoadingRedeemAmount={isLoadingRedeemAmount}
                 isLoadingEthUsdPrice={isLoadingEthUsdPrice}
                 usdInput={usdInput}
-                formatInputWithCommas={formatInputWithCommas}
+                chainSlug={chainSlug}
+                ethUsdPrice={ethUsdPrice}
               />
             </div>
           )}
@@ -1196,11 +1652,11 @@ function MissionPayRedeemComponent({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <Image
-                          src="/assets/icon-star.svg"
-                          alt="Token"
-                          width={20}
-                          height={20}
-                          className="bg-orange-500 rounded-full p-1 w-6 h-6"
+                          src={mission?.metadata.logoUri}
+                          width={40}
+                          height={40}
+                          className="rounded-full"
+                          alt={`${token?.tokenSymbol} logo`}
                         />
                         <div>
                           <p className="font-medium text-white">
@@ -1262,32 +1718,45 @@ function MissionPayRedeemComponent({
                 </div>
               </div>
 
-              {/* Token Info */}
-              {token?.tokenSymbol && token?.tokenName && (
-                <div className="bg-black/20 border border-white/10 rounded-lg p-3">
-                  <div className="flex items-center space-x-3">
-                    <Image
-                      src={mission?.metadata.logoUri}
-                      width={40}
-                      height={40}
-                      className="rounded-full"
-                      alt={`${token?.tokenSymbol} logo`}
-                    />
-                    <div>
-                      <p className="font-medium text-white">
-                        {token?.tokenSymbol}
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        {token?.tokenName}
-                      </p>
+              {/* Conditional Content Based on Balance */}
+              {layerZeroLimitExceeded ? (
+                // LayerZero limit exceeded - show only error message, no forms
+                <div className="space-y-6 pt-4">
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                        <span className="text-blue-400 text-xl">💡</span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-blue-300 font-semibold text-base mb-2">
+                          How to Proceed
+                        </h4>
+                        <div className="space-y-3 text-sm text-blue-200/80">
+                          <p>
+                            <strong className="text-blue-300">Option 1:</strong>{' '}
+                            Reduce your contribution to under $
+                            {(
+                              LAYERZERO_MAX_CONTRIBUTION_ETH *
+                              (ethUsdPrice || 0)
+                            ).toFixed(0)}{' '}
+                            USD ( + fees)
+                          </p>
+                          <p>
+                            <strong className="text-blue-300">Option 2:</strong>{' '}
+                            Switch to Arbitrum network and contribute any amount
+                            without limits
+                          </p>
+                          <p>
+                            <strong className="text-blue-300">Option 3:</strong>{' '}
+                            Split your contribution into multiple transactions
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* Conditional Content Based on Balance */}
-              {hasEnoughBalance ? (
-                // User has enough balance - show crypto pay form
+              ) : hasEnoughBalance ? (
+                // User has enough balance - show pay form
                 <>
                   {/* Message Input */}
                   <div className="space-y-2">
@@ -1304,18 +1773,68 @@ function MissionPayRedeemComponent({
                       maxLength={100}
                     />
                   </div>
+                  {/* Payment Breakdown */}
+                  {ethUsdPrice && usdInput && (
+                    <PaymentBreakdown
+                      usdInput={usdInput}
+                      chainSlug={chainSlug}
+                      defaultChainSlug={defaultChainSlug}
+                      layerZeroLimitExceeded={layerZeroLimitExceeded}
+                      isLoadingGasEstimate={isLoadingGasEstimate}
+                      layerZeroFeeDisplay={layerZeroFeeDisplay}
+                      showEstimatedGas={showEstimatedGas as boolean}
+                      gasCostDisplay={gasCostDisplay}
+                      requiredEth={requiredEth}
+                      ethUsdPrice={ethUsdPrice}
+                      nativeBalance={nativeBalance}
+                      showCurrentBalance={true}
+                      showNeedToBuy={true}
+                      coinbasePaymentSubtotal={coinbasePaymentSubtotal}
+                      coinbaseTotalFees={coinbaseTotalFees}
+                      coinbasePaymentTotal={coinbasePaymentTotal}
+                      coinbaseEthReceive={coinbaseEthReceive}
+                      isAdjustedForMinimum={isAdjustedForMinimum}
+                      coinbaseEthInsufficient={coinbaseEthInsufficient}
+                    />
+                  )}
 
                   <MissionTokenNotice />
+
+                  {/* LayerZero Limit Warning */}
+                  {layerZeroLimitExceeded && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                      <p className="text-red-300 text-sm font-medium">
+                        ⚠️ Contribution Limit Exceeded
+                      </p>
+                      <p className="text-red-200/80 text-xs mt-2">
+                        Cross-chain contributions from{' '}
+                        {chainSlug === 'ethereum'
+                          ? 'Ethereum'
+                          : chainSlug === 'base'
+                          ? 'Base'
+                          : 'this network'}{' '}
+                        are limited to {LAYERZERO_MAX_ETH} ETH (~$
+                        {(
+                          LAYERZERO_MAX_CONTRIBUTION_ETH * (ethUsdPrice || 0)
+                        ).toFixed(0)}
+                        ) per transaction due to LayerZero protocol limits (0.24
+                        ETH total including fees).
+                      </p>
+                      <p className="text-red-200/80 text-xs mt-2">
+                        Please reduce your contribution amount or split it into
+                        multiple transactions. Alternatively, you can contribute
+                        directly on Arbitrum without limits.
+                      </p>
+                    </div>
+                  )}
 
                   {/* Terms Checkbox */}
                   <div className="bg-black/10 rounded-lg p-4 border border-white/5">
                     <ConditionCheckbox
                       id="contribution-terms-checkbox"
                       label={
-                        <>
-                          <p className="text-sm text-gray-300">
-                            {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
-                          </p>
+                        <p className="text-sm text-gray-300">
+                          {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
                           <Link
                             href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
                             className="text-blue-400 hover:text-blue-300"
@@ -1323,11 +1842,9 @@ function MissionPayRedeemComponent({
                             rel="noopener noreferrer"
                           >
                             risks
-                          </Link>{' '}
-                          <p className="text-sm text-gray-300">
-                            {`associated with participation in the MoonDAO Launchpad.`}
-                          </p>
-                        </>
+                          </Link>
+                          {` associated with participation in the MoonDAO Launchpad.`}
+                        </p>
                       }
                       agreedToCondition={agreedToCondition}
                       setAgreedToCondition={setAgreedToCondition}
@@ -1347,7 +1864,9 @@ function MissionPayRedeemComponent({
                       id="contribute-button"
                       className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50"
                       label={
-                        !chainSlugs.includes(chainSlug)
+                        layerZeroLimitExceeded
+                          ? 'Contribution Limit Exceeded'
+                          : !chainSlugs.includes(chainSlug)
                           ? `Switch Network`
                           : `Contribute $${formattedUsdInput || '0'} USD`
                       }
@@ -1357,7 +1876,10 @@ function MissionPayRedeemComponent({
                         !usdInput ||
                         parseFloat((usdInput as string).replace(/,/g, '')) <=
                           0 ||
-                        !chainSlugs.includes(chainSlug)
+                        !chainSlugs.includes(chainSlug) ||
+                        isLoadingGasEstimate ||
+                        isLoadingEthUsdPrice ||
+                        layerZeroLimitExceeded
                       }
                     />
                   </div>
@@ -1365,50 +1887,37 @@ function MissionPayRedeemComponent({
               ) : (
                 // User needs more ETH - show CBOnramp
                 <div className="space-y-4">
-                  {/* Show balance info if user has some ETH */}
-                  {usdInput &&
-                    usdDeficit &&
-                    nativeBalance &&
-                    Number(nativeBalance) > 0 &&
-                    ethUsdPrice && (
-                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 space-y-2">
-                        <p className="text-blue-300 text-sm">
-                          <span className="font-semibold">
-                            Current Balance:
-                          </span>{' '}
-                          {Number(nativeBalance).toFixed(4)} ETH ($
-                          {(Number(nativeBalance) * ethUsdPrice).toFixed(2)})
-                          <br />
-                          <span className="font-semibold">
-                            Need to Buy:
-                          </span>{' '}
-                          {isAdjustedForMinimum ? (
-                            <>
-                              ${usdDeficit} (adjusted to meet Coinbase's $2
-                              minimum)
-                            </>
-                          ) : (
-                            <>
-                              ${usdDeficit} more of ETH to complete your $
-                              {usdInput} contribution
-                            </>
-                          )}
-                        </p>
-                        {isAdjustedForMinimum && (
-                          <p className="text-blue-200 text-xs">
-                            Note: You'll receive a bit more ETH than needed for
-                            this contribution, which you can use for future
-                            transactions.
-                          </p>
-                        )}
-                      </div>
-                    )}
+                  {/* Show balance breakdown if user has some ETH */}
+                  {usdInput && ethUsdPrice && (
+                    <PaymentBreakdown
+                      usdInput={usdInput}
+                      chainSlug={chainSlug}
+                      defaultChainSlug={defaultChainSlug}
+                      layerZeroLimitExceeded={layerZeroLimitExceeded}
+                      isLoadingGasEstimate={isLoadingGasEstimate}
+                      layerZeroFeeDisplay={layerZeroFeeDisplay}
+                      showEstimatedGas={showEstimatedGas as boolean}
+                      gasCostDisplay={gasCostDisplay}
+                      requiredEth={requiredEth}
+                      ethUsdPrice={ethUsdPrice}
+                      nativeBalance={nativeBalance}
+                      showCurrentBalance={true}
+                      showNeedToBuy={true}
+                      coinbasePaymentSubtotal={coinbasePaymentSubtotal}
+                      coinbaseEthReceive={coinbaseEthReceive}
+                      isAdjustedForMinimum={isAdjustedForMinimum}
+                      coinbaseEthInsufficient={coinbaseEthInsufficient}
+                      coinbaseTotalFees={coinbaseTotalFees}
+                      coinbasePaymentTotal={coinbasePaymentTotal}
+                    />
+                  )}
 
-                  {usdInput && usdDeficit && (
+                  {usdInput && ethDeficit > 0 && (
                     <CBOnramp
                       address={address || ''}
                       selectedChain={selectedChain}
-                      usdInput={usdDeficit}
+                      ethAmount={ethDeficit}
+                      onQuoteCalculated={handleCoinbaseQuote}
                       onSuccess={() => {
                         setIsFiatPaymentProcessing(false)
                         toast.success(
@@ -1418,9 +1927,7 @@ function MissionPayRedeemComponent({
                           }
                         )
                       }}
-                      onBeforeNavigate={() => {
-                        // No cleanup needed - using React state instead of sessionStorage
-                      }}
+                      onBeforeNavigate={() => {}}
                       redirectUrl={`${DEPLOYED_ORIGIN}/mission/${
                         mission?.id
                       }?onrampSuccess=true&chain=${chainSlug}&usdAmount=${usdInput.replace(
@@ -1429,23 +1936,6 @@ function MissionPayRedeemComponent({
                       )}`}
                     />
                   )}
-
-                  {/* Show minimum adjustment warning for users with no balance */}
-                  {(!nativeBalance || Number(nativeBalance) === 0) &&
-                    usdInput &&
-                    parseFloat(usdInput.replace(/,/g, '')) > 0 &&
-                    parseFloat(usdInput.replace(/,/g, '')) < 2 && (
-                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                        <p className="text-blue-300 text-sm">
-                          <span className="font-semibold">Note:</span> Coinbase
-                          requires a minimum purchase of $2. You'll receive ${' '}
-                          {(2 - parseFloat(usdInput.replace(/,/g, ''))).toFixed(
-                            2
-                          )}{' '}
-                          extra in ETH that you can use for future transactions.
-                        </p>
-                      </div>
-                    )}
 
                   {usdInput && (
                     <>

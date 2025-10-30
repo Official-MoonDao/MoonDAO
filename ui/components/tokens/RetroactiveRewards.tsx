@@ -1,6 +1,5 @@
 import { DEFAULT_CHAIN_V5, MOONEY_DECIMALS } from 'const/config'
 import Image from 'next/image'
-import { useRouter } from 'next/router'
 import React from 'react'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useRetroactiveRewards from '@/lib/tokens/hooks/useRetroactiveRewards'
@@ -8,16 +7,13 @@ import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 
 export default function RetroactiveRewards() {
   useChainDefault()
-  const router = useRouter()
   const chain = DEFAULT_CHAIN_V5
 
   const { withdrawable, withdraw } = useRetroactiveRewards()
 
   const handleWithdraw = async () => {
     await withdraw()
-    setTimeout(() => {
-      router.reload()
-    }, 5000)
+    // No need for router.reload() anymore since the hook handles state refresh automatically
   }
 
   if (Number(withdrawable) <= 0) {

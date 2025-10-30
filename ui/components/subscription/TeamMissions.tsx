@@ -1,3 +1,4 @@
+import { BLOCKED_MISSIONS } from 'const/whitelist'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -143,7 +144,10 @@ export default function TeamMissions({
           }
         })
       )
-      setMissions(missions.toReversed())
+      const filteredMissions = missions.filter((mission) => {
+        return !BLOCKED_MISSIONS.has(mission.id)
+      })
+      setMissions(filteredMissions.toReversed())
     }
 
     if (missionTableContract && jbControllerContract) getTeamMissions()

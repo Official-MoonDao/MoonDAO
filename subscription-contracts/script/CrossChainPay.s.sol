@@ -9,19 +9,9 @@ contract CrossChainPayDeploy is Script, Config {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
-        // Use 0 for chain dependent stargate router address then set after to maintain
-        // deterministic deploys.
-        bytes memory constructorArgs = abi.encode(
-            deployer,
-            JB_V5_MULTI_TERMINAL,
-            address(0)
-        );
-        (address payAddress, bytes32 salt) =
-            Miner.find(CREATE2_DEPLOYER, 0xda0, type(CrossChainPay).creationCode, constructorArgs);
+        bytes32 salt = bytes32(abi.encode(0xda0)); // ~ H(4) A(a) T(7) S(5)
         CrossChainPay pay = new CrossChainPay{salt: salt}(deployer, JB_V5_MULTI_TERMINAL, address(0));
         pay.setStargateRouter(STARGATE_POOLS[block.chainid]);
-
-        require(address(pay) == payAddress, "Fee hook address mismatch");
 
         // For testing, call crossChainPay with a small amount
         if (block.chainid == OPT_SEP){

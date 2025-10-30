@@ -288,12 +288,17 @@ export function ProjectRewards({
       .concat([{ symbol: 'stETH', balance: stakedEth }])
   }, [mainnetTokens, arbitrumTokens, polygonTokens, baseTokens, stakedEth])
 
+  // The quarterly ETH budget is the value of all non-mooney tokens in the treasury
+  // converted to ETH on the first day of the quarter. This function calculates in
+  // real time. To get the budget we run this on the first day of the quarter, and
+  // then hard code it below.
   const {
     ethBudget: ethBudgetCurrent,
     mooneyBudget,
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
-  const ethBudget = 17.09
+  // 2025q4
+  const ethBudget = 14.15
 
   const usdBudget = ethBudget * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
