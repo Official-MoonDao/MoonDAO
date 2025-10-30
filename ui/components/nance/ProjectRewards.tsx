@@ -308,7 +308,6 @@ export function ProjectRewards({
     addressToEthPayout,
     addressToMooneyPayout,
     ethPayoutCSV,
-    mooneyPayoutCSV,
     humanFormat,
     vMooneyAddresses,
     vMooneyAmounts,
