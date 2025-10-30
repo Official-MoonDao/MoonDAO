@@ -281,7 +281,7 @@ function zeroOutDistributionForContributors(
     const sum = _.sum(Object.values(dist).filter((num) => !Number.isNaN(num)))
     const normDist: { [key: string]: number } = {}
     for (const [key, value] of Object.entries(dist)) {
-      if (value === NaN) {
+      if (Number.isNaN(value)) {
         continue
       }
       normDist[key] = (value / sum) * 100
