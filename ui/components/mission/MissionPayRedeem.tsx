@@ -226,13 +226,6 @@ function MissionPayRedeemContent({
 
             <div className="w-full space-y-2">
               <AcceptedPaymentMethods />
-              <p className="text-xs text-center text-gray-300 leading-relaxed">
-                {'Want to contribute by wire transfer?'}
-                <br />
-                <span className="text-blue-400 hover:text-blue-300 transition-colors">
-                  {'Email us at info@moondao.com'}
-                </span>
-              </p>
             </div>
             {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
               <PrivyWeb3Button
@@ -1950,8 +1943,7 @@ function MissionPayRedeemComponent({
                               className="text-orange-200 underline hover:text-orange-100"
                             >
                               info@moondao.com
-                            </a>{' '}
-                            about wire transfer options.
+                            </a>.
                           </p>
                         </div>
                       )}
