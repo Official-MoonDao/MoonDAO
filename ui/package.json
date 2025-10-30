@@ -152,5 +152,6 @@
     "tailwindcss": "^3.3.2",
     "ts-migrate": "^0.1.35",
     "ts-node": "^10.9.2"
-  }
+  },
+  "packageManager": "yarn@4.10.3"
 }
