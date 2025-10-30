@@ -404,9 +404,9 @@ export function getPayouts(
     const contributors: { [key: string]: number } = normalizeJsonString(
       project.rewardDistribution
     )
-    const upfrontPayments: { [key: string]: number } = normalizeJsonString(
-      project.upfrontPayments
-    )
+    const upfrontPayments: {
+      [key: string]: number | { [key: string]: number }
+    } = normalizeJsonString(project.upfrontPayments)
     for (const [contributerAddress, contributorPercentage] of Object.entries(
       contributors
     )) {
