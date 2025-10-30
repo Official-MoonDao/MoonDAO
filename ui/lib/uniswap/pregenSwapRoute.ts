@@ -1,4 +1,5 @@
 import { CurrencyAmount, Percent, TradeType } from '@uniswap/sdk-core'
+// @ts-ignore
 import { AlphaRouter, SwapType } from '@uniswap/smart-order-router'
 import { ethers } from 'ethers'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'

@@ -1,4 +1,5 @@
 import { Token } from '@uniswap/sdk-core'
+// @ts-ignore
 import { nativeOnChain } from '@uniswap/smart-order-router'
 import { DAI_ADDRESSES, MOONEY_ADDRESSES, USDT_ADDRESSES } from 'const/config'
 import { useMemo } from 'react'
