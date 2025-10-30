@@ -1,8 +1,6 @@
 import {
   TrophyIcon,
   StarIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
 } from '@heroicons/react/24/outline'
 import XPManagerABI from 'const/abis/XPManager.json'
 import { XP_MANAGER_ADDRESSES } from 'const/config'
@@ -32,8 +30,6 @@ export default function Quests({}: QuestsProps) {
   const userAddress = account?.address as Address
   const [userInfo, setUserInfo] = useState<CompleteUserXPInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false)
-
   const xpVerifiers = useXPVerifiers()
 
   const xpManagerContract = useContract({
@@ -92,9 +88,8 @@ export default function Quests({}: QuestsProps) {
     ? Number(userInfo.erc20Config.conversionRate) / 1e18
     : 0
 
-  // Get quests to display based on expanded state
-  const displayedQuests = isExpanded ? xpVerifiers : xpVerifiers.slice(0, 4)
-  const hasMoreQuests = xpVerifiers.length > 4
+  // Display all quests
+  const displayedQuests = xpVerifiers
 
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 mb-6">
@@ -138,29 +133,7 @@ export default function Quests({}: QuestsProps) {
         </div> */}
       </div>
 
-      {/* View All Button */}
-      {hasMoreQuests && (
-        <div className="flex justify-center mb-4">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600/20 to-purple-600/20 hover:from-blue-600/30 hover:to-purple-600/30 border border-blue-500/30 hover:border-blue-500/50 text-blue-300 hover:text-blue-200 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 backdrop-blur-sm"
-          >
-            {isExpanded ? (
-              <>
-                <ChevronUpIcon className="w-4 h-4" />
-                Show Less
-              </>
-            ) : (
-              <>
-                <ChevronDownIcon className="w-4 h-4" />
-                View All ({xpVerifiers.length} Quests)
-              </>
-            )}
-          </button>
-        </div>
-      )}
-
-      <div className="w-full">
+      <div className="w-full mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {displayedQuests.map((verifier: any) => (
             <Quest
