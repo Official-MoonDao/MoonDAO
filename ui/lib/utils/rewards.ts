@@ -394,7 +394,7 @@ export function getPayouts(
       rewardDistribution: JSON.stringify(communityCircle),
     },
   ])
-  const addressToPercent = {}
+  const addressToPercent: { [key: string]: number } = {}
   for (const project of projectsAndCommunityCircle) {
     const projectId = project.id
     const projectPercentage =
