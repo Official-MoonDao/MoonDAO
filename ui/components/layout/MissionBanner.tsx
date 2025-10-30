@@ -1,4 +1,4 @@
-import { FEATURED_MISSION_NAME, FEATURED_MISSION_DESCRIPTION, FEATURED_MISSION_ID } from 'const/config'
+import { FEATURED_MISSION } from 'const/config'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -8,16 +8,10 @@ export default function MissionBanner() {
   const [isVisible, setIsVisible] = useState(true)
 
   // Hide banner if user is on the featured mission page
-  const isOnFeaturedMissionPage = router.pathname === '/mission/[tokenId]' && router.query.tokenId === FEATURED_MISSION_ID
+  const isOnFeaturedMissionPage = router.pathname === '/mission/[tokenId]' && router.query.tokenId === FEATURED_MISSION.id
 
   if (!isVisible || isOnFeaturedMissionPage) {
     return null
-  }
-
-  const featuredMission = {
-    id: FEATURED_MISSION_ID,
-    name: FEATURED_MISSION_NAME,
-    description: FEATURED_MISSION_DESCRIPTION,
   }
 
   return (
@@ -55,16 +49,16 @@ export default function MissionBanner() {
             <div className="marquee-content">
               <span className="inline-flex items-center gap-3 whitespace-nowrap px-8">
                 <span className="text-sm font-medium text-slate-300">Featured Mission:</span>
-                <span className="text-base font-semibold">{featuredMission.name}</span>
+                <span className="text-base font-semibold">{FEATURED_MISSION.name}</span>
                 <span className="mx-2">•</span>
-                <span className="text-sm text-slate-400">{featuredMission.description}</span>
+                <span className="text-sm text-slate-400">{FEATURED_MISSION.description}</span>
               </span>
               {/* Duplicate for seamless loop */}
               <span className="inline-flex items-center gap-3 whitespace-nowrap px-8">
                 <span className="text-sm font-medium text-slate-300">Featured Mission:</span>
-                <span className="text-base font-semibold">{featuredMission.name}</span>
+                <span className="text-base font-semibold">{FEATURED_MISSION.name}</span>
                 <span className="mx-2">•</span>
-                <span className="text-sm text-slate-400">{featuredMission.description}</span>
+                <span className="text-sm text-slate-400">{FEATURED_MISSION.description}</span>
               </span>
             </div>
           </div>
@@ -73,7 +67,7 @@ export default function MissionBanner() {
         {/* CTA Button */}
         <div className="flex-shrink-0 ml-2">
           <Link
-            href={`/mission/${featuredMission.id}`}
+            href={`/mission/${FEATURED_MISSION.id}`}
             className="inline-flex items-center px-3 sm:px-5 py-2 bg-white text-slate-900 font-semibold text-xs sm:text-sm rounded-md hover:bg-slate-100 transition-all duration-200 shadow-sm whitespace-nowrap"
           >
             <span className="hidden sm:inline">Support Mission</span>
