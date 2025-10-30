@@ -40,6 +40,16 @@ contract LaunchPadApprovalHook is IJBRulesetApprovalHook, Ownable {
         refundsEnabled = _refundsEnabled;
     }
 
+    // Missions have 2 rulesets.
+    // Ruleset 1 is for active funding/refunds
+    // Ruleset 2 is for payouts
+    // Returning Approved will advance the ruleset from 1->2, whereas
+    // returning Failed will keep the mission in ruleset 1.
+    // If refunds are manually enabled, we'll stay in ruleset
+    // 1 even if the funding goal is achieved.
+    // If not, we will advance to payouts if when the funding goal is achieved.
+    // In either case, after the refund period has passed, the rulset will advance
+    // to payouts.
     function approvalStatusOf(
         uint256 projectId,
         JBRuleset memory ruleset
