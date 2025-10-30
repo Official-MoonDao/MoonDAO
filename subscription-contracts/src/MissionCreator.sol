@@ -39,6 +39,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
     uint256[] public missionIds;
     mapping(uint256 => uint256) public missionIdToProjectId;
     mapping(uint256 => address) public missionIdToPayHook;
+    mapping(uint256 => address) public missionIdToApprovalHook;
     mapping(uint256 => address) public missionIdToTeamVesting;
     mapping(uint256 => address) public missionIdToMoonDAOVesting;
     mapping(uint256 => address) public missionIdToPoolDeployer;
@@ -88,9 +89,10 @@ contract MissionCreator is Ownable, IERC721Receiver {
         feeHookAddress = _feeHookAddress;
     }
 
-    function setMissionData(uint256 missionId, uint256 projectId, address payHook, address teamVesting, address moonDAOVesting, address poolDeployer, uint256 fundingGoal, address terminal) external onlyOwner {
+    function setMissionData(uint256 missionId, uint256 projectId, address payHook, address approvalHook, address teamVesting, address moonDAOVesting, address poolDeployer, uint256 fundingGoal, address terminal) external onlyOwner {
         missionIdToProjectId[missionId] = projectId;
         missionIdToPayHook[missionId] = payHook;
+        missionIdToApprovalHook[missionId] = approvalHook;
         missionIdToTeamVesting[missionId] = teamVesting;
         missionIdToMoonDAOVesting[missionId] = moonDAOVesting;
         missionIdToPoolDeployer[missionId] = poolDeployer;
@@ -303,6 +305,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
         missionIds.push(missionId);
         missionIdToProjectId[missionId] = projectId;
         missionIdToPayHook[missionId] = address(launchPadPayHook);
+        missionIdToApprovalHook[missionId] = address(launchPadApprovalHook);
         missionIdToTeamVesting[missionId] = address(teamVesting);
         missionIdToMoonDAOVesting[missionId] = address(moonDAOVesting);
         missionIdToPoolDeployer[missionId] = address(poolDeployer);

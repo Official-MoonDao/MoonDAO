@@ -27,6 +27,8 @@ contract MyScript is Script, Config {
                 missionId,
                 oldMissionCreator.missionIdToProjectId(missionId),
                 oldMissionCreator.missionIdToPayHook(missionId),
+                //oldMissionCreator.missionIdToApprovalHook(missionId),
+                address(0x0000000000000000000000000000000000000000),
                 oldMissionCreator.missionIdToTeamVesting(missionId),
                 oldMissionCreator.missionIdToMoonDAOVesting(missionId),
                 oldMissionCreator.missionIdToPoolDeployer(missionId),
