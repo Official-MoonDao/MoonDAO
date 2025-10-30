@@ -1,6 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { TradeType } from '@uniswap/sdk-core'
-import { nativeOnChain } from '@uniswap/smart-order-router'
+import { nativeOnChain as any } from '@uniswap/smart-order-router'
 import Link from 'next/link'
 import { useEffect, useState, useRef, useMemo, useContext } from 'react'
 import { useActiveAccount } from 'thirdweb/react'

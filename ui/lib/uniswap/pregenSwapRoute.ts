@@ -1,9 +1,5 @@
 import { CurrencyAmount, Percent, TradeType } from '@uniswap/sdk-core'
-import {
-  AlphaRouter,
-  SwapOptionsUniversalRouter,
-  SwapType,
-} from '@uniswap/smart-order-router'
+import { AlphaRouter, SwapType } from '@uniswap/smart-order-router'
 import { ethers } from 'ethers'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import client from '../thirdweb/client'
@@ -25,7 +21,7 @@ export async function pregenSwapRoute(
       provider,
     })
 
-    const options: SwapOptionsUniversalRouter = {
+    const options: any = {
       recipient: '0x0000000000000000000000000000000000000000',
       slippageTolerance: new Percent(50, 10_000),
       type: SwapType.UNIVERSAL_ROUTER,
