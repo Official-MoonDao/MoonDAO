@@ -477,7 +477,7 @@ export function getPayouts(
     })
     .join(',')
 
-  const humanFormat = {}
+  const humanFormat: { [key: string]: any } = {}
   for (const [address, mooneyPayout] of Object.entries(addressToMooneyPayout)) {
     if (!(address.toLowerCase() in humanFormat)) {
       humanFormat[address.toLowerCase()] = { vMOONEY: 0, ETH: 0 }
