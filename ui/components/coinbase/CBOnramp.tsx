@@ -502,9 +502,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           </div>
           <div>
             <h2 className="text-lg font-semibold text-white">Fund</h2>
-            <p className="text-gray-300 text-xs">
-              {selectedChain?.name || 'Ethereum'}
-            </p>
           </div>
         </div>
       </div>
@@ -599,71 +596,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             </span>
           </div>
         )}
-
-        {/* Purchase Limits Info */}
-        <div className="bg-black/10 rounded-lg border border-white/5">
-          <button
-            type="button"
-            onClick={() => setShowLimits(!showLimits)}
-            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors rounded-lg"
-          >
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-              Purchase Limits
-            </span>
-            {showLimits ? (
-              <ChevronUpIcon className="w-4 h-4 text-gray-400" />
-            ) : (
-              <ChevronDownIcon className="w-4 h-4 text-gray-400" />
-            )}
-          </button>
-          {showLimits && (
-            <div className="mt-2 px-3 pb-3 space-y-2 text-xs text-gray-300">
-              <div className="flex items-start space-x-2">
-                <span className="text-gray-500 mt-0.5">•</span>
-                <p>
-                  <span className="text-white font-medium">Minimum:</span> $2
-                </p>
-              </div>
-              <div
-                className={`flex items-start space-x-2 ${
-                  exceedsGuestLimit
-                    ? 'bg-orange-500/5 -mx-1 px-1 py-1 rounded'
-                    : ''
-                }`}
-              >
-                <span
-                  className={`${
-                    exceedsGuestLimit ? 'text-orange-400' : 'text-gray-500'
-                  } mt-0.5`}
-                >
-                  •
-                </span>
-                <p>
-                  <span
-                    className={`font-medium ${
-                      exceedsGuestLimit ? 'text-orange-300' : 'text-white'
-                    }`}
-                  >
-                    Guest checkout:
-                  </span>{' '}
-                  <span className={exceedsGuestLimit ? 'text-orange-200' : ''}>
-                    $500/week {exceedsGuestLimit && '⚠️'}
-                  </span>
-                </p>
-              </div>
-              <div className="flex items-start space-x-2">
-                <span className="text-gray-500 mt-0.5">•</span>
-                <p>
-                  <span className="text-white font-medium">
-                    Coinbase account:
-                  </span>{' '}
-                  Up to $25k/day for verified U.S. accounts (varies by
-                  verification level & payment method)
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Additional info */}
         <div className="bg-black/10 rounded-lg p-4 border border-white/5">
