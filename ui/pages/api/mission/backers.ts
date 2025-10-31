@@ -13,10 +13,10 @@ async function handler(
 
   try {
     const backers = await getBackers(projectId, missionId)
-    return backers
+    return res.status(200).json({ backers })
   } catch (error) {
     console.error('Failed to fetch backers:', error)
-    throw new Error('Failed to fetch backers')
+    return res.status(500).json({ error: 'Failed to fetch backers' })
   }
 }
 

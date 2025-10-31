@@ -223,7 +223,7 @@ const MissionProfileHeader = React.memo(
                         <div className="flex items-center">
                           <TextSkeleton width="w-16" height="h-5" />
                           <span className="text-xs opacity-90 ml-2">
-                            ETH RAISED
+                            RAISED
                           </span>
                         </div>
                       ) : (

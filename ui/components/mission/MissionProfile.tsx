@@ -112,6 +112,7 @@ type MissionProfileProps = {
   _fundingGoal: number
   _ruleset: any[]
   _backers: any[]
+  _citizens: any[]
 }
 
 export default function MissionProfile({
@@ -126,6 +127,7 @@ export default function MissionProfile({
   _fundingGoal,
   _ruleset,
   _backers,
+  _citizens,
 }: MissionProfileProps) {
   const account = useActiveAccount()
   const { wallets } = useWallets()
@@ -850,6 +852,7 @@ export default function MissionProfile({
         <Head
           title={mission?.metadata?.name}
           image={mission?.metadata?.logoUri}
+          description={mission?.metadata?.tagline}
         />
         <ContentLayout
           header={''}
@@ -963,6 +966,7 @@ export default function MissionProfile({
                   primaryTerminalAddress={primaryTerminalAddress}
                   refreshBackers={refreshBackers}
                   backers={backers}
+                  citizens={_citizens}
                   refreshStage={refreshStage}
                   refreshTotalFunding={refreshTotalFunding}
                   deadline={deadline}

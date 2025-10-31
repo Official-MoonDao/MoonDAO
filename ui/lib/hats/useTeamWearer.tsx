@@ -109,7 +109,18 @@ export function useTeamWearer(
             })
           ).then((results) => results.filter((result) => result !== null))
 
-          setWornMoondaoHats(moondaoHatsWithTeamId)
+          const uniqueTeams = [
+            ...new Set(moondaoHatsWithTeamId.map((hat: any) => hat.teamId)),
+          ].map((teamId: any) => {
+            return {
+              teamId: teamId,
+              hats: moondaoHatsWithTeamId.filter(
+                (hat: any) => hat.teamId === teamId
+              ),
+            }
+          })
+
+          setWornMoondaoHats(uniqueTeams)
         } else {
           setWornMoondaoHats([])
         }

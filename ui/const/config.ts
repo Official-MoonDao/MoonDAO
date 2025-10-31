@@ -5,8 +5,8 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 export const DEPLOYED_ORIGIN =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? 'https://onramp.preview.moondao.com' //'https://moondao.com'
-    : 'https://moondao-git-mission-onramp-improvements-moondao.vercel.app'
+    ? 'https://onramp.preview.moondao.com'
+    : 'https://moondao-git-mission-onramp-moondao.vercel.app'
 
 interface DeploymentConfig {
   MOONEYToken: string
@@ -19,6 +19,7 @@ interface DeploymentConfig {
   FeeHook: string
   MissionCreator: string
   UniswapV4Router: string
+  MissionTable: string
 }
 
 type Index = { [key: string]: string }
@@ -254,13 +255,13 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 export const FEATURED_MISSION_INDEX = 0
 
 export const MISSION_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x1B50781A23e32d70Be36116aAe9a21C8B4706E22',
-  sepolia: '0x6ac6a697C7f8F99bF2779aa8e0B4597311771101',
+  arbitrum: arbitrumConfig.MissionTable,
+  sepolia: sepoliaConfig.MissionTable,
 }
 
 export const MISSION_TABLE_NAMES: Index = {
   arbitrum: 'MissionTable_42161_151',
-  sepolia: 'MissionTable_11155111_1974',
+  sepolia: 'MissionTable_11155111_2026',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {
@@ -542,7 +543,7 @@ export const MOONDAO_NETWORK_SUBGRAPH_URL =
   'https://api.studio.thegraph.com/query/38443/moondao-network/version/latest'
 export const MOONDAO_MISSIONS_SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? 'https://api.studio.thegraph.com/query/38443/moondao-missions-arb/version/latest'
+    ? 'https://api.studio.thegraph.com/query/38443/moon-dao-missions-arb/version/latest'
     : 'https://api.studio.thegraph.com/query/38443/moondao-missions-sepolia/version/latest'
 export const TICK_SPACING = 200
 

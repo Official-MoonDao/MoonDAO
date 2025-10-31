@@ -1,5 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
+import { getAccessToken } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import MISSION_CROSS_CHAIN_PAY_ABI from 'const/abis/CrossChainPay.json'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
@@ -788,6 +789,7 @@ export default function MissionContributeModal({
     setTransactionRejected(false)
 
     try {
+      let receipt: any
       if (chainSlug !== defaultChainSlug) {
         const quoteCrossChainPay: any = await readContract({
           contract: crossChainPayContract,
@@ -831,7 +833,7 @@ export default function MissionContributeModal({
           isTestnet ? 19999 : 1,
           originReceipt.transactionHash
         )
-        const receipt = await waitForReceipt({
+        receipt = await waitForReceipt({
           client: client,
           chain: DEFAULT_CHAIN_V5,
           transactionHash: destinationMessage.dstTxHash as `0x${string}`,
@@ -852,10 +854,30 @@ export default function MissionContributeModal({
           value: toWei(inputValue),
         })
 
-        const receipt = await sendAndConfirmTransaction({
+        receipt = await sendAndConfirmTransaction({
           transaction,
           account,
         })
+      }
+
+      const accessToken = await getAccessToken()
+
+      const contributionNotification: any = await fetch(
+        '/api/mission/contribution-notification',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            txHash: receipt.transactionHash,
+            accessToken: accessToken,
+            txChainSlug: chainSlug,
+            projectId: mission?.projectId,
+          }),
+        }
+      )
+      const contributionNotificationData = await contributionNotification.json()
+
+      if (contributionNotificationData?.message) {
+        console.log(contributionNotificationData.message)
       }
 
       setInput('0')

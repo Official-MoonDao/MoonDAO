@@ -18,6 +18,7 @@ import {
   sendAndConfirmTransaction,
   simulateTransaction,
 } from 'thirdweb'
+import { TransactionReceipt } from 'thirdweb/dist/types/transaction/types'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
@@ -187,13 +188,6 @@ function MissionPayRedeemContent({
 
             <div className="w-full space-y-2">
               <AcceptedPaymentMethods />
-              <p className="text-xs text-center text-gray-300 leading-relaxed">
-                {'Want to contribute by wire transfer?'}
-                <br />
-                <span className="text-blue-400 hover:text-blue-300 transition-colors">
-                  {'Email us at info@moondao.com'}
-                </span>
-              </p>
             </div>
             {token?.tokenSymbol && +tokenCredit?.toString() > 0 && (
               <PrivyWeb3Button

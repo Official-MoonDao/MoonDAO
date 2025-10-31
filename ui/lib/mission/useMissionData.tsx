@@ -37,7 +37,7 @@ export default function useMissionData({
   const chainSlug = getChainSlug(selectedChain)
   const [fundingGoal, setFundingGoal] = useState(_fundingGoal)
   const [stage, setStage] = useState<MissionStage>(_stage)
-  const [backers, setBackers] = useState<any[]>(_backers)
+  const [backers, setBackers] = useState<any[]>(_backers || undefined)
   const [deadline, setDeadline] = useState<number | undefined>(_deadline)
   const [refundPeriod, setRefundPeriod] = useState<number | undefined>(
     _refundPeriod
@@ -168,13 +168,22 @@ export default function useMissionData({
   // Backers
   const refreshBackers = useCallback(async () => {
     if (mission?.projectId === undefined) return
+    try {
+      const res = await fetch(
+        `/api/mission/backers?projectId=${mission?.projectId}`
+      )
+      const data = await res.json()
+      setBackers(data.backers)
+    } catch (error) {
+      console.error('Error fetching backers:', error)
+    }
+  }, [mission])
 
-    const res = await fetch(
-      `/api/mission/backers?projectId=${mission?.projectId}`
-    )
-    const data = await res.json()
-    setBackers(data.backers)
-  }, [mission?.projectId])
+  useEffect(() => {
+    if (backers === undefined) {
+      refreshBackers()
+    }
+  }, [backers])
 
   return {
     ...jbProjectData,

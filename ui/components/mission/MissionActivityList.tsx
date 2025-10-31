@@ -10,6 +10,7 @@ export default function MissionActivityList({
   selectedChain,
   tokenSymbol,
   projectId,
+  citizens,
 }: any) {
   const [filter, setFilter] = useState<'all' | 'payEvent' | 'mintTokensEvent'>(
     'all'
@@ -33,7 +34,8 @@ export default function MissionActivityList({
         .flatMap((page) => page.data.activityEvents.items)
         .map(transformEventData)
         .filter((event) => !!event)
-        .map((e) => translateEventDataToPresenter(e, tokenSymbol)) ?? [],
+        .map((e) => translateEventDataToPresenter(e, tokenSymbol, citizens)) ??
+      [],
     [projectEventsQueryResult?.pages]
   )
 
@@ -59,6 +61,8 @@ export default function MissionActivityList({
             header={event?.header}
             subject={event?.subject}
             extra={event?.extra}
+            address={event?.address}
+            name={event?.name}
             event={event?.event}
           />
         ))}
@@ -76,7 +80,8 @@ function RichNote({ note }: { note: string }) {
 
 function translateEventDataToPresenter(
   event: any,
-  tokenSymbol: string | undefined
+  tokenSymbol: string | undefined,
+  citizens: any[]
 ) {
   switch (event.type) {
     case 'payEvent':
@@ -102,6 +107,10 @@ function translateEventDataToPresenter(
         extra: null,
       }
     case 'mintTokensEvent':
+      const name = citizens.find(
+        (citizen) =>
+          citizen.owner.toLowerCase() == event.beneficiary.toLowerCase()
+      )?.name
       return {
         event,
         header: 'Minted tokens',
@@ -109,6 +118,8 @@ function translateEventDataToPresenter(
           <span className="font-heading text-lg">To: {event.beneficiary}</span>
         ),
         extra: null,
+        address: event.beneficiary,
+        name: name,
       }
 
     case 'deployErc20Event':

@@ -6,13 +6,14 @@ import LaunchPadPayHookABI from 'const/abis/LaunchPadPayHook.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
 import TeamABI from 'const/abis/Team.json'
 import {
+  CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   IPFS_GATEWAY,
   JBV5_CONTROLLER_ADDRESS,
   JBV5_DIRECTORY_ADDRESS,
   JBV5_TOKENS_ADDRESS,
-  MISSION_CREATOR_ADDRESSES,
   JB_NATIVE_TOKEN_ADDRESS,
+  MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_NAMES,
   TEAM_ADDRESSES,
 } from 'const/config'
@@ -97,6 +98,7 @@ type ProjectProfileProps = {
   _fundingGoal: number
   _ruleset: any[]
   _backers: any[]
+  _citizens: any[]
 }
 
 export default function MissionProfilePage({
@@ -111,6 +113,7 @@ export default function MissionProfilePage({
   _fundingGoal,
   _ruleset,
   _backers,
+  _citizens,
 }: ProjectProfileProps) {
   const selectedChain = DEFAULT_CHAIN_V5
 
@@ -131,6 +134,7 @@ export default function MissionProfilePage({
         _fundingGoal={_fundingGoal}
         _ruleset={_ruleset}
         _backers={_backers}
+        _citizens={_citizens}
       />
     </JuiceProviders>
   )
@@ -442,6 +446,11 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       _backers = []
       console.error('Failed to fetch backers:', err)
     }
+    const citizenStatement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}
+     WHERE owner IN (${_backers
+       .map((backer) => `"${backer.backer}"`)
+       .join(',')})`
+    const _citizens = await queryTable(chain, citizenStatement)
 
     return {
       props: {
@@ -459,6 +468,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         _fundingGoal: missionRow.fundingGoal,
         _ruleset,
         _backers,
+        _citizens,
       },
     }
   } catch (error) {

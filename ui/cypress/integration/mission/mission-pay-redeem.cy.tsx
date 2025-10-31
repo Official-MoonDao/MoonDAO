@@ -229,7 +229,6 @@ describe('MissionPayRedeem Component', () => {
       </TestnetProviders>
     )
 
-    cy.contains('Want to contribute by wire transfer?').should('be.visible')
     cy.contains('Email us at info@moondao.com').should('be.visible')
   })
 

@@ -219,12 +219,36 @@ export function runQuadraticVoting(
   return projectIdToEstimatedPercentage
 }
 
-export function zeroOutDistributionForContributors(
+function fillInZeros(citizenDistributions: any, projects: any) {
+  const newDistributions = []
+  for (const d of citizenDistributions) {
+    const { id, address, year, quarter, distribution: dist } = d
+    const newDist: { [key: string]: number } = {}
+    for (const project of projects) {
+      if (!(project.id in dist)) {
+        newDist[project.id] = 0
+      } else if (project.id in dist) {
+        newDist[project.id] = dist[project.id]
+      }
+    }
+    newDistributions.push({
+      id: id,
+      address,
+      year,
+      quarter,
+      distribution: newDist,
+    })
+  }
+  return newDistributions
+}
+
+function zeroOutDistributionForContributors(
   citizenDistributions: any,
   projects: any
 ) {
   // 1. if a citizen is listed in the rewardDistribution for a projects, zero out that value
   const newDistributions = []
+  const zeroedOut = {}
   for (const d of citizenDistributions) {
     const { id, address, year, quarter, distribution: dist } = d
     const newDist: { [key: string]: number } = {}
@@ -237,7 +261,7 @@ export function zeroOutDistributionForContributors(
           (contributor) => contributor.toLowerCase() === address.toLowerCase()
         )
       ) {
-        newDist[project.id] = 0
+        newDist[project.id] = NaN
       } else if (project.id in dist) {
         newDist[project.id] = dist[project.id]
       }
@@ -254,10 +278,10 @@ export function zeroOutDistributionForContributors(
   const normalizedDistributions = []
   for (const d of newDistributions) {
     const { id, address, year, quarter, distribution: dist } = d
-    const sum = _.sum(Object.values(dist))
+    const sum = _.sum(Object.values(dist).filter((num) => !Number.isNaN(num)))
     const normDist: { [key: string]: number } = {}
     for (const [key, value] of Object.entries(dist)) {
-      if (value === 0) {
+      if (Number.isNaN(value)) {
         continue
       }
       normDist[key] = (value / sum) * 100
@@ -279,8 +303,12 @@ export function computeRewardPercentages(
   projects: any,
   addressToQuadraticVotingPower: any
 ) {
+  const citizenDistributionsWithZeroes = fillInZeros(
+    citizenDistributions,
+    projects
+  )
   const citizenDistributionsWithZeroedOutContributors =
-    zeroOutDistributionForContributors(citizenDistributions, projects)
+    zeroOutDistributionForContributors(citizenDistributionsWithZeroes, projects)
   const [filledInCitizenDistributions, votes] = runIterativeNormalization(
     citizenDistributionsWithZeroedOutContributors,
     projects
@@ -366,6 +394,7 @@ export function getPayouts(
       rewardDistribution: JSON.stringify(communityCircle),
     },
   ])
+  const addressToPercent: { [key: string]: number } = {}
   for (const project of projectsAndCommunityCircle) {
     const projectId = project.id
     const projectPercentage =
@@ -375,23 +404,40 @@ export function getPayouts(
     const contributors: { [key: string]: number } = normalizeJsonString(
       project.rewardDistribution
     )
-    const upfrontPayments: { [key: string]: number } = normalizeJsonString(
-      project.upfrontPayments
-    )
-
+    const upfrontPayments: {
+      [key: string]: any
+    } = normalizeJsonString(project.upfrontPayments)
     for (const [contributerAddress, contributorPercentage] of Object.entries(
       contributors
     )) {
+      if (!(contributerAddress.toLowerCase() in addressToPercent)) {
+        addressToPercent[contributerAddress.toLowerCase()] = 0
+      }
       const marginalPayoutProportion =
         (contributorPercentage / 100) * (projectPercentage / 100)
+      addressToPercent[contributerAddress.toLowerCase()] +=
+        marginalPayoutProportion * 100
       if (!(contributerAddress in addressToEthPayout)) {
         addressToEthPayout[contributerAddress] = 0
       }
       if (!(contributerAddress in addressToMooneyPayout)) {
         addressToMooneyPayout[contributerAddress] = 0
       }
-      addressToMooneyPayout[contributerAddress] +=
-        marginalPayoutProportion * mooneyBudget
+      if (
+        upfrontPayments &&
+        'vMOONEY' in upfrontPayments &&
+        ((contributerAddress in upfrontPayments['vMOONEY'] &&
+          upfrontPayments['vMOONEY'][contributerAddress] >
+            marginalPayoutProportion * mooneyBudget) ||
+          (utils.getAddress(contributerAddress) in upfrontPayments['vMOONEY'] &&
+            upfrontPayments['vMOONEY'][utils.getAddress(contributerAddress)] >
+              marginalPayoutProportion * mooneyBudget))
+      ) {
+        // skip mooney payment
+      } else {
+        addressToMooneyPayout[contributerAddress] +=
+          marginalPayoutProportion * mooneyBudget
+      }
 
       if (
         upfrontPayments &&
@@ -431,6 +477,20 @@ export function getPayouts(
     })
     .join(',')
 
+  const humanFormat: { [key: string]: any } = {}
+  for (const [address, mooneyPayout] of Object.entries(addressToMooneyPayout)) {
+    if (!(address.toLowerCase() in humanFormat)) {
+      humanFormat[address.toLowerCase()] = { vMOONEY: 0, ETH: 0 }
+    }
+    humanFormat[address.toLowerCase()]['vMOONEY'] += mooneyPayout
+  }
+  for (const [address, ethPayout] of Object.entries(addressToEthPayout)) {
+    if (!(address.toLowerCase() in humanFormat)) {
+      humanFormat[address.toLowerCase()] = { vMOONEY: 0, ETH: 0 }
+    }
+    humanFormat[address.toLowerCase()]['ETH'] += ethPayout
+  }
+
   return {
     addressToEthPayout,
     addressToMooneyPayout,
@@ -438,5 +498,6 @@ export function getPayouts(
     vMooneyPayoutCSV,
     vMooneyAddresses,
     vMooneyAmounts,
+    humanFormat,
   }
 }
