@@ -1,11 +1,23 @@
 import { DEFAULT_CHAIN_V5 } from 'const/config'
+import { setCDNCacheHeaders } from 'middleware/cacheHeaders'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import queryTable from '@/lib/tableland/queryTable'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
   const { statement } = req.query
+
+  if (!statement || typeof statement !== 'string') {
+    return res.status(400).json({ error: 'Statement parameter is required' })
+  }
+
+  // Cache varies by SQL statement (different queries = different cache keys)
+  setCDNCacheHeaders(res, 30, 60, 'Accept-Encoding, statement')
 
   const data = await queryTable(DEFAULT_CHAIN_V5, statement as string)
 

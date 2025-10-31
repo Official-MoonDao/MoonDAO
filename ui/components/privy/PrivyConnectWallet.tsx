@@ -16,6 +16,7 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import toast from 'react-hot-toast'
+import useSWR from 'swr'
 import {
   getContract,
   prepareContractCall,
@@ -44,69 +45,66 @@ import WalletAction from './WalletAction'
 
 // Custom hook to fetch wallet tokens from our API
 function useWalletTokens(address: string | undefined, chain: string) {
-  const [tokens, setTokens] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const apiKey = address
+    ? `/api/etherscan/wallet-tokens?address=${address}&chain=${chain}&offset=50`
+    : null
 
-  const fetchTokens = useCallback(async () => {
-    if (!address) {
-      setTokens([])
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch(
-        `/api/etherscan/wallet-tokens?address=${address}&chain=${chain}&offset=50`
-      )
+  const {
+    data,
+    error: swrError,
+    isLoading,
+    mutate,
+  } = useSWR(
+    apiKey,
+    async (url: string) => {
+      const response = await fetch(url)
       const data = await response.json()
 
-      console.log(data)
-
       if (data.error) {
-        setError(data.error)
-        setTokens([])
-      } else if (data.result) {
-        const formattedTokens = data.result
-          .filter(
-            (token: any) =>
-              token.TokenBalance && parseFloat(token.TokenBalance) > 0
-          )
-          .map((token: any) => ({
-            symbol: token.TokenSymbol || 'Unknown',
-            name: token.TokenName || 'Unknown Token',
-            balance: token.TokenBalance,
-            decimals: parseInt(token.TokenDivisor) || 18,
-            contractAddress: token.TokenAddress,
-            // Format balance to human readable number
-            formattedBalance:
-              parseFloat(token.TokenBalance) /
-              Math.pow(10, parseInt(token.TokenDivisor) || 18),
-          }))
-        setTokens(formattedTokens)
-      } else {
-        setTokens([])
+        throw new Error(data.error)
       }
-    } catch (err) {
-      console.error('Error fetching wallet tokens:', err)
-      setError('Failed to fetch tokens')
-      setTokens([])
-    } finally {
-      setLoading(false)
+
+      return data
+    },
+    {
+      refreshInterval: 60000,
+      revalidateOnFocus: false,
     }
-  }, [address, chain])
+  )
 
-  useEffect(() => {
-    fetchTokens()
-    const interval = setInterval(() => {
-      fetchTokens()
-    }, 60000)
-    return () => clearInterval(interval)
-  }, [fetchTokens])
+  const tokens = useMemo(() => {
+    if (!data?.result) return []
 
-  return { tokens, loading, error, refetch: fetchTokens }
+    return data.result
+      .filter(
+        (token: any) => token.TokenBalance && parseFloat(token.TokenBalance) > 0
+      )
+      .map((token: any) => ({
+        symbol: token.TokenSymbol || 'Unknown',
+        name: token.TokenName || 'Unknown Token',
+        balance: token.TokenBalance,
+        decimals: parseInt(token.TokenDivisor) || 18,
+        contractAddress: token.TokenAddress,
+        // Format balance to human readable number
+        formattedBalance:
+          parseFloat(token.TokenBalance) /
+          Math.pow(10, parseInt(token.TokenDivisor) || 18),
+      }))
+  }, [data])
+
+  const error = useMemo(() => {
+    if (swrError) {
+      return swrError instanceof Error
+        ? swrError.message
+        : 'Failed to fetch tokens'
+    }
+    if (data?.error) {
+      return data.error
+    }
+    return null
+  }, [swrError, data])
+
+  return { tokens, loading: isLoading, error, refetch: mutate }
 }
 
 type PrivyConnectWalletProps = {
@@ -1205,7 +1203,7 @@ export function PrivyConnectWallet({
                       )}
 
                       {/* Dynamic Token Balances */}
-                      {walletTokens.map((token, index) => (
+                      {walletTokens.map((token: any, index: number) => (
                         <div
                           key={`${token.contractAddress}-${index}`}
                           className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group"

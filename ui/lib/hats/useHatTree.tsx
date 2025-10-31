@@ -8,25 +8,20 @@ export function useHatTree(selectedChain: any, treeId: any, topHatId: any) {
     async function getHatTree() {
       try {
         if (!treeId) return []
-        const res = await fetch('/api/hats/get-tree', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            chainId: selectedChain.id,
-            treeId,
-            props: {
-              hats: {
-                props: {
-                  wearers: {
-                    props: {},
-                  },
+        const propsParam = encodeURIComponent(
+          JSON.stringify({
+            hats: {
+              props: {
+                wearers: {
+                  props: {},
                 },
               },
             },
-          }),
-        })
+          })
+        )
+        const res = await fetch(
+          `/api/hats/get-tree?chainId=${selectedChain.id}&treeId=${treeId}&props=${propsParam}`
+        )
 
         const tree = await res.json()
 

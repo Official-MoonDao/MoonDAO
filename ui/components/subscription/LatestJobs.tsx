@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import Job, { Job as JobType } from '../jobs/Job'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
@@ -16,35 +17,63 @@ export default function LatestJobs({
 }: LatestJobsProps) {
   const router = useRouter()
   const [latestJobs, setLatestJobs] = useState<JobType[]>([])
+  const [tableName, setTableName] = useState<string | null>(null)
 
+  // Get table name from contract
   useEffect(() => {
-    //get latest 25 jobs
-    async function getLatestJobs() {
-      const now = Math.floor(Date.now() / 1000)
-      const tableName = await readContract({
-        contract: jobTableContract,
-        method: 'getTableName' as string,
-        params: [],
-      })
-      const statement = `SELECT * FROM ${tableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
-      const latestJobsRes = await fetch(
-        `/api/tableland/query?statement=${statement}`
-      )
-      const jobs = await latestJobsRes.json()
-      const validJobs = jobs.filter(async (job: JobType) => {
-        const teamExpiration = await readContract({
-          contract: teamContract,
-          method: 'expiresAt' as string,
-          params: [job.teamId],
+    async function getTableName() {
+      if (!jobTableContract) return
+      try {
+        const name: any = await readContract({
+          contract: jobTableContract,
+          method: 'getTableName' as string,
+          params: [],
         })
-        return +teamExpiration.toString() > now
-      })
+        setTableName(name)
+      } catch (error) {
+        console.error('Error fetching table name:', error)
+      }
+    }
+    getTableName()
+  }, [jobTableContract])
+
+  // Build statement with current timestamp
+  const now = Math.floor(Date.now() / 1000)
+  const statement = tableName
+    ? `SELECT * FROM ${tableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
+    : null
+
+  const { data: jobs } = useTablelandQuery(statement, {
+    revalidateOnFocus: false,
+  })
+
+  // Process and filter jobs
+  useEffect(() => {
+    async function processJobs() {
+      if (!jobs || !teamContract) return
+
+      const validJobs = await Promise.all(
+        jobs
+          .map(async (job: JobType) => {
+            try {
+              const teamExpiration = await readContract({
+                contract: teamContract,
+                method: 'expiresAt' as string,
+                params: [job.teamId],
+              })
+              return +teamExpiration.toString() > now ? job : null
+            } catch {
+              return null
+            }
+          })
+          .filter((job: any) => job !== null)
+      )
+
       setLatestJobs(validJobs)
     }
-    if (teamContract && jobTableContract) {
-      getLatestJobs()
-    }
-  }, [teamContract, jobTableContract])
+
+    processJobs()
+  }, [jobs, teamContract, now])
 
   return (
     <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">

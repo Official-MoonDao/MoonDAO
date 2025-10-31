@@ -256,7 +256,7 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
   sepolia: '0x1e638C6120d7eF07e0978b68e22CD80bf5E70986',
 }
 
-export const FEATURED_MISSION_INDEX = 0
+export const FEATURED_MISSION_INDEX = 3
 
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionTable,

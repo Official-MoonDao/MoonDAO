@@ -2,6 +2,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import StandardButton from '../layout/StandardButton'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
@@ -19,24 +20,43 @@ export default function TeamMarketplace({
   const [listings, setListings] = useState<TeamListingType[]>()
   const [listingModalEnabled, setListingModalEnabled] = useState(false)
   const [queriedListingId, setQueriedListingId] = useState<number>()
+  const [tableName, setTableName] = useState<string | null>(null)
 
-  async function getEntityMarketplaceListings() {
-    const marketplaceTableName = await readContract({
-      contract: marketplaceTableContract,
-      method: 'getTableName' as string,
-      params: [],
-    })
-    const statement = `SELECT * FROM ${marketplaceTableName} WHERE teamId = ${teamId}`
+  // Get table name from contract
+  useEffect(() => {
+    async function getTableName() {
+      if (!marketplaceTableContract) return
+      try {
+        const name: any = await readContract({
+          contract: marketplaceTableContract,
+          method: 'getTableName' as string,
+          params: [],
+        })
+        setTableName(name)
+      } catch (error) {
+        console.error('Error fetching table name:', error)
+      }
+    }
+    getTableName()
+  }, [marketplaceTableContract])
 
-    const res = await fetch(`/api/tableland/query?statement=${statement}`)
-    const data = await res.json()
-
-    setListings(data)
-  }
+  // Build statement and fetch with SWR
+  const statement = tableName
+    ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
+    : null
+  const { data, mutate } = useTablelandQuery(statement, {
+    revalidateOnFocus: false,
+  })
 
   useEffect(() => {
-    if (marketplaceTableContract) getEntityMarketplaceListings()
-  }, [marketplaceTableContract, teamId])
+    if (data) {
+      setListings(data)
+    }
+  }, [data])
+
+  const getEntityMarketplaceListings = () => {
+    mutate()
+  }
 
   useEffect(() => {
     if (router.query.listing) {
@@ -55,10 +75,7 @@ export default function TeamMarketplace({
   }, [router.query.listingId])
 
   return (
-    <div
-      id="team-marketplace"
-      className="w-full p-6"
-    >
+    <div id="team-marketplace" className="w-full p-6">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-6">
         <div className="flex gap-5">
           <Image

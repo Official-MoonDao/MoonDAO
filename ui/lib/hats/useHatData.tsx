@@ -35,19 +35,12 @@ export function useHatData(selectedChain: any, hatsContract: any, hatId: any) {
         )
         const { data: hatMetadataData } = await hatMetadataRes.json()
 
-        const hatRes = await fetch('/api/hats/get-hat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            chainId: selectedChain.id,
-            hatId,
-            props: {
-              prettyId: true,
-            },
-          }),
-        })
+        const propsParam = encodeURIComponent(
+          JSON.stringify({ prettyId: true })
+        )
+        const hatRes = await fetch(
+          `/api/hats/get-hat?chainId=${selectedChain.id}&hatId=${hatId}&props=${propsParam}`
+        )
 
         const hatSubgraphData = await hatRes.json()
 
