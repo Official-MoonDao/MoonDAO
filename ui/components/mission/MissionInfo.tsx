@@ -70,8 +70,9 @@ export default function MissionInfo({
   citizens,
   refreshTotalFunding,
   ruleset,
-  modalEnabled,
-  setModalEnabled,
+  setContributeModalEnabled,
+  setUsdInput,
+  usdInput,
 }: any) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -310,8 +311,11 @@ export default function MissionInfo({
               refreshBackers={refreshBackers}
               backers={backers}
               refreshTotalFunding={refreshTotalFunding}
-              modalEnabled={modalEnabled}
-              setModalEnabled={setModalEnabled}
+              onOpenModal={() => {
+                setContributeModalEnabled(true)
+              }}
+              usdInput={usdInput || ''}
+              setUsdInput={setUsdInput}
             />
           </div>
         </div>

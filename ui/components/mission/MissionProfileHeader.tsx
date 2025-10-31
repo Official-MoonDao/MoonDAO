@@ -9,6 +9,7 @@ import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
 import IPFSRenderer from '../layout/IPFSRenderer'
+import StandardButton from '../layout/StandardButton'
 import Tooltip from '../layout/Tooltip'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionFundingProgressBar from './MissionFundingProgressBar'
@@ -33,6 +34,7 @@ interface MissionProfileHeaderProps {
   deadlinePassed: boolean
   refundPeriodPassed: boolean
   stage: number
+  token: any
   poolDeployerAddress: string | undefined
   isManager: boolean
   availableTokens: number
@@ -40,10 +42,10 @@ interface MissionProfileHeaderProps {
   sendReservedTokens: () => void
   sendPayouts: () => void
   deployLiquidityPool: () => void
-  // Direct props for total funding instead of callback
   totalFunding: bigint
   isLoadingTotalFunding: boolean
   setMissionMetadataModalEnabled?: (enabled: boolean) => void
+  setDeployTokenModalEnabled?: (enabled: boolean) => void
   contributeButton: React.ReactNode
 }
 
@@ -59,6 +61,7 @@ const MissionProfileHeader = React.memo(
     deadlinePassed,
     refundPeriodPassed,
     stage,
+    token,
     poolDeployerAddress,
     isManager,
     availableTokens,
@@ -69,6 +72,7 @@ const MissionProfileHeader = React.memo(
     totalFunding,
     isLoadingTotalFunding,
     setMissionMetadataModalEnabled,
+    setDeployTokenModalEnabled,
     contributeButton,
   }: MissionProfileHeaderProps) => {
     const account = useActiveAccount()
@@ -235,71 +239,84 @@ const MissionProfileHeader = React.memo(
                   </Tooltip>
                   <div className="mt-2 md:mt-0 flex flex-col items-center md:items-end gap-2">
                     {contributeButton}
-
                     {/* Compact Manager Actions */}
-                    {account && deadlinePassed && isManager && (
+                    {account && isManager && (
                       <div className="flex flex-wrap gap-3">
-                        <PrivyWeb3Button
-                          requiredChain={DEFAULT_CHAIN_V5}
-                          className="group relative bg-white/10 hover:bg-purple-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-purple-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
-                          label={
-                            <div className="flex items-center gap-2">
-                              <Image
-                                src="/assets/icon-raised-tokens.svg"
-                                alt="Send Tokens"
-                                width={14}
-                                height={14}
-                                className="opacity-70 group-hover:opacity-100"
+                        {deadlinePassed && (
+                          <>
+                            <PrivyWeb3Button
+                              requiredChain={DEFAULT_CHAIN_V5}
+                              className="group relative bg-white/10 hover:bg-purple-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-purple-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                              label={
+                                <div className="flex items-center gap-2">
+                                  <Image
+                                    src="/assets/icon-raised-tokens.svg"
+                                    alt="Send Tokens"
+                                    width={14}
+                                    height={14}
+                                    className="opacity-70 group-hover:opacity-100"
+                                  />
+                                  <span className="text-xs font-medium">
+                                    Tokens
+                                  </span>
+                                </div>
+                              }
+                              action={sendReservedTokens}
+                              isDisabled={!availableTokens}
+                            />
+                            <PrivyWeb3Button
+                              requiredChain={DEFAULT_CHAIN_V5}
+                              className="group relative bg-white/10 hover:bg-blue-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-blue-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                              label={
+                                <div className="flex items-center gap-2">
+                                  <Image
+                                    src="/assets/icon-crowdfunding.svg"
+                                    alt="Send Payouts"
+                                    width={14}
+                                    height={14}
+                                    className="opacity-70 group-hover:opacity-100"
+                                  />
+                                  <span className="text-xs font-medium">
+                                    Payouts
+                                  </span>
+                                </div>
+                              }
+                              action={sendPayouts}
+                              isDisabled={!availablePayouts}
+                            />
+                            {stage === 2 && (
+                              <PrivyWeb3Button
+                                requiredChain={DEFAULT_CHAIN_V5}
+                                className="group relative bg-white/10 hover:bg-green-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-green-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                                label={
+                                  <div className="flex items-center gap-2">
+                                    <Image
+                                      src="/assets/icon-ethereum.svg"
+                                      alt="Deploy Liquidity"
+                                      width={14}
+                                      height={14}
+                                      className="opacity-90 group-hover:opacity-100"
+                                    />
+                                    <span className="text-xs font-medium">
+                                      Liquidity
+                                    </span>
+                                  </div>
+                                }
+                                action={deployLiquidityPool}
+                                isDisabled={!poolDeployerAddress}
                               />
-                              <span className="text-xs font-medium">
-                                Tokens
-                              </span>
-                            </div>
-                          }
-                          action={sendReservedTokens}
-                          isDisabled={!availableTokens}
-                        />
-                        <PrivyWeb3Button
-                          requiredChain={DEFAULT_CHAIN_V5}
-                          className="group relative bg-white/10 hover:bg-blue-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-blue-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
-                          label={
-                            <div className="flex items-center gap-2">
-                              <Image
-                                src="/assets/icon-crowdfunding.svg"
-                                alt="Send Payouts"
-                                width={14}
-                                height={14}
-                                className="opacity-70 group-hover:opacity-100"
-                              />
-                              <span className="text-xs font-medium">
-                                Payouts
-                              </span>
-                            </div>
-                          }
-                          action={sendPayouts}
-                          isDisabled={!availablePayouts}
-                        />
-                        {stage === 2 && (
-                          <PrivyWeb3Button
-                            requiredChain={DEFAULT_CHAIN_V5}
-                            className="group relative bg-white/10 hover:bg-green-500/20 text-white py-2 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-green-400/50 disabled:opacity-30 disabled:cursor-not-allowed"
-                            label={
-                              <div className="flex items-center gap-2">
-                                <Image
-                                  src="/assets/icon-ethereum.svg"
-                                  alt="Deploy Liquidity"
-                                  width={14}
-                                  height={14}
-                                  className="opacity-90 group-hover:opacity-100"
-                                />
-                                <span className="text-xs font-medium">
-                                  Liquidity
-                                </span>
-                              </div>
-                            }
-                            action={deployLiquidityPool}
-                            isDisabled={!poolDeployerAddress}
-                          />
+                            )}
+                          </>
+                        )}
+                        {setDeployTokenModalEnabled && !token?.tokenAddress && (
+                          <StandardButton
+                            id="deploy-token-button"
+                            className="group relative bg-white/10 hover:bg-purple-500/20 text-white py-3 px-3 rounded-full transition-all duration-200 border border-white/20 hover:border-purple-400/50 disabled:opacity-30 disabled:cursor-not-allowed text-xs"
+                            borderRadius="rounded-full"
+                            onClick={() => setDeployTokenModalEnabled(true)}
+                          >
+                            Deploy Token
+                          </StandardButton>
                         )}
                       </div>
                     )}

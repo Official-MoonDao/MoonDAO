@@ -3,11 +3,14 @@ export default function ConditionCheckbox({
   label,
   agreedToCondition,
   setAgreedToCondition,
+  disabled = false,
 }: any) {
   return (
     <div className="flex gap-2 items-center">
       <label
-        className="relative flex items-center p-3 rounded-full cursor-pointer"
+        className={`relative flex items-center p-3 rounded-full ${
+          disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+        }`}
         htmlFor="link"
       >
         <input
@@ -15,8 +18,11 @@ export default function ConditionCheckbox({
           checked={agreedToCondition}
           onChange={(e) => setAgreedToCondition(e.target.checked)}
           type="checkbox"
-          className="before:content[''] peer relative h-7 w-7 cursor-pointer appearance-none rounded-md border border-white
-           transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-light-warm checked:bg-gray-900 checked:before:bg-gray-900 hover:before:opacity-10"
+          disabled={disabled}
+          className={`before:content[''] peer relative h-7 w-7 appearance-none rounded-md border border-white
+           transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-light-warm checked:bg-gray-900 checked:before:bg-gray-900 hover:before:opacity-10 ${
+             disabled ? 'cursor-not-allowed' : 'cursor-pointer'
+           }`}
         />
         <span className="absolute text-white transition-opacity opacity-0 pointer-events-none top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 peer-checked:opacity-100">
           <svg
@@ -36,7 +42,9 @@ export default function ConditionCheckbox({
         </span>
       </label>
       <label
-        className="font-light text-gray-700  select-none max-w-[550px]"
+        className={`font-light text-gray-700 select-none max-w-[550px] ${
+          disabled ? 'cursor-not-allowed opacity-50' : ''
+        }`}
         htmlFor="link"
       >
         <p className="dark:text-white">{label}</p>

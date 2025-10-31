@@ -138,7 +138,7 @@ export default function CreateCitizen({
   const subscribeToNetworkSignup = useSubscribe(CK_NETWORK_SIGNUP_FORM_ID)
   const tagToNetworkSignup = useTag(CK_NETWORK_SIGNUP_TAG_ID)
 
-  const nativeBalance = useNativeBalance()
+  const { nativeBalance } = useNativeBalance()
 
   const submitTypeform = useCallback(async (formResponse: any) => {
     const { formId, responseId } = formResponse
