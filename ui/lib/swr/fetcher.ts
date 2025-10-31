@@ -5,7 +5,6 @@ export default async function fetcher(url: string) {
     const error = new Error(
       `An error occurred while fetching the data: ${res.status} ${res.statusText}`
     )
-
     try {
       const errorData = await res.json()
       if (errorData.error || errorData.message) {
@@ -14,7 +13,6 @@ export default async function fetcher(url: string) {
     } catch {
       ;(error as any).status = res.status
     }
-
     throw error
   }
 

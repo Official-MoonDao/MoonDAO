@@ -1,7 +1,7 @@
-import { setCDNCacheHeaders } from 'middleware/cacheHeaders'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { setCDNCacheHeaders } from '@/lib/cache/cacheHeaders'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {

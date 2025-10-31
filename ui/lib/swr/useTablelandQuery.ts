@@ -18,6 +18,7 @@ export function useTablelandQuery(
     revalidateOnReconnect = false,
   } = options
 
+  // Build the API URL with the statement parameter
   const key = statement
     ? `/api/tableland/query?statement=${encodeURIComponent(statement)}`
     : null

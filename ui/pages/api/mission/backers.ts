@@ -1,3 +1,4 @@
+import { setCDNCacheHeaders } from 'middleware/cacheHeaders'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
@@ -9,7 +10,7 @@ async function handler(
 ): Promise<any> {
   const { projectId, missionId } = req.query
 
-  res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60')
+  setCDNCacheHeaders(res, 60, 60, 'Accept-Encoding, projectId, missionId')
 
   try {
     const backers = await getBackers(projectId, missionId)

@@ -1,8 +1,8 @@
 import { DEFAULT_CHAIN_V5 } from 'const/config'
-import { setCDNCacheHeaders } from 'middleware/cacheHeaders'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { setCDNCacheHeaders } from '@/lib/cache/cacheHeaders'
 import queryTable from '@/lib/tableland/queryTable'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -16,6 +16,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(400).json({ error: 'Statement parameter is required' })
   }
 
+  // Set CDN cache headers: 30s fresh, max 60s stale while revalidating (less aggressive caching)
   // Cache varies by SQL statement (different queries = different cache keys)
   setCDNCacheHeaders(res, 30, 60, 'Accept-Encoding, statement')
 
