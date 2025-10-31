@@ -15,6 +15,7 @@ solidity-bytes-utils/=node_modules/solidity-bytes-utils/
 @layerzerolabs/lz-evm-messagelib-v2/=node_modules/@layerzerolabs/lz-evm-messagelib-v2/
 @uniswap/v4-core/=node_modules/@uniswap/v4-core/
 @uniswap/v4-periphery/=node_modules/@uniswap/v4-periphery/
+@uniswap/v3-periphery/=node_modules/@uniswap/universal-router/lib/v3-periphery/
 @uniswap/permit2/=node_modules/@uniswap/permit2/
 @uniswap/universal-router/=node_modules/@uniswap/universal-router/
 @uniswap/v3-core/=node_modules/@uniswap/v3-core/
