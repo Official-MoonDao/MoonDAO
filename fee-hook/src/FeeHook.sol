@@ -7,6 +7,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
+import {ModifyLiquidityParams, SwapParams} from "v4-core/src/types/PoolOperation.sol";
 import {Actions} from "v4-periphery/src/libraries/Actions.sol";
 import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
 import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol";
@@ -77,7 +78,7 @@ contract FeeHook is BaseHook, Ownable, IERC721Receiver  {
         vMooneyAddress = _vMooneyAddress;
     }
 
-    function _afterSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata _params, BalanceDelta, bytes calldata)
+    function _afterSwap(address, PoolKey calldata key, SwapParams calldata _params, BalanceDelta, bytes calldata)
         internal
         override
         returns (bytes4, int128)
@@ -110,7 +111,7 @@ contract FeeHook is BaseHook, Ownable, IERC721Receiver  {
     function _beforeAddLiquidity(
         address,
         PoolKey calldata key,
-        IPoolManager.ModifyLiquidityParams calldata,
+        ModifyLiquidityParams calldata,
         bytes calldata
     ) internal override returns (bytes4) {
         PoolId poolId = key.toId();
