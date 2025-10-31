@@ -4,10 +4,10 @@ import {
   USDC_ADDRESSES,
   USDT_ADDRESSES,
 } from 'const/config'
+import { setCDNCacheHeaders } from 'middleware/cacheHeaders'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { setCDNCacheHeaders } from '@/lib/cache/cacheHeaders'
 import { getMissionTokenAddresses } from '@/lib/mission/missionSubgraph'
 
 // Function to get legitimate token addresses for filtering
