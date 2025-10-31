@@ -8,6 +8,7 @@ fs_permissions = [
     { access = "read", path = "../contracts/deployments/"}
 ]
 evm_version = "cancun"
+version = "0.8.26"
 
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
