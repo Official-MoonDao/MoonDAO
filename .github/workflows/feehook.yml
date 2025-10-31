@@ -29,6 +29,11 @@ jobs:
           submodules: recursive
           clean: false
 
+      - name: Install npm dependencies
+        run: |
+          cd fee-hook && npm install --legacy-peer-deps
+        id: install-dependencies
+
       - name: Run apply_patch.sh
         run: |
           chmod +x ./fee-hook/apply_patch.sh
@@ -42,11 +47,6 @@ jobs:
       - name: Run Local Chain with Anvil
         run: anvil --fork-url https://1.rpc.thirdweb.com/${{ secrets.ANVIL_THIRDWEB_CLIENT_ID }} &
         id: local-chain
-
-      - name: Install npm dependencies
-        run: |
-          cd fee-hook && npm install --legacy-peer-deps
-        id: install-dependencies
 
       - name: Run Forge build
         run: |
