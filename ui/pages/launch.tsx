@@ -108,6 +108,7 @@ export default function Launch({ missions }: any) {
     selectedChain,
     address
   )
+
   const [userTeamsAsManager, setUserTeamsAsManager] = useState<any>()
   const [userTeamsAsManagerLoading, setUserTeamsAsManagerLoading] =
     useState(false)
@@ -122,7 +123,8 @@ export default function Launch({ missions }: any) {
 
       const teamChecks = await Promise.all(
         userTeams.map(async (hat: any) => {
-          if (!hat?.teamId || !hat.id) return { hat, isManager: false }
+          if (!hat?.teamId || !hat.hats?.[0].id)
+            return { hat, isManager: false }
 
           const managerHatId: any = await readContract({
             contract: teamContract,
@@ -130,7 +132,7 @@ export default function Launch({ missions }: any) {
             params: [hat.teamId],
           })
 
-          const isManager = hatIdDecimalToHex(managerHatId) === hat.id
+          const isManager = hatIdDecimalToHex(managerHatId) === hat.hats?.[0].id
 
           return { hat, isManager }
         })
@@ -999,7 +1001,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
       chain: chain,
     })
 
-    const missionTableName = await readContract({
+    const missionTableName: any = await readContract({
       contract: missionTableContract,
       method: 'getTableName' as string,
       params: [],
@@ -1009,7 +1011,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
 
     const missionRows = await queryTable(chain, statement)
 
-    const filteredMissionRows = missionRows.filter((mission) => {
+    const filteredMissionRows = missionRows.filter((mission: any) => {
       return !BLOCKED_MISSIONS.has(mission.id) && mission && mission.id
     })
 
@@ -1022,7 +1024,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
 
     // Process missions with rate limiting protection
     const missions = await Promise.all(
-      filteredMissionRows.map(async (missionRow, index) => {
+      filteredMissionRows.map(async (missionRow: any, index: number) => {
         try {
           // Add delay between requests to avoid rate limiting
           if (index > 0) {

@@ -1,6 +1,6 @@
 import CitizenTableABI from 'const/abis/CitizenTable.json'
-import JobTableABI from 'const/abis/JobBoardTable.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
+import JobTableABI from 'const/abis/JobBoardTable.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
@@ -46,8 +46,8 @@ import Container from '../components/layout/Container'
 import { ExpandedFooter } from '../components/layout/ExpandedFooter'
 import WebsiteHead from '../components/layout/Head'
 import PageEnder from '../components/layout/PreFooter'
-import SignedInDashboard from '@/components/home/SignedInDashboard'
 import FeaturedMissionSection from '@/components/home/FeaturedMissionSection'
+import SignedInDashboard from '@/components/home/SignedInDashboard'
 
 export default function Home({
   newestNewsletters,
@@ -235,8 +235,7 @@ export async function getStaticProps() {
         }),
       ])
 
-      const [citizens, listings, jobs, teams, projects, missionRows] =
-        await Promise.all([
+      const [citizens, listings, jobs] = await Promise.all([
         queryTable(
           chain,
           `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 10`
@@ -255,6 +254,11 @@ export async function getStaticProps() {
             Date.now() / 1000
           )}) ORDER BY id DESC LIMIT 10`
         ),
+      ])
+
+      await new Promise((resolve) => setTimeout(resolve, 200))
+
+      const [teams, projects, missionRows] = await Promise.all([
         queryTable(chain, `SELECT * FROM ${teamTableName} ORDER BY id DESC`),
         queryTable(chain, `SELECT * FROM ${projectTableName} ORDER BY id DESC`),
         queryTable(

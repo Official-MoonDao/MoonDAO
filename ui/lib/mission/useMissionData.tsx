@@ -6,6 +6,7 @@ import client from '@/lib/thirdweb/client'
 import useJBProjectData from '../juicebox/useJBProjectData'
 import { getChainSlug } from '../thirdweb/chain'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
+import { useTablelandQuery } from '../swr/useTablelandQuery'
 
 /*
 1: Stage 1
@@ -78,17 +79,21 @@ export default function useMissionData({
     }
   }, [missionCreatorContract, mission?.id])
 
+  // Fetch funding goal from tableland
+  const fundingStatement =
+    mission?.id !== undefined && !fundingGoal
+      ? `SELECT * FROM ${MISSION_TABLE_NAMES[chainSlug]} WHERE id = ${mission.id}`
+      : null
+
+  const { data: fundingData } = useTablelandQuery(fundingStatement, {
+    revalidateOnFocus: false,
+  })
+
   useEffect(() => {
-    async function getFundingData() {
-      const statement = `SELECT * FROM ${MISSION_TABLE_NAMES[chainSlug]} WHERE id = ${mission.id}`
-      const res = await fetch(`/api/tableland/query?statement=${statement}`)
-      const rows = await res.json()
-      setFundingGoal(rows[0]?.fundingGoal)
+    if (fundingData && fundingData[0]?.fundingGoal) {
+      setFundingGoal(fundingData[0].fundingGoal)
     }
-    if (mission?.id !== undefined && !fundingGoal) {
-      getFundingData()
-    }
-  }, [chainSlug, mission?.id, _fundingGoal])
+  }, [fundingData])
 
   useEffect(() => {
     if (missionCreatorContract && mission?.id !== undefined) {
