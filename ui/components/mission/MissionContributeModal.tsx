@@ -170,7 +170,7 @@ export default function MissionContributeModal({
   })
 
   const nativeBalance = useNativeBalance()
-  const { gasPrice } = useGasPrice(selectedChain)
+  const { effectiveGasPrice } = useGasPrice(selectedChain)
 
   // Check if LayerZero quote exceeds the protocol limit
   const layerZeroLimitExceeded = useMemo(() => {
@@ -279,17 +279,19 @@ export default function MissionContributeModal({
   )
 
   // Calculate gas cost in ETH and USD
+  // Note: estimatedGas already includes buffers (130-180%), so we use effectiveGasPrice
+  // which is baseFee + priorityFee (no additional buffer) to match wallet displays
   const gasCostDisplay = useMemo(() => {
     if (
       !estimatedGas ||
       estimatedGas === BigInt(0) ||
-      !gasPrice ||
-      gasPrice === BigInt(0)
+      !effectiveGasPrice ||
+      effectiveGasPrice === BigInt(0)
     ) {
       return { eth: '0.0000', usd: '0.00' }
     }
 
-    const gasCostWei = estimatedGas * gasPrice
+    const gasCostWei = estimatedGas * effectiveGasPrice
     const gasCostEth = Number(gasCostWei) / 1e18
 
     const gasCostUsd = ethUsdPrice ? gasCostEth * ethUsdPrice : 0
@@ -307,7 +309,7 @@ export default function MissionContributeModal({
       eth: formattedGasCostEth,
       usd: gasCostUsd.toFixed(2),
     }
-  }, [estimatedGas, gasPrice, ethUsdPrice])
+  }, [estimatedGas, effectiveGasPrice, ethUsdPrice])
 
   // Helper function to safely convert a number to wei (BigInt)
   const toWei = (value: number): bigint => {
@@ -576,6 +578,7 @@ export default function MissionContributeModal({
   ])
 
   // Calculate required ETH amount
+  // Add a small safety buffer (3-5%) to ensure users have enough after onramp
   const requiredEth = useMemo(() => {
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
     const isCrossChain = chainSlug !== defaultChainSlug
@@ -592,7 +595,15 @@ export default function MissionContributeModal({
         usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
     }
 
-    const gasCostWei = estimatedGas * gasPrice
+    // Calculate base gas cost (estimatedGas already has buffers, effectiveGasPrice is baseFee+priorityFee)
+    const baseGasCostWei = effectiveGasPrice
+      ? estimatedGas * effectiveGasPrice
+      : BigInt(0)
+
+    // Add small safety buffer (3%) for requiredEth to account for base fee fluctuations
+    // This ensures users have enough after onramp, but is much smaller than previous estimates
+    const safetyBuffer = BigInt(103) // 3%
+    const gasCostWei = (baseGasCostWei * safetyBuffer) / BigInt(100)
     const gasCostEth = Number(gasCostWei) / 1e18
 
     const total = transactionValueEth + gasCostEth
@@ -602,7 +613,7 @@ export default function MissionContributeModal({
     usdInput,
     ethUsdPrice,
     estimatedGas,
-    gasPrice,
+    effectiveGasPrice,
     crossChainQuote,
     chainSlug,
     defaultChainSlug,
@@ -1136,6 +1147,17 @@ export default function MissionContributeModal({
     [nativeBalance, requiredEth]
   )
 
+  // Clear Coinbase fee state when user no longer needs onramp
+  useEffect(() => {
+    if (hasEnoughBalance || ethDeficit === 0) {
+      setCoinbaseEthReceive(null)
+      setCoinbasePaymentSubtotal(undefined)
+      setCoinbasePaymentTotal(undefined)
+      setCoinbaseTotalFees(undefined)
+      setCoinbaseEthInsufficient(false)
+    }
+  }, [hasEnoughBalance, ethDeficit])
+
   // Clear parameter when modal is closed
   const handleModalClose = useCallback(() => {
     if (setModalEnabled) {
@@ -1146,6 +1168,13 @@ export default function MissionContributeModal({
     setTransactionRejected(false)
     setIsAutoTriggering(false)
     hasTriggeredTransaction.current = false
+
+    // Clear Coinbase fee state
+    setCoinbaseEthReceive(null)
+    setCoinbasePaymentSubtotal(undefined)
+    setCoinbasePaymentTotal(undefined)
+    setCoinbaseTotalFees(undefined)
+    setCoinbaseEthInsufficient(false)
 
     clearOnrampJWT()
 
