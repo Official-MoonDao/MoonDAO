@@ -62,8 +62,7 @@ import {
 import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import client, { serverClient } from '@/lib/thirdweb/client'
-import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import { formatTimeUntilDeadline } from '@/lib/utils/dates'
@@ -83,7 +82,6 @@ import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import { TwitterIcon } from '../assets'
 import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
-import StandardButton from '../layout/StandardButton'
 
 const CHAIN = DEFAULT_CHAIN_V5
 const CHAIN_SLUG = getChainSlug(CHAIN)
@@ -135,26 +133,25 @@ export default function MissionProfile({
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
 
-  const fullComponentRef = useRef<HTMLDivElement>(null)
+  const payRedeemContainerRef = useRef<HTMLDivElement>(null)
 
-  const [isFullComponentVisible, setIsFullComponentVisible] = useState(false)
+  const [isPayRedeemContainerVisible, setIsPayRedeemContainerVisible] =
+    useState(false)
   const [isMounted, setIsMounted] = useState(false)
 
   const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-  // Track when component has mounted to avoid hydration issues
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  // Add Intersection Observer to detect when full component is visible
+  // Intersection Observer to detect when pay/redeem component is visible
   useEffect(() => {
-    const currentRef = fullComponentRef.current
-    console.log('currentRef', currentRef)
+    const currentRef = payRedeemContainerRef.current
     const observer = new IntersectionObserver(
       ([entry]) => {
         // When the full component is more than 20% visible, hide the fixed button
-        setIsFullComponentVisible(entry.intersectionRatio > 0.75)
+        setIsPayRedeemContainerVisible(entry.intersectionRatio > 0.75)
       },
       {
         threshold: [0, 0.2, 0.5, 1.0], // Multiple thresholds for smoother detection
@@ -171,7 +168,7 @@ export default function MissionProfile({
         observer.unobserve(currentRef)
       }
     }
-  }, [fullComponentRef])
+  }, [payRedeemContainerRef])
 
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains = useMemo(
@@ -294,7 +291,6 @@ export default function MissionProfile({
 
   // Handle onramp success from URL params and chain switching
   useEffect(() => {
-    const onrampSuccess = router?.query?.onrampSuccess === 'true'
     const chainToSwitchTo = router?.query?.chain as string | undefined
 
     // Only process initial chain param once
@@ -325,27 +321,111 @@ export default function MissionProfile({
     chainSlug,
     setSelectedChain,
     chainSlugs,
-    router?.query?.onrampSuccess,
   ])
 
-  // Handle post-onramp modal opening
+  // Check for stored JWT and verify it proactively (not just when onrampSuccess is in URL)
+  const checkAndVerifyStoredJWT = useCallback(async () => {
+    if (!router?.isReady || !account?.address) return
+
+    const storedJWT = getStoredOnrampJWT()
+    if (!storedJWT) {
+      // No stored JWT - clear any existing payload
+      if (onrampJWTPayload) {
+        setOnrampJWTPayload(null)
+      }
+      return
+    }
+
+    // Don't re-verify if we already have a valid payload
+    if (onrampJWTPayload) {
+      // Verify it still matches current context
+      if (
+        onrampJWTPayload.address?.toLowerCase() ===
+          account.address?.toLowerCase() &&
+        onrampJWTPayload.chainSlug === chainSlug &&
+        onrampJWTPayload.missionId === mission.id?.toString()
+      ) {
+        return // Already have valid payload
+      }
+      // Payload doesn't match - clear it and re-verify
+      setOnrampJWTPayload(null)
+    }
+
+    try {
+      const payload = await verifyOnrampJWT(
+        storedJWT,
+        account.address,
+        mission.id?.toString()
+      )
+
+      if (!payload) {
+        // Verification failed - clear invalid JWT
+        clearOnrampJWT()
+        setOnrampJWTPayload(null)
+        return
+      }
+
+      // Validate payload matches current context
+      if (
+        !payload.address ||
+        !payload.chainSlug ||
+        payload.address.toLowerCase() !== account.address?.toLowerCase() ||
+        payload.chainSlug !== chainSlug ||
+        payload.missionId !== mission.id?.toString()
+      ) {
+        // Invalid - clear JWT and payload
+        clearOnrampJWT()
+        setOnrampJWTPayload(null)
+        return
+      }
+
+      // Set wallet based on JWT payload if needed
+      if (
+        payload.selectedWallet !== undefined &&
+        payload.selectedWallet !== selectedWallet
+      ) {
+        setSelectedWallet(payload.selectedWallet)
+      }
+
+      // Set verified payload
+      setOnrampJWTPayload(payload)
+      if (payload.usdAmount) {
+        setUsdInput(payload.usdAmount)
+      }
+
+      // If coming from onramp redirect, open modal
+      const onrampSuccess = router?.query?.onrampSuccess === 'true'
+      if (onrampSuccess && !hasProcessedOnrampRef.current) {
+        hasProcessedOnrampRef.current = true
+        setContributeModalEnabled(true)
+      }
+    } catch (error) {
+      console.error('Error verifying stored JWT:', error)
+      clearOnrampJWT()
+      setOnrampJWTPayload(null)
+    }
+  }, [
+    router?.isReady,
+    router?.query?.onrampSuccess,
+    account?.address,
+    getStoredOnrampJWT,
+    verifyOnrampJWT,
+    chainSlug,
+    mission.id,
+    onrampJWTPayload,
+    selectedWallet,
+    setSelectedWallet,
+    clearOnrampJWT,
+  ])
+
+  // Handle post-onramp modal opening (when onrampSuccess is in URL)
   const handlePostOnrampModal = useCallback(async () => {
     if (!router?.isReady) return
 
     const onrampSuccess = router?.query?.onrampSuccess === 'true'
-    const agreedFromUrl = router?.query?.agreed === 'true'
-    const usdAmountFromUrl = router?.query?.usdAmount as string | undefined
-    const selectedWalletFromUrl = router?.query?.selectedWalletAddress as
-      | string
-      | undefined
 
     // Early return if not an onramp success scenario
-    if (
-      !onrampSuccess ||
-      !agreedFromUrl ||
-      !usdAmountFromUrl ||
-      !selectedWalletFromUrl
-    ) {
+    if (!onrampSuccess) {
       hasProcessedOnrampRef.current = false
       return
     }
@@ -359,83 +439,31 @@ export default function MissionProfile({
       return console.error('Already processed onramp')
     }
 
-    const selectedWalletToSetIndex = wallets.findIndex(
-      (wallet) =>
-        wallet.address.toLowerCase() === selectedWalletFromUrl?.toLowerCase()
-    )
-
-    if (
-      selectedWalletToSetIndex === undefined ||
-      selectedWalletToSetIndex === null
-    ) {
-      return console.error('No selected wallet found')
-    }
-
-    if (selectedWalletToSetIndex !== selectedWallet) {
-      setSelectedWallet(selectedWalletToSetIndex)
-    }
-
-    // Mark as processed immediately to prevent re-runs
-    hasProcessedOnrampRef.current = true
-
-    try {
-      const storedJWT = getStoredOnrampJWT()
-      if (!storedJWT) {
-        throw new Error('No stored JWT found')
-      }
-
-      const payload = await verifyOnrampJWT(storedJWT, account.address, mission.id?.toString())
-      if (!payload) {
-        throw new Error('Failed to verify JWT - payload is null')
-      }
-
-      if (
-        !payload.address ||
-        !payload.chainSlug ||
-        payload.address.toLowerCase() !== account.address?.toLowerCase() ||
-        payload.chainSlug !== chainSlug ||
-        (payload.missionId && payload.missionId !== mission.id?.toString())
-      ) {
-        throw new Error('Invalid JWT - address, chain, or mission mismatch')
-      }
-
-      setOnrampJWTPayload(payload)
-      setUsdInput(usdAmountFromUrl)
-      setContributeModalEnabled(true)
-    } catch (error) {
-      console.error('Error handling post-onramp modal:', error)
-      // Reset ref on error so user can retry
-      hasProcessedOnrampRef.current = false
-      clearOnrampJWT()
-      const { onrampSuccess: _, ...restQuery } = router.query
-      router.replace(
-        { pathname: router.pathname, query: restQuery },
-        undefined,
-        {
-          shallow: true,
-        }
-      )
-    }
+    // Check and verify stored JWT (this will also open modal if valid)
+    await checkAndVerifyStoredJWT()
   }, [
-    getStoredOnrampJWT,
-    verifyOnrampJWT,
+    router?.isReady,
+    router?.query?.onrampSuccess,
     wallets,
-    chainSlug,
-    clearOnrampJWT,
-    router,
     account?.address,
-    setSelectedWallet,
-    selectedWallet,
+    checkAndVerifyStoredJWT,
   ])
 
+  // Check for stored JWT when component mounts or when account/chain changes
+  useEffect(() => {
+    if (!router?.isReady || !account?.address) return
+
+    // Check for stored JWT proactively (not just when onrampSuccess is in URL)
+    checkAndVerifyStoredJWT()
+  }, [router?.isReady, account?.address, chainSlug, checkAndVerifyStoredJWT])
+
+  // Handle post-onramp modal opening (when onrampSuccess is in URL)
   useEffect(() => {
     if (!router?.isReady) return
 
     const onrampSuccess = router?.query?.onrampSuccess === 'true'
-    const agreedFromUrl = router?.query?.agreed === 'true'
-    const usdAmountFromUrl = router?.query?.usdAmount as string | undefined
 
-    if (onrampSuccess && agreedFromUrl && usdAmountFromUrl) {
+    if (onrampSuccess) {
       // Add a small delay to ensure account is loaded
       const timeoutId = setTimeout(() => {
         handlePostOnrampModal()
@@ -449,8 +477,6 @@ export default function MissionProfile({
   }, [
     router?.isReady,
     router?.query?.onrampSuccess,
-    router?.query?.agreed,
-    router?.query?.usdAmount,
     account?.address,
     handlePostOnrampModal,
   ])
@@ -744,30 +770,6 @@ export default function MissionProfile({
     }
   }, [teamContract, mission?.teamId, _teamNFT])
 
-  // Add Intersection Observer to detect when full component is visible
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // When the full component is more than 20% visible, hide the fixed button
-        setIsFullComponentVisible(entry.intersectionRatio > 0.2)
-      },
-      {
-        threshold: [0, 0.2, 0.5, 1.0], // Multiple thresholds for smoother detection
-        rootMargin: '-100px 0px 0px 0px', // Adjust this to control when fade starts
-      }
-    )
-
-    if (fullComponentRef.current) {
-      observer.observe(fullComponentRef.current)
-    }
-
-    return () => {
-      if (fullComponentRef.current) {
-        observer.unobserve(fullComponentRef.current)
-      }
-    }
-  }, [])
-
   return (
     <>
       {/* Mission Metadata Modal */}
@@ -893,7 +895,7 @@ export default function MissionProfile({
                 visibleButton={
                   windowWidth > 0 &&
                   windowWidth < 768 &&
-                  !isFullComponentVisible
+                  !isPayRedeemContainerVisible
                 }
                 buttonMode="fixed"
               />
@@ -904,7 +906,7 @@ export default function MissionProfile({
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
             <div
-              ref={fullComponentRef} // Add ref to the full component container
+              ref={payRedeemContainerRef} // Add ref to the full component container
               className="flex z-20 xl:hidden w-full px-[5vw]"
             >
               {primaryTerminalAddress &&

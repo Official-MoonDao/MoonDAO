@@ -89,7 +89,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     chain: selectedChain,
   })
 
-  const nativeBalance = useNativeBalance()
+  const { nativeBalance } = useNativeBalance()
 
   const { fundWallet } = useFundWallet()
 

@@ -142,16 +142,27 @@ export default function MissionContributeModal({
   const [coinbaseEthInsufficient, setCoinbaseEthInsufficient] =
     useState<boolean>(false)
 
-  const { generateJWT: generateOnrampJWT, clearJWT: clearOnrampJWT } =
-    useOnrampJWT()
+  const {
+    generateJWT: generateOnrampJWT,
+    clearJWT: clearOnrampJWT,
+    getStoredJWT,
+    verifyJWT: verifyOnrampJWT,
+    isVerifying: isVerifyingJWT,
+    error: jwtError,
+  } = useOnrampJWT()
 
   const [agreedToCondition, setAgreedToCondition] = useState(() => {
     return router?.query?.agreed === 'true'
   })
   const [isAutoTriggering, setIsAutoTriggering] = useState(() => {
-    // Only start in auto-trigger mode if coming from onramp AND have valid JWT payload
-    return router?.query?.onrampSuccess === 'true' && !!onrampJWTPayload
+    if (typeof window === 'undefined') return false
+    const storedJWT = getStoredJWT()
+    const isPostOnramp = router?.query?.onrampSuccess === 'true'
+    return !!storedJWT || isPostOnramp || !!onrampJWTPayload
   })
+  const [jwtVerificationError, setJwtVerificationError] = useState<
+    string | null
+  >(null)
   const [transactionRejected, setTransactionRejected] = useState(false)
   const hasTriggeredTransaction = useRef(false)
 
@@ -169,7 +180,7 @@ export default function MissionContributeModal({
     forwardClient,
   })
 
-  const nativeBalance = useNativeBalance()
+  const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
   const { effectiveGasPrice } = useGasPrice(selectedChain)
 
   // Check if LayerZero quote exceeds the protocol limit
@@ -856,13 +867,7 @@ export default function MissionContributeModal({
 
       // Clean up onramp URL params after successful transaction
       if (router?.query?.onrampSuccess === 'true') {
-        const {
-          onrampSuccess: _,
-          agreed: __,
-          message: msgParam,
-          selectedWallet: walletParam,
-          ...restQuery
-        } = router.query
+        const { onrampSuccess: _, ...restQuery } = router.query
         router.replace(
           {
             pathname: router.pathname,
@@ -982,37 +987,146 @@ export default function MissionContributeModal({
     return () => clearTimeout(timeoutId)
   }, [usdInput, input, selectedChain, estimateContributionGas])
 
-  // Sync isAutoTriggering with JWT payload availability
+  // Check for stored JWT and verify it as fallback (parent MissionProfile should handle verification)
+  // This is only used if parent hasn't verified yet, to show auto modal immediately
+  useEffect(() => {
+    // Trust parent's verified payload if it exists - no need to re-verify
+    if (onrampJWTPayload) {
+      setJwtVerificationError(null)
+      return
+    }
+
+    const isPostOnramp = router?.query?.onrampSuccess === 'true'
+    const storedJWT = getStoredJWT()
+
+    // Fallback
+    if (storedJWT && account && address && (isPostOnramp || modalEnabled)) {
+      const verifyStoredJWT = async () => {
+        setJwtVerificationError(null)
+        try {
+          const payload = await verifyOnrampJWT(
+            storedJWT,
+            address,
+            mission?.id?.toString()
+          )
+
+          if (!payload) {
+            const errorMsg = jwtError || 'Failed to verify onramp session'
+            setJwtVerificationError(errorMsg)
+            setIsAutoTriggering(false)
+            return
+          }
+
+          // Validate payload matches current context
+          if (
+            !payload.address ||
+            !payload.chainSlug ||
+            payload.address.toLowerCase() !== address.toLowerCase() ||
+            payload.chainSlug !== chainSlug ||
+            payload.missionId !== mission?.id?.toString()
+          ) {
+            const errorMsg =
+              'Onramp session does not match current wallet, mission, or chain'
+            setJwtVerificationError(errorMsg)
+            setIsAutoTriggering(false)
+            clearOnrampJWT() // Clear invalid JWT
+            return
+          }
+
+          if (isPostOnramp || modalEnabled) {
+            setIsAutoTriggering(true)
+          }
+        } catch (error: any) {
+          const errorMsg = error?.message || 'Failed to verify onramp session'
+          setJwtVerificationError(errorMsg)
+          setIsAutoTriggering(false)
+        }
+      }
+
+      verifyStoredJWT()
+    } else if (!storedJWT && !isPostOnramp) {
+      // No stored JWT and not returning from onramp - don't show auto-triggering
+      setIsAutoTriggering(false)
+    }
+  }, [
+    modalEnabled,
+    getStoredJWT,
+    verifyOnrampJWT,
+    account,
+    address,
+    chainSlug,
+    mission?.id,
+    onrampJWTPayload,
+    jwtError,
+    router?.query?.onrampSuccess,
+    clearOnrampJWT,
+  ])
+
+  // Refresh balance immediately when returning from Coinbase onramp
   useEffect(() => {
     const isPostOnramp = router?.query?.onrampSuccess === 'true'
-    if (!isPostOnramp) {
+    if (isPostOnramp && account && address) {
+      // Immediately refresh balance when returning from onramp
+      refetchNativeBalance()
+      const timeoutId = setTimeout(() => {
+        refetchNativeBalance()
+      }, 2000)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [router?.query?.onrampSuccess, account, address, refetchNativeBalance])
+
+  // Sync isAutoTriggering with verified JWT payload and balance status
+  useEffect(() => {
+    if (!onrampJWTPayload) {
+      const storedJWT = getStoredJWT()
+      const isPostOnramp = router?.query?.onrampSuccess === 'true'
+      if (storedJWT && (isPostOnramp || isVerifyingJWT)) {
+        // Keep auto-triggering on while verifying
+        return
+      }
+      // No stored JWT and no payload - turn off auto-triggering
+      if (!storedJWT && !isPostOnramp) {
+        setIsAutoTriggering(false)
+      }
+      return
+    }
+
+    // We have a verified payload - validate it matches context
+    if (
+      !onrampJWTPayload.address ||
+      !onrampJWTPayload.chainSlug ||
+      !account ||
+      !address ||
+      onrampJWTPayload.address.toLowerCase() !== address.toLowerCase() ||
+      onrampJWTPayload.chainSlug !== chainSlug ||
+      onrampJWTPayload.missionId !== mission?.id?.toString()
+    ) {
+      const errorMsg = 'Onramp session does not match current wallet or mission'
+      setJwtVerificationError(errorMsg)
       setIsAutoTriggering(false)
       return
     }
 
-    // Only set auto-triggering if we have a valid JWT payload
-    if (
-      onrampJWTPayload &&
-      onrampJWTPayload.address &&
-      onrampJWTPayload.chainSlug &&
-      account &&
-      address &&
-      onrampJWTPayload.address.toLowerCase() === address.toLowerCase() &&
-      onrampJWTPayload.chainSlug === chainSlug &&
-      (!onrampJWTPayload.missionId ||
-        onrampJWTPayload.missionId === mission?.id?.toString())
-    ) {
-      setIsAutoTriggering(true)
-    } else {
+    // Don't show auto-triggering UI if user doesn't have enough balance
+    // They should see the full UI with onramp option instead
+    if (!hasEnoughBalance) {
       setIsAutoTriggering(false)
+      return
     }
+
+    // All checks passed - show auto-triggering
+    setIsAutoTriggering(true)
+    setJwtVerificationError(null)
   }, [
-    router?.query?.onrampSuccess,
     onrampJWTPayload,
     account,
     address,
     chainSlug,
     mission?.id,
+    hasEnoughBalance,
+    getStoredJWT,
+    router?.query?.onrampSuccess,
+    isVerifyingJWT,
   ])
 
   // Auto-trigger transaction after successful onramp
@@ -1039,8 +1153,7 @@ export default function MissionContributeModal({
       !address ||
       onrampJWTPayload.address.toLowerCase() !== address.toLowerCase() ||
       onrampJWTPayload.chainSlug !== chainSlug ||
-      (onrampJWTPayload.missionId &&
-        onrampJWTPayload.missionId !== mission?.id?.toString())
+      onrampJWTPayload.missionId !== mission?.id?.toString()
     ) {
       setIsAutoTriggering(false)
       setTransactionRejected(false)
@@ -1072,8 +1185,7 @@ export default function MissionContributeModal({
               onrampJWTPayload.address.toLowerCase() !==
                 address.toLowerCase() ||
               onrampJWTPayload.chainSlug !== chainSlug ||
-              (onrampJWTPayload.missionId &&
-                onrampJWTPayload.missionId !== mission?.id?.toString())
+              onrampJWTPayload.missionId !== mission?.id?.toString()
             ) {
               throw new Error('Invalid JWT')
             }
@@ -1167,6 +1279,7 @@ export default function MissionContributeModal({
     // Reset all auto-trigger states
     setTransactionRejected(false)
     setIsAutoTriggering(false)
+    setJwtVerificationError(null)
     hasTriggeredTransaction.current = false
 
     // Clear Coinbase fee state
@@ -1180,13 +1293,7 @@ export default function MissionContributeModal({
 
     // Clean up onramp URL params when modal closes
     if (router?.query?.onrampSuccess === 'true') {
-      const {
-        onrampSuccess: _,
-        agreed: __,
-        message: msgParam,
-        selectedWallet: walletParam,
-        ...restQuery
-      } = router.query
+      const { onrampSuccess: _, ...restQuery } = router.query
       router.replace(
         {
           pathname: router.pathname,
@@ -1251,6 +1358,10 @@ export default function MissionContributeModal({
                 <h3 className="text-xl font-semibold text-white">
                   {!account
                     ? 'Connecting Your Wallet'
+                    : isVerifyingJWT || (!onrampJWTPayload && getStoredJWT())
+                    ? 'Verifying Onramp Success'
+                    : jwtVerificationError
+                    ? 'Verification Failed'
                     : !hasEnoughBalance || isLoadingGasEstimate
                     ? 'Preparing Transaction'
                     : 'Processing Your Contribution'}
@@ -1258,12 +1369,30 @@ export default function MissionContributeModal({
                 <p className="text-gray-300 text-sm max-w-md">
                   {!account
                     ? 'Please connect or unlock your wallet to continue'
+                    : isVerifyingJWT || (!onrampJWTPayload && getStoredJWT())
+                    ? 'Verifying your onramp session...'
+                    : jwtVerificationError
+                    ? jwtVerificationError
                     : !hasEnoughBalance
-                    ? 'Verifying your balance...'
+                    ? router?.query?.onrampSuccess === 'true'
+                      ? 'Refreshing balance after purchase...'
+                      : 'Verifying your balance...'
                     : isLoadingGasEstimate
                     ? 'Calculating gas fees...'
                     : 'Please confirm the transaction in your wallet'}
                 </p>
+                {jwtVerificationError && (
+                  <button
+                    onClick={() => {
+                      setJwtVerificationError(null)
+                      setIsAutoTriggering(false)
+                      clearOnrampJWT()
+                    }}
+                    className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors"
+                  >
+                    Dismiss
+                  </button>
+                )}
               </div>
 
               <div className="w-full max-w-md">
@@ -1317,7 +1446,8 @@ export default function MissionContributeModal({
             <>
               {/* Post-Onramp Success Indicator or Rejection Notice */}
               {router?.query?.onrampSuccess === 'true' &&
-                !transactionRejected && (
+                !transactionRejected &&
+                hasEnoughBalance && (
                   <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
@@ -1329,6 +1459,29 @@ export default function MissionContributeModal({
                         </p>
                         <p className="text-green-200/80 text-xs mt-1">
                           Ready to contribute to the mission
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              {/* Insufficient balance after onramp redirect */}
+              {router?.query?.onrampSuccess === 'true' &&
+                !transactionRejected &&
+                !hasEnoughBalance &&
+                ethDeficit > 0 && (
+                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center">
+                        <span className="text-orange-400 text-lg">⚠️</span>
+                      </div>
+                      <div>
+                        <p className="text-orange-300 font-semibold text-sm">
+                          Additional ETH Required
+                        </p>
+                        <p className="text-orange-200/80 text-xs mt-1">
+                          You still need {ethDeficit.toFixed(6)} ETH to complete
+                          this contribution. Please purchase ETH below.
                         </p>
                       </div>
                     </div>
@@ -1751,14 +1904,7 @@ export default function MissionContributeModal({
                           missionId: mission?.id?.toString(),
                         })
                       }}
-                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${
-                        mission?.id
-                      }?onrampSuccess=true&chain=${chainSlug}&usdAmount=${usdInput.replace(
-                        /,/g,
-                        ''
-                      )}&agreed=${agreedToCondition}&message=${encodeURIComponent(
-                        message || ''
-                      )}&selectedWalletAddress=${address}`}
+                      redirectUrl={`${DEPLOYED_ORIGIN}/mission/${mission?.id}?onrampSuccess=true`}
                     />
                   )}
 
