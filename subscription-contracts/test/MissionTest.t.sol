@@ -18,6 +18,7 @@ import {MissionTable} from "../src/tables/MissionTable.sol";
 import {MoonDaoTeamTableland} from "../src/tables/MoonDaoTeamTableland.sol";
 import {MoonDAOTeamCreator} from "../src/MoonDAOTeamCreator.sol";
 import {LaunchPadPayHook} from "../src/LaunchPadPayHook.sol";
+import {LaunchPadApprovalHook} from "../src/LaunchPadApprovalHook.sol";
 import {PassthroughModule} from "../src/PassthroughModule.sol";
 import {IHats} from "@hats/Interfaces/IHats.sol";
 import {Hats} from "@hats/Hats.sol";
@@ -917,5 +918,110 @@ contract MissionTest is Test, Config {
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user2));
         missionCreator.setFeeHookAddress(address(0));
     }
+
+    function testEnableRefunds() public {
+        _createTeam();
+        vm.startPrank(user1);
+        uint256 missionId = _createMission(500_000_000_000_000_000, false);
+        vm.stopPrank();
+        assertEq(missionCreator.stage(missionId), 1);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+        uint256 balance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        assertEq(balance, 0);
+
+        uint256 payAmount = 1_000_000_000_000_000_000;
+        vm.prank(user1);
+        terminal.pay{value: payAmount}(
+            projectId,
+            JBConstants.NATIVE_TOKEN,
+            0,
+            user1,
+            0,
+            "",
+            new bytes(0)
+        );
+        uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        assertEq(balanceAfter1, payAmount);
+        uint256 user1TokensAfter = jbTokens.totalBalanceOf(user1, projectId);
+        assertEq(user1TokensAfter, 1_000 * 1e18);
+        vm.stopPrank();
+
+        vm.prank(user2);
+        terminal.pay{value: payAmount/2}(
+            projectId,
+            JBConstants.NATIVE_TOKEN,
+            0,
+            user2,
+            0,
+            "",
+            new bytes(0)
+        );
+        uint256 user2TokensAfter = jbTokens.totalBalanceOf(user2, projectId);
+        assertEq(user2TokensAfter, 500 * 1e18);
+
+        uint256 user1BalanceBefore = address(user1).balance;
+        uint256 user2BalanceBefore = address(user2).balance;
+        skip(28 days);
+        assertEq(missionCreator.stage(missionId), 2);
+        address approvalHookAddress = missionCreator.missionIdToApprovalHook(missionId);
+        LaunchPadApprovalHook approvalHook = LaunchPadApprovalHook(approvalHookAddress);
+        address payhookAddress = missionCreator.missionIdToPayHook(missionId);
+        LaunchPadPayHook payhook = LaunchPadPayHook(payhookAddress);
+        vm.startPrank(teamAddress);
+        approvalHook.enableRefunds(true);
+        payhook.enableRefunds(true);
+        vm.stopPrank();
+
+        assertEq(missionCreator.stage(missionId), 3);
+
+
+        vm.prank(user1);
+        uint256 user1CashOutAmount = IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            user1,
+            projectId,
+            user1TokensAfter,
+            JBConstants.NATIVE_TOKEN,
+            0,
+            payable(user1),
+            bytes(""));
+        uint256 user1BalanceAfter = address(user1).balance;
+        console.log("balance after", user1BalanceAfter);
+        assertEq(user1CashOutAmount, payAmount);
+        assertEq(user1BalanceAfter - user1BalanceBefore, payAmount);
+        assertEq(jbTokens.totalBalanceOf(user1, projectId), 0);
+        assertEq(jbTokens.totalBalanceOf(zero, projectId), 0);
+
+        skip(28 days);
+        // Refund period has passed
+        vm.prank(user2);
+        vm.expectRevert("Refund period has passed. Refunds are disabled.");
+        IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            user2,
+            projectId,
+            user2TokensAfter,
+            JBConstants.NATIVE_TOKEN,
+            0,
+            payable(user2),
+            bytes(""));
+
+
+        uint256 treasuryBalanceBefore = address(TREASURY).balance;
+        uint256 teamBalanceBefore = address(teamAddress).balance;
+        uint256 terminalBalance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+        uint256 payoutAmount = IJBMultiTerminal(address(terminal)).sendPayoutsOf(
+            projectId,
+            JBConstants.NATIVE_TOKEN,
+            terminalBalance,
+            uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            0
+        );
+
+        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 25/ 1000, 0.0000001e18);
+        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *90 / 100, 0.0000001e18);
+
+    }
+
 }
 

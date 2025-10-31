@@ -72,7 +72,6 @@ import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
-import Quests from '../xp/Quests'
 import DashboardTeams from './DashboardTeams'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
@@ -235,7 +234,7 @@ export default function SingedInDashboard({
     mooneyBudget,
     ethPrice,
   } = getBudget(tokens, year, quarter)
-  const ethBudget = 17.09
+  const ethBudget = 14.15
 
   const votingEscrowDepositorContract = useContract({
     address: VOTING_ESCROW_DEPOSITOR_ADDRESSES[chainSlug],
@@ -749,9 +748,6 @@ export default function SingedInDashboard({
           </div>
         </div>
 
-        {/* Quest System - Horizontal Section */}
-        {address && <Quests />}
-
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
           {/* Left Sidebar - Key Metrics & Quick Actions */}
@@ -905,6 +901,13 @@ export default function SingedInDashboard({
                 >
                   <ShoppingBagIcon className="w-4 h-4" />
                   Shop
+                </StandardButton>
+                <StandardButton
+                  className="bg-gradient-to-r from-yellow-600 to-amber-700 hover:from-yellow-700 hover:to-amber-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
+                  link="/quests"
+                >
+                  <TrophyIcon className="w-4 h-4" />
+                  Quests
                 </StandardButton>
               </div>
             </div>

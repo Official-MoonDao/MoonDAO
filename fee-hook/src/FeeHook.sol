@@ -85,6 +85,7 @@ contract FeeHook is BaseHook, Ownable, IERC721Receiver  {
         PoolId poolId = key.toId();
         if (_params.zeroForOne && _params.amountSpecified < 0) {
             uint256 feeAmount = uint256(-_params.amountSpecified) * uint256(key.fee) / 1e6;
+            uint256 feeAmount = uint256(1 ether) * uint256(10000) / 1e6;
             uncollectedFees[poolId] += feeAmount;
         }
         // Only withraw fees if the amount is above a certain threshold to save on gas

@@ -36,6 +36,8 @@ contract Config is Script {
     mapping(uint256 => address) public MOONDAO_TREASURY_ADDRESSES;
     mapping(uint256 => address) public STARGATE_POOLS;
     mapping(uint256 => address) public MISSION_CREATOR_ADDRESSES;
+    mapping(uint256 => address) public MISSION_TABLE_ADDRESSES;
+
     // Juicebox contract addresses are shared across chains
     address constant JB_V5_MULTI_TERMINAL = address(0x2dB6d704058E552DeFE415753465df8dF0361846);
     address constant JB_V5_CONTROLLER = address(0x27da30646502e2f642bE5281322Ae8C394F7668a);
@@ -162,6 +164,8 @@ contract Config is Script {
 
         MISSION_CREATOR_ADDRESSES[ARBITRUM] = arbJson.readAddress(".MissionCreator");
         MISSION_CREATOR_ADDRESSES[SEP] = sepJson.readAddress(".MissionCreator");
+        MISSION_TABLE_ADDRESSES[ARBITRUM] = arbJson.readAddress(".MissionTable");
+        MISSION_TABLE_ADDRESSES[SEP] = sepJson.readAddress(".MissionTable");
     }
 
     function currentSalt() public view returns (bytes32) {
