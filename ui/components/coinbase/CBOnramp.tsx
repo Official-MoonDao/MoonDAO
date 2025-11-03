@@ -1,6 +1,6 @@
 import { generateOnRampURL } from '@coinbase/cbpay-js'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid'
 import { DEPLOYED_ORIGIN } from 'const/config'
+import Image from 'next/image'
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { arbitrum } from '@/lib/rpc/chains'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
@@ -486,19 +486,13 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-            <svg
-              className="w-5 h-5 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-              />
-            </svg>
+            <Image
+              src="/coins/ETH.svg"
+              alt="ETH"
+              width={20}
+              height={20}
+              className="w-6 h-6"
+            />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-white">Fund</h2>
@@ -509,9 +503,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       <div className="p-6 space-y-6">
         {/* Purchase details */}
         <div>
-          <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">
-            Purchase Details
-          </h4>
           <div className="bg-black/20 rounded-lg p-4 border border-white/5 space-y-3">
             {isLoadingQuote ? (
               <div className="flex items-center justify-center">
