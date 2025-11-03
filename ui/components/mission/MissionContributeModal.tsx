@@ -166,6 +166,9 @@ export default function MissionContributeModal({
   >(null)
   const [transactionRejected, setTransactionRejected] = useState(false)
   const hasTriggeredTransaction = useRef(false)
+  const balanceFallbackTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null)
 
   useEffect(() => {
     if (onrampJWTPayload && typeof onrampJWTPayload.agreed === 'boolean') {
@@ -1128,21 +1131,35 @@ export default function MissionContributeModal({
 
   // Sync isAutoTriggering with verified JWT payload and balance status
   useEffect(() => {
+    const clearBalanceFallbackTimeout = () => {
+      if (balanceFallbackTimeoutRef.current) {
+        clearTimeout(balanceFallbackTimeoutRef.current)
+        balanceFallbackTimeoutRef.current = null
+      }
+    }
+
     if (!onrampJWTPayload) {
       const storedJWT = getStoredJWT()
       const isPostOnramp = router?.query?.onrampSuccess === 'true'
+
       if (storedJWT && (isPostOnramp || isVerifyingJWT)) {
         // Keep auto-triggering on while verifying
-        return
+        return () => {
+          clearBalanceFallbackTimeout()
+        }
       }
-      // No stored JWT and no payload - turn off auto-triggering
+
+      clearBalanceFallbackTimeout()
+
       if (!storedJWT && !isPostOnramp) {
         setIsAutoTriggering(false)
       }
-      return
+
+      return () => {
+        clearBalanceFallbackTimeout()
+      }
     }
 
-    // We have a verified payload - validate it matches context
     if (
       !onrampJWTPayload.address ||
       !onrampJWTPayload.chainSlug ||
@@ -1152,21 +1169,40 @@ export default function MissionContributeModal({
       onrampJWTPayload.chainSlug !== chainSlug ||
       onrampJWTPayload.missionId !== mission?.id?.toString()
     ) {
+      clearBalanceFallbackTimeout()
       const errorMsg = 'Onramp session does not match current wallet or mission'
       setJwtVerificationError(errorMsg)
       setIsAutoTriggering(false)
-      return
+      return () => {
+        clearBalanceFallbackTimeout()
+      }
     }
 
-    // Don't show auto-triggering UI if user doesn't have enough balance
     if (!hasEnoughBalance && process.env.NEXT_PUBLIC_ENV !== 'dev') {
-      setIsAutoTriggering(false)
-      return
+      if (router?.query?.onrampSuccess === 'true') {
+        if (!balanceFallbackTimeoutRef.current) {
+          balanceFallbackTimeoutRef.current = setTimeout(() => {
+            setIsAutoTriggering(false)
+            balanceFallbackTimeoutRef.current = null
+          }, 2000)
+        }
+      } else {
+        clearBalanceFallbackTimeout()
+        setIsAutoTriggering(false)
+      }
+
+      return () => {
+        clearBalanceFallbackTimeout()
+      }
     }
 
-    // All checks passed - show auto-triggering
+    clearBalanceFallbackTimeout()
     setIsAutoTriggering(true)
     setJwtVerificationError(null)
+
+    return () => {
+      clearBalanceFallbackTimeout()
+    }
   }, [
     onrampJWTPayload,
     account,
@@ -1334,6 +1370,11 @@ export default function MissionContributeModal({
     setIsAutoTriggering(false)
     setJwtVerificationError(null)
     hasTriggeredTransaction.current = false
+
+    if (balanceFallbackTimeoutRef.current) {
+      clearTimeout(balanceFallbackTimeoutRef.current)
+      balanceFallbackTimeoutRef.current = null
+    }
 
     // Clear Coinbase fee state
     setCoinbaseEthReceive(null)
