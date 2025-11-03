@@ -1,4 +1,5 @@
 import { ChatBubbleLeftIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
+import { useWallets } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
@@ -46,9 +47,11 @@ import {
 } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
+import useOnrampJWT, { OnrampJwtPayload } from '@/lib/coinbase/useOnrampJWT'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import useMissionData from '@/lib/mission/useMissionData'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import {
   arbitrum,
   base,
@@ -59,8 +62,7 @@ import {
 import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import client, { serverClient } from '@/lib/thirdweb/client'
-import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import { formatTimeUntilDeadline } from '@/lib/utils/dates'
@@ -71,6 +73,8 @@ import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import Head from '@/components/layout/Head'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import { Mission } from '@/components/mission/MissionCard'
+import MissionContributeModal from '@/components/mission/MissionContributeModal'
+import MissionDeployTokenModal from '@/components/mission/MissionDeployTokenModal'
 import MissionInfo from '@/components/mission/MissionInfo'
 import MissionMetadataModal from '@/components/mission/MissionMetadataModal'
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
@@ -126,29 +130,30 @@ export default function MissionProfile({
   _citizens,
 }: MissionProfileProps) {
   const account = useActiveAccount()
+  const { wallets } = useWallets()
   const router = useRouter()
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
+  const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
 
-  const fullComponentRef = useRef<HTMLDivElement>(null)
+  const payRedeemContainerRef = useRef<HTMLDivElement>(null)
 
-  const [isFullComponentVisible, setIsFullComponentVisible] = useState(false)
+  const [isPayRedeemContainerVisible, setIsPayRedeemContainerVisible] =
+    useState(false)
   const [isMounted, setIsMounted] = useState(false)
 
   const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-  // Track when component has mounted to avoid hydration issues
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  // Add Intersection Observer to detect when full component is visible
+  // Intersection Observer to detect when pay/redeem component is visible
   useEffect(() => {
-    const currentRef = fullComponentRef.current
-    console.log('currentRef', currentRef)
+    const currentRef = payRedeemContainerRef.current
     const observer = new IntersectionObserver(
       ([entry]) => {
         // When the full component is more than 20% visible, hide the fixed button
-        setIsFullComponentVisible(entry.intersectionRatio > 0.75)
+        setIsPayRedeemContainerVisible(entry.intersectionRatio > 0.75)
       },
       {
         threshold: [0, 0.2, 0.5, 1.0], // Multiple thresholds for smoother detection
@@ -165,7 +170,7 @@ export default function MissionProfile({
         observer.unobserve(currentRef)
       }
     }
-  }, [fullComponentRef])
+  }, [payRedeemContainerRef])
 
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains = useMemo(
@@ -181,11 +186,11 @@ export default function MissionProfile({
   const [availablePayouts, setAvailablePayouts] = useState<number>(0)
   const [missionMetadataModalEnabled, setMissionMetadataModalEnabled] =
     useState(false)
+  const [contributeModalEnabled, setContributeModalEnabled] = useState(false)
+  const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
+  const [usdInput, setUsdInput] = useState<string>('')
+  const hasProcessedOnrampRef = useRef(false)
 
-  // Shared modal state for both mobile and desktop instances
-  const [payModalEnabled, setPayModalEnabled] = useState(false)
-  const [hasProcessedOnrampSuccess, setHasProcessedOnrampSuccess] =
-    useState(false)
   const [hasReadInitialChainParam, setHasReadInitialChainParam] =
     useState(false)
 
@@ -277,9 +282,17 @@ export default function MissionProfile({
     _backers,
   })
 
+  const {
+    verifyJWT: verifyOnrampJWT,
+    clearJWT: clearOnrampJWT,
+    getStoredJWT: getStoredOnrampJWT,
+  } = useOnrampJWT()
+
+  const [onrampJWTPayload, setOnrampJWTPayload] =
+    useState<OnrampJwtPayload | null>(null)
+
   // Handle onramp success from URL params and chain switching
   useEffect(() => {
-    const onrampSuccess = router?.query?.onrampSuccess === 'true'
     const chainToSwitchTo = router?.query?.chain as string | undefined
 
     // Only process initial chain param once
@@ -304,43 +317,189 @@ export default function MissionProfile({
         }
       }
     }
-
-    if (onrampSuccess && !payModalEnabled && !hasProcessedOnrampSuccess) {
-      setHasProcessedOnrampSuccess(true)
-      setTimeout(() => {
-        setPayModalEnabled(true)
-      }, 500)
-    }
   }, [
-    router?.query?.onrampSuccess,
     router?.query?.chain,
-    payModalEnabled,
-    hasProcessedOnrampSuccess,
     hasReadInitialChainParam,
     chainSlug,
     setSelectedChain,
+    chainSlugs,
   ])
 
-  // Callback to handle modal state changes - clear URL params when closing
-  const handlePayModalChange = useCallback(
-    (enabled: boolean) => {
-      setPayModalEnabled(enabled)
+  // Check for stored JWT and verify it proactively (not just when onrampSuccess is in URL)
+  const checkAndVerifyStoredJWT = useCallback(async () => {
+    if (!router?.isReady || !account?.address) return
 
-      // Clear onrampSuccess from URL when closing
-      if (!enabled && router?.query?.onrampSuccess) {
-        const { onrampSuccess, usdAmount, chain, ...rest } = router.query
-        router.replace(
-          {
-            pathname: router.pathname,
-            query: chain ? { chain, ...rest } : rest,
-          },
-          undefined,
-          { shallow: true }
-        )
+    const storedJWT = getStoredOnrampJWT()
+    if (!storedJWT) {
+      // No stored JWT - clear any existing payload
+      if (onrampJWTPayload) {
+        setOnrampJWTPayload(null)
       }
-    },
-    [router]
-  )
+      return
+    }
+
+    // Don't re-verify if we already have a valid payload
+    if (onrampJWTPayload) {
+      // Verify it still matches current context
+      if (
+        onrampJWTPayload.address?.toLowerCase() ===
+          account.address?.toLowerCase() &&
+        onrampJWTPayload.chainSlug === chainSlug &&
+        onrampJWTPayload.missionId === mission.id?.toString()
+      ) {
+        return // Already have valid payload
+      }
+      // Payload doesn't match - clear it and re-verify
+      setOnrampJWTPayload(null)
+    }
+
+    try {
+      const payload = await verifyOnrampJWT(
+        storedJWT,
+        account.address,
+        mission.id?.toString()
+      )
+
+      if (!payload) {
+        // Verification failed - clear invalid JWT
+        clearOnrampJWT()
+        setOnrampJWTPayload(null)
+        return
+      }
+
+      // Validate payload matches current context
+      if (
+        !payload.address ||
+        !payload.chainSlug ||
+        payload.address.toLowerCase() !== account.address?.toLowerCase() ||
+        payload.chainSlug !== chainSlug ||
+        payload.missionId !== mission.id?.toString()
+      ) {
+        // Invalid - clear JWT and payload
+        clearOnrampJWT()
+        setOnrampJWTPayload(null)
+        return
+      }
+
+      // Set wallet based on JWT payload if needed
+      if (
+        payload.selectedWallet !== undefined &&
+        payload.selectedWallet !== selectedWallet
+      ) {
+        setSelectedWallet(payload.selectedWallet)
+      }
+
+      // Set verified payload
+      setOnrampJWTPayload(payload)
+      if (payload.usdAmount) {
+        setUsdInput(payload.usdAmount)
+      }
+
+      // If coming from onramp redirect, open modal
+      const onrampSuccess = router?.query?.onrampSuccess === 'true'
+      if (onrampSuccess && !hasProcessedOnrampRef.current) {
+        hasProcessedOnrampRef.current = true
+        setContributeModalEnabled(true)
+      }
+    } catch (error) {
+      console.error('Error verifying stored JWT:', error)
+      clearOnrampJWT()
+      setOnrampJWTPayload(null)
+    }
+  }, [
+    router?.isReady,
+    router?.query?.onrampSuccess,
+    account?.address,
+    getStoredOnrampJWT,
+    verifyOnrampJWT,
+    chainSlug,
+    mission.id,
+    onrampJWTPayload,
+    selectedWallet,
+    setSelectedWallet,
+    clearOnrampJWT,
+  ])
+
+  // Handle post-onramp modal opening (when onrampSuccess is in URL)
+  const handlePostOnrampModal = useCallback(async () => {
+    if (!router?.isReady) return
+
+    const onrampSuccess = router?.query?.onrampSuccess === 'true'
+
+    // Early return if not an onramp success scenario
+    if (!onrampSuccess) {
+      hasProcessedOnrampRef.current = false
+      return
+    }
+
+    // Wait for account to be available
+    if (!wallets?.[0] || !account?.address) {
+      return console.error('No wallets or accounts found')
+    }
+
+    // If already processed, just ensure modal is open if needed
+    if (hasProcessedOnrampRef.current) {
+      if (onrampJWTPayload && !contributeModalEnabled) {
+        setContributeModalEnabled(true)
+      }
+      return
+    }
+
+    // Mark as processed first to prevent race conditions
+    hasProcessedOnrampRef.current = true
+
+    // Check and verify stored JWT (this will also open modal if valid)
+    await checkAndVerifyStoredJWT()
+  }, [
+    router?.isReady,
+    router?.query?.onrampSuccess,
+    wallets,
+    account?.address,
+    checkAndVerifyStoredJWT,
+    contributeModalEnabled,
+    onrampJWTPayload,
+  ])
+
+  // Check for stored JWT when component mounts or when account/chain changes
+  useEffect(() => {
+    if (!router?.isReady || !account?.address) return
+
+    // Check for stored JWT proactively (not just when onrampSuccess is in URL)
+    checkAndVerifyStoredJWT()
+  }, [router?.isReady, account?.address, chainSlug, checkAndVerifyStoredJWT])
+
+  // Handle post-onramp modal opening (when onrampSuccess is in URL)
+  useEffect(() => {
+    if (!router?.isReady) return
+
+    const onrampSuccess = router?.query?.onrampSuccess === 'true'
+
+    if (onrampSuccess) {
+      // Add a small delay to ensure account is loaded
+      const timeoutId = setTimeout(() => {
+        handlePostOnrampModal()
+      }, 500)
+
+      return () => clearTimeout(timeoutId)
+    } else {
+      // Reset when not in onramp success scenario
+      hasProcessedOnrampRef.current = false
+    }
+  }, [
+    router?.isReady,
+    router?.query?.onrampSuccess,
+    account?.address,
+    handlePostOnrampModal,
+  ])
+
+  // Reset ref when component unmounts or onrampSuccess is removed
+  useEffect(() => {
+    return () => {
+      if (!router?.query?.onrampSuccess) {
+        hasProcessedOnrampRef.current = false
+      }
+    }
+  }, [router?.query?.onrampSuccess])
 
   // Update URL when chain changes (but only after initial chain param has been read)
   useEffect(() => {
@@ -622,30 +781,6 @@ export default function MissionProfile({
     }
   }, [teamContract, mission?.teamId, _teamNFT])
 
-  // Add Intersection Observer to detect when full component is visible
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // When the full component is more than 20% visible, hide the fixed button
-        setIsFullComponentVisible(entry.intersectionRatio > 0.2)
-      },
-      {
-        threshold: [0, 0.2, 0.5, 1.0], // Multiple thresholds for smoother detection
-        rootMargin: '-100px 0px 0px 0px', // Adjust this to control when fade starts
-      }
-    )
-
-    if (fullComponentRef.current) {
-      observer.observe(fullComponentRef.current)
-    }
-
-    return () => {
-      if (fullComponentRef.current) {
-        observer.unobserve(fullComponentRef.current)
-      }
-    }
-  }, [])
-
   return (
     <>
       {/* Mission Metadata Modal */}
@@ -656,6 +791,19 @@ export default function MissionProfile({
           selectedChain={selectedChain}
           setEnabled={setMissionMetadataModalEnabled}
           jbControllerContract={jbControllerContract}
+        />
+      )}
+
+      {/* Deploy Token Modal */}
+      {deployTokenModalEnabled && (
+        <MissionDeployTokenModal
+          setEnabled={setDeployTokenModalEnabled}
+          isTeamSigner={isManager}
+          queueSafeTx={() => {}}
+          mission={mission}
+          chainSlug={chainSlug}
+          teamMutlisigAddress=""
+          lastSafeTxExecuted={false}
         />
       )}
 
@@ -681,6 +829,8 @@ export default function MissionProfile({
         totalFunding={totalFunding}
         isLoadingTotalFunding={isLoadingTotalFunding}
         setMissionMetadataModalEnabled={setMissionMetadataModalEnabled}
+        setDeployTokenModalEnabled={setDeployTokenModalEnabled}
+        token={token}
         contributeButton={
           <MissionPayRedeem
             mission={mission}
@@ -695,8 +845,11 @@ export default function MissionProfile({
             backers={backers}
             refreshTotalFunding={refreshTotalFunding}
             ruleset={ruleset}
-            modalEnabled={payModalEnabled}
-            setModalEnabled={handlePayModalChange}
+            onOpenModal={() => {
+              setContributeModalEnabled(true)
+            }}
+            usdInput={usdInput || ''}
+            setUsdInput={setUsdInput}
             onlyButton
             visibleButton={windowWidth > 0 && windowWidth > 768}
             buttonClassName="max-h-1/2 w-full  rounded-full text-sm flex justify-center items-center"
@@ -745,13 +898,16 @@ export default function MissionProfile({
                 backers={backers}
                 refreshTotalFunding={refreshTotalFunding}
                 ruleset={ruleset}
-                modalEnabled={payModalEnabled}
-                setModalEnabled={handlePayModalChange}
+                onOpenModal={() => {
+                  setContributeModalEnabled(true)
+                }}
+                usdInput={usdInput || ''}
+                setUsdInput={setUsdInput}
                 onlyButton
                 visibleButton={
                   windowWidth > 0 &&
                   windowWidth < 768 &&
-                  !isFullComponentVisible
+                  !isPayRedeemContainerVisible
                 }
                 buttonMode="fixed"
               />
@@ -762,7 +918,7 @@ export default function MissionProfile({
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
           >
             <div
-              ref={fullComponentRef} // Add ref to the full component container
+              ref={payRedeemContainerRef} // Add ref to the full component container
               className="flex z-20 xl:hidden w-full px-[5vw]"
             >
               {primaryTerminalAddress &&
@@ -785,8 +941,11 @@ export default function MissionProfile({
                     backers={backers}
                     refreshTotalFunding={refreshTotalFunding}
                     ruleset={ruleset}
-                    modalEnabled={payModalEnabled}
-                    setModalEnabled={handlePayModalChange}
+                    onOpenModal={() => {
+                      setContributeModalEnabled(true)
+                    }}
+                    usdInput={usdInput || ''}
+                    setUsdInput={setUsdInput}
                   />
                 </div>
               ) : (
@@ -820,8 +979,9 @@ export default function MissionProfile({
                   refreshStage={refreshStage}
                   refreshTotalFunding={refreshTotalFunding}
                   deadline={deadline}
-                  modalEnabled={payModalEnabled}
-                  setModalEnabled={handlePayModalChange}
+                  setContributeModalEnabled={setContributeModalEnabled}
+                  usdInput={usdInput || ''}
+                  setUsdInput={setUsdInput}
                 />
               </div>
             </div>
@@ -917,6 +1077,23 @@ export default function MissionProfile({
           </div>
         </ContentLayout>
       </Container>
+
+      {/* Single modal instance for all contribute buttons */}
+      <MissionContributeModal
+        mission={mission}
+        token={token}
+        modalEnabled={contributeModalEnabled}
+        setModalEnabled={setContributeModalEnabled}
+        primaryTerminalAddress={primaryTerminalAddress}
+        onrampJWTPayload={onrampJWTPayload}
+        jbControllerContract={jbControllerContract}
+        refreshBackers={refreshBackers}
+        backers={backers}
+        refreshTotalFunding={refreshTotalFunding}
+        ruleset={ruleset}
+        usdInput={usdInput || ''}
+        setUsdInput={setUsdInput}
+      />
     </>
   )
 }

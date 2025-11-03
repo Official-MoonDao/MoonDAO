@@ -127,7 +127,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
   const { data: votes } = useVotesOfAddress(nft?.owner)
 
   // Balances
-  const nativeBalance = useNativeBalance()
+  const { nativeBalance } = useNativeBalance()
 
   const MOONEYBalance = useTotalMooneyBalance(isGuest ? address : nft?.owner)
 

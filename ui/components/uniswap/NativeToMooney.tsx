@@ -18,7 +18,7 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 export default function NativeToMooney({ selectedChain }: any) {
   const chainSlug = getChainSlug(selectedChain)
 
-  const nativeBalance = useNativeBalance()
+  const { nativeBalance } = useNativeBalance()
 
   const account = useActiveAccount()
   const address = account?.address

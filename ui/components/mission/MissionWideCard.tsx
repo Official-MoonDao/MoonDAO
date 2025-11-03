@@ -11,7 +11,6 @@ import StandardButton from '../layout/StandardButton'
 import StandardWideCard from '../layout/StandardWideCard'
 import { Mission } from './MissionCard'
 import MissionFundingProgressBar from './MissionFundingProgressBar'
-import MissionPayRedeem from './MissionPayRedeem'
 import MissionStat from './MissionStat'
 
 export type MissionWideCardProps = {
@@ -98,21 +97,11 @@ export default function MissionWideCard({
 
   return (
     <>
-      {ruleset && contribute && payModalEnabled && primaryTerminalAddress && (
+      {ruleset && contribute && primaryTerminalAddress && (
         <div id="pay-modal">
-          <MissionPayRedeem
-            stage={stage}
-            mission={mission}
-            token={token}
-            teamNFT={teamNFT}
-            deadline={deadline || 0}
-            backers={backers}
-            onlyModal
-            modalEnabled={payModalEnabled}
-            setModalEnabled={setPayModalEnabled}
-            primaryTerminalAddress={primaryTerminalAddress}
-            ruleset={ruleset}
-          />
+          <StandardButton link={`/mission/${mission.id}`}>
+            Contribute
+          </StandardButton>
         </div>
       )}
       <StandardWideCard

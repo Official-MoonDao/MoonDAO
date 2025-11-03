@@ -1,7 +1,7 @@
 import { generateOnRampURL } from '@coinbase/cbpay-js'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid'
 import { DEPLOYED_ORIGIN } from 'const/config'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { arbitrum } from '@/lib/rpc/chains'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -13,7 +13,8 @@ interface CBOnrampProps {
   redirectUrl?: string
   onSuccess?: () => void
   onExit?: () => void
-  onBeforeNavigate?: () => void
+  onBeforeNavigate?: () => Promise<void>
+  isWaitingForGasEstimate?: boolean
   onQuoteCalculated?: (
     ethAmount: number,
     paymentSubtotal: number,
@@ -21,6 +22,8 @@ interface CBOnrampProps {
     totalFees: number
   ) => void
 }
+
+const GUEST_CHECKOUT_LIMIT = 500
 
 export const CBOnramp: React.FC<CBOnrampProps> = ({
   address,
@@ -30,12 +33,14 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   onSuccess,
   onExit,
   onBeforeNavigate,
+  isWaitingForGasEstimate = false,
   onQuoteCalculated,
 }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingQuote, setIsLoadingQuote] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showLimits, setShowLimits] = useState(false)
+  const [hasShownLimitsForExcess, setHasShownLimitsForExcess] = useState(false)
   const [quoteData, setQuoteData] = useState<{
     ethAmount: number
     purchaseAmount: number
@@ -44,6 +49,12 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     onrampUrl?: string
     quoteId?: string | null
   } | null>(null)
+  const [debouncedEthAmount, setDebouncedEthAmount] = useState(ethAmount)
+
+  // Guest checkout limit
+  const exceedsGuestLimit = quoteData?.purchaseAmount
+    ? quoteData.purchaseAmount > GUEST_CHECKOUT_LIMIT
+    : false
 
   // Check if current chain is Arbitrum
   const isArbitrum = useMemo(
@@ -54,11 +65,34 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     [selectedChain]
   )
 
+  // Debounce ethAmount
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedEthAmount(ethAmount)
+    }, 800) // Wait 800ms after user stops typing
+
+    return () => clearTimeout(timeoutId)
+  }, [ethAmount])
+
+  // Auto-expand limits section when amount exceeds guest limit
+  useEffect(() => {
+    if (exceedsGuestLimit && !hasShownLimitsForExcess) {
+      setShowLimits(true)
+      setHasShownLimitsForExcess(true)
+    }
+  }, [exceedsGuestLimit, hasShownLimitsForExcess])
+
   // Fetch quote on component load and calculate fees
   useEffect(() => {
     const fetchQuote = async () => {
-      if (!address || !ethAmount || ethAmount <= 0) {
+      if (!address || !debouncedEthAmount || debouncedEthAmount <= 0) {
         setIsLoadingQuote(false)
+        return
+      }
+
+      // Wait for gas estimation to complete before fetching quote
+      if (isWaitingForGasEstimate) {
+        setIsLoadingQuote(true) // Keep showing loading state while waiting
         return
       }
 
@@ -83,7 +117,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
         // Coinbase's actual rate includes spread (~3-5% above spot)
         // Add 4% buffer to account for spread and get closer on first attempt
         const { channelId } = await generateSessionToken()
-        const initialEstimateUSD = ethAmount * spotPrice * 1.05
+        const initialEstimateUSD = debouncedEthAmount * spotPrice * 1.05
 
         let currentResponse = await fetch('/api/coinbase/buy-quote', {
           method: 'POST',
@@ -141,10 +175,13 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
         let attempts = 0
         const maxAttempts = 3
 
-        while (receivedEthAmount < ethAmount && attempts < maxAttempts) {
+        while (
+          receivedEthAmount < debouncedEthAmount &&
+          attempts < maxAttempts
+        ) {
           attempts++
 
-          const ethShortfall = ethAmount - receivedEthAmount
+          const ethShortfall = debouncedEthAmount - receivedEthAmount
           const effectiveRateTotal = paymentTotal / receivedEthAmount // USD (total) per ETH
           const additionalUsdTotal = ethShortfall * effectiveRateTotal
 
@@ -238,7 +275,15 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     }
 
     fetchQuote()
-  }, [address, ethAmount, selectedChain, isArbitrum, onQuoteCalculated])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    address,
+    debouncedEthAmount,
+    selectedChain,
+    isArbitrum,
+    isWaitingForGasEstimate,
+    onQuoteCalculated,
+  ])
 
   // Map chain to network name for Coinbase QUOTE API
   // Quote API only supports: ethereum, base, polygon
@@ -292,7 +337,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       case 'ethereum':
       case 'mainnet':
       case 'sepolia':
-        return 'ethereum'
+        return 'arbitrum'
       default:
         // Handle by chain ID
         switch (chainId) {
@@ -316,7 +361,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   }
 
   // Generate session token for secure init mode
-  const generateSessionToken = async () => {
+  const generateSessionToken = useCallback(async () => {
     try {
       const networkName = getOnrampNetworkName(selectedChain)
 
@@ -350,7 +395,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     } catch (error: any) {
       throw error
     }
-  }
+  }, [address, selectedChain])
 
   const handleOpenOnramp = async () => {
     if (!address) {
@@ -397,7 +442,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
 
       const url = generateOnRampURL(widgetParams)
 
-      onBeforeNavigate?.()
+      await onBeforeNavigate?.()
       window.location.href = url
     } catch (error: any) {
       setError('Failed to initialize payment system: ' + error.message)
@@ -457,9 +502,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           </div>
           <div>
             <h2 className="text-lg font-semibold text-white">Fund</h2>
-            <p className="text-gray-300 text-xs">
-              {selectedChain?.name || 'Ethereum'}
-            </p>
           </div>
         </div>
       </div>
@@ -472,7 +514,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           </h4>
           <div className="bg-black/20 rounded-lg p-4 border border-white/5 space-y-3">
             {isLoadingQuote ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex items-center justify-center">
                 <LoadingSpinner />
                 <span className="ml-2 text-gray-400 text-sm">
                   Getting quote...
@@ -486,24 +528,46 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
                     slightly.
                   </div>
                 )}
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 text-sm">Network:</span>
+                  <span className="text-white font-medium">
+                    {selectedChain?.name || 'Ethereum'}
+                  </span>
+                </div>
               </>
             ) : (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400 text-sm">ETH Amount:</span>
-                <span className="text-white font-medium">
-                  {ethAmount.toFixed(6)} ETH
-                </span>
-              </div>
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 text-sm">Network:</span>
+                  <span className="text-white font-medium">
+                    {selectedChain?.name || 'Ethereum'}
+                  </span>
+                </div>
+              </>
             )}
-
-            <div className="flex items-center justify-between">
-              <span className="text-gray-400 text-sm">Network:</span>
-              <span className="text-white font-medium">
-                {selectedChain?.name || 'Ethereum'}
-              </span>
-            </div>
           </div>
         </div>
+
+        {/* Guest limit warning */}
+        {exceedsGuestLimit && (
+          <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-6 h-6 bg-orange-500/20 rounded-full flex items-center justify-center mt-0.5">
+                <span className="text-orange-400 text-sm">⚠️</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-orange-300 font-semibold text-sm mb-1">
+                  Coinbase Account Required
+                </p>
+                <p className="text-orange-200/90 text-xs leading-relaxed">
+                  This purchase (${quoteData?.purchaseAmount.toFixed(2)})
+                  exceeds the $500 guest checkout limit. You'll need to sign in
+                  with a Coinbase account to complete this purchase.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Purchase button */}
         <PrivyWeb3Button
@@ -513,7 +577,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
               : isLoadingQuote
               ? 'Getting quote...'
               : quoteData?.purchaseAmount
-              ? `Buy ${quoteData.ethAmount} ETH with Coinbase`
+              ? `Buy ${quoteData.ethAmount.toFixed(4)} ETH with Coinbase`
               : `Buy ETH with Coinbase`
           }
           showSignInLabel={false}
@@ -532,53 +596,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             </span>
           </div>
         )}
-
-        {/* Purchase Limits Info */}
-        <div className="bg-black/10 rounded-lg border border-white/5">
-          <button
-            type="button"
-            onClick={() => setShowLimits(!showLimits)}
-            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors rounded-lg"
-          >
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-              Purchase Limits
-            </span>
-            {showLimits ? (
-              <ChevronUpIcon className="w-4 h-4 text-gray-400" />
-            ) : (
-              <ChevronDownIcon className="w-4 h-4 text-gray-400" />
-            )}
-          </button>
-          {showLimits && (
-            <div className="mt-2 px-3 pb-3 space-y-2 text-xs text-gray-300">
-              <div className="flex items-start space-x-2">
-                <span className="text-gray-500 mt-0.5">•</span>
-                <p>
-                  <span className="text-white font-medium">Minimum:</span> $2
-                </p>
-              </div>
-              <div className="flex items-start space-x-2">
-                <span className="text-gray-500 mt-0.5">•</span>
-                <p>
-                  <span className="text-white font-medium">
-                    Guest checkout:
-                  </span>{' '}
-                  $500/week
-                </p>
-              </div>
-              <div className="flex items-start space-x-2">
-                <span className="text-gray-500 mt-0.5">•</span>
-                <p>
-                  <span className="text-white font-medium">
-                    Coinbase account:
-                  </span>{' '}
-                  Up to $25k/day for verified U.S. accounts (varies by
-                  verification level & payment method)
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Additional info */}
         <div className="bg-black/10 rounded-lg p-4 border border-white/5">
