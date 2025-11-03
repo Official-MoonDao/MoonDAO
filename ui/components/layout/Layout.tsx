@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/next'
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES } from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
@@ -7,7 +8,6 @@ import React from 'react'
 import { useState } from 'react'
 import { useContext } from 'react'
 import { Toaster } from 'react-hot-toast'
-import { Analytics } from "@vercel/analytics/next"
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useNavigation from '@/lib/navigation/useNavigation'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -61,7 +61,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     router.pathname === '/faq' ||
     router.pathname === '/constitution' ||
     router.pathname === '/news' ||
-    router.pathname === '/mission/[tokenId]' || 
+    router.pathname === '/mission/[tokenId]' ||
     router.pathname === '/dude-perfect' ||
     router.pathname === '/network' ||
     router.pathname === '/network-overview' ||
@@ -73,6 +73,12 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     router.pathname === '/bridge'
 
   const isHomepage = router.pathname === '/'
+
+  const noLayout = router.pathname === '/451'
+
+  if (noLayout) {
+    return <div>{children}</div>
+  }
 
   // Use top nav for all pages now
   const layout = (
@@ -113,8 +119,16 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         </div>
 
         {/* Main Content - Full width with top nav */}
-        <main className={`pt-16 pb-20 w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'flex justify-center'}`}>
-          <div className={`w-full min-h-screen ${isFullscreen || isHomepage ? '' : 'max-w-7xl px-4 sm:px-6 lg:px-8'}`}>
+        <main
+          className={`pt-16 pb-20 w-full min-h-screen ${
+            isFullscreen || isHomepage ? '' : 'flex justify-center'
+          }`}
+        >
+          <div
+            className={`w-full min-h-screen ${
+              isFullscreen || isHomepage ? '' : 'max-w-7xl px-4 sm:px-6 lg:px-8'
+            }`}
+          >
             {children}
           </div>
         </main>
