@@ -7,10 +7,10 @@ export default function MissionBanner() {
   const router = useRouter()
   const [isVisible, setIsVisible] = useState(true)
 
-  // Hide banner if user is on the featured mission page
-  const isOnFeaturedMissionPage = router.pathname === '/mission/[tokenId]' && router.query.tokenId === FEATURED_MISSION.id
+  // Hide banner if user is on any mission page
+  const isOnMissionPage = router.pathname === '/mission/[tokenId]'
 
-  if (!isVisible || isOnFeaturedMissionPage) {
+  if (!isVisible || isOnMissionPage) {
     return null
   }
 
@@ -20,7 +20,7 @@ export default function MissionBanner() {
         {/* Close button */}
         <button
           onClick={() => setIsVisible(false)}
-          className="absolute left-4 z-10 hover:bg-white/10 rounded p-1.5 transition-colors group"
+          className="absolute left-2 sm:left-4 z-10 hover:bg-white/10 rounded p-1 sm:p-1.5 transition-colors group"
           aria-label="Close banner"
         >
           <svg
@@ -38,7 +38,7 @@ export default function MissionBanner() {
         </button>
 
         {/* Scrolling text container with fade effects */}
-        <div className="flex-1 ml-12 mr-2 relative min-w-0">
+        <div className="flex-1 ml-8 sm:ml-12 mr-2 relative min-w-0">
           {/* Left fade overlay */}
           <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-900 to-transparent z-10 pointer-events-none"></div>
           
@@ -47,18 +47,18 @@ export default function MissionBanner() {
           
           <div className="marquee-container overflow-hidden">
             <div className="marquee-content">
-              <span className="inline-flex items-center gap-3 whitespace-nowrap px-8">
-                <span className="text-sm font-medium text-slate-300">Featured Mission:</span>
-                <span className="text-base font-semibold">{FEATURED_MISSION.name}</span>
-                <span className="mx-2">•</span>
-                <span className="text-sm text-slate-400">{FEATURED_MISSION.description}</span>
+              <span className="inline-flex items-center gap-2 sm:gap-3 whitespace-nowrap px-6 sm:px-8">
+                <span className="text-xs sm:text-sm font-medium text-slate-300">Featured Mission:</span>
+                <span className="text-sm sm:text-base font-semibold">{FEATURED_MISSION.name}</span>
+                <span className="mx-1 sm:mx-2">•</span>
+                <span className="text-xs sm:text-sm text-slate-400">{FEATURED_MISSION.description}</span>
               </span>
               {/* Duplicate for seamless loop */}
-              <span className="inline-flex items-center gap-3 whitespace-nowrap px-8">
-                <span className="text-sm font-medium text-slate-300">Featured Mission:</span>
-                <span className="text-base font-semibold">{FEATURED_MISSION.name}</span>
-                <span className="mx-2">•</span>
-                <span className="text-sm text-slate-400">{FEATURED_MISSION.description}</span>
+              <span className="inline-flex items-center gap-2 sm:gap-3 whitespace-nowrap px-6 sm:px-8">
+                <span className="text-xs sm:text-sm font-medium text-slate-300">Featured Mission:</span>
+                <span className="text-sm sm:text-base font-semibold">{FEATURED_MISSION.name}</span>
+                <span className="mx-1 sm:mx-2">•</span>
+                <span className="text-xs sm:text-sm text-slate-400">{FEATURED_MISSION.description}</span>
               </span>
             </div>
           </div>
@@ -71,10 +71,9 @@ export default function MissionBanner() {
             className="inline-flex items-center px-3 sm:px-5 py-2 bg-white text-slate-900 font-semibold text-xs sm:text-sm rounded-md hover:bg-slate-100 transition-all duration-200 shadow-sm whitespace-nowrap"
           >
             <span className="hidden sm:inline">Support Mission</span>
-            <span className="sm:hidden">Support</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 ml-1 sm:ml-1.5"
+              className="h-4 w-4 sm:ml-1.5"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -96,7 +95,13 @@ export default function MissionBanner() {
 
         .marquee-content {
           display: inline-flex;
-          animation: marquee 90s linear infinite;
+          animation: marquee 60s linear infinite;
+        }
+
+        @media (max-width: 640px) {
+          .marquee-content {
+            animation: marquee 40s linear infinite;
+          }
         }
 
         @keyframes marquee {
