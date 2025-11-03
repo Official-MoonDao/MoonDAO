@@ -90,10 +90,10 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
               </div>
             </div>
 
-            {proposalPacket.voteURL && votes && (
+            {proposalPacket.voteURL && votes && votes?.proposal && (
               <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] flex flex-col h-fit">
                 {/* Show voting results if proposal voting is closed */}
-                {votes.proposal.state === 'closed' ? (
+                {votes.proposal?.state === 'closed' ? (
                   <VotingResults
                     votingInfo={votes.proposal}
                     votesData={votes}
