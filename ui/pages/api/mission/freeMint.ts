@@ -1,4 +1,3 @@
-import { ThirdwebSDK } from '@thirdweb-dev/sdk'
 import CitizenABI from 'const/abis/Citizen.json'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
 import {
@@ -10,8 +9,15 @@ import {
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getContract, readContract } from 'thirdweb'
+import {
+  readContract,
+  prepareContractCall,
+  sendAndConfirmTransaction,
+  sendTransaction,
+  getContract,
+} from 'thirdweb'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
+import { createHSMWallet } from '@/lib/google/hsm-signer'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 
@@ -19,9 +25,6 @@ import { serverClient } from '@/lib/thirdweb/client'
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
 const privateKey = process.env.XP_ORACLE_SIGNER_PK
-const sdk = ThirdwebSDK.fromPrivateKey(privateKey || '', chainSlug, {
-  secretKey: '',
-})
 const subgraphClient = createClient({
   url: MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL,
   exchanges: [fetchExchange, cacheExchange],
@@ -32,18 +35,14 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   if (!address || !name || !image || !privacy || !formId) {
     return res.status(400).json({ error: 'Mint params not found!' })
   }
-  const citizenContract = await sdk.getContract(
-    CITIZEN_ADDRESSES[chainSlug],
-    CitizenABI
-  )
-  const citizenReadContract = getContract({
+  const citizenContract = getContract({
     client: serverClient,
     address: CITIZEN_ADDRESSES[chainSlug],
     abi: CitizenABI as any,
     chain: chain,
   })
   const balance: any = await readContract({
-    contract: citizenReadContract,
+    contract: citizenContract,
     method: 'balanceOf' as string,
     params: [address],
   })
@@ -83,15 +82,27 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     })
   }
   const cost: any = await readContract({
-    contract: citizenReadContract,
+    contract: citizenContract,
     method: 'getRenewalPrice' as string,
     params: [address, 365 * 24 * 60 * 60],
   })
-  const { receipt } = await citizenContract.call(
-    'mintTo',
-    [address, name, '', image, '', '', '', '', privacy, formId],
-    { value: cost }
-  )
-  res.status(200).json(receipt)
+  const account = await createHSMWallet()
+  const transaction = prepareContractCall({
+    contract: citizenContract,
+    method: 'mintTo' as string,
+    params: [address, name, '', image, '', '', '', '', privacy, formId],
+    value: cost,
+  })
+  const receipt = await sendAndConfirmTransaction({
+    transaction,
+    account,
+  })
+  const jsonReceipt = JSON.stringify(receipt, (key, value) => {
+    if (typeof value === 'bigint') {
+      return value.toString()
+    }
+    return value
+  })
+  res.status(200).json(JSON.parse(jsonReceipt))
 }
 export default withMiddleware(POST, rateLimit)
