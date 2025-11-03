@@ -437,9 +437,16 @@ export default function MissionProfile({
       return console.error('No wallets or accounts found')
     }
 
+    // If already processed, just ensure modal is open if needed
     if (hasProcessedOnrampRef.current) {
-      return console.error('Already processed onramp')
+      if (onrampJWTPayload && !contributeModalEnabled) {
+        setContributeModalEnabled(true)
+      }
+      return
     }
+
+    // Mark as processed first to prevent race conditions
+    hasProcessedOnrampRef.current = true
 
     // Check and verify stored JWT (this will also open modal if valid)
     await checkAndVerifyStoredJWT()
@@ -449,6 +456,8 @@ export default function MissionProfile({
     wallets,
     account?.address,
     checkAndVerifyStoredJWT,
+    contributeModalEnabled,
+    onrampJWTPayload,
   ])
 
   // Check for stored JWT when component mounts or when account/chain changes

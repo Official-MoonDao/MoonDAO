@@ -167,6 +167,12 @@ export default function MissionContributeModal({
   const [transactionRejected, setTransactionRejected] = useState(false)
   const hasTriggeredTransaction = useRef(false)
 
+  useEffect(() => {
+    if (onrampJWTPayload && typeof onrampJWTPayload.agreed === 'boolean') {
+      setAgreedToCondition(onrampJWTPayload.agreed)
+    }
+  }, [onrampJWTPayload])
+
   const primaryTerminalContract = useContract({
     address: primaryTerminalAddress,
     chain: DEFAULT_CHAIN_V5,
@@ -287,7 +293,7 @@ export default function MissionContributeModal({
         return
       }
     },
-    [setInput, formatInputWithCommas]
+    [setInput, formatInputWithCommas, setUsdInput]
   )
 
   // Calculate gas cost in ETH and USD
@@ -966,6 +972,7 @@ export default function MissionContributeModal({
     backers,
     isCitizen,
     router,
+    setUsdInput,
   ])
 
   // Calculate quote when input changes
@@ -1056,6 +1063,9 @@ export default function MissionContributeModal({
           }
 
           if (isPostOnramp || modalEnabled) {
+            if (typeof payload.agreed === 'boolean') {
+              setAgreedToCondition(payload.agreed)
+            }
             setIsAutoTriggering(true)
           }
         } catch (error: any) {
@@ -1093,6 +1103,25 @@ export default function MissionContributeModal({
       const timeoutId = setTimeout(() => {
         refetchNativeBalance()
       }, 2000)
+
+      // In dev mode, also refresh more aggressively to catch balance updates
+      if (process.env.NEXT_PUBLIC_ENV === 'dev') {
+        const devRefreshInterval = setInterval(() => {
+          refetchNativeBalance()
+        }, 1000)
+
+        // Stop refreshing after 10 seconds in dev mode
+        const devTimeout = setTimeout(() => {
+          clearInterval(devRefreshInterval)
+        }, 10000)
+
+        return () => {
+          clearTimeout(timeoutId)
+          clearInterval(devRefreshInterval)
+          clearTimeout(devTimeout)
+        }
+      }
+
       return () => clearTimeout(timeoutId)
     }
   }, [router?.query?.onrampSuccess, account, address, refetchNativeBalance])
@@ -1130,8 +1159,7 @@ export default function MissionContributeModal({
     }
 
     // Don't show auto-triggering UI if user doesn't have enough balance
-    // They should see the full UI with onramp option instead
-    if (!hasEnoughBalance) {
+    if (!hasEnoughBalance && process.env.NEXT_PUBLIC_ENV !== 'dev') {
       setIsAutoTriggering(false)
       return
     }
@@ -1183,17 +1211,20 @@ export default function MissionContributeModal({
       return
     }
 
-    if (
+    // In dev mode, proceed even if balance check fails or gas estimate is loading
+    const isDevMode = process.env.NEXT_PUBLIC_ENV === 'dev'
+    const shouldProceed =
       isPostOnramp &&
       modalEnabled &&
-      hasEnoughBalance &&
-      !isLoadingGasEstimate &&
+      (hasEnoughBalance || isDevMode) &&
+      (!isLoadingGasEstimate || isDevMode) &&
       agreedToCondition &&
       usdInput &&
       parseFloat(usdInput.replace(/,/g, '')) > 0 &&
       output > 0 &&
       account
-    ) {
+
+    if (shouldProceed) {
       hasTriggeredTransaction.current = true
 
       const timeoutId = setTimeout(() => {
@@ -1251,12 +1282,12 @@ export default function MissionContributeModal({
     router?.query?.referrer,
     router?.isReady,
     account,
-    clearOnrampJWT,
     address,
     chainSlug,
-    router,
     onrampJWTPayload,
     mission?.id,
+    clearOnrampJWT,
+    router,
   ])
 
   // Callback to receive quote data from CBOnramp
@@ -1397,7 +1428,9 @@ export default function MissionContributeModal({
                     ? jwtVerificationError
                     : !hasEnoughBalance
                     ? router?.query?.onrampSuccess === 'true'
-                      ? 'Refreshing balance after purchase...'
+                      ? process.env.NEXT_PUBLIC_ENV === 'dev'
+                        ? 'Proceeding with transaction in dev mode...'
+                        : 'Refreshing balance after purchase...'
                       : 'Verifying your balance...'
                     : isLoadingGasEstimate
                     ? 'Calculating gas fees...'
