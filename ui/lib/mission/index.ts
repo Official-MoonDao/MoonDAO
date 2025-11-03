@@ -119,3 +119,19 @@ export async function getBackers(projectId: any, missionId?: any) {
     throw new Error('Failed to fetch subgraph data')
   }
 }
+
+export function formatContributionOutput(output: number) {
+  if (!Number.isFinite(output) || output <= 0) return 0
+
+  if (output >= 1) {
+    return Math.floor(output).toLocaleString()
+  }
+  if (output < 0.01) {
+    return (Math.floor(output * 1000) / 1000).toFixed(3).toString()
+  }
+  if (output < 0.1) {
+    return (Math.floor(output * 100) / 100).toFixed(2).toString()
+  }
+
+  return (Math.floor(output * 10) / 10).toFixed(1).toString()
+}
