@@ -1,3 +1,4 @@
+import confetti from 'canvas-confetti'
 import ERC20 from 'const/abis/ERC20.json'
 import VMooneyFaucetAbi from 'const/abis/VMooneyFaucet.json'
 import VotingEscrow from 'const/abis/VotingEscrow.json'
@@ -14,7 +15,6 @@ import { useContext, useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import confetti from 'canvas-confetti'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -73,7 +73,8 @@ export default function useRetroactiveRewards(): UseRetroactiveRewardsReturn {
     chain: selectedChain,
   })
 
-  const { withdrawAmount: withdrawable, refresh: refreshWithdrawAmount } = useWithdrawAmount(votingEscrowDepositorContract, address)
+  const { withdrawAmount: withdrawable, refresh: refreshWithdrawAmount } =
+    useWithdrawAmount(votingEscrowDepositorContract, address)
 
   const { data: VMOONEYLock, isLoading: VMOONEYLockLoading } = useRead({
     contract: vMooneyContract,
@@ -123,14 +124,20 @@ export default function useRetroactiveRewards(): UseRetroactiveRewardsReturn {
       toast.error('Please connect your wallet.', { style: toastStyle })
       return
     }
+
+    let requiresDurationExtension = !hasMoreThan36Months
+
     try {
       const millisecondsPerSecond = 1000
       const fourYearsOut = BigNumber.from(
         +dateOut(new Date(), { days: 1461 })
       ).div(millisecondsPerSecond)
 
-      if (Number(vMooneyBalance) === 0) {
-        if (Number(mooneyBalance) === 0) {
+      const currentVMooneyBalance = BigNumber.from(vMooneyBalance ?? 0)
+      const currentMooneyBalance = BigNumber.from(mooneyBalance ?? 0)
+
+      if (currentVMooneyBalance.eq(0)) {
+        if (currentMooneyBalance.eq(0)) {
           const dripTx = prepareContractCall({
             contract: vMooneyFaucetContract,
             method: 'drip' as string,
@@ -140,7 +147,7 @@ export default function useRetroactiveRewards(): UseRetroactiveRewardsReturn {
         }
 
         const initialLockAmount = utils.parseUnits('1', MOONEY_DECIMALS)
-        const currentAllowance = BigNumber.from(mooneyAllowance || 0)
+        const currentAllowance = BigNumber.from(mooneyAllowance ?? 0)
         if (currentAllowance.lt(initialLockAmount)) {
           await approveToken({
             account,
@@ -156,19 +163,47 @@ export default function useRetroactiveRewards(): UseRetroactiveRewardsReturn {
           amount: initialLockAmount,
           time: fourYearsOut,
         })
+
+        requiresDurationExtension = false
       }
 
-      if (!hasMoreThan36Months) {
-        await increaseLock({
-          account,
-          votingEscrowContract: vMooneyContract,
-          currentTime: VMOONEYLock && VMOONEYLock[1],
-          newAmount: utils.parseUnits('0', MOONEY_DECIMALS),
-          newTime: fourYearsOut,
-        })
+      let lockData = VMOONEYLock
+
+      if (
+        requiresDurationExtension &&
+        !lockData &&
+        vMooneyContract &&
+        address
+      ) {
+        try {
+          lockData = await vMooneyContract.call('locked', [address])
+        } catch (lockFetchError) {
+          console.error(
+            'Failed to fetch lock data before extending',
+            lockFetchError
+          )
+        }
       }
 
-      const mooneyAllowanceBigNum = BigNumber.from(mooneyAllowance)
+      const currentLockEnd = lockData?.[1]
+
+      if (requiresDurationExtension && currentLockEnd) {
+        const currentLockEndBigNumber = BigNumber.from(currentLockEnd)
+
+        if (fourYearsOut.gt(currentLockEndBigNumber)) {
+          await increaseLock({
+            account,
+            votingEscrowContract: vMooneyContract,
+            currentTime: currentLockEndBigNumber,
+            newAmount: utils.parseUnits('0', MOONEY_DECIMALS),
+            newTime: fourYearsOut,
+          })
+        }
+
+        requiresDurationExtension = false
+      }
+
+      const mooneyAllowanceBigNum = BigNumber.from(mooneyAllowance ?? 0)
       const withdrawableBigNum = BigNumber.from(withdrawable.toString())
 
       if (mooneyAllowanceLoading) {
@@ -207,7 +242,7 @@ export default function useRetroactiveRewards(): UseRetroactiveRewardsReturn {
         toast.success('Withdrawal successful!', {
           style: toastStyle,
         })
-        
+
         // Trigger confetti animation
         confetti({
           particleCount: 150,
@@ -216,13 +251,13 @@ export default function useRetroactiveRewards(): UseRetroactiveRewardsReturn {
           shapes: ['circle', 'star'],
           colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
         })
-        
+
         // Refresh the withdrawable amount
         await refreshWithdrawAmount()
       }
     } catch (error: any) {
       console.error(error)
-      if (!hasMoreThan36Months) {
+      if (requiresDurationExtension) {
         toast.error(
           'Failed to extend your lock. Please ensure your lock duration is at least 3 years.',
           {
@@ -250,6 +285,7 @@ export default function useRetroactiveRewards(): UseRetroactiveRewardsReturn {
     vMooneyContract,
     votingEscrowDepositorContract,
     chainSlug,
+    address,
   ])
 
   return {
