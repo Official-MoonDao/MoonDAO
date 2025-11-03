@@ -22,6 +22,7 @@ import { TransactionReceipt } from 'thirdweb/dist/types/transaction/types'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { formatContributionOutput } from '@/lib/mission'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
@@ -160,7 +161,7 @@ function MissionPayRedeemContent({
                           id="token-output"
                           className="w-full bg-transparent border-none outline-none text-lg font-bold text-white text-right w-16 placeholder-gray-500 focus:placeholder-gray-400 transition-colors duration-200"
                         >
-                          {formatTokenAmount(output, 2)}
+                          {formatContributionOutput(output)}
                         </p>
                       </div>
                     </div>

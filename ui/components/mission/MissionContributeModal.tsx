@@ -45,6 +45,7 @@ import { useCitizen } from '@/lib/citizen/useCitizen'
 import useOnrampJWT, { OnrampJwtPayload } from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { formatContributionOutput } from '@/lib/mission'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import {
   arbitrum,
@@ -166,6 +167,9 @@ export default function MissionContributeModal({
   >(null)
   const [transactionRejected, setTransactionRejected] = useState(false)
   const hasTriggeredTransaction = useRef(false)
+  const balanceFallbackTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null)
 
   useEffect(() => {
     if (onrampJWTPayload && typeof onrampJWTPayload.agreed === 'boolean') {
@@ -1128,21 +1132,35 @@ export default function MissionContributeModal({
 
   // Sync isAutoTriggering with verified JWT payload and balance status
   useEffect(() => {
+    const clearBalanceFallbackTimeout = () => {
+      if (balanceFallbackTimeoutRef.current) {
+        clearTimeout(balanceFallbackTimeoutRef.current)
+        balanceFallbackTimeoutRef.current = null
+      }
+    }
+
     if (!onrampJWTPayload) {
       const storedJWT = getStoredJWT()
       const isPostOnramp = router?.query?.onrampSuccess === 'true'
+
       if (storedJWT && (isPostOnramp || isVerifyingJWT)) {
         // Keep auto-triggering on while verifying
-        return
+        return () => {
+          clearBalanceFallbackTimeout()
+        }
       }
-      // No stored JWT and no payload - turn off auto-triggering
+
+      clearBalanceFallbackTimeout()
+
       if (!storedJWT && !isPostOnramp) {
         setIsAutoTriggering(false)
       }
-      return
+
+      return () => {
+        clearBalanceFallbackTimeout()
+      }
     }
 
-    // We have a verified payload - validate it matches context
     if (
       !onrampJWTPayload.address ||
       !onrampJWTPayload.chainSlug ||
@@ -1152,21 +1170,40 @@ export default function MissionContributeModal({
       onrampJWTPayload.chainSlug !== chainSlug ||
       onrampJWTPayload.missionId !== mission?.id?.toString()
     ) {
+      clearBalanceFallbackTimeout()
       const errorMsg = 'Onramp session does not match current wallet or mission'
       setJwtVerificationError(errorMsg)
       setIsAutoTriggering(false)
-      return
+      return () => {
+        clearBalanceFallbackTimeout()
+      }
     }
 
-    // Don't show auto-triggering UI if user doesn't have enough balance
     if (!hasEnoughBalance && process.env.NEXT_PUBLIC_ENV !== 'dev') {
-      setIsAutoTriggering(false)
-      return
+      if (router?.query?.onrampSuccess === 'true') {
+        if (!balanceFallbackTimeoutRef.current) {
+          balanceFallbackTimeoutRef.current = setTimeout(() => {
+            setIsAutoTriggering(false)
+            balanceFallbackTimeoutRef.current = null
+          }, 2000)
+        }
+      } else {
+        clearBalanceFallbackTimeout()
+        setIsAutoTriggering(false)
+      }
+
+      return () => {
+        clearBalanceFallbackTimeout()
+      }
     }
 
-    // All checks passed - show auto-triggering
+    clearBalanceFallbackTimeout()
     setIsAutoTriggering(true)
     setJwtVerificationError(null)
+
+    return () => {
+      clearBalanceFallbackTimeout()
+    }
   }, [
     onrampJWTPayload,
     account,
@@ -1334,6 +1371,11 @@ export default function MissionContributeModal({
     setIsAutoTriggering(false)
     setJwtVerificationError(null)
     hasTriggeredTransaction.current = false
+
+    if (balanceFallbackTimeoutRef.current) {
+      clearTimeout(balanceFallbackTimeoutRef.current)
+      balanceFallbackTimeoutRef.current = null
+    }
 
     // Clear Coinbase fee state
     setCoinbaseEthReceive(null)
@@ -1611,11 +1653,11 @@ export default function MissionContributeModal({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <Image
-                          src="/assets/icon-star.svg"
-                          alt="Token"
-                          width={20}
-                          height={20}
-                          className="bg-orange-500 rounded-full p-1 w-6 h-6"
+                          src={mission?.metadata.logoUri}
+                          width={40}
+                          height={40}
+                          className="rounded-full"
+                          alt={`${token?.tokenSymbol} logo`}
                         />
                         <div>
                           <p className="font-medium text-white">
@@ -1628,7 +1670,7 @@ export default function MissionContributeModal({
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-white">
-                          {formatTokenAmount(output, 2)}
+                          {formatContributionOutput(output)}
                         </p>
                         <p className="text-gray-400 text-xs">
                           {token?.tokenSymbol}
@@ -1676,29 +1718,6 @@ export default function MissionContributeModal({
                   </div>
                 </div>
               </div>
-
-              {/* Token Info */}
-              {token?.tokenSymbol && token?.tokenName && (
-                <div className="bg-black/20 border border-white/10 rounded-lg p-3">
-                  <div className="flex items-center space-x-3">
-                    <Image
-                      src={mission?.metadata.logoUri}
-                      width={40}
-                      height={40}
-                      className="rounded-full"
-                      alt={`${token?.tokenSymbol} logo`}
-                    />
-                    <div>
-                      <p className="font-medium text-white">
-                        {token?.tokenSymbol}
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        {token?.tokenName}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Conditional Content Based on Balance */}
               {layerZeroLimitExceeded ? (
