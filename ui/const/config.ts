@@ -253,6 +253,11 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 }
 
 export const FEATURED_MISSION_INDEX = 0
+export const FEATURED_MISSION = {
+  id: '3',
+  name: 'Support the Inspiration4 Complex at Space Camp',
+  description: 'Donate to support real training hardware and inspire future astronauts at Space Camp, USA'
+}
 
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionTable,
