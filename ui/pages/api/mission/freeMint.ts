@@ -9,11 +9,12 @@ import {
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
-import useContract from '@/lib/thirdweb/hooks/useContract'
 import {
   readContract,
+  prepareContractCall,
   sendAndConfirmTransaction,
   sendTransaction,
+  getContract,
 } from 'thirdweb'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
 import { createHSMWallet } from '@/lib/google/hsm-signer'
@@ -34,7 +35,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   if (!address || !name || !image || !privacy || !formId) {
     return res.status(400).json({ error: 'Mint params not found!' })
   }
-  const citizenContract = useContract({
+  const citizenContract = getContract({
     client: serverClient,
     address: CITIZEN_ADDRESSES[chainSlug],
     abi: CitizenABI as any,
@@ -90,11 +91,18 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     contract: citizenContract,
     method: 'mintTo' as string,
     params: [address, name, '', image, '', '', '', '', privacy, formId],
+    value: cost,
   })
   const receipt = await sendAndConfirmTransaction({
     transaction,
     account,
   })
-  res.status(200).json(receipt)
+  const jsonReceipt = JSON.stringify(receipt, (key, value) => {
+    if (typeof value === 'bigint') {
+      return value.toString()
+    }
+    return value
+  })
+  res.status(200).json(JSON.parse(jsonReceipt))
 }
 export default withMiddleware(POST, rateLimit)
