@@ -1,7 +1,6 @@
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
@@ -16,11 +15,7 @@ export default function CitizenProfileLink() {
       <button
         onClick={async () => {
           setIsLoading(true)
-          const prettyLink = generatePrettyLinkWithId(
-            citizen.metadata.name as string,
-            citizen.id.toString()
-          )
-          await router.push(`/citizen/${prettyLink}`)
+          await router.push('/')
           setIsLoading(false)
         }}
         className="flex items-center justify-center"
