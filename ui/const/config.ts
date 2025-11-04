@@ -256,7 +256,8 @@ export const FEATURED_MISSION_INDEX = 0
 export const FEATURED_MISSION = {
   id: '3',
   name: 'Support the Inspiration4 Complex at Space Camp',
-  description: 'Donate to support real training hardware and inspire future astronauts at Space Camp, USA'
+  description:
+    'Donate to support real training hardware and inspire future astronauts at Space Camp, USA',
 }
 
 export const MISSION_TABLE_ADDRESSES: Index = {
@@ -554,3 +555,5 @@ export const TICK_SPACING = 200
 
 export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
 export const FREE_MINT_THRESHOLD = 1e16
+// 2025q4
+export const ETH_BUDGET = 14.15

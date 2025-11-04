@@ -9,6 +9,10 @@ import {
   ARBITRUM_ASSETS_URL,
   POLYGON_ASSETS_URL,
   BASE_ASSETS_URL,
+  MOONEY_ADDRESSES,
+  FEE_HOOK_ADDRESSES,
+  TICK_SPACING,
+  ETH_BUDGET,
 } from 'const/config'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import _ from 'lodash'
@@ -27,7 +31,7 @@ import { ethereum } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
-import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
+import { useUniswapV4 } from '@/lib/uniswap/hooks/useUniswapV4'
 import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
 import {
   getBudget,
@@ -290,18 +294,16 @@ export function ProjectRewards({
   // The quarterly ETH budget is the value of all non-mooney tokens in the treasury
   // converted to ETH on the first day of the quarter. This function calculates in
   // real time. To get the budget we run this on the first day of the quarter, and
-  // then hard code it below.
+  // then hard code it in const/config.
   const {
     ethBudget: ethBudgetCurrent,
     mooneyBudget,
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
-  // 2025q4
-  const ethBudget = 14.15
+  const ethBudget = ETH_BUDGET
 
   const usdBudget = ethBudget * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
-  const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
   const {
     addressToEthPayout,
@@ -317,6 +319,14 @@ export function ProjectRewards({
     ethBudget,
     mooneyBudget
   )
+  const swapChain = ethereum
+  const { quote, swap } = useUniswapV4(
+    MOONEY_ADDRESSES[getChainSlug(swapChain)],
+    18,
+    TICK_SPACING,
+    FEE_HOOK_ADDRESSES[getChainSlug(swapChain)],
+    swapChain
+  )
 
   useEffect(() => {
     let isCancelled = false
@@ -328,7 +338,11 @@ export function ProjectRewards({
           setMooneyBudgetUSD(0)
           return
         }
-
+        const swapAmount = 0.001
+        const mooneyOut = await quote(swapAmount.toString())
+        const mooneyPriceETH = swapAmount / mooneyOut
+        const mooneyBudgetUSD = mooneyPriceETH * ethPrice * mooneyBudget
+        setMooneyBudgetUSD(mooneyBudgetUSD)
       } catch (error) {
         console.error('Error fetching Mooney budget USD:', error)
         if (!isCancelled) {
@@ -338,14 +352,14 @@ export function ProjectRewards({
       }
     }
 
-    if (mooneyBudget && MOONEY && DAI) {
+    if (mooneyBudget) {
       getMooneyBudgetUSD()
     }
 
     return () => {
       isCancelled = true
     }
-  }, [mooneyBudget, DAI, MOONEY])
+  }, [mooneyBudget])
 
   const handleSubmit = async () => {
     const totalPercentage = Object.values(distribution).reduce(

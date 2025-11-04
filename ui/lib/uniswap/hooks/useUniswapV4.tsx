@@ -10,6 +10,7 @@ import { ethers } from 'ethers'
 import { useCallback } from 'react'
 import { useContext } from 'react'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { Chain } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 
@@ -31,9 +32,15 @@ export function useUniswapV4(
   tokenAddress: string,
   tokenDecimals: number,
   tickSpacing: number = 200,
-  hookAddress: string = ethers.constants.AddressZero
+  hookAddress: string = ethers.constants.AddressZero,
+  chain: Chain
 ) {
-  const { selectedChain } = useContext(ChainContextV5)
+  var selectedChain
+  if (!chain) {
+    const { selectedChain } = useContext(ChainContextV5)
+  } else {
+    selectedChain = chain
+  }
   const chainSlug = getChainSlug(selectedChain)
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
@@ -55,7 +62,7 @@ export function useUniswapV4(
       }
 
       const wallet = wallets[selectedWallet]
-      const provider = await wallet.getEthersProvider()
+      const provider = new ethers.providers.JsonRpcProvider(selectedChain.rpc)
 
       const quoterContract = new ethers.Contract(
         UNISWAP_V4_QUOTER_ADDRESSES[chainSlug],

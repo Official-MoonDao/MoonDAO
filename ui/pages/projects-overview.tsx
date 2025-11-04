@@ -2,7 +2,13 @@ import {
   ARBITRUM_ASSETS_URL,
   POLYGON_ASSETS_URL,
   BASE_ASSETS_URL,
+  ETH_BUDGET,
+  MOONEY_ADDRESSES,
+  FEE_HOOK_ADDRESSES,
+  TICK_SPACING,
 } from 'const/config'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { useUniswapV4 } from '@/lib/uniswap/hooks/useUniswapV4'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
@@ -11,7 +17,6 @@ import { useAssets } from '@/lib/dashboard/hooks'
 import { Project } from '@/lib/project/useProjectData'
 import { ethereum } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
-import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import { getBudget } from '@/lib/utils/rewards'
 import ProjectsSection from '../components/home/ProjectsSection'
@@ -62,7 +67,6 @@ const ProjectsOverview: React.FC<{
   const { tokens: polygonTokens } = useAssets(POLYGON_ASSETS_URL)
   const { tokens: baseTokens } = useAssets(BASE_ASSETS_URL)
   const { stakedEth } = useStakedEth()
-  const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState<number | null>(null)
   const [isLoadingMooneyUSD, setIsLoadingMooneyUSD] = useState(true)
@@ -84,9 +88,16 @@ const ProjectsOverview: React.FC<{
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
 
-  // Use hardcoded value like in RetroactiveRewards for current quarter
-  const ethBudget = 17.09
+  const ethBudget = ETH_BUDGET
   const usdBudget = ethBudget * ethPrice
+  const swapChain = ethereum
+  const { quote, swap } = useUniswapV4(
+    MOONEY_ADDRESSES[getChainSlug(swapChain)],
+    18,
+    TICK_SPACING,
+    FEE_HOOK_ADDRESSES[getChainSlug(swapChain)],
+    swapChain
+  )
 
   // Calculate MOONEY USD value
   useEffect(() => {
@@ -99,6 +110,11 @@ const ProjectsOverview: React.FC<{
           setIsLoadingMooneyUSD(false)
           return
         }
+        const swapAmount = 0.001
+        const mooneyOut = await quote(swapAmount.toString())
+        const mooneyPriceETH = swapAmount / mooneyOut
+        const mooneyBudgetUSD = mooneyPriceETH * ethPrice * mooneyBudget
+        setMooneyBudgetUSD(mooneyBudgetUSD)
       } catch (error) {
         console.error('Error fetching Mooney budget USD:', error)
         if (!isCancelled) {
@@ -108,7 +124,7 @@ const ProjectsOverview: React.FC<{
       }
     }
 
-    if (mooneyBudget && MOONEY && DAI) {
+    if (mooneyBudget) {
       getMooneyBudgetUSD()
     } else if (mooneyBudget === 0) {
       setIsLoadingMooneyUSD(false)
@@ -117,7 +133,7 @@ const ProjectsOverview: React.FC<{
     return () => {
       isCancelled = true
     }
-  }, [mooneyBudget, DAI, MOONEY])
+  }, [mooneyBudget])
 
   return (
     <>
