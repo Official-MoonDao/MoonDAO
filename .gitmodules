@@ -1,9 +1,3 @@
-[submodule "contracts/lib/openzeppelin-contracts"]
-	path = contracts/lib/openzeppelin-contracts
-	url = https://github.com/openzeppelin/openzeppelin-contracts
-[submodule "contracts/lib/solmate"]
-	path = contracts/lib/solmate
-	url = https://github.com/rari-capital/solmate
 [submodule "fee-hook/lib/permit2"]
 	path = fee-hook/lib/permit2
 	url = https://github.com/Uniswap/permit2
@@ -34,9 +28,6 @@
 [submodule "xp/lib/forge-std"]
 	path = xp/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-[submodule "xp/lib/openzeppelin-contracts"]
-	path = xp/lib/openzeppelin-contracts
-	url = https://github.com/OpenZeppelin/openzeppelin-contracts
 [submodule "xp/lib/contracts"]
 	path = xp/lib/contracts
 	url = https://github.com/thirdweb-dev/contracts

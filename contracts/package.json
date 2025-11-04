@@ -7,7 +7,10 @@
     "solhint": "solhint -f table src/**/*.sol",
     "prettier:solidity": "prettier --write src/**/*.sol"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@rari-capital/solmate": "^6.4.0",
+    "openzeppelin-contracts": "^4.0.0"
+  },
   "devDependencies": {
     "@typechain/ethers-v5": "^7.0.1",
     "@typescript-eslint/eslint-plugin": "^4.29.1",
