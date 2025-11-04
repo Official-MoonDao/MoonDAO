@@ -33,11 +33,12 @@ export function useUniswapV4(
   tokenDecimals: number,
   tickSpacing: number = 200,
   hookAddress: string = ethers.constants.AddressZero,
-  chain: Chain
+  chain: Chain | undefined = undefined
 ) {
-  var selectedChain
+  var selectedChain: any
+  const { selectedChain: contextChain } = useContext(ChainContextV5)
   if (!chain) {
-    const { selectedChain } = useContext(ChainContextV5)
+    selectedChain = contextChain
   } else {
     selectedChain = chain
   }

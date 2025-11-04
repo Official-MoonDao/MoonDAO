@@ -340,7 +340,7 @@ export function ProjectRewards({
         }
         const swapAmount = 0.001
         const mooneyOut = await quote(swapAmount.toString())
-        const mooneyPriceETH = swapAmount / mooneyOut
+        const mooneyPriceETH = swapAmount / parseFloat(mooneyOut)
         const mooneyBudgetUSD = mooneyPriceETH * ethPrice * mooneyBudget
         setMooneyBudgetUSD(mooneyBudgetUSD)
       } catch (error) {

@@ -7,8 +7,6 @@ import {
   FEE_HOOK_ADDRESSES,
   TICK_SPACING,
 } from 'const/config'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import { useUniswapV4 } from '@/lib/uniswap/hooks/useUniswapV4'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
@@ -17,6 +15,8 @@ import { useAssets } from '@/lib/dashboard/hooks'
 import { Project } from '@/lib/project/useProjectData'
 import { ethereum } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { useUniswapV4 } from '@/lib/uniswap/hooks/useUniswapV4'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import { getBudget } from '@/lib/utils/rewards'
 import ProjectsSection from '../components/home/ProjectsSection'
@@ -112,7 +112,7 @@ const ProjectsOverview: React.FC<{
         }
         const swapAmount = 0.001
         const mooneyOut = await quote(swapAmount.toString())
-        const mooneyPriceETH = swapAmount / mooneyOut
+        const mooneyPriceETH = swapAmount / parseFloat(mooneyOut)
         const mooneyBudgetUSD = mooneyPriceETH * ethPrice * mooneyBudget
         setMooneyBudgetUSD(mooneyBudgetUSD)
       } catch (error) {
