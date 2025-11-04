@@ -531,27 +531,31 @@ export default function TeamDetailPage({
           )}
 
           {subIsValid && (
-            <TeamTreasury
-              isSigner={isSigner}
-              safeData={safeData}
-              multisigAddress={nft.owner}
-              safeOwners={safeOwners}
-            />
+            <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+              <TeamTreasury
+                isSigner={isSigner}
+                safeData={safeData}
+                multisigAddress={nft.owner}
+                safeOwners={safeOwners}
+              />
+            </div>
           )}
 
           {/* Header and socials */}
           {subIsValid && (
-            <TeamMissions
-              selectedChain={selectedChain}
-              isManager={isManager}
-              teamId={tokenId}
-              missionTableContract={missionTableContract}
-              missionCreatorContract={missionCreatorContract}
-              jbControllerContract={jbControllerContract}
-              jbDirectoryContract={jbDirectoryContract}
-              jbTokensContract={jbTokensContract}
-              teamContract={teamContract}
-            />
+            <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+              <TeamMissions
+                selectedChain={selectedChain}
+                isManager={isManager}
+                teamId={tokenId}
+                missionTableContract={missionTableContract}
+                missionCreatorContract={missionCreatorContract}
+                jbControllerContract={jbControllerContract}
+                jbDirectoryContract={jbDirectoryContract}
+                jbTokensContract={jbTokensContract}
+                teamContract={teamContract}
+              />
+            </div>
           )}
           {subIsValid && !isDeleted ? (
             <div className="space-y-6 mb-10">
@@ -573,7 +577,7 @@ export default function TeamDetailPage({
                   {isManager && hats?.[0]?.id && (
                     <div
                       id="button-container"
-                      className="pr-12 my-2 flex flex-col md:flex-row justify-start items-center gap-2"
+                      className="my-2 flex flex-col md:flex-row justify-start items-center gap-2"
                     >
                       {/* <StandardButton
                         className="min-w-[200px] gradient-2 rounded-[5vmax]"

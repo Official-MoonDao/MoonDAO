@@ -531,7 +531,7 @@ export default function TeamManageMembers({
         />
       )}
       <StandardButton
-        className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"
+        className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
         onClick={() => setManagerModalEnabled(true)}
       >
         {'Manage Members'}

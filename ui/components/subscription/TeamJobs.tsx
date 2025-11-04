@@ -84,22 +84,27 @@ export default function TeamJobs({
   if (!jobs?.[0]) return null
 
   return (
-    <section
-      id="jobs section"
-      className="p-6"
-    >
+    <section id="jobs section" className="p-6">
       <div className="w-full flex flex-col justify-between gap-5">
         <div
           id="job-title-container"
           className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center"
         >
           <div className="flex gap-5">
-            <Image src={jobIcon} alt="Job icon" width={30} height={30} className="opacity-70" />
-            <h2 className="font-GoodTimes text-2xl text-white">Open Job Board</h2>
+            <Image
+              src={jobIcon}
+              alt="Job icon"
+              width={30}
+              height={30}
+              className="opacity-70"
+            />
+            <h2 className="font-GoodTimes text-2xl text-white">
+              Open Job Board
+            </h2>
           </div>{' '}
           {isManager && (
             <StandardButton
-              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"
+              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
               onClick={() => {
                 setTeamJobModalEnabled(true)
               }}
@@ -137,7 +142,8 @@ export default function TeamJobs({
                   🔒 {jobs.length} Job{jobs.length !== 1 ? 's' : ''} Available
                 </h4>
                 <p className="text-slate-300 mb-4">
-                  This team has active job postings. Become a Citizen to view full details, salary information, and application links.
+                  This team has active job postings. Become a Citizen to view
+                  full details, salary information, and application links.
                 </p>
                 <StandardButton
                   className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"
@@ -164,7 +170,8 @@ export default function TeamJobs({
               {jobs.length > 3 && (
                 <div className="w-full md:w-[calc(50%-0.5rem)] xl:w-[calc(33.33%-0.67rem)] bg-slate-700/30 rounded-xl border border-slate-600/30 p-6 flex items-center justify-center">
                   <p className="text-slate-400 text-center">
-                    +{jobs.length - 3} more job{jobs.length - 3 !== 1 ? 's' : ''}
+                    +{jobs.length - 3} more job
+                    {jobs.length - 3 !== 1 ? 's' : ''}
                   </p>
                 </div>
               )}

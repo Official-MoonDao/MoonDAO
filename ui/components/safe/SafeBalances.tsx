@@ -2,6 +2,17 @@ import { COIN_ICONS } from 'const/icons'
 import Image from 'next/image'
 import { formatUnits } from 'ethers/lib/utils'
 
+// Helper function to format balance with max 5 decimals, removing trailing zeros
+function formatBalance(balance: string): string {
+  const num = parseFloat(balance)
+  if (isNaN(num)) return balance
+
+  // Format to 5 decimals max, then remove trailing zeros
+  const formatted = num.toFixed(5)
+  // Remove trailing zeros but keep at least one digit after decimal if there are any
+  return formatted.replace(/\.?0+$/, '') || '0'
+}
+
 export function SafeAsset({
   label,
   balance,
@@ -18,7 +29,7 @@ export function SafeAsset({
         height={20}
       />
       <div className="flex gap-2 w-full">
-        <p className="pl-6 font-GoodTimes">{balance}</p>
+        <p className="pl-6 font-GoodTimes">{formatBalance(balance)}</p>
         <p className="font-GoodTimes">{`${label}`}</p>
       </div>
     </div>

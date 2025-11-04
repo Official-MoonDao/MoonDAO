@@ -97,19 +97,11 @@ export default function MissionWideCard({
 
   return (
     <>
-      {ruleset && contribute && primaryTerminalAddress && (
-        <div id="pay-modal">
-          <StandardButton link={`/mission/${mission.id}`}>
-            Contribute
-          </StandardButton>
-        </div>
-      )}
       <StandardWideCard
         title={mission?.metadata?.name}
         subheader={mission?.metadata?.tagline}
         stats={
           <div className="w-full flex flex-col">
-            {}
             <div className="w-full grid grid-cols-1 md:grid-cols-3  items-center">
               <div className="w-full flex flex-col gap-4 col-span-3">
                 {ethPrice && subgraphData?.volume > 0 && (
@@ -223,7 +215,7 @@ export default function MissionWideCard({
         }
         paragraph={
           <div
-            className="prose prose-invert max-w-none"
+            className="prose prose-invert max-w-none px-8 pb-12 md:pb-0 md:px-0"
             dangerouslySetInnerHTML={{
               __html: mission?.metadata?.description || '',
             }}
