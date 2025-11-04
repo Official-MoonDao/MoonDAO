@@ -1,4 +1,4 @@
-@thirdweb-dev/contracts/=node_modules/contracts/
+@thirdweb-dev/contracts/=node_modules/@thirdweb-dev/contracts/
 std/=lib/hats-protocol/lib/forge-std/src/
 @hats/=lib/hats-protocol/src/
 hats-protocol/=lib/hats-protocol/src/
