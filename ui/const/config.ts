@@ -555,5 +555,5 @@ export const TICK_SPACING = 200
 
 export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
 export const FREE_MINT_THRESHOLD = 1e16
-// 2025q4
+// 2025 q4
 export const ETH_BUDGET = 14.15
