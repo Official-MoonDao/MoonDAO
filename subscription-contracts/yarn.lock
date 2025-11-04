@@ -7415,11 +7415,6 @@ socket.io-parser@~4.2.4:
     "@socket.io/component-emitter" "~3.1.0"
     debug "~4.3.1"
 
-solady@^0.1.26:
-  version "0.1.26"
-  resolved "https://registry.npmjs.org/solady/-/solady-0.1.26.tgz"
-  integrity sha512-dhGr/ptJFdea/1KE6xgqgwEdbMhUiSfRc6A+jLeltPe16zyt9qtED3PElIBVRnzEmUO5aZTjKVAr6SlqXBBcIw==
-
 solady@0.0.180:
   version "0.0.180"
   resolved "https://registry.npmjs.org/solady/-/solady-0.0.180.tgz"

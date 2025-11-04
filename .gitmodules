@@ -28,3 +28,6 @@
 [submodule "open"]
 	path = xp/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "subscription-contracts/lib/solady"]
+	path = subscription-contracts/lib/solady
+	url = https://github.com/vectorized/solady/
