@@ -16,6 +16,7 @@ import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
 import JBV5Tokens from 'const/abis/JBV5Tokens.json'
+import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
@@ -28,6 +29,7 @@ import {
   JBV5_CONTROLLER_ADDRESS,
   JBV5_DIRECTORY_ADDRESS,
   JBV5_TOKENS_ADDRESS,
+  MARKETPLACE_TABLE_ADDRESSES,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   POLYGON_ASSETS_URL,
@@ -72,6 +74,7 @@ import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
+import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
 import DashboardTeams from './DashboardTeams'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
@@ -245,6 +248,12 @@ export default function SingedInDashboard({
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI,
+    chain: selectedChain,
+  })
+
+  const marketplaceTableContract = useContract({
+    address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
+    abi: MarketplaceTableABI as any,
     chain: selectedChain,
   })
 
@@ -1191,92 +1200,47 @@ export default function SingedInDashboard({
               </div>
             </div>
 
-            {/* Marketplace */}
+            {/* Open Jobs */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-white text-lg">
-                  Marketplace
+                  Open Jobs
                 </h3>
                 <StandardButton
                   className="text-blue-300 text-sm hover:text-blue-200 transition-all"
-                  link="/marketplace"
+                  link="/jobs"
                 >
                   See all
                 </StandardButton>
               </div>
 
               <div className="space-y-3 h-full overflow-y-auto">
-                {newestListings && newestListings.length > 0 ? (
-                  newestListings
-                    .slice(0, 3)
-                    .map((listing: any, index: number) => (
-                      <Link
-                        key={listing.id || index}
-                        href={`/team/${listing.teamId}?listing=${listing.id}`}
-                      >
-                        <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                          <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                            {listing.image ? (
-                              <IPFSRenderer
-                                src={listing.image}
-                                alt={listing.title}
-                                className="w-full h-full object-cover"
-                                width={100}
-                                height={100}
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                                <ShoppingBagIcon className="w-5 h-5" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-white font-medium text-sm truncate">
-                              {listing.title || 'Marketplace Item'}
-                            </h4>
-                            <p className="text-gray-400 text-xs">
-                              {listing.price && listing.currency
-                                ? `${listing.price} ${listing.currency}`
-                                : 'View details'}
-                            </p>
-                          </div>
-                        </div>
-                      </Link>
-                    ))
+                {newestJobs && newestJobs.length > 0 ? (
+                  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                        <BriefcaseIcon className="w-5 h-5" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-white font-medium text-sm truncate">
+                        {newestJobs[0]?.title || 'Open Position'}
+                      </h4>
+                      <p className="text-gray-400 text-xs">
+                        {newestJobs.length > 1 ? `+${newestJobs.length - 1} more positions` : 'View details'}
+                      </p>
+                    </div>
+                  </div>
                 ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white">
-                        <ShoppingBagIcon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm">
-                          Moon Rock Sample
-                        </h4>
-                        <p className="text-gray-400 text-xs">2.5 ETH</p>
-                      </div>
+                  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">
+                      <BriefcaseIcon className="w-5 h-5" />
                     </div>
-                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white">
-                        <ShoppingBagIcon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm">
-                          Space Suit NFT
-                        </h4>
-                        <p className="text-gray-400 text-xs">1.8 ETH</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-white">
-                        <ShoppingBagIcon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm">
-                          Lunar Map Print
-                        </h4>
-                        <p className="text-gray-400 text-xs">0.5 ETH</p>
-                      </div>
+                    <div className="flex-1">
+                      <h4 className="text-white font-medium text-sm">
+                        Space Engineer
+                      </h4>
+                      <p className="text-gray-400 text-xs">View all open positions</p>
                     </div>
                   </div>
                 )}
@@ -1429,85 +1393,13 @@ export default function SingedInDashboard({
           )}
         </div>
 
-        {/* Jobs Section - Full Width */}
-        <div className="bg-gradient-to-br from-purple-600/20 to-indigo-800/20 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 mt-8 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-            <div>
-              <h3 className="text-2xl font-bold text-white flex items-center gap-2 mb-2">
-                <BriefcaseIcon className="w-7 h-7" />
-                Open Positions
-              </h3>
-              <p className="text-purple-200 text-sm">
-                Join our mission and build the future of space exploration
-              </p>
-            </div>
-
-            {/* Only View All Jobs button */}
-            <StandardButton
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all"
-              link="/jobs"
-            >
-              View All Jobs
-            </StandardButton>
-          </div>
-
-          {newestJobs && newestJobs.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {newestJobs.slice(0, 6).map((job: any, i: number) => (
-                <div
-                  key={`job-${i}`}
-                  className="bg-black/30 rounded-xl p-5 border border-purple-500/10 hover:border-purple-500/20 transition-all duration-200"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <h4 className="font-semibold text-white text-lg">
-                      {job.title}
-                    </h4>
-                    {job.tag && (
-                      <span className="bg-purple-500/20 text-purple-300 text-xs px-2 py-1 rounded">
-                        {job.tag}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-purple-100 text-sm mb-4 line-clamp-3">
-                    {job.description}
-                  </p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-purple-200 text-xs">
-                      Posted{' '}
-                      {Math.floor((Date.now() / 1000 - job.timestamp) / 86400)}{' '}
-                      days ago
-                    </span>
-                    {job.contactInfo && (
-                      <StandardButton
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-all"
-                        onClick={() => window.open(job.contactInfo)}
-                      >
-                        Apply
-                      </StandardButton>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-black/20 rounded-xl p-8 border border-purple-500/20">
-              <div className="text-center">
-                <BriefcaseIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-                <h4 className="font-bold text-white text-xl mb-2">
-                  No Open Positions
-                </h4>
-                <p className="text-gray-400 text-sm mb-4">
-                  Check back soon for new job opportunities in space exploration
-                </p>
-                <StandardButton
-                  className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 px-6 py-3 rounded-lg transition-all"
-                  link="/jobs"
-                >
-                  View All Jobs
-                </StandardButton>
-              </div>
-            </div>
-          )}
+        {/* Marketplace Section - Full Width */}
+        <div className="mt-8 mb-8">
+          <NewMarketplaceListings
+            selectedChain={selectedChain}
+            teamContract={teamContract}
+            marketplaceTableContract={marketplaceTableContract}
+          />
         </div>
 
         {/* Events Section */}
