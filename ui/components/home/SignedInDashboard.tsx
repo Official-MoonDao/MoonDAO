@@ -1216,33 +1216,40 @@ export default function SingedInDashboard({
 
               <div className="space-y-3 h-full overflow-y-auto">
                 {newestJobs && newestJobs.length > 0 ? (
-                  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                        <BriefcaseIcon className="w-5 h-5" />
+                  <Link 
+                    href={newestJobs[0]?.contactInfo || '/jobs'}
+                    className="block"
+                  >
+                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                          <BriefcaseIcon className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-white font-medium text-sm truncate">
+                          {newestJobs[0]?.title}
+                        </h4>
+                        <p className="text-gray-400 text-xs">
+                          {newestJobs.length > 1 ? `+${newestJobs.length - 1} more positions` : 'Click to apply'}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-white font-medium text-sm truncate">
-                        {newestJobs[0]?.title || 'Open Position'}
-                      </h4>
-                      <p className="text-gray-400 text-xs">
-                        {newestJobs.length > 1 ? `+${newestJobs.length - 1} more positions` : 'View details'}
-                      </p>
-                    </div>
-                  </div>
+                  </Link>
                 ) : (
-                  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">
-                      <BriefcaseIcon className="w-5 h-5" />
+                  <Link href="/jobs" className="block">
+                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">
+                        <BriefcaseIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-white font-medium text-sm">
+                          No open positions
+                        </h4>
+                        <p className="text-gray-400 text-xs">Check back soon for opportunities</p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="text-white font-medium text-sm">
-                        Space Engineer
-                      </h4>
-                      <p className="text-gray-400 text-xs">View all open positions</p>
-                    </div>
-                  </div>
+                  </Link>
                 )}
               </div>
             </div>
