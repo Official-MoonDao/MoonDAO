@@ -1434,7 +1434,7 @@ export default function SingedInDashboard({
             <div className="relative">
               <div
                 id="luma-loading-dashboard-small"
-                className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center min-h-[350px]"
+                className="absolute inset-0 bg-gray-800/20 rounded-lg flex items-center justify-center min-h-[500px]"
               >
                 <div className="text-white text-center">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
@@ -1444,7 +1444,7 @@ export default function SingedInDashboard({
               <iframe
                 src="https://lu.ma/embed/calendar/cal-7mKdy93TZVlA0Xh/events?lt=dark"
                 width="100%"
-                height="350"
+                height="600"
                 frameBorder="0"
                 style={{ border: '1px solid #ffffff20', borderRadius: '8px' }}
                 allowFullScreen
