@@ -18,10 +18,7 @@ import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
-import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
 import {
-  ARBITRUM_ASSETS_URL,
-  BASE_ASSETS_URL,
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
   JBV5_CONTROLLER_ADDRESS,
@@ -29,20 +26,15 @@ import {
   JBV5_TOKENS_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
-  POLYGON_ASSETS_URL,
   TEAM_ADDRESSES,
-  VOTING_ESCROW_DEPOSITOR_ADDRESSES,
 } from 'const/config'
 import dynamic from 'next/dynamic'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useState, useEffect } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import { useAssets } from '@/lib/dashboard/hooks'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useMissionData from '@/lib/mission/useMissionData'
-import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
 import {
   generatePrettyLink,
@@ -52,11 +44,9 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalLockedMooney } from '@/lib/tokens/hooks/useTotalLockedMooney'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
+import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
-import { getRelativeQuarter } from '@/lib/utils/dates'
-import useStakedEth from '@/lib/utils/hooks/useStakedEth'
 import { truncateTokenValue } from '@/lib/utils/numbers'
-import { getBudget } from '@/lib/utils/rewards'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { RevenueChart } from '@/components/dashboard/treasury/RevenueChart'
 import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
@@ -201,18 +191,24 @@ export default function SingedInDashboard({
     setChartModalOpen(true)
   }
 
-  const { proposals, packet, votingInfoMap } = useNewestProposals(100)
   const account = useActiveAccount()
   const address = account?.address
 
-  const { data: voteCount } = useVoteCountOfAddress(address)
+  const { data: voteCount, isValidating: isLoadingVoteCount } =
+    useVoteCountOfAddress(address)
 
   const MOONEYBalance = useTotalMooneyBalance(address)
   const {
     totalLockedMooney: lockedMooneyAmount,
     nextUnlockDate: lockedMooneyUnlockDate,
+    breakdown: lockedMooneyBreakdown,
     isLoading: isLoadingLockedMooney,
   } = useTotalLockedMooney(address)
+
+  const { totalVMOONEY, isLoading: isLoadingVMOONEY } = useTotalVMOONEY(
+    address,
+    lockedMooneyBreakdown
+  )
 
   const {
     walletVP,
@@ -220,33 +216,7 @@ export default function SingedInDashboard({
     isError: isErrorVP,
   } = useTotalVP(address || '')
 
-  const { quarter, year } = getRelativeQuarter(0)
-
-  const { tokens: mainnetTokens } = useAssets()
-  const { tokens: arbitrumTokens } = useAssets(ARBITRUM_ASSETS_URL)
-  const { tokens: polygonTokens } = useAssets(POLYGON_ASSETS_URL)
-  const { tokens: baseTokens } = useAssets(BASE_ASSETS_URL)
-  const { stakedEth, error } = useStakedEth()
-
-  const tokens = mainnetTokens
-    .concat(arbitrumTokens)
-    .concat(polygonTokens)
-    .concat(baseTokens)
-    .concat([{ symbol: 'stETH', balance: stakedEth }])
-
-  const {
-    ethBudget: ethBudgetCurrent,
-    usdBudget,
-    mooneyBudget,
-    ethPrice,
-  } = getBudget(tokens, year, quarter)
   const ethBudget = 14.15
-
-  const votingEscrowDepositorContract = useContract({
-    address: VOTING_ESCROW_DEPOSITOR_ADDRESSES[chainSlug],
-    abi: VotingEscrowDepositor.abi,
-    chain: selectedChain,
-  })
 
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
@@ -254,7 +224,7 @@ export default function SingedInDashboard({
     chain: selectedChain,
   })
 
-  const { userTeams: teamHats } = useTeamWearer(
+  const { userTeams: teamHats, isLoading: isLoadingTeams } = useTeamWearer(
     teamContract,
     selectedChain,
     address
@@ -346,7 +316,9 @@ export default function SingedInDashboard({
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                       <span className="text-white font-bold text-base sm:text-lg">
-                        {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
+                        {citizen?.metadata?.name ||
+                          `${address?.slice(0, 6)}...${address?.slice(-4)}` ||
+                          ''}
                       </span>
                     </div>
                   )}
@@ -368,7 +340,7 @@ export default function SingedInDashboard({
 
               {/* Title */}
               <div className="min-w-0">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-lg leading-tight">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-lg leading-tight max-w-[350px] break-words">
                   {isLoadingCitizen ? (
                     <span className="flex items-center gap-2">
                       Welcome...
@@ -389,10 +361,11 @@ export default function SingedInDashboard({
                 <MooneyBalances
                   unlockedMooney={MOONEYBalance}
                   lockedMooney={lockedMooneyAmount}
+                  totalVMOONEY={totalVMOONEY}
                   votingPower={walletVP}
                   isLockedLoading={!!isLoadingLockedMooney}
+                  isVMOONEYLoading={isLoadingVMOONEY}
                   isVotingPowerLoading={!!isLoadingVP}
-                  unlockDate={lockedMooneyUnlockDate}
                 />
               </div>
             )}
@@ -405,9 +378,13 @@ export default function SingedInDashboard({
                   className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group font-GoodTimes"
                 >
                   <CheckBadgeIcon className="h-5 w-5 text-white/80 group-hover:text-white" />
-                  <span className="font-medium whitespace-nowrap text-white/80 group-hover:text-white">
-                    {voteCount || 0}
-                  </span>
+                  {isLoadingVoteCount ? (
+                    <LoadingSpinner width="w-4" height="h-4" />
+                  ) : (
+                    <span className="font-medium whitespace-nowrap text-white/80 group-hover:text-white">
+                      {voteCount || 0}
+                    </span>
+                  )}
                   <span className="text-white/60 group-hover:underline">
                     Votes
                   </span>
@@ -418,9 +395,13 @@ export default function SingedInDashboard({
                   className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group font-GoodTimes"
                 >
                   <UserGroupIcon className="h-5 w-5 text-white/80 group-hover:text-white" />
-                  <span className="font-medium whitespace-nowrap text-white/80 group-hover:text-white">
-                    {teamHats?.length || 0}
-                  </span>
+                  {isLoadingTeams ? (
+                    <LoadingSpinner width="w-4" height="h-4" />
+                  ) : (
+                    <span className="font-medium whitespace-nowrap text-white/80 group-hover:text-white">
+                      {teamHats?.length || 0}
+                    </span>
+                  )}
                   <span className="text-white/60 group-hover:underline">
                     {teamHats?.length === 1 ? 'Team' : 'Teams'}
                   </span>

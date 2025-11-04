@@ -6,21 +6,23 @@ import Tooltip from '../layout/Tooltip'
 type MooneyBalancesProps = {
   unlockedMooney?: number | null
   lockedMooney?: number | null
+  totalVMOONEY?: number | null
   votingPower?: number | null
   isUnlockedLoading?: boolean
   isLockedLoading?: boolean
+  isVMOONEYLoading?: boolean
   isVotingPowerLoading?: boolean
-  unlockDate?: Date | null
 }
 
 export default function MooneyBalances({
   unlockedMooney,
   lockedMooney,
+  totalVMOONEY,
   votingPower,
   isUnlockedLoading,
   isLockedLoading,
+  isVMOONEYLoading,
   isVotingPowerLoading,
-  unlockDate,
 }: MooneyBalancesProps) {
   const totalMooney = (unlockedMooney || 0) + (lockedMooney || 0)
   const unlockedShare =
@@ -29,7 +31,26 @@ export default function MooneyBalances({
 
   const formattedUnlocked = formatToken(unlockedMooney)
   const formattedLocked = formatToken(lockedMooney)
+  const formattedVMOONEY = formatToken(totalVMOONEY)
   const formattedVotingPower = formatVotingPower(votingPower)
+
+  const showUnlockedSkeleton =
+    isUnlockedLoading === true ||
+    unlockedMooney === null ||
+    unlockedMooney === undefined ||
+    (unlockedMooney === 0 && isUnlockedLoading === undefined)
+
+  const showLockedSkeleton =
+    isLockedLoading === true ||
+    lockedMooney === null ||
+    lockedMooney === undefined ||
+    (lockedMooney === 0 && isLockedLoading === undefined)
+
+  const showVotingPowerSkeleton =
+    isVotingPowerLoading === true ||
+    votingPower === null ||
+    votingPower === undefined ||
+    (votingPower === 0 && isVotingPowerLoading === undefined)
 
   return (
     <div className="flex flex-col items-left justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 sm:px-4 sm:py-2.5 text-white backdrop-blur-xl">
@@ -67,17 +88,21 @@ export default function MooneyBalances({
         </div>
       </div>
 
-      {/* Clickable Metrics */}
+      {/* Metrics */}
       <div className="flex items-center gap-2 sm:gap-3 text-xs text-white/80 min-w-0 flex-wrap">
-        {/* Available - Clickable to Buy */}
+        {/* Available */}
         <Link
-          href="/get-mooney"
+          href="/mooney"
           className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group"
         >
           <div className="h-2 w-2 rounded-full bg-gradient-to-r from-sky-400 to-blue-500 flex-shrink-0" />
-          <span className="font-medium whitespace-nowrap">
-            {isUnlockedLoading ? '…' : formattedUnlocked}
-          </span>
+          {showUnlockedSkeleton ? (
+            <SkeletonText width="w-16" />
+          ) : (
+            <span className="font-medium whitespace-nowrap min-w-[4rem]">
+              {formattedUnlocked}
+            </span>
+          )}
           <span className="text-white/60 group-hover:underline font-semibold">
             Available
           </span>
@@ -85,15 +110,19 @@ export default function MooneyBalances({
 
         <div className="hidden lg:block h-4 w-px bg-white/20" />
 
-        {/* Locked - Clickable to Stake */}
+        {/* Locked */}
         <Link
           href="/lock"
           className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group"
         >
           <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex-shrink-0" />
-          <span className="font-medium whitespace-nowrap">
-            {isLockedLoading ? '…' : formattedLocked}
-          </span>
+          {showLockedSkeleton ? (
+            <SkeletonText width="w-16" />
+          ) : (
+            <span className="font-medium whitespace-nowrap min-w-[4rem]">
+              {formattedLocked}
+            </span>
+          )}
           <span className="text-white/60 group-hover:underline font-semibold">
             Locked
           </span>
@@ -101,28 +130,34 @@ export default function MooneyBalances({
 
         <div className="hidden lg:block h-4 w-px bg-white/20" />
 
-        {/* Voting Power - Clickable to Stake */}
+        {/* Voting Power */}
         <Link
-          href="/lock"
+          href="/vote"
           className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
         >
           <div className="group flex items-center justify-center gap-1">
             <BoltIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-400/90" />
-            <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white group-hover:bg-white/20 transition-colors">
-              {isVotingPowerLoading ? '…' : formattedVotingPower}
-            </span>
+            {showVotingPowerSkeleton ? (
+              <SkeletonText width="w-16" />
+            ) : (
+              <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white group-hover:bg-white/20 transition-colors min-w-[3rem]">
+                {formattedVotingPower}
+              </span>
+            )}
             <span className="font-semibold tracking-wide text-white/75 group-hover:underline">
               Voting Power
             </span>
           </div>
-          <Tooltip
-            buttonClassName="scale-75"
-            text={`Your voting power is the square root of your vMOONEY balance. ${votingPower}`}
-            compact
-          >
-            ?
-          </Tooltip>
         </Link>
+        <Tooltip
+          buttonClassName="scale-75"
+          text={`Your voting power is the square root of your vMOONEY balance: ${
+            isVMOONEYLoading ? '...' : formattedVMOONEY
+          } vMOONEY`}
+          compact
+        >
+          ?
+        </Tooltip>
       </div>
     </div>
   )
@@ -162,4 +197,13 @@ function formatVotingPower(value?: number | null) {
   return value.toLocaleString('en-US', {
     maximumFractionDigits: 2,
   })
+}
+
+function SkeletonText({ width }: { width: string }) {
+  return (
+    <span
+      className={`${width} h-4 bg-white/10 rounded animate-pulse inline-block`}
+      aria-hidden="true"
+    />
+  )
 }

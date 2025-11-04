@@ -19,14 +19,31 @@ export default function Tooltip({
   wrap = false,
 }: TooltipProps) {
   const [isHovered, setIsHovered] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
   const [contentOffset, setContentOffset] = useState(0)
 
   const tooltipRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const animationRef = useRef<gsap.core.Tween | null>(null)
+  const [isTouched, setIsTouched] = useState(false)
 
   useEffect(() => {
-    if (isHovered && contentRef.current && triggerRef.current) {
+    if (isHovered) {
+      setIsVisible(true)
+    }
+  }, [isHovered])
+
+  // Handle animation and position
+  useEffect(() => {
+    if (
+      isHovered &&
+      isVisible &&
+      contentRef.current &&
+      triggerRef.current &&
+      tooltipRef.current
+    ) {
       const contentRect = contentRef.current.getBoundingClientRect()
       const triggerRect = triggerRef.current.getBoundingClientRect()
       const viewportWidth = window.innerWidth
@@ -50,36 +67,136 @@ export default function Tooltip({
 
       setContentOffset(offset)
 
-      if (tooltipRef.current) {
-        gsap.fromTo(
-          tooltipRef.current,
-          {
-            scale: 0.7,
-            opacity: 0,
-            y: -10 * (compact ? 0.5 : 1),
-          },
-          {
-            scale: 1,
-            opacity: 1,
-            y: -20 * (compact ? 0.5 : 1),
-            duration: 0.3,
-            ease: 'back.out(1.7)',
-          }
-        )
+      if (animationRef.current) {
+        animationRef.current.kill()
+      }
+
+      animationRef.current = gsap.fromTo(
+        tooltipRef.current,
+        {
+          scale: 0.7,
+          opacity: 0,
+          y: -10 * (compact ? 0.5 : 1),
+        },
+        {
+          scale: 1,
+          opacity: 1,
+          y: -20 * (compact ? 0.5 : 1),
+          duration: 0.3,
+          ease: 'back.out(1.7)',
+        }
+      )
+    }
+  }, [isHovered, isVisible, compact])
+
+  // Handle exit animation
+  useEffect(() => {
+    if (!isHovered && isVisible && tooltipRef.current) {
+      // Exit animation
+      if (animationRef.current) {
+        animationRef.current.kill()
+      }
+
+      const yOffset = -20 * (compact ? 0.5 : 1)
+
+      animationRef.current = gsap.to(tooltipRef.current, {
+        scale: 0.7,
+        opacity: 0,
+        y: yOffset - 10,
+        duration: 0.2,
+        ease: 'power2.in',
+        onComplete: () => {
+          setIsVisible(false)
+          animationRef.current = null
+        },
+      })
+    }
+  }, [isHovered, isVisible, compact])
+
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.kill()
       }
     }
-  }, [isHovered])
+  }, [])
+
+  // Handle click outside to close tooltip when manually opened
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node) &&
+        isTouched &&
+        isVisible
+      ) {
+        setIsHovered(false)
+        setIsTouched(false)
+      }
+    }
+
+    if (isTouched && isVisible) {
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside, true)
+        document.addEventListener('touchstart', handleClickOutside, true)
+      }, 100)
+
+      return () => {
+        clearTimeout(timeoutId)
+        document.removeEventListener('mousedown', handleClickOutside, true)
+        document.removeEventListener('touchstart', handleClickOutside, true)
+      }
+    }
+  }, [isTouched, isVisible])
+
+  // Handle toggle on mobile (touch)
+  const handleTriggerTouch = (e: React.TouchEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (isHovered && isTouched) {
+      setIsHovered(false)
+      setIsTouched(false)
+    } else {
+      // Open if closed
+      setIsHovered(true)
+      setIsTouched(true)
+    }
+  }
+
+  // Handle toggle on desktop (click)
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    const isTouchDevice =
+      'ontouchstart' in window || navigator.maxTouchPoints > 0
+
+    if (!isTouchDevice) {
+      if (isHovered && isTouched) {
+        setIsHovered(false)
+        setIsTouched(false)
+      } else {
+        setIsHovered(true)
+        setIsTouched(true)
+      }
+    }
+  }
 
   return (
     <div
+      ref={containerRef}
       className={`relative ${wrap ? 'cursor-pointer' : ''}`}
       onMouseEnter={() => {
         if (!wrap) return
-        setIsHovered(true)
+        const isTouchDevice =
+          'ontouchstart' in window || navigator.maxTouchPoints > 0
+        if (!isTouchDevice || !isTouched) {
+          setIsHovered(true)
+        }
       }}
       onMouseLeave={() => {
         if (!wrap) return
-        setIsHovered(false)
+        if (!isTouched) {
+          setIsHovered(false)
+        }
       }}
     >
       {!wrap && (
@@ -90,19 +207,37 @@ export default function Tooltip({
             !disabled && isHovered ? 'opacity-100' : 'opacity-50'
           } ${!disabled && 'cursor-pointer'}`}
           onMouseEnter={() => {
-            setIsHovered(true)
+            // Only allow hover on non-touch devices or when not manually opened
+            const isTouchDevice =
+              'ontouchstart' in window || navigator.maxTouchPoints > 0
+            if (!isTouchDevice || !isTouched) {
+              setIsHovered(true)
+            }
           }}
           onMouseLeave={() => {
-            setIsHovered(false)
+            // Only close on hover leave if not manually opened
+            if (!isTouched) {
+              setIsHovered(false)
+            }
           }}
+          onClick={handleTriggerClick}
+          onTouchStart={handleTriggerTouch}
         >
           {children}
         </div>
       )}
 
-      {wrap && <div ref={triggerRef}>{children}</div>}
+      {wrap && (
+        <div
+          ref={triggerRef}
+          onClick={handleTriggerClick}
+          onTouchStart={handleTriggerTouch}
+        >
+          {children}
+        </div>
+      )}
 
-      {!disabled && isHovered && (
+      {!disabled && isVisible && (
         <div
           id="tooltip"
           ref={tooltipRef}
@@ -120,7 +255,7 @@ export default function Tooltip({
               compact
                 ? 'max-w-[85vw] md:max-w-[400px]'
                 : 'max-w-[85vw] md:max-w-[200px]'
-            }  bg-white text-black px-3 py-2 rounded-[1vmax] break-words`}
+            }  bg-white text-black px-3 py-2 rounded-[1vmax] break-words pointer-events-auto`}
             style={{ transform: `translateX(${contentOffset}px)` }}
           >
             <p>{text}</p>
