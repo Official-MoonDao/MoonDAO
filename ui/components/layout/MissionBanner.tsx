@@ -10,11 +10,7 @@ export default function MissionBanner() {
   // Hide banner if user is on any mission page
   const isOnMissionPage = router.pathname === '/mission/[tokenId]'
 
-  if (
-    !isVisible ||
-    isOnMissionPage ||
-    process.env.NEXT_PUBLIC_HIDE_BANNER === 'true'
-  ) {
+  if (!isVisible || isOnMissionPage) {
     return null
   }
 
@@ -45,36 +41,24 @@ export default function MissionBanner() {
         <div className="flex-1 ml-8 sm:ml-12 mr-2 relative min-w-0">
           {/* Left fade overlay */}
           <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-900 to-transparent z-10 pointer-events-none"></div>
-
+          
           {/* Right fade overlay */}
           <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-900 to-transparent z-10 pointer-events-none"></div>
-
+          
           <div className="marquee-container overflow-hidden">
             <div className="marquee-content">
               <span className="inline-flex items-center gap-2 sm:gap-3 whitespace-nowrap px-6 sm:px-8">
-                <span className="text-xs sm:text-sm font-medium text-slate-300">
-                  Featured Mission:
-                </span>
-                <span className="text-sm sm:text-base font-semibold">
-                  {FEATURED_MISSION.name}
-                </span>
+                <span className="text-xs sm:text-sm font-medium text-slate-300">Featured Mission:</span>
+                <span className="text-sm sm:text-base font-semibold">{FEATURED_MISSION.name}</span>
                 <span className="mx-1 sm:mx-2">•</span>
-                <span className="text-xs sm:text-sm text-slate-400">
-                  {FEATURED_MISSION.description}
-                </span>
+                <span className="text-xs sm:text-sm text-slate-400">{FEATURED_MISSION.description}</span>
               </span>
               {/* Duplicate for seamless loop */}
               <span className="inline-flex items-center gap-2 sm:gap-3 whitespace-nowrap px-6 sm:px-8">
-                <span className="text-xs sm:text-sm font-medium text-slate-300">
-                  Featured Mission:
-                </span>
-                <span className="text-sm sm:text-base font-semibold">
-                  {FEATURED_MISSION.name}
-                </span>
+                <span className="text-xs sm:text-sm font-medium text-slate-300">Featured Mission:</span>
+                <span className="text-sm sm:text-base font-semibold">{FEATURED_MISSION.name}</span>
                 <span className="mx-1 sm:mx-2">•</span>
-                <span className="text-xs sm:text-sm text-slate-400">
-                  {FEATURED_MISSION.description}
-                </span>
+                <span className="text-xs sm:text-sm text-slate-400">{FEATURED_MISSION.description}</span>
               </span>
             </div>
           </div>
