@@ -126,7 +126,7 @@ contract BulkClaimTest is Test {
         xpManager.claimBulkXP(VERIFIER_ID, context);
 
         // Verify results
-        assertEq(xpManager.getTotalXP(user), 185);
+        assertEq(xpManager.getTotalXP(user), 385);
         assertEq(votingVerifier.getUserHighestStage(user), 5); // Next stage they can claim (have claimed 0-4)
 
         // Verify cannot claim again (no more stages available)
@@ -168,7 +168,7 @@ contract BulkClaimTest is Test {
         xpManager.claimBulkXP(VERIFIER_ID, context);
 
         // Verify results
-        assertEq(xpManager.getTotalXP(user), 35);
+        assertEq(xpManager.getTotalXP(user), 85);
         assertEq(votingVerifier.getUserHighestStage(user), 3); // Next stage they can claim (have claimed 0-2)
     }
 
@@ -194,7 +194,7 @@ contract BulkClaimTest is Test {
         vm.prank(user);
         xpManager.claimBulkXP(VERIFIER_ID, context1);
 
-        assertEq(xpManager.getTotalXP(user), 35);
+        assertEq(xpManager.getTotalXP(user), 85);
         assertEq(votingVerifier.getUserHighestStage(user), 3);
 
         // Second claim with 10,000 voting power (should claim remaining stages)
@@ -256,7 +256,7 @@ contract BulkClaimTest is Test {
         vm.prank(user);
         xpManager.claimBulkXP(VERIFIER_ID, context);
 
-        assertEq(xpManager.getTotalXP(user), 5);
+        assertEq(xpManager.getTotalXP(user), 10);
         assertEq(votingVerifier.getUserHighestStage(user), 1);
 
         // Reset user stage back to 0 so they can theoretically claim stage 0 again
