@@ -16,9 +16,6 @@
 [submodule "subscription-contracts/lib/evm-tableland"]
 	path = subscription-contracts/lib/evm-tableland
 	url = https://github.com/tablelandnetwork/evm-tableland
-[submodule "subscription-contracts/lib/openzeppelin"]
-	path = subscription-contracts/lib/openzeppelin
-	url = https://github.com/OpenZeppelin/openzeppelin-contracts
 [submodule "subscription-contracts/lib/hats-module"]
 	path = subscription-contracts/lib/hats-module
 	url = https://github.com/Hats-Protocol/hats-module
@@ -28,6 +25,3 @@
 [submodule "xp/lib/forge-std"]
 	path = xp/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-[submodule "xp/lib/contracts"]
-	path = xp/lib/contracts
-	url = https://github.com/thirdweb-dev/contracts
