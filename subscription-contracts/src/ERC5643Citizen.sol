@@ -9,7 +9,6 @@ import {ERC721URIStorage} from "./ERC721URIStorage.sol";
 import "@thirdweb-dev/contracts/lib/Address.sol";
 import "@evm-tableland/contracts/utils/URITemplate.sol";
 import {MoonDaoCitizenTableland} from "./tables/MoonDaoTableland.sol";
-import "@openzeppelin/contracts/access/extensions/AccessControlDefaultAdminRules.sol";
 import {Whitelist} from "./Whitelist.sol";
 
 error RenewalTooShort();
