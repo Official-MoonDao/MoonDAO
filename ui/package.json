@@ -48,7 +48,6 @@
     "@typeform/embed-react": "^3.17.0",
     "@types/canvas-confetti": "^1.9.0",
     "@uniswap/sdk-core": "^4.0.7",
-    "@uniswap/smart-order-router": "github:namedotget/smart-order-router#main",
     "@uniswap/universal-router-sdk": "^4.19.6",
     "@uniswap/v4-sdk": "^1.21.4",
     "@upstash/ratelimit": "^2.0.1",
@@ -151,5 +150,6 @@
     "tailwindcss": "^3.3.2",
     "ts-migrate": "^0.1.35",
     "ts-node": "^10.9.2"
-  }
+  },
+  "packageManager": "yarn@4.10.3"
 }

@@ -28,7 +28,6 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
-import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
 import {
   getBudget,
@@ -330,12 +329,6 @@ export function ProjectRewards({
           return
         }
 
-        const route = await pregenSwapRoute(ethereum, mooneyBudget, MOONEY, DAI)
-
-        if (!isCancelled && route?.route[0]?.rawQuote) {
-          const usd = route.route[0].rawQuote.toString() / 1e18
-          setMooneyBudgetUSD(usd)
-        }
       } catch (error) {
         console.error('Error fetching Mooney budget USD:', error)
         if (!isCancelled) {

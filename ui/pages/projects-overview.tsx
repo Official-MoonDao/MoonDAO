@@ -12,7 +12,6 @@ import { Project } from '@/lib/project/useProjectData'
 import { ethereum } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
-import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import { getBudget } from '@/lib/utils/rewards'
 import ProjectsSection from '../components/home/ProjectsSection'
@@ -99,14 +98,6 @@ const ProjectsOverview: React.FC<{
           setMooneyBudgetUSD(0)
           setIsLoadingMooneyUSD(false)
           return
-        }
-
-        const route = await pregenSwapRoute(ethereum, mooneyBudget, MOONEY, DAI)
-
-        if (!isCancelled && route?.route[0]?.rawQuote) {
-          const usd = route.route[0].rawQuote.toString() / 1e18
-          setMooneyBudgetUSD(usd)
-          setIsLoadingMooneyUSD(false)
         }
       } catch (error) {
         console.error('Error fetching Mooney budget USD:', error)
