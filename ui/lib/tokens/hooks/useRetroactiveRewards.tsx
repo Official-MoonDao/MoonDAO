@@ -1,3 +1,4 @@
+import confetti from 'canvas-confetti'
 import ERC20 from 'const/abis/ERC20.json'
 import VMooneyFaucetAbi from 'const/abis/VMooneyFaucet.json'
 import VotingEscrow from 'const/abis/VotingEscrow.json'
@@ -14,7 +15,6 @@ import { useContext, useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import confetti from 'canvas-confetti'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -73,7 +73,8 @@ export default function useRetroactiveRewards(): UseRetroactiveRewardsReturn {
     chain: selectedChain,
   })
 
-  const { withdrawAmount: withdrawable, refresh: refreshWithdrawAmount } = useWithdrawAmount(votingEscrowDepositorContract, address)
+  const { withdrawAmount: withdrawable, refresh: refreshWithdrawAmount } =
+    useWithdrawAmount(votingEscrowDepositorContract, address)
 
   const { data: VMOONEYLock, isLoading: VMOONEYLockLoading } = useRead({
     contract: vMooneyContract,
@@ -207,7 +208,7 @@ export default function useRetroactiveRewards(): UseRetroactiveRewardsReturn {
         toast.success('Withdrawal successful!', {
           style: toastStyle,
         })
-        
+
         // Trigger confetti animation
         confetti({
           particleCount: 150,
@@ -216,7 +217,7 @@ export default function useRetroactiveRewards(): UseRetroactiveRewardsReturn {
           shapes: ['circle', 'star'],
           colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
         })
-        
+
         // Refresh the withdrawable amount
         await refreshWithdrawAmount()
       }

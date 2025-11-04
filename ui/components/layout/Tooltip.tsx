@@ -6,6 +6,7 @@ export type TooltipProps = {
   children: React.ReactNode
   disabled?: boolean
   buttonClassName?: string
+  compact?: boolean
   wrap?: boolean
 }
 
@@ -14,6 +15,7 @@ export default function Tooltip({
   children,
   disabled,
   buttonClassName,
+  compact,
   wrap = false,
 }: TooltipProps) {
   const [isHovered, setIsHovered] = useState(false)
@@ -54,12 +56,12 @@ export default function Tooltip({
           {
             scale: 0.7,
             opacity: 0,
-            y: -10,
+            y: -10 * (compact ? 0.5 : 1),
           },
           {
             scale: 1,
             opacity: 1,
-            y: -20,
+            y: -20 * (compact ? 0.5 : 1),
             duration: 0.3,
             ease: 'back.out(1.7)',
           }
@@ -114,15 +116,23 @@ export default function Tooltip({
         >
           <div
             ref={contentRef}
-            className="w-max max-w-[85vw] md:max-w-[400px] bg-white text-black px-3 py-2 rounded-[1vmax] break-words"
-            style={{
-              transform: `translateX(${contentOffset}px)`,
-            }}
+            className={`w-max ${
+              compact
+                ? 'max-w-[85vw] md:max-w-[400px]'
+                : 'max-w-[85vw] md:max-w-[200px]'
+            }  bg-white text-black px-3 py-2 rounded-[1vmax] break-words`}
+            style={{ transform: `translateX(${contentOffset}px)` }}
           >
             <p>{text}</p>
           </div>
           <div className="absolute top-full left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[-1]">
-            <svg width="32" height="24" viewBox="0 0 32 24" fill="white">
+            <svg
+              width="32"
+              height="24"
+              viewBox="0 0 32 24"
+              fill="white"
+              className={compact ? 'scale-75' : ''}
+            >
               <path
                 d="M0,4 
                    Q0,0 4,0
