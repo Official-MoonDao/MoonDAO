@@ -93,7 +93,16 @@ function translateEventDataToPresenter(
             <NativeTokenValue decimals={8} wei={event.amount.value} />
           </span>
         ),
-        extra: null,
+        extra: <RichNote note={event.memo} />,
+        name:
+          citizens.find(
+            (citizen) =>
+              citizen.owner.toLowerCase() == event?.beneficiary?.toLowerCase()
+          )?.name ||
+          event?.beneficiary.slice(0, 6) +
+            '...' +
+            event?.beneficiary.slice(-4) ||
+          null,
       }
     case 'addToBalanceEvent':
       return {
@@ -115,7 +124,12 @@ function translateEventDataToPresenter(
         event,
         header: 'Minted tokens',
         subject: (
-          <span className="font-heading text-lg">To: {event.beneficiary}</span>
+          <span className="font-heading text-lg">
+            To:{' '}
+            {event.beneficiary.slice(0, 6) +
+              '...' +
+              event.beneficiary.slice(-4)}
+          </span>
         ),
         extra: null,
         address: event.beneficiary,

@@ -60,7 +60,11 @@ const useOmnichainSubgraphProjectEvents = ({
           body: JSON.stringify({ query }),
         })
 
+        console.log('RES', res)
+
         const data = await res.json()
+
+        console.log('DATA', data)
 
         const activityEvents = data.activityEvents?.items || []
 

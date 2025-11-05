@@ -41,6 +41,7 @@ export default function MissionActivityEvent({
       <div className="text-sm">{subject}</div>
       <div className="mt-2 opacity-60">{name ? name : ens ? ens.name : ''}</div>
       <hr className="border-1 mt-2 opacity-60" />
+      {extra && <div className="mt-2 opacity-60">{extra}</div>}
     </div>
   )
 }
