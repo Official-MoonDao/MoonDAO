@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import Job, { Job as JobType } from '../jobs/Job'
 import StandardButton from '../layout/StandardButton'
 import Card from './Card'
@@ -26,26 +27,44 @@ export default function TeamJobs({
   const router = useRouter()
   const [jobs, setJobs] = useState<JobType[]>()
   const [teamJobModalEnabled, setTeamJobModalEnabled] = useState(false)
-
-  async function getEntityJobs() {
-    const jobTableName = await readContract({
-      contract: jobTableContract,
-      method: 'getTableName' as string,
-      params: [],
-    })
-    const statement = `SELECT * FROM ${jobTableName} WHERE teamId = ${teamId}`
-
-    const res = await fetch(`/api/tableland/query?statement=${statement}`)
-    const data = await res.json()
-
-    setJobs(data)
-  }
+  const [tableName, setTableName] = useState<string | null>(null)
 
   const jobIcon = '/./assets/icon-job.svg'
 
+  // Get table name from contract
   useEffect(() => {
-    if (jobTableContract) getEntityJobs()
-  }, [teamId, jobTableContract])
+    async function getTableName() {
+      if (!jobTableContract) return
+      try {
+        const name: any = await readContract({
+          contract: jobTableContract,
+          method: 'getTableName' as string,
+          params: [],
+        })
+        setTableName(name)
+      } catch (error) {
+        console.error('Error fetching table name:', error)
+      }
+    }
+    getTableName()
+  }, [jobTableContract])
+
+  const statement = tableName
+    ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
+    : null
+  const { data, mutate } = useTablelandQuery(statement, {
+    revalidateOnFocus: false,
+  })
+
+  useEffect(() => {
+    if (data) {
+      setJobs(data)
+    }
+  }, [data])
+
+  const getEntityJobs = () => {
+    mutate()
+  }
 
   useEffect(() => {
     if (router.query.job) {

@@ -2,10 +2,17 @@ import { NextApiRequest, NextApiResponse } from 'next'
 
 const GUILD_ID = '914720248140279868'
 
-export default async function handler(req: NextApiRequest,
-  res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   try {
     const username = req.query.username
+    if (!username || username === '') {
+      return res
+        .status(400)
+        .json({ success: false, error: 'Username is required' })
+    }
     const response = await fetch(
       `https://discord.com/api/v10/guilds/${GUILD_ID}/members/search?query=${username}&limit=10`,
       {

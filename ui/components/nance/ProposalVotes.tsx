@@ -6,11 +6,12 @@ import {
   createEnumParam,
 } from 'next-query-params'
 import Link from 'next/link'
-import { ReactNode, useCallback, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState, useMemo } from 'react'
 import { SNAPSHOT_SPACE_NAME } from '../../lib/nance/constants'
 import { formatNumberUSStyle } from '@/lib/nance'
 import { VotesOfProposal } from '@/lib/snapshot'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { classNames } from '@/lib/utils/tailwind'
 import Votes, {
@@ -62,32 +63,18 @@ export default function ProposalVotes({
     filterBy: withDefault(createEnumParam(['for', 'against']), ''),
   })
 
-  const [votingCitizens, setVotingCitizens] = useState<
-    {
-      id: string
-      name: string
-      owner: string
-    }[]
-  >([])
-
-  const fetchVotingCitizens = useCallback(async () => {
-    const statement = `SELECT id, name, owner FROM ${
+  const statement = useMemo(() => {
+    if (votesOfProposal.votes.length === 0) return null
+    return `SELECT id, name, owner FROM ${
       CITIZEN_TABLE_NAMES[chainSlug]
     } WHERE owner IN (${votesOfProposal.votes
       .map((v) => `'${v.voter.toLowerCase()}'`)
       .join(',')})`
-    const citizenTableRes = await fetch(
-      `/api/tableland/query?statement=${statement}`
-    )
-    const citizenTableData = await citizenTableRes.json()
-    setVotingCitizens(citizenTableData)
-  }, [votesOfProposal, chainSlug])
+  }, [votesOfProposal.votes, chainSlug])
 
-  useEffect(() => {
-    if (votesOfProposal.votes.length > 0) {
-      fetchVotingCitizens()
-    }
-  }, [votesOfProposal.votes, fetchVotingCitizens])
+  const { data: votingCitizens = [] } = useTablelandQuery(statement, {
+    revalidateOnFocus: false,
+  })
 
   const proposalInfo = votesOfProposal.proposal
   const proposalType = proposalInfo?.type ?? ''
@@ -111,10 +98,10 @@ export default function ProposalVotes({
   } else if (query.sortBy === 'name') {
     votes = votes.sort((a, b) => {
       const citizenA = votingCitizens.find(
-        (c) => c.owner.toLowerCase() === a.voter.toLowerCase()
+        (c: any) => c.owner.toLowerCase() === a.voter.toLowerCase()
       )
       const citizenB = votingCitizens.find(
-        (c) => c.owner.toLowerCase() === b.voter.toLowerCase()
+        (c: any) => c.owner.toLowerCase() === b.voter.toLowerCase()
       )
 
       const nameA = citizenA?.name || ''
@@ -134,7 +121,7 @@ export default function ProposalVotes({
 
   const Voter = ({ address }: { address: string }) => {
     const citizen = votingCitizens.find(
-      (c) => c.owner.toLowerCase() === address.toLowerCase()
+      (c: any) => c.owner.toLowerCase() === address.toLowerCase()
     )
     return citizen ? (
       <Link

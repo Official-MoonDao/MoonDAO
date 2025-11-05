@@ -22,28 +22,23 @@ export function useTeamWearer(
           setIsLoading(false)
           return
         }
-        const res = await fetch('/api/hats/get-wearer', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            chainId: selectedChain.id,
-            wearerAddress: address,
-            props: {
-              currentHats: {
-                props: {
-                  tree: {},
+        const propsParam = encodeURIComponent(
+          JSON.stringify({
+            currentHats: {
+              props: {
+                tree: {},
+                admin: {
                   admin: {
-                    admin: {
-                      admin: {},
-                    },
+                    admin: {},
                   },
                 },
               },
             },
-          }),
-        })
+          })
+        )
+        const res = await fetch(
+          `/api/hats/get-wearer?chainId=${selectedChain.id}&wearerAddress=${address}&props=${propsParam}`
+        )
 
         const hats: any = await res.json()
 
@@ -115,7 +110,7 @@ export function useTeamWearer(
             return {
               teamId: teamId,
               hats: moondaoHatsWithTeamId.filter(
-                (hat: any) => hat.teamId === teamId
+                (hat: any) => +hat.teamId === +teamId
               ),
             }
           })
