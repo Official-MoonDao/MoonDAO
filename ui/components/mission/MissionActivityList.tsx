@@ -1,3 +1,4 @@
+import { ArrowDownIcon } from '@heroicons/react/24/outline'
 import { NativeTokenValue, useSuckers } from 'juice-sdk-react'
 import { useMemo, useState } from 'react'
 import { transformEventData } from '@/lib/juicebox/transformEventData'
@@ -22,6 +23,8 @@ export default function MissionActivityList({
     data: projectEventsQueryResult,
     isLoading: loadingEvents,
     fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useOmnichainSubgraphProjectEvents({
     filter: filter === 'all' ? undefined : filter,
     sucker: suckers?.find((s: any) => s.peerChainId === selectedChain.id),
@@ -36,7 +39,7 @@ export default function MissionActivityList({
         .filter((event) => !!event)
         .map((e) => translateEventDataToPresenter(e, tokenSymbol, citizens)) ??
       [],
-    [projectEventsQueryResult?.pages]
+    [projectEventsQueryResult?.pages, tokenSymbol, citizens]
   )
 
   return (
@@ -54,7 +57,7 @@ export default function MissionActivityList({
           ]}
         />
       </div>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 py-2">
         {projectEvents.map((event, i) => (
           <MissionActivityEvent
             key={event?.event.id + i}
@@ -62,20 +65,59 @@ export default function MissionActivityList({
             subject={event?.subject}
             extra={event?.extra}
             address={event?.address}
-            name={event?.name}
+            citizen={event?.citizen || null}
             event={event?.event}
           />
         ))}
-        <button className="text-lg text-left" onClick={() => fetchNextPage()}>
-          Load more
-        </button>
+        {hasNextPage && (
+          <button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="w-full bg-gradient-to-br from-slate-700/20 to-slate-800/30 border border-white/10 hover:from-slate-600/30 hover:to-slate-700/40 hover:border-white/20 backdrop-blur-sm rounded-xl p-4 transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none flex items-center justify-center gap-2 text-white/90 hover:text-white font-medium"
+          >
+            {isFetchingNextPage ? (
+              <>
+                <svg
+                  className="animate-spin h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span>Loading...</span>
+              </>
+            ) : (
+              <>
+                <ArrowDownIcon className="w-5 h-5" />
+                <span>Load more</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   )
 }
 
 function RichNote({ note }: { note: string }) {
-  return <div className="text-sm break-words">{note}</div>
+  return (
+    <div className="text-sm break-words text-white/80 leading-relaxed">
+      {note}
+    </div>
+  )
 }
 
 function translateEventDataToPresenter(
@@ -83,6 +125,10 @@ function translateEventDataToPresenter(
   tokenSymbol: string | undefined,
   citizens: any[]
 ) {
+  const citizen = citizens.find(
+    (citizen) =>
+      citizen.owner.toLowerCase() == event?.beneficiary?.toLowerCase()
+  )
   switch (event.type) {
     case 'payEvent':
       return {
@@ -94,15 +140,7 @@ function translateEventDataToPresenter(
           </span>
         ),
         extra: <RichNote note={event.memo} />,
-        name:
-          citizens.find(
-            (citizen) =>
-              citizen.owner.toLowerCase() == event?.beneficiary?.toLowerCase()
-          )?.name ||
-          event?.beneficiary.slice(0, 6) +
-            '...' +
-            event?.beneficiary.slice(-4) ||
-          null,
+        citizen: citizen,
       }
     case 'addToBalanceEvent':
       return {
@@ -116,10 +154,6 @@ function translateEventDataToPresenter(
         extra: null,
       }
     case 'mintTokensEvent':
-      const name = citizens.find(
-        (citizen) =>
-          citizen.owner.toLowerCase() == event.beneficiary.toLowerCase()
-      )?.name
       return {
         event,
         header: 'Minted tokens',
@@ -133,7 +167,7 @@ function translateEventDataToPresenter(
         ),
         extra: null,
         address: event.beneficiary,
-        name: name,
+        citizen: citizen,
       }
 
     case 'deployErc20Event':
