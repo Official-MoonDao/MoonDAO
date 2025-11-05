@@ -19,6 +19,7 @@ interface DeploymentConfig {
   FeeHook: string
   MissionCreator: string
   UniswapV4Router: string
+  MissionTable: string
 }
 
 type Index = { [key: string]: string }
@@ -252,15 +253,21 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
 }
 
 export const FEATURED_MISSION_INDEX = 3
+export const FEATURED_MISSION = {
+  id: '3',
+  name: 'Support the Inspiration4 Complex at Space Camp',
+  description:
+    'Donate to support real training hardware and inspire future astronauts at Space Camp, USA',
+}
 
 export const MISSION_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x1B50781A23e32d70Be36116aAe9a21C8B4706E22',
-  sepolia: '0x6ac6a697C7f8F99bF2779aa8e0B4597311771101',
+  arbitrum: arbitrumConfig.MissionTable,
+  sepolia: sepoliaConfig.MissionTable,
 }
 
 export const MISSION_TABLE_NAMES: Index = {
   arbitrum: 'MissionTable_42161_151',
-  sepolia: 'MissionTable_11155111_1974',
+  sepolia: 'MissionTable_11155111_2026',
 }
 
 export const MISSION_CREATOR_ADDRESSES: Index = {

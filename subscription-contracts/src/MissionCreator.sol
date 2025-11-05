@@ -36,8 +36,10 @@ contract MissionCreator is Ownable, IERC721Receiver {
     address public moonDAOTreasury;
     address public feeHookAddress;
     address positionManagerAddress;
+    uint256[] public missionIds;
     mapping(uint256 => uint256) public missionIdToProjectId;
     mapping(uint256 => address) public missionIdToPayHook;
+    mapping(uint256 => address) public missionIdToApprovalHook;
     mapping(uint256 => address) public missionIdToTeamVesting;
     mapping(uint256 => address) public missionIdToMoonDAOVesting;
     mapping(uint256 => address) public missionIdToPoolDeployer;
@@ -87,6 +89,17 @@ contract MissionCreator is Ownable, IERC721Receiver {
         feeHookAddress = _feeHookAddress;
     }
 
+    function setMissionData(uint256 missionId, uint256 projectId, address payHook, address approvalHook, address teamVesting, address moonDAOVesting, address poolDeployer, uint256 fundingGoal, address terminal) external onlyOwner {
+        missionIdToProjectId[missionId] = projectId;
+        missionIdToPayHook[missionId] = payHook;
+        missionIdToApprovalHook[missionId] = approvalHook;
+        missionIdToTeamVesting[missionId] = teamVesting;
+        missionIdToMoonDAOVesting[missionId] = moonDAOVesting;
+        missionIdToPoolDeployer[missionId] = poolDeployer;
+        missionIdToFundingGoal[missionId] = fundingGoal;
+        missionIdToTerminal[missionId] = terminal;
+    }
+
     function createMission(uint256 teamId, address to, string calldata projectUri, uint256 fundingGoal, uint256 deadline, uint256 refundPeriod, bool token, string calldata tokenName, string calldata tokenSymbol, string calldata memo) external returns (uint256) {
 
         if(msg.sender != owner()) {
@@ -102,7 +115,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
 
 
         LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, to);
-        LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, address(terminal));
+        LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, address(terminal), to);
         // Ruleset 0 is funding/refunds
         // Ruleset 0 has a cashout hook that will only allow refunds if the deadline has passed and the funding goal has not been met.
         // Ruleset 0 has an approval hook that will automatically move to ruleset 1 if the funding goal is met and if the deadline has passed.
@@ -115,7 +128,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
             duration: 0, // A duration of 0 means the ruleset will last indefinitely until the next ruleset is queued. Any non-zero value would be the number of seconds this ruleset will last before the next ruleset is queued. If no new rulesets are queued, this ruleset will cycle over to another period with the same duration.
             weight: 2_000_000_000_000_000_000_000, // Standard rate is 2,000 tokens issued per unit of `baseCurrency` set below, 1,000 going to the funder and 1,000 going to the project. Note that this will be modified by the payhook based on current amount of funds raised, min funding required, and funding goal.
             weightCutPercent: 0, // 0% weight cut. If the `duration` property above is set to a non-zero value, the `weightCutPercent` property will be used to determine how much of the weight is cut from this ruleset to the next cycle.
-            approvalHook: IJBRulesetApprovalHook(address(launchPadApprovalHook)), // No approval hook contract is attached to this ruleset, meaning new rulesets can be queued at any time and will take effect as soon as possible given the current ruleset's `duration`.
+            approvalHook: IJBRulesetApprovalHook(address(launchPadApprovalHook)),
             metadata: JBRulesetMetadata({
                 reservedPercent: 5_000, // 50% of tokens are reserved, to be split according to the `splitGroups` property below.
                 cashOutTaxRate: 0, // 0% tax on cashouts.
@@ -289,8 +302,10 @@ contract MissionCreator is Ownable, IERC721Receiver {
         jbProjects.safeTransferFrom(address(this), to, projectId);
 
         uint256 missionId = missionTable.insertIntoTable(teamId, projectId, fundingGoal);
+        missionIds.push(missionId);
         missionIdToProjectId[missionId] = projectId;
         missionIdToPayHook[missionId] = address(launchPadPayHook);
+        missionIdToApprovalHook[missionId] = address(launchPadApprovalHook);
         missionIdToTeamVesting[missionId] = address(teamVesting);
         missionIdToMoonDAOVesting[missionId] = address(moonDAOVesting);
         missionIdToPoolDeployer[missionId] = address(poolDeployer);

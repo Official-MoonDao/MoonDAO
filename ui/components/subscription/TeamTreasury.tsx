@@ -36,7 +36,7 @@ export default function TeamTreasury({
   )
 
   return (
-    <div className="w-full p-6">
+    <>
       {safeModalEnabled && isSigner && (
         <SafeModal
           safeData={safeData}
@@ -58,8 +58,9 @@ export default function TeamTreasury({
           setEnabled={setSafeSendModalEnabled}
         />
       )}
-      <div className="flex flex-col">
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center mb-6">
+      <section className="p-6">
+        <div className="w-full flex flex-col justify-between gap-5">
+        <div className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
           <div className="flex gap-5">
             <Image
               src={'/assets/icon-treasury.svg'}
@@ -111,7 +112,8 @@ export default function TeamTreasury({
             <SafeTransactions address={address} safeData={safeData} />
           </div>
         )}
-      </div>
-    </div>
+        </div>
+      </section>
+    </>
   )
 }

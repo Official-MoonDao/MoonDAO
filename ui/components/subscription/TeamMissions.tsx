@@ -197,61 +197,65 @@ export default function TeamMissions({
   if (!missions?.[0]) return null
 
   return (
-    <div
+    <section
       id="team-missions"
-      className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section"
+      className="p-6"
     >
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 pr-12">
-        <div className="flex gap-5 opacity-[50%]">
-          <Image
-            src={'/assets/icon-marketplace.svg'}
-            alt="Marketplace icon"
-            width={30}
-            height={30}
-          />
-          <h2 className="header font-GoodTimes">
-            {missions.length > 1 ? 'Missions' : 'Mission'}
-          </h2>
+      <div className="w-full flex flex-col justify-between gap-5">
+        <div className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
+          <div className="flex gap-5">
+            <Image
+              src={'/assets/icon-marketplace.svg'}
+              alt="Marketplace icon"
+              width={30}
+              height={30}
+              className="opacity-70"
+            />
+            <h2 className="font-GoodTimes text-2xl text-white">
+              {missions.length > 1 ? 'Missions' : 'Mission'}
+            </h2>
+          </div>
+          {isManager && (
+            <StandardButton
+              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
+              onClick={() => router.push('/launch')}
+            >
+              Create a Mission
+            </StandardButton>
+          )}
         </div>
-        {isManager && (
-          <StandardButton
-            className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
-            onClick={() => router.push('/launch')}
-          >
-            Create a Mission
-          </StandardButton>
-        )}
+        <div className="mt-4">
+          <div className="flex gap-4">
+            {missions?.[0] &&
+              missions
+                .slice(pageIdx - 1, pageIdx)
+                .map((mission) => (
+                  <TeamMission
+                    key={mission.id}
+                    selectedChain={selectedChain}
+                    mission={mission}
+                    missionTableContract={missionTableContract}
+                    missionCreatorContract={missionCreatorContract}
+                    jbControllerContract={jbControllerContract}
+                    jbDirectoryContract={jbDirectoryContract}
+                    jbTokensContract={jbTokensContract}
+                    teamContract={teamContract}
+                    isManager={isManager}
+                  />
+                ))}
+          </div>
+        </div>
+        <div className="mt-8">
+          {missions?.length > 1 && (
+            <PaginationButtons
+              handlePageChange={handlePageChange}
+              maxPage={maxPage}
+              pageIdx={pageIdx}
+              label="Mission"
+            />
+          )}
+        </div>
       </div>
-
-      <div className="mt-4 flex gap-4 px-8">
-        {missions?.[0] &&
-          missions
-            .slice(pageIdx - 1, pageIdx)
-            .map((mission) => (
-              <TeamMission
-                key={mission.id}
-                selectedChain={selectedChain}
-                mission={mission}
-                missionTableContract={missionTableContract}
-                missionCreatorContract={missionCreatorContract}
-                jbControllerContract={jbControllerContract}
-                jbDirectoryContract={jbDirectoryContract}
-                jbTokensContract={jbTokensContract}
-                teamContract={teamContract}
-                isManager={isManager}
-              />
-            ))}
-      </div>
-      <div className="mt-8">
-        {missions?.length > 1 && (
-          <PaginationButtons
-            handlePageChange={handlePageChange}
-            maxPage={maxPage}
-            pageIdx={pageIdx}
-            label="Mission"
-          />
-        )}
-      </div>
-    </div>
+    </section>
   )
 }

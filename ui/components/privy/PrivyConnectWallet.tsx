@@ -622,7 +622,7 @@ export function PrivyConnectWallet({
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
   const [previousChain, setPreviousChain] = useState(selectedChain)
 
-  const nativeBalance = useNativeBalance()
+  const { nativeBalance } = useNativeBalance()
 
   const {
     tokens: walletTokens,

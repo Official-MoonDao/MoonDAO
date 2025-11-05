@@ -18,24 +18,13 @@ export default function Page451() {
                   {`We're Sorry, Access is Restricted`}
                 </h1>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  We value privacy and transparency, and we're actively
-                  exploring ways to serve our global community in a compliant
-                  manner. If you’d like to stay up to date with the latest
-                  developments, please join our Discord server at
+                  It looks like the location you’re visiting from is currently
+                  restricted, so we can’t provide access right now. We’re
+                  working to expand availability while staying compliant. If
+                  you’d like updates, please join our Discord server at
                   https://discord.gg/moondao. Thank you for your understanding.
                 </p>
               </div>
-            </div>
-
-            {/* Actions */}
-            <div className="space-y-3">
-              <Link
-                href="/"
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
-                passHref
-              >
-                <span>Go to Homepage</span>
-              </Link>
             </div>
           </div>
         </div>

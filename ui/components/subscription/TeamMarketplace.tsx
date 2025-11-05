@@ -89,7 +89,7 @@ export default function TeamMarketplace({
         </div>
         {isManager && (
           <StandardButton
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl py-3 px-6 font-semibold transition-all duration-200 hover:scale-105"
+            className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
             onClick={() => setListingModalEnabled(true)}
           >
             Create a Listing

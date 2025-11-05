@@ -284,26 +284,60 @@ export default function ProposalInfo({
 }
 
 function ProposalStatus({ status }: { status: string }) {
-  const statusColors = {
-    Voting:
-      'bg-gradient-to-r from-yellow-300 to-yellow-600 text-yellow-800 text-sm',
-    Archived: 'bg-gradient-to-r from-gray-800 to-gray-600 text-white text-sm',
-    Approved: 'bg-gradient-to-r from-green-800 to-green-600 text-white text-sm',
-    Discussion: 'bg-gradient-to-r from-[#425EEB] to-[#6D3F79] text-white',
-    Cancelled: 'bg-gradient-to-r from-red-800 to-red-600 text-white',
+  const statusConfig = {
+    Voting: {
+      bg: 'bg-emerald-500/10',
+      border: 'border-emerald-500/30',
+      text: 'text-emerald-400',
+      dot: 'bg-emerald-500'
+    },
+    'Temperature Check': {
+      bg: 'bg-orange-500/10',
+      border: 'border-orange-500/30', 
+      text: 'text-orange-400',
+      dot: 'bg-orange-500'
+    },
+    Archived: {
+      bg: 'bg-gray-500/10',
+      border: 'border-gray-500/30',
+      text: 'text-gray-400',
+      dot: 'bg-gray-500'
+    },
+    Approved: {
+      bg: 'bg-green-500/10',
+      border: 'border-green-500/30',
+      text: 'text-green-400',
+      dot: 'bg-green-500'
+    },
+    Discussion: {
+      bg: 'bg-blue-500/10',
+      border: 'border-blue-500/30',
+      text: 'text-blue-400',
+      dot: 'bg-blue-500'
+    },
+    Cancelled: {
+      bg: 'bg-red-500/10',
+      border: 'border-red-500/30',
+      text: 'text-red-400',
+      dot: 'bg-red-500'
+    },
   }
 
-  const colorClass =
-    statusColors[status as keyof typeof statusColors] ||
-    'bg-gray-200 text-gray-800'
+  const config = statusConfig[status as keyof typeof statusConfig] || {
+    bg: 'bg-gray-500/10',
+    border: 'border-gray-500/30', 
+    text: 'text-gray-400',
+    dot: 'bg-gray-500'
+  }
 
   return (
-    <div>
-      <span
-        className={`px-3 py-1 rounded-full text-xs font-medium ${colorClass} font-GoodTimes inline-block`}
-      >
-        {status}
-      </span>
+    <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${config.bg} ${config.border} backdrop-blur-sm`}>
+        <div className={`w-2 h-2 rounded-full ${config.dot}`}></div>
+        <span className={`text-xs font-medium ${config.text} font-RobotoMono uppercase tracking-wider`}>
+          {status}
+        </span>
+      </div>
     </div>
   )
 }

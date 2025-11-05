@@ -2,3 +2,6 @@
 *cache/
 *node_modules/
 notes.txt
+fee-hook/lib/
+xp/lib/contracts/
+contracts/lib/

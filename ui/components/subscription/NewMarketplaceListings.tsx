@@ -1,8 +1,8 @@
+import { ShoppingBagIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
-import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
 
@@ -78,22 +78,34 @@ export default function NewMarketplaceListings({
   }, [listings, teamContract, now])
 
   return (
-    <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 pr-12">
-        <div className="flex gap-5 opacity-[50%]">
-          <h2 className="header font-GoodTimes">Newest Listings</h2>
+    <div className="bg-gradient-to-br from-purple-600/20 to-indigo-800/20 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+        <div>
+          <h3 className="text-2xl font-bold text-white flex items-center gap-2 mb-2">
+            <ShoppingBagIcon className="w-7 h-7" />
+            Newest Listings
+          </h3>
+          <p className="text-purple-200 text-sm">
+            Discover and trade exclusive items from space missions
+          </p>
         </div>
 
         <StandardButton
-          className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
+          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all"
           onClick={() => router.push('/marketplace')}
         >
-          See More
+          View All Items
         </StandardButton>
       </div>
 
-      <SlidingCardMenu>
-        <div id="new-marketplace-listings-container" className="flex gap-5">
+      <div
+        className="overflow-x-auto overflow-y-hidden"
+        style={{ msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+      >
+        <div
+          id="new-marketplace-listings-container"
+          className="flex gap-4 pb-2"
+        >
           {newListings.map((listing, i) => (
             <TeamListing
               key={`team-listing-${i}`}
@@ -106,7 +118,7 @@ export default function NewMarketplaceListings({
             />
           ))}
         </div>
-      </SlidingCardMenu>
+      </div>
     </div>
   )
 }
