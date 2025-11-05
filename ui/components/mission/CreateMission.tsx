@@ -293,11 +293,8 @@ export default function CreateMission({
       setTeamRequirementModalEnabled(userTeamsAsManager?.[0] === undefined)
   }, [userTeams, userTeamsAsManager, userTeamsAsManagerLoading])
 
-  const {
-    data: fundingGoalInETH,
-    isLoading: fundingGoalInETHIsLoading,
-    refresh: getFundingGoalInETH,
-  } = useETHPrice(missionData?.fundingGoal || 0, 'USD_TO_ETH')
+  const { data: fundingGoalInETH, isLoading: fundingGoalInETHIsLoading } =
+    useETHPrice(missionData?.fundingGoal || 0, 'USD_TO_ETH')
 
   const [isUploadingImage, setIsUploadingImage] = useState(false)
 
@@ -912,7 +909,6 @@ export default function CreateMission({
                           </p>
                         </div>
                       }
-                      onBlur={getFundingGoalInETH}
                     />
                   </div>
 

@@ -7,9 +7,10 @@ import {
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
@@ -31,26 +32,23 @@ export default function RewardsThankYou({
   const account = useActiveAccount()
   const address = account?.address
 
-  const [userDistribution, setUserDistribution] = useState<Distribution>()
+  const { quarter, year } = getRelativeQuarter(-1)
+  const statement = address
+    ? `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
+    : null
 
-  useEffect(() => {
-    async function getUserDistribution() {
-      const { quarter, year } = getRelativeQuarter(-1)
+  const { data: distributions } = useTablelandQuery(statement, {
+    revalidateOnFocus: false,
+  })
 
-      const distributionStatement = `SELECT * FROM ${distributionTableName} WHERE year = ${year} AND quarter = ${quarter}`
-      const res = await fetch(
-        `/api/tableland/query?statement=${distributionStatement}`
-      )
-      const distributions = await res.json()
-      const userDist = distributions.find(
-        (distribution: any) =>
-          distribution?.address.toLowerCase() === address?.toLowerCase()
-      )
-      setUserDistribution(userDist)
-    }
-
-    if (address) getUserDistribution()
-  }, [address, distributionTableName])
+  // Find user's distribution
+  const userDistribution = useMemo(() => {
+    if (!distributions || !address) return undefined
+    return distributions.find(
+      (distribution: any) =>
+        distribution?.address.toLowerCase() === address.toLowerCase()
+    )
+  }, [distributions, address])
 
   const descriptionSection = (
     <p>You've successfully submitted your project allocations!</p>

@@ -1,31 +1,21 @@
+import { setCDNCacheHeaders } from 'middleware/cacheHeaders'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 
-let priceCache: {
-  data: any
-  timestamp: number
-} | null = null
-
-const CACHE_DURATION = 60 * 1000
-
 async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
   try {
-    const now = Date.now()
-    if (priceCache && now - priceCache.timestamp < CACHE_DURATION) {
-      return res.status(200).json(priceCache.data)
-    }
+    setCDNCacheHeaders(res, 60, 60, 'Accept-Encoding')
 
     const ethPrice = await fetch(
       `https://api.etherscan.io/v2/api?module=stats&action=ethprice&chainid=1&apikey=${process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY}`
     )
 
     const ethPriceData = await ethPrice.json()
-
-    priceCache = {
-      data: ethPriceData,
-      timestamp: now,
-    }
 
     res.status(200).json(ethPriceData)
   } catch (error) {

@@ -2,6 +2,7 @@ import { ShoppingBagIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import StandardButton from '../layout/StandardButton'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
 
@@ -18,37 +19,63 @@ export default function NewMarketplaceListings({
 }: NewMarketplaceListingsProps) {
   const router = useRouter()
   const [newListings, setNewListings] = useState<TeamListingType[]>([])
+  const [tableName, setTableName] = useState<string | null>(null)
 
+  // Get table name from contract
   useEffect(() => {
-    //get latest 25 listings
-    async function getNewMarketplaceListings() {
-      const now = Math.floor(Date.now() / 1000)
-      const tableName = await readContract({
-        contract: marketplaceTableContract,
-        method: 'getTableName' as string,
-        params: [],
-      })
-      const statement = `SELECT * FROM ${tableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
-      const allListingsRes = await fetch(
-        `/api/tableland/query?statement=${statement}`
-      )
-      const listings = await allListingsRes.json()
-      const validListings = listings.filter(
-        async (listing: TeamListingType) => {
-          const teamExpiration = await readContract({
-            contract: teamContract,
-            method: 'expiresAt' as string,
-            params: [listing.teamId],
+    async function getTableName() {
+      if (!marketplaceTableContract) return
+      try {
+        const name: any = await readContract({
+          contract: marketplaceTableContract,
+          method: 'getTableName' as string,
+          params: [],
+        })
+        setTableName(name)
+      } catch (error) {
+        console.error('Error fetching table name:', error)
+      }
+    }
+    getTableName()
+  }, [marketplaceTableContract])
+
+  // Build statement with current timestamp
+  const now = Math.floor(Date.now() / 1000)
+  const statement = tableName
+    ? `SELECT * FROM ${tableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
+    : null
+
+  const { data: listings } = useTablelandQuery(statement, {
+    revalidateOnFocus: false,
+  })
+
+  // Process and filter listings
+  useEffect(() => {
+    async function processListings() {
+      if (!listings || !teamContract) return
+
+      const validListings = await Promise.all(
+        listings
+          .map(async (listing: TeamListingType) => {
+            try {
+              const teamExpiration = await readContract({
+                contract: teamContract,
+                method: 'expiresAt' as string,
+                params: [listing.teamId],
+              })
+              return +teamExpiration.toString() > now ? listing : null
+            } catch {
+              return null
+            }
           })
-          return +teamExpiration.toString() > now
-        }
+          .filter((listing: any) => listing !== null)
       )
+
       setNewListings(validListings)
     }
-    if (teamContract && marketplaceTableContract) {
-      getNewMarketplaceListings()
-    }
-  }, [teamContract, marketplaceTableContract])
+
+    processListings()
+  }, [listings, teamContract, now])
 
   return (
     <div className="bg-gradient-to-br from-purple-600/20 to-indigo-800/20 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4">
@@ -71,8 +98,14 @@ export default function NewMarketplaceListings({
         </StandardButton>
       </div>
 
-      <div className="overflow-x-auto overflow-y-hidden" style={{ msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
-        <div id="new-marketplace-listings-container" className="flex gap-4 pb-2">
+      <div
+        className="overflow-x-auto overflow-y-hidden"
+        style={{ msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+      >
+        <div
+          id="new-marketplace-listings-container"
+          className="flex gap-4 pb-2"
+        >
           {newListings.map((listing, i) => (
             <TeamListing
               key={`team-listing-${i}`}
