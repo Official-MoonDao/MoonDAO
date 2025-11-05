@@ -58,7 +58,7 @@ export default function StandardWideCard({
           ></div>
           <span
             id="content-container"
-            className={`h-full md:p-[32px] rounded-[20px] overflow-hidden flex flex-col justify-between bg-[#14162c]`}
+            className={`h-full md:p-[32px] rounded-[20px] overflow-hidden flex flex-col justify-between bg-slate-800/50`}
           >
             <span
               id="content"
@@ -147,7 +147,7 @@ export default function StandardWideCard({
         </div>
       </span>
       {fullParagraph && showMoreButton && (
-        <div className="absolute bottom-[-20px] left-[5%] gradient-2 rounded-full">
+        <div className="absolute bottom-[-20px] left-[5%] gradient-2 rounded-full z-[50]">
           <StandardButton
             onClick={(e: React.MouseEvent) => {
               e.preventDefault()

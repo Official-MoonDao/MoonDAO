@@ -154,6 +154,21 @@ export default function SafeTransactions({
                       ? 'Reject Transaction'
                       : tx.dataDecoded?.method || 'Unknown Method'
 
+                    // Get recipient address - for token transfers, show the actual recipient
+                    // For ETH transfers, use tx.to directly
+                    let recipientAddress = tx.to
+                    if (
+                      tx.dataDecoded?.method === 'transfer' ||
+                      tx.dataDecoded?.method === 'transferFrom'
+                    ) {
+                      // For transfer: parameters[0] = to, parameters[1] = value
+                      // For transferFrom: parameters[0] = from, parameters[1] = to, parameters[2] = value
+                      recipientAddress =
+                        tx.dataDecoded.method === 'transfer'
+                          ? tx.dataDecoded.parameters?.[0]?.value
+                          : tx.dataDecoded.parameters?.[1]?.value
+                    }
+
                     return (
                       <div
                         key={tx.safeTxHash}
@@ -177,7 +192,7 @@ export default function SafeTransactions({
                           data-testid={`transaction-to-${tx.safeTxHash}`}
                           className="text-gray-300 mb-2"
                         >
-                          To: <span className="text-sm">{tx.to}</span>
+                          To: <span className="text-sm">{recipientAddress}</span>
                         </p>
                         <p
                           data-testid={`transaction-value-${tx.safeTxHash}`}

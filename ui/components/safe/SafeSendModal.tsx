@@ -26,14 +26,11 @@ type SafeBalanceUsdResponse = {
   balance: string
 }
 
-type SafeModalTabType = 'signers' | 'transactions' | 'send'
-
 export default function SafeSendModal({
   safeData,
   safeAddress,
   setEnabled,
 }: SafeModalProps) {
-  const [tab, setTab] = useState<SafeModalTabType>('send')
   const [amount, setAmount] = useState('')
   const [to, setTo] = useState('')
   const [selectedToken, setSelectedToken] = useState<string>('native')
@@ -96,170 +93,225 @@ export default function SafeSendModal({
 
   return (
     <Modal id="safe-modal" setEnabled={setEnabled}>
-      <div
-        data-testid="safe-modal-content"
-        className="bg-dark-cool rounded-[2vmax] p-8 max-w-2xl min-w-[350px] w-full relative md:min-w-[600px]"
-      >
+      <div className="w-screen md:w-[550px] mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white">
+        {/* Header */}
         <div
           data-testid="safe-modal-header"
-          className="w-full flex items-center justify-between"
+          className="flex items-center justify-between p-6 border-b border-white/10"
         >
-          <h1
-            data-testid="safe-modal-title"
-            className="text-2xl font-GoodTimes"
-          >
-            Safe
-          </h1>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2
+                data-testid="safe-modal-title"
+                className="text-xl font-semibold text-white"
+              >
+                Send Funds
+              </h2>
+              <p className="text-gray-300 text-sm">Safe Wallet</p>
+            </div>
+          </div>
           <button
             data-testid="safe-modal-close"
             id="close-modal"
             type="button"
-            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200"
             onClick={() => setEnabled(false)}
           >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+            <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
           </button>
         </div>
 
-        {isNetworkMismatch ? (
-          <SafeNetworkMismatch />
-        ) : (
-          <div>
-            {/* Current Safe Info */}
-            <div data-testid="safe-info" className="mb-4">
-              <p data-testid="safe-address" className="text-gray-400 mb-2">
-                {'Address: '}
-                <Link
-                  className="hover:underline"
-                  href={`https://app.safe.global/home?safe=${
-                    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
-                  }:${safeAddress}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
+        <div className="p-6 space-y-4">
+          {isNetworkMismatch ? (
+            <SafeNetworkMismatch />
+          ) : (
+            <>
+              {/* Current Safe Info */}
+              <div
+                data-testid="safe-info"
+                className="bg-black/20 border border-white/10 rounded-lg p-4"
+              >
+                <p className="text-gray-300 text-sm mb-2">Safe Address</p>
+                <p
+                  data-testid="safe-address"
+                  className="text-white font-mono text-sm"
                 >
-                  {safeAddress.slice(0, 6)}...{safeAddress.slice(-4)}
-                </Link>
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-4" data-testid="safe-send-form">
-              <div className="flex gap-4 items-center">
-                <select
-                  data-testid="token-select"
-                  className="max-w-[200px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-                  onChange={({ target }) => setSelectedToken(target.value)}
-                  value={selectedToken}
-                >
-                  {safeBalances?.map((balance: SafeBalanceUsdResponse) => (
-                    <option
-                      key={balance.tokenAddress || 'native'}
-                      value={balance.token?.symbol?.toLowerCase() || 'native'}
-                    >
-                      {balance.token?.symbol || 'ETH'}
-                    </option>
-                  ))}
-                </select>
-
-                {selectedToken === 'native' ? (
-                  <SafeAsset
-                    label={'ETH'}
-                    balance={formatUnits(
-                      safeBalances?.find(
-                        (b: SafeBalanceUsdResponse) => !b.tokenAddress
-                      )?.balance || '0',
-                      18
-                    )}
-                  />
-                ) : (
-                  safeBalances?.map((balance: SafeBalanceUsdResponse) => {
-                    if (
-                      balance.token?.symbol?.toLowerCase() === selectedToken
-                    ) {
-                      return (
-                        <SafeAsset
-                          key={balance.tokenAddress || 'native'}
-                          label={balance.token?.symbol || 'ETH'}
-                          balance={formatUnits(
-                            balance.balance,
-                            balance.token?.decimals || 18
-                          )}
-                        />
-                      )
-                    }
-                    return null
-                  })
-                )}
+                  <Link
+                    className="hover:text-blue-400 transition-colors"
+                    href={`https://app.safe.global/home?safe=${
+                      process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+                        ? 'arb1'
+                        : 'sep'
+                    }:${safeAddress}`}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    {safeAddress.slice(0, 6)}...{safeAddress.slice(-4)}
+                  </Link>
+                </p>
               </div>
 
-              <input
-                data-testid="recipient-address"
-                type="text"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-                placeholder="To address"
-                className="flex-1 bg-darkest-cool text-white px-4 py-2 rounded-lg"
-              />
-              <input
-                data-testid="amount-input"
-                type="text"
-                value={amount}
-                onChange={({ target }) => {
-                  const value = target.value
+              <div className="flex flex-col gap-4" data-testid="safe-send-form">
+                {/* Token Selection */}
+                <div className="space-y-2">
+                  <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+                    Token
+                  </label>
+                  <div className="flex flex-col gap-4">
+                    <select
+                      data-testid="token-select"
+                      className="flex-1 bg-black/20 border border-white/10 rounded-lg p-3 text-white hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                      onChange={({ target }) => setSelectedToken(target.value)}
+                      value={selectedToken}
+                    >
+                      {safeBalances?.map((balance: SafeBalanceUsdResponse) => (
+                        <option
+                          key={balance.tokenAddress || 'native'}
+                          value={
+                            balance.token?.symbol?.toLowerCase() || 'native'
+                          }
+                          className="bg-gray-900"
+                        >
+                          {balance.token?.symbol || 'ETH'}
+                        </option>
+                      ))}
+                    </select>
 
-                  // Allow empty input for backspacing
-                  if (value === '') {
-                    setAmount('')
-                    return
-                  }
+                    {selectedToken === 'native' ? (
+                      <SafeAsset
+                        label={'ETH'}
+                        balance={formatUnits(
+                          safeBalances?.find(
+                            (b: SafeBalanceUsdResponse) => !b.tokenAddress
+                          )?.balance || '0',
+                          18
+                        )}
+                      />
+                    ) : (
+                      safeBalances?.map((balance: SafeBalanceUsdResponse) => {
+                        if (
+                          balance.token?.symbol?.toLowerCase() === selectedToken
+                        ) {
+                          return (
+                            <SafeAsset
+                              key={balance.tokenAddress || 'native'}
+                              label={balance.token?.symbol || 'ETH'}
+                              balance={formatUnits(
+                                balance.balance,
+                                balance.token?.decimals || 18
+                              )}
+                            />
+                          )
+                        }
+                        return null
+                      })
+                    )}
+                  </div>
+                </div>
 
-                  // Only allow numbers and decimal point
-                  if (!/^\d*\.?\d*$/.test(value)) {
-                    return
-                  }
+                {/* Recipient Address */}
+                <div className="space-y-2">
+                  <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+                    Recipient Address
+                  </label>
+                  <input
+                    data-testid="recipient-address"
+                    type="text"
+                    value={to}
+                    onChange={(e) => setTo(e.target.value)}
+                    placeholder="0x..."
+                    className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                  />
+                </div>
 
-                  const token =
-                    selectedToken === 'native'
-                      ? safeBalances?.find(
-                          (b: SafeBalanceUsdResponse) => !b.tokenAddress
-                        )
-                      : safeBalances?.find(
-                          (b: SafeBalanceUsdResponse) =>
-                            b.token?.symbol?.toLowerCase() === selectedToken
-                        )
+                {/* Amount */}
+                <div className="space-y-2">
+                  <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+                    Amount
+                  </label>
+                  <input
+                    data-testid="amount-input"
+                    type="text"
+                    value={amount}
+                    onChange={({ target }) => {
+                      const value = target.value
 
-                  const maxAmount = token?.balance
-                    ? Number(
-                        formatUnits(token.balance, token.token?.decimals || 18)
-                      )
-                    : 0
+                      // Allow empty input for backspacing
+                      if (value === '') {
+                        setAmount('')
+                        return
+                      }
 
-                  // If there's no balance (maxAmount is 0), allow any amount
-                  if (maxAmount === 0) {
-                    setAmount(value)
-                    return
-                  }
+                      // Only allow numbers and decimal point
+                      if (!/^\d*\.?\d*$/.test(value)) {
+                        return
+                      }
 
-                  // Otherwise, validate against maxAmount
-                  if (Number(value) <= maxAmount) {
-                    setAmount(value)
-                  } else {
-                    setAmount(maxAmount.toString())
-                  }
-                }}
-                placeholder="Amount"
-                className="flex-1 bg-darkest-cool text-white px-4 py-2 rounded-lg"
-              />
-              <PrivyWeb3Button
-                dataTestId="send-button"
-                className="w-full rounded-full"
-                label="Send"
-                type="button"
-                action={handleSend}
-                isDisabled={!isValid}
-              />
-            </div>
-          </div>
-        )}
+                      const token =
+                        selectedToken === 'native'
+                          ? safeBalances?.find(
+                              (b: SafeBalanceUsdResponse) => !b.tokenAddress
+                            )
+                          : safeBalances?.find(
+                              (b: SafeBalanceUsdResponse) =>
+                                b.token?.symbol?.toLowerCase() === selectedToken
+                            )
+
+                      const maxAmount = token?.balance
+                        ? Number(
+                            formatUnits(
+                              token.balance,
+                              token.token?.decimals || 18
+                            )
+                          )
+                        : 0
+
+                      // If there's no balance (maxAmount is 0), allow any amount
+                      if (maxAmount === 0) {
+                        setAmount(value)
+                        return
+                      }
+
+                      // Otherwise, validate against maxAmount
+                      if (Number(value) <= maxAmount) {
+                        setAmount(value)
+                      } else {
+                        setAmount(maxAmount.toString())
+                      }
+                    }}
+                    placeholder="0.0"
+                    className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                  />
+                </div>
+
+                {/* Send Button */}
+                <PrivyWeb3Button
+                  dataTestId="send-button"
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  label="Send"
+                  type="button"
+                  action={handleSend}
+                  isDisabled={!isValid}
+                />
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </Modal>
   )
