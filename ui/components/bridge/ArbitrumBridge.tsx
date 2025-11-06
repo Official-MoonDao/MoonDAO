@@ -32,6 +32,7 @@ export default function ArbitrumBridge() {
   const bridgeType = 'deposit'
   const [nativeBalance, setNativeBalance] = useState<any>(0)
   const [ethMooneyBalance, setEthMooneyBalance] = useState<any>()
+  const [isEOA, setIsEOA] = useState(false)
   const [arbMooneyBalance, setArbMooneyBalance] = useState<any>()
   const [balance, setBalance] = useState(0)
   const [skipNetworkCheck, setSkipNetworkCheck] = useState(false)
@@ -80,6 +81,20 @@ export default function ArbitrumBridge() {
     )
     return depositReceipt
   }
+
+  useEffect(() => {
+    async function checkIsEOA() {
+      const provider = await wallets[selectedWallet]?.getEthersProvider()
+      // Get the code at the given address
+      if (provider) {
+        const code = await provider.getCode(address)
+        // An EOA will have an empty code (0x)
+        setIsEOA(code === '0x')
+      }
+    }
+    checkIsEOA()
+  }, [address, wallets])
+
   async function withdrawEth() {
     const l2Network = await getL2Network(arbitrum.id)
     const ethBridger = new EthBridger(l2Network)
@@ -383,29 +398,37 @@ export default function ArbitrumBridge() {
 
         {/* Action Button */}
         <div className="p-5 border-t border-white/10 bg-black/10">
-          <PrivyWeb3Button
-            v5
-            skipNetworkCheck={skipNetworkCheck}
-            requiredChain={ethereum}
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-[1.01] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
-            label="Bridge to Arbitrum"
-            action={async () => {
-              try {
-                if (inputToken === 'eth') {
-                  await depositEth()
-                } else {
-                  await depositMooney()
+          {isEOA ? (
+            <PrivyWeb3Button
+              v5
+              skipNetworkCheck={skipNetworkCheck}
+              requiredChain={ethereum}
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-[1.01] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
+              label="Bridge to Arbitrum"
+              isDisabled={!isEOA}
+              action={async () => {
+                try {
+                  if (inputToken === 'eth') {
+                    await depositEth()
+                  } else {
+                    await depositMooney()
+                  }
+                } catch (err: any) {
+                  console.log(err.message)
+                  if (
+                    err.message.includes('insufficient funds') ||
+                    err.message.includes('No retryable data found in error')
+                  )
+                    toast.error('Insufficient balance.')
                 }
-              } catch (err: any) {
-                console.log(err.message)
-                if (
-                  err.message.includes('insufficient funds') ||
-                  err.message.includes('No retryable data found in error')
-                )
-                  toast.error('Insufficient balance.')
-              }
-            }}
-          />
+              }}
+            />
+          ) : (
+            <div className="text-center w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-[1.01] shadow-lg opacity-50 cursor-not-allowed hover:scale-100 isabled:from-gray-500 to-gray-600">
+              {' '}
+              Multi-sig not supported{' '}
+            </div>
+          )}
         </div>
       </div>
     </div>
