@@ -32,7 +32,7 @@
     "cypress_config_file": "cypress.config.js",
     "cache_dependencies": true,
     "npm_dependencies": {
-      "cypress": "^12.17.3",
+      "cypress": "12.17.3",
       "dotenv": "^17.2.2",
       "typescript": "^5.1.6",
       "@types/node": "^20.4.1",
@@ -59,7 +59,6 @@
       "next.config.js",
       "i18n.js",
       "next-sitemap.config.js",
-      "cypress/support/**",
       "cypress/mock/**",
       "cypress/videos/**",
       "cypress/screenshots/**",

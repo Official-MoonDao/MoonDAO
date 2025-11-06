@@ -129,7 +129,7 @@ module.exports = defineConfig({
     },
     specPattern: 'cypress/e2e/**/*.cy.{js,ts,jsx,tsx}',
     baseUrl: process.env.CYPRESS_BASE_URL || 'http://localhost:3000',
-    supportFile: false,
+    supportFile: 'cypress/support/e2e.ts',
     requestTimeout: 60000,
     responseTimeout: 60000,
     pageLoadTimeout: 120000,
