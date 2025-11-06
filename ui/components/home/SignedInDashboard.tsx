@@ -115,6 +115,7 @@ export default function SingedInDashboard({
   filteredTeams,
   currentProjects,
   missions,
+  featuredMissionData,
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
@@ -302,13 +303,15 @@ export default function SingedInDashboard({
 
   // Find the best mission to feature - one with active funding, otherwise the newest one
   const featuredMission =
+    featuredMissionData?.mission ||
     missions?.find(
       (mission: any) =>
         mission.projectId &&
         mission.projectId > 0 &&
         mission.fundingGoal &&
         mission.fundingGoal > 0
-    ) || (missions?.length > 0 ? missions[0] : null)
+    ) ||
+    (missions?.length > 0 ? missions[0] : null)
 
   // Featured mission data - exactly like launchpad
   const {
@@ -323,6 +326,15 @@ export default function SingedInDashboard({
     jbControllerContract,
     jbDirectoryContract,
     jbTokensContract,
+    projectMetadata: featuredMissionData?.projectMetadata,
+    _stage: featuredMissionData?._stage,
+    _deadline: featuredMissionData?._deadline,
+    _refundPeriod: featuredMissionData?._refundPeriod,
+    _primaryTerminalAddress: featuredMissionData?._primaryTerminalAddress,
+    _token: featuredMissionData?._token,
+    _fundingGoal: featuredMissionData?._fundingGoal,
+    _ruleset: featuredMissionData?._ruleset,
+    _backers: featuredMissionData?._backers,
   })
 
   return (
@@ -639,10 +651,15 @@ export default function SingedInDashboard({
                             </span>
                           </div>
                           <p className="text-white font-bold text-sm">
-                            {truncateTokenValue(
-                              Number(featuredMissionSubgraphData?.volume || 0) /
-                                1e18,
-                              'ETH'
+                            {featuredMissionFundingGoal ? (
+                              truncateTokenValue(
+                                Number(
+                                  featuredMissionSubgraphData?.volume || 0
+                                ) / 1e18,
+                                'ETH'
+                              )
+                            ) : (
+                              <LoadingSpinner width="w-4" height="h-4" />
                             )}{' '}
                             ETH
                           </p>
@@ -690,7 +707,12 @@ export default function SingedInDashboard({
                           </div>
                           <p className="text-white font-bold text-sm">
                             {(() => {
-                              if (!featuredMissionDeadline) return 'No Deadline'
+                              if (!featuredMissionDeadline)
+                                return (
+                                  <span className="flex items-left gap-2">
+                                    <LoadingSpinner width="w-4" height="h-4" />
+                                  </span>
+                                )
 
                               const now = Date.now()
                               if (featuredMissionDeadline <= now)

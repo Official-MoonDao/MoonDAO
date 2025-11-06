@@ -3,7 +3,9 @@ import { useLogin, usePrivy } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
+import JBV5Token from 'const/abis/JBV5Token.json'
 import JBV5Tokens from 'const/abis/JBV5Tokens.json'
+import LaunchPadPayHookABI from 'const/abis/LaunchPadPayHook.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
@@ -13,6 +15,7 @@ import {
   JBV5_CONTROLLER_ADDRESS,
   JBV5_DIRECTORY_ADDRESS,
   JBV5_TOKENS_ADDRESS,
+  JB_NATIVE_TOKEN_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
@@ -31,6 +34,7 @@ import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
+import { getBackers } from '@/lib/mission'
 import useMissionData from '@/lib/mission/useMissionData'
 import { sepolia } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
@@ -51,7 +55,7 @@ import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrol
 import CreateMission from '@/components/mission/CreateMission'
 import MissionWideCard from '@/components/mission/MissionWideCard'
 
-export default function Launch({ missions }: any) {
+export default function Launch({ missions, featuredMissionData }: any) {
   const router = useRouter()
   const shallowQuery = useShallowQueryRoute()
 
@@ -360,7 +364,10 @@ export default function Launch({ missions }: any) {
       </section>
 
       {/* Featured Mission Section */}
-      <FeaturedMissionSection missions={missions} />
+      <FeaturedMissionSection
+        missions={missions}
+        featuredMissionData={featuredMissionData}
+      />
 
       {/* Go Further Together Section - Fullscreen Space Theme */}
       <section className="relative min-h-screen overflow-hidden">
@@ -1057,6 +1064,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
             id: missionRow.id,
             teamId: missionRow.teamId,
             projectId: missionRow.projectId,
+            fundingGoal: missionRow.fundingGoal || 0,
             metadata: metadata,
           }
         } catch (error) {
@@ -1065,6 +1073,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
             id: missionRow?.id || `fallback-${index}`,
             teamId: missionRow?.teamId || null,
             projectId: missionRow?.projectId || null,
+            fundingGoal: missionRow?.fundingGoal || 0,
             metadata: {
               name: 'Mission Unavailable',
               description: 'This mission is temporarily unavailable.',
@@ -1075,9 +1084,203 @@ export const getStaticProps: GetStaticProps = async (): Promise<
       })
     )
 
+    const filteredMissions = missions.filter((mission) => mission !== null)
+
+    let featuredMissionData: any = null
+    const featuredMission =
+      filteredMissions.find(
+        (mission: any) =>
+          mission.projectId &&
+          mission.projectId > 0 &&
+          mission.fundingGoal &&
+          mission.fundingGoal > 0
+      ) ||
+      (filteredMissions.length > 0
+        ? filteredMissions[FEATURED_MISSION_INDEX] || filteredMissions[0]
+        : null)
+
+    if (featuredMission && featuredMission.projectId) {
+      try {
+        const jbDirectoryContract = getContract({
+          client: serverClient,
+          address: JBV5_DIRECTORY_ADDRESS,
+          abi: JBV5Directory.abi as any,
+          chain: chain,
+        })
+
+        const missionCreatorContract = getContract({
+          client: serverClient,
+          address: MISSION_CREATOR_ADDRESSES[chainSlug],
+          abi: MissionCreator.abi as any,
+          chain: chain,
+        })
+
+        const jbTokensContract = getContract({
+          client: serverClient,
+          address: JBV5_TOKENS_ADDRESS,
+          abi: JBV5Tokens.abi as any,
+          chain: chain,
+        })
+
+        const [
+          stage,
+          payHookAddress,
+          tokenAddress,
+          primaryTerminalAddress,
+          ruleset,
+        ] = await Promise.all([
+          readContract({
+            contract: missionCreatorContract,
+            method: 'stage' as string,
+            params: [featuredMission.id],
+          }).catch(() => null),
+          readContract({
+            contract: missionCreatorContract,
+            method: 'missionIdToPayHook' as string,
+            params: [featuredMission.id],
+          }).catch(() => null),
+          readContract({
+            contract: jbTokensContract,
+            method: 'tokenOf' as string,
+            params: [featuredMission.projectId],
+          }).catch(() => null),
+          readContract({
+            contract: jbDirectoryContract,
+            method: 'primaryTerminalOf' as string,
+            params: [featuredMission.projectId, JB_NATIVE_TOKEN_ADDRESS],
+          }).catch(() => '0x0000000000000000000000000000000000000000'),
+          readContract({
+            contract: jbV5ControllerContract,
+            method: 'currentRulesetOf' as string,
+            params: [featuredMission.projectId],
+          }).catch(() => null),
+        ])
+
+        let deadline: number | undefined = undefined
+        let refundPeriod: number | undefined = undefined
+
+        if (
+          payHookAddress &&
+          payHookAddress !== '0x0000000000000000000000000000000000000000'
+        ) {
+          try {
+            const payHookContract = getContract({
+              client: serverClient,
+              address: payHookAddress,
+              chain: chain,
+              abi: LaunchPadPayHookABI.abi as any,
+            })
+
+            const [dl, rp] = await Promise.all([
+              readContract({
+                contract: payHookContract,
+                method: 'deadline' as string,
+                params: [],
+              }).catch(() => null),
+              readContract({
+                contract: payHookContract,
+                method: 'refundPeriod' as string,
+                params: [],
+              }).catch(() => null),
+            ])
+
+            if (dl) deadline = +dl.toString() * 1000
+            if (rp) refundPeriod = +rp.toString() * 1000
+          } catch (error) {
+            console.warn('Failed to fetch deadline/refundPeriod:', error)
+          }
+        }
+
+        let tokenData: any = {
+          tokenAddress: tokenAddress || '',
+          tokenName: '',
+          tokenSymbol: '',
+          tokenSupply: '',
+        }
+
+        if (
+          tokenAddress &&
+          tokenAddress !== '0x0000000000000000000000000000000000000000'
+        ) {
+          try {
+            const tokenContract = getContract({
+              client: serverClient,
+              address: tokenAddress,
+              abi: JBV5Token as any,
+              chain: chain,
+            })
+
+            const [nameResult, symbolResult, supplyResult] =
+              await Promise.allSettled([
+                readContract({
+                  contract: tokenContract,
+                  method: 'name' as string,
+                  params: [],
+                }),
+                readContract({
+                  contract: tokenContract,
+                  method: 'symbol' as string,
+                  params: [],
+                }),
+                readContract({
+                  contract: tokenContract,
+                  method: 'totalSupply' as string,
+                  params: [],
+                }),
+              ])
+
+            if (nameResult.status === 'fulfilled' && nameResult.value) {
+              tokenData.tokenName = nameResult.value
+            }
+            if (symbolResult.status === 'fulfilled' && symbolResult.value) {
+              tokenData.tokenSymbol = symbolResult.value
+            }
+            if (supplyResult.status === 'fulfilled' && supplyResult.value) {
+              tokenData.tokenSupply = supplyResult.value.toString()
+            }
+          } catch (error) {
+            console.warn('Failed to fetch token data:', error)
+          }
+        }
+
+        const _ruleset = ruleset
+          ? [
+              { weight: +ruleset[0].weight.toString() },
+              { reservedPercent: +ruleset[1].reservedPercent.toString() },
+            ]
+          : null
+
+        let _backers: any[] = []
+        try {
+          _backers = await getBackers(
+            featuredMission.projectId,
+            featuredMission.id
+          )
+        } catch (err) {
+          console.warn('Failed to fetch backers:', err)
+        }
+
+        featuredMissionData = {
+          mission: featuredMission,
+          _stage: stage ? +stage.toString() : 1,
+          _deadline: deadline,
+          _refundPeriod: refundPeriod,
+          _primaryTerminalAddress: primaryTerminalAddress,
+          _token: tokenData,
+          _fundingGoal: featuredMission.fundingGoal || 0,
+          _ruleset: _ruleset,
+          _backers: _backers,
+          projectMetadata: featuredMission.metadata,
+        }
+      } catch (error) {
+        console.warn('Failed to fetch featured mission data:', error)
+      }
+    }
+
     return {
       props: {
-        missions: missions.filter((mission) => mission !== null),
+        missions: filteredMissions,
+        featuredMissionData,
       },
       revalidate: 60, // Increase revalidation time to reduce RPC calls
     }
@@ -1100,6 +1303,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
             },
           },
         ],
+        featuredMissionData: null,
       },
       revalidate: 60,
     }

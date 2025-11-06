@@ -4,9 +4,9 @@ import { useCallback, useContext, useEffect, useState } from 'react'
 import { readContract, getContract } from 'thirdweb'
 import client from '@/lib/thirdweb/client'
 import useJBProjectData from '../juicebox/useJBProjectData'
+import { useTablelandQuery } from '../swr/useTablelandQuery'
 import { getChainSlug } from '../thirdweb/chain'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
-import { useTablelandQuery } from '../swr/useTablelandQuery'
 
 /*
 1: Stage 1
@@ -38,7 +38,9 @@ export default function useMissionData({
   const chainSlug = getChainSlug(selectedChain)
   const [fundingGoal, setFundingGoal] = useState(_fundingGoal)
   const [stage, setStage] = useState<MissionStage>(_stage)
-  const [backers, setBackers] = useState<any[]>(_backers || undefined)
+  const [backers, setBackers] = useState<any[]>(
+    _backers !== undefined ? _backers : undefined
+  )
   const [deadline, setDeadline] = useState<number | undefined>(_deadline)
   const [refundPeriod, setRefundPeriod] = useState<number | undefined>(
     _refundPeriod
