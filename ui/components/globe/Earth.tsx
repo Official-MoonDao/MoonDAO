@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback, memo } from 'react'
 import ReactDOMServer from 'react-dom/server'
 import Globe, { GlobeMethods } from 'react-globe.gl'
 import useGlobeSize from '@/lib/globe/useGlobeSize'
@@ -11,23 +11,56 @@ type EarthProps = {
   height?: number
 }
 
-export default function Earth({ pointsData, width, height }: EarthProps) {
+function Earth({ pointsData, width, height }: EarthProps) {
   const defaultSize = useGlobeSize()
-  const size = width && height ? { width, height } : defaultSize
+  const size = useMemo(
+    () => (width && height ? { width, height } : defaultSize),
+    [width, height, defaultSize]
+  )
   const globeRef = useRef<GlobeMethods | undefined>()
+  const pointsDataRef = useRef<any[]>(pointsData)
   const [selectedPoint, setSelectedPoint] = useState(null)
   const [pointModalEnabled, setPointModalEnabled] = useState(false)
 
-  useEffect(() => {
-    //Change point of view to the center of the US
-    if (globeRef.current) {
-      globeRef.current.pointOfView({
-        lat: 39.8283,
-        lng: -98.5795,
-        altitude: 3.5,
-      })
+  const memoizedPointsData = useMemo(() => {
+    if (
+      pointsDataRef.current.length !== pointsData.length ||
+      pointsDataRef.current !== pointsData
+    ) {
+      pointsDataRef.current = pointsData
     }
-  }, [globeRef])
+    return pointsDataRef.current
+  }, [pointsData])
+
+  const pointLabel = useCallback(
+    (d: any) =>
+      ReactDOMServer.renderToString(
+        <CitizenPointLabel
+          formattedAddress={d.formattedAddress}
+          citizens={d.citizens}
+        />
+      ),
+    []
+  )
+
+  const handlePointClick = useCallback((d: any) => {
+    setSelectedPoint(d)
+    setPointModalEnabled(true)
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (globeRef.current) {
+        globeRef.current.pointOfView({
+          lat: 39.8283,
+          lng: -98.5795,
+          altitude: 3.5,
+        })
+      }
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [])
 
   return (
     <>
@@ -37,23 +70,13 @@ export default function Earth({ pointsData, width, height }: EarthProps) {
         height={size.height}
         backgroundColor="#00000000"
         globeImageUrl={'/react-globe/earth-night.jpg'}
-        pointsData={pointsData}
+        pointsData={memoizedPointsData}
         pointAltitude="size"
         pointColor="color"
         pointRadius={0.5}
         labelSize={1.7}
-        pointLabel={(d: any) =>
-          ReactDOMServer.renderToString(
-            <CitizenPointLabel
-              formattedAddress={d.formattedAddress}
-              citizens={d.citizens}
-            />
-          )
-        }
-        onPointClick={(d: any) => {
-          setSelectedPoint(d)
-          setPointModalEnabled(true)
-        }}
+        pointLabel={pointLabel}
+        onPointClick={handlePointClick}
         animateIn
       />
       {pointModalEnabled && (
@@ -65,3 +88,16 @@ export default function Earth({ pointsData, width, height }: EarthProps) {
     </>
   )
 }
+
+export default memo(Earth, (prevProps, nextProps) => {
+  if (prevProps.pointsData.length !== nextProps.pointsData.length) {
+    return false
+  }
+  if (
+    prevProps.width !== nextProps.width ||
+    prevProps.height !== nextProps.height
+  ) {
+    return false
+  }
+  return true
+})
