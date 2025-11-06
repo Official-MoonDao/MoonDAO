@@ -100,6 +100,8 @@ export function projectEventsQuery(
             txHash
             from
             amount
+            memo
+            beneficiary
           }
           addToBalanceEvent {
             id

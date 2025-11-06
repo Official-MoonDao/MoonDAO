@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import Job, { Job as JobType } from '../jobs/Job'
 import StandardButton from '../layout/StandardButton'
 import Card from './Card'
@@ -26,26 +27,44 @@ export default function TeamJobs({
   const router = useRouter()
   const [jobs, setJobs] = useState<JobType[]>()
   const [teamJobModalEnabled, setTeamJobModalEnabled] = useState(false)
-
-  async function getEntityJobs() {
-    const jobTableName = await readContract({
-      contract: jobTableContract,
-      method: 'getTableName' as string,
-      params: [],
-    })
-    const statement = `SELECT * FROM ${jobTableName} WHERE teamId = ${teamId}`
-
-    const res = await fetch(`/api/tableland/query?statement=${statement}`)
-    const data = await res.json()
-
-    setJobs(data)
-  }
+  const [tableName, setTableName] = useState<string | null>(null)
 
   const jobIcon = '/./assets/icon-job.svg'
 
+  // Get table name from contract
   useEffect(() => {
-    if (jobTableContract) getEntityJobs()
-  }, [teamId, jobTableContract])
+    async function getTableName() {
+      if (!jobTableContract) return
+      try {
+        const name: any = await readContract({
+          contract: jobTableContract,
+          method: 'getTableName' as string,
+          params: [],
+        })
+        setTableName(name)
+      } catch (error) {
+        console.error('Error fetching table name:', error)
+      }
+    }
+    getTableName()
+  }, [jobTableContract])
+
+  const statement = tableName
+    ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
+    : null
+  const { data, mutate } = useTablelandQuery(statement, {
+    revalidateOnFocus: false,
+  })
+
+  useEffect(() => {
+    if (data) {
+      setJobs(data)
+    }
+  }, [data])
+
+  const getEntityJobs = () => {
+    mutate()
+  }
 
   useEffect(() => {
     if (router.query.job) {
@@ -84,22 +103,27 @@ export default function TeamJobs({
   if (!jobs?.[0]) return null
 
   return (
-    <section
-      id="jobs section"
-      className="p-6"
-    >
+    <section id="jobs section" className="p-6">
       <div className="w-full flex flex-col justify-between gap-5">
         <div
           id="job-title-container"
           className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center"
         >
           <div className="flex gap-5">
-            <Image src={jobIcon} alt="Job icon" width={30} height={30} className="opacity-70" />
-            <h2 className="font-GoodTimes text-2xl text-white">Open Job Board</h2>
+            <Image
+              src={jobIcon}
+              alt="Job icon"
+              width={30}
+              height={30}
+              className="opacity-70"
+            />
+            <h2 className="font-GoodTimes text-2xl text-white">
+              Open Job Board
+            </h2>
           </div>{' '}
           {isManager && (
             <StandardButton
-              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"
+              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
               onClick={() => {
                 setTeamJobModalEnabled(true)
               }}
@@ -137,7 +161,8 @@ export default function TeamJobs({
                   🔒 {jobs.length} Job{jobs.length !== 1 ? 's' : ''} Available
                 </h4>
                 <p className="text-slate-300 mb-4">
-                  This team has active job postings. Become a Citizen to view full details, salary information, and application links.
+                  This team has active job postings. Become a Citizen to view
+                  full details, salary information, and application links.
                 </p>
                 <StandardButton
                   className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"
@@ -164,7 +189,8 @@ export default function TeamJobs({
               {jobs.length > 3 && (
                 <div className="w-full md:w-[calc(50%-0.5rem)] xl:w-[calc(33.33%-0.67rem)] bg-slate-700/30 rounded-xl border border-slate-600/30 p-6 flex items-center justify-center">
                   <p className="text-slate-400 text-center">
-                    +{jobs.length - 3} more job{jobs.length - 3 !== 1 ? 's' : ''}
+                    +{jobs.length - 3} more job
+                    {jobs.length - 3 !== 1 ? 's' : ''}
                   </p>
                 </div>
               )}

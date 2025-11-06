@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
+import useSWR from 'swr'
+import fetcher from '@/lib/swr/fetcher'
 
 type QuoteDirection = 'ETH_TO_USD' | 'USD_TO_ETH'
 
@@ -6,47 +8,39 @@ export default function useETHPrice(
   amount: number,
   direction: QuoteDirection = 'ETH_TO_USD'
 ) {
-  const [convertedAmount, setConvertedAmount] = useState<number>(0)
-  const [ethPrice, setEthPrice] = useState<number | null>(null)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const {
+    data: ethPriceData,
+    isLoading: isLoadingPrice,
+    error,
+  } = useSWR('/api/etherscan/eth-price', fetcher, {
+    refreshInterval: 60000,
+    revalidateOnFocus: false,
+    keepPreviousData: true,
+    dedupingInterval: 30000,
+  })
 
-  async function fetchEthPrice() {
-    try {
-      setIsLoading(true)
-      const response = await fetch('/api/etherscan/eth-price')
-      const { result } = await response.json()
-      if (result?.ethusd) {
-        setEthPrice(parseFloat(result.ethusd))
+  const ethPrice = useMemo(() => {
+    if (ethPriceData?.result?.ethusd) {
+      const price = parseFloat(ethPriceData.result.ethusd)
+      // Validate
+      if (!isNaN(price) && price > 0) {
+        return price
       }
-    } catch (error) {
-      console.error('Error fetching ETH price:', error)
-    } finally {
-      setIsLoading(false)
     }
-  }
+    return null
+  }, [ethPriceData])
 
-  function calculateQuote() {
-    if (!ethPrice || !amount) return
+  const convertedAmount = useMemo(() => {
+    if (!ethPrice || !amount) return 0
 
     if (direction === 'ETH_TO_USD') {
-      setConvertedAmount(amount * ethPrice)
+      return amount * ethPrice
     } else {
-      setConvertedAmount(amount / ethPrice)
+      return amount / ethPrice
     }
-  }
-
-  // Fetch ETH price every minute
-  useEffect(() => {
-    fetchEthPrice()
-    const interval = setInterval(() => {
-      fetchEthPrice()
-    }, 60 * 1000)
-    return () => clearInterval(interval)
-  }, [])
-
-  useEffect(() => {
-    calculateQuote()
   }, [ethPrice, amount, direction])
 
-  return { data: convertedAmount, isLoading, refresh: calculateQuote }
+  const isLoading = isLoadingPrice && !ethPriceData
+
+  return { data: convertedAmount, isLoading, error, ethPrice }
 }

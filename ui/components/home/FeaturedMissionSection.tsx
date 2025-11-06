@@ -21,7 +21,10 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import StandardButton from '@/components/layout/StandardButton'
 
-export default function FeaturedMissionSection({ missions }: any) {
+export default function FeaturedMissionSection({
+  missions,
+  featuredMissionData,
+}: any) {
   const router = useRouter()
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
@@ -56,7 +59,8 @@ export default function FeaturedMissionSection({ missions }: any) {
     chain: selectedChain,
   })
 
-  const featuredMission = missions?.[0] || null
+  const featuredMission =
+    featuredMissionData?.mission || missions?.[FEATURED_MISSION_INDEX] || null
 
   const {
     subgraphData: featuredMissionSubgraphData,
@@ -69,6 +73,15 @@ export default function FeaturedMissionSection({ missions }: any) {
     jbControllerContract,
     jbDirectoryContract,
     jbTokensContract,
+    projectMetadata: featuredMissionData?.projectMetadata,
+    _stage: featuredMissionData?._stage,
+    _deadline: featuredMissionData?._deadline,
+    _refundPeriod: featuredMissionData?._refundPeriod,
+    _primaryTerminalAddress: featuredMissionData?._primaryTerminalAddress,
+    _token: featuredMissionData?._token,
+    _fundingGoal: featuredMissionData?._fundingGoal,
+    _ruleset: featuredMissionData?._ruleset,
+    _backers: featuredMissionData?._backers,
   })
 
   if (!featuredMission) {
@@ -106,7 +119,7 @@ export default function FeaturedMissionSection({ missions }: any) {
         </div>
 
         <JuiceProviders
-          projectId={missions?.[FEATURED_MISSION_INDEX]?.projectId || 0}
+          projectId={featuredMission?.projectId || 0}
           selectedChain={selectedChain}
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 lg:gap-12 items-center">
@@ -117,13 +130,10 @@ export default function FeaturedMissionSection({ missions }: any) {
                   <Image
                     src={
                       getIPFSGateway(
-                        missions?.[FEATURED_MISSION_INDEX]?.metadata?.logoUri
+                        featuredMission?.metadata?.logoUri
                       ) || '/assets/project-default.png'
                     }
-                    alt={
-                      missions?.[FEATURED_MISSION_INDEX]?.metadata?.name ||
-                      'Mission'
-                    }
+                    alt={featuredMission?.metadata?.name || 'Mission'}
                     width={500}
                     height={500}
                     className="w-full h-auto object-cover"
@@ -132,18 +142,13 @@ export default function FeaturedMissionSection({ missions }: any) {
                 </div>
 
                 {/* Team Image */}
-                {missions?.[FEATURED_MISSION_INDEX]?.team?.metadata
-                  ?.logoUri && (
+                {featuredMission?.team?.metadata?.logoUri && (
                   <div className="absolute -bottom-4 -right-4 bg-white/10 backdrop-blur-sm rounded-full p-2 shadow-lg border border-white/20">
                     <Image
                       src={getIPFSGateway(
-                        missions?.[FEATURED_MISSION_INDEX]?.team?.metadata
-                          ?.logoUri
+                        featuredMission?.team?.metadata?.logoUri
                       )}
-                      alt={
-                        missions?.[FEATURED_MISSION_INDEX]?.team?.metadata
-                          ?.name || 'Team'
-                      }
+                      alt={featuredMission?.team?.metadata?.name || 'Team'}
                       width={48}
                       height={48}
                       className="w-12 h-12 rounded-full object-cover"
@@ -158,34 +163,29 @@ export default function FeaturedMissionSection({ missions }: any) {
               {/* Mission Title & Tagline */}
               <div className="space-y-2 md:space-y-3 lg:space-y-4">
                 <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-GoodTimes text-white leading-tight">
-                  {missions?.[FEATURED_MISSION_INDEX]?.metadata?.name ||
+                  {featuredMission?.metadata?.name ||
                     'Welcome to the MoonDAO Launchpad'}
                 </h1>
-                {(missions?.[FEATURED_MISSION_INDEX]?.metadata?.tagline ||
-                  missions?.[FEATURED_MISSION_INDEX]?.metadata
-                    ?.description) && (
+                {(featuredMission?.metadata?.tagline ||
+                  featuredMission?.metadata?.description) && (
                   <p className="text-sm md:text-lg lg:text-xl xl:text-2xl text-white/80 font-light">
-                    {missions?.[FEATURED_MISSION_INDEX]?.metadata?.tagline ||
-                      missions?.[FEATURED_MISSION_INDEX]?.metadata?.description}
+                    {featuredMission?.metadata?.tagline ||
+                      featuredMission?.metadata?.description}
                   </p>
                 )}
               </div>
 
               {/* Team Information */}
-              {missions?.[FEATURED_MISSION_INDEX]?.team && (
+              {featuredMission?.team && (
                 <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-white/5 backdrop-blur-sm rounded-xl md:rounded-2xl border border-white/10">
                   <div className="relative">
                     <Image
                       src={
                         getIPFSGateway(
-                          missions?.[FEATURED_MISSION_INDEX]?.team?.metadata
-                            ?.logoUri
+                          featuredMission?.team?.metadata?.logoUri
                         ) || '/assets/project-default.png'
                       }
-                      alt={
-                        missions?.[FEATURED_MISSION_INDEX]?.team?.metadata
-                          ?.name || 'Team'
-                      }
+                      alt={featuredMission?.team?.metadata?.name || 'Team'}
                       width={64}
                       height={64}
                       className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover border-2 border-white/20"
@@ -196,8 +196,7 @@ export default function FeaturedMissionSection({ missions }: any) {
                       Launched by
                     </span>
                     <span className="text-white font-semibold text-sm md:text-lg">
-                      {missions?.[FEATURED_MISSION_INDEX]?.team?.metadata
-                        ?.name || 'Unknown Team'}
+                      {featuredMission?.team?.metadata?.name || 'Unknown Team'}
                     </span>
                   </div>
                 </div>
@@ -316,18 +315,11 @@ export default function FeaturedMissionSection({ missions }: any) {
               {/* CTA Buttons */}
               <div className="flex flex-row gap-2 md:gap-4 pt-4">
                 <StandardButton
-                  className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white font-semibold text-xs md:text-sm px-3 md:px-4 lg:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border border-white/20 text-center flex-1 flex items-center justify-center"
-                  link={`/mission/${missions?.[FEATURED_MISSION_INDEX]?.id}`}
+                  className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white font-semibold text-xs md:text-sm px-3 md:px-4 lg:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border border-white/20 text-center w-full flex items-center justify-center"
+                  link={`/mission/${featuredMission?.id}`}
                   hoverEffect={false}
                 >
                   <span className="ml-1 md:ml-2">Contribute</span>
-                </StandardButton>
-                <StandardButton
-                  className="bg-white/10 backdrop-blur-sm text-white font-semibold text-xs md:text-sm px-3 md:px-4 lg:px-6 py-2 md:py-3 rounded-lg md:rounded-xl hover:bg-white/20 transition-all duration-300 border border-white/20 text-center flex-1 flex items-center justify-center"
-                  link={`/mission/${missions?.[FEATURED_MISSION_INDEX]?.id}`}
-                  hoverEffect={false}
-                >
-                  <span className="ml-1 md:ml-2">Explore</span>
                 </StandardButton>
               </div>
             </div>

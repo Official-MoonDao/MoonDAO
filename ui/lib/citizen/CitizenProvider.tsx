@@ -1,7 +1,8 @@
 import { usePrivy } from '@privy-io/react-auth'
-import { CITIZEN_TABLE_NAMES } from 'const/config'
-import { useEffect, useState } from 'react'
+import { CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
+import { useEffect, useState, useRef } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
+import { useTablelandQuery } from '../swr/useTablelandQuery'
 import { citizenRowToNFT } from '../tableland/convertRow'
 import { getChainSlug } from '../thirdweb/chain'
 import CitizenContext from './citizen-context'
@@ -94,9 +95,6 @@ const getCachedCitizen = (address: string, chainId: number): any => {
       localStorage.removeItem(cacheKey)
       return null
     }
-
-    console.log('Cache hit! Loading data:', parsedCache.data)
-    // Deserialize BigInt values
     return deserializeBigInt(parsedCache.data)
   } catch (error) {
     console.warn('Failed to load cached citizen data:', error)
@@ -117,8 +115,6 @@ const setCachedCitizen = (address: string, chainId: number, data: any) => {
     }
 
     localStorage.setItem(cacheKey, JSON.stringify(cacheData))
-    console.log('Cached citizen data with key:', cacheKey, 'data:', data)
-    console.log('localStorage now contains:', localStorage.getItem(cacheKey))
   } catch (error) {
     console.warn('Failed to cache citizen data:', error)
   }
@@ -163,10 +159,17 @@ export default function CitizenProvider({
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const account = useActiveAccount()
   const { authenticated, user } = usePrivy()
+  const hasLoadedNonDefaultCache = useRef(false)
 
   const address = account?.address
   const chainId = selectedChain?.id
   const chainSlug = getChainSlug(selectedChain)
+  const isDefaultChain = chainId === DEFAULT_CHAIN_V5.id
+
+  // Reset cache loading flag when address or chain changes
+  useEffect(() => {
+    hasLoadedNonDefaultCache.current = false
+  }, [address, chainId])
 
   // Load cached data immediately when address/chain are available
   useEffect(() => {
@@ -175,81 +178,95 @@ export default function CitizenProvider({
       return
     }
 
-    // Only need address and chainId for cache loading
-    if (!address || !chainId) {
+    // Only need address for cache loading
+    if (!address) {
       return
     }
 
     // Clear expired cache on load
     clearExpiredCache()
 
-    // Try to load from cache immediately
-    console.log(
-      'Loading cached citizen data for:',
-      address,
-      'on chain:',
-      chainId
-    )
-    const cachedData = getCachedCitizen(address, chainId)
+    const cacheChainId = isDefaultChain ? chainId : DEFAULT_CHAIN_V5.id
+    const cachedData = getCachedCitizen(address, cacheChainId)
+
     if (cachedData) {
-      console.log('Found cached data, setting citizen state:', cachedData)
       setCitizen(cachedData)
     } else {
-      // If no cached data and we have auth, we'll need to fetch
-      if (authenticated && user) {
+      if (authenticated && user && isDefaultChain) {
         setIsLoading(true)
-      }
-      console.log('No cached data found')
-    }
-  }, [address, chainId, mock])
-
-  // Always fetch fresh data when authenticated and address/chain are available
-  useEffect(() => {
-    if (mock) return
-    if (!authenticated || !user || !address || !chainId) return
-
-    async function fetchCitizenData() {
-      console.log(
-        'Fetching fresh citizen data for:',
-        address,
-        'on chain:',
-        chainId
-      )
-      try {
-        const statement = `SELECT * FROM ${
-          CITIZEN_TABLE_NAMES[chainSlug]
-        } WHERE owner = '${address?.toLocaleLowerCase()}'`
-        const citizenRes = await fetch(
-          `/api/tableland/query?statement=${statement}`
-        )
-        const citizen = await citizenRes.json()
-
-        if (!citizen || citizen.length === 0) {
-          setCitizen(undefined)
-          setCachedCitizen(address || '', chainId, undefined)
-          return
-        }
-
-        const nft = citizenRowToNFT(citizen?.[0])
-
-        console.log('Fresh citizen data fetched:', nft)
-        setCitizen(nft)
-        setCachedCitizen(address || '', chainId, nft)
-        console.log('Updated citizen state and cache')
-      } catch (err: any) {
-        console.log('Error fetching citizen:', err)
-        if (err.reason === 'No token owned') {
-          console.log('No token owned, setting citizen to undefined')
-          setCitizen(undefined)
-          setCachedCitizen(address || '', chainId, undefined)
-        }
-      } finally {
+      } else if (authenticated && user && !isDefaultChain) {
         setIsLoading(false)
       }
     }
+  }, [address, chainId, mock, isDefaultChain, authenticated, user])
 
-    fetchCitizenData()
-  }, [authenticated, user, address, chainId, chainSlug, selectedChain, mock])
+  // Only query for citizens on DEFAULT_CHAIN
+  const statement =
+    mock || !authenticated || !user || !address || !chainId || !isDefaultChain
+      ? null
+      : `SELECT * FROM ${
+          CITIZEN_TABLE_NAMES[chainSlug]
+        } WHERE owner = '${address?.toLowerCase()}'`
+
+  const { data: citizenData, isLoading: isLoadingQuery } = useTablelandQuery(
+    statement,
+    {
+      revalidateOnFocus: false,
+    }
+  )
+
+  // Update citizen state when data changes
+  useEffect(() => {
+    if (mock) return
+    if (!authenticated || !user || !address || !chainId) {
+      setIsLoading(false)
+      hasLoadedNonDefaultCache.current = false
+      return
+    }
+
+    if (!isDefaultChain) {
+      // Only load from cache once per address/chain change
+      if (!hasLoadedNonDefaultCache.current) {
+        const defaultChainCache = getCachedCitizen(address, DEFAULT_CHAIN_V5.id)
+        if (defaultChainCache) {
+          setCitizen(defaultChainCache)
+        }
+        hasLoadedNonDefaultCache.current = true
+      }
+      setIsLoading(false)
+      return
+    }
+
+    // Reset the flag when switching to default chain
+    hasLoadedNonDefaultCache.current = false
+
+    if (isLoadingQuery) {
+      setIsLoading(true)
+      return
+    }
+
+    setIsLoading(false)
+
+    if (!citizenData || citizenData.length === 0) {
+      setCitizen(undefined)
+      setCachedCitizen(address || '', chainId, undefined)
+      return
+    }
+
+    const nft = citizenRowToNFT(citizenData?.[0])
+    setCitizen(nft)
+    setCachedCitizen(address || '', chainId, nft)
+  }, [
+    citizenData,
+    isLoadingQuery,
+    authenticated,
+    user,
+    address,
+    chainId,
+    chainSlug,
+    mock,
+    isDefaultChain,
+  ])
 
   useEffect(() => {
     if (mock) return
@@ -257,6 +274,7 @@ export default function CitizenProvider({
     if (!authenticated) {
       setCitizen(undefined)
       setIsLoading(false)
+      hasLoadedNonDefaultCache.current = false
     }
   }, [authenticated, mock])
 

@@ -23,28 +23,23 @@ async function hasJoinedTeam(user: Address): Promise<boolean> {
       process.env.NEXTAUTH_URL ||
       process.env.VERCEL_URL ||
       'http://localhost:3000'
-    const res = await fetch(`${baseUrl}/api/hats/get-wearer`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chainId: DEFAULT_CHAIN_V5.id,
-        wearerAddress: user,
-        props: {
-          currentHats: {
-            props: {
-              tree: {},
+    const propsParam = encodeURIComponent(
+      JSON.stringify({
+        currentHats: {
+          props: {
+            tree: {},
+            admin: {
               admin: {
-                admin: {
-                  admin: {},
-                },
+                admin: {},
               },
             },
           },
         },
-      }),
-    })
+      })
+    )
+    const res = await fetch(
+      `${baseUrl}/api/hats/get-wearer?chainId=${DEFAULT_CHAIN_V5.id}&wearerAddress=${user}&props=${propsParam}`
+    )
 
     if (!res.ok) {
       console.error('Error fetching hats data:', res.statusText)

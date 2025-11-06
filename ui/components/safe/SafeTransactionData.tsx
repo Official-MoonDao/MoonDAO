@@ -105,15 +105,26 @@ export default function SafeTransactionData({
       transaction.dataDecoded?.method === 'transfer' ||
       transaction.dataDecoded?.method === 'transferFrom'
     ) {
-      const [to, value] = transaction.dataDecoded.parameters || []
+      // For transfer: parameters[0] = to, parameters[1] = value
+      // For transferFrom: parameters[0] = from, parameters[1] = to, parameters[2] = value
+      const recipient =
+        transaction.dataDecoded.method === 'transfer'
+          ? transaction.dataDecoded.parameters?.[0]?.value
+          : transaction.dataDecoded.parameters?.[1]?.value
+
+      const value =
+        transaction.dataDecoded.method === 'transfer'
+          ? transaction.dataDecoded.parameters?.[1]?.value
+          : transaction.dataDecoded.parameters?.[2]?.value
 
       return (
         <div className="space-y-2">
           <p className="text-gray-300">Type: Token Transfer</p>
           <p className="text-gray-300">Token: {tokenSymbol}</p>
+          <p className="text-gray-300">To: {recipient}</p>
           <p className="text-gray-300">
             Amount:{' '}
-            {ethers.utils.formatUnits(value?.value || '0', tokenDecimals || 18)}
+            {ethers.utils.formatUnits(value || '0', tokenDecimals || 18)}
           </p>
         </div>
       )

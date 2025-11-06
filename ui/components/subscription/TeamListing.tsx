@@ -61,7 +61,7 @@ export default function TeamListing({
   const [enabledMarketplaceListingModal, setEnabledMarketplaceListingModal] =
     useState(false)
   const [enabledBuyListingModal, setEnabledBuyListingModal] = useState(
-    queriedListingId === listing.id
+    queriedListingId === listing?.id
   )
 
   const currTime = useCurrUnixTime()
@@ -71,7 +71,7 @@ export default function TeamListing({
   const [isUpcoming, setIsUpcoming] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const daysUntilExpiry = daysUntilTimestamp(listing.endTime)
+  const daysUntilExpiry = daysUntilTimestamp(listing?.endTime)
 
   const [teamNFT, setTeamNFT] = useState<any>()
 
@@ -97,16 +97,16 @@ export default function TeamListing({
         }
       }
     }
-    if (teamContract && listing.teamId !== undefined) {
+    if (teamContract && listing?.teamId !== undefined) {
       retriesRef.current = 0
       getTeamNFT()
     }
-  }, [listing.teamId, teamContract])
+  }, [listing?.teamId, teamContract])
 
   useEffect(() => {
-    if (currTime >= listing.startTime && currTime <= listing.endTime) {
+    if (currTime >= listing?.startTime && currTime <= listing?.endTime) {
       setIsActive(true)
-    } else if (listing.startTime === 0 && listing.endTime === 0) {
+    } else if (listing?.startTime === 0 && listing?.endTime === 0) {
       setIsActive(true)
     } else if (editable) {
       setIsActive(true)
@@ -114,22 +114,22 @@ export default function TeamListing({
       setIsActive(false)
     }
 
-    if (currTime < listing.startTime) {
+    if (currTime < listing?.startTime) {
       setIsUpcoming(true)
     } else {
       setIsUpcoming(false)
     }
 
     if (
-      currTime > listing.endTime &&
-      listing.endTime !== 0 &&
-      listing.endTime !== undefined
+      currTime > listing?.endTime &&
+      listing?.endTime !== 0 &&
+      listing?.endTime !== undefined
     ) {
       setIsExpired(true)
     } else {
       setIsExpired(false)
     }
-  }, [currTime, listing.startTime, listing.endTime, editable])
+  }, [currTime, listing?.startTime, listing?.endTime, editable])
 
   if (!isActive) return null
 
@@ -140,8 +140,8 @@ export default function TeamListing({
           <p id="listing-price" className="font-bold">
             {`${
               isCitizen
-                ? truncateTokenValue(listing.price, listing.currency)
-                : truncateTokenValue(+listing.price * 1.1, listing.currency)
+                ? truncateTokenValue(listing?.price, listing?.currency)
+                : truncateTokenValue(+listing?.price * 1.1, listing?.currency)
             } ${listing.currency}`}
           </p>
           {isCitizen && (
@@ -149,9 +149,10 @@ export default function TeamListing({
               id="listing-original-price"
               className="line-through text-xs opacity-70"
             >
-              {`${truncateTokenValue(+listing.price * 1.1, listing.currency)} ${
-                listing.currency
-              }`}
+              {`${truncateTokenValue(
+                +listing?.price * 1.1,
+                listing?.currency
+              )} ${listing?.currency}`}
             </p>
           )}
         </div>
@@ -166,8 +167,8 @@ export default function TeamListing({
           >
             <span className="bg-light-warm px-2 py-1 rounded mr-1">
               {`Save ${truncateTokenValue(
-                +listing.price * 0.1,
-                listing.currency
+                +listing?.price * 0.1,
+                listing?.currency
               )} ${listing.currency}`}
             </span>
             {' with citizenship'}
@@ -180,14 +181,14 @@ export default function TeamListing({
             ? `*This listing has expired and is no longer available for purchase.`
             : isUpcoming
             ? `*This listing is not available for purchase until ${
-                new Date(listing.startTime * 1000).toLocaleDateString() +
+                new Date(listing?.startTime * 1000).toLocaleDateString() +
                 ' ' +
                 new Date(listing.startTime * 1000).toLocaleTimeString()
               }`
             : ''}
         </p>
       )}
-      {!isExpired && !isUpcoming && listing.endTime != 0 && (
+      {!isExpired && !isUpcoming && listing?.endTime != 0 && (
         <p id="listing-end-time" className="mt-2 opacity-60">
           {`Offer ends in ${daysUntilExpiry} ${
             +daysUntilExpiry === 1 ? 'day' : 'days'

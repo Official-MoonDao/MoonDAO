@@ -4,21 +4,11 @@ import {
   USDC_ADDRESSES,
   USDT_ADDRESSES,
 } from 'const/config'
+import { setCDNCacheHeaders } from 'middleware/cacheHeaders'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getMissionTokenAddresses } from '@/lib/mission/missionSubgraph'
-
-// Cache for wallet tokens (keyed by wallet-chain combination)
-let tokenCache: Map<
-  string,
-  {
-    data: any
-    timestamp: number
-  }
-> = new Map()
-
-const CACHE_DURATION = 60 * 1000 // 1 minute cache
 
 // Function to get legitimate token addresses for filtering
 async function getLegitimateTokenAddresses(
@@ -109,6 +99,10 @@ async function fetchTokenBalance(
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
   try {
     const { address, chain = 'ethereum', page = '1', offset = '50' } = req.query
 
@@ -125,15 +119,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
-    const chainId = SUPPORTED_CHAINS[chain as string]
-    const cacheKey = `${address}-${chain}-${page}-${offset}`
-    const now = Date.now()
+    // Cache varies by address, chain, page, and offset
+    setCDNCacheHeaders(
+      res,
+      60,
+      60,
+      'Accept-Encoding, address, chain, page, offset'
+    )
 
-    // Check cache
-    const cached = tokenCache.get(cacheKey)
-    if (cached && now - cached.timestamp < CACHE_DURATION) {
-      return res.status(200).json(cached.data)
-    }
+    const chainId = SUPPORTED_CHAINS[chain as string]
 
     const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
 
@@ -158,6 +152,34 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     // Check if the API returned an error
     if (data.status === '0' && data.message !== 'OK') {
+      const noTransactionsMessages = [
+        'No transactions found',
+        'No token transfers found',
+        'No transactions found.',
+      ]
+
+      if (
+        noTransactionsMessages.some((msg) =>
+          data.message.toLowerCase().includes(msg.toLowerCase())
+        )
+      ) {
+        // Return empty result instead of error
+        const responseData = {
+          status: '1',
+          message: 'OK',
+          result: [],
+        }
+
+        // Cache the empty result
+        const cacheKey = `${address}-${chain}-${page}-${offset}`
+        tokenCache.set(cacheKey, {
+          data: responseData,
+          timestamp: Date.now(),
+        })
+
+        return res.status(200).json(responseData)
+      }
+
       return res.status(400).json({
         error: `Etherscan API Error: ${data.message}`,
       })
@@ -225,12 +247,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       message: 'OK',
       result: tokensWithBalances,
     }
-
-    // Cache the result
-    tokenCache.set(cacheKey, {
-      data: responseData,
-      timestamp: now,
-    })
 
     res.status(200).json(responseData)
   } catch (error) {

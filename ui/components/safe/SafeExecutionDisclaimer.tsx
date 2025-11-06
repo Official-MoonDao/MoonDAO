@@ -50,6 +50,17 @@ export default function SafeExecutionDisclaimer({
       : transaction.dataDecoded?.method || 'Unknown Method'
     : ''
 
+  // Get recipient address - for token transfers, show the actual recipient
+  // For ETH transfers, use transaction.to directly
+  const recipientAddress =
+    transaction &&
+    (transaction.dataDecoded?.method === 'transfer' ||
+      transaction.dataDecoded?.method === 'transferFrom')
+      ? transaction.dataDecoded.method === 'transfer'
+        ? transaction.dataDecoded.parameters?.[0]?.value
+        : transaction.dataDecoded.parameters?.[1]?.value
+      : transaction?.to
+
   const handleExecute = async () => {
     if (!safeTxHash || !onExecute) return
 
@@ -95,7 +106,7 @@ export default function SafeExecutionDisclaimer({
         <div className="bg-moon-indigo p-4 rounded-lg mt-4">
           <p className="text-gray-300 mb-2 flex items-center gap-2">{method}</p>
           <p className="text-gray-300 mb-2">
-            To: <span className="text-sm">{transaction.to}</span>
+            To: <span className="text-sm">{recipientAddress}</span>
           </p>
           <p className="text-gray-300 mb-2">
             Value: {ethers.utils.formatEther(transaction.value)} ETH
