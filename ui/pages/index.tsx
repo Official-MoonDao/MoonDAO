@@ -3,10 +3,10 @@ import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
 import JBV5Token from 'const/abis/JBV5Token.json'
 import JBV5Tokens from 'const/abis/JBV5Tokens.json'
-import LaunchPadPayHookABI from 'const/abis/LaunchPadPayHook.json'
-import MissionCreator from 'const/abis/MissionCreator.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
+import LaunchPadPayHookABI from 'const/abis/LaunchPadPayHook.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
+import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
@@ -23,6 +23,7 @@ import {
   MISSION_TABLE_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
+  ZERO_ADDRESS,
 } from 'const/config'
 import { BLOCKED_MISSIONS, BLOCKED_PROJECTS } from 'const/whitelist'
 import Head from 'next/head'
@@ -538,7 +539,7 @@ export async function getStaticProps() {
                 contract: jbDirectoryContract,
                 method: 'primaryTerminalOf' as string,
                 params: [featuredMission.projectId, JB_NATIVE_TOKEN_ADDRESS],
-              }).catch(() => '0x0000000000000000000000000000000000000000'),
+              }).catch(() => ZERO_ADDRESS),
               readContract({
                 contract: jbControllerContract,
                 method: 'currentRulesetOf' as string,
@@ -549,10 +550,7 @@ export async function getStaticProps() {
             let deadline: number | undefined = undefined
             let refundPeriod: number | undefined = undefined
 
-            if (
-              payHookAddress &&
-              payHookAddress !== '0x0000000000000000000000000000000000000000'
-            ) {
+            if (payHookAddress && payHookAddress !== ZERO_ADDRESS) {
               try {
                 const payHookContract = getContract({
                   client: serverClient,
@@ -588,10 +586,7 @@ export async function getStaticProps() {
               tokenSupply: '',
             }
 
-            if (
-              tokenAddress &&
-              tokenAddress !== '0x0000000000000000000000000000000000000000'
-            ) {
+            if (tokenAddress && tokenAddress !== ZERO_ADDRESS) {
               try {
                 const tokenContract = getContract({
                   client: serverClient,
