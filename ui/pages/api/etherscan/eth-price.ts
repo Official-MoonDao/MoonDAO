@@ -15,7 +15,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       `https://api.etherscan.io/v2/api?module=stats&action=ethprice&chainid=1&apikey=${process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY}`
     )
 
+    if (!ethPrice.ok) {
+      throw new Error(`Etherscan API returned ${ethPrice.status}`)
+    }
+
     const ethPriceData = await ethPrice.json()
+
+    // Validate response structure
+    if (
+      !ethPriceData ||
+      ethPriceData.message !== 'OK' ||
+      !ethPriceData.result?.ethusd
+    ) {
+      throw new Error('Invalid response structure from Etherscan API')
+    }
 
     res.status(200).json(ethPriceData)
   } catch (error) {
