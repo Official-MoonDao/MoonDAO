@@ -19,6 +19,8 @@ export function transformEventData(data: any) {
       ...extractBaseEventData(data.payEvent),
       type: 'payEvent',
       amount: new Ether(BigInt(data.payEvent.amount)),
+      memo: data.payEvent.memo,
+      beneficiary: data.payEvent.beneficiary,
     }
   }
   if (data.addToBalanceEvent) {
