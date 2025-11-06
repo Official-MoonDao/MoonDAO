@@ -90,7 +90,7 @@ export function ExpandedFooter({
 
   // Navigation link groups - matching topnav organization exactly
   const networkLinks = [
-    { text: 'Network Overview', href: '/network-overview' },
+    { text: 'Join Network', href: '/join' },
     { text: 'Explore Network', href: '/network' },
     { text: 'Become a Citizen', href: '/join' },
     { text: 'Create a Team', href: '/team' },
