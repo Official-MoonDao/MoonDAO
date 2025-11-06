@@ -1,7 +1,12 @@
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
+import JBV5Directory from 'const/abis/JBV5Directory.json'
+import JBV5Token from 'const/abis/JBV5Token.json'
+import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import JobTableABI from 'const/abis/JobBoardTable.json'
+import LaunchPadPayHookABI from 'const/abis/LaunchPadPayHook.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
+import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
@@ -9,11 +14,16 @@ import {
   CITIZEN_TABLE_ADDRESSES,
   DEFAULT_CHAIN_V5,
   JBV5_CONTROLLER_ADDRESS,
+  JBV5_DIRECTORY_ADDRESS,
+  JBV5_TOKENS_ADDRESS,
+  JB_NATIVE_TOKEN_ADDRESS,
   JOBS_TABLE_ADDRESSES,
   MARKETPLACE_TABLE_ADDRESSES,
+  MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
+  ZERO_ADDRESS,
 } from 'const/config'
 import { BLOCKED_MISSIONS, BLOCKED_PROJECTS } from 'const/whitelist'
 import Head from 'next/head'
@@ -24,6 +34,7 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { getAUMHistory, getMooneyPrice } from '@/lib/coinstats'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { getCitizensLocationData } from '@/lib/map'
+import { getBackers } from '@/lib/mission'
 import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
@@ -62,6 +73,7 @@ export default function Home({
   citizensLocationData,
   currentProjects,
   missions,
+  featuredMissionData,
 }: any) {
   const router = useRouter()
   const { citizen } = useContext(CitizenContext)
@@ -86,6 +98,7 @@ export default function Home({
           citizensLocationData={citizensLocationData}
           currentProjects={currentProjects}
           missions={missions}
+          featuredMissionData={featuredMissionData}
         />
       </>
     )
@@ -104,7 +117,10 @@ export default function Home({
       />
       <div>
         <Hero />
-        <FeaturedMissionSection missions={missions} />
+        <FeaturedMissionSection
+          missions={missions}
+          featuredMissionData={featuredMissionData}
+        />
         <Callout1 />
         <Callout2 />
         <Feature />
@@ -158,6 +174,7 @@ export async function getStaticProps() {
   let currentProjects: Project[] = []
   let citizensLocationData: any = []
   let missions: any = []
+  let featuredMissionData: any = null
 
   const contractOperations = async () => {
     try {
@@ -452,6 +469,198 @@ export async function getStaticProps() {
             })
         )
         missions = processedMissions.filter((mission) => mission !== null)
+
+        // Fetch featured mission data (first mission with active funding, or first mission)
+        const featuredMission =
+          missions.find(
+            (mission: any) =>
+              mission.projectId &&
+              mission.projectId > 0 &&
+              mission.fundingGoal &&
+              mission.fundingGoal > 0
+          ) || (missions.length > 0 ? missions[0] : null)
+
+        if (featuredMission && featuredMission.projectId) {
+          try {
+            const chain = DEFAULT_CHAIN_V5
+            const chainSlug = getChainSlug(chain)
+
+            const jbControllerContract = getContract({
+              client: serverClient,
+              address: JBV5_CONTROLLER_ADDRESS,
+              abi: JBV5Controller.abi as any,
+              chain: chain,
+            })
+
+            const jbDirectoryContract = getContract({
+              client: serverClient,
+              address: JBV5_DIRECTORY_ADDRESS,
+              abi: JBV5Directory.abi as any,
+              chain: chain,
+            })
+
+            const missionCreatorContract = getContract({
+              client: serverClient,
+              address: MISSION_CREATOR_ADDRESSES[chainSlug],
+              abi: MissionCreator.abi as any,
+              chain: chain,
+            })
+
+            const jbTokensContract = getContract({
+              client: serverClient,
+              address: JBV5_TOKENS_ADDRESS,
+              abi: JBV5Tokens.abi as any,
+              chain: chain,
+            })
+
+            const [
+              stage,
+              payHookAddress,
+              tokenAddress,
+              primaryTerminalAddress,
+              ruleset,
+            ] = await Promise.all([
+              readContract({
+                contract: missionCreatorContract,
+                method: 'stage' as string,
+                params: [featuredMission.id],
+              }).catch(() => null),
+              readContract({
+                contract: missionCreatorContract,
+                method: 'missionIdToPayHook' as string,
+                params: [featuredMission.id],
+              }).catch(() => null),
+              readContract({
+                contract: jbTokensContract,
+                method: 'tokenOf' as string,
+                params: [featuredMission.projectId],
+              }).catch(() => null),
+              readContract({
+                contract: jbDirectoryContract,
+                method: 'primaryTerminalOf' as string,
+                params: [featuredMission.projectId, JB_NATIVE_TOKEN_ADDRESS],
+              }).catch(() => ZERO_ADDRESS),
+              readContract({
+                contract: jbControllerContract,
+                method: 'currentRulesetOf' as string,
+                params: [featuredMission.projectId],
+              }).catch(() => null),
+            ])
+
+            let deadline: number | undefined = undefined
+            let refundPeriod: number | undefined = undefined
+
+            if (payHookAddress && payHookAddress !== ZERO_ADDRESS) {
+              try {
+                const payHookContract = getContract({
+                  client: serverClient,
+                  address: payHookAddress,
+                  chain: chain,
+                  abi: LaunchPadPayHookABI.abi as any,
+                })
+
+                const [dl, rp] = await Promise.all([
+                  readContract({
+                    contract: payHookContract,
+                    method: 'deadline' as string,
+                    params: [],
+                  }).catch(() => null),
+                  readContract({
+                    contract: payHookContract,
+                    method: 'refundPeriod' as string,
+                    params: [],
+                  }).catch(() => null),
+                ])
+
+                if (dl) deadline = +dl.toString() * 1000
+                if (rp) refundPeriod = +rp.toString() * 1000
+              } catch (error) {
+                console.warn('Failed to fetch deadline/refundPeriod:', error)
+              }
+            }
+
+            let tokenData: any = {
+              tokenAddress: tokenAddress || '',
+              tokenName: '',
+              tokenSymbol: '',
+              tokenSupply: '',
+            }
+
+            if (tokenAddress && tokenAddress !== ZERO_ADDRESS) {
+              try {
+                const tokenContract = getContract({
+                  client: serverClient,
+                  address: tokenAddress,
+                  abi: JBV5Token as any,
+                  chain: chain,
+                })
+
+                const [nameResult, symbolResult, supplyResult] =
+                  await Promise.allSettled([
+                    readContract({
+                      contract: tokenContract,
+                      method: 'name' as string,
+                      params: [],
+                    }),
+                    readContract({
+                      contract: tokenContract,
+                      method: 'symbol' as string,
+                      params: [],
+                    }),
+                    readContract({
+                      contract: tokenContract,
+                      method: 'totalSupply' as string,
+                      params: [],
+                    }),
+                  ])
+
+                if (nameResult.status === 'fulfilled' && nameResult.value) {
+                  tokenData.tokenName = nameResult.value
+                }
+                if (symbolResult.status === 'fulfilled' && symbolResult.value) {
+                  tokenData.tokenSymbol = symbolResult.value
+                }
+                if (supplyResult.status === 'fulfilled' && supplyResult.value) {
+                  tokenData.tokenSupply = supplyResult.value.toString()
+                }
+              } catch (error) {
+                console.warn('Failed to fetch token data:', error)
+              }
+            }
+
+            const _ruleset = ruleset
+              ? [
+                  { weight: +ruleset[0].weight.toString() },
+                  { reservedPercent: +ruleset[1].reservedPercent.toString() },
+                ]
+              : null
+
+            let _backers: any[] = []
+            try {
+              _backers = await getBackers(
+                featuredMission.projectId,
+                featuredMission.id
+              )
+            } catch (err) {
+              console.warn('Failed to fetch backers:', err)
+            }
+
+            featuredMissionData = {
+              mission: featuredMission,
+              _stage: stage ? +stage.toString() : 1,
+              _deadline: deadline,
+              _refundPeriod: refundPeriod,
+              _primaryTerminalAddress: primaryTerminalAddress,
+              _token: tokenData,
+              _fundingGoal: featuredMission.fundingGoal || 0,
+              _ruleset: _ruleset,
+              _backers: _backers,
+              projectMetadata: featuredMission.metadata,
+            }
+          } catch (error) {
+            console.warn('Failed to fetch featured mission data:', error)
+          }
+        }
       } catch (error) {
         console.error('Failed to process missions:', error)
         missions = []
@@ -485,6 +694,7 @@ export async function getStaticProps() {
       citizensLocationData,
       currentProjects,
       missions,
+      featuredMissionData,
     },
     revalidate: 300,
   }

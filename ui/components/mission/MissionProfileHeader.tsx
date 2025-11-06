@@ -7,7 +7,6 @@ import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { truncateTokenValue } from '@/lib/utils/numbers'
-import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import StandardButton from '../layout/StandardButton'
 import Tooltip from '../layout/Tooltip'
@@ -76,12 +75,7 @@ const MissionProfileHeader = React.memo(
     contributeButton,
   }: MissionProfileHeaderProps) => {
     const account = useActiveAccount()
-    const { data: ethPrice, isLoading: isLoadingEthPrice } = useETHPrice(
-      1,
-      'ETH_TO_USD'
-    )
-
-    // Total funding is now passed as props from MissionProfile component
+    const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
     return (
       <div className="w-full bg-[#090d21] relative overflow-hidden">
@@ -219,7 +213,7 @@ const MissionProfileHeader = React.memo(
                         height={20}
                         className="mr-2"
                       />
-                      {isLoadingTotalFunding ? (
+                      {isLoadingTotalFunding || !ethPrice || ethPrice <= 0 ? (
                         <div className="flex items-center">
                           <TextSkeleton width="w-16" height="h-5" />
                           <span className="text-xs opacity-90 ml-2">
@@ -356,9 +350,13 @@ const MissionProfileHeader = React.memo(
                     </div>
                     <div className="w-fit">
                       <Tooltip
-                        text={`$${Math.round(
-                          (fundingGoal / 1e18) * ethPrice
-                        ).toLocaleString()}`}
+                        text={
+                          !isLoadingTotalFunding && ethPrice && ethPrice > 0
+                            ? `$${Math.round(
+                                (fundingGoal / 1e18) * ethPrice
+                              ).toLocaleString()}`
+                            : `Loading...`
+                        }
                         wrap
                       >
                         <p className="w-fit text-white font-GoodTimes text-xs lg:text-sm">
