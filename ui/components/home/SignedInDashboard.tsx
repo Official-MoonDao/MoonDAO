@@ -1194,9 +1194,7 @@ export default function SingedInDashboard({
             {/* Open Jobs */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">
-                  Open Jobs
-                </h3>
+                <h3 className="font-semibold text-white text-lg">Open Jobs</h3>
                 <StandardButton
                   className="text-blue-300 text-sm hover:text-blue-200 transition-all"
                   link="/jobs"
@@ -1207,7 +1205,7 @@ export default function SingedInDashboard({
 
               <div className="space-y-3 h-full overflow-y-auto">
                 {newestJobs && newestJobs.length > 0 ? (
-                  <Link 
+                  <Link
                     href={newestJobs[0]?.contactInfo || '/jobs'}
                     className="block"
                   >
@@ -1222,7 +1220,9 @@ export default function SingedInDashboard({
                           {newestJobs[0]?.title}
                         </h4>
                         <p className="text-gray-400 text-xs">
-                          {newestJobs.length > 1 ? `+${newestJobs.length - 1} more positions` : 'Click to apply'}
+                          {newestJobs.length > 1
+                            ? `+${newestJobs.length - 1} more positions`
+                            : 'Click to apply'}
                         </p>
                       </div>
                     </div>
@@ -1237,7 +1237,9 @@ export default function SingedInDashboard({
                         <h4 className="text-white font-medium text-sm">
                           No open positions
                         </h4>
-                        <p className="text-gray-400 text-xs">Check back soon for opportunities</p>
+                        <p className="text-gray-400 text-xs">
+                          Check back soon for opportunities
+                        </p>
                       </div>
                     </div>
                   </Link>

@@ -1,5 +1,5 @@
 import { usePrivy } from '@privy-io/react-auth'
-import { CITIZEN_TABLE_NAMES } from 'const/config'
+import { CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { useEffect, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTablelandQuery } from '../swr/useTablelandQuery'
@@ -163,6 +163,7 @@ export default function CitizenProvider({
   const address = account?.address
   const chainId = selectedChain?.id
   const chainSlug = getChainSlug(selectedChain)
+  const isDefaultChain = chainId === DEFAULT_CHAIN_V5.id
 
   // Load cached data immediately when address/chain are available
   useEffect(() => {
@@ -171,28 +172,31 @@ export default function CitizenProvider({
       return
     }
 
-    // Only need address and chainId for cache loading
-    if (!address || !chainId) {
+    // Only need address for cache loading
+    if (!address) {
       return
     }
 
     // Clear expired cache on load
     clearExpiredCache()
 
-    const cachedData = getCachedCitizen(address, chainId)
+    const cacheChainId = isDefaultChain ? chainId : DEFAULT_CHAIN_V5.id
+    const cachedData = getCachedCitizen(address, cacheChainId)
+
     if (cachedData) {
       setCitizen(cachedData)
     } else {
-      // If no cached data and we have auth, we'll need to fetch
-      if (authenticated && user) {
+      if (authenticated && user && isDefaultChain) {
         setIsLoading(true)
+      } else if (authenticated && user && !isDefaultChain) {
+        setIsLoading(false)
       }
-      console.log('No cached data found')
     }
-  }, [address, chainId, mock])
+  }, [address, chainId, mock, isDefaultChain, authenticated, user])
 
+  // Only query for citizens on DEFAULT_CHAIN
   const statement =
-    mock || !authenticated || !user || !address || !chainId
+    mock || !authenticated || !user || !address || !chainId || !isDefaultChain
       ? null
       : `SELECT * FROM ${
           CITIZEN_TABLE_NAMES[chainSlug]
@@ -209,6 +213,17 @@ export default function CitizenProvider({
   useEffect(() => {
     if (mock) return
     if (!authenticated || !user || !address || !chainId) {
+      setIsLoading(false)
+      return
+    }
+
+    if (!isDefaultChain) {
+      if (!citizen) {
+        const defaultChainCache = getCachedCitizen(address, DEFAULT_CHAIN_V5.id)
+        if (defaultChainCache) {
+          setCitizen(defaultChainCache)
+        }
+      }
       setIsLoading(false)
       return
     }
@@ -238,6 +253,8 @@ export default function CitizenProvider({
     chainId,
     chainSlug,
     mock,
+    isDefaultChain,
+    citizen,
   ])
 
   useEffect(() => {
