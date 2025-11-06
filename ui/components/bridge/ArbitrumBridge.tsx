@@ -86,7 +86,7 @@ export default function ArbitrumBridge() {
     async function checkIsEOA() {
       const provider = await wallets[selectedWallet]?.getEthersProvider()
       // Get the code at the given address
-      if (provider) {
+      if (provider && address) {
         const code = await provider.getCode(address)
         // An EOA will have an empty code (0x)
         setIsEOA(code === '0x')
