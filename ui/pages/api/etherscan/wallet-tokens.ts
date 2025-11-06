@@ -170,13 +170,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           result: [],
         }
 
-        // Cache the empty result
-        const cacheKey = `${address}-${chain}-${page}-${offset}`
-        tokenCache.set(cacheKey, {
-          data: responseData,
-          timestamp: Date.now(),
-        })
-
         return res.status(200).json(responseData)
       }
 
