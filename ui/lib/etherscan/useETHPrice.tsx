@@ -15,11 +15,17 @@ export default function useETHPrice(
   } = useSWR('/api/etherscan/eth-price', fetcher, {
     refreshInterval: 60000,
     revalidateOnFocus: false,
+    keepPreviousData: true,
+    dedupingInterval: 30000,
   })
 
   const ethPrice = useMemo(() => {
     if (ethPriceData?.result?.ethusd) {
-      return parseFloat(ethPriceData.result.ethusd)
+      const price = parseFloat(ethPriceData.result.ethusd)
+      // Validate
+      if (!isNaN(price) && price > 0) {
+        return price
+      }
     }
     return null
   }, [ethPriceData])
@@ -34,7 +40,7 @@ export default function useETHPrice(
     }
   }, [ethPrice, amount, direction])
 
-  const isLoading = isLoadingPrice
+  const isLoading = isLoadingPrice && !ethPriceData
 
-  return { data: convertedAmount, isLoading, error }
+  return { data: convertedAmount, isLoading, error, ethPrice }
 }
