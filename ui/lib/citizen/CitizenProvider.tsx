@@ -1,6 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTablelandQuery } from '../swr/useTablelandQuery'
 import { citizenRowToNFT } from '../tableland/convertRow'
@@ -159,11 +159,17 @@ export default function CitizenProvider({
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const account = useActiveAccount()
   const { authenticated, user } = usePrivy()
+  const hasLoadedNonDefaultCache = useRef(false)
 
   const address = account?.address
   const chainId = selectedChain?.id
   const chainSlug = getChainSlug(selectedChain)
   const isDefaultChain = chainId === DEFAULT_CHAIN_V5.id
+
+  // Reset cache loading flag when address or chain changes
+  useEffect(() => {
+    hasLoadedNonDefaultCache.current = false
+  }, [address, chainId])
 
   // Load cached data immediately when address/chain are available
   useEffect(() => {
@@ -214,19 +220,25 @@ export default function CitizenProvider({
     if (mock) return
     if (!authenticated || !user || !address || !chainId) {
       setIsLoading(false)
+      hasLoadedNonDefaultCache.current = false
       return
     }
 
     if (!isDefaultChain) {
-      if (!citizen) {
+      // Only load from cache once per address/chain change
+      if (!hasLoadedNonDefaultCache.current) {
         const defaultChainCache = getCachedCitizen(address, DEFAULT_CHAIN_V5.id)
         if (defaultChainCache) {
           setCitizen(defaultChainCache)
         }
+        hasLoadedNonDefaultCache.current = true
       }
       setIsLoading(false)
       return
     }
+
+    // Reset the flag when switching to default chain
+    hasLoadedNonDefaultCache.current = false
 
     if (isLoadingQuery) {
       setIsLoading(true)
@@ -254,7 +266,6 @@ export default function CitizenProvider({
     chainSlug,
     mock,
     isDefaultChain,
-    citizen,
   ])
 
   useEffect(() => {
@@ -263,6 +274,7 @@ export default function CitizenProvider({
     if (!authenticated) {
       setCitizen(undefined)
       setIsLoading(false)
+      hasLoadedNonDefaultCache.current = false
     }
   }, [authenticated, mock])
 
