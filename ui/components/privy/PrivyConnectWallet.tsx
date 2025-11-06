@@ -1244,17 +1244,6 @@ export function PrivyConnectWallet({
                           </div>
                         </div>
                       ))}
-
-                      {/* No tokens message */}
-                      {!tokensLoading &&
-                        !tokensError &&
-                        walletTokens.length === 0 && (
-                          <div className="bg-black/10 rounded-lg p-4 text-center">
-                            <p className="text-gray-400 text-sm">
-                              No tokens found in this wallet
-                            </p>
-                          </div>
-                        )}
                     </div>
                   </div>
                 )}

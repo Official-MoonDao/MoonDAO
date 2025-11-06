@@ -152,6 +152,34 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     // Check if the API returned an error
     if (data.status === '0' && data.message !== 'OK') {
+      const noTransactionsMessages = [
+        'No transactions found',
+        'No token transfers found',
+        'No transactions found.',
+      ]
+
+      if (
+        noTransactionsMessages.some((msg) =>
+          data.message.toLowerCase().includes(msg.toLowerCase())
+        )
+      ) {
+        // Return empty result instead of error
+        const responseData = {
+          status: '1',
+          message: 'OK',
+          result: [],
+        }
+
+        // Cache the empty result
+        const cacheKey = `${address}-${chain}-${page}-${offset}`
+        tokenCache.set(cacheKey, {
+          data: responseData,
+          timestamp: Date.now(),
+        })
+
+        return res.status(200).json(responseData)
+      }
+
       return res.status(400).json({
         error: `Etherscan API Error: ${data.message}`,
       })
