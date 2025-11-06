@@ -721,20 +721,11 @@ export default function SingedInDashboard({
                   {/* Action Buttons */}
                   <div className="flex gap-3 pt-2">
                     <StandardButton
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1"
+                      className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] hover:from-[#7A4A8C] hover:to-[#6B57B7] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all w-full"
                       link={`/mission/${featuredMission.id}`}
                     >
-                      View Details
+                      Contribute
                     </StandardButton>
-                    {featuredMission.projectId &&
-                      featuredMission.projectId > 0 && (
-                        <StandardButton
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                          link={`/mission/${featuredMission.id}`}
-                        >
-                          Fund Mission
-                        </StandardButton>
-                      )}
                   </div>
                 </div>
               </div>
