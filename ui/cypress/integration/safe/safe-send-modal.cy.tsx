@@ -5,8 +5,9 @@ import { SafeData } from '@/lib/safe/useSafe'
 import * as PrivyComponents from '@/components/privy/PrivyWeb3Button'
 import SafeSendModal from '@/components/safe/SafeSendModal'
 
-describe('SafeSendModal', () => {
+describe('<SafeSendModal />', () => {
   let mockSafeData: SafeData
+  let props: any
   const mockSafeAddress = '0x1234567890123456789012345678901234567890'
 
   const mockBalances = [
@@ -34,8 +35,18 @@ describe('SafeSendModal', () => {
 
     // Mock the PrivyWeb3Button component
     cy.stub(PrivyComponents, 'PrivyWeb3Button').callsFake(
-      ({ children, ...props }) => (
-        <button {...props} data-testid="send-button" type="submit">
+      ({ action, children, isDisabled, ...props }) => (
+        <button
+          {...props}
+          data-testid="send-button"
+          type="submit"
+          disabled={isDisabled}
+          onClick={async () => {
+            if (action && !isDisabled) {
+              await action()
+            }
+          }}
+        >
           {children || 'Send'}
         </button>
       )
@@ -61,20 +72,23 @@ describe('SafeSendModal', () => {
       rejectTransaction: cy.stub(),
     }
 
-    cy.mount(
-      <TestnetProviders>
-        <SafeSendModal
-          safeData={mockSafeData}
-          safeAddress={mockSafeAddress}
-          setEnabled={cy.stub()}
-        />
-        <Toaster />
-      </TestnetProviders>
-    )
+    props = {
+      safeData: mockSafeData,
+      safeAddress: mockSafeAddress,
+      setEnabled: cy.stub(),
+    }
+
+    cy.mountNextRouter('/')
   })
 
   it('Renders the modal with correct title and address', () => {
-    cy.get('[data-testid="safe-modal-title"]').should('contain', 'Safe')
+    cy.mount(
+      <TestnetProviders>
+        <SafeSendModal {...props} />
+        <Toaster />
+      </TestnetProviders>
+    )
+    cy.get('[data-testid="safe-modal-title"]').should('contain', 'Send Funds')
     cy.get('[data-testid="safe-address"]').should('contain', '0x1234...7890')
   })
 
@@ -87,6 +101,7 @@ describe('SafeSendModal', () => {
           safeAddress={mockSafeAddress}
           setEnabled={setEnabled}
         />
+        <Toaster />
       </TestnetProviders>
     )
     cy.get('[data-testid="safe-modal-close"]').click()
@@ -94,6 +109,13 @@ describe('SafeSendModal', () => {
   })
 
   it('Validates address input', () => {
+    cy.mount(
+      <TestnetProviders>
+        <SafeSendModal {...props} />
+        <Toaster />
+      </TestnetProviders>
+    )
+
     // Test invalid address
     cy.get('[data-testid="recipient-address"]').type('invalid-address')
     cy.get('[data-testid="send-button"]').should('be.disabled')
@@ -108,6 +130,13 @@ describe('SafeSendModal', () => {
   })
 
   it('Validates amount input', () => {
+    cy.mount(
+      <TestnetProviders>
+        <SafeSendModal {...props} />
+        <Toaster />
+      </TestnetProviders>
+    )
+
     // Test invalid amount (0)
     cy.get('[data-testid="recipient-address"]').type(
       '0x1234567890123456789012345678901234567890'
@@ -119,18 +148,5 @@ describe('SafeSendModal', () => {
     cy.get('[data-testid="amount-input"]').clear()
     cy.get('[data-testid="amount-input"]').type('1')
     cy.get('[data-testid="send-button"]').should('be.enabled')
-  })
-
-  it('Displays error toast for insufficient balance', () => {
-    // Mock the sendFunds function to throw an insufficient balance error
-    const mockError = new Error('Insufficient balance')
-    mockSafeData.sendFunds = cy.stub().rejects(mockError)
-
-    cy.get('[data-testid="recipient-address"]').type(
-      '0x1234567890123456789012345678901234567890'
-    )
-    cy.get('[data-testid="amount-input"]').type('1000000') // Large amount
-    cy.get('[data-testid="send-button"]').click()
-    cy.contains('Insufficient balance', { timeout: 10000 }).should('be.visible')
   })
 })

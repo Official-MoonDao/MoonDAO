@@ -22,6 +22,8 @@ describe('<BuyTeamListingModal />', () => {
       setEnabled: cy.stub(),
     }
 
+    cy.mountNextRouter('/')
+
     cy.mount(
       <TestnetProviders>
         <BuyTeamListingModal {...props} />

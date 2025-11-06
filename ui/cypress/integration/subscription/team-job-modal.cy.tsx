@@ -34,6 +34,7 @@ describe('<TeamJobModal />', () => {
       }),
       edit: false,
     }
+    cy.mountNextRouter('/')
   })
 
   it('Renders the component', () => {

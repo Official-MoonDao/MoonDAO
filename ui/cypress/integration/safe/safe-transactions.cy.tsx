@@ -37,10 +37,7 @@ describe('SafeTransactions', () => {
           to: '0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b',
           value: ethers.utils.parseEther('1').toString(),
           data: '0x',
-          dataDecoded: {
-            method: 'transfer',
-            parameters: [],
-          },
+          dataDecoded: null,
           confirmations: [], // Empty confirmations to ensure !hasSigned
           confirmationsRequired: 2,
           isExecuted: false,
@@ -63,6 +60,8 @@ describe('SafeTransactions', () => {
       fetchPendingTransactions: fetchPendingTransactionsStub,
       currentNonce: 1,
     }
+
+    cy.mountNextRouter('/')
 
     cy.mount(
       <TestnetProviders>
@@ -265,5 +264,143 @@ describe('SafeTransactions', () => {
       </TestnetProviders>
     )
     cy.get('[data-testid="execute-transaction-0x123"]').should('not.exist')
+  })
+
+  it('handles transactions with undefined confirmations', () => {
+    const safeDataWithUndefinedConfirmations = {
+      ...mockSafeData,
+      pendingTransactions: [
+        {
+          ...mockSafeData.pendingTransactions[0],
+          confirmations: undefined,
+        },
+      ],
+    }
+    cy.mount(
+      <TestnetProviders>
+        <SafeTransactions
+          address={mockAddress}
+          safeData={safeDataWithUndefinedConfirmations}
+        />
+      </TestnetProviders>
+    )
+    cy.get('[data-testid="transaction-0x123"]').should('exist')
+    cy.get('[data-testid="transaction-confirmations-0x123"]').should(
+      'contain',
+      '0/2'
+    )
+  })
+
+  it('groups transactions by nonce', () => {
+    const groupedSafeData = {
+      ...mockSafeData,
+      pendingTransactions: [
+        {
+          ...mockSafeData.pendingTransactions[0],
+          safeTxHash: '0x123',
+          nonce: 1,
+        },
+        {
+          ...mockSafeData.pendingTransactions[0],
+          safeTxHash: '0x456',
+          nonce: 1,
+        },
+        {
+          ...mockSafeData.pendingTransactions[0],
+          safeTxHash: '0x789',
+          nonce: 2,
+        },
+      ],
+    }
+    cy.mount(
+      <TestnetProviders>
+        <SafeTransactions address={mockAddress} safeData={groupedSafeData} />
+      </TestnetProviders>
+    )
+    cy.get('[data-testid="transaction-group-1"]').should('exist')
+    cy.get('[data-testid="transaction-group-2"]').should('exist')
+    cy.get('[data-testid="duplicate-nonce-warning-1"]').should('exist')
+    cy.get('[data-testid="duplicate-nonce-warning-2"]').should('not.exist')
+  })
+
+  it('displays Transfer ETH method for ETH transfers', () => {
+    const ethTransferData = {
+      ...mockSafeData,
+      pendingTransactions: [
+        {
+          ...mockSafeData.pendingTransactions[0],
+          data: '0x',
+          value: ethers.utils.parseEther('1').toString(),
+        },
+      ],
+    }
+    cy.mount(
+      <TestnetProviders>
+        <SafeTransactions address={mockAddress} safeData={ethTransferData} />
+      </TestnetProviders>
+    )
+    cy.get('[data-testid="transaction-method-0x123"]').should(
+      'contain',
+      'Transfer ETH'
+    )
+  })
+
+  it('displays Reject Transaction method for rejection transactions', () => {
+    const rejectionData = {
+      ...mockSafeData,
+      pendingTransactions: [
+        {
+          ...mockSafeData.pendingTransactions[0],
+          data: '0x',
+          value: '0',
+          dataDecoded: {
+            method: 'rejectTransaction',
+            parameters: [],
+          },
+        },
+      ],
+    }
+    cy.mount(
+      <TestnetProviders>
+        <SafeTransactions address={mockAddress} safeData={rejectionData} />
+      </TestnetProviders>
+    )
+    cy.get('[data-testid="transaction-method-0x123"]').should(
+      'contain',
+      'Reject Transaction'
+    )
+  })
+
+  it('shows sign button when there is a rejection in the group', () => {
+    const rejectionGroupData = {
+      ...mockSafeData,
+      pendingTransactions: [
+        {
+          ...mockSafeData.pendingTransactions[0],
+          safeTxHash: '0x123',
+          nonce: 1,
+        },
+        {
+          ...mockSafeData.pendingTransactions[0],
+          safeTxHash: '0x456',
+          nonce: 1,
+          data: '0x',
+          value: '0',
+          dataDecoded: {
+            method: 'rejectTransaction',
+            parameters: [],
+          },
+        },
+      ],
+    }
+    cy.mount(
+      <TestnetProviders>
+        <SafeTransactions address={mockAddress} safeData={rejectionGroupData} />
+      </TestnetProviders>
+    )
+    cy.get('[data-testid="sign-transaction-with-rejection-0x123"]').should(
+      'exist'
+    )
+    cy.get('[data-testid="reject-transaction-0x123"]').should('not.exist')
   })
 })

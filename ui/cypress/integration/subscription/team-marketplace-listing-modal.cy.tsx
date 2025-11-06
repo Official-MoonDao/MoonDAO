@@ -1,4 +1,5 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
+import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
 import { MARKETPLACE_TABLE_ADDRESSES } from 'const/config'
 import { Toaster } from 'react-hot-toast'
@@ -6,7 +7,6 @@ import { getContract } from 'thirdweb'
 import { serverClient } from '@/lib/thirdweb/client'
 import { TeamListing as TeamListingType } from '@/components/subscription/TeamListing'
 import TeamMarketplaceListingModal from '@/components/subscription/TeamMarketplaceListingModal'
-import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 
 describe('<TeamMarketplaceListingModal />', () => {
   let listing: TeamListingType
@@ -32,6 +32,7 @@ describe('<TeamMarketplaceListingModal />', () => {
       edit: false,
       listing,
     }
+    cy.mountNextRouter('/')
   })
 
   it('Renders the component', () => {
