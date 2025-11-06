@@ -6,7 +6,6 @@ import {
   ShoppingBagIcon,
   NewspaperIcon,
   GlobeAmericasIcon,
-  BoltIcon,
   PencilIcon,
   BriefcaseIcon,
   TrophyIcon,
@@ -20,10 +19,7 @@ import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
-import VotingEscrowDepositor from 'const/abis/VotingEscrowDepositor.json'
 import {
-  ARBITRUM_ASSETS_URL,
-  BASE_ASSETS_URL,
   DEFAULT_CHAIN_V5,
   HATS_ADDRESS,
   JBV5_CONTROLLER_ADDRESS,
@@ -32,21 +28,15 @@ import {
   MARKETPLACE_TABLE_ADDRESSES,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
-  POLYGON_ASSETS_URL,
   TEAM_ADDRESSES,
-  VOTING_ESCROW_DEPOSITOR_ADDRESSES,
 } from 'const/config'
-import { BigNumber } from 'ethers'
 import dynamic from 'next/dynamic'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useState, useEffect } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import { useAssets } from '@/lib/dashboard/hooks'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useMissionData from '@/lib/mission/useMissionData'
-import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
 import {
   generatePrettyLink,
@@ -54,15 +44,15 @@ import {
 } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { useTotalLockedMooney } from '@/lib/tokens/hooks/useTotalLockedMooney'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
+import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
-import { getRelativeQuarter } from '@/lib/utils/dates'
-import useStakedEth from '@/lib/utils/hooks/useStakedEth'
 import { truncateTokenValue } from '@/lib/utils/numbers'
-import { getBudget } from '@/lib/utils/rewards'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { RevenueChart } from '@/components/dashboard/treasury/RevenueChart'
 import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
+import MooneyBalances from '@/components/home/MooneyBalances'
 import ChartModal from '@/components/layout/ChartModal'
 import Container from '@/components/layout/Container'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
@@ -205,46 +195,32 @@ export default function SingedInDashboard({
     setChartModalOpen(true)
   }
 
-  const { proposals, packet, votingInfoMap } = useNewestProposals(100)
   const account = useActiveAccount()
   const address = account?.address
 
-  const { data: voteCount } = useVoteCountOfAddress(address)
+  const { data: voteCount, isValidating: isLoadingVoteCount } =
+    useVoteCountOfAddress(address)
 
   const MOONEYBalance = useTotalMooneyBalance(address)
+  const {
+    totalLockedMooney: lockedMooneyAmount,
+    nextUnlockDate: lockedMooneyUnlockDate,
+    breakdown: lockedMooneyBreakdown,
+    isLoading: isLoadingLockedMooney,
+  } = useTotalLockedMooney(address)
+
+  const { totalVMOONEY, isLoading: isLoadingVMOONEY } = useTotalVMOONEY(
+    address,
+    lockedMooneyBreakdown
+  )
+
   const {
     walletVP,
     isLoading: isLoadingVP,
     isError: isErrorVP,
   } = useTotalVP(address || '')
 
-  const { quarter, year } = getRelativeQuarter(0)
-
-  const { tokens: mainnetTokens } = useAssets()
-  const { tokens: arbitrumTokens } = useAssets(ARBITRUM_ASSETS_URL)
-  const { tokens: polygonTokens } = useAssets(POLYGON_ASSETS_URL)
-  const { tokens: baseTokens } = useAssets(BASE_ASSETS_URL)
-  const { stakedEth, error } = useStakedEth()
-
-  const tokens = mainnetTokens
-    .concat(arbitrumTokens)
-    .concat(polygonTokens)
-    .concat(baseTokens)
-    .concat([{ symbol: 'stETH', balance: stakedEth }])
-
-  const {
-    ethBudget: ethBudgetCurrent,
-    usdBudget,
-    mooneyBudget,
-    ethPrice,
-  } = getBudget(tokens, year, quarter)
   const ethBudget = 14.15
-
-  const votingEscrowDepositorContract = useContract({
-    address: VOTING_ESCROW_DEPOSITOR_ADDRESSES[chainSlug],
-    abi: VotingEscrowDepositor.abi,
-    chain: selectedChain,
-  })
 
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
@@ -252,17 +228,16 @@ export default function SingedInDashboard({
     chain: selectedChain,
   })
 
+  const { userTeams: teamHats, isLoading: isLoadingTeams } = useTeamWearer(
+    teamContract,
+    selectedChain,
+    address
+  )
   const marketplaceTableContract = useContract({
     address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
     abi: MarketplaceTableABI as any,
     chain: selectedChain,
   })
-
-  const { userTeams: teamHats } = useTeamWearer(
-    teamContract,
-    selectedChain,
-    address
-  )
 
   // Mission contracts - exactly like launchpad
   const missionTableContract = useContract({
@@ -344,12 +319,12 @@ export default function SingedInDashboard({
         <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-4 sm:p-6 mb-6 overflow-hidden">
           <div className="absolute inset-0 bg-black/20 rounded-2xl"></div>
 
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-0">
+          <div className="relative z-10 flex flex-col xl:flex-row lg:items-center gap-4 lg:gap-6">
             {/* Left Side - Profile & Title */}
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
               {/* Profile Picture */}
-              <div className="relative">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-3 border-white shadow-xl bg-white relative flex-shrink-0">
+              <div className="relative flex-shrink-0">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-3 border-white shadow-xl bg-white relative">
                   {citizen?.metadata?.image ? (
                     <IPFSRenderer
                       src={citizen.metadata.image}
@@ -361,7 +336,9 @@ export default function SingedInDashboard({
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                       <span className="text-white font-bold text-base sm:text-lg">
-                        {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
+                        {citizen?.metadata?.name ||
+                          `${address?.slice(0, 6)}...${address?.slice(-4)}` ||
+                          ''}
                       </span>
                     </div>
                   )}
@@ -381,9 +358,9 @@ export default function SingedInDashboard({
                 )}
               </div>
 
-              {/* Title & Subtitle */}
-              <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-1 drop-shadow-lg leading-tight">
+              {/* Title */}
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-lg leading-tight max-w-[350px] break-words">
                   {isLoadingCitizen ? (
                     <span className="flex items-center gap-2">
                       Welcome...
@@ -398,110 +375,59 @@ export default function SingedInDashboard({
               </div>
             </div>
 
-            {/* Center - Stats with Action Buttons */}
+            {/* Center - Balance constellation */}
             {address && (
-              <div className="flex items-center justify-center gap-2 sm:gap-4 lg:gap-6 order-3 lg:order-2 overflow-x-auto scrollbar-hide">
-                <div className="text-center flex-shrink-0">
-                  {MOONEYBalance === undefined || MOONEYBalance === null ? (
-                    <div className="animate-pulse bg-white/20 rounded w-12 sm:w-16 h-6 mx-auto"></div>
-                  ) : (
-                    <div className="text-lg sm:text-xl font-bold text-white">
-                      {Math.round(MOONEYBalance).toLocaleString()}
-                    </div>
-                  )}
-                  <div className="text-xs sm:text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
-                    <Image
-                      src="/coins/MOONEY.png"
-                      width={12}
-                      height={12}
-                      alt="MOONEY"
-                      className="rounded-full"
-                    />
-                    MOONEY
-                  </div>
-                  <div className="flex justify-center">
-                    <StandardButton
-                      className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-1"
-                      link="/get-mooney"
-                    >
-                      <BanknotesIcon className="w-3 h-3" />
-                      Buy
-                    </StandardButton>
-                  </div>
-                </div>
-
-                <div className="w-px h-12 sm:h-16 bg-white/20 hidden sm:block"></div>
-
-                <div className="text-center flex-shrink-0">
-                  {walletVP === undefined || walletVP === null ? (
-                    <div className="animate-pulse bg-white/20 rounded w-12 sm:w-16 h-6 mx-auto"></div>
-                  ) : (
-                    <div className="text-lg sm:text-xl font-bold text-white">
-                      {Math.round(walletVP).toLocaleString()}
-                    </div>
-                  )}
-                  <div className="text-xs sm:text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
-                    <BoltIcon className="w-3 h-3" />
-                    Voting Power
-                  </div>
-                  <div className="flex justify-center">
-                    <StandardButton
-                      className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-1"
-                      link="/lock"
-                    >
-                      <BoltIcon className="w-3 h-3" />
-                      Stake
-                    </StandardButton>
-                  </div>
-                </div>
-
-                <div className="w-px h-12 sm:h-16 bg-white/20 hidden sm:block"></div>
-
-                <div className="text-center flex-shrink-0">
-                  <div className="text-lg sm:text-xl font-bold text-white">
-                    {voteCount || 0}
-                  </div>
-                  <div className="text-xs sm:text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
-                    <CheckBadgeIcon className="w-3 h-3" />
-                    Votes
-                  </div>
-                  <div className="flex justify-center">
-                    <StandardButton
-                      className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-1"
-                      link="/governance"
-                    >
-                      <CheckBadgeIcon className="w-3 h-3" />
-                      Vote
-                    </StandardButton>
-                  </div>
-                </div>
-
-                <div className="w-px h-12 sm:h-16 bg-white/20 hidden sm:block"></div>
-
-                <div className="text-center flex-shrink-0">
-                  <div className="text-lg sm:text-xl font-bold text-white">
-                    {teamHats?.length || 0}
-                  </div>
-                  <div className="text-xs sm:text-sm text-white/60 flex items-center justify-center gap-1 mt-1 mb-3">
-                    <UserGroupIcon className="w-3 h-3" />
-                    Teams
-                  </div>
-                  <div className="flex justify-center">
-                    <StandardButton
-                      className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-1"
-                      link="/network"
-                    >
-                      <UserGroupIcon className="w-3 h-3" />
-                      <span className="hidden sm:inline">Join Team</span>
-                      <span className="sm:hidden">Join</span>
-                    </StandardButton>
-                  </div>
-                </div>
+              <div className="">
+                <MooneyBalances
+                  unlockedMooney={MOONEYBalance}
+                  lockedMooney={lockedMooneyAmount}
+                  totalVMOONEY={totalVMOONEY}
+                  votingPower={walletVP}
+                  isLockedLoading={!!isLoadingLockedMooney}
+                  isVMOONEYLoading={isLoadingVMOONEY}
+                  isVotingPowerLoading={!!isLoadingVP}
+                />
               </div>
             )}
 
-            {/* Right Side - Empty space for balance */}
-            <div className="order-2 lg:order-3"></div>
+            {/* Right Side - Votes & Teams */}
+            {address && (
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <Link
+                  href="/governance"
+                  className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group font-GoodTimes"
+                >
+                  <CheckBadgeIcon className="h-5 w-5 text-white/80 group-hover:text-white" />
+                  {isLoadingVoteCount ? (
+                    <LoadingSpinner width="w-4" height="h-4" />
+                  ) : (
+                    <span className="font-medium whitespace-nowrap text-white/80 group-hover:text-white">
+                      {voteCount || 0}
+                    </span>
+                  )}
+                  <span className="text-white/60 group-hover:underline">
+                    Votes
+                  </span>
+                </Link>
+                <div className="h-4 w-px bg-white/20" />
+                <Link
+                  href="/network"
+                  className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group font-GoodTimes"
+                >
+                  <UserGroupIcon className="h-5 w-5 text-white/80 group-hover:text-white" />
+                  {isLoadingTeams ? (
+                    <LoadingSpinner width="w-4" height="h-4" />
+                  ) : (
+                    <span className="font-medium whitespace-nowrap text-white/80 group-hover:text-white">
+                      {teamHats?.length || 0}
+                    </span>
+                  )}
+                  <span className="text-white/60 group-hover:underline">
+                    {teamHats?.length === 1 ? 'Team' : 'Teams'}
+                  </span>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
