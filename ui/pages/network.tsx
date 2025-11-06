@@ -314,7 +314,7 @@ export default function Network({
                 <StandardButton
                   className="gradient-2 rounded-xl hover:scale-105 transition-transform"
                   hoverEffect={false}
-                  link="/network-overview"
+                  link="/join"
                 >
                   <div className="flex items-center justify-center gap-2">
                     <PlusCircleIcon width={16} height={16} />

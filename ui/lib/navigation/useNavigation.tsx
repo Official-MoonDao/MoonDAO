@@ -25,9 +25,8 @@ export default function useNavigation(citizen: any) {
         href: '/network',
         icon: IconOrg,
         children: [
-          { name: 'Network Overview', href: '/network-overview' },
+          { name: 'Join Network', href: '/join' },
           { name: 'Explore Network', href: '/network' },
-          { name: 'Become a Citizen', href: '/join' },
           { name: 'Create a Team', href: '/team' },
           {
             name: 'Submit Contribution',
