@@ -12,6 +12,7 @@ import {
   DEPLOYED_ORIGIN,
   DEFAULT_CHAIN_V5,
   DISCORD_CITIZEN_ROLE_ID,
+  CITIZEN_TABLE_NAMES,
 } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
@@ -41,6 +42,7 @@ import {
   Chain,
 } from '@/lib/rpc/chains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { mutateTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
@@ -386,7 +388,22 @@ export default function CreateCitizen({
             `## [**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${citizenPrettyLink}?_timestamp=123456789) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`
           )
 
-          router.push(`/citizen/${citizenPrettyLink}`)
+          // Clear localStorage cache for citizen data
+          const cacheKey = `moondao_citizen_${address?.toLowerCase()}_${
+            DEFAULT_CHAIN_V5.id
+          }`
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem(cacheKey)
+          }
+
+          // Invalidate SWR cache for citizen query to force refresh on dashboard
+          const statement = `SELECT * FROM ${
+            CITIZEN_TABLE_NAMES[defaultChainSlug]
+          } WHERE owner = '${address?.toLowerCase()}'`
+          await mutateTablelandQuery(statement)
+
+          // Redirect to home page
+          router.push('/')
           setIsLoadingMint(false)
         }, 10000)
       }
