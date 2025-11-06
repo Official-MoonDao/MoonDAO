@@ -36,9 +36,9 @@ export default function DashboardTeams({
     <>
       {!isLoading && hats ? (
         <div className="flex flex-col lg:flex-row gap-4 max-h-[400px] overflow-y-auto md:overflow-y-hidden md:overflow-x-auto">
-          {hats?.map((hat: any) => (
+          {hats?.map((hat: any, index: number) => (
             <div
-              key={hat.id}
+              key={hat.id || `hat-${index}`}
               className="bg-slate-600/20 rounded-xl p-2 hover:bg-slate-600/30 transition-colors"
             >
               <Hat
