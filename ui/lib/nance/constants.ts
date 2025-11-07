@@ -7,7 +7,4 @@ export const SNAPSHOT_SPACE_NAME =
 
 export const proposalIdPrefix = 'MDP-'
 
-export const NANCE_API_URL =
-  mainnet || dev
-    ? 'https://nance-ts-production.up.railway.app'
-    : 'http://localhost:3003'
+export const NANCE_API_URL = 'https://nance-ts-production.up.railway.app'

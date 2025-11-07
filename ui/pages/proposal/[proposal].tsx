@@ -7,6 +7,7 @@ import {
 import { GetServerSideProps } from 'next'
 import { createEnumParam, useQueryParams, withDefault } from 'next-query-params'
 import { NANCE_API_URL, NANCE_SPACE_NAME } from '@/lib/nance/constants'
+import useProposalJSON from '@/lib/nance/useProposalJSON'
 import { useVotesOfProposal } from '@/lib/snapshot'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -23,6 +24,8 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
   const [query, setQuery] = useQueryParams({
     sortBy: withDefault(createEnumParam(['time', 'vp']), 'time'),
   })
+
+  const { abstract } = useProposalJSON(proposalPacket.body)
 
   if (proposalPacket) {
     proposalPacket = {
@@ -57,6 +60,7 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
 
   return (
     <Container>
+      <WebsiteHead title={proposalPacket.title} description={abstract} />
       <ContentLayout
         header={proposalPacket.title}
         mode="compact"
