@@ -27,11 +27,17 @@ contract MyScript is Script {
 
 
         address oldCreatorAddress = 0xe5709Bc44427DCEF81fF2F718DFc6A032fD23bbF;
-        uint256 projectTeamAdminHatId = 1887196678076684115928201594833669786492226355261806482072218554597376;
+        //uint256 projectTeamAdminHatId = 1887196678076684115928201594833669786492226355261806482072218554597376;
+        //uint256 projectTeamAdminHatId = 0x0000018200020000000000000000000000000000000000000000000000000000;
 
         address projectAddress = 0xCb31829B312923C7502766ef4f36948A7A64cD6A;
-        ProjectTeam projectTeam = ProjectTeam(projectAddress);
         address projectTableAddress = 0x83755AF34867a3513ddCE921E9cAd28f0828CDdB;
+        if (block.chainid == 11155111){
+            projectTableAddress = 0x885ab2ADe7f3223490d970f01558CD9251df85cd;
+            projectAddress = 0xb13540430A4D63D3A8741b6D898CA15011ac17BF;
+            oldCreatorAddress = 0xd1EfE13758b73F2Db9Ed19921eB756fbe4C26E2D;
+        }
+        ProjectTeam projectTeam = ProjectTeam(projectAddress);
 
 
         ProjectTeamCreator creator = new ProjectTeamCreator(hatsAddress, hatsModuleFactoryAddress, hatsPassthroughAddress, address(projectTeam), gnosisSingletonAddress, gnosisSafeProxyFactoryAddress, projectTableAddress);
@@ -39,9 +45,9 @@ contract MyScript is Script {
         creator.setProjectTeamAdminHatId(projectTeamAdminHatId);
         projectTeam.setProjectTeamCreator(address(creator));
 
-        hats.transferHat(projectTeamAdminHatId, oldCreatorAddress, address(creator));
-        //hats.mintHat(projectTeamAdminHatId, address(creator));
-        //hats.changeHatEligibility(projectTeamAdminHatId, address(creator));
+        //hats.transferHat(projectTeamAdminHatId, oldCreatorAddress, address(creator));
+        hats.mintHat(projectTeamAdminHatId, address(creator));
+        hats.changeHatEligibility(projectTeamAdminHatId, address(creator));
 
 
         vm.stopBroadcast();

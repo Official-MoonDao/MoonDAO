@@ -25,11 +25,13 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig =
-  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
+const ethConfig = require(
+  `../../contracts/deployments/ethereum`
+) as DeploymentConfig
 
-const polygonConfig =
-  require(`../../contracts/deployments/polygon`) as DeploymentConfig
+const polygonConfig = require(
+  `../../contracts/deployments/polygon`
+) as DeploymentConfig
 
 const arbitrumConfig =
   require('../../contracts/deployments/arbitrum') as DeploymentConfig
@@ -37,11 +39,13 @@ const arbitrumConfig =
 const baseConfig =
   require('../../contracts/deployments/base') as DeploymentConfig
 
-const goerliConfig =
-  require(`../../contracts/deployments/goerli`) as DeploymentConfig
+const goerliConfig = require(
+  `../../contracts/deployments/goerli`
+) as DeploymentConfig
 
-const sepoliaConfig =
-  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
+const sepoliaConfig = require(
+  `../../contracts/deployments/sepolia`
+) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
@@ -135,25 +139,35 @@ export const CITIZEN_TABLE_NAMES: Index = {
 
 export const PROJECT_ADDRESSES: Index = {
   arbitrum: '0xCb31829B312923C7502766ef4f36948A7A64cD6A',
-  sepolia: '0x19124F594c3BbCb82078b157e526B278C8E9EfFc',
+  sepolia: '0x52B8b33336D1b2D6ff7c89e6F5A79914b73423ac',
   'arbitrum-sepolia': '0xDC35Dc4F7610678B0389157522734b79ea464101',
 }
 
 export const PROJECT_CREATOR_ADDRESSES: Index = {
   arbitrum: '0x2486149B23447c37932471eA6dF091267ebca953',
-  sepolia: '0xd1EfE13758b73F2Db9Ed19921eB756fbe4C26E2D',
+  sepolia: '0x3fB29C65a593721c6Bb0cD40116e24D9DB466A93',
   'arbitrum-sepolia': '0xde26EcE3C1Ec58057348e3a7B28359c8cDfae56A',
+}
+
+export const SENATORS_ADDRESSES: Index = {
+  //arbitrum: '...',
+  sepolia: 0x9c4fdb567a3ab576742b8253db48dad2922e8675,
+}
+
+export const PROPOSALS_ADDRESSES: Index = {
+  //arbitrum: '...',
+  sepolia: '0x9C4FdB567a3ab576742B8253db48dAD2922e8675',
 }
 
 export const PROJECT_TABLE_ADDRESSES: Index = {
   arbitrum: '0x83755AF34867a3513ddCE921E9cAd28f0828CDdB',
-  sepolia: '0x17729AFF287d9873F5610c029A5Db814e428e97a',
+  sepolia: '0xbd5d694bC25F862298B08Ecf201F5907Dc1BbcA6',
   'arbitrum-sepolia': '0x51a5cA8966cA71ac0A0D58DbeF2ec6a932e1490E',
 }
 
 export const PROJECT_TABLE_NAMES: Index = {
   arbitrum: 'PROJECT_42161_122',
-  sepolia: 'PROJECT_11155111_1888',
+  sepolia: 'PROJECT_11155111_2028',
   'arbitrum-sepolia': 'PROJECT_421614_1060',
 }
 

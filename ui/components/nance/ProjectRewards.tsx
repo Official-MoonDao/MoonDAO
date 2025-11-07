@@ -1,11 +1,13 @@
 import DistributionTableABI from 'const/abis/DistributionTable.json'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
+import ProposalsABI from 'const/abis/Proposals.json'
 import {
   DEFAULT_CHAIN_V5,
   DISTRIBUTION_TABLE_ADDRESSES,
   HATS_ADDRESS,
   PROJECT_ADDRESSES,
+  PROPOSALS_ADDRESSES,
   ARBITRUM_ASSETS_URL,
   POLYGON_ASSETS_URL,
   BASE_ASSETS_URL,
@@ -60,6 +62,7 @@ export type RewardAssetProps = {
 }
 
 export type ProjectRewardsProps = {
+  proposals: Project[]
   currentProjects: Project[]
   pastProjects: Project[]
   distributions: Distribution[]
@@ -136,6 +139,7 @@ function RewardAsset({
 }
 
 export function ProjectRewards({
+  proposals,
   currentProjects,
   pastProjects,
   distributions,
@@ -196,6 +200,13 @@ export function ProjectRewards({
     chain: chain,
     abi: ProjectABI as any,
   })
+  const proposalContract = useContract({
+    address: PROPOSALS_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: ProposalsABI.abi as any,
+  })
+  console.log('proposalContract')
+  console.log(proposalContract)
   const distributionTableContract = useContract({
     address: DISTRIBUTION_TABLE_ADDRESSES[chainSlug],
     chain: chain,
@@ -459,6 +470,49 @@ export function ProjectRewards({
               className="bg-black/20 rounded-xl p-6 border border-white/10"
             >
               <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
+                Proposals
+              </h1>
+              <div className="flex flex-col gap-6">
+                {proposals && proposals.length > 0 ? (
+                  proposals.map((project: any, i) => (
+                    <div
+                      key={`project-card-${i}`}
+                      className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+                    >
+                      <ProjectCard
+                        key={`project-card-${i}`}
+                        project={project}
+                        projectContract={projectContract}
+                        proposalContract={proposalContract}
+                        hatsContract={hatsContract}
+                        distribute={active && project.eligible}
+                        distribution={
+                          userHasVotingPower ? distribution : undefined
+                        }
+                        handleDistributionChange={
+                          userHasVotingPower
+                            ? handleDistributionChange
+                            : undefined
+                        }
+                        userHasVotingPower={userHasVotingPower}
+                        isVotingPeriod={active}
+                        active={false}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <p>There are no active Proposals.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div
+              id="projects-container"
+              className="bg-black/20 rounded-xl p-6 border border-white/10"
+            >
+              <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
                 Active Projects
               </h1>
 
@@ -473,6 +527,7 @@ export function ProjectRewards({
                         key={`project-card-${i}`}
                         project={project}
                         projectContract={projectContract}
+                        proposalContract={proposalContract}
                         hatsContract={hatsContract}
                         distribute={active && project.eligible}
                         distribution={
@@ -485,6 +540,7 @@ export function ProjectRewards({
                         }
                         userHasVotingPower={userHasVotingPower}
                         isVotingPeriod={active}
+                        active={true}
                       />
                     </div>
                   ))

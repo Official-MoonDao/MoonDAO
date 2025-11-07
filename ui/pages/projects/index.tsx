@@ -21,6 +21,7 @@ import {
 } from '@/components/nance/ProjectRewards'
 
 export default function Projects({
+  proposals,
   currentProjects,
   pastProjects,
   distributions,
@@ -29,6 +30,7 @@ export default function Projects({
   useChainDefault()
   return (
     <ProjectRewards
+      proposals={proposals}
       currentProjects={currentProjects}
       pastProjects={pastProjects}
       distributions={distributions}
@@ -49,13 +51,18 @@ export async function getStaticProps() {
     const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
     const projects = await queryTable(chain, projectStatement)
 
+    const proposals = []
     const currentProjects = []
     const pastProjects = []
     for (let i = 0; i < projects.length; i++) {
       if (!BLOCKED_PROJECTS.has(projects[i].id)) {
         const current = projects[i].active
         if (!current) {
-          pastProjects.push(projects[i])
+          if (quarter == projects[i].quarter && year == projects[i].year) {
+            proposals.push(projects[i])
+          } else {
+            pastProjects.push(projects[i])
+          }
         } else {
           currentProjects.push(projects[i])
         }
@@ -73,6 +80,7 @@ export async function getStaticProps() {
 
     return {
       props: {
+        proposals: proposals.reverse(),
         currentProjects: currentProjects.reverse(),
         pastProjects: pastProjects.reverse(),
         distributions,
@@ -83,6 +91,7 @@ export async function getStaticProps() {
     console.error('Error fetching projects or distributions:', error)
     return {
       props: {
+        proposals: [],
         currentProjects: [],
         pastProjects: [],
         distributions: [],
