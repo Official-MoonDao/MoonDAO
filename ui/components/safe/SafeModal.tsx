@@ -109,7 +109,10 @@ export default function SafeModal({
 
   return (
     <Modal id="safe-modal" setEnabled={setEnabled}>
-      <div className="w-screen md:w-[550px] mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white">
+      <div
+        data-testid="safe-modal-content"
+        className="w-screen md:w-[550px] mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white"
+      >
         {/* Header */}
         <div
           data-testid="safe-modal-header"

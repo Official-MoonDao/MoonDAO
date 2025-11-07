@@ -32,10 +32,12 @@
     "cypress_config_file": "cypress.config.js",
     "cache_dependencies": true,
     "npm_dependencies": {
-      "dotenv": "latest",
-      "browserstack-cypress-cli": "latest",
-      "typescript": "latest",
-      "@types/node": "latest"
+      "cypress": "12.17.3",
+      "dotenv": "^17.2.2",
+      "typescript": "^5.1.6",
+      "@types/node": "^20.4.1",
+      "axios": "^1.4.0",
+      "form-data": "^4.0.3"
     },
     "project_name": "MoonDAO",
     "build_name": "MoonDAO-E2E-Tests",
@@ -57,7 +59,6 @@
       "next.config.js",
       "i18n.js",
       "next-sitemap.config.js",
-      "cypress/support/**",
       "cypress/mock/**",
       "cypress/videos/**",
       "cypress/screenshots/**",

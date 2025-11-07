@@ -118,8 +118,8 @@ describe('<Proposal />', () => {
       // Check for the green dot indicator
       cy.get('.bg-emerald-500').should('exist')
 
-      // Check for voting text
-      cy.get('.text-gray-400').contains('Voting').should('exist')
+      // Check for voting text with correct styling
+      cy.get('.text-white.font-RobotoMono').contains('Voting').should('exist')
     })
 
     it('Should show voting indicator for temperature check proposals', () => {
@@ -141,8 +141,34 @@ describe('<Proposal />', () => {
       // Check for the green dot indicator (same as voting)
       cy.get('.bg-emerald-500').should('exist')
 
-      // Check for voting text
-      cy.get('.text-gray-400').contains('Voting').should('exist')
+      // Check for voting text with correct styling
+      cy.get('.text-white.font-RobotoMono').contains('Temperature Check').should('exist')
+    })
+
+    it('Should show "Results Available" indicator for closed voting proposals', () => {
+      const closedVotingInfo = {
+        ...mockVotingInfo,
+        state: 'closed',
+      }
+
+      cy.mount(
+        <TestnetProviders>
+          <Proposal
+            proposal={mockProposal}
+            packet={mockPacket}
+            votingInfo={closedVotingInfo}
+          />
+        </TestnetProviders>
+      )
+
+      // Check for "Results Available" text
+      cy.contains('Results Available').should('exist')
+
+      // Check for the blue dot indicator
+      cy.get('.bg-blue-500').should('exist')
+
+      // Check for correct styling
+      cy.get('.text-white.font-RobotoMono').contains('Results Available').should('exist')
     })
 
     it('Should show last edited time for non-voting proposals', () => {
@@ -252,6 +278,61 @@ describe('<Proposal />', () => {
     })
   })
 
+  describe('UI Elements', () => {
+    it('Should display chevron icon', () => {
+      cy.mount(
+        <TestnetProviders>
+          <Proposal
+            proposal={mockProposal}
+            packet={mockPacket}
+            votingInfo={mockVotingInfo}
+          />
+        </TestnetProviders>
+      )
+
+      // Check for chevron icon
+      cy.get('[data-testid="chevron-right"]').should('exist')
+      cy.get('[data-testid="chevron-right"]').should('have.class', 'h-5')
+      cy.get('[data-testid="chevron-right"]').should('have.class', 'w-5')
+    })
+  })
+
+  describe('Compact Mode', () => {
+    it('Should render in compact mode when compact prop is true', () => {
+      cy.mount(
+        <TestnetProviders>
+          <Proposal
+            proposal={mockProposal}
+            packet={mockPacket}
+            votingInfo={mockVotingInfo}
+            compact={true}
+          />
+        </TestnetProviders>
+      )
+
+      // Component should still render
+      cy.get('#proposal-card').should('exist')
+      cy.contains('Test Proposal for Component Testing').should('exist')
+    })
+
+    it('Should render in normal mode when compact prop is false', () => {
+      cy.mount(
+        <TestnetProviders>
+          <Proposal
+            proposal={mockProposal}
+            packet={mockPacket}
+            votingInfo={mockVotingInfo}
+            compact={false}
+          />
+        </TestnetProviders>
+      )
+
+      // Component should render with full details
+      cy.get('#proposal-card').should('exist')
+      cy.contains('Test Proposal for Component Testing').should('exist')
+    })
+  })
+
   describe('Edge Cases', () => {
     it('Should handle proposal without lastEditedTime', () => {
       const proposalWithoutLastEdit = {
@@ -307,6 +388,28 @@ describe('<Proposal />', () => {
 
       // Should still display title without prefix
       cy.contains('Test Proposal for Component Testing').should('exist')
+    })
+
+    it('Should handle closed votingInfo with non-voting status', () => {
+      const closedVotingInfo = {
+        ...mockVotingInfo,
+        state: 'closed',
+      }
+      const discussionProposal = { ...mockProposal, status: 'Discussion' }
+
+      cy.mount(
+        <TestnetProviders>
+          <Proposal
+            proposal={discussionProposal}
+            packet={mockPacket}
+            votingInfo={closedVotingInfo}
+          />
+        </TestnetProviders>
+      )
+
+      // Should show "Results Available" when votingInfo is closed
+      cy.contains('Results Available').should('exist')
+      cy.get('.bg-blue-500').should('exist')
     })
   })
 

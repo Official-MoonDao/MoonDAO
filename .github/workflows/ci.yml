@@ -98,7 +98,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ui
-        run: yarn install --frozen-lockfile
+        run: yarn install
 
       - name: Install Cypress binary
         working-directory: ui
@@ -144,6 +144,10 @@ jobs:
         with:
           path: ui/.next
           key: next-${{ runner.os }}-${{ github.sha }}
+
+      - name: Install dependencies
+        working-directory: ui
+        run: yarn install
 
       # BrowserStack Environment Setup - Must be in the same job where it's used
       - name: BrowserStack Env Setup
@@ -224,6 +228,10 @@ jobs:
         with:
           path: ui/.next
           key: next-${{ runner.os }}-${{ github.sha }}
+
+      - name: Install dependencies
+        working-directory: ui
+        run: yarn install
 
       - name: Run Component Tests
         uses: cypress-io/github-action@v6

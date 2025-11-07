@@ -11,10 +11,13 @@ import { getContract } from 'thirdweb'
 import { serverClient } from '@/lib/thirdweb/client'
 import NewMarketplaceListings from '@/components/subscription/NewMarketplaceListings'
 import { TeamListing } from '@/components/subscription/TeamListing'
+import * as thirdweb from 'thirdweb'
 
 describe('<NewMarketplaceListings />', () => {
   let props: any
   let listing: TeamListing
+  const mockTableName = 'marketplace_table_12345'
+  const futureTimestamp = Math.floor(Date.now() / 1000) + 86400 // 24 hours in the future
 
   before(() => {
     cy.fixture('marketplace/listing').then((l) => {
@@ -23,7 +26,19 @@ describe('<NewMarketplaceListings />', () => {
   })
 
   beforeEach(() => {
+    // Mock readContract for getTableName and expiresAt
+    cy.stub(thirdweb, 'readContract').callsFake(async (options: any) => {
+      if (options.method === 'getTableName') {
+        return mockTableName
+      }
+      if (options.method === 'expiresAt') {
+        return BigInt(futureTimestamp)
+      }
+      return null
+    })
+
     props = {
+      selectedChain: CYPRESS_CHAIN_V5,
       teamContract: getContract({
         client: serverClient,
         address: TEAM_ADDRESSES[CYPRESS_CHAIN_SLUG],
@@ -54,9 +69,22 @@ describe('<NewMarketplaceListings />', () => {
   it('Renders the component and listings', () => {
     cy.wait('@getNewMarketplaceListings')
 
-    cy.get('.header').contains('Newest Listings')
+    cy.contains('h3', 'Newest Listings').should('be.visible')
+    
+    // Wait for listings to be processed and rendered
     cy.get('#new-marketplace-listings-container')
       .children()
       .should('have.length', 2)
+      .should('be.visible')
+  })
+
+  it('Displays the description text', () => {
+    cy.contains('Discover and trade exclusive items from space missions').should(
+      'be.visible'
+    )
+  })
+
+  it('Has a View All Items button', () => {
+    cy.contains('button', 'View All Items').should('be.visible')
   })
 })

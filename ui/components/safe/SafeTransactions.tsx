@@ -121,17 +121,18 @@ export default function SafeTransactions({
                   )}
 
                   {transactions.map((tx: any) => {
-                    const hasSigned = tx.confirmations.some(
+                    const confirmations = tx.confirmations || []
+                    const hasSigned = confirmations.some(
                       (conf: any) =>
                         conf.owner.toLowerCase() === address?.toLowerCase()
                     )
                     const canExecute =
-                      tx.confirmations.length >= threshold &&
+                      confirmations.length >= threshold &&
                       !tx.isExecuted &&
                       tx.nonce === safeData?.currentNonce
 
                     const canSign =
-                      tx.confirmations.length < threshold &&
+                      confirmations.length < threshold &&
                       !tx.isExecuted &&
                       tx.nonce === safeData?.currentNonce
 
@@ -163,10 +164,11 @@ export default function SafeTransactions({
                     ) {
                       // For transfer: parameters[0] = to, parameters[1] = value
                       // For transferFrom: parameters[0] = from, parameters[1] = to, parameters[2] = value
-                      recipientAddress =
+                      const paramAddress =
                         tx.dataDecoded.method === 'transfer'
                           ? tx.dataDecoded.parameters?.[0]?.value
                           : tx.dataDecoded.parameters?.[1]?.value
+                      recipientAddress = paramAddress || tx.to
                     }
 
                     return (
@@ -204,8 +206,8 @@ export default function SafeTransactions({
                           data-testid={`transaction-confirmations-${tx.safeTxHash}`}
                           className="text-gray-300 mb-2"
                         >
-                          Confirmations: {tx.confirmations.length}/
-                          {tx.confirmationsRequired}
+                          Confirmations: {confirmations.length}/
+                          {tx.confirmationsRequired || 0}
                         </p>
 
                         <SafeTransactionData

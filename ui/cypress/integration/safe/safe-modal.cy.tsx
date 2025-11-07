@@ -39,6 +39,8 @@ describe('<SafeModal />', () => {
       setEnabled: cy.stub(),
     }
 
+    cy.mountNextRouter('/')
+
     cy.mount(
       <TestnetProviders>
         <SafeModal {...props} />
@@ -50,7 +52,8 @@ describe('<SafeModal />', () => {
     it('Renders the modal with basic information', () => {
       cy.get('[data-testid="safe-modal-content"]').should('exist')
       cy.get('[data-testid="safe-modal-title"]').should('contain', 'Safe')
-      cy.get('[data-testid="safe-address"]').should('contain', 'Address:')
+      cy.get('[data-testid="safe-address"]').should('exist')
+      cy.get('[data-testid="safe-info"]').should('contain', 'Safe Address')
     })
 
     it('Closes modal when close button is clicked', () => {
