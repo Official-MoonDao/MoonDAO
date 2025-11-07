@@ -13,7 +13,6 @@ import {
   YAxis,
 } from 'recharts'
 import useJBTrendingProjects from '@/lib/juicebox/useJBTrendingProjects'
-import { useTimelineYDomain } from '@/lib/juicebox/useTimelineYDomain'
 import { truncateTokenValue, wadToFloat } from '@/lib/utils/numbers'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import RangeSelector from '../layout/RangeSelector'
@@ -103,10 +102,6 @@ export default function MissionTimelineChart({
     return sampledTicks
   }, [processedPoints, xDomain])
 
-  const defaultYDomain = useTimelineYDomain(
-    processedPoints?.map((point) => point[view])
-  )
-
   const { trendingProjects } = useJBTrendingProjects()
   const highTrendingScore = trendingProjects?.length
     ? wadToFloat(trendingProjects[0].trendingScore)
@@ -117,81 +112,117 @@ export default function MissionTimelineChart({
       0
     ) ?? 0
 
-  const originalYDomain: [number, number] =
-    view === 'trendingScore' && highTrendingScore
-      ? [
-          defaultYDomain[0],
-          Math.max(highTrendingScore, highTrendingPoint) * 1.05,
-        ]
-      : defaultYDomain
+  const yAxisScale = useMemo(() => {
+    if (!processedPoints?.length)
+      return { ticks: [0, 0.02, 0.04, 0.06, 0.08, 0.1], domain: [0, 0.1] }
 
-  const yTicks = useMemo(() => {
-    // Get the max value in the current view
-    const maxValue = Math.max(
-      ...processedPoints.map((point) => point[view]),
-      0.00001
-    )
-
-    // Create ticks based on the order of magnitude
-    let tickCount = 5
-    let ticks = []
-
-    if (maxValue < 0.0001) {
-      // Very small values
-      const step = maxValue / tickCount
-      for (let i = 0; i <= tickCount; i++) {
-        ticks.push(step * i)
-      }
-    } else if (maxValue < 0.001) {
-      // Small values
-      for (let i = 0; i <= tickCount; i++) {
-        ticks.push((maxValue / tickCount) * i)
-      }
-    } else if (maxValue < 0.01) {
-      // Values in 0.001-0.01 range
-      for (let i = 0; i <= tickCount; i++) {
-        ticks.push(0.002 * i)
-      }
-    } else if (maxValue < 0.1) {
-      // Values in 0.01-0.1 range
-      for (let i = 0; i <= 5; i++) {
-        ticks.push(0.02 * i)
-      }
-    } else if (maxValue < 1) {
-      // Values in 0.1-1 range
-      for (let i = 0; i <= 5; i++) {
-        ticks.push(0.2 * i)
-      }
-    } else if (maxValue < 10) {
-      // Values in 1-10 range
-      for (let i = 0; i <= 5; i++) {
-        ticks.push(2 * i)
-      }
-    } else {
-      // Values above 10
-      const roundedMax = Math.ceil(maxValue / 10) * 10
-      const step = roundedMax / 5
-      for (let i = 0; i <= 5; i++) {
-        ticks.push(step * i)
-      }
-    }
-
-    return ticks
-  }, [processedPoints, view])
-
-  const yDomain = useMemo(() => {
-    // For trending score, use the original domain
     if (view === 'trendingScore' && highTrendingScore) {
-      return originalYDomain
+      const yMax = Math.max(highTrendingScore, highTrendingPoint) * 1.05
+      const tickCount = 5
+      const step = yMax / tickCount
+      return {
+        ticks: Array.from({ length: tickCount + 1 }, (_, i) => step * i),
+        domain: [0, yMax],
+      }
     }
 
-    // Otherwise use the domain based on our custom ticks
-    if (yTicks.length) {
-      return [0, yTicks[yTicks.length - 1]]
+    const values = processedPoints.map((point) => point[view])
+    const maxValue = Math.max(...values)
+    const minValue = Math.min(...values)
+    const dataRange = maxValue - minValue
+    const tickCount = 5
+
+    const getYPaddingForValue = (maxValue: number, dataRange: number) => {
+      if (dataRange === 0) {
+        const paddingRates = [
+          { threshold: 10, rate: 0.1 },
+          { threshold: 1000, rate: 0.05 },
+          { threshold: 100000, rate: 0.03 },
+          { threshold: 10000000, rate: 0.02 },
+          { threshold: Infinity, rate: 0.01 },
+        ]
+        return (
+          paddingRates.find((p) => maxValue <= p.threshold)!.rate * maxValue
+        )
+      }
+
+      if (maxValue <= 10) {
+        return Math.max(dataRange * 0.15, maxValue * 0.05)
+      }
+
+      const baseRate = maxValue <= 100000 ? 0.3 : 0.2
+      const minRate = maxValue <= 100000 ? 0.02 : 0.01
+      return Math.max(dataRange * baseRate, maxValue * minRate)
     }
 
-    return [0, 0.1]
-  }, [yTicks, view, originalYDomain, highTrendingScore])
+    const getYRoundingConfig = (range: number) => {
+      const configs = [
+        { threshold: 0.01, divisor: 0.001 },
+        { threshold: 0.1, divisor: 0.01 },
+        { threshold: 0.5, divisor: 0.05 },
+        { threshold: 1, divisor: 0.1 },
+        { threshold: 2, divisor: 0.2 },
+        { threshold: 5, divisor: 0.5 },
+        { threshold: 10, divisor: 1 },
+        { threshold: 100, divisor: 5 },
+        { threshold: 1000, divisor: 25 },
+        { threshold: 10000, divisor: 100 },
+        { threshold: 100000, divisor: 1000 },
+        { threshold: 1000000, divisor: 10000 },
+        { threshold: Infinity, divisor: 100000 },
+      ]
+      return configs.find((c) => range <= c.threshold)!.divisor
+    }
+
+    // Helper function for standard max - adjusted for small ETH values
+    const getYStandardMaxValue = (maxValue: number) => {
+      if (maxValue <= 0.01) return Math.ceil(maxValue * 1000) / 1000
+      if (maxValue <= 0.1) return Math.ceil(maxValue * 100) / 100
+      if (maxValue <= 1) return Math.ceil(maxValue * 10) / 10
+      if (maxValue <= 10) return Math.ceil(maxValue)
+
+      const configs = [
+        { threshold: 100, divisor: 10, multiplier: 10 },
+        { threshold: 1000, divisor: 50, multiplier: 50 },
+        { threshold: 10000, divisor: 100, multiplier: 100 },
+        { threshold: 100000, divisor: 1000, multiplier: 1000 },
+        { threshold: 1000000, divisor: 10000, multiplier: 10000 },
+        { threshold: Infinity, divisor: 100000, multiplier: 100000 },
+      ]
+
+      const config = configs.find((c) => maxValue <= c.threshold)!
+      return Math.ceil(maxValue / config.divisor) * config.multiplier
+    }
+
+    if (maxValue < 10) {
+      const padding = getYPaddingForValue(maxValue, dataRange)
+      let yMin = Math.max(0, minValue - padding)
+      let yMax = maxValue + padding
+
+      const range = yMax - yMin
+      const divisor = getYRoundingConfig(range)
+
+      yMin = Math.floor(yMin / divisor) * divisor
+      yMax = Math.ceil(yMax / divisor) * divisor
+
+      const step = (yMax - yMin) / tickCount
+      return {
+        ticks: Array.from({ length: tickCount + 1 }, (_, i) => yMin + step * i),
+        domain: [yMin, yMax],
+      }
+    }
+
+    const yMax = getYStandardMaxValue(maxValue)
+    const step = yMax / tickCount
+
+    return {
+      ticks: Array.from({ length: tickCount + 1 }, (_, i) => step * i),
+      domain: [0, yMax],
+    }
+  }, [processedPoints, view, highTrendingScore, highTrendingPoint])
+
+  const yTicks = yAxisScale.ticks
+  const yDomain = yAxisScale.domain
 
   const allZeroValues = useMemo(() => {
     if (!processedPoints?.length) return true
@@ -260,32 +291,15 @@ export default function MissionTimelineChart({
 
                 const { value } = props.payload
 
-                let formattedValue
-                // Use a consistent format based on the magnitude of the value
-                if (value === 0) {
-                  formattedValue = '0'
-                } else if (value < 0.0001) {
-                  formattedValue = value.toExponential(2)
-                } else if (value < 0.001) {
-                  formattedValue = value.toFixed(6)
-                } else if (value < 0.01) {
-                  formattedValue = value.toFixed(4)
-                } else if (value < 0.1) {
-                  formattedValue = value.toFixed(3)
-                } else if (value < 1) {
-                  formattedValue = value.toFixed(2)
-                } else if (value < 10) {
-                  formattedValue = value.toFixed(1)
-                } else {
-                  formattedValue = value.toFixed(0)
-                }
+                const formattedValue =
+                  value < 1 ? value.toFixed(4) : value.toLocaleString()
 
                 return (
                   <g>
                     <rect
                       transform={`translate(${props.x},${props.y - 6})`}
                       height={12}
-                      width={formattedValue.length * 8}
+                      width={String(formattedValue).length * 8}
                       fill={bg}
                     />
                     <text
@@ -300,8 +314,10 @@ export default function MissionTimelineChart({
               }}
               ticks={yTicks}
               domain={yDomain}
+              type="number"
               interval={0}
               mirror
+              allowDataOverflow={false}
             />
             <XAxis
               stroke={stroke}
