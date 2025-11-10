@@ -7,6 +7,10 @@ import {
   ClipboardDocumentListIcon,
   GlobeAltIcon,
   PencilIcon,
+  UserGroupIcon,
+  BriefcaseIcon,
+  ShoppingBagIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline'
 import Safe, { SafeConfig } from '@safe-global/protocol-kit'
 import CitizenABI from 'const/abis/Citizen.json'
@@ -40,7 +44,7 @@ import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import { useContext, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
@@ -71,6 +75,8 @@ import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
+import StatsCard from '@/components/dashboard/StatsCard'
+import DashboardCard from '@/components/dashboard/DashboardCard'
 import SafeModal from '@/components/safe/SafeModal'
 import Action from '@/components/subscription/Action'
 import GeneralActions from '@/components/subscription/GeneralActions'
@@ -193,6 +199,94 @@ export default function TeamDetailPage({
     method: 'expiresAt',
     params: [tokenId],
   })
+
+  // Stats data (with dummy fallback for teams with no data)
+  const [teamStats, setTeamStats] = useState({
+    memberCount: 0,
+    jobCount: 0,
+    listingCount: 0,
+    missionCount: 0,
+    treasuryBalance: '0',
+  })
+
+  // Calculate team stats from actual data when available
+  useEffect(() => {
+    async function calculateStats() {
+      try {
+        // Get job count
+        let jobCount = 0
+        if (jobTableContract) {
+          try {
+            const jobTableName: any = await readContract({
+              contract: jobTableContract,
+              method: 'getTableName' as string,
+              params: [],
+            })
+            const jobStatement = `SELECT COUNT(*) as count FROM ${jobTableName} WHERE teamId = ${tokenId}`
+            const jobData: any = await queryTable(selectedChain, jobStatement)
+            jobCount = jobData?.[0]?.count || 0
+          } catch (err) {
+            console.error('Error fetching job count:', err)
+          }
+        }
+
+        // Get listing count
+        let listingCount = 0
+        if (marketplaceTableContract) {
+          try {
+            const marketplaceTableName: any = await readContract({
+              contract: marketplaceTableContract,
+              method: 'getTableName' as string,
+              params: [],
+            })
+            const listingStatement = `SELECT COUNT(*) as count FROM ${marketplaceTableName} WHERE teamId = ${tokenId}`
+            const listingData: any = await queryTable(selectedChain, listingStatement)
+            listingCount = listingData?.[0]?.count || 0
+          } catch (err) {
+            console.error('Error fetching listing count:', err)
+          }
+        }
+
+        // Get mission count
+        let missionCount = 0
+        if (missionTableContract) {
+          try {
+            const missionTableName: any = await readContract({
+              contract: missionTableContract,
+              method: 'getTableName' as string,
+              params: [],
+            })
+            const missionStatement = `SELECT COUNT(*) as count FROM ${missionTableName} WHERE teamId = ${tokenId}`
+            const missionData: any = await queryTable(selectedChain, missionStatement)
+            missionCount = missionData?.[0]?.count || 0
+          } catch (err) {
+            console.error('Error fetching mission count:', err)
+          }
+        }
+
+        setTeamStats({
+          memberCount: hats?.length || 0,
+          jobCount,
+          listingCount,
+          missionCount,
+          treasuryBalance: '0',
+        })
+      } catch (err) {
+        console.error('Error calculating stats:', err)
+        setTeamStats({
+          memberCount: 0,
+          jobCount: 0,
+          listingCount: 0,
+          missionCount: 0,
+          treasuryBalance: '0',
+        })
+      }
+    }
+
+    if (tokenId && selectedChain) {
+      calculateStats()
+    }
+  }, [tokenId, selectedChain, hats, jobTableContract, marketplaceTableContract, missionTableContract])
 
   useChainDefault()
 
@@ -476,54 +570,105 @@ export default function TeamDetailPage({
           id="page-container"
           className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
         >
+          {/* Team Statistics Overview */}
+          {!isDeleted && subIsValid && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatsCard
+                title="Team Members"
+                value={teamStats.memberCount}
+                icon={
+                  <UserGroupIcon
+                    className="w-6 h-6 text-blue-400"
+                  />
+                }
+                subtitle="Active members"
+              />
+              <StatsCard
+                title="Open Jobs"
+                value={teamStats.jobCount}
+                icon={
+                  <BriefcaseIcon
+                    className="w-6 h-6 text-green-400"
+                  />
+                }
+                subtitle="Hiring opportunities"
+              />
+              <StatsCard
+                title="Marketplace Items"
+                value={teamStats.listingCount}
+                icon={
+                  <ShoppingBagIcon
+                    className="w-6 h-6 text-purple-400"
+                  />
+                }
+                subtitle="Active listings"
+              />
+              <StatsCard
+                title="Active Missions"
+                value={teamStats.missionCount}
+                icon={
+                  <ChartBarIcon
+                    className="w-6 h-6 text-orange-400"
+                  />
+                }
+                subtitle="Fundraising campaigns"
+              />
+            </div>
+          )}
+
           {!isDeleted && subIsValid && (
             <div id="entity-actions-container" className=" z-30">
               {isManager || address === nft.owner ? (
-                <div
-                  id="team-actions-container"
-                  className="px-5 pt-5 md:px-0 md:pt-0"
+                <DashboardCard
+                  title="Quick Actions"
+                  icon={
+                    <Image
+                      src="/assets/icon-rocket.svg"
+                      alt="Actions"
+                      width={30}
+                      height={30}
+                    />
+                  }
                 >
-                  <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                      <Action
-                        title="Fund"
-                        description="Launch a mission to raise funds."
-                        icon={
-                          <BanknotesIcon
-                            height={24}
-                            width={24}
-                            className="text-white"
-                          />
-                        }
-                        onClick={() => router.push('/launch?status=create')}
-                      />
-                      <Action
-                        title="Hire"
-                        description="List job openings or contracts to a global talent pool."
-                        icon={
-                          <ClipboardDocumentListIcon
-                            height={24}
-                            width={24}
-                            className="text-white"
-                          />
-                        }
-                        onClick={() => setTeamJobModalEnabled(true)}
-                      />
-                      <Action
-                        title="Sell"
-                        description="List products, services, or ticketed events for sale."
-                        icon={
-                          <BuildingStorefrontIcon
-                            height={24}
-                            width={24}
-                            className="text-white"
-                          />
-                        }
-                        onClick={() => setTeamListingModalEnabled(true)}
-                      />
-                    </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <Action
+                      title="Fund"
+                      description="Launch a mission to raise funds."
+                      icon={
+                        <BanknotesIcon
+                          height={24}
+                          width={24}
+                          className="text-white"
+                        />
+                      }
+                      onClick={() => router.push('/launch?status=create')}
+                    />
+                    <Action
+                      title="Hire"
+                      description="List job openings or contracts to a global talent pool."
+                      icon={
+                        <ClipboardDocumentListIcon
+                          height={24}
+                          width={24}
+                          className="text-white"
+                        />
+                      }
+                      onClick={() => setTeamJobModalEnabled(true)}
+                    />
+                    <Action
+                      title="Sell"
+                      description="List products, services, or ticketed events for sale."
+                      icon={
+                        <BuildingStorefrontIcon
+                          height={24}
+                          width={24}
+                          className="text-white"
+                        />
+                      }
+                      onClick={() => setTeamListingModalEnabled(true)}
+                    />
                   </div>
-                </div>
+                </DashboardCard>
               ) : (
                 ''
               )}

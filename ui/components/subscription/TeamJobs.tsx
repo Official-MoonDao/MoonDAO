@@ -134,7 +134,7 @@ export default function TeamJobs({
         </div>
         {isManager || isCitizen ? (
           <div className="mt-4">
-            <div className="flex gap-4 flex-wrap">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {jobs?.[0] ? (
                 jobs.map((job, i) => (
                   <Job
@@ -148,7 +148,7 @@ export default function TeamJobs({
                   />
                 ))
               ) : (
-                <p className="text-slate-300 text-center py-8">{`This team hasn't listed any open roles yet.`}</p>
+                <p className="text-slate-300 text-center py-8 col-span-2">{`This team hasn't listed any open roles yet.`}</p>
               )}
             </div>
           </div>
@@ -174,7 +174,7 @@ export default function TeamJobs({
                 </StandardButton>
               </div>
             </div>
-            <div className="flex gap-4 flex-wrap opacity-50 pointer-events-none">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 opacity-50 pointer-events-none">
               {jobs.slice(0, 3).map((job, i) => (
                 <Job
                   id={`team-job-preview-${job.id}`}
@@ -187,7 +187,7 @@ export default function TeamJobs({
                 />
               ))}
               {jobs.length > 3 && (
-                <div className="w-full md:w-[calc(50%-0.5rem)] xl:w-[calc(33.33%-0.67rem)] bg-slate-700/30 rounded-xl border border-slate-600/30 p-6 flex items-center justify-center">
+                <div className="bg-slate-700/30 rounded-xl border border-slate-600/30 p-6 flex items-center justify-center min-h-[200px]">
                   <p className="text-slate-400 text-center">
                     +{jobs.length - 3} more job
                     {jobs.length - 3 !== 1 ? 's' : ''}

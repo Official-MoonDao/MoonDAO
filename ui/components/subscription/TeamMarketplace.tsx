@@ -97,7 +97,7 @@ export default function TeamMarketplace({
         )}
       </div>
       <div className="mt-4">
-        <div className="flex gap-4 flex-wrap">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {listings?.[0] &&
             listings.map((listing, i) => (
               <TeamListing

@@ -249,7 +249,7 @@ export default function TeamMissions({
           {missions?.length > 1 && (
             <PaginationButtons
               handlePageChange={handlePageChange}
-              maxPage={maxPage}
+              maxPage={missions.length}
               pageIdx={pageIdx}
               label="Mission"
             />
