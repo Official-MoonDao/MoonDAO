@@ -34,7 +34,7 @@ export default function Jobs({ jobs }: JobsProps) {
   const chainSlug = getChainSlug(selectedChain)
   const { citizen } = useContext(CitizenContext)
 
-  const [filteredJobs, setFilteredJobs] = useState<JobType[]>()
+  const [filteredJobs, setFilteredJobs] = useState<JobType[]>(jobs || [])
   const [input, setInput] = useState('')
 
   const teamContract = useContract({

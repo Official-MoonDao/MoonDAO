@@ -52,8 +52,9 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   const shallowQueryRoute = useShallowQueryRoute()
   const chainSlug = getChainSlug(selectedChain)
 
-  const [filteredListings, setFilteredListings] =
-    useState<MarketplaceListing[]>()
+  const [filteredListings, setFilteredListings] = useState<
+    MarketplaceListing[]
+  >(listings || [])
   const [input, setInput] = useState('')
   const [pageIdx, setPageIdx] = useState(1)
 
