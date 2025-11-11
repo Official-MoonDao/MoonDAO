@@ -1,6 +1,7 @@
 import useTranslation from 'next-translate/useTranslation'
 import { useContext, useState } from 'react'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import { StringParam, useQueryParams, withDefault } from 'next-query-params'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -15,6 +16,9 @@ export default function Join() {
   const { selectedChain } = useContext(ChainContextV5)
 
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
+  const [{ freeMint }] = useQueryParams({
+    freeMint: withDefault(StringParam, undefined),
+  })
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   // Ensures default chain settings
@@ -24,6 +28,7 @@ export default function Join() {
   if (selectedTier === 'citizen') {
     return (
       <CreateCitizen
+        freeMint={freeMint}
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
       />
