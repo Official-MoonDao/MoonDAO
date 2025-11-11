@@ -87,10 +87,6 @@ export default function useNavigation(citizen: any) {
             name: 'Propose Project',
             href: '/proposals',
           },
-          {
-            name: 'Project System Docs',
-            href: '/project-system-docs',
-          },
         ],
       },
       {
@@ -103,9 +99,6 @@ export default function useNavigation(citizen: any) {
           { name: 'Events', href: '/events' },
           { name: 'Analytics', href: '/analytics' },
           { name: 'Resources', href: '/resources' },
-          { name: 'FAQ', href: '/faq' },
-          { name: 'Privacy Policy', href: '/privacy-policy' },
-          { name: 'Terms of Service', href: '/terms-of-service' },
         ],
       },
       {
