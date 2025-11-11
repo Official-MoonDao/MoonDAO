@@ -205,8 +205,6 @@ export function ProjectRewards({
     chain: chain,
     abi: ProposalsABI.abi as any,
   })
-  console.log('proposalContract')
-  console.log(proposalContract)
   const distributionTableContract = useContract({
     address: DISTRIBUTION_TABLE_ADDRESSES[chainSlug],
     chain: chain,

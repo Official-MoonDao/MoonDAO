@@ -46,12 +46,14 @@ type ProjectProfileProps = {
   tokenId: string
   project: Project
   safeOwners: string[]
+  proposal: string
 }
 
 export default function ProjectProfile({
   tokenId,
   project,
   safeOwners,
+  proposal,
 }: ProjectProfileProps) {
   const account = useActiveAccount()
   const address = account?.address
@@ -205,14 +207,11 @@ export default function ProjectProfile({
             }
           >
             <div className="prose prose-invert max-w-none">
-              <MarkdownWithTOC body={nanceProposal?.body || ''} />
+              <MarkdownWithTOC body={proposal || ''} />
             </div>
           </SectionCard>
           {finalReportMarkdown && (
-            <SectionCard
-              header="Final Report"
-              iconSrc="/assets/icon-star.svg"
-            >
+            <SectionCard header="Final Report" iconSrc="/assets/icon-star.svg">
               <div className="prose prose-invert max-w-none">
                 <MarkdownWithTOC body={finalReportMarkdown} />
               </div>
@@ -327,12 +326,15 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   })
 
   const safeOwners = await safe.getOwners()
+  const proposalJson = await fetch(project.proposalIPFS)
+  const proposal = await proposalJson.text()
 
   return {
     props: {
       project,
       tokenId,
       safeOwners,
+      proposal,
     },
   }
 }

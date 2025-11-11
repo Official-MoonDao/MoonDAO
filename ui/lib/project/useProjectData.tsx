@@ -40,7 +40,7 @@ export default function useProjectData(
   })
   const nanceProposal = nanceProposalResponse?.data
 
-  const proposalJSON = useProposalJSON(nanceProposal?.body as string)
+  //const proposalJSON = useProposalJSON(nanceProposal?.body as string)
 
   const [isManager, setIsManager] = useState<boolean>(false)
   const [hatTreeId, setHatTreeId] = useState<any>()
@@ -49,6 +49,7 @@ export default function useProjectData(
   const [managerHatId, setManagerHatId] = useState<any>()
 
   const [finalReportMarkdown, setFinalReportMarkdown] = useState<string>()
+  const [proposalJSON, setProposalJSON] = useState<string>()
 
   const isActive = useMemo(() => {
     return project?.active === 1

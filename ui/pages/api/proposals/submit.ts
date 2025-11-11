@@ -47,7 +47,6 @@ async function getAbstract(proposalBody: string): Promise<string | null> {
     )
 
     const data = await response.json()
-    console.log('data', data)
     const text = data.choices?.[0]?.message?.content?.trim() || null
     return text
   } catch (error) {
@@ -130,7 +129,6 @@ async function getAddresses(
 
 async function POST(req: NextApiRequest, res: NextApiResponse) {
   const { address, proposalTitle, proposalIPFS, budget, body } = req.body
-  console.log('req', req.body)
 
   const projectTeamCreatorContract = getContract({
     client: serverClient,
@@ -138,7 +136,6 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     abi: ProjectTeamCreatorABI as any,
     chain: chain,
   })
-  console.log('chain', chain)
   var members = []
   var membersUsernames = []
   const [leads, leadsUsernames] = await getAddresses(body, [
@@ -185,6 +182,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   //proposal.upfrontPayment
   //? JSON.stringify(proposal.upfrontPayment)
   //: ''
+  // FIXME pinipfs not working here
   const [adminHatMetadataIpfs, managerHatMetadataIpfs, memberHatMetadataIpfs] =
     await Promise.allSettled([
       getHatMetadataIPFS('Admin'),
@@ -210,24 +208,6 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       members.length > 0 ? members : [address]
     }]\n (${membersUsernames})\nsigners [${signers}]\n (${signersUsernames})\nabstract:\n ${abstractText}\n (y/n)`
   )
-  console.log('params')
-  console.log([
-    'ipfs://QmUMm4rHbbkcfBCszfFHmBNvHSyPGNVXJZHpcCG4BMEaNY',
-    'ipfs://QmT7LKxDAzaJsBafMbe2B1thaoqkvKgj7Y72QQiuQusnzE',
-    'ipfs://QmVjgE2pPQjueixuUcpo6h3z4NBMB5S6BeH617vHSwW74m',
-    proposalTitle,
-    abstractText, // description
-    '', // image
-    quarter,
-    year,
-    proposalId,
-    proposalIPFS, // proposal ipfs
-    'https://moondao.com/proposal/' + proposalId,
-    upfrontPayment,
-    leads[0] || '', // leadAddress,
-    members.length > 0 ? members : [address], // members
-    signers.length > 0 ? signers : [address], // signers,
-  ])
   const transaction = prepareContractCall({
     contract: projectTeamCreatorContract,
     method: 'createProjectTeam',
@@ -254,7 +234,6 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     transaction,
     account,
   })
-  console.log('receipt', receipt)
   res.status(200).json({
     params: [
       'ipfs://QmUMm4rHbbkcfBCszfFHmBNvHSyPGNVXJZHpcCG4BMEaNY',

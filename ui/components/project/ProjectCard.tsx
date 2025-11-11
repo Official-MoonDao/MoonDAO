@@ -130,18 +130,28 @@ const ProjectCardContent = memo(
             ) : (
               <div className="px-3 py-2 bg-blue-600/20 border border-blue-500/30 rounded-lg">
                 <p className="text-sm text-blue-400 font-medium">🤔 Proposal</p>
-                <div> Temp check votes: {proposalData?.tempCheckVoteCount}</div>
                 <div>Temp check</div>
 
                 <PrivyWeb3Button
                   action={handleSubmit(true)}
                   requiredChain={DEFAULT_CHAIN_V5}
-                  label={'👍'}
+                  className="rounded-full bg-red-500 hover:bg-red-600 mr-2"
+                  label={
+                    '👍' + proposalData?.tempCheckApprovalCount?.toString() ||
+                    ''
+                  }
                 />
                 <PrivyWeb3Button
                   action={handleSubmit(false)}
                   requiredChain={DEFAULT_CHAIN_V5}
-                  label={'👎'}
+                  className="rounded-full bg-red-500 hover:bg-red-600"
+                  label={
+                    '👎' +
+                      (
+                        proposalData?.tempCheckVoteCount -
+                        proposalData?.tempCheckApprovalCount
+                      )?.toString() || ''
+                  }
                 />
               </div>
             )}
@@ -242,6 +252,7 @@ export default function ProjectCard({
     proposalContract,
     project.MDP
   )
+  console.log('proposalData')
   console.log(proposalData)
   const { adminHatId, proposalJSON } = useProjectData(
     projectContract,
