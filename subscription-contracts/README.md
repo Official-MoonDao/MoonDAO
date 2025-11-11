@@ -45,5 +45,5 @@ ETHERSCAN_API_KEY=$SEPOLIA_ETHERSCAN_API_KEY PRIVATE_KEY=$PRIVATE_KEY forge scri
 anvil --fork-url https://11155111.rpc.thirdweb.com/${THIRDWEB_CLIENT_ID}
 
 # Run tests
-ETHERSCAN_API_KEY="Y9MZ685PVCHY686V7MKFQXS8Z9Z6WTY4GZ" forge test --via-ir --fork-url 127.0.0.1:8545 --match-path test/ProjectTest.t.sol -vvvv
+ETHERSCAN_API_KEY=$ETH forge test --via-ir --fork-url 127.0.0.1:8545 --match-path test/MissionTest.t.sol -vvvv
 ```

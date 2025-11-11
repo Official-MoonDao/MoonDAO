@@ -29,7 +29,7 @@ export default function QuestsPage() {
         description={
           'Complete quests to earn XP and unlock rewards in the Space Acceleration Network. Build your reputation as a contributor to humanity\'s multiplanetary future.'
         }
-        image="https://ipfs.io/ipfs/QmSuJQjNWDQn5Wht6d6PqUoten6DVm3cLocoHxi85G9N8T"
+        image="https://ipfs.io/ipfs/QmXY1axN4tQGV7CQBFtoE4hMZM3TRGMqqg5DD5LG3dz1dA"
       />
       <Container>
         <ContentLayout

@@ -1831,6 +1831,7 @@ export default function MissionContributeModal({
 
                   {/* Terms Checkbox */}
                   <div className="bg-black/10 rounded-lg p-4 border border-white/5">
+                    <MissionTokenNotice />
                     <ConditionCheckbox
                       id="contribution-terms-checkbox"
                       label={
@@ -1889,6 +1890,7 @@ export default function MissionContributeModal({
                 // User needs more ETH - show CBOnramp
                 <div className="space-y-4">
                   {/* Terms Checkbox - Required before onramp */}
+                  <MissionTokenNotice />
                   <div className="bg-black/10 rounded-lg p-4 border border-white/5">
                     <ConditionCheckbox
                       id="pre-contribution-terms-checkbox"
