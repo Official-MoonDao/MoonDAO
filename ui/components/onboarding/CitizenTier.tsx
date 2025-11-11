@@ -39,9 +39,9 @@ const CitizenTier = ({
       method: 'balanceOf' as string,
       params: [address],
     })
-    //if (citizenBalance > 0) {
-    //return toast.error('You have already registered as a citizen.')
-    //}
+    if (citizenBalance > 0) {
+      return toast.error('You have already registered as a citizen.')
+    }
     setSelectedTier('citizen')
   }
 
