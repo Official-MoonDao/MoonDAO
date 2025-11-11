@@ -1,8 +1,4 @@
-import {
-  DEFAULT_CHAIN_V5,
-  JOBS_TABLE_ADDRESSES,
-  TEAM_ADDRESSES,
-} from 'const/config'
+import { DEFAULT_CHAIN_V5, JOBS_TABLE_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
@@ -94,12 +90,7 @@ export default function Jobs({ jobs }: JobsProps) {
             filteredJobs?.[0] ? (
               <CardGridContainer>
                 {filteredJobs.map((job: JobType, i: number) => (
-                  <Job
-                    key={`job-${i}`}
-                    job={job}
-                    showTeam
-                    teamContract={teamContract}
-                  />
+                  <Job key={`job-${i}`} job={job} showTeam teamContract={teamContract} />
                 ))}
               </CardGridContainer>
             ) : (
