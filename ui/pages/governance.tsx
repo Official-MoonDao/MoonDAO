@@ -7,7 +7,6 @@ import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import GovernanceSection from '../components/home/GovernanceSection'
 import StandardButton from '../components/layout/StandardButton'
 import ProposalList from '../components/nance/ProposalList'
 import { NANCE_API_URL } from '../lib/nance/constants'
@@ -197,9 +196,6 @@ const Governance: React.FC = () => {
           </div>
         </div>
       </Container>
-
-      {/* Governance Section from Homepage */}
-      <GovernanceSection />
 
       {/* Governance Cards Section */}
       <section className="relative py-16 md:py-24 px-4 sm:px-6 lg:px-8">
