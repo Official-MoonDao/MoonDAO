@@ -136,7 +136,9 @@ async function handler(req: any, res: any) {
             '...' +
             proposalAuthorAddress.slice(-4)
 
-        const content = `## **${authorDisplay}** has submitted a new proposal!\n[${proposal.title}](${DEPLOYED_ORIGIN}/proposal/${proposal.uuid})`
+        const content = `## **${authorDisplay}** has submitted a new proposal!\n**[${
+          proposal.title
+        }](${DEPLOYED_ORIGIN}/proposal/${proposal.proposalId?.toString()})**`
 
         let messageData: any = {}
 
