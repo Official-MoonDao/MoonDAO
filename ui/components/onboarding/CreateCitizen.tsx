@@ -68,11 +68,7 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { ImageGenerator } from './CitizenImageGenerator'
 import { StageContainer } from './StageContainer'
 
-export default function CreateCitizen({
-  selectedChain,
-  setSelectedTier,
-  freeMint,
-}: any) {
+export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const router = useRouter()
 
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
@@ -108,6 +104,7 @@ export default function CreateCitizen({
 
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
   const [isImageGenerating, setIsImageGenerating] = useState(false)
+  const [freeMint, setFreeMint] = useState(false)
 
   // When the generated image arrives, stop showing the loading animation in stage 2
   useEffect(() => {
@@ -141,6 +138,24 @@ export default function CreateCitizen({
   const tagToNetworkSignup = useTag(CK_NETWORK_SIGNUP_TAG_ID)
 
   const { nativeBalance } = useNativeBalance()
+
+  useEffect(() => {
+    const getTotalPaid = async () => {
+      const res = await fetch(`/api/mission/freeMint?address=${address}`, {
+        method: 'GET',
+      })
+      if (!res.ok) {
+        const errorText = await res.text() // Or response.json()
+        console.error(errorText)
+      } else {
+        const { data } = await res.json()
+        if (data.eligible) {
+          setFreeMint(true)
+        }
+      }
+    }
+    getTotalPaid()
+  }, [address])
 
   const submitTypeform = useCallback(async (formResponse: any) => {
     const { formId, responseId } = formResponse

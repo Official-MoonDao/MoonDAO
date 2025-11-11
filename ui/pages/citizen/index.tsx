@@ -16,9 +16,6 @@ export default function Join() {
   const { selectedChain } = useContext(ChainContextV5)
 
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
-  const [{ freeMint }] = useQueryParams({
-    freeMint: withDefault(StringParam, undefined),
-  })
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   // Ensures default chain settings
@@ -28,7 +25,6 @@ export default function Join() {
   if (selectedTier === 'citizen') {
     return (
       <CreateCitizen
-        freeMint={freeMint}
         selectedChain={selectedChain}
         setSelectedTier={setSelectedTier}
       />
