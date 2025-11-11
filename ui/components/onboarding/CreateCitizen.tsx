@@ -93,7 +93,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
   const [isImageGenerating, setIsImageGenerating] = useState(false)
   const [freeMint, setFreeMint] = useState(false)
-  console.log('freeMint', freeMint)
 
   // When the generated image arrives, stop showing the loading animation in stage 2
   useEffect(() => {
