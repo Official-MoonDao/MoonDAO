@@ -57,7 +57,6 @@ import CitizenABI from '../const/abis/Citizen.json'
 import JobsABI from '../const/abis/JobBoardTable.json'
 import TeamABI from '../const/abis/Team.json'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { StringParam, useQueryParams, withDefault } from 'next-query-params'
 import useTranslation from 'next-translate/useTranslation'
 
 // Dynamic imports for globe components
@@ -77,17 +76,11 @@ export default function Join({
   jobs = [],
   citizensLocationData = [],
 }: JoinProps) {
-  const [{ tier, freeMint }] = useQueryParams({
-    tier: withDefault(StringParam, undefined),
-    freeMint: withDefault(StringParam, undefined),
-  })
   const { t } = useTranslation('common')
   const { selectedChain } = useContext(ChainContextV5)
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
   const { citizen } = useContext(CitizenContext)
-
-
 
   // Pricing constants and hooks for dynamic pricing
   const CITIZEN_PRICE = 0.0111
@@ -290,7 +283,8 @@ export default function Join({
                 Join the Space Acceleration Network
               </h1>
               <p className="sub-header text-white/90 drop-shadow-lg mb-8">
-                An onchain startup society focused on building a permanent settlement on the Moon and beyond
+                An onchain startup society focused on building a permanent
+                settlement on the Moon and beyond
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <StandardButton
@@ -518,7 +512,10 @@ export default function Join({
                   // Scroll to join section
                   const joinSection = document.getElementById('join-moondao')
                   if (joinSection) {
-                    joinSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    joinSection.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    })
                   }
                 }}
               >
@@ -712,13 +709,18 @@ export default function Join({
               ) : (
                 <div className="text-center py-12">
                   <div className="w-24 h-24 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <ListBulletIcon width={48} height={48} className="text-blue-400" />
+                    <ListBulletIcon
+                      width={48}
+                      height={48}
+                      className="text-blue-400"
+                    />
                   </div>
                   <h3 className="text-xl font-GoodTimes text-white mb-4">
                     No Jobs Available
                   </h3>
                   <p className="text-slate-300 mb-6">
-                    Check back soon for new opportunities in the Space Acceleration Network.
+                    Check back soon for new opportunities in the Space
+                    Acceleration Network.
                   </p>
                   <StandardButton
                     backgroundColor="bg-blue-600 hover:bg-blue-700"
@@ -731,7 +733,7 @@ export default function Join({
                   </StandardButton>
                 </div>
               )}
-              
+
               {jobs && jobs.length > 6 && (
                 <div className="text-center mt-8">
                   <StandardButton
@@ -756,8 +758,8 @@ export default function Join({
               Need Help Getting Started?
             </h3>
             <p className="text-slate-300 mb-6 max-w-2xl mx-auto">
-              Have questions about joining MoonDAO or need assistance with the onboarding process? 
-              Our community is here to help.
+              Have questions about joining MoonDAO or need assistance with the
+              onboarding process? Our community is here to help.
             </p>
             <StandardButton
               backgroundColor="bg-purple-600 hover:bg-purple-700"
@@ -771,8 +773,6 @@ export default function Join({
           </div>
         </div>
       </Container>
-
-
     </section>
   )
 }

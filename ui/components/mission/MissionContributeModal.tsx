@@ -932,7 +932,7 @@ export default function MissionContributeModal({
         if (totalPaid > FREE_MINT_THRESHOLD) {
           toast.success(
             <div>
-              <Link href={'/join?tier=citizen&freeMint=true'}>
+              <Link href={'/citizen?freeMint=true'}>
                 Mission token purchased! Click to claim free citizenship!
               </Link>
             </div>,
