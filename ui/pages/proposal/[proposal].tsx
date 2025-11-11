@@ -1,12 +1,9 @@
 import { NanceProvider } from '@nance/nance-hooks'
-import {
-  ProposalPacket,
-  getActionsFromBody,
-  getProposal,
-} from '@nance/nance-sdk'
+import { ProposalPacket, getActionsFromBody, getProposal } from '@nance/nance-sdk'
 import { GetServerSideProps } from 'next'
 import { createEnumParam, useQueryParams, withDefault } from 'next-query-params'
 import { NANCE_API_URL, NANCE_SPACE_NAME } from '@/lib/nance/constants'
+import useProposalJSON from '@/lib/nance/useProposalJSON'
 import { useVotesOfProposal } from '@/lib/snapshot'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -23,6 +20,9 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
   const [query, setQuery] = useQueryParams({
     sortBy: withDefault(createEnumParam(['time', 'vp']), 'time'),
   })
+
+  const proposalJSON = useProposalJSON(proposalPacket.body)
+  const description = proposalJSON?.abstract
 
   if (proposalPacket) {
     proposalPacket = {
@@ -51,12 +51,11 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
 
   // Determine the number of grid columns based on the presence of votes
   const gridCols =
-    proposalPacket.voteURL && votes
-      ? 'grid-cols-1 lg:grid-cols-3'
-      : 'grid-cols-1 lg:grid-cols-2'
+    proposalPacket.voteURL && votes ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2'
 
   return (
     <Container>
+      <WebsiteHead title={proposalPacket.title} description={description} />
       <ContentLayout
         header={proposalPacket.title}
         mode="compact"
@@ -84,9 +83,7 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
                 <DropDownMenu proposalPacket={proposalPacket} />
               </div>
               <div>
-                <MarkdownWithTOC
-                  body={proposalPacket.body || '--- No content ---'}
-                />
+                <MarkdownWithTOC body={proposalPacket.body || '--- No content ---'} />
               </div>
             </div>
 
@@ -111,19 +108,13 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
                         })
                       }}
                     >
-                      <h3 className="font-GoodTimes pb-2 text-gray-400">
-                        Votes
-                      </h3>
+                      <h3 className="font-GoodTimes pb-2 text-gray-400">Votes</h3>
                       <span className="ml-2 text-center text-xs text-gray-300">
-                        sort by{' '}
-                        {query.sortBy === 'vp' ? 'voting power' : 'time'}
+                        sort by {query.sortBy === 'vp' ? 'voting power' : 'time'}
                       </span>
                     </button>
                     <div className="pb-5">
-                      <ProposalVotes
-                        votesOfProposal={votes}
-                        refetch={() => mutate()}
-                      />
+                      <ProposalVotes votesOfProposal={votes} refetch={() => mutate()} />
                     </div>
                   </div>
                 )}
@@ -148,11 +139,7 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
   )
 }
 
-export default function ProposalPage({
-  proposalPacket,
-}: {
-  proposalPacket: ProposalPacket
-}) {
+export default function ProposalPage({ proposalPacket }: { proposalPacket: ProposalPacket }) {
   return (
     <>
       <WebsiteHead title={proposalPacket.title} />
@@ -170,10 +157,7 @@ export const getServerSideProps: GetServerSideProps<{
     const params = context.params
     const uuid = params?.proposal as string
     if (!uuid) throw new Error('Proposal not found')
-    const proposalPacket = await getProposal(
-      { space: NANCE_SPACE_NAME, uuid },
-      NANCE_API_URL
-    )
+    const proposalPacket = await getProposal({ space: NANCE_SPACE_NAME, uuid }, NANCE_API_URL)
     return {
       props: {
         proposalPacket,
