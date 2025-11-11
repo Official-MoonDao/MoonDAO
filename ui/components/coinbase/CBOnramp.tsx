@@ -603,8 +603,13 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
             </span>
           </div>
           <p className="text-gray-300 text-xs text-center leading-relaxed">
-            You'll be redirected to Coinbase to complete your purchase securely
+            You'll be redirected to Coinbase to complete your purchase securely.
           </p>
+          <div className="border-t border-white/5">
+            <p className="text-gray-400 text-xs text-center leading-relaxed italic">
+              Coinbase does not accept prepaid or virtual debit cards.
+            </p>
+          </div>
         </div>
       </div>
     </div>
