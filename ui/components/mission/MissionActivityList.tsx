@@ -13,9 +13,7 @@ export default function MissionActivityList({
   projectId,
   citizens,
 }: any) {
-  const [filter, setFilter] = useState<'all' | 'payEvent' | 'mintTokensEvent'>(
-    'all'
-  )
+  const [filter, setFilter] = useState<'all' | 'payEvent' | 'mintTokensEvent'>('all')
 
   const { data: suckers, refetch } = useSuckers()
 
@@ -37,8 +35,8 @@ export default function MissionActivityList({
         .flatMap((page) => page.data.activityEvents.items)
         .map(transformEventData)
         .filter((event) => !!event)
-        .map((e) => translateEventDataToPresenter(e, tokenSymbol, citizens)) ??
-      [],
+        .filter((event) => event.type !== 'mintTokensEvent')
+        .map((e) => translateEventDataToPresenter(e, tokenSymbol, citizens)) ?? [],
     [projectEventsQueryResult?.pages, tokenSymbol, citizens]
   )
 
@@ -113,11 +111,7 @@ export default function MissionActivityList({
 }
 
 function RichNote({ note }: { note: string }) {
-  return (
-    <div className="text-sm break-words text-white/80 leading-relaxed">
-      {note}
-    </div>
-  )
+  return <div className="text-sm break-words text-white/80 leading-relaxed">{note}</div>
 }
 
 function translateEventDataToPresenter(
@@ -126,8 +120,7 @@ function translateEventDataToPresenter(
   citizens: any[]
 ) {
   const citizen = citizens.find(
-    (citizen) =>
-      citizen.owner.toLowerCase() == event?.beneficiary?.toLowerCase()
+    (citizen) => citizen.owner.toLowerCase() == event?.beneficiary?.toLowerCase()
   )
   switch (event.type) {
     case 'payEvent':
