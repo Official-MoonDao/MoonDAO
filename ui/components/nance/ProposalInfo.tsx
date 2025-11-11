@@ -1,4 +1,5 @@
 import { CalendarDaysIcon } from '@heroicons/react/24/outline'
+import { Project } from '@/lib/project/useProjectData'
 import { useProposalUpload, useSpaceInfo } from '@nance/nance-hooks'
 import { ProposalPacket } from '@nance/nance-sdk'
 import {
@@ -69,6 +70,7 @@ export function ProposalInfoSkeleton() {
 
 export default function ProposalInfo({
   proposalPacket,
+  project,
   votingInfo,
   linkDisabled = false,
   sponsorDisabled = true,
@@ -78,6 +80,7 @@ export default function ProposalInfo({
   compact = false,
 }: {
   proposalPacket: ProposalPacket
+  project: Project
   votingInfo: SnapshotGraphqlProposalVotingInfo | undefined
   linkDisabled?: boolean
   sponsorDisabled?: boolean
@@ -86,12 +89,9 @@ export default function ProposalInfo({
   showStatus?: boolean
   compact?: boolean
 }) {
-  const { proposalIdPrefix } = proposalPacket?.proposalInfo
-  const { proposalInfo, ...proposal } = proposalPacket
-  const preTitleDisplay =
-    proposalIdPrefix && proposal.proposalId
-      ? `${proposalIdPrefix}${proposal.proposalId}: `
-      : ''
+  //const { proposalInfo, ...proposal } = proposalPacket
+  const proposal = project
+  const preTitleDisplay = project.MDP ? `MDP${project.MDP}: ` : ''
   const router = useRouter()
   proposal.voteSetup = {
     type: 'weighted', // could make this dynamic in the future
@@ -132,7 +132,7 @@ export default function ProposalInfo({
     if (!nextSnapshotVote) return
     setSigningStatus('loading')
     const proposalId = proposal.proposalId || nextProposalId
-    const preTitle = `${proposalIdPrefix}${proposalId}: `
+    const preTitle = `MDP${proposalId}: `
     signProposalAsync(proposal, preTitle, nextSnapshotVote)
       .then((res) => {
         const { signature, message, address } = res
@@ -184,22 +184,20 @@ export default function ProposalInfo({
           {showTitle &&
             (!linkDisabled ? (
               <Link
-                href={`/proposal/${
-                  proposalPacket.proposalId?.toString() || proposalPacket.uuid
-                }`}
+                href={`/proposal/${project.id}`}
                 passHref
                 className="text-lg font-semibold text-white hover:text-gray-300 transition-colors"
                 style={{ fontFamily: 'Lato' }}
               >
                 <span className="absolute inset-x-0 -top-px bottom-0" />
-                {`${preTitleDisplay}${proposalPacket.title}`}
+                {`${preTitleDisplay}${project.name}`}
               </Link>
             ) : (
               <span
                 className="text-lg font-semibold text-white"
                 style={{ fontFamily: 'Lato' }}
               >
-                {`${preTitleDisplay}${proposalPacket.title}`}
+                {`${preTitleDisplay}${project.name}`}
               </span>
             ))}
         </div>
@@ -289,52 +287,56 @@ function ProposalStatus({ status }: { status: string }) {
       bg: 'bg-emerald-500/10',
       border: 'border-emerald-500/30',
       text: 'text-emerald-400',
-      dot: 'bg-emerald-500'
+      dot: 'bg-emerald-500',
     },
     'Temperature Check': {
       bg: 'bg-orange-500/10',
-      border: 'border-orange-500/30', 
+      border: 'border-orange-500/30',
       text: 'text-orange-400',
-      dot: 'bg-orange-500'
+      dot: 'bg-orange-500',
     },
     Archived: {
       bg: 'bg-gray-500/10',
       border: 'border-gray-500/30',
       text: 'text-gray-400',
-      dot: 'bg-gray-500'
+      dot: 'bg-gray-500',
     },
     Approved: {
       bg: 'bg-green-500/10',
       border: 'border-green-500/30',
       text: 'text-green-400',
-      dot: 'bg-green-500'
+      dot: 'bg-green-500',
     },
     Discussion: {
       bg: 'bg-blue-500/10',
       border: 'border-blue-500/30',
       text: 'text-blue-400',
-      dot: 'bg-blue-500'
+      dot: 'bg-blue-500',
     },
     Cancelled: {
       bg: 'bg-red-500/10',
       border: 'border-red-500/30',
       text: 'text-red-400',
-      dot: 'bg-red-500'
+      dot: 'bg-red-500',
     },
   }
 
   const config = statusConfig[status as keyof typeof statusConfig] || {
     bg: 'bg-gray-500/10',
-    border: 'border-gray-500/30', 
+    border: 'border-gray-500/30',
     text: 'text-gray-400',
-    dot: 'bg-gray-500'
+    dot: 'bg-gray-500',
   }
 
   return (
     <div className="flex items-center gap-2">
-      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${config.bg} ${config.border} backdrop-blur-sm`}>
+      <div
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${config.bg} ${config.border} backdrop-blur-sm`}
+      >
         <div className={`w-2 h-2 rounded-full ${config.dot}`}></div>
-        <span className={`text-xs font-medium ${config.text} font-RobotoMono uppercase tracking-wider`}>
+        <span
+          className={`text-xs font-medium ${config.text} font-RobotoMono uppercase tracking-wider`}
+        >
           {status}
         </span>
       </div>

@@ -1,7 +1,13 @@
 import { Dialog, RadioGroup, Transition } from '@headlessui/react'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import ProposalsABI from 'const/abis/Proposals.json'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import { XMarkIcon } from '@heroicons/react/24/solid'
+import { DEFAULT_CHAIN_V5, PROPOSALS_ADDRESSES } from 'const/config'
+import { Project } from '@/lib/project/useProjectData'
 import { useState, Fragment, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
+import { useTotalLockedMooney } from '@/lib/tokens/hooks/useTotalLockedMooney'
 import toast from 'react-hot-toast'
 import { formatNumberUSStyle } from '@/lib/nance'
 import useVote from '@/lib/nance/useVote'
@@ -9,6 +15,7 @@ import {
   SnapshotGraphqlProposalVotingInfo,
   useVotingPower,
 } from '@/lib/snapshot'
+import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { classNames } from '@/lib/utils/tailwind'
 
 interface VotingProps {
@@ -18,6 +25,8 @@ interface VotingProps {
   spaceId: string
   spaceHideAbstain: boolean
   proposal: SnapshotGraphqlProposalVotingInfo
+  project: Project
+  votesOfProposal: any
   refetch: (option?: any) => void
 }
 
@@ -36,14 +45,38 @@ export default function VotingModal({
   spaceId,
   spaceHideAbstain,
   proposal,
+  project,
+  votesOfProposal,
   refetch,
 }: VotingProps) {
   // state
   const [choice, setChoice] = useState()
   const [reason, setReason] = useState('')
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
+  const proposalTableContract = useContract({
+    address: PROPOSALS_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: ProposalsABI.abi as any,
+  })
+
+  proposal.choices = ['Yes', 'No', 'Abstain'] // could make this dynamic in the future
+  console.log('proposal', proposal)
   // external
-  const { data: _vp } = useVotingPower(address, spaceId, proposal?.id || '')
-  const vp = _vp?.vp || 0
+  //const { data: _vp } = useVotingPower(address, spaceId, proposal?.id || '')
+  const {
+    totalLockedMooney: lockedMooneyAmount,
+    nextUnlockDate: lockedMooneyUnlockDate,
+    breakdown: lockedMooneyBreakdown,
+    isLoading: isLoadingLockedMooney,
+  } = useTotalLockedMooney(address)
+  const { totalVMOONEY, isLoading: isLoadingVMOONEY } = useTotalVMOONEY(
+    address,
+    lockedMooneyBreakdown
+  )
+  const vp = totalVMOONEY || 0
+  console.log('vp')
+  console.log(vp)
 
   const { trigger } = useVote(
     spaceId,
@@ -53,19 +86,47 @@ export default function VotingModal({
     reason,
     proposal.privacy
   )
-
-  // shorthand functions
-  const submitVote = () => {
-    toast
-      .promise(trigger(), {
-        loading: 'Voting...',
-        success: <b>Vote submitted!</b>,
-        error: (e) => (
-          <b>Error: {e.message || e.error_description || JSON.stringify(e)}</b>
-        ),
+  const handleSubmit = async () => {
+    const totalPercentage = Object.values(distribution).reduce(
+      (sum, value) => sum + value,
+      0
+    )
+    if (totalPercentage !== 100) {
+      toast.error('Total distribution must equal 100%.', {
+        style: toastStyle,
       })
-      .then(closeModal)
-      .then(refetch)
+      return
+    }
+    try {
+      if (!account) throw new Error('No account found')
+      let receipt
+      if (edit) {
+        const transaction = prepareContractCall({
+          contract: distributionTableContract,
+          method: 'updateTableCol' as string,
+          params: [project.mdp, JSON.stringify(distribution)],
+        })
+        receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+      } else {
+        const transaction = prepareContractCall({
+          contract: distributionTableContract,
+          method: 'insertIntoTable' as string,
+          params: [project.mdp, JSON.stringify(distribution)],
+        })
+        receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+      }
+    } catch (error) {
+      console.error('Error submitting distribution:', error)
+      toast.error('Error submitting distribution. Please try again.', {
+        style: toastStyle,
+      })
+    }
   }
 
   if (proposal === undefined) {
@@ -81,6 +142,7 @@ export default function VotingModal({
   const renderVoteButton = () => {
     let canVote = false
     let label = 'Close'
+    console.log('choice', choice)
 
     if (address == '') {
       label = 'Wallet not connected'
@@ -94,12 +156,13 @@ export default function VotingModal({
     } else {
       label = 'Close'
     }
+    console.log('canVote', canVote)
 
     return (
       <button
         type="button"
         disabled={!canVote}
-        onClick={canVote ? submitVote : closeModal}
+        onClick={canVote ? handleSubmit : closeModal}
         className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50"
       >
         {label}
@@ -197,11 +260,13 @@ export default function VotingModal({
 
                             <div>
                               <p className="text-gray-300 text-xs font-medium uppercase tracking-wide whitespace-nowrap">
-                                <span className="hidden sm:inline">Total Votes</span>
+                                <span className="hidden sm:inline">
+                                  Total Votes
+                                </span>
                                 <span className="sm:hidden">Votes</span>
                               </p>
                               <p className="text-lg font-bold text-white">
-                                {proposal.votes}
+                                {votesOfProposal.votes.length}
                               </p>
                             </div>
 
@@ -232,6 +297,7 @@ export default function VotingModal({
                             <h4 className="text-gray-300 font-medium text-xs uppercase tracking-wide mb-3">
                               Select Your Choice
                             </h4>
+                            <p> {proposal.type}</p>
                             {(proposal.type == 'single-choice' ||
                               proposal.type == 'basic') && (
                               <BasicChoiceSelector
@@ -353,6 +419,7 @@ function WeightedChoiceSelector({
 }: Omit<SelectorProps, 'value'> & {
   value: { [key: string]: number } | undefined
 }) {
+  console.log('choice selector')
   const { register, getValues, watch } = useForm()
 
   useEffect(() => {

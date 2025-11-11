@@ -1,4 +1,5 @@
 import { CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
+import { Project } from '@/lib/project/useProjectData'
 import {
   useQueryParams,
   withDefault,
@@ -37,6 +38,7 @@ const getColorOfChoice = (choice: string | undefined) => {
 
 export default function ProposalVotes({
   votesOfProposal,
+  project,
   refetch,
   threshold = 0,
   showContainer,
@@ -46,6 +48,7 @@ export default function ProposalVotes({
   containerClassName,
 }: {
   votesOfProposal: VotesOfProposal
+  project: Project
   refetch: () => void
   threshold?: number
   showContainer?: boolean
@@ -54,6 +57,7 @@ export default function ProposalVotes({
   onTitleClick?: () => void
   containerClassName?: string
 }) {
+  console.log('proposal votes')
   const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
 
   const [query, setQuery] = useQueryParams({
@@ -308,7 +312,9 @@ export default function ProposalVotes({
   const footerSection = (
     <NewVoteButton
       snapshotSpace={SNAPSHOT_SPACE_NAME}
-      snapshotProposal={proposalInfo}
+      snapshotProposal={{ state: 'active', type: 'quadratic' }}
+      votesOfProposal={votesOfProposal}
+      project={project}
       refetch={refetch}
     />
   )

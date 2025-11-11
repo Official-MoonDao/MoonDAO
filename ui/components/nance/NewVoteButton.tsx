@@ -1,5 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useState } from 'react'
+import { Project } from '@/lib/project/useProjectData'
 import useAccountAddress from '../../lib/nance/useAccountAddress'
 import { SnapshotGraphqlProposalVotingInfo } from '@/lib/snapshot'
 import { classNames } from '../../lib/utils/tailwind'
@@ -7,12 +8,16 @@ import VotingModal from './VotingModal'
 
 export default function NewVoteButton({
   snapshotProposal,
+  votesOfProposal,
+  project,
   snapshotSpace,
   refetch,
   isSmall = false,
 }: {
   snapshotProposal: SnapshotGraphqlProposalVotingInfo | undefined
+  votesOfProposal: any
   snapshotSpace: string
+  project: Project
   refetch: (option?: any) => void
   isSmall?: boolean
 }) {
@@ -20,15 +25,18 @@ export default function NewVoteButton({
   const [modalIsOpen, setModalIsOpen] = useState(false)
   // external hook
   const { address, isConnected } = useAccountAddress()
+  console.log('isConnected', isConnected)
+  console.log('address', address)
   const { connectWallet: openConnectModal } = usePrivy()
 
   let buttonLabel = 'Vote'
   if (snapshotProposal === undefined) {
     buttonLabel = 'Loading'
   }
+  console.log('snapshotProposal', snapshotProposal)
   if (snapshotProposal?.state !== 'active') {
     buttonLabel = 'Voting Closed'
-  } else if (isConnected) {
+  } else if (address) {
     buttonLabel = 'Vote'
   } else {
     buttonLabel = 'Connect Wallet'
@@ -44,7 +52,7 @@ export default function NewVoteButton({
         )}
         onClick={(e) => {
           e.stopPropagation()
-          if (isConnected) {
+          if (address) {
             setModalIsOpen(true)
           } else {
             openConnectModal?.()
@@ -55,10 +63,12 @@ export default function NewVoteButton({
         <span>{buttonLabel}</span>
       </button>
 
-      {snapshotProposal?.choices && modalIsOpen && (
+      {modalIsOpen && (
         <VotingModal
           modalIsOpen={modalIsOpen}
           closeModal={() => setModalIsOpen(false)}
+          votesOfProposal={votesOfProposal}
+          project={project}
           address={address}
           spaceId={snapshotSpace}
           proposal={snapshotProposal}
