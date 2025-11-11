@@ -1,4 +1,5 @@
 import CitizenABI from 'const/abis/Citizen.json'
+import { setCDNCacheHeaders } from 'middleware/cacheHeaders'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
 import {
   DEFAULT_CHAIN_V5,
@@ -21,14 +22,6 @@ import { createHSMWallet } from '@/lib/google/hsm-signer'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 
-type CachedBackers = {
-  data: Backer[]
-  timestamp: number
-}
-
-const backersCache: Map<string, CachedBackers> = new Map()
-const CACHE_TTL = 30 * 1000 // 30 seconds
-
 // Configuration constants
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
@@ -39,12 +32,6 @@ const subgraphClient = createClient({
 })
 
 async function getTotalPaid(address: string) {
-  const now = Date.now()
-  const cached = backersCache.get(address)
-
-  if (cached && now - cached.timestamp < CACHE_TTL) {
-    return cached.data
-  }
   const fetchPayments = async () => {
     const query = `
       query {
@@ -73,14 +60,11 @@ async function getTotalPaid(address: string) {
   const totalPaid = payments.reduce((acc: any, payment: any) => {
     return acc + parseInt(payment.totalAmountContributed)
   }, 0)
-  backersCache.set(address, {
-    data: totalPaid,
-    timestamp: now,
-  })
   return totalPaid
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
+  setCDNCacheHeaders(res, 60, 60, 'Accept-Encoding, address')
   if (req.method === 'POST') {
     const { address, name, image, privacy, formId } = req.body
     if (!address || !name || !image || !privacy || !formId) {
