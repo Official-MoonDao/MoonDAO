@@ -283,7 +283,7 @@ export default function ProposalEditor() {
                 style: toastStyle,
               })
               // Show CTA instead of immediate redirect
-              setSubmittedProposalId(res.data.uuid)
+              setSubmittedProposalId(proposalId?.toString())
               setShowSubmissionCTA(true)
 
               // Send Discord notification
