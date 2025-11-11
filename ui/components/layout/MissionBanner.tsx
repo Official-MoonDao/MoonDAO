@@ -62,6 +62,10 @@ export default function MissionBanner() {
                 <span className="text-xs sm:text-sm text-slate-400">
                   {FEATURED_MISSION.description}
                 </span>
+                <span className="mx-1 sm:mx-2">•</span>
+                <span className="text-xs sm:text-sm text-slate-400">
+                  {'Contribute $50 for a free citizenship!'}
+                </span>
               </span>
               {/* Duplicate for seamless loop */}
               <span className="inline-flex items-center gap-2 sm:gap-3 whitespace-nowrap px-6 sm:px-8">
@@ -74,6 +78,10 @@ export default function MissionBanner() {
                 <span className="mx-1 sm:mx-2">•</span>
                 <span className="text-xs sm:text-sm text-slate-400">
                   {FEATURED_MISSION.description}
+                </span>
+                <span className="mx-1 sm:mx-2">•</span>
+                <span className="text-xs sm:text-sm text-slate-400">
+                  {'Contribute $50 for a free citizenship!'}
                 </span>
               </span>
             </div>
