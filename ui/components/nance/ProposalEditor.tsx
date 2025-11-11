@@ -292,7 +292,7 @@ export default function ProposalEditor() {
                 const accessToken = await getAccessToken()
 
                 const notificationResponse = await fetch(
-                  '/api/proposal/new-proposal-notifcation',
+                  '/api/proposal/new-proposal-notification',
                   {
                     method: 'POST',
                     body: JSON.stringify({
