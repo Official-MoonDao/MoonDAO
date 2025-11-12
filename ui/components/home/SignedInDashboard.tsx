@@ -66,6 +66,7 @@ import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
 import DashboardTeams from './DashboardTeams'
+import DashboardQuests from './DashboardQuests'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
@@ -1216,6 +1217,23 @@ export default function SingedInDashboard({
                 />
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Quests Section */}
+        <div className="flex-grow order-5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
+          <div className="flex flex-col gap-4">
+            <div>
+              <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                <TrophyIcon className="w-7 h-7 text-yellow-400" />
+                Quests
+              </h3>
+              <p className="text-slate-300 text-sm mt-2">
+                Complete quests to earn XP and level up
+              </p>
+            </div>
+
+            <DashboardQuests selectedChain={selectedChain} />
           </div>
         </div>
 
