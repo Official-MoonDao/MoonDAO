@@ -1,25 +1,26 @@
 import { NanceProvider } from '@nance/nance-hooks'
-import { serverClient } from '@/lib/thirdweb/client'
-import queryTable from '@/lib/tableland/queryTable'
-import ProjectTableABI from 'const/abis/ProjectTable.json'
-import { BLOCKED_PROJECTS } from 'const/whitelist'
-import {
-  PROJECT_TABLE_ADDRESSES,
-  DEFAULT_CHAIN_V5,
-  PROPOSALS_TABLE_NAMES,
-} from 'const/config'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import { Project } from '@/lib/project/useProjectData'
+import { useTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import {
   ProposalPacket,
   getActionsFromBody,
   getProposal,
 } from '@nance/nance-sdk'
-import { getContract, readContract } from 'thirdweb'
+import ProjectTableABI from 'const/abis/ProjectTable.json'
+import {
+  PROJECT_TABLE_ADDRESSES,
+  DEFAULT_CHAIN_V5,
+  PROPOSALS_TABLE_NAMES,
+} from 'const/config'
+import { BLOCKED_MDPS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import { createEnumParam, useQueryParams, withDefault } from 'next-query-params'
+import { getContract, readContract } from 'thirdweb'
 import { NANCE_API_URL, NANCE_SPACE_NAME } from '@/lib/nance/constants'
+import { Project } from '@/lib/project/useProjectData'
 import { useVotesOfProposal } from '@/lib/snapshot'
+import queryTable from '@/lib/tableland/queryTable'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/client'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import WebsiteHead from '@/components/layout/Head'
@@ -56,21 +57,10 @@ function Proposal({
     }
   }
 
-  //const fetchVotes =
-  //proposalPacket?.voteURL !== undefined &&
-  //(proposalPacket?.status === 'Voting' ||
-  //proposalPacket?.status === 'Approved' ||
-  //proposalPacket?.status === 'Cancelled' ||
-  //proposalPacket?.status === 'Archived')
-
-  //const { data: votes, mutate } = useVotesOfProposal(
-  //proposalPacket?.voteURL,
-  //1000, // first
-  //0, // skip
-  //query.sortBy as 'created' | 'vp', // orderBy
-  //fetchVotes // shouldFetch
-  //)
-  const votes = []
+  const votes = proposalVotes
+  const vMOONEYs = useTotalVMOONEYs(proposalVotes.map((pv) => pv.address))
+  console.log(proposalVotes.map((pv) => pv.address))
+  console.log('vMOONEYs', vMOONEYs)
 
   // Determine the number of grid columns based on the presence of votes
   const gridCols = votes
@@ -148,10 +138,12 @@ export default function ProposalPage({
   proposalPacket,
   project,
   proposal,
+  proposalVotes,
 }: {
   proposalPacket: ProposalPacket
   project: Project
   proposal: string
+  proposalVotes: any
 }) {
   return (
     <>
@@ -161,6 +153,7 @@ export default function ProposalPage({
           proposalPacket={proposalPacket}
           project={project}
           proposal={proposal}
+          proposalVotes={proposalVotes}
         />
       </NanceProvider>
     </>
@@ -172,7 +165,7 @@ export const getServerSideProps: GetServerSideProps<{
 }> = async (context) => {
   try {
     const params = context.params
-    const tokenId = params?.tokenId as string
+    const mdp = params?.mdp as string
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
     //if (!uuid) throw new Error('Proposal not found')
@@ -192,17 +185,17 @@ export const getServerSideProps: GetServerSideProps<{
       method: 'getTableName' as string,
       params: [],
     })
-    const statement = `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`
+    const statement = `SELECT * FROM ${projectTableName} WHERE MDP = ${mdp}`
 
     const projects = await queryTable(chain, statement)
     const project = projects[0]
 
-    if (!project || BLOCKED_PROJECTS.has(Number(tokenId))) {
+    if (!project || BLOCKED_MDPS.has(Number(mdp))) {
       return {
         notFound: true,
       }
     }
-    const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE id = ${tokenId}`
+    const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
     const proposalVotes = (await queryTable(
       chain,
       voteStatement
@@ -210,7 +203,6 @@ export const getServerSideProps: GetServerSideProps<{
 
     const proposalJson = await fetch(project.proposalIPFS)
     const proposal = await proposalJson.text()
-    console.log('proposal', proposal)
     return {
       props: {
         proposal,

@@ -1,20 +1,23 @@
 import { Dialog, RadioGroup, Transition } from '@headlessui/react'
-import useContract from '@/lib/thirdweb/hooks/useContract'
-import ProposalsABI from 'const/abis/Proposals.json'
-import { getChainSlug } from '@/lib/thirdweb/chain'
 import { XMarkIcon } from '@heroicons/react/24/solid'
+import ProposalsABI from 'const/abis/Proposals.json'
 import { DEFAULT_CHAIN_V5, PROPOSALS_ADDRESSES } from 'const/config'
-import { Project } from '@/lib/project/useProjectData'
 import { useState, Fragment, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { useTotalLockedMooney } from '@/lib/tokens/hooks/useTotalLockedMooney'
 import toast from 'react-hot-toast'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { useActiveAccount } from 'thirdweb/react'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatNumberUSStyle } from '@/lib/nance'
 import useVote from '@/lib/nance/useVote'
+import { Project } from '@/lib/project/useProjectData'
 import {
   SnapshotGraphqlProposalVotingInfo,
   useVotingPower,
 } from '@/lib/snapshot'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import { useTotalLockedMooney } from '@/lib/tokens/hooks/useTotalLockedMooney'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { classNames } from '@/lib/utils/tailwind'
 
@@ -54,14 +57,28 @@ export default function VotingModal({
   const [reason, setReason] = useState('')
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
+  const account = useActiveAccount()
+  const userAddress = account?.address
   const proposalTableContract = useContract({
     address: PROPOSALS_ADDRESSES[chainSlug],
     chain: chain,
     abi: ProposalsABI.abi as any,
   })
+  const [edit, setEdit] = useState(false)
+  const votes = votesOfProposal.votes
+  useEffect(() => {
+    if (votes && userAddress) {
+      for (const v of votes) {
+        if (v.address.toLowerCase() === userAddress.toLowerCase()) {
+          setChoice(v.vote)
+          setEdit(true)
+          break
+        }
+      }
+    }
+  }, [userAddress, votes])
 
   proposal.choices = ['Yes', 'No', 'Abstain'] // could make this dynamic in the future
-  console.log('proposal', proposal)
   // external
   //const { data: _vp } = useVotingPower(address, spaceId, proposal?.id || '')
   const {
@@ -75,8 +92,6 @@ export default function VotingModal({
     lockedMooneyBreakdown
   )
   const vp = totalVMOONEY || 0
-  console.log('vp')
-  console.log(vp)
 
   const { trigger } = useVote(
     spaceId,
@@ -87,7 +102,7 @@ export default function VotingModal({
     proposal.privacy
   )
   const handleSubmit = async () => {
-    const totalPercentage = Object.values(distribution).reduce(
+    const totalPercentage = Object.values(choice).reduce(
       (sum, value) => sum + value,
       0
     )
@@ -102,9 +117,9 @@ export default function VotingModal({
       let receipt
       if (edit) {
         const transaction = prepareContractCall({
-          contract: distributionTableContract,
+          contract: proposalTableContract,
           method: 'updateTableCol' as string,
-          params: [project.mdp, JSON.stringify(distribution)],
+          params: [project.MDP, JSON.stringify(choice)],
         })
         receipt = await sendAndConfirmTransaction({
           transaction,
@@ -112,9 +127,9 @@ export default function VotingModal({
         })
       } else {
         const transaction = prepareContractCall({
-          contract: distributionTableContract,
+          contract: proposalTableContract,
           method: 'insertIntoTable' as string,
-          params: [project.mdp, JSON.stringify(distribution)],
+          params: [project.MDP, JSON.stringify(choice)],
         })
         receipt = await sendAndConfirmTransaction({
           transaction,
@@ -142,7 +157,6 @@ export default function VotingModal({
   const renderVoteButton = () => {
     let canVote = false
     let label = 'Close'
-    console.log('choice', choice)
 
     if (address == '') {
       label = 'Wallet not connected'
@@ -156,7 +170,6 @@ export default function VotingModal({
     } else {
       label = 'Close'
     }
-    console.log('canVote', canVote)
 
     return (
       <button
@@ -419,7 +432,6 @@ function WeightedChoiceSelector({
 }: Omit<SelectorProps, 'value'> & {
   value: { [key: string]: number } | undefined
 }) {
-  console.log('choice selector')
   const { register, getValues, watch } = useForm()
 
   useEffect(() => {
@@ -457,6 +469,7 @@ function WeightedChoiceSelector({
               placeholder="0"
               min={0}
               step={1}
+              defaultValue={value[index + 1]}
               {...register((index + 1).toString(), {
                 shouldUnregister: true,
                 valueAsNumber: true,

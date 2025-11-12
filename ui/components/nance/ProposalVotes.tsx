@@ -1,5 +1,4 @@
 import { CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
-import { Project } from '@/lib/project/useProjectData'
 import {
   useQueryParams,
   withDefault,
@@ -10,6 +9,7 @@ import Link from 'next/link'
 import { ReactNode, useEffect, useState, useMemo } from 'react'
 import { SNAPSHOT_SPACE_NAME } from '../../lib/nance/constants'
 import { formatNumberUSStyle } from '@/lib/nance'
+import { Project } from '@/lib/project/useProjectData'
 import { VotesOfProposal } from '@/lib/snapshot'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
@@ -58,6 +58,7 @@ export default function ProposalVotes({
   containerClassName?: string
 }) {
   console.log('proposal votes')
+  console.log(votesOfProposal)
   const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
 
   const [query, setQuery] = useQueryParams({
@@ -72,13 +73,14 @@ export default function ProposalVotes({
     return `SELECT id, name, owner FROM ${
       CITIZEN_TABLE_NAMES[chainSlug]
     } WHERE owner IN (${votesOfProposal.votes
-      .map((v) => `'${v.voter.toLowerCase()}'`)
+      .map((v) => `'${v.address.toLowerCase()}'`)
       .join(',')})`
   }, [votesOfProposal.votes, chainSlug])
 
   const { data: votingCitizens = [] } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
   })
+  console.log('votingCitizens', votingCitizens)
 
   const proposalInfo = votesOfProposal.proposal
   const proposalType = proposalInfo?.type ?? ''
@@ -102,10 +104,10 @@ export default function ProposalVotes({
   } else if (query.sortBy === 'name') {
     votes = votes.sort((a, b) => {
       const citizenA = votingCitizens.find(
-        (c: any) => c.owner.toLowerCase() === a.voter.toLowerCase()
+        (c: any) => c.owner.toLowerCase() === a.address.toLowerCase()
       )
       const citizenB = votingCitizens.find(
-        (c: any) => c.owner.toLowerCase() === b.voter.toLowerCase()
+        (c: any) => c.owner.toLowerCase() === b.address.toLowerCase()
       )
 
       const nameA = citizenA?.name || ''
@@ -116,7 +118,7 @@ export default function ProposalVotes({
       }
       if (nameA && !nameB) return -1
       if (!nameA && nameB) return 1
-      return a.voter.localeCompare(b.voter)
+      return a.address.localeCompare(b.address)
     })
   } else {
     // Default to time (most recent first)
@@ -263,7 +265,7 @@ export default function ProposalVotes({
             leftContent={
               <div className="flex">
                 <div className="inline">
-                  <Voter address={vote.voter} />
+                  <Voter address={vote.address} />
                 </div>
                 &nbsp;
                 <span
@@ -273,21 +275,13 @@ export default function ProposalVotes({
                 </span>
               </div>
             }
-            rightContent={
-              <div>
-                {`${formatNumberUSStyle(vote.vp, true)} (${(
-                  (vote.vp * 100) /
-                  (proposalInfo?.scores_total ?? 1)
-                ).toFixed()}%)`}
-              </div>
-            }
           />
         )}
 
         {!isSimpleVoting && (
           <>
             <VoteItemHeader
-              leftContent={<Voter address={vote.voter} />}
+              leftContent={<Voter address={vote.address} />}
               rightContent={
                 <div className="text-sm text-slate-500">
                   {`${formatNumberUSStyle(vote.vp, true)} (${(
