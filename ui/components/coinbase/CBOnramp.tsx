@@ -607,7 +607,8 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           </p>
           <div className="border-t border-white/5">
             <p className="text-gray-400 text-xs text-center leading-relaxed italic">
-              Coinbase does not accept prepaid or virtual debit cards.
+              Coinbase only accepts bank-issued debit cards and does not accept
+              credit cards, prepaid cards, or virtual cards at this time.
             </p>
           </div>
         </div>
