@@ -118,10 +118,7 @@ export default function MissionProfilePage({
   const selectedChain = DEFAULT_CHAIN_V5
 
   return (
-    <JuiceProviders
-      projectId={mission?.projectId}
-      selectedChain={selectedChain}
-    >
+    <JuiceProviders projectId={mission?.projectId} selectedChain={selectedChain}>
       <MissionProfile
         mission={mission}
         _stage={_stage}
@@ -140,7 +137,9 @@ export default function MissionProfilePage({
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+export const getServerSideProps: GetServerSideProps = async ({ params, res }) => {
+  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
+
   try {
     const tokenId: any = params?.tokenId
 
@@ -201,53 +200,48 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       chain: chain,
     })
 
-    const [
-      metadataURI,
-      stage,
-      payHookAddress,
-      tokenAddress,
-      primaryTerminalAddress,
-      ruleset,
-    ] = await Promise.all([
-      readContract({
-        contract: jbControllerContract,
-        method: 'uriOf' as string,
-        params: [missionRow.projectId],
-      }).then((result) => {
-        return result
-      }),
-      readContract({
-        contract: missionCreatorContract,
-        method: 'stage' as string,
-        params: [tokenId],
-      }).then((result) => {
-        return result
-      }),
-      readContract({
-        contract: missionCreatorContract,
-        method: 'missionIdToPayHook' as string,
-        params: [tokenId],
-      })
-        .then((result) => {
+    // Fetch core contract data
+    const [metadataURI, stage, payHookAddress, tokenAddress, primaryTerminalAddress, ruleset] =
+      await Promise.all([
+        readContract({
+          contract: jbControllerContract,
+          method: 'uriOf' as string,
+          params: [missionRow.projectId],
+        }).then((result) => {
           return result
+        }),
+        readContract({
+          contract: missionCreatorContract,
+          method: 'stage' as string,
+          params: [tokenId],
+        }).then((result) => {
+          return result
+        }),
+        readContract({
+          contract: missionCreatorContract,
+          method: 'missionIdToPayHook' as string,
+          params: [tokenId],
         })
-        .catch(() => null), // Don't fail if this fails
-      readContract({
-        contract: jbTokensContract,
-        method: 'tokenOf' as string,
-        params: [missionRow.projectId],
-      }),
-      readContract({
-        contract: jbDirectoryContract,
-        method: 'primaryTerminalOf' as string,
-        params: [missionRow.projectId, JB_NATIVE_TOKEN_ADDRESS],
-      }).catch((e) => '0x0000000000000000000000000000000000000000'), // Default to zero address if fetch fails
-      readContract({
-        contract: jbControllerContract,
-        method: 'currentRulesetOf' as string,
-        params: [missionRow.projectId],
-      }).catch((e) => null), // Don't fail if this fails
-    ])
+          .then((result) => {
+            return result
+          })
+          .catch(() => null), // Don't fail if this fails
+        readContract({
+          contract: jbTokensContract,
+          method: 'tokenOf' as string,
+          params: [missionRow.projectId],
+        }),
+        readContract({
+          contract: jbDirectoryContract,
+          method: 'primaryTerminalOf' as string,
+          params: [missionRow.projectId, JB_NATIVE_TOKEN_ADDRESS],
+        }).catch((e) => '0x0000000000000000000000000000000000000000'), // Default to zero address if fetch fails
+        readContract({
+          contract: jbControllerContract,
+          method: 'currentRulesetOf' as string,
+          params: [missionRow.projectId],
+        }).catch((e) => null), // Don't fail if this fails
+      ])
 
     const ipfsHash = metadataURI.startsWith('ipfs://')
       ? metadataURI.replace('ipfs://', '')
@@ -256,7 +250,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     const promises = [
       // IPFS metadata fetch with multiple gateway fallbacks
       fetchFromIPFSWithFallback(ipfsHash).catch((error: any) => {
-        console.warn('All IPFS gateways failed:', error)
+        console.warn('[Mission SSR] IPFS fetch failed:', {
+          projectId: missionRow.projectId,
+          error: error?.message,
+        })
         return {
           name: 'Mission Loading...',
           description: 'Metadata is loading...',
@@ -265,10 +262,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }),
     ]
 
-    if (
-      payHookAddress &&
-      payHookAddress !== '0x0000000000000000000000000000000000000000'
-    ) {
+    if (payHookAddress && payHookAddress !== '0x0000000000000000000000000000000000000000') {
       const payHookContract = getContract({
         client: serverClient,
         address: payHookAddress,
@@ -309,10 +303,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       reservedRate: '',
     }
 
-    if (
-      tokenAddress &&
-      tokenAddress !== '0x0000000000000000000000000000000000000000'
-    ) {
+    if (tokenAddress && tokenAddress !== '0x0000000000000000000000000000000000000000') {
       try {
         const tokenContract = getContract({
           client: serverClient,
@@ -321,24 +312,23 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
           chain: chain,
         })
 
-        const [nameResult, symbolResult, supplyResult] =
-          await Promise.allSettled([
-            readContract({
-              contract: tokenContract,
-              method: 'name' as string,
-              params: [],
-            }),
-            readContract({
-              contract: tokenContract,
-              method: 'symbol' as string,
-              params: [],
-            }),
-            readContract({
-              contract: tokenContract,
-              method: 'totalSupply' as string,
-              params: [],
-            }),
-          ])
+        const [nameResult, symbolResult, supplyResult] = await Promise.allSettled([
+          readContract({
+            contract: tokenContract,
+            method: 'name' as string,
+            params: [],
+          }),
+          readContract({
+            contract: tokenContract,
+            method: 'symbol' as string,
+            params: [],
+          }),
+          readContract({
+            contract: tokenContract,
+            method: 'totalSupply' as string,
+            params: [],
+          }),
+        ])
 
         if (nameResult.status === 'fulfilled' && nameResult.value) {
           tokenData.tokenName = nameResult.value
@@ -349,8 +339,13 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         if (supplyResult.status === 'fulfilled' && supplyResult.value) {
           tokenData.tokenSupply = supplyResult.value.toString()
         }
-      } catch (error) {
-        console.warn('Failed to fetch token data:', error)
+      } catch (error: any) {
+        console.warn('[Mission SSR] Failed to fetch token data:', {
+          tokenId,
+          projectId: missionRow.projectId,
+          tokenAddress,
+          error: error?.message,
+        })
       }
     }
 
@@ -421,36 +416,57 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
             if (hat?.subHats) {
               const subHatsLevel1 = hat.subHats
-              const subHatsLevel2 = subHatsLevel1
-                ?.map((hat: any) => hat.subHats)
-                .flat()
+              const subHatsLevel2 = subHatsLevel1?.map((hat: any) => hat.subHats).flat()
               teamHats = subHatsLevel1.concat(subHatsLevel2)
             }
           }
         }
-      } catch (error) {
-        console.warn('Failed to fetch team data or hats:', error)
+      } catch (error: any) {
+        console.warn('[Mission SSR] Failed to fetch team data:', {
+          teamId: mission.teamId,
+          error: error?.message,
+        })
         // Continue without team data if fetch fails
       }
     }
 
-    const _ruleset = [
-      { weight: +ruleset[0].weight.toString() },
-      { reservedPercent: +ruleset[1].reservedPercent.toString() },
-    ]
+    // Handle null ruleset gracefully
+    const _ruleset = ruleset
+      ? [
+          { weight: +ruleset[0].weight.toString() },
+          { reservedPercent: +ruleset[1].reservedPercent.toString() },
+        ]
+      : [{ weight: 0 }, { reservedPercent: 0 }]
 
     let _backers: any[] = []
     try {
       _backers = await getBackers(mission.projectId, mission.id)
-    } catch (err) {
+    } catch (err: any) {
       _backers = []
-      console.error('Failed to fetch backers:', err)
+      console.error('[Mission SSR] Failed to fetch backers:', {
+        tokenId,
+        projectId: mission.projectId,
+        error: err?.message,
+      })
     }
-    const citizenStatement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}
-     WHERE owner IN (${_backers
-       .map((backer) => `"${backer.backer}"`)
-       .join(',')})`
-    const _citizens = await queryTable(chain, citizenStatement)
+
+    // Only query citizens if there are backers (prevents invalid SQL)
+    let _citizens: any[] = []
+    if (_backers.length > 0) {
+      try {
+        const citizenStatement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}
+         WHERE owner IN (${_backers.map((backer) => `"${backer.backer}"`).join(',')})`
+        _citizens = await queryTable(chain, citizenStatement)
+      } catch (err: any) {
+        console.error('[Mission SSR] Failed to fetch citizens:', {
+          tokenId,
+          projectId: mission.projectId,
+          backersCount: _backers.length,
+          error: err?.message,
+        })
+        _citizens = []
+      }
+    }
 
     return {
       props: {
@@ -460,10 +476,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         _refundPeriod: refundPeriod,
         _primaryTerminalAddress: primaryTerminalAddress,
         _token: tokenData,
-        _teamNFT: {
-          ...teamNFT,
-          id: teamNFT.id.toString(),
-        },
+        _teamNFT: teamNFT
+          ? {
+              ...teamNFT,
+              id: teamNFT.id.toString(),
+            }
+          : null,
         _teamHats: teamHats,
         _fundingGoal: missionRow.fundingGoal,
         _ruleset,
@@ -471,8 +489,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         _citizens,
       },
     }
-  } catch (error) {
-    console.error('getServerSideProps error:', error)
+  } catch (error: any) {
     return {
       notFound: true,
     }
