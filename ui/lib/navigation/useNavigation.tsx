@@ -67,6 +67,7 @@ export default function useNavigation(citizen: any) {
             href: '/mooney',
           },
           { name: 'Lock', href: '/lock' },
+          { name: 'Bridge', href: '/bridge' },
         ],
       },
       {
