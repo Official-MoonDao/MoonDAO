@@ -66,6 +66,7 @@ import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
 import DashboardTeams from './DashboardTeams'
+import DashboardQuests from './DashboardQuests'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
@@ -850,13 +851,6 @@ export default function SingedInDashboard({
                   <ShoppingBagIcon className="w-4 h-4" />
                   Shop
                 </StandardButton>
-                <StandardButton
-                  className="bg-gradient-to-r from-yellow-600 to-amber-700 hover:from-yellow-700 hover:to-amber-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/quests"
-                >
-                  <TrophyIcon className="w-4 h-4" />
-                  Quests
-                </StandardButton>
               </div>
             </div>
 
@@ -1216,6 +1210,23 @@ export default function SingedInDashboard({
                 />
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Quests Section */}
+        <div className="flex-grow order-5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
+          <div className="flex flex-col gap-4">
+            <div>
+              <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                <TrophyIcon className="w-7 h-7 text-yellow-400" />
+                Quests
+              </h3>
+              <p className="text-slate-300 text-sm mt-2">
+                Complete quests to earn XP and level up
+              </p>
+            </div>
+
+            <DashboardQuests selectedChain={selectedChain} />
           </div>
         </div>
 
