@@ -42,19 +42,6 @@ export default function MissionActivityList({
 
   return (
     <div>
-      <div className="flex justify-end items-center gap-4">
-        <Selector
-          value={filter}
-          onChange={(value) => {
-            setFilter(value as 'all' | 'payEvent' | 'mintTokensEvent')
-          }}
-          options={[
-            { label: 'All', value: 'all' },
-            { label: 'Contributions', value: 'payEvent' },
-            { label: 'Tokens', value: 'mintTokensEvent' },
-          ]}
-        />
-      </div>
       <div className="flex flex-col gap-4 py-2">
         {projectEvents.map((event, i) => (
           <MissionActivityEvent
@@ -133,6 +120,7 @@ function translateEventDataToPresenter(
           </span>
         ),
         extra: <RichNote note={event.memo} />,
+        address: event.beneficiary,
         citizen: citizen,
       }
     case 'addToBalanceEvent':
@@ -152,10 +140,7 @@ function translateEventDataToPresenter(
         header: 'Minted tokens',
         subject: (
           <span className="font-heading text-lg">
-            To:{' '}
-            {event.beneficiary.slice(0, 6) +
-              '...' +
-              event.beneficiary.slice(-4)}
+            To: {event.beneficiary.slice(0, 6) + '...' + event.beneficiary.slice(-4)}
           </span>
         ),
         extra: null,
