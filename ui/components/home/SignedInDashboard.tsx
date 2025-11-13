@@ -10,7 +10,12 @@ import {
   BriefcaseIcon,
   TrophyIcon,
   CalendarDaysIcon,
+  WalletIcon,
+  ClipboardDocumentIcon,
+  PlusIcon,
+  ArrowUpRightIcon,
 } from '@heroicons/react/24/outline'
+import { useFundWallet } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
@@ -30,6 +35,9 @@ import {
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
+import { toast } from 'react-hot-toast'
+import Image from 'next/image'
+import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useContext, useState, useEffect } from 'react'
@@ -110,6 +118,9 @@ export default function SingedInDashboard({
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
+
+  const router = useRouter()
+  const { fundWallet } = useFundWallet()
 
   const { citizen, isLoading: isLoadingCitizen } = useContext(CitizenContext)
 
@@ -1014,124 +1025,153 @@ export default function SingedInDashboard({
 
           {/* Right Sidebar - Community & Stats */}
           <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3">
-            {/* Claim Rewards Section */}
-            {address && <ClaimRewardsSection />}
-
-            {/* Recent Citizens */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">
-                  New Citizens
-                </h3>
-                <StandardButton
-                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
-                  link="/network?tab=citizens"
-                >
-                  See all
-                </StandardButton>
-              </div>
-
-              <div className="space-y-3">
-                {newestCitizens && newestCitizens.length > 0 ? (
-                  newestCitizens.slice(0, 5).map((citizen: any) => (
-                    <Link
-                      key={citizen.id}
-                      href={`/citizen/${
-                        citizen.name && citizen.id
-                          ? generatePrettyLinkWithId(citizen.name, citizen.id)
-                          : citizen.id || 'anonymous'
-                      }`}
-                      className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer"
-                    >
-                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                        {citizen.image ? (
-                          <IPFSRenderer
-                            src={citizen.image}
-                            alt={citizen.name}
-                            className="w-full h-full object-cover"
-                            width={100}
-                            height={100}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                            {citizen.name?.[0] || 'C'}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-sm truncate">
-                          {citizen.name || 'Anonymous'}
-                        </h4>
-                      </div>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="text-gray-400 text-sm text-center py-4">
-                    Loading...
+            {/* Wallet Dropdown Content - Static version */}
+            {address && (
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                {/* Header Section */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                      <WalletIcon className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-lg text-white">Wallet</h3>
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
 
-            {/* Featured Teams */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">
-                  Featured Teams
-                </h3>
-                <StandardButton
-                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
-                  link="/network?tab=teams"
-                >
-                  See all
-                </StandardButton>
-              </div>
-
-              <div className="space-y-3">
-                {filteredTeams && filteredTeams.length > 0 ? (
-                  filteredTeams.slice(0, 5).map((team: any, index: number) => (
-                    <Link
-                      key={team.id || index}
-                      href={`/team/${generatePrettyLink(team.name)}`}
+                {/* Address Section */}
+                <div className="bg-black/20 rounded-lg p-3 mb-4 border border-white/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      </div>
+                      <p className="text-white font-mono text-sm">
+                        {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                      </p>
+                    </div>
+                    <button
+                      className="p-1 hover:bg-white/10 rounded transition-colors duration-200 group"
+                      onClick={() => {
+                        navigator.clipboard.writeText(address || '')
+                        toast.success('Address copied to clipboard.')
+                      }}
                     >
-                      <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                        <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                          {team.image ? (
-                            <IPFSRenderer
-                              src={team.image}
-                              alt={team.name}
-                              className="w-full h-full object-cover"
-                              width={100}
-                              height={100}
+                      <ClipboardDocumentIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Balances Section */}
+                <div className="mb-4">
+                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">
+                    Balances
+                  </h4>
+                  <div className="space-y-3">
+                    {/* MOONEY Balance */}
+                    <div className="bg-black/20 rounded-lg p-3 border border-white/5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center">
+                            <Image
+                              src="/coins/MOONEY.png"
+                              width={20}
+                              height={20}
+                              alt="MOONEY"
+                              className="object-contain"
                             />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                              {team.name?.[0] || 'T'}
-                            </div>
-                          )}
+                          </div>
+                          <div>
+                            <p className="font-medium text-white">MOONEY</p>
+                            <p className="text-gray-400 text-xs">Available</p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-white font-medium text-sm truncate">
-                            {team.name || 'Team'}
-                          </h4>
+                        <div className="text-right">
+                          <p className="font-semibold text-white">
+                            {MOONEYBalance
+                              ? MOONEYBalance.toFixed(2)
+                              : '0.00'}
+                          </p>
                         </div>
                       </div>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">
-                      M
                     </div>
-                    <div className="flex-1">
-                      <h4 className="text-white font-medium text-sm">
-                        Mission Control
-                      </h4>
+
+                    {/* vMOONEY Balance */}
+                    <div className="bg-black/20 rounded-lg p-3 border border-white/5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center">
+                            <Image
+                              src="/assets/vmooney-shield.svg"
+                              width={20}
+                              height={20}
+                              alt="vMOONEY"
+                              className="object-contain"
+                            />
+                          </div>
+                          <div>
+                            <p className="font-medium text-white">vMOONEY</p>
+                            <p className="text-gray-400 text-xs">Locked</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-white">
+                            {totalVMOONEY ? totalVMOONEY.toFixed(2) : '0.00'}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
+                </div>
+
+                {/* Quick Actions */}
+                <div className="mb-4">
+                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">
+                    Quick Actions
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => fundWallet && fundWallet(address as `0x${string}`)}
+                      className="w-full aspect-square flex flex-col items-center justify-center gap-3 bg-black/20 hover:bg-black/30 rounded-xl border border-white/5 hover:border-white/10 transition-all duration-200 group"
+                    >
+                      <PlusIcon className="w-8 h-8 text-white" />
+                      <span className="text-gray-300 text-sm font-medium group-hover:text-white transition-colors">
+                        Fund
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => router.push('/mooney')}
+                      className="w-full aspect-square flex flex-col items-center justify-center gap-3 bg-black/20 hover:bg-black/30 rounded-xl border border-white/5 hover:border-white/10 transition-all duration-200 group"
+                    >
+                      <ArrowUpRightIcon className="w-8 h-8 text-white" />
+                      <span className="text-gray-300 text-sm font-medium group-hover:text-white transition-colors">
+                        Send
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Links */}
+                <div className="border-t border-white/10 pt-4">
+                  <div className="flex flex-col gap-2 text-xs">
+                    <StandardButton
+                      link="/lock"
+                      className="w-full text-center bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 py-2 rounded-lg transition-all"
+                    >
+                      Lock Tokens
+                    </StandardButton>
+                    <StandardButton
+                      link="/mooney"
+                      className="w-full text-center bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 py-2 rounded-lg transition-all"
+                    >
+                      Get MOONEY
+                    </StandardButton>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Retroactive Rewards Section - Moved from left sidebar */}
+            {address && <ClaimRewardsSection />}
 
             {/* Open Jobs */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
@@ -1431,6 +1471,118 @@ export default function SingedInDashboard({
             </div>
           </div>
         </div>
+
+        {/* Citizens and Teams - Horizontal Scrollable Section Above Map */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* New Citizens - Horizontal */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white text-lg">
+                  New Citizens
+                </h3>
+                <StandardButton
+                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                  link="/network?tab=citizens"
+                >
+                  See all
+                </StandardButton>
+              </div>
+
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                {newestCitizens && newestCitizens.length > 0 ? (
+                  newestCitizens.slice(0, 8).map((citizen: any) => (
+                    <Link
+                      key={citizen.id}
+                      href={`/citizen/${
+                        citizen.name && citizen.id
+                          ? generatePrettyLinkWithId(citizen.name, citizen.id)
+                          : citizen.id || 'anonymous'
+                      }`}
+                      className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
+                    >
+                      <div className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center mx-auto mb-2">
+                        {citizen.image ? (
+                          <IPFSRenderer
+                            src={citizen.image}
+                            alt={citizen.name}
+                            className="w-full h-full object-cover"
+                            width={100}
+                            height={100}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                            {citizen.name?.[0] || 'C'}
+                          </div>
+                        )}
+                      </div>
+                      <h4 className="text-white font-medium text-xs truncate text-center">
+                        {citizen.name || 'Anonymous'}
+                      </h4>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="text-gray-400 text-sm text-center py-4 w-full">
+                    Loading...
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Featured Teams - Horizontal */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white text-lg">
+                  Featured Teams
+                </h3>
+                <StandardButton
+                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                  link="/network?tab=teams"
+                >
+                  See all
+                </StandardButton>
+              </div>
+
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                {filteredTeams && filteredTeams.length > 0 ? (
+                  filteredTeams.slice(0, 8).map((team: any, index: number) => (
+                    <Link
+                      key={team.id || index}
+                      href={`/team/${generatePrettyLink(team.name)}`}
+                      className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
+                    >
+                      <div className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center mx-auto mb-2">
+                        {team.image ? (
+                          <IPFSRenderer
+                            src={team.image}
+                            alt={team.name}
+                            className="w-full h-full object-cover"
+                            width={100}
+                            height={100}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                            {team.name?.[0] || 'T'}
+                          </div>
+                        )}
+                      </div>
+                      <h4 className="text-white font-medium text-xs truncate text-center">
+                        {team.name || 'Team'}
+                      </h4>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2">
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white mx-auto mb-2">
+                      M
+                    </div>
+                    <h4 className="text-white font-medium text-xs truncate text-center">
+                      Mission Control
+                    </h4>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
         {/* Global Community Map - Enhanced */}
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8 mb-8">
