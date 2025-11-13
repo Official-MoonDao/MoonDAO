@@ -7,6 +7,16 @@ import StandardButton from '../layout/StandardButton'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
+type TeamMarketplaceProps = {
+  selectedChain: any
+  marketplaceTableContract: any
+  teamContract: any
+  teamId: string
+  isManager: boolean
+  isCitizen: any
+  listings?: TeamListingType[] // Optional: can be provided externally to avoid fetching
+}
+
 export default function TeamMarketplace({
   selectedChain,
   marketplaceTableContract,
@@ -14,18 +24,21 @@ export default function TeamMarketplace({
   teamId,
   isManager,
   isCitizen,
-}: any) {
+  listings: externalListings,
+}: TeamMarketplaceProps) {
   const router = useRouter()
 
-  const [listings, setListings] = useState<TeamListingType[]>()
+  const [internalListings, setInternalListings] = useState<TeamListingType[]>()
   const [listingModalEnabled, setListingModalEnabled] = useState(false)
   const [queriedListingId, setQueriedListingId] = useState<number>()
   const [tableName, setTableName] = useState<string | null>(null)
 
+  const shouldFetch = !externalListings
+
   // Get table name from contract
   useEffect(() => {
     async function getTableName() {
-      if (!marketplaceTableContract) return
+      if (!marketplaceTableContract || !shouldFetch) return
       try {
         const name: any = await readContract({
           contract: marketplaceTableContract,
@@ -38,21 +51,24 @@ export default function TeamMarketplace({
       }
     }
     getTableName()
-  }, [marketplaceTableContract])
+  }, [marketplaceTableContract, shouldFetch])
 
   // Build statement and fetch with SWR
-  const statement = tableName
-    ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
-    : null
+  const statement =
+    shouldFetch && tableName
+      ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
+      : null
   const { data, mutate } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
   })
 
   useEffect(() => {
     if (data) {
-      setListings(data)
+      setInternalListings(data)
     }
   }, [data])
+
+  const listings = externalListings || internalListings
 
   const getEntityMarketplaceListings = () => {
     mutate()

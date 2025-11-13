@@ -34,6 +34,7 @@ type TeamMissionsProps = {
   jbDirectoryContract: any
   jbTokensContract: any
   teamContract: any
+  missions?: Mission[] // Optional: can be provided externally to avoid fetching
 }
 
 export function TeamMission({
@@ -98,13 +99,16 @@ export default function TeamMissions({
   jbDirectoryContract,
   jbTokensContract,
   teamContract,
+  missions: externalMissions,
 }: TeamMissionsProps) {
   const router = useRouter()
-  const [missions, setMissions] = useState<Mission[]>()
+  const [internalMissions, setInternalMissions] = useState<Mission[]>()
   const [pageIdx, setPageIdx] = useState(1)
   const [tableName, setTableName] = useState<string | null>(null)
-  const maxPage = missions?.length || 0
   const shallowQueryRoute = useShallowQueryRoute()
+
+  const missions = externalMissions || internalMissions
+  const maxPage = missions?.length || 0
 
   function handlePageChange(newPage: number) {
     const nextMission = missions?.[newPage - 1]
@@ -115,10 +119,12 @@ export default function TeamMissions({
     })
   }
 
+  const shouldFetch = !externalMissions
+
   // Get table name from contract
   useEffect(() => {
     async function getTableName() {
-      if (!missionTableContract) return
+      if (!missionTableContract || !shouldFetch) return
       try {
         const name: any = await readContract({
           contract: missionTableContract,
@@ -131,12 +137,13 @@ export default function TeamMissions({
       }
     }
     getTableName()
-  }, [missionTableContract])
+  }, [missionTableContract, shouldFetch])
 
   // Build statement and fetch with SWR
-  const statement = tableName
-    ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
-    : null
+  const statement =
+    shouldFetch && tableName
+      ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
+      : null
   const { data: rows, mutate } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
   })
@@ -144,7 +151,7 @@ export default function TeamMissions({
   // Process rows when they arrive
   useEffect(() => {
     async function processRows() {
-      if (!rows || !jbControllerContract) return
+      if (!rows || !jbControllerContract || !shouldFetch) return
 
       const missions = await Promise.all(
         rows.map(async (row: any) => {
@@ -170,11 +177,11 @@ export default function TeamMissions({
       const filteredMissions = missions.filter((mission) => {
         return !BLOCKED_MISSIONS.has(mission.id)
       })
-      setMissions(filteredMissions.toReversed())
+      setInternalMissions(filteredMissions.toReversed())
     }
 
     processRows()
-  }, [rows, jbControllerContract])
+  }, [rows, jbControllerContract, shouldFetch])
 
   //Scroll to mission
   useEffect(() => {
@@ -197,10 +204,7 @@ export default function TeamMissions({
   if (!missions?.[0]) return null
 
   return (
-    <section
-      id="team-missions"
-      className="p-6"
-    >
+    <section id="team-missions" className="p-6">
       <div className="w-full flex flex-col justify-between gap-5">
         <div className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
           <div className="flex gap-5">

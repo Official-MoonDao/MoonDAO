@@ -15,6 +15,7 @@ type TeamJobsProps = {
   isManager: boolean
   isCitizen: any
   hasFullAccess?: boolean
+  jobs?: JobType[] // Optional: can be provided externally to avoid fetching
 }
 
 export default function TeamJobs({
@@ -23,18 +24,21 @@ export default function TeamJobs({
   isManager,
   isCitizen,
   hasFullAccess = false,
+  jobs: externalJobs,
 }: TeamJobsProps) {
   const router = useRouter()
-  const [jobs, setJobs] = useState<JobType[]>()
+  const [internalJobs, setInternalJobs] = useState<JobType[]>()
   const [teamJobModalEnabled, setTeamJobModalEnabled] = useState(false)
   const [tableName, setTableName] = useState<string | null>(null)
 
   const jobIcon = '/./assets/icon-job.svg'
 
+  const shouldFetch = !externalJobs
+
   // Get table name from contract
   useEffect(() => {
     async function getTableName() {
-      if (!jobTableContract) return
+      if (!jobTableContract || !shouldFetch) return
       try {
         const name: any = await readContract({
           contract: jobTableContract,
@@ -47,20 +51,23 @@ export default function TeamJobs({
       }
     }
     getTableName()
-  }, [jobTableContract])
+  }, [jobTableContract, shouldFetch])
 
-  const statement = tableName
-    ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
-    : null
+  const statement =
+    shouldFetch && tableName
+      ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
+      : null
   const { data, mutate } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
   })
 
   useEffect(() => {
     if (data) {
-      setJobs(data)
+      setInternalJobs(data)
     }
   }, [data])
+
+  const jobs = externalJobs || internalJobs
 
   const getEntityJobs = () => {
     mutate()
