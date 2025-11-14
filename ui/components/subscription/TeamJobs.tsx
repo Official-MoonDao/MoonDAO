@@ -15,6 +15,7 @@ type TeamJobsProps = {
   isManager: boolean
   isCitizen: any
   hasFullAccess?: boolean
+  jobs?: JobType[] // Optional: can be provided externally to avoid fetching
 }
 
 export default function TeamJobs({
@@ -23,18 +24,21 @@ export default function TeamJobs({
   isManager,
   isCitizen,
   hasFullAccess = false,
+  jobs: externalJobs,
 }: TeamJobsProps) {
   const router = useRouter()
-  const [jobs, setJobs] = useState<JobType[]>()
+  const [internalJobs, setInternalJobs] = useState<JobType[]>()
   const [teamJobModalEnabled, setTeamJobModalEnabled] = useState(false)
   const [tableName, setTableName] = useState<string | null>(null)
 
   const jobIcon = '/./assets/icon-job.svg'
 
+  const shouldFetch = !externalJobs
+
   // Get table name from contract
   useEffect(() => {
     async function getTableName() {
-      if (!jobTableContract) return
+      if (!jobTableContract || !shouldFetch) return
       try {
         const name: any = await readContract({
           contract: jobTableContract,
@@ -47,20 +51,23 @@ export default function TeamJobs({
       }
     }
     getTableName()
-  }, [jobTableContract])
+  }, [jobTableContract, shouldFetch])
 
-  const statement = tableName
-    ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
-    : null
+  const statement =
+    shouldFetch && tableName
+      ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
+      : null
   const { data, mutate } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
   })
 
   useEffect(() => {
     if (data) {
-      setJobs(data)
+      setInternalJobs(data)
     }
   }, [data])
+
+  const jobs = externalJobs || internalJobs
 
   const getEntityJobs = () => {
     mutate()
@@ -134,7 +141,7 @@ export default function TeamJobs({
         </div>
         {isManager || isCitizen ? (
           <div className="mt-4">
-            <div className="flex gap-4 flex-wrap">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {jobs?.[0] ? (
                 jobs.map((job, i) => (
                   <Job
@@ -148,7 +155,7 @@ export default function TeamJobs({
                   />
                 ))
               ) : (
-                <p className="text-slate-300 text-center py-8">{`This team hasn't listed any open roles yet.`}</p>
+                <p className="text-slate-300 text-center py-8 col-span-2">{`This team hasn't listed any open roles yet.`}</p>
               )}
             </div>
           </div>
@@ -174,7 +181,7 @@ export default function TeamJobs({
                 </StandardButton>
               </div>
             </div>
-            <div className="flex gap-4 flex-wrap opacity-50 pointer-events-none">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 opacity-50 pointer-events-none">
               {jobs.slice(0, 3).map((job, i) => (
                 <Job
                   id={`team-job-preview-${job.id}`}
@@ -187,7 +194,7 @@ export default function TeamJobs({
                 />
               ))}
               {jobs.length > 3 && (
-                <div className="w-full md:w-[calc(50%-0.5rem)] xl:w-[calc(33.33%-0.67rem)] bg-slate-700/30 rounded-xl border border-slate-600/30 p-6 flex items-center justify-center">
+                <div className="bg-slate-700/30 rounded-xl border border-slate-600/30 p-6 flex items-center justify-center min-h-[200px]">
                   <p className="text-slate-400 text-center">
                     +{jobs.length - 3} more job
                     {jobs.length - 3 !== 1 ? 's' : ''}
