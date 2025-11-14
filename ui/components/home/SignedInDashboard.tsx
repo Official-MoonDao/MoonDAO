@@ -61,6 +61,7 @@ import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { RevenueChart } from '@/components/dashboard/treasury/RevenueChart'
 import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
 import MooneyBalances from '@/components/home/MooneyBalances'
+import WalletInfoCard from '@/components/home/WalletInfoCard'
 import ChartModal from '@/components/layout/ChartModal'
 import Container from '@/components/layout/Container'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
@@ -1025,149 +1026,15 @@ export default function SingedInDashboard({
 
           {/* Right Sidebar - Community & Stats */}
           <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3">
-            {/* Wallet Dropdown Content - Static version */}
+            {/* Wallet Info Card */}
             {address && (
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-                {/* Header Section */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                      <WalletIcon className="w-4 h-4 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-lg text-white">Wallet</h3>
-                  </div>
-                </div>
-
-                {/* Address Section */}
-                <div className="bg-black/20 rounded-lg p-3 mb-4 border border-white/5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                      <p className="text-white font-mono text-sm">
-                        {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
-                      </p>
-                    </div>
-                    <button
-                      className="p-1 hover:bg-white/10 rounded transition-colors duration-200 group"
-                      onClick={() => {
-                        navigator.clipboard.writeText(address || '')
-                        toast.success('Address copied to clipboard.')
-                      }}
-                    >
-                      <ClipboardDocumentIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Balances Section */}
-                <div className="mb-4">
-                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">
-                    Balances
-                  </h4>
-                  <div className="space-y-3">
-                    {/* MOONEY Balance */}
-                    <div className="bg-black/20 rounded-lg p-3 border border-white/5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center">
-                            <Image
-                              src="/coins/MOONEY.png"
-                              width={20}
-                              height={20}
-                              alt="MOONEY"
-                              className="object-contain"
-                            />
-                          </div>
-                          <div>
-                            <p className="font-medium text-white">MOONEY</p>
-                            <p className="text-gray-400 text-xs">Available</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-white">
-                            {MOONEYBalance
-                              ? MOONEYBalance.toFixed(2)
-                              : '0.00'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* vMOONEY Balance */}
-                    <div className="bg-black/20 rounded-lg p-3 border border-white/5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center">
-                            <Image
-                              src="/assets/vmooney-shield.svg"
-                              width={20}
-                              height={20}
-                              alt="vMOONEY"
-                              className="object-contain"
-                            />
-                          </div>
-                          <div>
-                            <p className="font-medium text-white">vMOONEY</p>
-                            <p className="text-gray-400 text-xs">Locked</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-white">
-                            {totalVMOONEY ? totalVMOONEY.toFixed(2) : '0.00'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="mb-4">
-                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">
-                    Quick Actions
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => fundWallet && fundWallet(address as `0x${string}`)}
-                      className="w-full aspect-square flex flex-col items-center justify-center gap-3 bg-black/20 hover:bg-black/30 rounded-xl border border-white/5 hover:border-white/10 transition-all duration-200 group"
-                    >
-                      <PlusIcon className="w-8 h-8 text-white" />
-                      <span className="text-gray-300 text-sm font-medium group-hover:text-white transition-colors">
-                        Fund
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => router.push('/mooney')}
-                      className="w-full aspect-square flex flex-col items-center justify-center gap-3 bg-black/20 hover:bg-black/30 rounded-xl border border-white/5 hover:border-white/10 transition-all duration-200 group"
-                    >
-                      <ArrowUpRightIcon className="w-8 h-8 text-white" />
-                      <span className="text-gray-300 text-sm font-medium group-hover:text-white transition-colors">
-                        Send
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Quick Links */}
-                <div className="border-t border-white/10 pt-4">
-                  <div className="flex flex-col gap-2 text-xs">
-                    <StandardButton
-                      link="/lock"
-                      className="w-full text-center bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 py-2 rounded-lg transition-all"
-                    >
-                      Lock Tokens
-                    </StandardButton>
-                    <StandardButton
-                      link="/mooney"
-                      className="w-full text-center bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 py-2 rounded-lg transition-all"
-                    >
-                      Get MOONEY
-                    </StandardButton>
-                  </div>
-                </div>
-              </div>
+              <WalletInfoCard
+                unlockedMooney={MOONEYBalance || 0}
+                lockedMooney={lockedMooneyAmount || 0}
+                isUnlockedLoading={false}
+                isLockedLoading={isLoadingLockedMooney}
+                onSendClick={() => router.push('/mooney')}
+              />
             )}
 
             {/* Retroactive Rewards Section - Moved from left sidebar */}
