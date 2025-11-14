@@ -35,10 +35,7 @@ function Earth({ pointsData, width, height }: EarthProps) {
   const pointLabel = useCallback(
     (d: any) =>
       ReactDOMServer.renderToString(
-        <CitizenPointLabel
-          formattedAddress={d.formattedAddress}
-          citizens={d.citizens}
-        />
+        <CitizenPointLabel formattedAddress={d.formattedAddress} citizens={d.citizens} />
       ),
     []
   )
@@ -54,7 +51,7 @@ function Earth({ pointsData, width, height }: EarthProps) {
         globeRef.current.pointOfView({
           lat: 39.8283,
           lng: -98.5795,
-          altitude: 3.5,
+          altitude: 2,
         })
       }
     }, 100)
@@ -80,10 +77,7 @@ function Earth({ pointsData, width, height }: EarthProps) {
         animateIn
       />
       {pointModalEnabled && (
-        <CitizenPointModal
-          selectedPoint={selectedPoint}
-          setEnabled={setPointModalEnabled}
-        />
+        <CitizenPointModal selectedPoint={selectedPoint} setEnabled={setPointModalEnabled} />
       )}
     </>
   )
@@ -93,10 +87,7 @@ export default memo(Earth, (prevProps, nextProps) => {
   if (prevProps.pointsData.length !== nextProps.pointsData.length) {
     return false
   }
-  if (
-    prevProps.width !== nextProps.width ||
-    prevProps.height !== nextProps.height
-  ) {
+  if (prevProps.width !== nextProps.width || prevProps.height !== nextProps.height) {
     return false
   }
   return true
