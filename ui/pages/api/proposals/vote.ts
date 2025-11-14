@@ -77,7 +77,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   // FIXME how long is the voting period? at least 5 days but in practice how long?
   const votingPeriodClosedTimestamp =
     parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
-  if (!currentTimestamp >= votingPeriodClosedTimestamp) {
+  if (currentTimestamp <= votingPeriodClosedTimestamp) {
     return res.status(400).json({
       error: 'Voting period has not ended.',
     })
@@ -95,10 +95,10 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       method: 'updateTableCol',
       params: [projectId, 'active', 1],
     })
-    const receipt = await sendAndConfirmTransaction({
-      transaction,
-      account,
-    })
+    //const receipt = await sendAndConfirmTransaction({
+    //transaction,
+    //account,
+    //})
     res.status(200).json({
       url: 'https://moondao.com/projects/' + mdp,
       proposalId: mdp,
