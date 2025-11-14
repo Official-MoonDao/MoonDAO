@@ -114,10 +114,7 @@ export default function Home({
       />
       <div>
         <Hero />
-        <FeaturedMissionSection
-          missions={missions}
-          featuredMissionData={featuredMissionData}
-        />
+        <FeaturedMissionSection missions={missions} featuredMissionData={featuredMissionData} />
         <Callout1 />
         <Callout2 />
         <Feature />
@@ -127,11 +124,7 @@ export default function Home({
         <Callout3 />
         <PartnerSection />
         <PageEnder />
-        <ExpandedFooter
-          hasCallToAction={false}
-          darkBackground={true}
-          isFullwidth={true}
-        />
+        <ExpandedFooter hasCallToAction={false} darkBackground={true} isFullwidth={true} />
       </div>
     </Container>
   )
@@ -247,10 +240,7 @@ export async function getStaticProps() {
       ])
 
       const [citizens, listings, jobs] = await Promise.all([
-        queryTable(
-          chain,
-          `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 10`
-        ),
+        queryTable(chain, `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 10`),
         queryTable(
           chain,
           `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${Math.floor(
@@ -272,10 +262,7 @@ export async function getStaticProps() {
       const [teams, projects, missionRows] = await Promise.all([
         queryTable(chain, `SELECT * FROM ${teamTableName} ORDER BY id DESC`),
         queryTable(chain, `SELECT * FROM ${projectTableName} ORDER BY id DESC`),
-        queryTable(
-          chain,
-          `SELECT * FROM ${missionTableName} ORDER BY id DESC LIMIT 10`
-        ),
+        queryTable(chain, `SELECT * FROM ${missionTableName} ORDER BY id DESC LIMIT 10`),
       ])
 
       return { citizens, listings, jobs, teams, projects, missionRows }
@@ -312,19 +299,14 @@ export async function getStaticProps() {
     }
   }
 
-  const [
-    transferResult,
-    contractResult,
-    aumResult,
-    mooneyPriceResult,
-    citizensLocationResult,
-  ] = await Promise.allSettled([
-    allTransferData(),
-    contractOperations(),
-    getAUMData(),
-    getMooneyPriceData(),
-    getCitizensLocationData(),
-  ])
+  const [transferResult, contractResult, aumResult, mooneyPriceResult, citizensLocationResult] =
+    await Promise.allSettled([
+      allTransferData(),
+      contractOperations(),
+      getAUMData(),
+      getMooneyPriceData(),
+      getCitizensLocationData(),
+    ])
 
   transferData =
     transferResult.status === 'fulfilled'
@@ -353,8 +335,7 @@ export async function getStaticProps() {
   }
 
   if (contractResult.status === 'fulfilled') {
-    const { citizens, listings, jobs, teams, projects, missionRows } =
-      contractResult.value
+    const { citizens, listings, jobs, teams, projects, missionRows } = contractResult.value
     newestCitizens = citizens
     newestListings = listings
     newestJobs = jobs
@@ -401,66 +382,61 @@ export async function getStaticProps() {
       // Process missions with proper metadata fetching (limit to 3 for performance)
       try {
         const processedMissions = await Promise.all(
-          filteredMissionRows
-            .slice(0, 3)
-            .map(async (missionRow: any, index: number) => {
-              try {
-                // Add delay between requests to avoid rate limiting
-                if (index > 0) {
-                  await new Promise((resolve) => setTimeout(resolve, 100))
-                }
+          filteredMissionRows.slice(0, 3).map(async (missionRow: any, index: number) => {
+            try {
+              // Add delay between requests to avoid rate limiting
+              if (index > 0) {
+                await new Promise((resolve) => setTimeout(resolve, 100))
+              }
 
-                if (!missionRow?.projectId) {
-                  return {
-                    id: missionRow?.id || `fallback-${index}`,
-                    teamId: missionRow?.teamId || null,
-                    projectId: null,
-                    metadata: {
-                      name: 'Mission Loading...',
-                      description: 'Mission data is being loaded.',
-                      image: '/assets/placeholder-mission.png',
-                    },
-                  }
-                }
-
-                const metadataURI = await readContract({
-                  contract: jbV5ControllerContract,
-                  method: 'uriOf' as string,
-                  params: [missionRow.projectId],
-                })
-
-                const metadataRes = await fetch(getIPFSGateway(metadataURI))
-                const metadata = await metadataRes.json()
-
-                return {
-                  id: missionRow.id,
-                  teamId: missionRow.teamId,
-                  projectId: missionRow.projectId,
-                  fundingGoal: missionRow.fundingGoal || 0,
-                  deadline: missionRow.deadline || null,
-                  stage: missionRow.stage || 1,
-                  metadata: metadata,
-                }
-              } catch (error) {
-                console.warn(
-                  `Failed to fetch mission ${missionRow?.id}:`,
-                  error
-                )
+              if (!missionRow?.projectId) {
                 return {
                   id: missionRow?.id || `fallback-${index}`,
                   teamId: missionRow?.teamId || null,
-                  projectId: missionRow?.projectId || null,
-                  fundingGoal: missionRow?.fundingGoal || 0,
-                  deadline: missionRow?.deadline || null,
-                  stage: missionRow?.stage || 1,
+                  projectId: null,
                   metadata: {
-                    name: 'Mission Unavailable',
-                    description: 'This mission is temporarily unavailable.',
+                    name: 'Mission Loading...',
+                    description: 'Mission data is being loaded.',
                     image: '/assets/placeholder-mission.png',
                   },
                 }
               }
-            })
+
+              const metadataURI = await readContract({
+                contract: jbV5ControllerContract,
+                method: 'uriOf' as string,
+                params: [missionRow.projectId],
+              })
+
+              const metadataRes = await fetch(getIPFSGateway(metadataURI))
+              const metadata = await metadataRes.json()
+
+              return {
+                id: missionRow.id,
+                teamId: missionRow.teamId,
+                projectId: missionRow.projectId,
+                fundingGoal: missionRow.fundingGoal || 0,
+                deadline: missionRow.deadline || null,
+                stage: missionRow.stage || 1,
+                metadata: metadata,
+              }
+            } catch (error) {
+              console.warn(`Failed to fetch mission ${missionRow?.id}:`, error)
+              return {
+                id: missionRow?.id || `fallback-${index}`,
+                teamId: missionRow?.teamId || null,
+                projectId: missionRow?.projectId || null,
+                fundingGoal: missionRow?.fundingGoal || 0,
+                deadline: missionRow?.deadline || null,
+                stage: missionRow?.stage || 1,
+                metadata: {
+                  name: 'Mission Unavailable',
+                  description: 'This mission is temporarily unavailable.',
+                  image: '/assets/placeholder-mission.png',
+                },
+              }
+            }
+          })
         )
         missions = processedMissions.filter((mission) => mission !== null)
 
@@ -507,39 +483,34 @@ export async function getStaticProps() {
               chain: chain,
             })
 
-            const [
-              stage,
-              payHookAddress,
-              tokenAddress,
-              primaryTerminalAddress,
-              ruleset,
-            ] = await Promise.all([
-              readContract({
-                contract: missionCreatorContract,
-                method: 'stage' as string,
-                params: [featuredMission.id],
-              }).catch(() => null),
-              readContract({
-                contract: missionCreatorContract,
-                method: 'missionIdToPayHook' as string,
-                params: [featuredMission.id],
-              }).catch(() => null),
-              readContract({
-                contract: jbTokensContract,
-                method: 'tokenOf' as string,
-                params: [featuredMission.projectId],
-              }).catch(() => null),
-              readContract({
-                contract: jbDirectoryContract,
-                method: 'primaryTerminalOf' as string,
-                params: [featuredMission.projectId, JB_NATIVE_TOKEN_ADDRESS],
-              }).catch(() => ZERO_ADDRESS),
-              readContract({
-                contract: jbControllerContract,
-                method: 'currentRulesetOf' as string,
-                params: [featuredMission.projectId],
-              }).catch(() => null),
-            ])
+            const [stage, payHookAddress, tokenAddress, primaryTerminalAddress, ruleset] =
+              await Promise.all([
+                readContract({
+                  contract: missionCreatorContract,
+                  method: 'stage' as string,
+                  params: [featuredMission.id],
+                }).catch(() => null),
+                readContract({
+                  contract: missionCreatorContract,
+                  method: 'missionIdToPayHook' as string,
+                  params: [featuredMission.id],
+                }).catch(() => null),
+                readContract({
+                  contract: jbTokensContract,
+                  method: 'tokenOf' as string,
+                  params: [featuredMission.projectId],
+                }).catch(() => null),
+                readContract({
+                  contract: jbDirectoryContract,
+                  method: 'primaryTerminalOf' as string,
+                  params: [featuredMission.projectId, JB_NATIVE_TOKEN_ADDRESS],
+                }).catch(() => ZERO_ADDRESS),
+                readContract({
+                  contract: jbControllerContract,
+                  method: 'currentRulesetOf' as string,
+                  params: [featuredMission.projectId],
+                }).catch(() => null),
+              ])
 
             let deadline: number | undefined = undefined
             let refundPeriod: number | undefined = undefined
@@ -589,24 +560,23 @@ export async function getStaticProps() {
                   chain: chain,
                 })
 
-                const [nameResult, symbolResult, supplyResult] =
-                  await Promise.allSettled([
-                    readContract({
-                      contract: tokenContract,
-                      method: 'name' as string,
-                      params: [],
-                    }),
-                    readContract({
-                      contract: tokenContract,
-                      method: 'symbol' as string,
-                      params: [],
-                    }),
-                    readContract({
-                      contract: tokenContract,
-                      method: 'totalSupply' as string,
-                      params: [],
-                    }),
-                  ])
+                const [nameResult, symbolResult, supplyResult] = await Promise.allSettled([
+                  readContract({
+                    contract: tokenContract,
+                    method: 'name' as string,
+                    params: [],
+                  }),
+                  readContract({
+                    contract: tokenContract,
+                    method: 'symbol' as string,
+                    params: [],
+                  }),
+                  readContract({
+                    contract: tokenContract,
+                    method: 'totalSupply' as string,
+                    params: [],
+                  }),
+                ])
 
                 if (nameResult.status === 'fulfilled' && nameResult.value) {
                   tokenData.tokenName = nameResult.value
@@ -631,10 +601,7 @@ export async function getStaticProps() {
 
             let _backers: any[] = []
             try {
-              _backers = await getBackers(
-                featuredMission.projectId,
-                featuredMission.id
-              )
+              _backers = await getBackers(featuredMission.projectId, featuredMission.id)
             } catch (err) {
               console.warn('Failed to fetch backers:', err)
             }
@@ -642,14 +609,14 @@ export async function getStaticProps() {
             featuredMissionData = {
               mission: featuredMission,
               _stage: stage ? +stage.toString() : 1,
-              _deadline: deadline,
+              _deadline: deadline || null,
               _refundPeriod: refundPeriod,
-              _primaryTerminalAddress: primaryTerminalAddress,
-              _token: tokenData,
+              _primaryTerminalAddress: primaryTerminalAddress || null,
+              _token: tokenData || null,
               _fundingGoal: featuredMission.fundingGoal || 0,
-              _ruleset: _ruleset,
-              _backers: _backers,
-              projectMetadata: featuredMission.metadata,
+              _ruleset: _ruleset || null,
+              _backers: _backers || [],
+              projectMetadata: featuredMission.metadata || null,
             }
           } catch (error) {
             console.warn('Failed to fetch featured mission data:', error)
