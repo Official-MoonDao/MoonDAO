@@ -14,7 +14,7 @@ contract MyScript is Script {
         newSenators[1] = 0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6;
         newSenators[2] = 0x679d87D8640e66778c3419D164998E720D7495f6;
         senators.addSenators(newSenators);
-        Proposals votes = new Proposals("Proposals", address(senators), 2, 2);
+        Proposals votes = new Proposals("Proposals", address(senators), 1, 1);
         vm.stopBroadcast();
     }
 }

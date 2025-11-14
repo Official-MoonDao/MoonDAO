@@ -29,6 +29,7 @@ type ProjectCardProps = {
   isVotingPeriod?: boolean
   active?: boolean
   proposalData?: any
+  refetch?: () => void
 }
 
 const ProjectCardContent = memo(
@@ -45,6 +46,7 @@ const ProjectCardContent = memo(
     active,
     proposalData,
     proposalContract,
+    refetch,
   }: any) => {
     const account = useActiveAccount()
     const [isExpanded, setIsExpanded] = useState(false)
@@ -81,6 +83,7 @@ const ProjectCardContent = memo(
           transaction,
           account,
         })
+        refetch()
         console.log('submit', pass)
       }
     }
@@ -137,8 +140,10 @@ const ProjectCardContent = memo(
                   requiredChain={DEFAULT_CHAIN_V5}
                   className="rounded-full bg-red-500 hover:bg-red-600 mr-2"
                   label={
-                    '👍' + proposalData?.tempCheckApprovalCount?.toString() ||
-                    ''
+                    '👍' +
+                    ('tempCheckApprovalCount' in proposalData
+                      ? proposalData?.tempCheckApprovalCount?.toString()
+                      : '')
                   }
                 />
                 <PrivyWeb3Button
@@ -147,10 +152,12 @@ const ProjectCardContent = memo(
                   className="rounded-full bg-red-500 hover:bg-red-600"
                   label={
                     '👎' +
-                      (
-                        proposalData?.tempCheckVoteCount -
-                        proposalData?.tempCheckApprovalCount
-                      )?.toString() || ''
+                    ('tempCheckApprovalCount' in proposalData
+                      ? (
+                          proposalData?.tempCheckVoteCount -
+                          proposalData?.tempCheckApprovalCount
+                        )?.toString()
+                      : '')
                   }
                 />
               </div>
@@ -248,12 +255,11 @@ export default function ProjectCard({
   const account = useActiveAccount()
   const address = account?.address
 
-  const { proposalData, isLoading } = useProposalData(
+  const { proposalData, isLoading, refetch } = useProposalData(
     proposalContract,
     project.MDP
   )
-  console.log('proposalData')
-  console.log(proposalData)
+  console.log('proposalData', proposalData)
   const { adminHatId, proposalJSON } = useProjectData(
     projectContract,
     hatsContract,
@@ -311,6 +317,8 @@ export default function ProjectCard({
   }, [adminHatId, hats, wearers, distribute, address, project])
 
   if (!project) return null
+  console.log('active', active)
+  console.log('project', project)
 
   return (
     <>
@@ -342,15 +350,18 @@ export default function ProjectCard({
           />
         </Link>
       ) : (
-        <ProjectCardContent
-          project={project}
-          proposalJSON={proposalJSON}
-          userHasVotingPower={userHasVotingPower}
-          isVotingPeriod={isVotingPeriod}
-          active={active}
-          proposalData={proposalData}
-          proposalContract={proposalContract}
-        />
+        <Link href={`/proposal/${project?.MDP}`} passHref>
+          <ProjectCardContent
+            project={project}
+            proposalJSON={proposalJSON}
+            refetch={refetch}
+            userHasVotingPower={userHasVotingPower}
+            isVotingPeriod={isVotingPeriod}
+            active={active}
+            proposalData={proposalData}
+            proposalContract={proposalContract}
+          />
+        </Link>
       )}
     </>
   )

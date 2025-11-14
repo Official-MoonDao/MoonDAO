@@ -199,11 +199,16 @@ export default function ProposalEditor() {
   async function submitProposal(e) {
     let body = getMarkdown()
     e.preventDefault()
-    console.log('submit')
-    //console.log('body')
-    console.log('getValues')
-    console.log(getValues())
+    setSigningStatus('loading')
     //console.log(body)
+    if (!proposalTitle) {
+      console.error('submitProposal: No title provided')
+      toast.error('Please enter a title for the proposal.', {
+        style: toastStyle,
+      })
+      setSigningStatus('error')
+      return
+    }
     const header = `# ${proposalTitle}\n\n`
     const fileName = `${proposalTitle.replace(/\s+/g, '-')}.md`
 
@@ -225,14 +230,20 @@ export default function ProposalEditor() {
       }),
     })
     if (!res.ok) {
-      const errorText = await res.text() // Or response.json()
-      console.error(errorText)
+      const { error } = await res.json() // Or response.json()
+      toast.error(error, {
+        style: toastStyle,
+      })
+      console.error(error)
+      setSigningStatus('error')
     } else {
       const response = await res.json()
       console.log('response')
       console.log(response)
+      setSigningStatus('success')
+      setShowSubmissionCTA(true)
+      return response.url
     }
-    //return res.url
   }
 
   async function signAndSendProposal(proposal: Proposal) {
@@ -555,13 +566,13 @@ export default function ProposalEditor() {
                   disabled={buttonsDisabled}
                   data-tip={
                     signingStatus === 'loading'
-                      ? 'Signing...'
+                      ? 'Submitting...'
                       : isUploadingImage
                       ? 'Uploading image...'
                       : 'You need to connect wallet first.'
                   }
                 >
-                  {signingStatus === 'loading' ? 'Signing...' : 'Save Draft'}
+                  {signingStatus === 'loading' ? 'Submitting...' : 'Save Draft'}
                 </button>
                 {/* SUBMIT */}
                 <button
@@ -587,13 +598,13 @@ export default function ProposalEditor() {
                   disabled={buttonsDisabled}
                   data-tip={
                     signingStatus === 'loading'
-                      ? 'Signing...'
+                      ? 'Submitting...'
                       : isUploadingImage
                       ? 'Uploading image...'
                       : 'You need to connect wallet first.'
                   }
                 >
-                  {signingStatus === 'loading' ? 'Signing...' : 'Submit'}
+                  {signingStatus === 'loading' ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
             </div>

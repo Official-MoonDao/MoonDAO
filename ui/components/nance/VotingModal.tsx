@@ -65,6 +65,7 @@ export default function VotingModal({
     abi: ProposalsABI.abi as any,
   })
   const [edit, setEdit] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const votes = votesOfProposal.votes
   useEffect(() => {
     if (votes && userAddress) {
@@ -91,7 +92,7 @@ export default function VotingModal({
     address,
     lockedMooneyBreakdown
   )
-  const vp = totalVMOONEY || 0
+  const vp = Math.sqrt(totalVMOONEY) || 0
 
   const { trigger } = useVote(
     spaceId,
@@ -114,6 +115,7 @@ export default function VotingModal({
     }
     try {
       if (!account) throw new Error('No account found')
+      setSubmitting(true)
       let receipt
       if (edit) {
         const transaction = prepareContractCall({
@@ -136,6 +138,7 @@ export default function VotingModal({
           account,
         })
       }
+      setSubmitting(false)
     } catch (error) {
       console.error('Error submitting distribution:', error)
       toast.error('Error submitting distribution. Please try again.', {
@@ -165,8 +168,12 @@ export default function VotingModal({
     } else if (choice === undefined) {
       label = 'You need to select a choice'
     } else if (vp > 0) {
-      label = 'Submit vote'
-      canVote = true
+      if (submitting) {
+        label = 'Submitting...'
+      } else {
+        label = 'Submit vote'
+        canVote = true
+      }
     } else {
       label = 'Close'
     }
@@ -469,19 +476,13 @@ function WeightedChoiceSelector({
               placeholder="0"
               min={0}
               step={1}
-              defaultValue={value[index + 1]}
+              defaultValue={value ? value[index + 1] : 0}
               {...register((index + 1).toString(), {
                 shouldUnregister: true,
                 valueAsNumber: true,
               })}
             />
-            <span className="w-16 text-right text-gray-300 text-sm">
-              {isNaN(getValues((index + 1).toString())) || totalUnits == 0
-                ? '0%'
-                : `${Math.round(
-                    (getValues((index + 1).toString()) / totalUnits) * 100
-                  )}%`}
-            </span>
+            <span className="w-16 text-right text-gray-300 text-sm">%</span>
           </div>
         </div>
       ))}

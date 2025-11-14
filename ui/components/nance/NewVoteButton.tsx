@@ -1,8 +1,7 @@
 import { usePrivy } from '@privy-io/react-auth'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Project } from '@/lib/project/useProjectData'
 import useAccountAddress from '../../lib/nance/useAccountAddress'
-import { SnapshotGraphqlProposalVotingInfo } from '@/lib/snapshot'
 import { classNames } from '../../lib/utils/tailwind'
 import VotingModal from './VotingModal'
 
@@ -14,7 +13,7 @@ export default function NewVoteButton({
   refetch,
   isSmall = false,
 }: {
-  snapshotProposal: SnapshotGraphqlProposalVotingInfo | undefined
+  snapshotProposal: any
   votesOfProposal: any
   snapshotSpace: string
   project: Project
@@ -25,19 +24,35 @@ export default function NewVoteButton({
   const [modalIsOpen, setModalIsOpen] = useState(false)
   // external hook
   const { address, isConnected } = useAccountAddress()
-  console.log('isConnected', isConnected)
-  console.log('address', address)
   const { connectWallet: openConnectModal } = usePrivy()
+  const [edit, setEdit] = useState(false)
+
+  const votes = votesOfProposal.votes
+  useEffect(() => {
+    if (votes && address) {
+      for (const v of votes) {
+        if (v.address.toLowerCase() === address.toLowerCase()) {
+          setEdit(true)
+          break
+        }
+      }
+    }
+  }, [address, votes])
 
   let buttonLabel = 'Vote'
   if (snapshotProposal === undefined) {
     buttonLabel = 'Loading'
   }
-  console.log('snapshotProposal', snapshotProposal)
-  if (snapshotProposal?.state !== 'active') {
+  if (snapshotProposal?.state == 'temp-check') {
+    buttonLabel = 'Temp Check'
+  } else if (snapshotProposal?.state !== 'temp-check-passed') {
     buttonLabel = 'Voting Closed'
   } else if (address) {
-    buttonLabel = 'Vote'
+    if (edit) {
+      buttonLabel = 'Edit Vote'
+    } else {
+      buttonLabel = 'Vote'
+    }
   } else {
     buttonLabel = 'Connect Wallet'
   }
@@ -58,7 +73,7 @@ export default function NewVoteButton({
             openConnectModal?.()
           }
         }}
-        disabled={snapshotProposal?.state !== 'active'}
+        disabled={snapshotProposal?.state !== 'temp-check-passed'}
       >
         <span>{buttonLabel}</span>
       </button>

@@ -38,6 +38,7 @@ const getColorOfChoice = (choice: string | undefined) => {
 
 export default function ProposalVotes({
   votesOfProposal,
+  state,
   project,
   refetch,
   threshold = 0,
@@ -48,6 +49,7 @@ export default function ProposalVotes({
   containerClassName,
 }: {
   votesOfProposal: VotesOfProposal
+  state: ProposalState
   project: Project
   refetch: () => void
   threshold?: number
@@ -57,8 +59,6 @@ export default function ProposalVotes({
   onTitleClick?: () => void
   containerClassName?: string
 }) {
-  console.log('proposal votes')
-  console.log(votesOfProposal)
   const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
 
   const [query, setQuery] = useQueryParams({
@@ -80,7 +80,6 @@ export default function ProposalVotes({
   const { data: votingCitizens = [] } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
   })
-  console.log('votingCitizens', votingCitizens)
 
   const proposalInfo = votesOfProposal.proposal
   const proposalType = proposalInfo?.type ?? ''
@@ -302,11 +301,12 @@ export default function ProposalVotes({
       </VoteItem>
     )) || []
 
+  console.log('statele', state)
   // Footer section
   const footerSection = (
     <NewVoteButton
       snapshotSpace={SNAPSHOT_SPACE_NAME}
-      snapshotProposal={{ state: 'active', type: 'quadratic' }}
+      snapshotProposal={{ state: state, type: 'quadratic' }}
       votesOfProposal={votesOfProposal}
       project={project}
       refetch={refetch}

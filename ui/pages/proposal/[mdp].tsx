@@ -1,4 +1,5 @@
 import { NanceProvider } from '@nance/nance-hooks'
+import { runQuadraticVoting } from '@/lib/utils/rewards'
 import { useTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import {
   ProposalPacket,
@@ -6,8 +7,10 @@ import {
   getProposal,
 } from '@nance/nance-sdk'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
+import ProposalsABI from 'const/abis/Proposals.json'
 import {
   PROJECT_TABLE_ADDRESSES,
+  PROPOSALS_ADDRESSES,
   DEFAULT_CHAIN_V5,
   PROPOSALS_TABLE_NAMES,
 } from 'const/config'
@@ -31,17 +34,20 @@ import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 import ProposalInfo from '@/components/nance/ProposalInfo'
 import ProposalVotes from '@/components/nance/ProposalVotes'
 import VotingResults from '@/components/nance/VotingResults'
+import ProposalState from '@/lib/nance/types'
 
 function Proposal({
   proposalPacket,
   project,
   proposal,
-  proposalVotes,
+  votes,
+  state,
 }: {
   proposalPacket: ProposalPacket
   project: Project
   proposal: string
-  proposalVotes: any[]
+  votes: any[]
+  state: ProposalState
 }) {
   const [query, setQuery] = useQueryParams({
     sortBy: withDefault(createEnumParam(['time', 'vp']), 'time'),
@@ -57,10 +63,34 @@ function Proposal({
     }
   }
 
-  const votes = proposalVotes
-  const vMOONEYs = useTotalVMOONEYs(proposalVotes.map((pv) => pv.address))
-  console.log(proposalVotes.map((pv) => pv.address))
+  const voteAddresses = votes.map((pv) => pv.address)
+  console.log('votes', votes)
+  //.concat(['0x679d87D8640e66778c3419D164998E720D7495f6'])
+  const { totalVMOONEYs: vMOONEYs } = useTotalVMOONEYs(voteAddresses)
   console.log('vMOONEYs', vMOONEYs)
+  const addressToQuadraticVotingPower = Object.fromEntries(
+    voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
+  )
+  const SUM_TO_ONE_HUNDRED = 100
+  const outcome = runQuadraticVoting(
+    votes,
+    addressToQuadraticVotingPower,
+    SUM_TO_ONE_HUNDRED
+  )
+  const tallyVotes = async () => {
+    const res = await fetch(`/api/proposals/vote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', // Important: Specify the content type
+      },
+      body: JSON.stringify({
+        mdp: project?.MDP,
+      }),
+    })
+    const resJson = await res.json()
+    console.log('resJson', resJson)
+  }
+  console.log('outcome', outcome)
 
   // Determine the number of grid columns based on the presence of votes
   const gridCols = votes
@@ -118,11 +148,13 @@ function Proposal({
                     </button>
                     <div className="pb-5">
                       <ProposalVotes
+                        state={state}
                         project={project}
                         votesOfProposal={{ votes: votes }}
                         refetch={() => mutate()}
                       />
                     </div>
+                    <button onClick={tallyVotes}>Tally votes</button>
                   </div>
                 )}
               </div>
@@ -138,12 +170,14 @@ export default function ProposalPage({
   proposalPacket,
   project,
   proposal,
-  proposalVotes,
+  votes,
+  state,
 }: {
   proposalPacket: ProposalPacket
   project: Project
   proposal: string
-  proposalVotes: any
+  votes: any
+  state: ProposalState
 }) {
   return (
     <>
@@ -153,7 +187,8 @@ export default function ProposalPage({
           proposalPacket={proposalPacket}
           project={project}
           proposal={proposal}
-          proposalVotes={proposalVotes}
+          votes={votes}
+          state={state}
         />
       </NanceProvider>
     </>
@@ -168,17 +203,33 @@ export const getServerSideProps: GetServerSideProps<{
     const mdp = params?.mdp as string
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
-    //if (!uuid) throw new Error('Proposal not found')
-    //const proposalPacket = await getProposal(
-    //{ space: NANCE_SPACE_NAME, uuid },
-    //NANCE_API_URL
-    //)
     const projectTableContract = getContract({
       client: serverClient,
       address: PROJECT_TABLE_ADDRESSES[chainSlug],
       abi: ProjectTableABI as any,
       chain: chain,
     })
+    const proposalContract = getContract({
+      client: serverClient,
+      address: PROPOSALS_ADDRESSES[chainSlug],
+      abi: ProposalsABI.abi as any,
+      chain: chain,
+    })
+    const tempCheckApproved = await readContract({
+      contract: proposalContract,
+      method: 'tempCheckApproved' as string,
+      params: [mdp],
+    })
+    const tempCheckFailed = await readContract({
+      contract: proposalContract,
+      method: 'tempCheckFailed' as string,
+      params: [mdp],
+    })
+    const state = tempCheckApproved
+      ? 'temp-check-passed'
+      : tempCheckFailed
+      ? 'temp-check-failed'
+      : 'temp-check'
 
     const projectTableName = await readContract({
       contract: projectTableContract,
@@ -196,10 +247,7 @@ export const getServerSideProps: GetServerSideProps<{
       }
     }
     const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
-    const proposalVotes = (await queryTable(
-      chain,
-      voteStatement
-    )) as DistributionVote[]
+    const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
 
     const proposalJson = await fetch(project.proposalIPFS)
     const proposal = await proposalJson.text()
@@ -207,7 +255,8 @@ export const getServerSideProps: GetServerSideProps<{
       props: {
         proposal,
         project,
-        proposalVotes,
+        votes,
+        state,
       },
     }
   } catch (error) {

@@ -26,6 +26,7 @@ contract Proposals is ERC721Holder, Ownable {
     mapping(uint256 => uint256) public tempCheckApprovalCount;
     mapping(uint256 => uint256) public tempCheckVoteCount;
     mapping(uint256 => bool) public tempCheckApproved;
+    mapping(uint256 => uint256) public tempCheckApprovedTimestamp;
     mapping(uint256 => bool) public tempCheckFailed;
     uint256 public quorum;
     uint256 public threshold;
@@ -79,9 +80,21 @@ contract Proposals is ERC721Holder, Ownable {
                 tempCheckApprovalCount[mdp]--;
             }
         }
-        if (tempCheckVoteCount[mdp] > quorum){
-            if (tempCheckApprovalCount[mdp] > threshold){
+        if (tempCheckVoteCount[mdp] >= quorum){
+            if (tempCheckApprovalCount[mdp] >= threshold){
                 tempCheckApproved[mdp] = true;
+                tempCheckApprovedTimestamp[mdp] = block.timestamp;
+            } else {
+                tempCheckFailed[mdp] = true;
+            }
+        }
+    }
+
+    function tallyVotes(uint256 mdp) external {
+        if (tempCheckVoteCount[mdp] >= quorum){
+            if (tempCheckApprovalCount[mdp] >= threshold){
+                tempCheckApproved[mdp] = true;
+                tempCheckApprovedTimestamp[mdp] = block.timestamp;
             } else {
                 tempCheckFailed[mdp] = true;
             }

@@ -1,6 +1,10 @@
-import ProjectTableABI from 'const/abis/ProjectTable.json'
 import ProjectTeamCreatorABI from 'const/abis/ProjectTeamCreator.json'
-import { DEFAULT_CHAIN_V5, PROJECT_CREATOR_ADDRESSES } from 'const/config'
+import queryTable from '@/lib/tableland/queryTable'
+import {
+  PROJECT_TABLE_NAMES,
+  DEFAULT_CHAIN_V5,
+  PROJECT_CREATOR_ADDRESSES,
+} from 'const/config'
 import { ethers } from 'ethers'
 import { getRelativeQuarter } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
@@ -21,7 +25,6 @@ import { serverClient } from '@/lib/thirdweb/client'
 // Configuration constants
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
-const proposalId = 201
 
 async function getAbstract(proposalBody: string): Promise<string | null> {
   const thePrompt =
@@ -136,6 +139,9 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     abi: ProjectTeamCreatorABI as any,
     chain: chain,
   })
+  const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} ORDER BY MDP DESC`
+  const projects = await queryTable(chain, projectStatement)
+  const proposalId = projects[0].MDP + 1
   var members = []
   var membersUsernames = []
   const [leads, leadsUsernames] = await getAddresses(body, [
@@ -144,6 +150,8 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   ])
   ;[members, membersUsernames] = await getAddresses(body, ['Initial Team'])
   // Only allow the first lead to be the lead for smart contract purposes
+  console.log()
+  console.log()
   if (leads.length > 1) {
     members = [...leads.slice(1), ...members]
     membersUsernames = [...leadsUsernames.slice(1), ...membersUsernames]
@@ -152,6 +160,29 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     'Multi-sig signers',
   ])
   const abstractText = (await getAbstract(body)).slice(0, 1000)
+
+  const membersValid = members
+    .map((address) => ethers.utils.isAddress(address))
+    .every(Boolean)
+  if (!membersValid) {
+    return res.status(400).json({
+      error: `Could not parse team members. Found: ${members}`,
+    })
+  }
+  const signersValid = signers
+    .map((address) => ethers.utils.isAddress(address))
+    .every(Boolean)
+  if (!signersValid) {
+    return res.status(400).json({
+      error: `Could not parse multi-sig signers. Found: ${signers}`,
+    })
+  }
+  const abstractValid = abstractText !== null && abstractText !== 'null'
+  if (!abstractValid) {
+    return res.status(400).json({
+      error: `Could not parse abstract. Found: ${abstractText}`,
+    })
+  }
 
   // parse out tables from proposal body which is in markdown format
   const getHatMetadataIPFS = async function (hatType: string) {
@@ -235,23 +266,8 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     account,
   })
   res.status(200).json({
-    params: [
-      'ipfs://QmUMm4rHbbkcfBCszfFHmBNvHSyPGNVXJZHpcCG4BMEaNY',
-      'ipfs://QmT7LKxDAzaJsBafMbe2B1thaoqkvKgj7Y72QQiuQusnzE',
-      'ipfs://QmVjgE2pPQjueixuUcpo6h3z4NBMB5S6BeH617vHSwW74m',
-      proposalTitle,
-      abstractText, // description
-      '', // image
-      quarter,
-      year,
-      proposalId,
-      proposalIPFS, // proposal ipfs
-      'https://moondao.com/proposal/' + proposalId,
-      upfrontPayment,
-      leads[0] || '', // leadAddress,
-      members.length > 0 ? members : [address], // members
-      signers.length > 0 ? signers : [address], // signers,
-    ],
+    url: 'https://moondao.com/proposal/' + proposalId,
+    proposalId: proposalId,
   })
 }
 export default withMiddleware(POST, rateLimit)

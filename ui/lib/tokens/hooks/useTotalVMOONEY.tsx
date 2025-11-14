@@ -20,7 +20,7 @@ export function useTotalVMOONEY(
   useEffect(() => {
     let cancelled = false
 
-    if (!addresses || !breakdown || breakdown.length === 0) {
+    if (!address || !breakdown || breakdown.length === 0) {
       setTotalVMOONEY(0)
       setIsLoading(false)
       return
@@ -110,86 +110,13 @@ export function useTotalVMOONEYs(addresses: string[] | undefined): {
       return
     }
 
-    async function fetchTotalVMOONEYs() {
+    async function fetchVMOONEYs() {
       setIsLoading(true)
-
-      try {
-        const chains = [arbitrum, ethereum, base, polygon]
-        const results = await Promise.allSettled(
-          chains.map(async (chain) => {
-            const chainSlug = getChainSlug(chain)
-            const chainId = chain.id
-            const tokenAddress = VMOONEY_ADDRESSES[chainSlug]
-            const url = 'https://engine.thirdweb.com/v1/read/contract'
-            const response = await fetch(url, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-secret-key': process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET,
-              },
-              body: JSON.stringify({
-                readOptions: {
-                  chainId: chainId,
-                  multicall: true,
-                  from: ZERO_ADDRESS,
-                },
-                params: addresses.map((address) => {
-                  return {
-                    contractAddress: tokenAddress,
-                    method: 'balanceOf',
-                    params: [address],
-                    abi: VMOONEY_ABI,
-                  }
-                }),
-              }),
-            })
-            console.log({
-              readOptions: {
-                chainId: chainId,
-                multicall: true,
-                from: '',
-              },
-              params: [
-                {
-                  contractAddress: tokenAddress,
-                  method: 'balanceOf',
-                  params: ['0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'],
-                  abi: VMOONEY_ABI,
-                },
-              ],
-            })
-            const jsonResponse = await response.json()
-            console.log('jsonResponse', jsonResponse)
-            return jsonResponse.result
-          })
-        )
-        console.log('results', results)
-        const values = results.map((r) => r.value)
-        console.log('values', values)
-
-        const total = results.reduce((sum, result) => {
-          if (result.status === 'fulfilled') {
-            return sum + result.value
-          }
-          return sum
-        }, 0)
-
-        if (!cancelled) {
-          setTotalVMOONEYs(total)
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.error('Failed to fetch vMOONEY balances:', error)
-          setTotalVMOONEYs([])
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false)
-        }
-      }
+      const totals = await fetchTotalVMOONEYs(addresses)
+      setTotalVMOONEYs(totals)
+      setIsLoading(false)
     }
-
-    fetchTotalVMOONEYs()
+    fetchVMOONEYs()
 
     return () => {
       cancelled = true
@@ -199,5 +126,55 @@ export function useTotalVMOONEYs(addresses: string[] | undefined): {
   return {
     totalVMOONEYs,
     isLoading,
+  }
+}
+
+export async function fetchTotalVMOONEYs(addresses: string[]) {
+  try {
+    const chains = [arbitrum, ethereum, base, polygon]
+    const results = await Promise.allSettled(
+      chains.map(async (chain) => {
+        const chainSlug = getChainSlug(chain)
+        const chainId = chain.id
+        const tokenAddress = VMOONEY_ADDRESSES[chainSlug]
+        const url = 'https://engine.thirdweb.com/v1/read/contract'
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-secret-key': process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET,
+          },
+          body: JSON.stringify({
+            readOptions: {
+              chainId: chainId,
+              multicall: true,
+              from: ZERO_ADDRESS,
+            },
+            params: addresses.map((address) => {
+              return {
+                contractAddress: tokenAddress,
+                method: 'balanceOf',
+                params: [address],
+                abi: VMOONEY_ABI,
+              }
+            }),
+          }),
+        })
+        const jsonResponse = await response.json()
+        return jsonResponse.result
+      })
+    )
+    const values = results.map((r) => r.value.map((v) => parseInt(v.result)))
+
+    const totals = values.reduce((accumulator, value) => {
+      value.forEach((v, i) => {
+        accumulator[i] = (accumulator[i] || 0) + value[i]
+      })
+      return accumulator
+    })
+    return totals
+  } catch (error) {
+    console.error('Failed to fetch vMOONEY balances:', error)
+    return []
   }
 }
