@@ -25,6 +25,7 @@ import MobileMenuTop from './Sidebar/MobileMenuTop'
 import MobileSidebar from './Sidebar/MobileSidebar'
 import NavigationLink from './Sidebar/NavigationLink'
 import TopNavBar from './TopNavBar'
+import InstallPrompt from '../pwa/InstallPrompt'
 
 interface Layout {
   children: JSX.Element
@@ -143,6 +144,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       <CookieBanner />
       <Toaster />
       <Analytics />
+      <InstallPrompt />
     </div>
   )
 
