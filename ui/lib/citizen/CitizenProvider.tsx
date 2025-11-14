@@ -150,11 +150,27 @@ const clearExpiredCache = () => {
   }
 }
 
-export default function CitizenProvider({
-  selectedChain,
-  children,
-  mock = false,
-}: any) {
+// Clear all citizen cache entries (used on logout)
+export const clearAllCitizenCache = () => {
+  if (typeof window === 'undefined') return
+
+  try {
+    const keysToRemove: string[] = []
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key?.startsWith(CACHE_PREFIX)) {
+        keysToRemove.push(key)
+      }
+    }
+
+    keysToRemove.forEach((key) => localStorage.removeItem(key))
+  } catch (error) {
+    console.warn('Failed to clear all citizen cache:', error)
+  }
+}
+
+export default function CitizenProvider({ selectedChain, children, mock = false }: any) {
   const [citizen, setCitizen] = useState<any>()
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const account = useActiveAccount()
@@ -204,16 +220,11 @@ export default function CitizenProvider({
   const statement =
     mock || !authenticated || !user || !address || !chainId || !isDefaultChain
       ? null
-      : `SELECT * FROM ${
-          CITIZEN_TABLE_NAMES[chainSlug]
-        } WHERE owner = '${address?.toLowerCase()}'`
+      : `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]} WHERE owner = '${address?.toLowerCase()}'`
 
-  const { data: citizenData, isLoading: isLoadingQuery } = useTablelandQuery(
-    statement,
-    {
-      revalidateOnFocus: false,
-    }
-  )
+  const { data: citizenData, isLoading: isLoadingQuery } = useTablelandQuery(statement, {
+    revalidateOnFocus: false,
+  })
 
   // Update citizen state when data changes
   useEffect(() => {

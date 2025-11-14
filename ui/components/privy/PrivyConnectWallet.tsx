@@ -26,6 +26,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
+import { clearAllCitizenCache } from '../../lib/citizen/CitizenProvider'
 import {
   ethereum,
   arbitrum,
@@ -1352,6 +1353,7 @@ export function PrivyConnectWallet({
                     className="w-full mt-4 bg-gradient-to-r from-red-500/80 to-pink-500/80 hover:from-red-500 hover:to-pink-500 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg"
                     onClick={async () => {
                       wallets.forEach((wallet) => wallet.disconnect())
+                      clearAllCitizenCache()
                       logout()
                     }}
                   >
