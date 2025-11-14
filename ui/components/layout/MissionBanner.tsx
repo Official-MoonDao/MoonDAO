@@ -10,16 +10,12 @@ export default function MissionBanner() {
   // Hide banner if user is on any mission page
   const isOnMissionPage = router.pathname === '/mission/[tokenId]'
 
-  if (
-    !isVisible ||
-    isOnMissionPage ||
-    process.env.NEXT_PUBLIC_HIDE_BANNER === 'true'
-  ) {
+  if (!isVisible || isOnMissionPage || process.env.NEXT_PUBLIC_HIDE_BANNER === 'true') {
     return null
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-2xl border-t border-slate-700/50 backdrop-blur-sm">
+    <div className="fixed bottom-16 left-0 right-0 z-40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-2xl border-t border-slate-700/50 backdrop-blur-sm">
       <div className="relative overflow-hidden h-16 flex items-center w-full px-4">
         {/* Close button */}
         <button
@@ -55,9 +51,7 @@ export default function MissionBanner() {
                 <span className="text-xs sm:text-sm font-medium text-slate-300">
                   Featured Mission:
                 </span>
-                <span className="text-sm sm:text-base font-semibold">
-                  {FEATURED_MISSION.name}
-                </span>
+                <span className="text-sm sm:text-base font-semibold">{FEATURED_MISSION.name}</span>
                 <span className="mx-1 sm:mx-2">•</span>
                 <span className="text-xs sm:text-sm text-slate-400">
                   {FEATURED_MISSION.description}
@@ -68,9 +62,7 @@ export default function MissionBanner() {
                 <span className="text-xs sm:text-sm font-medium text-slate-300">
                   Featured Mission:
                 </span>
-                <span className="text-sm sm:text-base font-semibold">
-                  {FEATURED_MISSION.name}
-                </span>
+                <span className="text-sm sm:text-base font-semibold">{FEATURED_MISSION.name}</span>
                 <span className="mx-1 sm:mx-2">•</span>
                 <span className="text-xs sm:text-sm text-slate-400">
                   {FEATURED_MISSION.description}

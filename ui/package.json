@@ -119,6 +119,7 @@
     "wagmi": "^2.14.13"
   },
   "devDependencies": {
+    "@babel/plugin-bugfix-firefox-class-in-computed-class-key": "^7.28.5",
     "@bygdle/javascript-lp-solver": "^0.4.26",
     "@cypress/webpack-preprocessor": "^6.0.2",
     "@tailwindcss/typography": "^0.5.16",

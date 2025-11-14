@@ -14,6 +14,7 @@ import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import GTag from '../components/layout/GTag'
 import Layout from '../components/layout/Layout'
+import BottomNavBar from '../components/pwa/BottomNavBar'
 import LoadingAnimation from '../components/pwa/LoadingAnimation'
 import '../styles/globals.css'
 
@@ -34,35 +35,62 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
 
   // Only show loading for PWA
   const [isAppLoading, setIsAppLoading] = useState(isPWA)
-  const [isAppMounted, setIsAppMounted] = useState(false)
 
   useEffect(() => {
     setLightMode(false)
 
-    // Mark app as mounted after first render
-    setIsAppMounted(true)
+    // Only run loading logic for PWA
+    if (isPWA) {
+      let hasHidden = false
+      const timeouts: NodeJS.Timeout[] = []
 
-    if (!isAppMounted) {
+      const hideLoading = () => {
+        if (!hasHidden) {
+          hasHidden = true
+          console.log('[PWA] Hiding loading screen')
+          setIsAppLoading(false)
+        }
+      }
+
+      // Failsafe: Force hide after 3 seconds maximum
+      const maxTimeout = setTimeout(() => {
+        console.log('[PWA] Max timeout reached, forcing loading screen to hide')
+        hideLoading()
+      }, 3000)
+      timeouts.push(maxTimeout)
+
+      const startTime = Date.now()
+
+      // Check if app is ready
       const checkReady = () => {
         const isRouterReady = router.isReady
         const isDocumentReady = document.readyState === 'complete'
 
+        console.log('[PWA] Checking ready state:', { isRouterReady, isDocumentReady })
+
         if (isRouterReady && isDocumentReady) {
-          setTimeout(() => {
-            setIsAppLoading(false)
-          }, 300)
-        } else {
-          setTimeout(checkReady, 100)
+          // Wait minimum 1s for smooth transition, then hide
+          const elapsed = Date.now() - startTime
+          const remainingTime = Math.max(0, 1000 - elapsed)
+
+          const hideTimeout = setTimeout(() => {
+            hideLoading()
+          }, remainingTime)
+          timeouts.push(hideTimeout)
+        } else if (!hasHidden) {
+          const checkTimeout = setTimeout(checkReady, 100)
+          timeouts.push(checkTimeout)
         }
       }
 
-      const minDisplayTimer = setTimeout(() => {
-        checkReady()
-      }, 1000)
+      checkReady()
 
-      return () => clearTimeout(minDisplayTimer)
+      return () => {
+        // Clear all timeouts on cleanup
+        timeouts.forEach(clearTimeout)
+      }
     }
-  }, [isPWA, router.isReady, isAppMounted, setLightMode])
+  }, [isPWA, router.isReady, setLightMode])
 
   return (
     <>
@@ -97,11 +125,14 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
                 <PrivyThirdwebV5Provider selectedChain={selectedChainV5}>
                   <CitizenProvider selectedChain={selectedChainV5}>
                     <NextQueryParamProvider>
-                      <Layout lightMode={lightMode} setLightMode={setLightMode}>
-                        <FlagProvider>
-                          <Component {...pageProps} />
-                        </FlagProvider>
-                      </Layout>
+                      <div className={isPWA ? 'pb-20' : ''}>
+                        <Layout lightMode={lightMode} setLightMode={setLightMode}>
+                          <FlagProvider>
+                            <Component {...pageProps} />
+                          </FlagProvider>
+                        </Layout>
+                      </div>
+                      {isPWA && <BottomNavBar />}
                     </NextQueryParamProvider>
                   </CitizenProvider>
                 </PrivyThirdwebV5Provider>
