@@ -107,7 +107,6 @@ export function ExpandedFooter({
   const tokenLinks = [
     { text: 'Buy', href: '/mooney' },
     { text: 'Lock', href: '/lock' },
-    { text: 'Bridge', href: '/bridge' },
   ]
 
   const projectLinks = [
@@ -119,7 +118,6 @@ export function ExpandedFooter({
   const learnLinks = [
     { text: 'News', href: '/news' },
     { text: 'About', href: '/about' },
-    { text: 'Events', href: '/events' },
     { text: 'Analytics', href: '/analytics' },
     { text: 'Resources', href: '/resources' },
     { text: 'FAQ', href: '/faq' },

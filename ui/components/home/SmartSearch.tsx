@@ -42,13 +42,6 @@ const searchMappings = [
     link: '/lock',
     category: 'Token'
   },
-  {
-    keywords: ['bridge', 'transfer', 'cross-chain', 'arbitrum', 'ethereum', 'polygon'],
-    title: 'Bridge Tokens',
-    description: 'Bridge MOONEY tokens between blockchains',
-    link: '/bridge',
-    category: 'Token'
-  },
 
   // Network & Community
   {
@@ -140,29 +133,6 @@ const searchMappings = [
     description: 'Shop for MoonDAO merchandise and products',
     link: '/marketplace',
     category: 'Shop'
-  },
-
-  // Space Projects
-  {
-    keywords: ['lifeship', 'backup', 'humanity', 'preservation', 'ark'],
-    title: 'Lifeship Project',
-    description: 'Help preserve humanity with the Lifeship project',
-    link: '/lifeship',
-    category: 'Projects'
-  },
-  {
-    keywords: ['zero gravity', 'zerog', 'microgravity', 'space flight', 'astronaut'],
-    title: 'Zero Gravity',
-    description: 'Experience zero gravity with MoonDAO',
-    link: '/zero-gravity',
-    category: 'Projects'
-  },
-  {
-    keywords: ['sweepstakes', 'contest', 'win', 'prize', 'giveaway', 'lottery'],
-    title: 'Sweepstakes',
-    description: 'Enter MoonDAO sweepstakes and contests',
-    link: '/sweepstakes',
-    category: 'Projects'
   }
 ]
 

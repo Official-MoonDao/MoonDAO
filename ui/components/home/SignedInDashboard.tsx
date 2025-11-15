@@ -9,7 +9,6 @@ import {
   PencilIcon,
   BriefcaseIcon,
   TrophyIcon,
-  CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
@@ -627,7 +626,7 @@ export default function SingedInDashboard({
                         {/* Time */}
                         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
                           <div className="flex items-center gap-2 mb-2">
-                            <CalendarDaysIcon className="w-4 h-4 text-blue-400" />
+                            <TrophyIcon className="w-4 h-4 text-blue-400" />
                             <span className="text-blue-200 text-xs font-medium">
                               Time
                             </span>
@@ -1388,12 +1387,6 @@ export default function SingedInDashboard({
                   Join the community events and discussions
                 </p>
               </div>
-              <StandardButton
-                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
-                link="/events"
-              >
-                View All Events
-              </StandardButton>
             </div>
 
             <div className="relative">
