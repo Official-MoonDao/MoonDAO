@@ -1,11 +1,21 @@
 import { FEATURED_MISSION } from 'const/config'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function MissionBanner() {
   const router = useRouter()
   const [isVisible, setIsVisible] = useState(true)
+  const [isPWA, setIsPWA] = useState(false)
+
+  // Detect PWA mode on client side
+  useEffect(() => {
+    const isPWAMode =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true
+
+    setIsPWA(isPWAMode)
+  }, [])
 
   // Hide banner if user is on any mission page
   const isOnMissionPage = router.pathname === '/mission/[tokenId]'
@@ -15,7 +25,11 @@ export default function MissionBanner() {
   }
 
   return (
-    <div className="fixed bottom-16 left-0 right-0 z-40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-2xl border-t border-slate-700/50 backdrop-blur-sm">
+    <div
+      className={`fixed left-0 right-0 z-40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-2xl border-t border-slate-700/50 backdrop-blur-sm ${
+        isPWA ? 'bottom-16' : 'bottom-0'
+      }`}
+    >
       <div className="relative overflow-hidden h-16 flex items-center w-full px-4">
         {/* Close button */}
         <button

@@ -25,16 +25,83 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
 
   const [lightMode, setLightMode] = useLightMode()
 
-  const [isPWA] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return (
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true
-    )
-  })
+  const [isPWA, setIsPWA] = useState(false)
+  const [isAppLoading, setIsAppLoading] = useState(false)
 
-  // Only show loading for PWA
-  const [isAppLoading, setIsAppLoading] = useState(isPWA)
+  // Detect PWA mode on client side
+  useEffect(() => {
+    const checkPWAMode = () => {
+      const standaloneMedia = window.matchMedia('(display-mode: standalone)').matches
+      const minimalUIMedia = window.matchMedia('(display-mode: minimal-ui)').matches
+      const fullscreenMedia = window.matchMedia('(display-mode: fullscreen)').matches
+      const windowControlsMedia = window.matchMedia('(display-mode: window-controls-overlay)').matches
+      const standaloneNavigator = (window.navigator as any).standalone === true
+      const hasSourcePWA = window.location.search.includes('source=pwa')
+
+      // If launched with ?source=pwa, mark it in localStorage for future navigation
+      if (hasSourcePWA) {
+        localStorage.setItem('isPWA', 'true')
+      }
+      
+      // Check localStorage for persistent PWA state
+      const isPWAStored = localStorage.getItem('isPWA') === 'true'
+
+      // Primary detection: check for source=pwa query param or media queries
+      const isRunningStandalone =
+        hasSourcePWA ||
+        isPWAStored ||
+        standaloneMedia ||
+        minimalUIMedia ||
+        fullscreenMedia ||
+        windowControlsMedia ||
+        standaloneNavigator
+
+      console.log('[PWA] Detection results:', {
+        standaloneMedia,
+        minimalUIMedia,
+        fullscreenMedia,
+        windowControlsMedia,
+        standaloneNavigator,
+        hasSourcePWA,
+        isPWAStored,
+        searchParams: window.location.search,
+        href: window.location.href,
+        isPWAMode: isRunningStandalone,
+        userAgent: navigator.userAgent,
+      })
+
+      // Store in localStorage if detected as PWA for future sessions
+      if (isRunningStandalone) {
+        localStorage.setItem('isPWA', 'true')
+      }
+
+      setIsPWA(isRunningStandalone)
+      setIsAppLoading(isRunningStandalone)
+    }
+
+    // Initial check
+    checkPWAMode()
+
+    // Listen for display mode changes (fixes first-launch detection issue)
+    const standaloneMediaQuery = window.matchMedia('(display-mode: standalone)')
+    const handleDisplayModeChange = () => {
+      console.log('[PWA] Display mode changed, rechecking...')
+      checkPWAMode()
+    }
+
+    standaloneMediaQuery.addEventListener('change', handleDisplayModeChange)
+
+    // Also recheck after a short delay to catch late-switching to standalone mode
+    const delayedCheck = setTimeout(() => {
+      console.log('[PWA] Delayed check after 500ms...')
+      checkPWAMode()
+    }, 500)
+
+    return () => {
+      standaloneMediaQuery.removeEventListener('change', handleDisplayModeChange)
+      clearTimeout(delayedCheck)
+    }
+  }, [])
 
   useEffect(() => {
     setLightMode(false)
@@ -132,7 +199,23 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
                           </FlagProvider>
                         </Layout>
                       </div>
-                      {isPWA && <BottomNavBar />}
+                      {/* Debug indicator - TEMPORARY */}
+                      <div className="fixed top-4 right-4 z-[10000] bg-black/80 text-white p-3 rounded-lg text-xs font-mono">
+                        <div>
+                          isPWA:{' '}
+                          <span className={isPWA ? 'text-green-400' : 'text-red-400'}>
+                            {isPWA.toString()}
+                          </span>
+                        </div>
+                        <div>pathname: {router.pathname}</div>
+                      </div>
+
+                      {isPWA && (
+                        <>
+                          {console.log('[PWA] Rendering BottomNavBar')}
+                          <BottomNavBar />
+                        </>
+                      )}
                     </NextQueryParamProvider>
                   </CitizenProvider>
                 </PrivyThirdwebV5Provider>

@@ -2,7 +2,7 @@
   "name": "MoonDAO",
   "short_name": "MoonDAO",
   "description": "Decentralizing space exploration and research",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "background_color": "#1e293b",
