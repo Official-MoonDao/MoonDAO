@@ -14,9 +14,13 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionFundingProgressBar from './MissionFundingProgressBar'
 
 // Loading skeleton components
-const TextSkeleton = ({ width, height = 'h-4' }: { width: string; height?: string }) => (
-  <div className={`animate-pulse bg-gray-300 rounded ${height} ${width}`} />
-)
+const TextSkeleton = ({
+  width,
+  height = 'h-4',
+}: {
+  width: string
+  height?: string
+}) => <div className={`animate-pulse bg-gray-300 rounded ${height} ${width}`} />
 
 interface MissionProfileHeaderProps {
   mission: any
@@ -164,15 +168,20 @@ const MissionProfileHeader = React.memo(
                 <div className="flex flex-wrap items-center gap-2 text-gray-400 text-sm">
                   <span>
                     Created on{' '}
-                    {new Date(ruleset?.[0]?.start * 1000).toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}{' '}
+                    {new Date(ruleset?.[0]?.start * 1000).toLocaleDateString(
+                      'en-US',
+                      {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      }
+                    )}{' '}
                     by
                   </span>
                   <Link
-                    href={`/team/${generatePrettyLink(teamNFT?.metadata?.name)}`}
+                    href={`/team/${generatePrettyLink(
+                      teamNFT?.metadata?.name
+                    )}`}
                     className="font-GoodTimes text-white hover:text-purple-300 underline transition-colors duration-200"
                   >
                     {teamNFT?.metadata?.name}
@@ -207,7 +216,9 @@ const MissionProfileHeader = React.memo(
                       {isLoadingTotalFunding || !ethPrice || ethPrice <= 0 ? (
                         <div className="flex items-center">
                           <TextSkeleton width="w-16" height="h-5" />
-                          <span className="text-xs opacity-90 ml-2">RAISED</span>
+                          <span className="text-xs opacity-90 ml-2">
+                            RAISED
+                          </span>
                         </div>
                       ) : (
                         <>
@@ -239,7 +250,9 @@ const MissionProfileHeader = React.memo(
                                     height={14}
                                     className="opacity-70 group-hover:opacity-100"
                                   />
-                                  <span className="text-xs font-medium">Tokens</span>
+                                  <span className="text-xs font-medium">
+                                    Tokens
+                                  </span>
                                 </div>
                               }
                               action={sendReservedTokens}
@@ -257,7 +270,9 @@ const MissionProfileHeader = React.memo(
                                     height={14}
                                     className="opacity-70 group-hover:opacity-100"
                                   />
-                                  <span className="text-xs font-medium">Payouts</span>
+                                  <span className="text-xs font-medium">
+                                    Payouts
+                                  </span>
                                 </div>
                               }
                               action={sendPayouts}
@@ -276,7 +291,9 @@ const MissionProfileHeader = React.memo(
                                       height={14}
                                       className="opacity-90 group-hover:opacity-100"
                                     />
-                                    <span className="text-xs font-medium">Liquidity</span>
+                                    <span className="text-xs font-medium">
+                                      Liquidity
+                                    </span>
                                   </div>
                                 }
                                 action={deployLiquidityPool}
@@ -320,7 +337,9 @@ const MissionProfileHeader = React.memo(
                         className="mr-1"
                       />
                       <div className="flex items-center gap-1">
-                        <span className="text-gray-400 text-xs uppercase tracking-wide">Goal</span>
+                        <span className="text-gray-400 text-xs uppercase tracking-wide">
+                          Goal
+                        </span>
                         <Tooltip
                           text={`This is an all or nothing mission and the minimum amount that must be reached to launch. Refunds will be made available to all contributors if the goal is not met.`}
                           buttonClassName="scale-75"
@@ -333,7 +352,9 @@ const MissionProfileHeader = React.memo(
                       <Tooltip
                         text={
                           !isLoadingTotalFunding && ethPrice && ethPrice > 0
-                            ? `$${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()}`
+                            ? `$${Math.round(
+                                (fundingGoal / 1e18) * ethPrice
+                              ).toLocaleString()}`
                             : `Loading...`
                         }
                         wrap
@@ -356,13 +377,26 @@ const MissionProfileHeader = React.memo(
                         className="mr-1"
                       />
                       <span className="text-gray-400 text-xs uppercase tracking-wide">
-                        {refundPeriodPassed || stage === 4 || stage === 3 ? 'Status' : 'Deadline'}
+                        {refundPeriodPassed || Number(stage) === 3
+                          ? 'Status'
+                          : deadlinePassed
+                          ? 'Closed'
+                          : 'Deadline'}
                       </span>
                     </div>
                     <p className="text-white font-GoodTimes text-xs lg:text-sm">
-                      {refundPeriodPassed || stage === 4
-                        ? 'PASSED'
-                        : stage === 3
+                      {refundPeriodPassed || deadlinePassed
+                        ? deadlinePassed
+                          ? `${new Date(deadline || 0).toLocaleDateString(
+                              'en-US',
+                              {
+                                month: 'long',
+                                day: 'numeric',
+                                year: 'numeric',
+                              }
+                            )}`
+                          : 'REFUNDED'
+                        : Number(stage) === 3
                         ? 'REFUND'
                         : duration}
                     </p>
@@ -378,7 +412,9 @@ const MissionProfileHeader = React.memo(
                         height={14}
                         className="mr-1"
                       />
-                      <span className="text-gray-400 text-xs uppercase tracking-wide">Backers</span>
+                      <span className="text-gray-400 text-xs uppercase tracking-wide">
+                        Backers
+                      </span>
                     </div>
                     <p className="text-white font-GoodTimes text-xs lg:text-sm">
                       {backers?.length || 0}
