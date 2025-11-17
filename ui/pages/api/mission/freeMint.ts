@@ -1,22 +1,15 @@
 import CitizenABI from 'const/abis/Citizen.json'
-import { setCDNCacheHeaders } from 'middleware/cacheHeaders'
-import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
 import {
   DEFAULT_CHAIN_V5,
   CITIZEN_ADDRESSES,
   MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL,
   FREE_MINT_THRESHOLD,
 } from 'const/config'
+import { setCDNCacheHeaders } from 'middleware/cacheHeaders'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
-import {
-  readContract,
-  prepareContractCall,
-  sendAndConfirmTransaction,
-  sendTransaction,
-  getContract,
-} from 'thirdweb'
+import { readContract, prepareContractCall, sendAndConfirmTransaction, getContract } from 'thirdweb'
 import { cacheExchange, createClient, fetchExchange } from 'urql'
 import { createHSMWallet } from '@/lib/google/hsm-signer'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -51,7 +44,7 @@ async function getTotalPaid(address: string) {
     `
     const subgraphRes = await subgraphClient.query(query, {}).toPromise()
     if (subgraphRes.error) {
-      console.log(error)
+      console.log(subgraphRes.error)
       throw new Error(subgraphRes.error.message)
     }
     return subgraphRes.data.backers
@@ -117,7 +110,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     const address = req.query.address
 
-    const totalPaid = await getTotalPaid(address)
+    if (!address || typeof address !== 'string') {
+      return res.status(400).json({ error: 'Address is required.' })
+    }
+
+    const totalPaid = await getTotalPaid(address as string)
     res.status(200).json({
       success: true,
       message: 'Fetched total paid.',
