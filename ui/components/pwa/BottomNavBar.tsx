@@ -4,6 +4,8 @@ import {
   ShoppingBagIcon,
   UserGroupIcon,
   BriefcaseIcon,
+  WalletIcon,
+  MapIcon,
 } from '@heroicons/react/24/outline'
 import {
   HomeIcon as HomeIconSolid,
@@ -11,7 +13,10 @@ import {
   ShoppingBagIcon as ShoppingBagIconSolid,
   UserGroupIcon as UserGroupIconSolid,
   BriefcaseIcon as BriefcaseIconSolid,
+  WalletIcon as WalletIconSolid,
+  MapIcon as MapIconSolid,
 } from '@heroicons/react/24/solid'
+import { usePrivy } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
 import { useContext, useMemo } from 'react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -25,10 +30,12 @@ interface NavItem {
 
 export default function BottomNavBar() {
   const router = useRouter()
+  const { authenticated } = usePrivy()
   const { citizen } = useContext(CitizenContext)
 
   const navItems: NavItem[] = useMemo(() => {
-    if (citizen) {
+    // State 3: Logged in with Citizen NFT
+    if (authenticated && citizen) {
       return [
         {
           label: 'Dashboard',
@@ -63,6 +70,37 @@ export default function BottomNavBar() {
       ]
     }
 
+    // State 2: Logged in via Privy (no Citizen NFT)
+    if (authenticated && !citizen) {
+      return [
+        {
+          label: 'Dashboard',
+          icon: HomeIcon,
+          iconSolid: HomeIconSolid,
+          path: '/dashboard',
+        },
+        {
+          label: 'Map',
+          icon: MapIcon,
+          iconSolid: MapIconSolid,
+          path: '/map',
+        },
+        {
+          label: 'Quests',
+          icon: RocketLaunchIcon,
+          iconSolid: RocketLaunchIconSolid,
+          path: '/quests',
+        },
+        {
+          label: 'Wallet',
+          icon: WalletIcon,
+          iconSolid: WalletIconSolid,
+          path: '/mooney',
+        },
+      ]
+    }
+
+    // State 1: Not logged in
     return [
       {
         label: 'Home',
@@ -83,7 +121,7 @@ export default function BottomNavBar() {
         path: '/network',
       },
     ]
-  }, [citizen])
+  }, [authenticated, citizen])
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -98,7 +136,7 @@ export default function BottomNavBar() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-[9999] bg-gradient-to-t from-[#0a0a0a] via-[#0d0d0d] to-[#0d0d0d]/95 backdrop-blur-xl border-t border-white/10"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-[9999] bg-gradient-to-t from-[#0a0a0a] via-[#0d0d0d] to-[#0d0d0d]/95 backdrop-blur-xl border-t border-white/10"
       style={{
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.5)',
