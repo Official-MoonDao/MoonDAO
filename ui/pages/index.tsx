@@ -45,12 +45,9 @@ import Callout1 from '../components/home/Callout1'
 import Callout2 from '../components/home/Callout2'
 import Callout3 from '../components/home/Callout3'
 import Feature from '../components/home/Feature'
-import GovernanceSection from '../components/home/GovernanceSection'
 import Hero from '../components/home/Hero'
 import LaunchpadSection from '../components/home/LaunchpadSection'
-import NetworkSection from '../components/home/NetworkSection'
 import PartnerSection from '../components/home/PartnerSection'
-import ProjectsSection from '../components/home/ProjectsSection'
 import SpeakerSection from '../components/home/SpeakerSection'
 import Timeline from '../components/home/Timeline'
 import Container from '../components/layout/Container'
@@ -126,9 +123,6 @@ export default function Home({
         <Callout2 />
         <Feature />
         <LaunchpadSection />
-        <GovernanceSection />
-        <ProjectsSection />
-        <NetworkSection />
         <Timeline />
         <SpeakerSection />
         <Callout3 />

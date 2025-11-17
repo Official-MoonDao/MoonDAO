@@ -15,7 +15,6 @@ import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import { getBudget } from '@/lib/utils/rewards'
-import ProjectsSection from '../components/home/ProjectsSection'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import StandardButton from '../components/layout/StandardButton'
@@ -171,9 +170,6 @@ const ProjectsOverview: React.FC<{
           </div>
         </div>
       </Container>
-
-      {/* Projects Section from Homepage */}
-      <ProjectsSection />
 
       {/* Project System Explainer Section */}
       <section className="relative py-16 md:py-24 px-4 sm:px-6 lg:px-8">

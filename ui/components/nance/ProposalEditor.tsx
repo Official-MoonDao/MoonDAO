@@ -18,7 +18,7 @@ import { add, differenceInDays, getUnixTime } from 'date-fns'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useLocalStorage } from 'react-use'
@@ -29,6 +29,7 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { TEMPLATE, uuidGen } from '@/lib/nance'
 import useAccount from '@/lib/nance/useAccountAddress'
 import { useSignProposal } from '@/lib/nance/useSignProposal'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { classNames } from '@/lib/utils/tailwind'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
@@ -77,6 +78,7 @@ export default function ProposalEditor() {
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
+  const { selectedWallet } = useContext(PrivyWalletContext)
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
@@ -321,7 +323,7 @@ export default function ProposalEditor() {
             message,
           },
         })
-          .then((res) => {
+          .then(async (res) => {
             console.log('signAndSendProposal: Upload response', res)
             if (res.success) {
               setSigningStatus('success')
@@ -331,8 +333,34 @@ export default function ProposalEditor() {
                 style: toastStyle,
               })
               // Show CTA instead of immediate redirect
-              setSubmittedProposalId(res.data.uuid)
+              setSubmittedProposalId(proposalId?.toString())
               setShowSubmissionCTA(true)
+
+              // Send Discord notification
+              try {
+                const { getAccessToken } = await import('@privy-io/react-auth')
+                const accessToken = await getAccessToken()
+
+                const notificationResponse = await fetch(
+                  '/api/proposal/new-proposal-notification',
+                  {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      proposalId: res.data.uuid,
+                      accessToken: accessToken,
+                      selectedWallet: selectedWallet,
+                    }),
+                  }
+                )
+
+                const notificationData = await notificationResponse.json()
+                if (notificationData?.message) {
+                  console.log('Notification result:', notificationData.message)
+                }
+              } catch (notificationError: any) {
+                console.error('Failed to send notification:', notificationError)
+                // Don't block the user experience if notification fails
+              }
             } else {
               console.error('signAndSendProposal: Upload failed', res)
               setSigningStatus('error')

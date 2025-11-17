@@ -52,8 +52,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   const shallowQueryRoute = useShallowQueryRoute()
   const chainSlug = getChainSlug(selectedChain)
 
-  const [filteredListings, setFilteredListings] =
-    useState<MarketplaceListing[]>()
+  const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>(listings || [])
   const [input, setInput] = useState('')
   const [pageIdx, setPageIdx] = useState(1)
 
@@ -95,8 +94,8 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   const descriptionSection = (
     <div className="pt-2">
       <div className="mb-4">
-        Discover space products and services from top innovators and teams in
-        the Space Acceleration Network, available for direct on-chain purchase.
+        Discover space products and services from top innovators and teams in the Space Acceleration
+        Network, available for direct on-chain purchase.
       </div>
       <div className="relative w-full flex flex-col gap-3">
         {/* Search Bar */}
@@ -144,20 +143,15 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                   (() => {
                     const startIdx = (pageIdx - 1) * ITEMS_PER_PAGE
                     const endIdx = startIdx + ITEMS_PER_PAGE
-                    const paginatedListings = filteredListings.slice(
-                      startIdx,
-                      endIdx
-                    )
-                    return paginatedListings.map(
-                      (listing: MarketplaceListing, i: number) => (
-                        <MarketplaceListing
-                          key={`marketplace-listing-${startIdx + i}`}
-                          listing={listing}
-                          teamContract={teamContract}
-                          selectedChain={selectedChain}
-                        />
-                      )
-                    )
+                    const paginatedListings = filteredListings.slice(startIdx, endIdx)
+                    return paginatedListings.map((listing: MarketplaceListing, i: number) => (
+                      <MarketplaceListing
+                        key={`marketplace-listing-${startIdx + i}`}
+                        listing={listing}
+                        teamContract={teamContract}
+                        selectedChain={selectedChain}
+                      />
+                    ))
                   })()
                 ) : (
                   <div className="col-span-full text-center py-8">
@@ -176,9 +170,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                   <div className="w-full flex justify-center">
                     <PaginationButtons
                       handlePageChange={handlePageChange}
-                      maxPage={Math.ceil(
-                        filteredListings.length / ITEMS_PER_PAGE
-                      )}
+                      maxPage={Math.ceil(filteredListings.length / ITEMS_PER_PAGE)}
                       pageIdx={pageIdx}
                       label="Page"
                     />
@@ -239,8 +231,7 @@ export async function getStaticProps() {
     const listingsWithTeamNames = validListings.map((listing: any) => {
       return {
         ...listing,
-        teamName: allTeamNames.find((team: any) => team.id === listing.teamId)
-          ?.name,
+        teamName: allTeamNames.find((team: any) => team.id === listing.teamId)?.name,
       }
     })
 

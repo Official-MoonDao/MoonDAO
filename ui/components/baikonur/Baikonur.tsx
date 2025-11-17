@@ -104,6 +104,9 @@ export function Baikonur({ finalists, distributions, refresh }: BaikonurProps) {
         .join(', ')
     )
   }
+  const percentages = [
+    3.9, 2.7, 18.9, 6.1, 2, 15.2, 5.7, 2.5, 7.1, 4, 11.2, 15, 3.1, 2.4,
+  ]
 
   const handleSubmit = async () => {
     const totalPercentage = Object.values(distribution).reduce(
@@ -170,7 +173,7 @@ export function Baikonur({ finalists, distributions, refresh }: BaikonurProps) {
                 }
                 userHasVotingPower={userHasVotingPower}
                 isVotingPeriod={isVotingPeriod}
-                percentage={0}
+                percentage={percentages[i]}
               />
             </div>
           ))

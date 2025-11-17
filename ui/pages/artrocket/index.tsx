@@ -279,7 +279,7 @@ export async function getStaticProps() {
       },
       {
         id: 2,
-        name: 'Moonshot',
+        name: 'Moonshot 🌟',
         videoUrl: 'https://x.com/MaldivesSpace/status/1973493014791397493',
         writtenUrl:
           'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.wt59usbk25c',
@@ -303,7 +303,7 @@ export async function getStaticProps() {
       },
       {
         id: 5,
-        name: 'AstroJuris',
+        name: 'AstroJuris ⭐',
         videoUrl: 'https://www.instagram.com/p/DPUViBWD2DQ/',
         writtenUrl:
           'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.nc7z3lvjcs7n',
@@ -351,7 +351,7 @@ export async function getStaticProps() {
       },
       {
         id: 11,
-        name: 'Astronautgio',
+        name: 'Astronautgio ⭐',
         videoUrl: 'https://www.instagram.com/reel/DPVTPRtAT95/',
         writtenUrl:
           'https://docs.google.com/document/d/1DFAB-Wd91Gw91nAqA36LddUJw-75G2D7L3Re4rsotRc/edit?tab=t.0#heading=h.gewonlpcyzwa',

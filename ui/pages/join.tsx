@@ -1,9 +1,5 @@
 import { PlusCircleIcon } from '@heroicons/react/20/solid'
-import {
-  GlobeAmericasIcon,
-  ListBulletIcon,
-  MoonIcon,
-} from '@heroicons/react/24/outline'
+import { GlobeAmericasIcon, ListBulletIcon, MoonIcon } from '@heroicons/react/24/outline'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
 import {
@@ -14,11 +10,8 @@ import {
   TEAM_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
 } from 'const/config'
-import {
-  BLOCKED_CITIZENS,
-  BLOCKED_TEAMS,
-  FEATURED_TEAMS,
-} from 'const/whitelist'
+import { BLOCKED_CITIZENS, BLOCKED_TEAMS, FEATURED_TEAMS } from 'const/whitelist'
+import useTranslation from 'next-translate/useTranslation'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -27,13 +20,11 @@ import React, { useState, useEffect, useCallback, useContext } from 'react'
 import { getContract, NFT, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
-import {
-  generatePrettyLink,
-  generatePrettyLinkWithId,
-} from '@/lib/subscription/pretty-links'
+import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { citizenRowToNFT, teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
@@ -43,7 +34,6 @@ import Card from '../components/layout/Card'
 import Container from '../components/layout/Container'
 import Frame from '../components/layout/Frame'
 import Head from '../components/layout/Head'
-import NetworkSection from '@/components/home/NetworkSection'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
@@ -52,13 +42,9 @@ import Search from '@/components/layout/Search'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import Tab from '@/components/layout/Tab'
-
 import CitizenABI from '../const/abis/Citizen.json'
 import JobsABI from '../const/abis/JobBoardTable.json'
 import TeamABI from '../const/abis/Team.json'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { StringParam, useQueryParams, withDefault } from 'next-query-params'
-import useTranslation from 'next-translate/useTranslation'
 
 // Dynamic imports for globe components
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
@@ -77,17 +63,11 @@ export default function Join({
   jobs = [],
   citizensLocationData = [],
 }: JoinProps) {
-  const [{ tier, freeMint }] = useQueryParams({
-    tier: withDefault(StringParam, undefined),
-    freeMint: withDefault(StringParam, undefined),
-  })
   const { t } = useTranslation('common')
   const { selectedChain } = useContext(ChainContextV5)
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
   const { citizen } = useContext(CitizenContext)
-
-
 
   // Pricing constants and hooks for dynamic pricing
   const CITIZEN_PRICE = 0.0111
@@ -98,10 +78,7 @@ export default function Join({
   const [input, setInput] = useState('')
   function filterBySearch(nfts: any[]) {
     return nfts.filter((nft) => {
-      return nft.metadata.name
-        ?.toString()
-        .toLowerCase()
-        .includes(input.toLowerCase())
+      return nft.metadata.name?.toString().toLowerCase().includes(input.toLowerCase())
     })
   }
 
@@ -112,9 +89,7 @@ export default function Join({
     if (tab === 'teams') {
       setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
     } else if (tab === 'citizens') {
-      setCachedNFTs(
-        input != '' ? filterBySearch(filteredCitizens) : filteredCitizens
-      )
+      setCachedNFTs(input != '' ? filterBySearch(filteredCitizens) : filteredCitizens)
     } else if (tab === 'map') {
       // For map tab, we don't need to set cachedNFTs as it shows the globe
       setCachedNFTs([])
@@ -159,12 +134,9 @@ export default function Join({
   const [maxPage, setMaxPage] = useState(1)
 
   useEffect(() => {
-    const totalTeams =
-      input != '' ? filterBySearch(filteredTeams).length : filteredTeams.length
+    const totalTeams = input != '' ? filterBySearch(filteredTeams).length : filteredTeams.length
     const totalCitizens =
-      input != ''
-        ? filterBySearch(filteredCitizens).length
-        : filteredCitizens.length
+      input != '' ? filterBySearch(filteredCitizens).length : filteredCitizens.length
 
     if (tab === 'teams') setMaxPage(Math.ceil(totalTeams / 10))
     else if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 10))
@@ -177,10 +149,7 @@ export default function Join({
 
   useEffect(() => {
     const { tab: urlTab, page: urlPage } = router.query
-    if (
-      urlTab &&
-      (urlTab === 'teams' || urlTab === 'citizens' || urlTab === 'map')
-    ) {
+    if (urlTab && (urlTab === 'teams' || urlTab === 'citizens' || urlTab === 'map')) {
       setTab(urlTab as string)
     }
     if (urlPage && !isNaN(Number(urlPage))) {
@@ -234,9 +203,7 @@ export default function Join({
 
       if (nft.metadata.name === 'Failed to load NFT metadata') return null
 
-      const type = nft.metadata.attributes.find(
-        (attr: any) => attr.trait_type === 'communications'
-      )
+      const type = nft.metadata.attributes.find((attr: any) => attr.trait_type === 'communications')
         ? 'team'
         : 'citizen'
 
@@ -290,7 +257,8 @@ export default function Join({
                 Join the Space Acceleration Network
               </h1>
               <p className="sub-header text-white/90 drop-shadow-lg mb-8">
-                An onchain startup society focused on building a permanent settlement on the Moon and beyond
+                An onchain startup society focused on building a permanent settlement on the Moon
+                and beyond
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <StandardButton
@@ -336,12 +304,10 @@ export default function Join({
 
           <div className="relative z-10 max-w-6xl mx-auto px-6">
             <div className="text-center mb-8">
-              <h2 className="header font-GoodTimes text-white mb-4 drop-shadow-lg">
-                Join MoonDAO
-              </h2>
+              <h2 className="header font-GoodTimes text-white mb-4 drop-shadow-lg">Join MoonDAO</h2>
               <p className="sub-header text-white/90 max-w-3xl mx-auto drop-shadow-lg">
-                Join our decentralized space collective and help accelerate
-                humanity's expansion to the Moon and beyond
+                Join our decentralized space collective and help accelerate humanity's expansion to
+                the Moon and beyond
               </p>
             </div>
 
@@ -358,22 +324,17 @@ export default function Join({
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <h3 className="text-2xl font-GoodTimes text-white mb-4">
-                      Become a Citizen
-                    </h3>
+                    <h3 className="text-2xl font-GoodTimes text-white mb-4">Become a Citizen</h3>
                     <p className="text-slate-300 mb-6 leading-relaxed">
-                      Citizens are the trailblazers supporting the creation of
-                      off-world settlements. Whether you're already part of a
-                      team or seeking to join one, everyone has a crucial role
-                      to play in this mission.
+                      Citizens are the trailblazers supporting the creation of off-world
+                      settlements. Whether you're already part of a team or seeking to join one,
+                      everyone has a crucial role to play in this mission.
                     </p>
                     <div className="flex flex-col items-center mb-6">
                       <div className="text-2xl font-semibold text-white">
                         ~${Math.round(citizenUsdPrice || 0)} / Year
                       </div>
-                      <div className="text-sm text-slate-400">
-                        ({CITIZEN_PRICE} Arbitrum ETH)
-                      </div>
+                      <div className="text-sm text-slate-400">({CITIZEN_PRICE} Arbitrum ETH)</div>
                       <div className="text-green-400 text-sm font-medium mt-2">
                         ✓ 12 Month Passport
                       </div>
@@ -403,22 +364,17 @@ export default function Join({
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <h3 className="text-2xl font-GoodTimes text-white mb-4">
-                      Create a Team
-                    </h3>
+                    <h3 className="text-2xl font-GoodTimes text-white mb-4">Create a Team</h3>
                     <p className="text-slate-300 mb-6 leading-relaxed">
-                      Teams are driving innovation and tackling ambitious space
-                      challenges together. From non-profits to startups and
-                      university teams, every group has something to contribute
-                      to our multiplanetary future.
+                      Teams are driving innovation and tackling ambitious space challenges together.
+                      From non-profits to startups and university teams, every group has something
+                      to contribute to our multiplanetary future.
                     </p>
                     <div className="flex flex-col items-center mb-6">
                       <div className="text-2xl font-semibold text-white">
                         ~${Math.round(teamUsdPrice || 0)} / Year
                       </div>
-                      <div className="text-sm text-slate-400">
-                        ({TEAM_PRICE} Arbitrum ETH)
-                      </div>
+                      <div className="text-sm text-slate-400">({TEAM_PRICE} Arbitrum ETH)</div>
                       <div className="text-green-400 text-sm font-medium mt-2">
                         ✓ 12 Month Passport
                       </div>
@@ -439,20 +395,11 @@ export default function Join({
           </div>
         </div>
 
-        {/* Network Explainer Section */}
-        <NetworkSection />
-
         {/* Explore the Network Header */}
-        <div
-          id="explore-network-header"
-          className="max-w-6xl mx-auto mb-8 px-6 pt-12"
-        >
-          <h2 className="header font-GoodTimes text-white text-center mb-4">
-            Explore the Network
-          </h2>
+        <div id="explore-network-header" className="max-w-6xl mx-auto mb-8 px-6 pt-12">
+          <h2 className="header font-GoodTimes text-white text-center mb-4">Explore the Network</h2>
           <p className="sub-header text-white/80 text-center mb-8 max-w-3xl mx-auto">
-            Discover and connect with citizens and teams building the future of
-            space exploration
+            Discover and connect with citizens and teams building the future of space exploration
           </p>
         </div>
 
@@ -518,7 +465,10 @@ export default function Join({
                   // Scroll to join section
                   const joinSection = document.getElementById('join-moondao')
                   if (joinSection) {
-                    joinSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    joinSection.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    })
                   }
                 }}
               >
@@ -578,14 +528,7 @@ export default function Join({
           ) : (
             /* Network Grid View */
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
-              <CardGridContainer
-                xsCols={1}
-                smCols={1}
-                mdCols={2}
-                lgCols={2}
-                maxCols={2}
-                center
-              >
+              <CardGridContainer xsCols={1} smCols={1} mdCols={2} lgCols={2} maxCols={2} center>
                 {renderNFTs()}
               </CardGridContainer>
 
@@ -600,18 +543,11 @@ export default function Join({
                         }
                       }}
                       className={`pagination-button transition-opacity hover:scale-110 ${
-                        pageIdx === 1
-                          ? 'opacity-30'
-                          : 'cursor-pointer opacity-100'
+                        pageIdx === 1 ? 'opacity-30' : 'cursor-pointer opacity-100'
                       }`}
                       disabled={pageIdx === 1}
                     >
-                      <Image
-                        src="/assets/icon-left.svg"
-                        alt="Left Arrow"
-                        width={35}
-                        height={35}
-                      />
+                      <Image src="/assets/icon-left.svg" alt="Left Arrow" width={35} height={35} />
                     </button>
                     <p id="page-number" className="px-5 font-bold text-white">
                       Page {pageIdx} of {maxPage}
@@ -623,9 +559,7 @@ export default function Join({
                         }
                       }}
                       className={`pagination-button transition-opacity hover:scale-110 ${
-                        pageIdx === maxPage
-                          ? 'opacity-30'
-                          : 'cursor-pointer opacity-100'
+                        pageIdx === maxPage ? 'opacity-30' : 'cursor-pointer opacity-100'
                       }`}
                       disabled={pageIdx === maxPage}
                     >
@@ -646,13 +580,10 @@ export default function Join({
         {/* Jobs Section */}
         <div id="space-careers" className="max-w-6xl mx-auto mb-16 px-6 pt-16">
           <div className="text-center mb-8">
-            <h2 className="header font-GoodTimes text-white mb-4">
-              Jobs Board
-            </h2>
+            <h2 className="header font-GoodTimes text-white mb-4">Jobs Board</h2>
             <p className="sub-header text-white/80 max-w-3xl mx-auto mb-8">
-              Join the mission to expand humanity to the Moon and beyond.
-              Explore opportunities with teams in the Space Acceleration
-              Network.
+              Join the mission to expand humanity to the Moon and beyond. Explore opportunities with
+              teams in the Space Acceleration Network.
             </p>
           </div>
 
@@ -688,13 +619,9 @@ export default function Join({
                       <h3 className="text-lg font-GoodTimes text-white mb-2 line-clamp-1">
                         {job.title}
                       </h3>
-                      <p className="text-slate-300 text-sm mb-4 line-clamp-3">
-                        {job.description}
-                      </p>
+                      <p className="text-slate-300 text-sm mb-4 line-clamp-3">{job.description}</p>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-400">
-                          Team #{job.teamId}
-                        </span>
+                        <span className="text-sm text-slate-400">Team #{job.teamId}</span>
                         <StandardButton
                           backgroundColor="bg-blue-600 hover:bg-blue-700"
                           textColor="text-white"
@@ -714,9 +641,7 @@ export default function Join({
                   <div className="w-24 h-24 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
                     <ListBulletIcon width={48} height={48} className="text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-GoodTimes text-white mb-4">
-                    No Jobs Available
-                  </h3>
+                  <h3 className="text-xl font-GoodTimes text-white mb-4">No Jobs Available</h3>
                   <p className="text-slate-300 mb-6">
                     Check back soon for new opportunities in the Space Acceleration Network.
                   </p>
@@ -731,7 +656,7 @@ export default function Join({
                   </StandardButton>
                 </div>
               )}
-              
+
               {jobs && jobs.length > 6 && (
                 <div className="text-center mt-8">
                   <StandardButton
@@ -752,11 +677,9 @@ export default function Join({
         {/* Help Section */}
         <div className="max-w-6xl mx-auto mb-16 px-6">
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-8 text-center">
-            <h3 className="text-2xl font-GoodTimes text-white mb-4">
-              Need Help Getting Started?
-            </h3>
+            <h3 className="text-2xl font-GoodTimes text-white mb-4">Need Help Getting Started?</h3>
             <p className="text-slate-300 mb-6 max-w-2xl mx-auto">
-              Have questions about joining MoonDAO or need assistance with the onboarding process? 
+              Have questions about joining MoonDAO or need assistance with the onboarding process?
               Our community is here to help.
             </p>
             <StandardButton
@@ -771,8 +694,6 @@ export default function Join({
           </div>
         </div>
       </Container>
-
-
     </section>
   )
 }
@@ -815,10 +736,7 @@ export async function getStaticProps() {
       contract: citizenTableContract,
       method: 'getTableName',
     })
-    const citizenRows: any = await queryTable(
-      chain,
-      `SELECT * FROM ${citizenTableName}`
-    )
+    const citizenRows: any = await queryTable(chain, `SELECT * FROM ${citizenTableName}`)
 
     const teams: NFT[] = []
     for (const row of teamRows) {
@@ -835,25 +753,23 @@ export async function getStaticProps() {
       return +expiresAt.toString() > now
     })
 
-    const sortedValidTeams = filteredValidTeams
-      .reverse()
-      .sort((a: any, b: any) => {
-        const aIsFeatured = FEATURED_TEAMS.includes(Number(a.metadata.id))
-        const bIsFeatured = FEATURED_TEAMS.includes(Number(b.metadata.id))
+    const sortedValidTeams = filteredValidTeams.reverse().sort((a: any, b: any) => {
+      const aIsFeatured = FEATURED_TEAMS.includes(Number(a.metadata.id))
+      const bIsFeatured = FEATURED_TEAMS.includes(Number(b.metadata.id))
 
-        if (aIsFeatured && bIsFeatured) {
-          return (
-            FEATURED_TEAMS.indexOf(Number(a.metadata.id)) -
-            FEATURED_TEAMS.indexOf(Number(b.metadata.id))
-          )
-        } else if (aIsFeatured) {
-          return -1
-        } else if (bIsFeatured) {
-          return 1
-        } else {
-          return 0
-        }
-      })
+      if (aIsFeatured && bIsFeatured) {
+        return (
+          FEATURED_TEAMS.indexOf(Number(a.metadata.id)) -
+          FEATURED_TEAMS.indexOf(Number(b.metadata.id))
+        )
+      } else if (aIsFeatured) {
+        return -1
+      } else if (bIsFeatured) {
+        return 1
+      } else {
+        return 0
+      }
+    })
 
     const citizenContract = getContract({
       client: serverClient,
@@ -896,10 +812,7 @@ export async function getStaticProps() {
     // Generate location data for map
     let citizensLocationData: any[] = []
 
-    if (
-      process.env.NEXT_PUBLIC_ENV === 'prod' ||
-      process.env.NEXT_PUBLIC_TEST_ENV === 'true'
-    ) {
+    if (process.env.NEXT_PUBLIC_ENV === 'prod' || process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
       // Get location data for each citizen
       for (const citizen of filteredValidCitizens) {
         const citizenLocation = getAttribute(
@@ -909,11 +822,7 @@ export async function getStaticProps() {
 
         let locationData
 
-        if (
-          citizenLocation &&
-          citizenLocation !== '' &&
-          !citizenLocation?.startsWith('{')
-        ) {
+        if (citizenLocation && citizenLocation !== '' && !citizenLocation?.startsWith('{')) {
           locationData = {
             results: [
               {
@@ -951,8 +860,7 @@ export async function getStaticProps() {
           id: citizen.metadata.id,
           name: citizen.metadata.name,
           location: citizenLocation,
-          formattedAddress:
-            locationData.results?.[0]?.formatted_address || 'Antarctica',
+          formattedAddress: locationData.results?.[0]?.formatted_address || 'Antarctica',
           image: citizen.metadata.image,
           lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
           lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
@@ -980,21 +888,12 @@ export async function getStaticProps() {
       }
 
       // Convert the map back to an array
-      citizensLocationData = Array.from(locationMap.values()).map(
-        (entry: any) => ({
-          ...entry,
-          color:
-            entry.citizens.length > 3
-              ? '#6a3d79'
-              : entry.citizens.length > 1
-              ? '#5e4dbf'
-              : '#5556eb',
-          size:
-            entry.citizens.length > 1
-              ? Math.min(entry.citizens.length * 0.01, 0.4)
-              : 0.01,
-        })
-      )
+      citizensLocationData = Array.from(locationMap.values()).map((entry: any) => ({
+        ...entry,
+        color:
+          entry.citizens.length > 3 ? '#6a3d79' : entry.citizens.length > 1 ? '#5e4dbf' : '#5556eb',
+        size: entry.citizens.length > 1 ? Math.min(entry.citizens.length * 0.01, 0.4) : 0.01,
+      }))
     }
 
     return {
