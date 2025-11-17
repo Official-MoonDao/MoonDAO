@@ -217,7 +217,7 @@ export default function MissionTokenSwapV4({ token }: { token: any }) {
 
       <PrivyWeb3Button
         className="mt-4 rounded-full gradient-2 rounded-full w-full py-1"
-        label="Buy"
+        label={`Get $${token?.tokenSymbol}`}
         action={async () => {
           const numericValue = usdInput.replace(/,/g, '')
           if (!amountIn || !numericValue || parseFloat(numericValue) <= 0)
