@@ -137,11 +137,6 @@ export default function InstallPrompt() {
       return
     }
 
-    // Check if cookie banner is visible
-    const cookieConsent = localStorage.getItem('cookie_consent')
-    const isCookieBannerShowing = cookieConsent === null || cookieConsent === undefined
-    setCookieBannerVisible(isCookieBannerShowing)
-
     // Detect browser
     const browser = detectBrowser()
     setBrowserInfo(browser)
@@ -158,6 +153,17 @@ export default function InstallPrompt() {
     const desktop =
       !iOS && !/Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
     setIsDesktop(desktop)
+
+    // Check if cookie banner is visible
+    const checkCookieBanner = () => {
+      const cookieConsent = localStorage.getItem('cookie_consent')
+      const isCookieBannerShowing = cookieConsent === null || cookieConsent === undefined
+      setCookieBannerVisible(isCookieBannerShowing)
+      return isCookieBannerShowing
+    }
+
+    // Initial check
+    const isCookieBannerShowing = checkCookieBanner()
 
     // Listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -198,26 +204,19 @@ export default function InstallPrompt() {
       }
 
       setIsInitialized(true)
-    }, 600)
+    }, 800)
 
-    // Poll for cookie consent changes in the same tab (only if cookie banner is showing)
-    let checkInterval: NodeJS.Timeout | null = null
-    if (isCookieBannerShowing) {
-      checkInterval = setInterval(() => {
-        const cookieConsent = localStorage.getItem('cookie_consent')
-        if (cookieConsent !== null && cookieConsent !== undefined) {
-          setCookieBannerVisible(false)
-          if (checkInterval) clearInterval(checkInterval)
-        }
-      }, 500)
-    }
+    // Poll for cookie consent changes in the same tab - always run this
+    const checkInterval = setInterval(() => {
+      checkCookieBanner()
+    }, 500)
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
       standaloneMediaQuery.removeEventListener('change', handleDisplayModeChange)
       window.removeEventListener('storage', handleStorageChange)
       clearTimeout(delayedStandaloneCheck)
-      if (checkInterval) clearInterval(checkInterval)
+      clearInterval(checkInterval)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

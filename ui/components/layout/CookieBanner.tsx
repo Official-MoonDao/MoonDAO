@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import Modal from './Modal'
 
 export default function CookieBanner() {
-  const [cookieConsent, setCookieConsent] = useState<any>(false)
+  const [cookieConsent, setCookieConsent] = useState<any>(null)
   const [hasLoadedLocalStorage, setHasLoadedLocalStorage] = useState(false)
 
   useEffect(() => {
@@ -11,8 +11,6 @@ export default function CookieBanner() {
 
     if (storedCookieConsent !== null && storedCookieConsent !== undefined) {
       setCookieConsent(JSON.parse(storedCookieConsent))
-    } else {
-      setCookieConsent(null)
     }
 
     setHasLoadedLocalStorage(true)
