@@ -377,15 +377,26 @@ const MissionProfileHeader = React.memo(
                         className="mr-1"
                       />
                       <span className="text-gray-400 text-xs uppercase tracking-wide">
-                        {refundPeriodPassed || stage === 4 || stage === 3
+                        {refundPeriodPassed || Number(stage) === 3
                           ? 'Status'
+                          : deadlinePassed
+                          ? 'Closed'
                           : 'Deadline'}
                       </span>
                     </div>
                     <p className="text-white font-GoodTimes text-xs lg:text-sm">
-                      {refundPeriodPassed || stage === 4 || stage === 2
-                        ? 'PASSED'
-                        : stage === 3
+                      {refundPeriodPassed || deadlinePassed
+                        ? deadlinePassed
+                          ? `${new Date(deadline || 0).toLocaleDateString(
+                              'en-US',
+                              {
+                                month: 'long',
+                                day: 'numeric',
+                                year: 'numeric',
+                              }
+                            )}`
+                          : 'REFUNDED'
+                        : Number(stage) === 3
                         ? 'REFUND'
                         : duration}
                     </p>
