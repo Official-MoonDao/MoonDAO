@@ -39,10 +39,6 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
   const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
   const voteAddresses = votes.map((pv) => pv.address)
-  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses)
-  const addressToQuadraticVotingPower = Object.fromEntries(
-    voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
-  )
   const proposalContract = getContract({
     client: serverClient,
     address: PROPOSALS_ADDRESSES[chainSlug],
@@ -72,7 +68,13 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   }
   const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
   const projects = await queryTable(chain, projectStatement)
-  const projectId = projects[0].id
+  const project = projects[0]
+  const projectId = project.id
+  if (project.active) {
+    return res.status(400).json({
+      error: 'Project has already passed.',
+    })
+  }
   const currentTimestamp: number = Math.floor(Date.now() / 1000)
   // FIXME how long is the voting period? at least 5 days but in practice how long?
   const votingPeriodClosedTimestamp =
@@ -82,6 +84,13 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       error: 'Voting period has not ended.',
     })
   }
+  const vMOONEYs = await fetchTotalVMOONEYs(
+    voteAddresses,
+    votingPeriodClosedTimestamp
+  )
+  const addressToQuadraticVotingPower = Object.fromEntries(
+    voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
+  )
   const SUM_TO_ONE_HUNDRED = 100
   const outcome = runQuadraticVoting(
     votes,
@@ -95,10 +104,10 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       method: 'updateTableCol',
       params: [projectId, 'active', 1],
     })
-    //const receipt = await sendAndConfirmTransaction({
-    //transaction,
-    //account,
-    //})
+    const receipt = await sendAndConfirmTransaction({
+      transaction,
+      account,
+    })
     res.status(200).json({
       url: 'https://moondao.com/projects/' + mdp,
       proposalId: mdp,

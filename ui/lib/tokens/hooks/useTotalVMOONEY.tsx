@@ -129,7 +129,10 @@ export function useTotalVMOONEYs(addresses: string[] | undefined): {
   }
 }
 
-export async function fetchTotalVMOONEYs(addresses: string[]) {
+export async function fetchTotalVMOONEYs(
+  addresses: string[],
+  timestamp: number
+) {
   try {
     const chains = [arbitrum, ethereum, base, polygon]
     const results = await Promise.allSettled(
@@ -154,7 +157,7 @@ export async function fetchTotalVMOONEYs(addresses: string[]) {
               return {
                 contractAddress: tokenAddress,
                 method: 'balanceOf',
-                params: [address],
+                params: timestamp ? [address, timestamp] : [address],
                 abi: VMOONEY_ABI,
               }
             }),
