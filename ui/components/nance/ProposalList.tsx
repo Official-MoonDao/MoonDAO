@@ -1,7 +1,4 @@
-import {
-  DocumentMagnifyingGlassIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline'
+import { DocumentMagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { ChevronRightIcon } from '@heroicons/react/24/solid'
 import { useProposals } from '@nance/nance-hooks'
 import { ProposalsPacket, getActionsFromBody } from '@nance/nance-sdk'
@@ -17,10 +14,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import { NANCE_SPACE_NAME } from '@/lib/nance/constants'
-import {
-  SnapshotGraphqlProposalVotingInfo,
-  useVotingInfoOfProposals,
-} from '@/lib/snapshot'
+import { SnapshotGraphqlProposalVotingInfo, useVotingInfoOfProposals } from '@/lib/snapshot'
 import PaginationButtons from '@/components/layout/PaginationButtons'
 import Proposal from './Proposal'
 import ProposalInfo, { ProposalInfoSkeleton } from './ProposalInfo'
@@ -34,9 +28,7 @@ function NoResults() {
       <h3 className="mt-2 text-sm font-semibold text-gray-900">
         No proposals satisified your requirement.
       </h3>
-      <p className="mt-1 text-sm text-gray-500">
-        Try to search with different keyword.
-      </p>
+      <p className="mt-1 text-sm text-gray-500">Try to search with different keyword.</p>
       <div className="mt-6">
         <Link
           href="#"
@@ -137,19 +129,14 @@ export default function ProposalList({
     const allProposals = proposalData.data.proposals.map((p: any) => {
       return {
         ...p,
-        actions:
-          p.actions && p.actions.length > 0
-            ? p.actions
-            : getActionsFromBody(p.body) || [],
+        actions: p.actions && p.actions.length > 0 ? p.actions : getActionsFromBody(p.body) || [],
       }
     })
 
     // Calculate total pages and current page logic
     const totalProposals = allProposals.length
     const currentPageIdx = noPagination ? 1 : pageIdx
-    const calculatedMaxPage = noPagination
-      ? 1
-      : Math.ceil(totalProposals / itemsPerPage)
+    const calculatedMaxPage = noPagination ? 1 : Math.ceil(totalProposals / itemsPerPage)
 
     if (calculatedMaxPage !== maxPage) {
       setMaxPage(calculatedMaxPage)
@@ -169,9 +156,7 @@ export default function ProposalList({
 
   const proposals = proposalsPacket?.proposals || []
 
-  const snapshotIds = proposals
-    .map((p) => p.voteURL)
-    .filter((v) => v !== undefined) as string[]
+  const snapshotIds = proposals.map((p) => p.voteURL).filter((v) => v !== undefined) as string[]
   const { data: votingInfos } = useVotingInfoOfProposals(snapshotIds)
   const votingInfoMap: { [key: string]: SnapshotGraphqlProposalVotingInfo } = {}
   votingInfos?.forEach((info) => (votingInfoMap[info.id] = info))

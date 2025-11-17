@@ -59,6 +59,7 @@ import WebsiteHead from '../components/layout/Head'
 import PageEnder from '../components/layout/PreFooter'
 import FeaturedMissionSection from '@/components/home/FeaturedMissionSection'
 import SignedInDashboard from '@/components/home/SignedInDashboard'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
 
 export default function Home({
   newestNewsletters,
@@ -373,7 +374,10 @@ export async function getStaticProps() {
         if (projects[i]) {
           const project = projects[i] as any
           // Use the 'active' field to determine current projects, excluding blocked ones
-          if (project.active && !BLOCKED_PROJECTS.has(project.id)) {
+          if (
+            project.active === PROJECT_ACTIVE &&
+            !BLOCKED_PROJECTS.has(project.id)
+          ) {
             activeProjects.push(project)
           }
         }

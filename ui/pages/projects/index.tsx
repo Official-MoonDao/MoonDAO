@@ -19,6 +19,11 @@ import {
   ProjectRewards,
   ProjectRewardsProps,
 } from '@/components/nance/ProjectRewards'
+import {
+  PROJECT_ACTIVE,
+  PROJECT_ENDED,
+  PROJECT_PENDING,
+} from '@/lib/nance/types'
 
 export default function Projects({
   proposals,
@@ -56,15 +61,13 @@ export async function getStaticProps() {
     const pastProjects = []
     for (let i = 0; i < projects.length; i++) {
       if (!BLOCKED_PROJECTS.has(projects[i].id)) {
-        const current = projects[i].active
-        if (!current) {
-          if (quarter == projects[i].quarter && year == projects[i].year) {
-            proposals.push(projects[i])
-          } else {
-            pastProjects.push(projects[i])
-          }
-        } else {
+        const activeStatus = projects[i].active
+        if (activeStatus == PROJECT_PENDING) {
+          proposals.push(projects[i])
+        } else if (activeStatus == PROJECT_ACTIVE) {
           currentProjects.push(projects[i])
+        } else if (activeStatus == PROJECT_ENDED) {
+          pastProjects.push(projects[i])
         }
       }
     }

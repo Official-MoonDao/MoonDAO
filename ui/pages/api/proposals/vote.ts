@@ -28,6 +28,7 @@ import { createHSMWallet } from '@/lib/google/hsm-signer'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
 
 // Configuration constants
 const chain = DEFAULT_CHAIN_V5
@@ -70,7 +71,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   const projects = await queryTable(chain, projectStatement)
   const project = projects[0]
   const projectId = project.id
-  if (project.active) {
+  if (project.active === PROJECT_ACTIVE) {
     return res.status(400).json({
       error: 'Project has already passed.',
     })
@@ -102,7 +103,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     const transaction = prepareContractCall({
       contract: projectTableContract,
       method: 'updateTableCol',
-      params: [projectId, 'active', 1],
+      params: [projectId, 'active', PROJECT_ACTIVE],
     })
     const receipt = await sendAndConfirmTransaction({
       transaction,

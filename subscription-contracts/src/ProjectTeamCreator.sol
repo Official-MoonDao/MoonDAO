@@ -78,7 +78,7 @@ contract ProjectTeamCreator is Ownable {
         //mint
         tokenId = projectTeam.mintTo(address(gnosisSafe), lead, projectAdminHat, projectManagerHat, projectContributorHat, address(memberPassthroughModule));
 
-        table.insertIntoTable(tokenId, name, description, image, quarter, year, MDP, proposalIPFS, proposalLink, "", "", "", upfrontPayments, 0, 0);
+        table.insertIntoTable(tokenId, name, description, image, quarter, year, MDP, proposalIPFS, proposalLink, "", "", "", upfrontPayments, 2, 0);
     }
 
     function constructSafeCallData(address[] memory signers) internal returns (bytes memory) {

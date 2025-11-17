@@ -2,7 +2,6 @@ import { usePrivy } from '@privy-io/react-auth'
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
-import { NanceProvider } from '@nance/nance-hooks'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -268,9 +267,7 @@ const Governance: React.FC = () => {
 
               {/* Proposals List - Latest */}
               <div className="relative mx-4">
-                <NanceProvider apiUrl={NANCE_API_URL}>
                   <ProposalList noPagination={true} />
-                </NanceProvider>
               </div>
             </div>
 

@@ -21,6 +21,7 @@ import WebsiteHead from '../components/layout/Head'
 import StandardButton from '../components/layout/StandardButton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import ProjectCard from '@/components/project/ProjectCard'
+import { PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
 
 // Project System Explainer Card Component
 const ProjectExplainerCard = ({
@@ -527,11 +528,11 @@ export const getServerSideProps: GetServerSideProps = async () => {
       for (let i = 0; i < projects.length; i++) {
         if (projects[i]) {
           const project = projects[i] as any
-          // Use the 'active' field to determine current vs past projects
-          if (project.active) {
-            currentProjects.push(project)
-          } else {
-            pastProjects.push(project)
+          const activeStatus = projects[i].active
+          if (activeStatus == PROJECT_ACTIVE) {
+            currentProjects.push(projects[i])
+          } else if (activeStatus == PROJECT_ENDED) {
+            pastProjects.push(projects[i])
           }
         }
       }

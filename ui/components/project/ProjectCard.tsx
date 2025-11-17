@@ -317,8 +317,6 @@ export default function ProjectCard({
   }, [adminHatId, hats, wearers, distribute, address, project])
 
   if (!project) return null
-  console.log('active', active)
-  console.log('project', project)
 
   return (
     <>

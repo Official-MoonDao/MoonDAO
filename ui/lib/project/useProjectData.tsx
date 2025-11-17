@@ -5,6 +5,7 @@ import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { NANCE_SPACE_NAME } from '../nance/constants'
 import useProposalJSON from '../nance/useProposalJSON'
+import { PROJECT_ACTIVE} from '@/lib/nance/types'
 
 export type Project = {
   MDP: number
@@ -52,7 +53,7 @@ export default function useProjectData(
   const [proposalJSON, setProposalJSON] = useState<string>()
 
   const isActive = useMemo(() => {
-    return project?.active === 1
+    return project?.active === PROJECT_ACTIVE
   }, [project])
 
   const totalBudget = useMemo(() => {

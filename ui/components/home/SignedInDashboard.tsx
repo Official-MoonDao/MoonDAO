@@ -66,6 +66,7 @@ import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
 import DashboardTeams from './DashboardTeams'
+import { PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
@@ -1282,12 +1283,14 @@ export default function SingedInDashboard({
                           </h4>
                           <span
                             className={`px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
-                              project.active
+                              project.active == PROJECT_ACTIVE
                                 ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                                 : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
                             }`}
                           >
-                            {project.active ? 'Active' : 'Inactive'}
+                            {project.active == PROJECT_ACTIVE
+                              ? 'Active'
+                              : 'Inactive'}
                           </span>
                         </div>
                         <p className="text-green-100 text-sm leading-relaxed flex-1 overflow-hidden">
@@ -1333,7 +1336,8 @@ export default function SingedInDashboard({
                   No Active Projects
                 </h4>
                 <p className="text-gray-400 text-base mb-6 leading-relaxed">
-                  Check back soon for new space exploration initiatives and opportunities to contribute to groundbreaking missions
+                  Check back soon for new space exploration initiatives and
+                  opportunities to contribute to groundbreaking missions
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <StandardButton

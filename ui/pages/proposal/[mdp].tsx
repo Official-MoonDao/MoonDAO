@@ -1,4 +1,3 @@
-import { NanceProvider } from '@nance/nance-hooks'
 import { runQuadraticVoting } from '@/lib/utils/rewards'
 import { useTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import {
@@ -18,7 +17,6 @@ import { BLOCKED_MDPS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import { createEnumParam, useQueryParams, withDefault } from 'next-query-params'
 import { getContract, readContract } from 'thirdweb'
-import { NANCE_API_URL, NANCE_SPACE_NAME } from '@/lib/nance/constants'
 import { Project } from '@/lib/project/useProjectData'
 import { useVotesOfProposal } from '@/lib/snapshot'
 import queryTable from '@/lib/tableland/queryTable'
@@ -28,10 +26,7 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import WebsiteHead from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import ActionLabel from '@/components/nance/ActionLabel'
-import DropDownMenu from '@/components/nance/DropdownMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
-import ProposalInfo from '@/components/nance/ProposalInfo'
 import ProposalVotes from '@/components/nance/ProposalVotes'
 import VotingResults from '@/components/nance/VotingResults'
 import ProposalState from '@/lib/nance/types'
@@ -53,6 +48,7 @@ function Proposal({
     sortBy: withDefault(createEnumParam(['time', 'vp']), 'time'),
   })
 
+  // FIXME use actions
   if (proposalPacket) {
     proposalPacket = {
       ...proposalPacket,
@@ -182,15 +178,13 @@ export default function ProposalPage({
   return (
     <>
       <WebsiteHead title={project.title} />
-      <NanceProvider apiUrl={NANCE_API_URL}>
-        <Proposal
-          proposalPacket={proposalPacket}
-          project={project}
-          proposal={proposal}
-          votes={votes}
-          state={state}
-        />
-      </NanceProvider>
+      <Proposal
+        proposalPacket={proposalPacket}
+        project={project}
+        proposal={proposal}
+        votes={votes}
+        state={state}
+      />
     </>
   )
 }

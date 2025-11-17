@@ -4,7 +4,6 @@ import {
   QueueListIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/solid'
-import { NanceProvider } from '@nance/nance-hooks'
 import { StringParam, useQueryParams, withDefault } from 'next-query-params'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -128,9 +127,7 @@ export default function SpaceIndex() {
           isProfile
         >
           <div className="pb-10 w-full">
-            <NanceProvider apiUrl={NANCE_API_URL}>
               <ProposalList />
-            </NanceProvider>
           </div>
         </ContentLayout>
       </Container>

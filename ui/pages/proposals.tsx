@@ -1,4 +1,3 @@
-import { NanceProvider } from '@nance/nance-hooks'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
@@ -17,9 +16,9 @@ export default function ProposalsPage() {
 
   return (
     <>
-      <WebsiteHead 
-        title={title} 
-        description="Submit a proposal to receive financing or special permissions from the MoonDAO community. Get your project funded and bring your space-related ideas to life." 
+      <WebsiteHead
+        title={title}
+        description="Submit a proposal to receive financing or special permissions from the MoonDAO community. Get your project funded and bring your space-related ideas to life."
       />
       <section className="flex flex-col justify-start px-5 mt-5 items-start animate-fadeIn w-[90vw] md:w-full">
         <Container>
@@ -28,7 +27,8 @@ export default function ProposalsPage() {
             headerSize="40px"
             description={
               <div className="text-gray-300 text-lg leading-relaxed">
-                Submit a proposal to receive financing or special permissions from the MoonDAO community. Get your project funded and bring your space-related ideas to life.
+                Submit a proposal to receive financing or special permissions from the MoonDAO
+                community. Get your project funded and bring your space-related ideas to life.
               </div>
             }
             mainPadding
@@ -37,15 +37,13 @@ export default function ProposalsPage() {
           >
             <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
               <div className="mb-8 w-full bg-black/20 rounded-xl p-6 border border-white/10">
-                <div id="instructions-container" className="flex items-center justify-center pt-6 mb-6">
+                <div
+                  id="instructions-container"
+                  className="flex items-center justify-center pt-6 mb-6"
+                >
                   <div id="step-1" className="flex flex-col items-center w-1/3 h-[150px]">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center mb-3">
-                      <Image
-                        src="/assets/icon-number-1.svg"
-                        alt="Step 1"
-                        width={30}
-                        height={30}
-                      />
+                      <Image src="/assets/icon-number-1.svg" alt="Step 1" width={30} height={30} />
                     </div>
                     <p className="text-center text-gray-300 text-sm">
                       Post to{' '}
@@ -62,12 +60,7 @@ export default function ProposalsPage() {
                   </div>
                   <div id="step-2" className="flex flex-col items-center w-1/3 h-[150px]">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center mb-3">
-                      <Image
-                        src="/assets/icon-number-2.svg"
-                        alt="Step 2"
-                        width={30}
-                        height={30}
-                      />
+                      <Image src="/assets/icon-number-2.svg" alt="Step 2" width={30} height={30} />
                     </div>
                     <p className="text-center text-gray-300 text-sm">
                       Submit your <br></br>proposal below
@@ -75,12 +68,7 @@ export default function ProposalsPage() {
                   </div>
                   <div id="step-3" className="flex flex-col items-center w-1/3 h-[150px]">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center mb-3">
-                      <Image
-                        src="/assets/icon-number-3.svg"
-                        alt="Step 3"
-                        width={30}
-                        height={30}
-                      />
+                      <Image src="/assets/icon-number-3.svg" alt="Step 3" width={30} height={30} />
                     </div>
                     <p className="text-center text-gray-300 text-sm">
                       Present proposal <br></br>at Town Hall
@@ -89,16 +77,16 @@ export default function ProposalsPage() {
                 </div>
                 <div className="bg-black/20 rounded-xl p-6 border border-white/10">
                   <p className="text-gray-300 leading-relaxed">
-                    Submit a proposal to receive financing or special
-                    permissions from the MoonDAO community. Please refer to{' '}
+                    Submit a proposal to receive financing or special permissions from the MoonDAO
+                    community. Please refer to{' '}
                     <Link
                       href="/project-system-docs"
                       className="text-blue-400 hover:text-blue-300 underline transition-colors"
                     >
                       our documentation
                     </Link>{' '}
-                    for more details before getting started. We recommend
-                    starting your draft with the{' '}
+                    for more details before getting started. We recommend starting your draft with
+                    the{' '}
                     <Link
                       href="https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit?usp=sharing"
                       className="text-blue-400 hover:text-blue-300 underline transition-colors"
@@ -111,12 +99,10 @@ export default function ProposalsPage() {
                   </p>
                 </div>
               </div>
-              <NanceProvider apiUrl={NANCE_API_URL}>
-                <ProposalEditor />
-              </NanceProvider>
+              <ProposalEditor />
             </div>
           </ContentLayout>
-          <NoticeFooter 
+          <NoticeFooter
             defaultImage="../assets/MoonDAO-Logo-White.svg"
             defaultTitle="Need Help?"
             defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
