@@ -7,6 +7,7 @@ interface ProgressBarProps {
   label?: string
   padding?: string
   compact?: boolean
+  isCelebrating?: boolean
 }
 
 export default function ProgressBar({
@@ -15,6 +16,7 @@ export default function ProgressBar({
   label,
   padding = '2px',
   compact = false,
+  isCelebrating = false,
 }: ProgressBarProps) {
   const progressBarRef = useRef<HTMLDivElement>(null)
   const labelRef = useRef<HTMLSpanElement>(null)
@@ -64,7 +66,11 @@ export default function ProgressBar({
           {/* Progress fill with enhanced gradient */}
           <div
             ref={progressBarRef}
-            className="h-full bg-gradient-to-r from-blue-500 via-purple-600 to-blue-500 relative shadow-lg"
+            className={`h-full relative shadow-lg ${
+              isCelebrating
+                ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-500'
+                : 'bg-gradient-to-r from-blue-500 via-purple-600 to-blue-500'
+            }`}
             style={{ width: '0%' }} // Start at 0 and let GSAP animate it
           >
             {/* Shimmer effect overlay */}

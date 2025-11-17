@@ -72,9 +72,7 @@ export default function MissionActivityEvent({
   const { data: ens } = useENS(address)
   const Icon = getEventIcon(header)
   const colorClass = getEventColorClass(header)
-  const isPayEvent =
-    header?.toLowerCase().includes('paid') ||
-    header?.toLowerCase().includes('pay')
+  const isPayEvent = header?.toLowerCase().includes('paid') || header?.toLowerCase().includes('pay')
 
   return (
     <div
@@ -110,17 +108,10 @@ export default function MissionActivityEvent({
                 </span>
               )}
             </div>
-            <div
-              className={`mt-2 ${isPayEvent ? 'text-white' : 'text-white/90'}`}
-            >
-              {subject}
-            </div>
+            <div className={`mt-2 ${isPayEvent ? 'text-white' : 'text-white/90'}`}>{subject}</div>
             {citizen && (
               <Link
-                href={`/citizen/${generatePrettyLinkWithId(
-                  citizen?.name,
-                  citizen?.id
-                )}`}
+                href={`/citizen/${generatePrettyLinkWithId(citizen?.name, citizen?.id)}`}
                 className="mt-2 inline-block text-sm text-white/70 hover:text-white hover:underline transition-colors"
               >
                 {citizen.name}
@@ -128,9 +119,7 @@ export default function MissionActivityEvent({
             )}
             {!citizen && address && (
               <div className="mt-2 text-sm text-white/70">
-                {ens
-                  ? ens.name
-                  : `${address.slice(0, 6)}...${address.slice(-4)}`}
+                {ens?.name ? ens.name : `${address.slice(0, 6)}...${address.slice(-4)}`}
               </div>
             )}
             {extra && (

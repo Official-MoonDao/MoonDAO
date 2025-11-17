@@ -13,9 +13,7 @@ export default function MissionActivityList({
   projectId,
   citizens,
 }: any) {
-  const [filter, setFilter] = useState<'all' | 'payEvent' | 'mintTokensEvent'>(
-    'all'
-  )
+  const [filter, setFilter] = useState<'all' | 'payEvent' | 'mintTokensEvent'>('all')
 
   const { data: suckers, refetch } = useSuckers()
 
@@ -37,26 +35,13 @@ export default function MissionActivityList({
         .flatMap((page) => page.data.activityEvents.items)
         .map(transformEventData)
         .filter((event) => !!event)
-        .map((e) => translateEventDataToPresenter(e, tokenSymbol, citizens)) ??
-      [],
+        .filter((event) => event.type !== 'mintTokensEvent')
+        .map((e) => translateEventDataToPresenter(e, tokenSymbol, citizens)) ?? [],
     [projectEventsQueryResult?.pages, tokenSymbol, citizens]
   )
 
   return (
     <div>
-      <div className="flex justify-end items-center gap-4">
-        <Selector
-          value={filter}
-          onChange={(value) => {
-            setFilter(value as 'all' | 'payEvent' | 'mintTokensEvent')
-          }}
-          options={[
-            { label: 'All', value: 'all' },
-            { label: 'Contributions', value: 'payEvent' },
-            { label: 'Tokens', value: 'mintTokensEvent' },
-          ]}
-        />
-      </div>
       <div className="flex flex-col gap-4 py-2">
         {projectEvents.map((event, i) => (
           <MissionActivityEvent
@@ -113,11 +98,7 @@ export default function MissionActivityList({
 }
 
 function RichNote({ note }: { note: string }) {
-  return (
-    <div className="text-sm break-words text-white/80 leading-relaxed">
-      {note}
-    </div>
-  )
+  return <div className="text-sm break-words text-white/80 leading-relaxed">{note}</div>
 }
 
 function translateEventDataToPresenter(
@@ -126,8 +107,7 @@ function translateEventDataToPresenter(
   citizens: any[]
 ) {
   const citizen = citizens.find(
-    (citizen) =>
-      citizen.owner.toLowerCase() == event?.beneficiary?.toLowerCase()
+    (citizen) => citizen.owner.toLowerCase() == event?.beneficiary?.toLowerCase()
   )
   switch (event.type) {
     case 'payEvent':
@@ -140,6 +120,7 @@ function translateEventDataToPresenter(
           </span>
         ),
         extra: <RichNote note={event.memo} />,
+        address: event.beneficiary,
         citizen: citizen,
       }
     case 'addToBalanceEvent':
@@ -159,10 +140,7 @@ function translateEventDataToPresenter(
         header: 'Minted tokens',
         subject: (
           <span className="font-heading text-lg">
-            To:{' '}
-            {event.beneficiary.slice(0, 6) +
-              '...' +
-              event.beneficiary.slice(-4)}
+            To: {event.beneficiary.slice(0, 6) + '...' + event.beneficiary.slice(-4)}
           </span>
         ),
         extra: null,

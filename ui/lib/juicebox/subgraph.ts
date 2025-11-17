@@ -49,7 +49,7 @@ export function suckerGroupMomentsQuery(
         timestamp_gte: ${startTimestamp},
         timestamp_lte: ${endTimestamp},
         version: ${BENDYSTRAW_JB_VERSION}
-      }) {
+      }, orderBy: "timestamp", orderDirection: "asc", limit: 1000) {
         items {
           balance
           volume
