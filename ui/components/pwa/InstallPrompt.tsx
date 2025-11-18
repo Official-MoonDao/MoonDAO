@@ -10,6 +10,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 type BrowserType =
   | 'chrome'
+  | 'chrome-ios'
   | 'edge'
   | 'firefox'
   | 'safari'
@@ -29,6 +30,16 @@ interface BrowserInfo {
 function detectBrowser(): BrowserInfo {
   const ua = navigator.userAgent
   const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream
+
+  // Chrome on iOS (uses WebKit, no native PWA support)
+  if (isIOS && ua.indexOf('CriOS') > -1) {
+    return {
+      type: 'chrome-ios',
+      name: 'Chrome (iOS)',
+      supportsInstall: true,
+      supportsNativePrompt: false,
+    }
+  }
 
   // Safari iOS
   if (isIOS) {
@@ -145,8 +156,8 @@ export default function InstallPrompt() {
     const isInStandaloneMode = isPWAMode()
     setIsStandalone(isInStandaloneMode)
 
-    // Check if iOS
-    const iOS = browser.type === 'safari-ios'
+    // Check if iOS (Safari or Chrome on iOS)
+    const iOS = browser.type === 'safari-ios' || browser.type === 'chrome-ios'
     setIsIOS(iOS)
 
     // Check if desktop
@@ -253,6 +264,11 @@ export default function InstallPrompt() {
       }
     }
 
+    // Only show if installation is supported
+    if (!browserInfo || !browserInfo.supportsInstall) {
+      return
+    }
+
     // For iOS, show prompt
     if (isIOS) {
       setTimeout(() => setShowPrompt(true), 500)
@@ -286,27 +302,6 @@ export default function InstallPrompt() {
         }
       } catch (error) {
         console.error('[PWA] Install prompt error:', error)
-        setShowInstructions(true)
-      }
-    } else if (isIOS && navigator.share) {
-      // Use Web Share API on iOS to open native share sheet
-      try {
-        await navigator.share({
-          title: 'MoonDAO',
-          text: 'Install MoonDAO PWA',
-          url: window.location.href,
-        })
-        setTimeout(() => {
-          if (isPWAMode()) {
-            localStorage.setItem('pwa-install-accepted', new Date().toISOString())
-            setShowPrompt(false)
-          }
-        }, 1000)
-      } catch (error: any) {
-        // User cancelled or share failed - show instructions as fallback
-        if (error.name !== 'AbortError') {
-          console.error('[PWA] Share error:', error)
-        }
         setShowInstructions(true)
       }
     } else {
@@ -374,6 +369,16 @@ export default function InstallPrompt() {
             'Select "Install MoonDAO"',
             'Click "Install" in the popup',
           ],
+        }
+
+      case 'chrome-ios':
+        return {
+          steps: [
+            'Tap the Share button (square with arrow up) at the bottom',
+            'Scroll down and tap "Add to Home Screen"',
+            'Tap "Add" in the top-right corner',
+          ],
+          note: 'Chrome on iOS uses the same installation method as Safari',
         }
 
       case 'safari-ios':
@@ -456,21 +461,42 @@ export default function InstallPrompt() {
           </button>
         </div>
 
-        <div className="flex gap-3 items-center justify-center pt-2">
-          <button
-            className="px-5 py-2 rounded-lg bg-black/20 border border-white/10 text-white hover:bg-black/30 hover:border-white/20 transition-all duration-200 font-medium text-sm"
-            onClick={handleDismiss}
-          >
-            {isIOS ? 'Maybe Later' : 'Not Now'}
-          </button>
-          <button
-            onClick={handleInstallClick}
-            className="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium transition-all duration-200 transform hover:scale-105 shadow-lg text-sm flex items-center gap-2"
-          >
-            <ArrowDownTrayIcon className="w-4 h-4" />
-            <span>{deferredPrompt ? 'Install App' : 'Install'}</span>
-          </button>
-        </div>
+        {isIOS ? (
+          <div className="space-y-2">
+            <div className="text-sm text-gray-300">
+              <p className="font-medium text-white mb-2">To install on iOS:</p>
+              <ol className="list-decimal list-inside space-y-1 text-xs">
+                {instructions.steps.map((step, index) => (
+                  <li key={index}>{step}</li>
+                ))}
+              </ol>
+            </div>
+            <div className="flex gap-3 items-center justify-center pt-2">
+              <button
+                className="px-5 py-2 rounded-lg bg-black/20 border border-white/10 text-white hover:bg-black/30 hover:border-white/20 transition-all duration-200 font-medium text-sm"
+                onClick={handleDismiss}
+              >
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3 items-center justify-center pt-2">
+            <button
+              className="px-5 py-2 rounded-lg bg-black/20 border border-white/10 text-white hover:bg-black/30 hover:border-white/20 transition-all duration-200 font-medium text-sm"
+              onClick={handleDismiss}
+            >
+              Not Now
+            </button>
+            <button
+              onClick={handleInstallClick}
+              className="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium transition-all duration-200 transform hover:scale-105 shadow-lg text-sm flex items-center gap-2"
+            >
+              <ArrowDownTrayIcon className="w-4 h-4" />
+              <span>{deferredPrompt ? 'Install App' : 'How to Install'}</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Instructions Modal */}
@@ -522,7 +548,11 @@ export default function InstallPrompt() {
             </div>
 
             <button
-              onClick={() => setShowInstructions(false)}
+              onClick={() => {
+                localStorage.setItem('pwa-install-accepted', new Date().toISOString())
+                setShowInstructions(false)
+                setShowPrompt(false)
+              }}
               className="mt-6 w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium py-2.5 px-4 rounded-lg transition-all duration-200 transform hover:scale-105"
             >
               Got it
