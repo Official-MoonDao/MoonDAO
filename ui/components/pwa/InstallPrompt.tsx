@@ -435,42 +435,21 @@ export default function InstallPrompt() {
           </button>
         </div>
 
-        {isIOS ? (
-          <div className="space-y-2">
-            <div className="text-sm text-gray-300">
-              <p className="font-medium text-white mb-2">To install on iOS:</p>
-              <ol className="list-decimal list-inside space-y-1 text-xs">
-                {instructions.steps.map((step, index) => (
-                  <li key={index}>{step}</li>
-                ))}
-              </ol>
-            </div>
-            <div className="flex gap-3 items-center justify-center pt-2">
-              <button
-                className="px-5 py-2 rounded-lg bg-black/20 border border-white/10 text-white hover:bg-black/30 hover:border-white/20 transition-all duration-200 font-medium text-sm"
-                onClick={handleDismiss}
-              >
-                Maybe Later
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex gap-3 items-center justify-center pt-2">
-            <button
-              className="px-5 py-2 rounded-lg bg-black/20 border border-white/10 text-white hover:bg-black/30 hover:border-white/20 transition-all duration-200 font-medium text-sm"
-              onClick={handleDismiss}
-            >
-              Not Now
-            </button>
-            <button
-              onClick={handleInstallClick}
-              className="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium transition-all duration-200 transform hover:scale-105 shadow-lg text-sm flex items-center gap-2"
-            >
-              <ArrowDownTrayIcon className="w-4 h-4" />
-              <span>{deferredPrompt ? 'Install App' : 'How to Install'}</span>
-            </button>
-          </div>
-        )}
+        <div className="flex gap-3 items-center justify-center pt-2">
+          <button
+            className="px-5 py-2 rounded-lg bg-black/20 border border-white/10 text-white hover:bg-black/30 hover:border-white/20 transition-all duration-200 font-medium text-sm"
+            onClick={handleDismiss}
+          >
+            {isIOS ? 'Maybe Later' : 'Not Now'}
+          </button>
+          <button
+            onClick={handleInstallClick}
+            className="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium transition-all duration-200 transform hover:scale-105 shadow-lg text-sm flex items-center gap-2"
+          >
+            <ArrowDownTrayIcon className="w-4 h-4" />
+            <span>{deferredPrompt ? 'Install App' : 'Install'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Instructions Modal */}
