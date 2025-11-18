@@ -1,3 +1,4 @@
+import { Redis } from '@upstash/redis'
 import { authMiddleware } from 'middleware/authMiddleware'
 import { secureHeaders } from 'middleware/secureHeaders'
 import withMiddleware from 'middleware/withMiddleware'
@@ -8,6 +9,13 @@ import {
   handleAPIError,
   BuyQuoteRequest,
 } from '../../../lib/coinbase'
+import { detectUserState, isValidUSState } from '../../../lib/geo'
+
+// Initialize Redis client for geolocation caching
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_URL!,
+  token: process.env.UPSTASH_REDIS_TOKEN!,
+})
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -36,6 +44,25 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     }
 
+    // Detect user's US state if not provided
+    let detectedSubdivision = subdivision
+    if (!detectedSubdivision) {
+      try {
+        const stateCode = await detectUserState(req, redis)
+        if (stateCode && isValidUSState(stateCode)) {
+          detectedSubdivision = stateCode
+          console.log(`[Coinbase] Auto-detected US state: ${stateCode}`)
+        } else {
+          console.log(
+            '[Coinbase] Unable to detect US state, proceeding without subdivision'
+          )
+        }
+      } catch (error) {
+        console.error('[Coinbase] Error detecting state:', error)
+        // Continue without subdivision - don't block the purchase
+      }
+    }
+
     // Validate CDP credentials
     const credentials = validateCDPCredentials()
 
@@ -47,7 +74,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       paymentMethod,
       purchaseCurrency,
       purchaseNetwork,
-      subdivision,
+      subdivision: detectedSubdivision,
     }
 
     requestBody.paymentAmount = paymentAmount.toString()

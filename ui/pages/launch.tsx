@@ -229,7 +229,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
     <>
       <section className="relative h-screen overflow-hidden">
         {/* High-quality background image */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 -top-18 md:-top-22 lg:-top-26">
           <Image
             src="/assets/launchpad/moondao-launchpad-hero.png"
             alt="MoonDAO Launchpad Hero"
@@ -243,7 +243,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
 
         {/* Hero content - positioned higher up from bottom */}
         <div className="relative z-10 h-full flex flex-col justify-end">
-          <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 pb-12 md:pb-16 lg:pb-20 xl:pb-24">
+          <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 pb-24 md:pb-28 lg:pb-32 xl:pb-36">
             <div className="max-w-2xl">
               {/* MoonDAO Logo */}
               <div className="mb-4 md:mb-6">
@@ -320,7 +320,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
         />
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="absolute bottom-20 sm:bottom-22 md:bottom-24 left-1/2 transform -translate-x-1/2 z-20">
           <div
             className="flex flex-col items-center text-white/70 hover:text-white/90 transition-colors duration-300 cursor-pointer group"
             onClick={() => {

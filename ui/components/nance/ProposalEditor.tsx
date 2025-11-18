@@ -1,10 +1,6 @@
 import { Field, Label, Switch } from '@headlessui/react'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
-import {
-  useProposal,
-  useProposalUpload,
-  useSpaceInfo,
-} from '@nance/nance-hooks'
+import { useProposal, useProposalUpload, useSpaceInfo } from '@nance/nance-hooks'
 import {
   Action,
   Proposal,
@@ -18,7 +14,7 @@ import { add, differenceInDays, getUnixTime } from 'date-fns'
 import { StringParam, useQueryParams } from 'next-query-params'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { FormProvider, SubmitHandler, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useLocalStorage } from 'react-use'
@@ -29,6 +25,7 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { TEMPLATE, uuidGen } from '@/lib/nance'
 import useAccount from '@/lib/nance/useAccountAddress'
 import { useSignProposal } from '@/lib/nance/useSignProposal'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { classNames } from '@/lib/utils/tailwind'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
@@ -42,10 +39,7 @@ const DRAFTS_ENABLED = false
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
-const ProposalLocalCache = dynamic(
-  import('@/components/nance/ProposalLocalCache'),
-  { ssr: false }
-)
+const ProposalLocalCache = dynamic(import('@/components/nance/ProposalLocalCache'), { ssr: false })
 
 let getMarkdown: GetMarkdown
 let setMarkdown: SetMarkdown
@@ -79,24 +73,20 @@ export default function ProposalEditor() {
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
+  const { selectedWallet } = useContext(PrivyWalletContext)
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
   const [proposalTitle, setProposalTitle] = useState<string | undefined>()
-  const [proposalStatus, setProposalStatus] =
-    useState<ProposalStatus>('Discussion')
+  const [proposalStatus, setProposalStatus] = useState<ProposalStatus>('Discussion')
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false)
   const [showSubmissionCTA, setShowSubmissionCTA] = useState<boolean>(false)
-  const [submittedProposalId, setSubmittedProposalId] = useState<
-    string | undefined
-  >()
+  const [submittedProposalId, setSubmittedProposalId] = useState<string | undefined>()
 
   const { data: spaceInfoData } = useSpaceInfo({ space: NANCE_SPACE_NAME })
   const spaceInfo = spaceInfoData?.data
   const { nextEvents, currentEvent } = spaceInfo || {}
-  let nextSnapshotVote = nextEvents?.find(
-    (event) => event.title === 'Snapshot Vote'
-  )
+  let nextSnapshotVote = nextEvents?.find((event) => event.title === 'Snapshot Vote')
   const nextProposalId = spaceInfo?.nextProposalId
   if (currentEvent?.title === 'Temperature Check') {
     const days = differenceInDays(
@@ -114,16 +104,12 @@ export default function ProposalEditor() {
 
   const [{ proposalId }] = useQueryParams({ proposalId: StringParam })
   const shouldFetch = !!proposalId
-  const { data } = useProposal(
-    { space: NANCE_SPACE_NAME, uuid: proposalId! },
-    shouldFetch
-  )
+  const { data } = useProposal({ space: NANCE_SPACE_NAME, uuid: proposalId! }, shouldFetch)
   const loadedProposal = data?.data
 
-  const [proposalCache, setProposalCache, clearProposalCache] =
-    useLocalStorage<ProposalCache>(
-      `NanceProposalCacheV1-${loadedProposal?.uuid.substring(0, 5) || 'new'}`
-    )
+  const [proposalCache, setProposalCache, clearProposalCache] = useLocalStorage<ProposalCache>(
+    `NanceProposalCacheV1-${loadedProposal?.uuid.substring(0, 5) || 'new'}`
+  )
 
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
@@ -183,8 +169,7 @@ export default function ProposalEditor() {
   const { wallet } = useAccount()
   const { signProposalAsync } = useSignProposal(wallet)
   const { trigger } = useProposalUpload(NANCE_SPACE_NAME, loadedProposal?.uuid)
-  const buttonsDisabled =
-    !address || signingStatus === 'loading' || isUploadingImage
+  const buttonsDisabled = !address || signingStatus === 'loading' || isUploadingImage
 
   const buildProposal = (status: ProposalStatus) => {
     return {
@@ -273,7 +258,7 @@ export default function ProposalEditor() {
             message,
           },
         })
-          .then((res) => {
+          .then(async (res) => {
             console.log('signAndSendProposal: Upload response', res)
             if (res.success) {
               setSigningStatus('success')
@@ -283,40 +268,59 @@ export default function ProposalEditor() {
                 style: toastStyle,
               })
               // Show CTA instead of immediate redirect
-              setSubmittedProposalId(res.data.uuid)
+              setSubmittedProposalId(proposalId?.toString())
               setShowSubmissionCTA(true)
+
+              // Send Discord notification
+              try {
+                const { getAccessToken } = await import('@privy-io/react-auth')
+                const accessToken = await getAccessToken()
+
+                const notificationResponse = await fetch(
+                  '/api/proposal/new-proposal-notification',
+                  {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      proposalId: res.data.uuid,
+                      accessToken: accessToken,
+                      selectedWallet: selectedWallet,
+                    }),
+                  }
+                )
+
+                const notificationData = await notificationResponse.json()
+                if (notificationData?.message) {
+                  console.log('Notification result:', notificationData.message)
+                }
+              } catch (notificationError: any) {
+                console.error('Failed to send notification:', notificationError)
+                // Don't block the user experience if notification fails
+              }
             } else {
               console.error('signAndSendProposal: Upload failed', res)
               setSigningStatus('error')
               toast.dismiss(t)
-              toast.error(
-                `Error saving proposal: ${res.error || 'Unknown error'}`,
-                { style: toastStyle }
-              )
+              toast.error(`Error saving proposal: ${res.error || 'Unknown error'}`, {
+                style: toastStyle,
+              })
             }
           })
           .catch((error) => {
             console.error('signAndSendProposal: Upload error', error)
             setSigningStatus('error')
             toast.dismiss(t)
-            toast.error(
-              `[API] Error submitting proposal:\n${error.message || error}`,
-              {
-                style: toastStyle,
-              }
-            )
+            toast.error(`[API] Error submitting proposal:\n${error.message || error}`, {
+              style: toastStyle,
+            })
           })
       })
       .catch((error) => {
         console.error('signAndSendProposal: Signing error', error)
         setSigningStatus('idle')
         toast.dismiss(t)
-        toast.error(
-          `[Wallet] Error signing proposal:\n${error.message || error}`,
-          {
-            style: toastStyle,
-          }
-        )
+        toast.error(`[Wallet] Error signing proposal:\n${error.message || error}`, {
+          style: toastStyle,
+        })
       })
   }
 
@@ -382,11 +386,7 @@ export default function ProposalEditor() {
                   }}
                 />
               </div>
-              <div
-                className={`${
-                  isUploadingImage ? 'pointer-events-none opacity-50' : ''
-                }`}
-              >
+              <div className={`${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
                 <EditorMarkdownUpload setMarkdown={setMarkdown} />
               </div>
             </div>
@@ -416,9 +416,7 @@ export default function ProposalEditor() {
                     alt="Uploading..."
                     className="w-16 h-16 mb-4"
                   />
-                  <p className="text-white text-lg font-medium">
-                    Uploading image...
-                  </p>
+                  <p className="text-white text-lg font-medium">Uploading image...</p>
                   <p className="text-gray-300 text-sm mt-2">
                     Please wait, do not close this window
                   </p>
@@ -450,9 +448,7 @@ export default function ProposalEditor() {
                   />
                 </Switch>
                 <Label as="span" className="ml-3 text-sm">
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    Attach Budget
-                  </span>{' '}
+                  <span className="font-medium text-gray-900 dark:text-white">Attach Budget</span>{' '}
                 </Label>
               </Field>
             </div>
@@ -460,9 +456,7 @@ export default function ProposalEditor() {
             {attachBudget && (
               <FormProvider {...methods}>
                 <div className="my-10 p-5 rounded-[20px] bg-dark-cool">
-                  <RequestBudgetActionForm
-                    disableRequiredFields={proposalStatus === 'Draft'}
-                  />
+                  <RequestBudgetActionForm disableRequiredFields={proposalStatus === 'Draft'} />
                 </div>
               </FormProvider>
             )}
@@ -485,13 +479,11 @@ export default function ProposalEditor() {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-yellow-400 mb-1">
-                      Network Notice
-                    </h3>
+                    <h3 className="text-sm font-semibold text-yellow-400 mb-1">Network Notice</h3>
                     <p className="text-sm text-yellow-200/80">
-                      Please ensure you're connected to the correct blockchain
-                      network before submitting. You may need to switch networks
-                      in your wallet to complete your submission successfully.
+                      Please ensure you're connected to the correct blockchain network before
+                      submitting. You may need to switch networks in your wallet to complete your
+                      submission successfully.
                     </p>
                   </div>
                 </div>

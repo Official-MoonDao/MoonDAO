@@ -54,9 +54,9 @@ function MissionPayRedeemContent({
   usdInput,
   setUsdInput,
 }: any) {
-  const isRefundable = stage === 3
+  const isRefundable = Number(stage) === 3
   const deadlineHasPassed = deadline ? deadline < Date.now() : false
-  const shouldShowSwapOnly = deadlineHasPassed && stage === 2
+  const shouldShowSwapOnly = deadlineHasPassed && Number(stage) === 2
 
   if (
     isRefundable &&
@@ -468,7 +468,7 @@ function MissionPayRedeemComponent({
         return
       }
     },
-    [setInput, formatInputWithCommas]
+    [setInput, setUsdInput, formatInputWithCommas]
   )
 
   // Helper function to safely convert a number to wei (BigInt)
@@ -524,7 +524,7 @@ function MissionPayRedeemComponent({
       return
     }
     if (!jbTokenBalance && !tokenCredit) return
-    if (stage !== 3) {
+    if (Number(stage) !== 3) {
       setRedeemAmount(0)
       setIsLoadingRedeemAmount(false)
       return
@@ -713,7 +713,7 @@ function MissionPayRedeemComponent({
 
   useEffect(() => {
     if (
-      stage === 3 &&
+      Number(stage) === 3 &&
       ((jbTokenBalance && jbTokenBalance > 0) ||
         (tokenCredit && tokenCredit > 0))
     ) {
@@ -724,7 +724,7 @@ function MissionPayRedeemComponent({
     }
   }, [jbTokenBalance, tokenCredit, stage, getRedeemQuote])
 
-  if (stage === 4) return null
+  if (Number(stage) === 4) return null
 
   return (
     <>
