@@ -288,6 +288,27 @@ export default function InstallPrompt() {
         console.error('[PWA] Install prompt error:', error)
         setShowInstructions(true)
       }
+    } else if (isIOS && navigator.share) {
+      // Use Web Share API on iOS to open native share sheet
+      try {
+        await navigator.share({
+          title: 'MoonDAO',
+          text: 'Install MoonDAO PWA',
+          url: window.location.href,
+        })
+        setTimeout(() => {
+          if (isPWAMode()) {
+            localStorage.setItem('pwa-install-accepted', new Date().toISOString())
+            setShowPrompt(false)
+          }
+        }, 1000)
+      } catch (error: any) {
+        // User cancelled or share failed - show instructions as fallback
+        if (error.name !== 'AbortError') {
+          console.error('[PWA] Share error:', error)
+        }
+        setShowInstructions(true)
+      }
     } else {
       setShowInstructions(true)
     }
