@@ -386,7 +386,10 @@ export default function InstallPrompt() {
     localStorage.setItem('pwa-install-dismissed', new Date().toISOString())
   }
 
-  // SYNCHRONOUS check at render time - don't rely only on state
+  if (!isInitialized) {
+    return null
+  }
+
   const isCurrentlyStandalone =
     typeof window !== 'undefined' && (isPWAMode() || hasAcceptedInstall())
 

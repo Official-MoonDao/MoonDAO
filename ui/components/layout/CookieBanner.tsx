@@ -26,7 +26,7 @@ export default function CookieBanner() {
     }
   }, [cookieConsent, hasLoadedLocalStorage])
 
-  if (cookieConsent != null) return null
+  if (cookieConsent != null || !hasLoadedLocalStorage) return null
 
   return (
     <Modal
