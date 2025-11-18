@@ -179,10 +179,30 @@ export default function InstallPrompt() {
     // Listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
+      console.log('[PWA] beforeinstallprompt event fired')
       setDeferredPrompt(e as BeforeInstallPromptEvent)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+
+    // Debug: Log if beforeinstallprompt doesn't fire (Chrome has strict engagement criteria)
+    if (browser.type === 'chrome' && !isIOS) {
+      setTimeout(() => {
+        if (!deferredPrompt) {
+          console.log('[PWA] Chrome beforeinstallprompt not fired. Chrome requires:', {
+            requirements: [
+              'Valid manifest.json',
+              'Registered service worker',
+              'HTTPS (or localhost)',
+              'User engagement: 2+ visits with 5+ min gap between visits',
+              'App not already installed',
+            ],
+            hasServiceWorker: 'serviceWorker' in navigator,
+            currentUrl: window.location.href,
+          })
+        }
+      }, 3000)
+    }
 
     // Listen for display mode changes (detects when PWA fully launches)
     const standaloneMediaQuery = window.matchMedia('(display-mode: standalone)')
@@ -269,21 +289,22 @@ export default function InstallPrompt() {
       return
     }
 
-    // For iOS, show prompt
+    // For iOS, show prompt (iOS doesn't support beforeinstallprompt)
     if (isIOS) {
       setTimeout(() => setShowPrompt(true), 500)
       return
     }
 
-    // For desktop, check service worker and show prompt
-    if (isDesktop && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        if (registrations.length > 0) {
-          setTimeout(() => setShowPrompt(true), 500)
-        }
-      })
-    } else if (!isDesktop) {
-      // For mobile (non-iOS), show if service worker is available
+    // For desktop, only show if beforeinstallprompt event has fired (criteria met)
+    if (isDesktop) {
+      if (deferredPrompt) {
+        setTimeout(() => setShowPrompt(true), 500)
+      }
+      return
+    }
+
+    // For mobile (non-iOS), show if service worker is available
+    if (!isDesktop) {
       setTimeout(() => setShowPrompt(true), 500)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
