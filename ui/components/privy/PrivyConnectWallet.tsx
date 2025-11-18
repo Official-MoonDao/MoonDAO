@@ -1366,10 +1366,9 @@ export function PrivyConnectWallet({
         <div className="w-full">
           <button
             id="sign-in-button"
-            onClick={async () => {
+            onClick={() => {
               if (user) {
-                await logout()
-                login()
+                logout().then(() => login())
               } else {
                 login()
               }

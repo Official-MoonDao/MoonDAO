@@ -1,5 +1,6 @@
 {
   "name": "MoonDAO",
+  "version": "1.0.1",
   "short_name": "MoonDAO",
   "description": "Decentralizing space exploration and research",
   "start_url": "/?source=pwa",
@@ -66,4 +67,3 @@
     }
   ]
 }
-
