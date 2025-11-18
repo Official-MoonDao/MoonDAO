@@ -15,15 +15,8 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
-import {
-  ProjectRewards,
-  ProjectRewardsProps,
-} from '@/components/nance/ProjectRewards'
-import {
-  PROJECT_ACTIVE,
-  PROJECT_ENDED,
-  PROJECT_PENDING,
-} from '@/lib/nance/types'
+import { ProjectRewards, ProjectRewardsProps } from '@/components/nance/ProjectRewards'
+import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
 
 export default function Projects({
   proposals,
@@ -49,12 +42,11 @@ export async function getStaticProps() {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
-    const { quarter, year } = getRelativeQuarter(
-      isRewardsCycle(new Date()) ? -1 : 0
-    )
+    const { quarter, year } = getRelativeQuarter(isRewardsCycle(new Date()) ? -1 : 0)
 
     const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
     const projects = await queryTable(chain, projectStatement)
+    console.log('projects', projects)
 
     const proposals = []
     const currentProjects = []
@@ -62,6 +54,8 @@ export async function getStaticProps() {
     for (let i = 0; i < projects.length; i++) {
       if (!BLOCKED_PROJECTS.has(projects[i].id)) {
         const activeStatus = projects[i].active
+        console.log('activeStatus', activeStatus)
+        console.log(PROJECT_PENDING)
         if (activeStatus == PROJECT_PENDING) {
           proposals.push(projects[i])
         } else if (activeStatus == PROJECT_ACTIVE) {

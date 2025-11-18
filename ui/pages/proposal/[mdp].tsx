@@ -1,10 +1,6 @@
 import { runQuadraticVoting } from '@/lib/utils/rewards'
 import { useTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
-import {
-  ProposalPacket,
-  getActionsFromBody,
-  getProposal,
-} from '@nance/nance-sdk'
+import { ProposalPacket, getActionsFromBody, getProposal } from '@nance/nance-sdk'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import ProposalsABI from 'const/abis/Proposals.json'
 import {
@@ -60,19 +56,12 @@ function Proposal({
   }
 
   const voteAddresses = votes.map((pv) => pv.address)
-  console.log('votes', votes)
-  //.concat(['0x679d87D8640e66778c3419D164998E720D7495f6'])
   const { totalVMOONEYs: vMOONEYs } = useTotalVMOONEYs(voteAddresses)
-  console.log('vMOONEYs', vMOONEYs)
   const addressToQuadraticVotingPower = Object.fromEntries(
     voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
   )
   const SUM_TO_ONE_HUNDRED = 100
-  const outcome = runQuadraticVoting(
-    votes,
-    addressToQuadraticVotingPower,
-    SUM_TO_ONE_HUNDRED
-  )
+  const outcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
   const tallyVotes = async () => {
     const res = await fetch(`/api/proposals/vote`, {
       method: 'POST',
@@ -89,9 +78,7 @@ function Proposal({
   console.log('outcome', outcome)
 
   // Determine the number of grid columns based on the presence of votes
-  const gridCols = votes
-    ? 'grid-cols-1 lg:grid-cols-3'
-    : 'grid-cols-1 lg:grid-cols-2'
+  const gridCols = votes ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2'
 
   return (
     <Container>
@@ -134,12 +121,9 @@ function Proposal({
                         })
                       }}
                     >
-                      <h3 className="font-GoodTimes pb-2 text-gray-400">
-                        Votes
-                      </h3>
+                      <h3 className="font-GoodTimes pb-2 text-gray-400">Votes</h3>
                       <span className="ml-2 text-center text-xs text-gray-300">
-                        sort by{' '}
-                        {query.sortBy === 'vp' ? 'voting power' : 'time'}
+                        sort by {query.sortBy === 'vp' ? 'voting power' : 'time'}
                       </span>
                     </button>
                     <div className="pb-5">
@@ -243,8 +227,9 @@ export const getServerSideProps: GetServerSideProps<{
     const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
     const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
 
-    const proposalJson = await fetch(project.proposalIPFS)
-    const proposal = await proposalJson.text()
+    const proposalResponse = await fetch(project.proposalIPFS)
+    const proposalJson = await proposalResponse.json()
+    const proposal = proposalJson.body
     return {
       props: {
         proposal,

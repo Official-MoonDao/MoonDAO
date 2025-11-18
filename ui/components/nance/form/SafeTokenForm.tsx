@@ -60,8 +60,6 @@ export default function SafeTokenForm({
 
   const filteredItems = acceptedTokens
     ? items.filter((item) => {
-        console.log('item', item)
-        console.log('acceptedTokens', acceptedTokens)
         return acceptedTokens.some((token) => item.name?.startsWith(token))
       })
     : items

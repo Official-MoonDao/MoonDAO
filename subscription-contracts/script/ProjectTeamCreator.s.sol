@@ -45,9 +45,9 @@ contract MyScript is Script {
         creator.setProjectTeamAdminHatId(projectTeamAdminHatId);
         projectTeam.setProjectTeamCreator(address(creator));
 
-        //hats.transferHat(projectTeamAdminHatId, oldCreatorAddress, address(creator));
-        hats.mintHat(projectTeamAdminHatId, address(creator));
-        hats.changeHatEligibility(projectTeamAdminHatId, address(creator));
+        hats.transferHat(projectTeamAdminHatId, oldCreatorAddress, address(creator));
+        //hats.mintHat(projectTeamAdminHatId, address(creator));
+        //hats.changeHatEligibility(projectTeamAdminHatId, address(creator));
 
 
         vm.stopBroadcast();
