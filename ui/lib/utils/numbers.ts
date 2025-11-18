@@ -99,3 +99,24 @@ export const fromWad = (wadValue?: BigNumberish) => {
 export const wadToFloat = (wadValue?: BigNumberish) => {
   return parseFloat(fromWad(wadValue))
 }
+
+/**
+ * Formats contribution amounts with appropriate precision
+ * @param output - The number to format
+ * @returns Formatted string or 0 if invalid
+ */
+export function formatContributionOutput(output: number): string | number {
+  if (!Number.isFinite(output) || output <= 0) return 0
+
+  if (output >= 1) {
+    return Math.floor(output).toLocaleString()
+  }
+  if (output < 0.01) {
+    return (Math.floor(output * 1000) / 1000).toFixed(3).toString()
+  }
+  if (output < 0.1) {
+    return (Math.floor(output * 100) / 100).toFixed(2).toString()
+  }
+
+  return (Math.floor(output * 10) / 10).toFixed(1).toString()
+}

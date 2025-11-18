@@ -1,16 +1,13 @@
 import { ChatBubbleLeftIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
-import { useWallets } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
-import JBV5TerminalStore from 'const/abis/JBV5TerminalStore.json'
 import JBV5Token from 'const/abis/JBV5Token.json'
 import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
-import PoolDeployerABI from 'const/abis/PoolDeployer.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
@@ -23,49 +20,29 @@ import {
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
-  JB_NATIVE_TOKEN_ADDRESS,
-  JB_NATIVE_TOKEN_ID,
 } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
-import toast from 'react-hot-toast'
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useWindowSize } from 'react-use'
-import {
-  getContract,
-  readContract,
-  prepareContractCall,
-  sendAndConfirmTransaction,
-} from 'thirdweb'
+import { getContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
-import useOnrampJWT, { OnrampJwtPayload } from '@/lib/coinbase/useOnrampJWT'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
+import { useDeadlineTracking } from '@/lib/mission/useDeadlineTracking'
+import { useManagerActions } from '@/lib/mission/useManagerActions'
 import useMissionData from '@/lib/mission/useMissionData'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
-import {
-  arbitrum,
-  base,
-  ethereum,
-  optimismSepolia,
-  sepolia,
-} from '@/lib/rpc/chains'
+import { useOnrampFlow } from '@/lib/mission/useOnrampFlow'
+import { arbitrum, base, ethereum, optimismSepolia, sepolia } from '@/lib/rpc/chains'
 import { useTeamData } from '@/lib/team/useTeamData'
-import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
-import { formatTimeUntilDeadline } from '@/lib/utils/dates'
+import { useElementVisibility } from '@/lib/utils/hooks/useElementVisibility'
 import { getAttribute } from '@/lib/utils/nft'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayoutMission'
@@ -130,47 +107,18 @@ export default function MissionProfile({
   _citizens,
 }: MissionProfileProps) {
   const account = useActiveAccount()
-  const { wallets } = useWallets()
   const router = useRouter()
-  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
-  const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
+  const { selectedChain } = useContext(ChainContextV5)
 
   const payRedeemContainerRef = useRef<HTMLDivElement>(null)
 
-  const [isPayRedeemContainerVisible, setIsPayRedeemContainerVisible] =
-    useState(false)
   const [isMounted, setIsMounted] = useState(false)
 
-  const { width: windowWidth, height: windowHeight } = useWindowSize()
+  const { width: windowWidth } = useWindowSize()
 
   useEffect(() => {
     setIsMounted(true)
   }, [])
-
-  // Intersection Observer to detect when pay/redeem component is visible
-  useEffect(() => {
-    const currentRef = payRedeemContainerRef.current
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // When the full component is more than 20% visible, hide the fixed button
-        setIsPayRedeemContainerVisible(entry.intersectionRatio > 0.75)
-      },
-      {
-        threshold: [0, 0.2, 0.5, 1.0], // Multiple thresholds for smoother detection
-        rootMargin: '-100px 0px 0px 0px', // Adjust when fade starts
-      }
-    )
-
-    if (currentRef) {
-      observer.observe(currentRef)
-    }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef)
-      }
-    }
-  }, [payRedeemContainerRef])
 
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains = useMemo(
@@ -182,27 +130,22 @@ export default function MissionProfile({
   const chainSlug = getChainSlug(selectedChain)
 
   const [teamNFT, setTeamNFT] = useState<any>(_teamNFT)
-  const [availableTokens, setAvailableTokens] = useState<number>(0)
-  const [availablePayouts, setAvailablePayouts] = useState<number>(0)
-  const [missionMetadataModalEnabled, setMissionMetadataModalEnabled] =
-    useState(false)
-  const [contributeModalEnabled, setContributeModalEnabled] = useState(false)
+  const [missionMetadataModalEnabled, setMissionMetadataModalEnabled] = useState(false)
   const [deployTokenModalEnabled, setDeployTokenModalEnabled] = useState(false)
-  const [usdInput, setUsdInput] = useState<string>('')
-  const hasProcessedOnrampRef = useRef(false)
 
-  const [hasReadInitialChainParam, setHasReadInitialChainParam] =
-    useState(false)
+  // Use custom hooks for extracted logic
+  const {
+    onrampJWTPayload,
+    usdInput,
+    setUsdInput,
+    contributeModalEnabled,
+    setContributeModalEnabled,
+  } = useOnrampFlow(mission, router, chainSlugs)
 
-  const [duration, setDuration] = useState<any>()
-  const [deadlinePassed, setDeadlinePassed] = useState(false)
-  const [refundPeriodPassed, setRefundPeriodPassed] = useState(false)
-  const [hasRefreshedStageAfterDeadline, setHasRefreshedStageAfterDeadline] =
-    useState(false)
-  const [
-    hasRefreshedStageAfterRefundPeriod,
-    setHasRefreshedStageAfterRefundPeriod,
-  ] = useState(false)
+  const { isVisible: isPayRedeemContainerVisible } = useElementVisibility(payRedeemContainerRef, {
+    visibilityThreshold: 0.75,
+    rootMargin: '-100px 0px 0px 0px',
+  })
 
   const {
     totalFunding,
@@ -282,301 +225,14 @@ export default function MissionProfile({
     _backers,
   })
 
-  const {
-    verifyJWT: verifyOnrampJWT,
-    clearJWT: clearOnrampJWT,
-    getStoredJWT: getStoredOnrampJWT,
-  } = useOnrampJWT()
-
-  const [onrampJWTPayload, setOnrampJWTPayload] =
-    useState<OnrampJwtPayload | null>(null)
-
-  // Handle onramp success from URL params and chain switching
-  useEffect(() => {
-    const chainToSwitchTo = router?.query?.chain as string | undefined
-
-    // Only process initial chain param once
-    if (!hasReadInitialChainParam) {
-      if (
-        chainToSwitchTo &&
-        chainToSwitchTo !== chainSlug &&
-        chainSlugs.includes(chainToSwitchTo)
-      ) {
-        const targetChain = v4SlugToV5Chain(chainToSwitchTo)
-        if (targetChain && setSelectedChain) {
-          setTimeout(() => {
-            setSelectedChain(targetChain)
-            setHasReadInitialChainParam(true)
-          }, 1000)
-        }
-      } else {
-        // No chain to switch to or already on correct chain, mark as read immediately
-        setHasReadInitialChainParam(true)
-        if (!chainToSwitchTo) {
-          setSelectedChain(DEFAULT_CHAIN_V5)
-        }
-      }
-    }
-  }, [
-    router?.query?.chain,
-    hasReadInitialChainParam,
-    chainSlug,
-    setSelectedChain,
-    chainSlugs,
-  ])
-
-  // Check for stored JWT and verify it proactively (not just when onrampSuccess is in URL)
-  const checkAndVerifyStoredJWT = useCallback(async () => {
-    if (!router?.isReady || !account?.address) return
-
-    const storedJWT = getStoredOnrampJWT()
-    if (!storedJWT) {
-      // No stored JWT - clear any existing payload
-      if (onrampJWTPayload) {
-        setOnrampJWTPayload(null)
-      }
-      return
-    }
-
-    // Don't re-verify if we already have a valid payload
-    if (onrampJWTPayload) {
-      // Verify it still matches current context
-      if (
-        onrampJWTPayload.address?.toLowerCase() ===
-          account.address?.toLowerCase() &&
-        onrampJWTPayload.chainSlug === chainSlug &&
-        onrampJWTPayload.missionId === mission.id?.toString()
-      ) {
-        return // Already have valid payload
-      }
-      // Payload doesn't match - clear it and re-verify
-      setOnrampJWTPayload(null)
-    }
-
-    try {
-      const payload = await verifyOnrampJWT(
-        storedJWT,
-        account.address,
-        mission.id?.toString()
-      )
-
-      if (!payload) {
-        // Verification failed - clear invalid JWT
-        clearOnrampJWT()
-        setOnrampJWTPayload(null)
-        return
-      }
-
-      // Validate payload matches current context
-      if (
-        !payload.address ||
-        !payload.chainSlug ||
-        payload.address.toLowerCase() !== account.address?.toLowerCase() ||
-        payload.chainSlug !== chainSlug ||
-        payload.missionId !== mission.id?.toString()
-      ) {
-        // Invalid - clear JWT and payload
-        clearOnrampJWT()
-        setOnrampJWTPayload(null)
-        return
-      }
-
-      // Set wallet based on JWT payload if needed
-      if (
-        payload.selectedWallet !== undefined &&
-        payload.selectedWallet !== selectedWallet
-      ) {
-        setSelectedWallet(payload.selectedWallet)
-      }
-
-      // Set verified payload
-      setOnrampJWTPayload(payload)
-      if (payload.usdAmount) {
-        setUsdInput(payload.usdAmount)
-      }
-
-      // If coming from onramp redirect, open modal
-      const onrampSuccess = router?.query?.onrampSuccess === 'true'
-      if (onrampSuccess && !hasProcessedOnrampRef.current) {
-        hasProcessedOnrampRef.current = true
-        setContributeModalEnabled(true)
-      }
-    } catch (error) {
-      console.error('Error verifying stored JWT:', error)
-      clearOnrampJWT()
-      setOnrampJWTPayload(null)
-    }
-  }, [
-    router?.isReady,
-    router?.query?.onrampSuccess,
-    account?.address,
-    getStoredOnrampJWT,
-    verifyOnrampJWT,
-    chainSlug,
-    mission.id,
-    onrampJWTPayload,
-    selectedWallet,
-    setSelectedWallet,
-    clearOnrampJWT,
-  ])
-
-  // Handle post-onramp modal opening (when onrampSuccess is in URL)
-  const handlePostOnrampModal = useCallback(async () => {
-    if (!router?.isReady) return
-
-    const onrampSuccess = router?.query?.onrampSuccess === 'true'
-
-    // Early return if not an onramp success scenario
-    if (!onrampSuccess) {
-      hasProcessedOnrampRef.current = false
-      return
-    }
-
-    // Wait for account to be available
-    if (!wallets?.[0] || !account?.address) {
-      return console.error('No wallets or accounts found')
-    }
-
-    // If already processed, just ensure modal is open if needed
-    if (hasProcessedOnrampRef.current) {
-      if (onrampJWTPayload && !contributeModalEnabled) {
-        setContributeModalEnabled(true)
-      }
-      return
-    }
-
-    // Mark as processed first to prevent race conditions
-    hasProcessedOnrampRef.current = true
-
-    // Check and verify stored JWT (this will also open modal if valid)
-    await checkAndVerifyStoredJWT()
-  }, [
-    router?.isReady,
-    router?.query?.onrampSuccess,
-    wallets,
-    account?.address,
-    checkAndVerifyStoredJWT,
-    contributeModalEnabled,
-    onrampJWTPayload,
-  ])
-
-  // Check for stored JWT when component mounts or when account/chain changes
-  useEffect(() => {
-    if (!router?.isReady || !account?.address) return
-
-    // Check for stored JWT proactively (not just when onrampSuccess is in URL)
-    checkAndVerifyStoredJWT()
-  }, [router?.isReady, account?.address, chainSlug, checkAndVerifyStoredJWT])
-
-  // Handle post-onramp modal opening (when onrampSuccess is in URL)
-  useEffect(() => {
-    if (!router?.isReady) return
-
-    const onrampSuccess = router?.query?.onrampSuccess === 'true'
-
-    if (onrampSuccess) {
-      // Add a small delay to ensure account is loaded
-      const timeoutId = setTimeout(() => {
-        handlePostOnrampModal()
-      }, 500)
-
-      return () => clearTimeout(timeoutId)
-    } else {
-      // Reset when not in onramp success scenario
-      hasProcessedOnrampRef.current = false
-    }
-  }, [
-    router?.isReady,
-    router?.query?.onrampSuccess,
-    account?.address,
-    handlePostOnrampModal,
-  ])
-
-  // Reset ref when component unmounts or onrampSuccess is removed
-  useEffect(() => {
-    return () => {
-      if (!router?.query?.onrampSuccess) {
-        hasProcessedOnrampRef.current = false
-      }
-    }
-  }, [router?.query?.onrampSuccess])
-
-  // Update URL when chain changes (but only after initial chain param has been read)
-  useEffect(() => {
-    const urlChain = router?.query?.chain as string | undefined
-
-    // Only update URL if we've read the initial chain param to avoid premature updates
-    if (hasReadInitialChainParam && urlChain && urlChain !== chainSlug) {
-      router.replace(
-        {
-          pathname: router.pathname,
-          query: {
-            ...router.query,
-            chain: chainSlug,
-          },
-        },
-        undefined,
-        { shallow: true }
-      )
-    }
-  }, [chainSlug, hasReadInitialChainParam, router])
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (deadline !== undefined && deadline !== null && deadline !== 0) {
-        const newDuration = formatTimeUntilDeadline(new Date(deadline))
-        setDuration(newDuration)
-
-        const isDeadlinePassed = deadline < Date.now()
-
-        // Only update deadlinePassed if it actually changed
-        if (isDeadlinePassed) {
-          setDeadlinePassed(isDeadlinePassed)
-        }
-
-        // If deadline just passed and we haven't refreshed stage yet, do it now
-        if (isDeadlinePassed && !hasRefreshedStageAfterDeadline) {
-          setTimeout(() => {
-            refreshStage?.()
-            setHasRefreshedStageAfterDeadline(true)
-          }, 3000)
-        }
-
-        // Reset the flag if deadline is not passed (in case deadline changes)
-        if (!isDeadlinePassed && hasRefreshedStageAfterDeadline) {
-          setHasRefreshedStageAfterDeadline(false)
-        }
-
-        if (
-          refundPeriod !== undefined &&
-          refundPeriod !== null &&
-          refundPeriod !== 0
-        ) {
-          const isRefundPeriodPassed = deadline + refundPeriod < Date.now()
-
-          if (isRefundPeriodPassed) {
-            setRefundPeriodPassed(isRefundPeriodPassed)
-          }
-
-          if (isRefundPeriodPassed && !hasRefreshedStageAfterRefundPeriod) {
-            refreshStage?.()
-            setHasRefreshedStageAfterRefundPeriod(true)
-          }
-          if (!isRefundPeriodPassed && hasRefreshedStageAfterRefundPeriod) {
-            setHasRefreshedStageAfterRefundPeriod(false)
-          }
-        }
-      }
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [deadline, refundPeriod]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const { adminHatId, isManager } = useTeamData(
-    teamContract,
-    hatsContract,
-    teamNFT
+  // Use deadline tracking hook
+  const { duration, deadlinePassed, refundPeriodPassed } = useDeadlineTracking(
+    deadline,
+    refundPeriod,
+    refreshStage
   )
+
+  const { adminHatId, isManager } = useTeamData(teamContract, hatsContract, teamNFT)
 
   const teamHats = _teamHats || []
 
@@ -598,164 +254,23 @@ export default function MissionProfile({
     chain: selectedChain,
   })
 
-  const {
-    data: userMissionTokenBalance,
-    isLoading: userMissionTokenBalanceLoading,
-  } = useRead({
+  const { data: userMissionTokenBalance, isLoading: userMissionTokenBalanceLoading } = useRead({
     contract: missionTokenContract,
     method: 'balanceOf',
     params: [account?.address],
   })
 
-  useEffect(() => {
-    async function fetchAvailableAmounts() {
-      if (
-        !jbTerminalContract ||
-        !jbControllerContract ||
-        mission?.projectId === undefined ||
-        mission?.projectId === null
-      )
-        return
-
-      try {
-        // Get available payouts
-        const storeAddress: any = await readContract({
-          contract: jbTerminalContract,
-          method: 'STORE' as string,
-          params: [],
-        })
-        const jbTerminalStoreContract = getContract({
-          client: serverClient,
-          address: storeAddress,
-          abi: JBV5TerminalStore.abi as any,
-          chain: selectedChain,
-        })
-        const balance: any = await readContract({
-          contract: jbTerminalStoreContract,
-          method: 'balanceOf' as string,
-          params: [
-            jbTerminalContract.address,
-            mission.projectId,
-            JB_NATIVE_TOKEN_ADDRESS,
-          ],
-        })
-
-        setAvailablePayouts(+balance.toString())
-
-        const reservedTokenBalance: any = await readContract({
-          contract: jbControllerContract,
-          method: 'pendingReservedTokenBalanceOf' as string,
-          params: [mission.projectId],
-        })
-
-        setAvailableTokens(+reservedTokenBalance.toString())
-      } catch (err: any) {
-        console.error('Error fetching available amounts:', err)
-      }
-    }
-
-    if (jbTerminalContract && jbControllerContract && mission?.projectId) {
-      fetchAvailableAmounts()
-    }
-  }, [
-    jbTerminalContract,
-    mission?.projectId,
-    selectedChain,
-    // jbControllerContract omitted - it's a stable module-level reference
-  ])
-
-  const sendReservedTokens = async () => {
-    if (!account || !mission?.projectId) return
-
-    try {
-      const tx = prepareContractCall({
-        contract: jbControllerContract,
-        method: 'sendReservedTokensToSplitsOf' as string,
-        params: [mission.projectId],
-      })
-
-      await sendAndConfirmTransaction({ transaction: tx, account })
-      toast.success('Tokens sent.')
-    } catch (err: any) {
-      console.error('Token distribution error:', err)
-      toast.error('No tokens to send.')
-    }
-  }
-
-  const sendPayouts = async () => {
-    if (!account || !mission?.projectId) return
-
-    try {
-      const storeAddress: any = await readContract({
-        contract: jbTerminalContract,
-        method: 'STORE' as string,
-        params: [],
-      })
-      const jbTerminalStoreContract = getContract({
-        client: serverClient,
-        address: storeAddress,
-        abi: JBV5TerminalStore.abi as any,
-        chain: selectedChain,
-      })
-      const balance: any = await readContract({
-        contract: jbTerminalStoreContract,
-        method: 'balanceOf' as string,
-        params: [
-          jbTerminalContract.address,
-          mission.projectId,
-          JB_NATIVE_TOKEN_ADDRESS,
-        ],
-      })
-      const tx = prepareContractCall({
-        contract: jbTerminalContract,
-        method: 'sendPayoutsOf' as string,
-        params: [
-          mission.projectId,
-          JB_NATIVE_TOKEN_ADDRESS,
-          balance,
-          JB_NATIVE_TOKEN_ID,
-          0,
-        ],
-      })
-
-      await sendAndConfirmTransaction({ transaction: tx, account })
-      toast.success('Payouts sent.')
-    } catch (err: any) {
-      console.error('Payout distribution error:', err)
-      toast.error('No payouts to send.')
-    }
-  }
-
-  const deployLiquidityPool = async () => {
-    if (!account || !poolDeployerAddress) return
-    const poolDeployerContract = getContract({
-      client: serverClient,
-      address: poolDeployerAddress,
-      abi: PoolDeployerABI as any,
-      chain: selectedChain,
-    })
-
-    try {
-      const tx = prepareContractCall({
-        contract: poolDeployerContract,
-        method: 'createAndAddLiquidity' as string,
-        params: [],
-      })
-
-      await sendAndConfirmTransaction({ transaction: tx, account })
-      toast.success('Liquidity pool deployed.')
-    } catch (err: any) {
-      console.error('Liquidity deployment error:', err)
-      toast.error('Failed to deploy liquidity pool.')
-    }
-  }
+  const {
+    availableTokens,
+    availablePayouts,
+    sendReservedTokens,
+    sendPayouts,
+    deployLiquidityPool,
+  } = useManagerActions(mission, selectedChain, poolDeployerAddress)
 
   const teamSocials = useMemo(() => {
     return {
-      communications: getAttribute(
-        teamNFT?.metadata?.attributes,
-        'communications'
-      )?.value,
+      communications: getAttribute(teamNFT?.metadata?.attributes, 'communications')?.value,
       twitter: getAttribute(teamNFT?.metadata?.attributes, 'twitter')?.value,
       website: getAttribute(teamNFT?.metadata?.attributes, 'website')?.value,
       discord: getAttribute(teamNFT?.metadata?.attributes, 'discord')?.value,
@@ -885,39 +400,32 @@ export default function MissionProfile({
           }
         >
           {/* Fixed contribute button for mobile with fade effect */}
-          {isMounted &&
-            windowWidth > 0 &&
-            windowWidth < 768 &&
-            !deadlinePassed && (
-              <div className={`fixed bottom-8 transition-opacity duration-300`}>
-                <MissionPayRedeem
-                  mission={mission}
-                  teamNFT={teamNFT}
-                  token={token}
-                  stage={stage}
-                  deadline={deadline || 0}
-                  primaryTerminalAddress={primaryTerminalAddress}
-                  jbControllerContract={jbControllerContract}
-                  jbTokensContract={jbTokensContract}
-                  refreshBackers={refreshBackers}
-                  backers={backers}
-                  refreshTotalFunding={refreshTotalFunding}
-                  ruleset={ruleset}
-                  onOpenModal={() => {
-                    setContributeModalEnabled(true)
-                  }}
-                  usdInput={usdInput || ''}
-                  setUsdInput={setUsdInput}
-                  onlyButton
-                  visibleButton={
-                    windowWidth > 0 &&
-                    windowWidth < 768 &&
-                    !isPayRedeemContainerVisible
-                  }
-                  buttonMode="fixed"
-                />
-              </div>
-            )}
+          {isMounted && windowWidth > 0 && windowWidth < 768 && !deadlinePassed && (
+            <div className={`fixed bottom-8 transition-opacity duration-300`}>
+              <MissionPayRedeem
+                mission={mission}
+                teamNFT={teamNFT}
+                token={token}
+                stage={stage}
+                deadline={deadline || 0}
+                primaryTerminalAddress={primaryTerminalAddress}
+                jbControllerContract={jbControllerContract}
+                jbTokensContract={jbTokensContract}
+                refreshBackers={refreshBackers}
+                backers={backers}
+                refreshTotalFunding={refreshTotalFunding}
+                ruleset={ruleset}
+                onOpenModal={() => {
+                  setContributeModalEnabled(true)
+                }}
+                usdInput={usdInput || ''}
+                setUsdInput={setUsdInput}
+                onlyButton
+                visibleButton={windowWidth > 0 && windowWidth < 768 && !isPayRedeemContainerVisible}
+                buttonMode="fixed"
+              />
+            </div>
+          )}
           <div
             id="page-container"
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"
@@ -927,8 +435,7 @@ export default function MissionProfile({
               className="flex z-20 xl:hidden w-full px-[5vw]"
             >
               {primaryTerminalAddress &&
-              primaryTerminalAddress !==
-                '0x0000000000000000000000000000000000000000' ? (
+              primaryTerminalAddress !== '0x0000000000000000000000000000000000000000' ? (
                 <div
                   id="mission-pay-redeem-container"
                   className="xl:bg-darkest-cool lg:max-w-[650px] mt-[5vw] md:mt-0 xl:mt-[2vw] w-full xl:rounded-tl-[2vmax] rounded-[2vmax] xl:pr-0 overflow-hidden xl:rounded-bl-[5vmax]"
