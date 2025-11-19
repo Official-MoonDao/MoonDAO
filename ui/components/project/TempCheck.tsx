@@ -1,5 +1,6 @@
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import { useActiveAccount } from 'thirdweb/react'
 import ProposalsABI from 'const/abis/Proposals.json'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
@@ -14,6 +15,7 @@ type TempCheckProps = {
 export default function TempCheck({ mdp }: TempCheckProps) {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
+  const account = useActiveAccount()
   const proposalContract = useContract({
     address: PROPOSALS_ADDRESSES[chainSlug],
     chain: chain,
@@ -32,7 +34,6 @@ export default function TempCheck({ mdp }: TempCheckProps) {
         account,
       })
       refetch()
-      console.log('submit', pass)
     }
   }
 

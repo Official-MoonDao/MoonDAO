@@ -1003,7 +1003,7 @@ export default function SingedInDashboard({
                 </h3>
                 <StandardButton
                   className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
-                  link="/governance"
+                  link="/projects"
                 >
                   View All
                 </StandardButton>
