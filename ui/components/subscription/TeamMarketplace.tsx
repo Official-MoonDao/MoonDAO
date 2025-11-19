@@ -55,9 +55,7 @@ export default function TeamMarketplace({
 
   // Build statement and fetch with SWR
   const statement =
-    shouldFetch && tableName
-      ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
-      : null
+    shouldFetch && tableName ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}` : null
   const { data, mutate } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
   })
@@ -135,7 +133,7 @@ export default function TeamMarketplace({
       )}
       {listingModalEnabled && (
         <TeamMarketplaceListingModal
-          teamId={teamId}
+          teamId={Number(teamId)}
           refreshListings={getEntityMarketplaceListings}
           marketplaceTableContract={marketplaceTableContract}
           setEnabled={setListingModalEnabled}
