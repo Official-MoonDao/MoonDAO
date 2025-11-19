@@ -1,4 +1,3 @@
-
 pragma solidity >=0.8.11 <0.9.0;
 
 import "@evm-tableland/contracts/interfaces/ITablelandTables.sol";

@@ -6,34 +6,17 @@ import ProposalInfo from './ProposalInfo'
 
 type ProposalProps = {
   proposal: any
-  packet: ProposalsPacket
-  votingInfo: SnapshotGraphqlProposalVotingInfo | undefined
-  compact?: boolean
 }
 
-export default function Proposal({
-  proposal,
-  packet,
-  votingInfo,
-  compact = false,
-}: ProposalProps) {
+export default function Proposal({ proposal }: ProposalProps) {
+  if (true) {
+    return <div>{proposal.name}</div>
+  }
   return (
     <div
       id="proposal-card"
       className="relative flex flex-col h-full justify-between gap-y-4 px-4 py-5 sm:px-6"
     >
-      <div className="flex-1">
-        <ProposalInfo
-          showTitle={true}
-          showStatus={false}
-          proposalPacket={{
-            ...proposal,
-            proposalInfo: packet.proposalInfo,
-          }}
-          votingInfo={votingInfo}
-          compact={compact}
-        />
-      </div>
       <div className="flex justify-between items-center mt-4">
         <div className="flex flex-col items-start">
           {['Voting', 'Temperature Check'].includes(proposal.status) ? (

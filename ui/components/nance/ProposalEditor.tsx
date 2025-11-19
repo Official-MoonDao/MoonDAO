@@ -185,7 +185,6 @@ export default function ProposalEditor() {
     let body = getMarkdown()
     e.preventDefault()
     setSigningStatus('loading')
-    //console.log(body)
     if (!proposalTitle) {
       console.error('submitProposal: No title provided')
       toast.error('Please enter a title for the proposal.', {
@@ -205,7 +204,6 @@ export default function ProposalEditor() {
     const file = new File([fileContents], fileName, {
       type: 'application/json',
     })
-    //console.log('budget', getValues()['budget'])
     const { url: proposalIPFS } = await pinBlobOrFile(file)
     const res = await fetch(`/api/proposals/submit`, {
       method: 'POST',
@@ -229,8 +227,6 @@ export default function ProposalEditor() {
       setSigningStatus('error')
     } else {
       const response = await res.json()
-      console.log('response')
-      console.log(response)
       setSigningStatus('success')
       setShowSubmissionCTA(true)
       return response.url

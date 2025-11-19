@@ -9,6 +9,7 @@ import ProjectTableABI from 'const/abis/ProjectTable.json'
 import VotingResults from '@/components/nance/VotingResults'
 import ProposalVotes from '@/components/nance/ProposalVotes'
 import ProposalsABI from 'const/abis/Proposals.json'
+import DropDownMenu from '@/components/nance/DropDownMenu'
 import {
   CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
@@ -116,15 +117,12 @@ export default function ProjectProfile({
     managerHatId,
     isManager,
     isActive,
-    nanceProposal,
     finalReportMarkdown,
-    proposalJSON,
     totalBudget,
     MDP,
     isLoading: isLoadingProjectData,
   } = useProjectData(projectContract, hatsContract, project)
 
-  console.log('proposal', proposal)
   const safeData = useSafe(owner)
   const isSigner = safeOwners.includes(address || '')
   //Hats
@@ -235,6 +233,9 @@ export default function ProjectProfile({
             <div className="mt-10 mb-10">
               <div className={`grid ${gridCols} gap-8`}>
                 <div className="lg:col-span-2 relative">
+                  <div className="absolute top-2 right-[20px]">
+                    <DropDownMenu proposalPacket={proposalPacket} />
+                  </div>
                   <div>
                     <MarkdownWithTOC body={proposal.body || ''} />
                   </div>
@@ -242,21 +243,19 @@ export default function ProjectProfile({
                 <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] flex flex-col h-fit">
                   <div className="px-[10px] p-5">
                     {project.active == PROJECT_PENDING ? (
-                      tempCheckState === 'temp-check' ?
-                      (
-                        <TempCheck
-                          mdp={project.MDP}
-                        />)
-                        :
-                    (<>
-                        <ProposalVotes
-                          state={tempCheckState}
-                          project={project}
-                          votesOfProposal={{ votes: votes }}
-                          refetch={() => mutate()}
-                        />
-                        <button onClick={tallyVotes}>Tally votes</button>
-                      </>)
+                      tempCheckState === 'temp-check' ? (
+                        <TempCheck mdp={project.MDP} />
+                      ) : (
+                        <>
+                          <ProposalVotes
+                            state={tempCheckState}
+                            project={project}
+                            votesOfProposal={{ votes: votes }}
+                            refetch={() => mutate()}
+                          />
+                          <button onClick={tallyVotes}>Tally votes</button>
+                        </>
+                      )
                     ) : (
                       <VotingResults
                         votingInfo={{

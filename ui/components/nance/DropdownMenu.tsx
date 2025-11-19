@@ -1,10 +1,4 @@
-import {
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
-  Transition,
-} from '@headlessui/react'
+import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import {
   ShareIcon,
   EllipsisVerticalIcon,
@@ -25,25 +19,9 @@ import useAccount from '@/lib/nance/useAccountAddress'
 import { useSignArchiveProposal } from '@/lib/nance/useSignArchiveProposal'
 import { useSignDeleteProposal } from '@/lib/nance/useSignDeleteProposal'
 
-export default function DropDownMenu({
-  proposalPacket,
-}: {
-  proposalPacket: ProposalPacket
-}) {
+export default function DropDownMenu({ proposalPacket }: { proposalPacket: ProposalPacket }) {
   const space = NANCE_SPACE_NAME
   const { wallet, isLinked } = useAccount()
-  const { signDeleteProposalAsync } = useSignDeleteProposal(wallet)
-  const { signArchiveProposalAsync } = useSignArchiveProposal(wallet)
-  const { trigger: triggerDelete, error: deleteError } = useProposalDelete(
-    space,
-    proposalPacket.uuid,
-    !!wallet
-  )
-  const { trigger: triggerArchive, error: archiveError } = useProposalUpload(
-    space,
-    proposalPacket.uuid,
-    !!wallet
-  )
   const router = useRouter()
 
   const { status } = proposalPacket
@@ -54,29 +32,10 @@ export default function DropDownMenu({
       status === 'Discussion' ||
       status === 'Temperature Check')
 
-  const handleDeleteProposal = async (uuid: string, snapshotId: string) => {
-    if (!uuid)
-      return toast.error('Proposal UUID is missing.', { style: toastStyle })
-    if (!snapshotId)
-      return toast.error('Snapshot ID is missing.', { style: toastStyle })
-
+  const handleEditProposal = async () => {
     // Show loading toast
     const loadingToastId = toast.loading('Signing...', { style: toastStyle })
-
     try {
-      const nanceSignature = await signDeleteProposalAsync(snapshotId)
-      const { address, signature, message } = nanceSignature
-
-      const res = await triggerDelete({
-        uuid,
-        envelope: {
-          type: 'SnapshotCancelProposal',
-          address,
-          signature,
-          message,
-        },
-      })
-
       if (res.success) {
         // Show success toast
         toast.success('Proposal deleted successfully!', {
@@ -102,71 +61,17 @@ export default function DropDownMenu({
     }
   }
 
-  const handleArchiveProposal = async (uuid: string, snapshotId: string) => {
-    if (!uuid)
-      return toast.error('Proposal UUID is missing.', { style: toastStyle })
-    if (!snapshotId)
-      return toast.error('Snapshot ID is missing.', { style: toastStyle })
-
-    // Show loading toast
-    const loadingToastId = toast.loading('Signing...', { style: toastStyle })
-
-    try {
-      const nanceSignature = await signArchiveProposalAsync(snapshotId)
-      const { address, signature, message } = nanceSignature
-
-      const res = await triggerArchive({
-        proposal: { ...proposalPacket, status: 'Archived' },
-        envelope: {
-          type: 'NanceArchiveProposal',
-          address,
-          signature,
-          message,
-        },
-      })
-
-      if (res.success) {
-        // Show success toast
-        toast.success('Proposal archived successfully!', {
-          id: loadingToastId,
-          style: toastStyle,
-        })
-        router.push('/vote')
-      } else {
-        // Show error toast
-        toast.error(`${archiveError}`, {
-          id: loadingToastId,
-          style: toastStyle,
-          duration: 15000,
-        })
-      }
-    } catch (error) {
-      // Show error toast
-      toast.error(`${error}`, {
-        id: loadingToastId,
-        style: toastStyle,
-        duration: 15000,
-      })
-    }
-  }
-
   return (
     <>
       <Menu as="div" className="relative inline-block">
         <MenuButton>
           <div className="inline-flex w-full justify-end rounded-md sm:hidden">
-            <EllipsisVerticalIcon
-              className="h-7 w-7 text-indigo-600"
-              aria-hidden="true"
-            />
+            <EllipsisVerticalIcon className="h-7 w-7 text-indigo-600" aria-hidden="true" />
           </div>
 
           <div className="hidden w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-1 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:inline-flex">
             Options
-            <ChevronDownIcon
-              className="-mr-1 h-5 w-5 text-gray-400"
-              aria-hidden="true"
-            />
+            <ChevronDownIcon className="-mr-1 h-5 w-5 text-gray-400" aria-hidden="true" />
           </div>
         </MenuButton>
         <Transition
@@ -187,15 +92,11 @@ export default function DropDownMenu({
                       focus ? 'bg-moonBlue text-white' : 'text-gray-900'
                     } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                     onClick={() => {
-                      toast.promise(
-                        navigator.clipboard.writeText(window.location.href),
-                        {
-                          loading: 'Copying...',
-                          success: 'Copied!',
-                          error: (err) =>
-                            `${err?.error_description || err.toString()}`,
-                        }
-                      )
+                      toast.promise(navigator.clipboard.writeText(window.location.href), {
+                        loading: 'Copying...',
+                        success: 'Copied!',
+                        error: (err) => `${err?.error_description || err.toString()}`,
+                      })
                     }}
                   >
                     <ShareIcon className="mr-2 h-5 w-5" aria-hidden="true" />
@@ -227,15 +128,10 @@ export default function DropDownMenu({
                         focus ? 'bg-moon-gold text-white' : 'text-gray-900'
                       } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                       onClick={() => {
-                        const snapshotId = proposalPacket?.voteURL as string
-                        const uuid = proposalPacket?.uuid as string
-                        handleArchiveProposal(uuid, snapshotId)
+                        handleEditProposal()
                       }}
                     >
-                      <ArchiveBoxArrowDownIcon
-                        className="mr-2 h-5 w-5"
-                        aria-hidden="true"
-                      />
+                      <ArchiveBoxArrowDownIcon className="mr-2 h-5 w-5" aria-hidden="true" />
                       Archive
                     </button>
                   )}
@@ -247,9 +143,8 @@ export default function DropDownMenu({
                         focus ? 'bg-moon-orange text-white' : 'text-gray-900'
                       } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                       onClick={() => {
-                        const snapshotId = proposalPacket?.voteURL as string
-                        const uuid = proposalPacket?.uuid as string
-                        handleDeleteProposal(uuid, snapshotId)
+                        handleEditProposal()
+                        //handleDeleteProposal()
                       }}
                     >
                       <TrashIcon className="mr-2 h-5 w-5" aria-hidden="true" />

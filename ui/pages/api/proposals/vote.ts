@@ -28,7 +28,7 @@ import { createHSMWallet } from '@/lib/google/hsm-signer'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
-import { PROJECT_ACTIVE } from '@/lib/nance/types'
+import { PROJECT_ACTIVE, PROJECT_VOTE_FAILED } from '@/lib/nance/types'
 
 // Configuration constants
 const chain = DEFAULT_CHAIN_V5
@@ -78,54 +78,44 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   }
   const currentTimestamp: number = Math.floor(Date.now() / 1000)
   // FIXME how long is the voting period? at least 5 days but in practice how long?
-  const votingPeriodClosedTimestamp =
-    parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
+  const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
   // Don't require voting period for testnet
-  if (process.env.NEXT_PUBLIC_CHAIN === 'mainnet' && currentTimestamp <= votingPeriodClosedTimestamp) {
+  if (
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' &&
+    currentTimestamp <= votingPeriodClosedTimestamp
+  ) {
     return res.status(400).json({
       error: 'Voting period has not ended.',
     })
   }
-  const vMOONEYs = await fetchTotalVMOONEYs(
-    voteAddresses,
-    votingPeriodClosedTimestamp
-  )
+  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)
   const addressToQuadraticVotingPower = Object.fromEntries(
     voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
   )
   const SUM_TO_ONE_HUNDRED = 100
-  const outcome = runQuadraticVoting(
-    votes,
-    addressToQuadraticVotingPower,
-    SUM_TO_ONE_HUNDRED
-  )
+  const outcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
   if (req.method === 'GET') {
     res.status(200).json({
-      outcome
+      outcome,
     })
   }
-  if (outcome[1] >= 66.6) {
-    const account = await createHSMWallet()
-    const transaction = prepareContractCall({
-      contract: projectTableContract,
-      method: 'updateTableCol',
-      params: [projectId, 'active', PROJECT_ACTIVE],
-    })
-    const receipt = await sendAndConfirmTransaction({
-      transaction,
-      account,
-    })
-    res.status(200).json({
-      url: 'https://moondao.com/projects/' + mdp,
-      proposalId: mdp,
-      passed: true,
-    })
-  } else {
-    res.status(200).json({
-      url: 'https://moondao.com/projects/' + mdp,
-      proposalId: mdp,
-      passed: false,
-    })
-  }
+  const SUPER_MAJORITY = 66.6
+  const passed = outcome[1] >= SUPER_MAJORITY
+  const active = passed ? PROJECT_ACTIVE : PROJECT_VOTE_FAILED
+  const account = await createHSMWallet()
+  const transaction = prepareContractCall({
+    contract: projectTableContract,
+    method: 'updateTableCol',
+    params: [projectId, 'active', active],
+  })
+  const receipt = await sendAndConfirmTransaction({
+    transaction,
+    account,
+  })
+  res.status(200).json({
+    url: 'https://moondao.com/projects/' + mdp,
+    proposalId: mdp,
+    passed: passed,
+  })
 }
 export default withMiddleware(POST, rateLimit)

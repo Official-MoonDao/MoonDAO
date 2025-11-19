@@ -46,7 +46,6 @@ export async function getStaticProps() {
 
     const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
     const projects = await queryTable(chain, projectStatement)
-    console.log('projects', projects)
 
     const proposals = []
     const currentProjects = []
@@ -54,8 +53,6 @@ export async function getStaticProps() {
     for (let i = 0; i < projects.length; i++) {
       if (!BLOCKED_PROJECTS.has(projects[i].id)) {
         const activeStatus = projects[i].active
-        console.log('activeStatus', activeStatus)
-        console.log(PROJECT_PENDING)
         if (activeStatus == PROJECT_PENDING) {
           proposals.push(projects[i])
         } else if (activeStatus == PROJECT_ACTIVE) {
