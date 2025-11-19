@@ -1,6 +1,7 @@
 import {
   CircleStackIcon,
   FolderIcon,
+  HomeIcon,
   PlusIcon,
   RocketLaunchIcon,
   WrenchScrewdriverIcon,
@@ -15,6 +16,11 @@ export default function useNavigation(citizen: any) {
         name: 'Join',
         href: '/join',
         icon: PlusIcon,
+      },
+      {
+        name: 'Dashboard',
+        href: '/',
+        icon: HomeIcon,
       },
       {
         name: 'Citizenship',
