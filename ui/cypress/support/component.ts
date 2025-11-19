@@ -50,8 +50,14 @@ Cypress.Commands.add('getById', (input: any) => {
 
 //mock next router
 Cypress.Commands.add('mountNextRouter', (pathname: string) => {
-  const push = cy.stub()
-  cy.stub(NextRouter, 'useRouter').returns({ pathname, push })
+  const push = cy.stub().resolves()
+  const replace = cy.stub().resolves()
+  cy.stub(NextRouter, 'useRouter').returns({ 
+    pathname, 
+    query: {},
+    push, 
+    replace 
+  })
 })
 
 // Add browser polyfills
