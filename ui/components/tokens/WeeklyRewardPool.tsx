@@ -1,3 +1,4 @@
+import { GiftIcon, TrophyIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import ERC20ABI from 'const/abis/ERC20.json'
@@ -8,22 +9,9 @@ import { ethers } from 'ethers'
 import Link from 'next/link'
 import { useContext, useState, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
-import {
-  getContract,
-  readContract,
-  prepareContractCall,
-  sendAndConfirmTransaction,
-} from 'thirdweb'
-import {
-  arbitrum,
-  base,
-  ethereum,
-  sepolia,
-  arbitrumSepolia,
-  Chain,
-} from 'thirdweb/chains'
+import { getContract, readContract, prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { arbitrum, base, ethereum, sepolia, arbitrumSepolia, Chain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
-import { GiftIcon, TrophyIcon } from '@heroicons/react/24/outline'
 import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
@@ -47,8 +35,7 @@ export default function WeeklyRewardPool() {
     [isTestnet]
   )
 
-  const { selectedChain: contextSelectedChain, setSelectedChain } =
-    useContext(ChainContextV5)
+  const { selectedChain: contextSelectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { data: currentEthPrice } = useETHPrice(1, 'ETH_TO_USD')
   const { selectedWallet } = useContext(PrivyWalletContext)
 
@@ -98,14 +85,9 @@ export default function WeeklyRewardPool() {
           )
         )
           .filter((bal) => bal !== undefined && bal !== null)
-          .reduce(
-            (acc, bal) => acc.add(bal || BigNumber.from(0)),
-            BigNumber.from(0)
-          )
+          .reduce((acc, bal) => acc.add(bal || BigNumber.from(0)), BigNumber.from(0))
 
-        setFeesAvailable(
-          ethers.utils.formatEther(totalFees || BigNumber.from(0))
-        )
+        setFeesAvailable(ethers.utils.formatEther(totalFees || BigNumber.from(0)))
       } catch (e) {
         console.error('Error fetching balances:', e)
         // Set to "0" on error instead of leaving as null
@@ -141,10 +123,7 @@ export default function WeeklyRewardPool() {
               }).catch(() => BigNumber.from(0))
             })
           )
-        ).reduce(
-          (acc, est) => acc.add(est || BigNumber.from(0)),
-          BigNumber.from(0)
-        )
+        ).reduce((acc, est) => acc.add(est || BigNumber.from(0)), BigNumber.from(0))
 
         setEstimatedFees(ethers.utils.formatEther(totalEstimated))
       } catch (e) {
@@ -267,42 +246,116 @@ export default function WeeklyRewardPool() {
       const currentChain = contextSelectedChain
       let transactionsSent = 0
 
+      const waitForChainSwitch = async (targetChainId: number, maxWait = 5000) => {
+        const startTime = Date.now()
+        while (Date.now() - startTime < maxWait) {
+          const walletChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
+          if (walletChainId === targetChainId) {
+            return true
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100))
+        }
+        return false
+      }
+
       for (const data of feeData) {
         if (data.checkedInOnChain) continue
         if (!data.vMooneyBalance || data.vMooneyBalance === BigInt(0)) {
           continue
         }
 
-        if (contextSelectedChain.id !== data.chain.id) {
+        const walletChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
+        if (walletChainId !== data.chain.id) {
           await wallets[selectedWallet].switchChain(data.chain.id)
           setSelectedChain(data.chain)
+
+          const switched = await waitForChainSwitch(data.chain.id)
+          if (!switched) {
+            console.warn(`Chain switch to ${data.chain.id} may not have completed`)
+            continue
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 500))
         }
 
-        const tx = prepareContractCall({
-          contract: data.contract,
-          method: 'checkIn' as string,
-          params: [],
+        const slug = getChainSlug(data.chain)
+        const hookAddress = FEE_HOOK_ADDRESSES[slug]
+        if (!hookAddress) continue
+
+        let contract = getContract({
+          client,
+          address: hookAddress,
+          abi: FeeHook.abi as any,
+          chain: data.chain,
         })
 
-        await sendAndConfirmTransaction({
-          transaction: tx,
-          account,
-        })
+        const currentWalletChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
+        if (currentWalletChainId !== data.chain.id) {
+          console.warn(`Expected chain ${data.chain.id} but wallet is on ${currentWalletChainId}`)
+          continue
+        }
 
-        transactionsSent++
+        let retries = 3
+        let success = false
+
+        while (retries > 0 && !success) {
+          try {
+            const tx = prepareContractCall({
+              contract,
+              method: 'checkIn' as string,
+              params: [],
+            })
+
+            await sendAndConfirmTransaction({
+              transaction: tx,
+              account,
+            })
+
+            success = true
+            transactionsSent++
+          } catch (error: any) {
+            if (
+              error?.code === 'NETWORK_ERROR' ||
+              error?.message?.includes('underlying network changed') ||
+              error?.message?.includes('network changed')
+            ) {
+              retries--
+              if (retries > 0) {
+                await new Promise((resolve) => setTimeout(resolve, 1000))
+
+                const verifyChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
+                if (verifyChainId !== data.chain.id) {
+                  throw new Error(
+                    `Network mismatch: expected ${data.chain.id}, got ${verifyChainId}`
+                  )
+                }
+
+                contract = getContract({
+                  client,
+                  address: hookAddress,
+                  abi: FeeHook.abi as any,
+                  chain: data.chain,
+                })
+              } else {
+                throw error
+              }
+            } else {
+              throw error
+            }
+          }
+        }
       }
 
-      // Switch back to original chain
-      if (currentChain.id !== contextSelectedChain.id) {
+      const finalWalletChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
+      if (finalWalletChainId !== currentChain.id) {
         await wallets[selectedWallet].switchChain(currentChain.id)
         setSelectedChain(currentChain)
+        await waitForChainSwitch(currentChain.id)
       }
 
       if (transactionsSent > 0) {
         toast.success(
-          `Checked in on ${transactionsSent} chain${
-            transactionsSent > 1 ? 's' : ''
-          }!`,
+          `Checked in on ${transactionsSent} chain${transactionsSent > 1 ? 's' : ''}!`,
           { style: toastStyle }
         )
         confetti({
@@ -314,15 +367,13 @@ export default function WeeklyRewardPool() {
         })
         setIsCheckedIn(true)
       } else {
-        toast.error(
-          'No check-ins needed. You may already be checked in or have no vMOONEY.',
-          { style: toastStyle }
-        )
+        toast.error('No check-ins needed. You may already be checked in or have no vMOONEY.', {
+          style: toastStyle,
+        })
       }
     } catch (error) {
       console.error('Error checking in:', error)
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error occurred'
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       toast.error(`Error checking in: ${errorMessage}`, { style: toastStyle })
     }
   }
@@ -331,10 +382,7 @@ export default function WeeklyRewardPool() {
     return balance !== null ? Number(balance).toFixed(decimals) : '0'
   }
 
-  const formatUSD = (
-    ethAmount: string | null,
-    ethPrice: number | undefined
-  ) => {
+  const formatUSD = (ethAmount: string | null, ethPrice: number | undefined) => {
     if (!ethAmount || !ethPrice) return '0'
     return (Number(ethAmount) * ethPrice).toFixed(2)
   }
@@ -354,17 +402,11 @@ export default function WeeklyRewardPool() {
           <div className="bg-white/8 backdrop-blur-sm border border-white/15 rounded-xl p-4 hover:bg-white/12 transition-all duration-300">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
-                <svg
-                  className="w-5 h-5 text-white"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
+                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z" />
                 </svg>
               </div>
-              <span className="text-white/70 font-medium text-sm">
-                Total Pool
-              </span>
+              <span className="text-white/70 font-medium text-sm">Total Pool</span>
             </div>
             {feesAvailable !== null ? (
               <div>
@@ -389,9 +431,7 @@ export default function WeeklyRewardPool() {
               <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
                 <GiftIcon className="w-5 h-5 text-white" />
               </div>
-              <span className="text-white/70 font-medium text-sm">
-                Your Reward
-              </span>
+              <span className="text-white/70 font-medium text-sm">Your Reward</span>
             </div>
             {address && VMOONEYBalance && VMOONEYBalance > 0 ? (
               estimatedFees !== null ? (
@@ -411,9 +451,7 @@ export default function WeeklyRewardPool() {
               )
             ) : (
               <div>
-                <div className="text-orange-300 text-lg font-bold mb-1">
-                  Need vMOONEY
-                </div>
+                <div className="text-orange-300 text-lg font-bold mb-1">Need vMOONEY</div>
                 <div className="text-white/60 text-sm">Lock MOONEY first</div>
               </div>
             )}
@@ -437,10 +475,7 @@ export default function WeeklyRewardPool() {
               {checkedInCount !== null && checkedInCount > 0 && (
                 <div className="flex items-center gap-1">
                   {[...Array(Math.min(5, checkedInCount))].map((_, i) => (
-                    <div
-                      key={i}
-                      className="w-2.5 h-2.5 bg-yellow-400 rounded-full"
-                    ></div>
+                    <div key={i} className="w-2.5 h-2.5 bg-yellow-400 rounded-full"></div>
                   ))}
                   {checkedInCount > 5 && (
                     <span className="text-xs text-yellow-400 ml-1 font-medium">
@@ -457,9 +492,7 @@ export default function WeeklyRewardPool() {
         <div className="space-y-4">
           {!address || (VMOONEYBalance && VMOONEYBalance > 0) ? (
             <PrivyWeb3Button
-              label={
-                isCheckedIn ? 'Already Checked In' : 'Check In & Claim Reward'
-              }
+              label={isCheckedIn ? 'Already Checked In' : 'Check In & Claim Reward'}
               action={handleCheckIn}
               isDisabled={isCheckedIn}
               className={`w-full py-4 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.01] shadow-lg whitespace-nowrap ${
