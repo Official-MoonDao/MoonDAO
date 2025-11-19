@@ -1,13 +1,10 @@
-import { ChatBubbleLeftIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
-import { getAttribute } from '@/lib/utils/nft'
-import { TwitterIcon } from '../assets'
 import MissionActivityList from './MissionActivityList'
 import MissionPayRedeem from './MissionPayRedeem'
+import MissionSocialLinks from './MissionSocialLinks'
 import MissionTimelineChart from './MissionTimelineChart'
 import MissionTokenInfo from './MissionTokenInfo'
 
@@ -173,28 +170,13 @@ export default function MissionInfo({
   return (
     <div className="w-full">
       <div className="-ml-3 block md:hidden flex items-center justify-center gap-2 w-full">
-        <div className="flex gap-2 justify-center w-full">
-          {mission?.metadata?.socialLink && (
-            <Link
-              className="flex gap-2 hover:scale-105 transition-all duration-200"
-              href={mission?.metadata?.socialLink}
-              target="_blank"
-              passHref
-            >
-              <ChatBubbleLeftIcon height={25} width={25} />
-            </Link>
-          )}
-          {mission?.metadata?.infoUri && (
-            <Link
-              className="flex gap-2 hover:scale-105 transition-all duration-200"
-              href={mission?.metadata?.infoUri}
-              target="_blank"
-              passHref
-            >
-              <GlobeAltIcon height={25} width={25} />
-            </Link>
-          )}
-        </div>
+        <MissionSocialLinks
+          socials={{
+            socialLink: mission?.metadata?.socialLink,
+            infoUri: mission?.metadata?.infoUri,
+          }}
+          className="justify-center w-full"
+        />
       </div>
       <div className="w-full pl-[2vw] flex flex-col md:flex-row gap-10 md:gap-2 justify-between max-w-[1200px]">
         <div
@@ -207,28 +189,13 @@ export default function MissionInfo({
         </div>
 
         <div className="hidden md:block md:mt-4 flex items-center md:justify-end gap-2 w-full">
-          <div className="flex gap-2 justify-end w-full">
-            {mission?.metadata?.socialLink && (
-              <Link
-                className="flex gap-2 hover:scale-105 transition-all duration-200"
-                href={mission?.metadata?.socialLink}
-                target="_blank"
-                passHref
-              >
-                <ChatBubbleLeftIcon height={25} width={25} />
-              </Link>
-            )}
-            {mission?.metadata?.infoUri && (
-              <Link
-                className="flex gap-2 hover:scale-105 transition-all duration-200"
-                href={mission?.metadata?.infoUri}
-                target="_blank"
-                passHref
-              >
-                <GlobeAltIcon height={25} width={25} />
-              </Link>
-            )}
-          </div>
+          <MissionSocialLinks
+            socials={{
+              socialLink: mission?.metadata?.socialLink,
+              infoUri: mission?.metadata?.infoUri,
+            }}
+            className="justify-end w-full"
+          />
         </div>
       </div>
 
