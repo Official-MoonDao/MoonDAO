@@ -1,20 +1,3 @@
-import dynamic from 'next/dynamic'
-import { useRouter } from 'next/router'
-import { useContext, useEffect } from 'react'
-import { getContract, readContract } from 'thirdweb'
-import CitizenContext from '@/lib/citizen/citizen-context'
-import { getAUMHistory, getMooneyPrice } from '@/lib/coinstats'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
-import { getBackers } from '@/lib/mission'
-import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
-import { Project } from '@/lib/project/useProjectData'
-import queryTable from '@/lib/tableland/queryTable'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
-import { getHistoricalRevenue } from '@/lib/treasury/revenue'
-import Container from '../components/layout/Container'
-import WebsiteHead from '../components/layout/Head'
-import { LoadingSpinner } from '../components/layout/LoadingSpinner'
 import {
   CITIZEN_TABLE_ADDRESSES,
   DEFAULT_CHAIN_V5,
@@ -26,6 +9,23 @@ import {
   TEAM_TABLE_ADDRESSES,
 } from 'const/config'
 import { BLOCKED_MISSIONS, BLOCKED_PROJECTS } from 'const/whitelist'
+import dynamic from 'next/dynamic'
+import { useRouter } from 'next/router'
+import { useContext, useEffect } from 'react'
+import { getContract, readContract } from 'thirdweb'
+import CitizenContext from '@/lib/citizen/citizen-context'
+import { getAUMHistory, getMooneyPrice } from '@/lib/coinstats'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import { getCitizensLocationData } from '@/lib/map'
+import { getAllNetworkTransfers } from '@/lib/network/networkSubgraph'
+import { Project } from '@/lib/project/useProjectData'
+import queryTable from '@/lib/tableland/queryTable'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/client'
+import { getHistoricalRevenue } from '@/lib/treasury/revenue'
+import Container from '../components/layout/Container'
+import WebsiteHead from '../components/layout/Head'
+import { LoadingSpinner } from '../components/layout/LoadingSpinner'
 
 // Dynamic import for SignedInDashboard (client-side only)
 const SignedInDashboard = dynamic(() => import('@/components/home/SignedInDashboard'), {
@@ -51,6 +51,7 @@ export default function Dashboard({
   currentProjects,
   missions,
   featuredMissionData,
+  citizensLocationData,
 }: any) {
   const router = useRouter()
   const { citizen, isLoading } = useContext(CitizenContext)
@@ -96,6 +97,7 @@ export default function Dashboard({
         currentProjects={currentProjects}
         missions={missions}
         featuredMissionData={featuredMissionData}
+        citizensLocationData={citizensLocationData}
       />
     </>
   )
@@ -141,6 +143,7 @@ export async function getStaticProps() {
   let currentProjects: Project[] = []
   let missions: any = []
   let featuredMissionData: any = null
+  let citizensLocationData: any[] = []
 
   const contractOperations = async () => {
     try {
@@ -265,8 +268,7 @@ export async function getStaticProps() {
 
   const getAUMData = async () => {
     try {
-      // Reduced to 30 days for faster initial load - full data fetched on client
-      const aum = await getAUMHistory(30)
+      const aum = await getAUMHistory(365)
       return aum
     } catch (error) {
       console.error('AUM data fetch failed:', error)
@@ -274,12 +276,24 @@ export async function getStaticProps() {
     }
   }
 
-  const [transferResult, contractResult, aumResult, mooneyPriceResult] = await Promise.allSettled([
-    allTransferData(),
-    contractOperations(),
-    getAUMData(),
-    getMooneyPriceData(),
-  ])
+  const getLocationData = async () => {
+    try {
+      const locationData = await getCitizensLocationData()
+      return locationData
+    } catch (error) {
+      console.error('Location data fetch failed:', error)
+      return []
+    }
+  }
+
+  const [transferResult, contractResult, aumResult, mooneyPriceResult, locationResult] =
+    await Promise.allSettled([
+      allTransferData(),
+      contractOperations(),
+      getAUMData(),
+      getMooneyPriceData(),
+      getLocationData(),
+    ])
 
   transferData =
     transferResult.status === 'fulfilled'
@@ -287,12 +301,23 @@ export async function getStaticProps() {
       : { citizenTransfers: [], teamTransfers: [] }
   aumData = aumResult.status === 'fulfilled' ? aumResult.value : null
 
-  // Historical Revenue - reduced to 30 days for faster initial load
-  if (aumData?.defiData) {
-    try {
-      revenueData = await getHistoricalRevenue(aumData.defiData, 30)
-    } catch (error) {
-      console.error('Error getting historical revenue:', error)
+  const defiDataForRevenue = aumData?.defiData || {
+    balance: 0,
+    firstPoolCreationTimestamp: 0,
+    protocols: [],
+  }
+
+  try {
+    revenueData = await getHistoricalRevenue(defiDataForRevenue, 365)
+  } catch (error) {
+    console.error('Error getting historical revenue:', error)
+    revenueData = {
+      revenueHistory: [],
+      currentRevenue: 0,
+      citizenRevenue: 0,
+      teamRevenue: 0,
+      defiRevenue: 0,
+      stakingRevenue: 0,
     }
   }
 
@@ -410,6 +435,10 @@ export async function getStaticProps() {
     mooneyPrice = mooneyPriceResult.value
   }
 
+  if (locationResult.status === 'fulfilled') {
+    citizensLocationData = locationResult.value
+  }
+
   return {
     props: {
       newestCitizens,
@@ -423,8 +452,8 @@ export async function getStaticProps() {
       currentProjects,
       missions,
       featuredMissionData,
+      citizensLocationData,
     },
     revalidate: 120, // 2 minutes - more frequent updates for dashboard
   }
 }
-

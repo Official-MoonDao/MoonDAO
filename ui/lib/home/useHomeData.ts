@@ -1,39 +1,8 @@
 import { useEffect, useState } from 'react'
 import useSWR from 'swr'
 import { getAUMHistory } from '@/lib/coinstats'
-import { getCitizensLocationData } from '@/lib/map'
 import { getHistoricalRevenue } from '@/lib/treasury/revenue'
 import fetcher from '../swr/fetcher'
-
-export function useCitizensLocationData() {
-  const [data, setData] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    let isMounted = true
-
-    getCitizensLocationData()
-      .then((locationData) => {
-        if (isMounted) {
-          setData(locationData)
-          setIsLoading(false)
-        }
-      })
-      .catch((error) => {
-        console.error('Failed to fetch citizens location data:', error)
-        if (isMounted) {
-          setData([])
-          setIsLoading(false)
-        }
-      })
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  return { data, isLoading }
-}
 
 export function useDetailedAUMData(initialData?: any) {
   const [data, setData] = useState(initialData)

@@ -35,7 +35,6 @@ import { useContext, useState, useEffect } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import { useCitizensLocationData } from '@/lib/home/useHomeData'
 import useMissionData from '@/lib/mission/useMissionData'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
@@ -97,14 +96,12 @@ export default function SingedInDashboard({
   currentProjects,
   missions,
   featuredMissionData,
+  citizensLocationData = [],
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
   const { citizen, isLoading: isLoadingCitizen } = useContext(CitizenContext)
-
-  // Fetch citizens location data on client-side
-  const { data: citizensLocationData, isLoading: isLoadingLocationData } = useCitizensLocationData()
 
   // Modal state for charts
   const [chartModalOpen, setChartModalOpen] = useState(false)
@@ -693,7 +690,7 @@ export default function SingedInDashboard({
                       </span>
                     </div>
                     <div className="h-20">
-                      <AUMChart compact={true} height={80} days={365} data={aumData.aumHistory} />
+                      <AUMChart compact={true} height={80} data={aumData.aumHistory} />
                     </div>
                   </div>
                 )}
