@@ -92,9 +92,7 @@ const ProjectCardContent = memo(
                   distribute && 'mr-4'
                 }`}
                 link={
-                  project?.finalReportIPFS
-                    ? `/project/${project.id}`
-                    : project?.finalReportLink
+                  project?.finalReportIPFS ? `/project/${project.id}` : project?.finalReportLink
                 }
                 onClick={(e: any) => {
                   e.stopPropagation()
@@ -106,17 +104,12 @@ const ProjectCardContent = memo(
               </StandardButton>
             ) : active ? (
               <div className="px-3 py-2 bg-green-600/20 border border-green-500/30 rounded-lg">
-                <p className="text-sm text-green-400 font-medium">
-                  🚀 Active Project
-                </p>
+                <p className="text-sm text-green-400 font-medium">🚀 Active Project</p>
               </div>
             ) : (
               <div className="px-3 py-2 bg-blue-600/20 border border-blue-500/30 rounded-lg">
-                <TempCheck
-                  mdp={project.MDP}
-                />
+                <p className="text-sm text-blue-400 font-medium">🤔 Proposal</p>
               </div>
-
             )}
           </div>
           {distribute &&
@@ -210,11 +203,7 @@ export default function ProjectCard({
   const account = useActiveAccount()
   const address = account?.address
 
-  const { adminHatId, proposalJSON } = useProjectData(
-    projectContract,
-    hatsContract,
-    project
-  )
+  const { adminHatId, proposalJSON } = useProjectData(projectContract, hatsContract, project)
   const { authenticated } = usePrivy()
 
   const { selectedChain } = useContext(ChainContextV5)
@@ -273,9 +262,7 @@ export default function ProjectCard({
       {distribute ? (
         <ProjectCardContent
           project={project}
-          distribute={
-            distribute && (project!.finalReportLink || project!.finalReportIPFS)
-          }
+          distribute={distribute && (project!.finalReportLink || project!.finalReportIPFS)}
           userContributed={userContributed}
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}
@@ -285,18 +272,8 @@ export default function ProjectCard({
           isVotingPeriod={isVotingPeriod}
           active={active}
         />
-      ) : active ? (
-        <Link href={`/project/${project?.id}`} passHref>
-          <ProjectCardContent
-            project={project}
-            proposalJSON={proposalJSON}
-            userHasVotingPower={userHasVotingPower}
-            isVotingPeriod={isVotingPeriod}
-            active={active}
-          />
-        </Link>
       ) : (
-        <Link href={`/proposal/${project?.MDP}`} passHref>
+        <Link href={`/project/${project?.id}`} passHref>
           <ProjectCardContent
             project={project}
             proposalJSON={proposalJSON}
