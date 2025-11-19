@@ -6,6 +6,7 @@ import {
   BriefcaseIcon,
   WalletIcon,
   MapIcon,
+  IdentificationIcon,
 } from '@heroicons/react/24/outline'
 import {
   HomeIcon as HomeIconSolid,
@@ -15,6 +16,7 @@ import {
   BriefcaseIcon as BriefcaseIconSolid,
   WalletIcon as WalletIconSolid,
   MapIcon as MapIconSolid,
+  IdentificationIcon as IdentificationIconSolid,
 } from '@heroicons/react/24/solid'
 import { usePrivy } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
@@ -74,28 +76,28 @@ export default function BottomNavBar() {
     if (authenticated && !citizen) {
       return [
         {
-          label: 'Dashboard',
+          label: 'Home',
           icon: HomeIcon,
           iconSolid: HomeIconSolid,
-          path: '/dashboard',
+          path: '/',
         },
         {
-          label: 'Map',
-          icon: MapIcon,
-          iconSolid: MapIconSolid,
-          path: '/map',
+          label: 'Marketplace',
+          icon: ShoppingBagIcon,
+          iconSolid: ShoppingBagIconSolid,
+          path: '/marketplace',
         },
         {
-          label: 'Quests',
-          icon: RocketLaunchIcon,
-          iconSolid: RocketLaunchIconSolid,
-          path: '/quests',
+          label: 'Network',
+          icon: UserGroupIcon,
+          iconSolid: UserGroupIconSolid,
+          path: '/network',
         },
         {
-          label: 'Wallet',
-          icon: WalletIcon,
-          iconSolid: WalletIconSolid,
-          path: '/mooney',
+          label: 'Become a Citizen',
+          icon: IdentificationIcon,
+          iconSolid: IdentificationIconSolid,
+          path: '/citizen',
         },
       ]
     }
