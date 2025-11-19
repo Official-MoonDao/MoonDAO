@@ -154,8 +154,8 @@ export function PrivyWeb3Button({
           id={id}
           dataTestId={dataTestId}
           className={className}
-          onClick={async () => {
-            await router.replace(
+          onClick={() => {
+            router.replace(
               {
                 query: {
                   ...router.query,

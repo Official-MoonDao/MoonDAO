@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import Modal from './Modal'
 
 export default function CookieBanner() {
-  const [cookieConsent, setCookieConsent] = useState<any>(false)
+  const [cookieConsent, setCookieConsent] = useState<any>(null)
   const [hasLoadedLocalStorage, setHasLoadedLocalStorage] = useState(false)
 
   useEffect(() => {
@@ -11,8 +11,6 @@ export default function CookieBanner() {
 
     if (storedCookieConsent !== null && storedCookieConsent !== undefined) {
       setCookieConsent(JSON.parse(storedCookieConsent))
-    } else {
-      setCookieConsent(null)
     }
 
     setHasLoadedLocalStorage(true)
@@ -28,13 +26,13 @@ export default function CookieBanner() {
     }
   }, [cookieConsent, hasLoadedLocalStorage])
 
-  if (cookieConsent != null) return null
+  if (cookieConsent != null || !hasLoadedLocalStorage) return null
 
   return (
     <Modal
       id="cookie-banner"
       setEnabled={() => {}}
-      className={`mx-auto max-w-max md:max-w-screen-sm fixed -bottom-0 md:bottom-8 left-0 right-0 px-4 md:px-6 py-4 justify-between items-center flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white z-[999]`}
+      className={`mx-auto max-w-max md:max-w-screen-sm fixed -bottom-0 md:bottom-8 left-0 right-0 px-4 md:px-6 py-4 justify-between items-center flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white z-[10000]`}
     >
       <div className="">
         <p className="text-sm text-gray-300">
