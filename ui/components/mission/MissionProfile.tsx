@@ -832,28 +832,30 @@ export default function MissionProfile({
         setDeployTokenModalEnabled={setDeployTokenModalEnabled}
         token={token}
         contributeButton={
-          <MissionPayRedeem
-            mission={mission}
-            teamNFT={teamNFT}
-            token={token}
-            stage={stage}
-            deadline={deadline || 0}
-            primaryTerminalAddress={primaryTerminalAddress}
-            jbControllerContract={jbControllerContract}
-            jbTokensContract={jbTokensContract}
-            refreshBackers={refreshBackers}
-            backers={backers}
-            refreshTotalFunding={refreshTotalFunding}
-            ruleset={ruleset}
-            onOpenModal={() => {
-              setContributeModalEnabled(true)
-            }}
-            usdInput={usdInput || ''}
-            setUsdInput={setUsdInput}
-            onlyButton
-            visibleButton={windowWidth > 0 && windowWidth > 768}
-            buttonClassName="max-h-1/2 w-full  rounded-full text-sm flex justify-center items-center"
-          />
+          !deadlinePassed && (
+            <MissionPayRedeem
+              mission={mission}
+              teamNFT={teamNFT}
+              token={token}
+              stage={stage}
+              deadline={deadline || 0}
+              primaryTerminalAddress={primaryTerminalAddress}
+              jbControllerContract={jbControllerContract}
+              jbTokensContract={jbTokensContract}
+              refreshBackers={refreshBackers}
+              backers={backers}
+              refreshTotalFunding={refreshTotalFunding}
+              ruleset={ruleset}
+              onOpenModal={() => {
+                setContributeModalEnabled(true)
+              }}
+              usdInput={usdInput || ''}
+              setUsdInput={setUsdInput}
+              onlyButton
+              visibleButton={windowWidth > 0 && windowWidth > 768}
+              buttonClassName="max-h-1/2 w-full  rounded-full text-sm flex justify-center items-center"
+            />
+          )
         }
       />
 
@@ -883,36 +885,39 @@ export default function MissionProfile({
           }
         >
           {/* Fixed contribute button for mobile with fade effect */}
-          {isMounted && windowWidth > 0 && windowWidth < 768 && (
-            <div className={`fixed bottom-8 transition-opacity duration-300`}>
-              <MissionPayRedeem
-                mission={mission}
-                teamNFT={teamNFT}
-                token={token}
-                stage={stage}
-                deadline={deadline || 0}
-                primaryTerminalAddress={primaryTerminalAddress}
-                jbControllerContract={jbControllerContract}
-                jbTokensContract={jbTokensContract}
-                refreshBackers={refreshBackers}
-                backers={backers}
-                refreshTotalFunding={refreshTotalFunding}
-                ruleset={ruleset}
-                onOpenModal={() => {
-                  setContributeModalEnabled(true)
-                }}
-                usdInput={usdInput || ''}
-                setUsdInput={setUsdInput}
-                onlyButton
-                visibleButton={
-                  windowWidth > 0 &&
-                  windowWidth < 768 &&
-                  !isPayRedeemContainerVisible
-                }
-                buttonMode="fixed"
-              />
-            </div>
-          )}
+          {isMounted &&
+            windowWidth > 0 &&
+            windowWidth < 768 &&
+            !deadlinePassed && (
+              <div className={`fixed bottom-8 transition-opacity duration-300`}>
+                <MissionPayRedeem
+                  mission={mission}
+                  teamNFT={teamNFT}
+                  token={token}
+                  stage={stage}
+                  deadline={deadline || 0}
+                  primaryTerminalAddress={primaryTerminalAddress}
+                  jbControllerContract={jbControllerContract}
+                  jbTokensContract={jbTokensContract}
+                  refreshBackers={refreshBackers}
+                  backers={backers}
+                  refreshTotalFunding={refreshTotalFunding}
+                  ruleset={ruleset}
+                  onOpenModal={() => {
+                    setContributeModalEnabled(true)
+                  }}
+                  usdInput={usdInput || ''}
+                  setUsdInput={setUsdInput}
+                  onlyButton
+                  visibleButton={
+                    windowWidth > 0 &&
+                    windowWidth < 768 &&
+                    !isPayRedeemContainerVisible
+                  }
+                  buttonMode="fixed"
+                />
+              </div>
+            )}
           <div
             id="page-container"
             className="bg-[#090d21] animate-fadeIn flex flex-col items-center gap-5 w-full"

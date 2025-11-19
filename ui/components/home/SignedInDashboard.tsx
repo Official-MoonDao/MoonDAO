@@ -9,7 +9,6 @@ import {
   PencilIcon,
   BriefcaseIcon,
   TrophyIcon,
-  CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
@@ -63,6 +62,7 @@ import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
+import DashboardQuests from './DashboardQuests'
 import DashboardTeams from './DashboardTeams'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
@@ -585,7 +585,7 @@ export default function SingedInDashboard({
                         {/* Time */}
                         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
                           <div className="flex items-center gap-2 mb-2">
-                            <CalendarDaysIcon className="w-4 h-4 text-blue-400" />
+                            <TrophyIcon className="w-4 h-4 text-blue-400" />
                             <span className="text-blue-200 text-xs font-medium">Time</span>
                           </div>
                           <p className="text-white font-bold text-sm">
@@ -777,13 +777,6 @@ export default function SingedInDashboard({
                 >
                   <ShoppingBagIcon className="w-4 h-4" />
                   Shop
-                </StandardButton>
-                <StandardButton
-                  className="bg-gradient-to-r from-yellow-600 to-amber-700 hover:from-yellow-700 hover:to-amber-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/quests"
-                >
-                  <TrophyIcon className="w-4 h-4" />
-                  Quests
                 </StandardButton>
               </div>
             </div>
@@ -1110,6 +1103,21 @@ export default function SingedInDashboard({
           </div>
         </div>
 
+        {/* Quests Section */}
+        <div className="flex-grow order-5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
+          <div className="flex flex-col gap-4">
+            <div>
+              <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                <TrophyIcon className="w-7 h-7 text-yellow-400" />
+                Quests
+              </h3>
+              <p className="text-slate-300 text-sm mt-2">Complete quests to earn XP and level up</p>
+            </div>
+
+            <DashboardQuests selectedChain={selectedChain} />
+          </div>
+        </div>
+
         {/* Active Projects Section - Full Width */}
         <div className="bg-gradient-to-br from-green-600/20 to-emerald-800/20 backdrop-blur-xl border border-green-500/20 rounded-2xl p-8 mt-8 mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
@@ -1259,12 +1267,6 @@ export default function SingedInDashboard({
                   Join the community events and discussions
                 </p>
               </div>
-              <StandardButton
-                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
-                link="/events"
-              >
-                View All Events
-              </StandardButton>
             </div>
 
             <div className="relative">
