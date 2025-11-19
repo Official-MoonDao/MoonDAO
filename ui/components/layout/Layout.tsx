@@ -18,7 +18,6 @@ import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import CookieBanner from './CookieBanner'
 import GlobalSearch from './GlobalSearch'
-import MissionBanner from './MissionBanner'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import LanguageChange from './Sidebar/LanguageChange'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
@@ -133,9 +132,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
 
         {/* Global Search - Sticky on all pages */}
         <GlobalSearch />
-
-        {/* Mission Banner - Fixed at bottom */}
-        <MissionBanner />
       </>
 
       <CookieBanner />
