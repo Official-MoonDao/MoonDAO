@@ -67,7 +67,9 @@ export default function MissionProfilePage({
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+export const getServerSideProps: GetServerSideProps = async ({ params, res }) => {
+  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
+
   try {
     const tokenId: any = params?.tokenId
 
@@ -161,17 +163,31 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     let _backers: any[] = []
     try {
       _backers = await getBackers(mission.projectId, mission.id)
-    } catch (err) {
+    } catch (err: any) {
       _backers = []
-      console.error('Failed to fetch backers:', err)
+      console.error('[Mission SSR] Failed to fetch backers:', {
+        tokenId,
+        projectId: mission.projectId,
+        error: err?.message,
+      })
     }
 
-    // Fetch citizens
+    // Only query citizens if there are backers (prevents invalid SQL)
     let _citizens: any[] = []
     if (_backers.length > 0) {
-      const citizenStatement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}
-       WHERE owner IN (${_backers.map((backer) => `"${backer.backer}"`).join(',')})`
-      _citizens = await queryTable(chain, citizenStatement)
+      try {
+        const citizenStatement = `SELECT * FROM ${CITIZEN_TABLE_NAMES[chainSlug]}
+         WHERE owner IN (${_backers.map((backer) => `"${backer.backer}"`).join(',')})`
+        _citizens = await queryTable(chain, citizenStatement)
+      } catch (err: any) {
+        console.error('[Mission SSR] Failed to fetch citizens:', {
+          tokenId,
+          projectId: mission.projectId,
+          backersCount: _backers.length,
+          error: err?.message,
+        })
+        _citizens = []
+      }
     }
 
     return {
@@ -190,8 +206,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         _citizens,
       },
     }
-  } catch (error) {
-    console.error('getServerSideProps error:', error)
+  } catch (error: any) {
     return {
       notFound: true,
     }

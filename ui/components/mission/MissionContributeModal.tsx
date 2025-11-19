@@ -835,9 +835,6 @@ export default function MissionContributeModal({
         )
       }
 
-      toast.success('Mission token purchased!', {
-        style: toastStyle,
-      })
       confetti({
         particleCount: 150,
         spread: 100,

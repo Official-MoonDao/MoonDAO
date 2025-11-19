@@ -91,9 +91,9 @@ export default function Job({
 
   const jobActions = (
     <div className="flex gap-2 items-center">
-      {job.contactInfo && (
+      {job.contactInfo && !previewMode && (
         <StandardButton
-          className="gradient-2 rounded-[5vmax] rounded-bl-[20px]"
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 hover:scale-105"
           onClick={() => {
             window.open(job.contactInfo)
           }}
@@ -102,23 +102,27 @@ export default function Job({
         </StandardButton>
       )}
       {editable && (
-        <div className="flex gap-4">
+        <div className="flex gap-2">
           <button
             id="edit-job-button"
+            className="p-2 bg-slate-600/30 hover:bg-slate-500/50 rounded-lg transition-colors"
             onClick={(e) => {
               e.stopPropagation()
               setEnabledEditJobModal(true)
             }}
           >
             {!isDeleting && (
-              <PencilIcon className="h-6 w-6 text-light-warm hover:text-light-cool" />
+              <PencilIcon className="h-4 w-4 text-slate-300 hover:text-white" />
             )}
           </button>
           {isDeleting ? (
-            <LoadingSpinner className="scale-[75%]" />
+            <div className="p-2">
+              <LoadingSpinner className="scale-75" />
+            </div>
           ) : (
             <button
               id="delete-job-button"
+              className="p-2 bg-slate-600/30 hover:bg-red-500/50 rounded-lg transition-colors"
               onClick={async (e) => {
                 e.stopPropagation()
                 setIsDeleting(true)
@@ -145,7 +149,7 @@ export default function Job({
                 }
               }}
             >
-              <TrashIcon className="h-6 w-6 text-light-warm hover:text-light-cool" />
+              <TrashIcon className="h-4 w-4 text-slate-300 hover:text-red-300" />
             </button>
           )}
         </div>
@@ -153,41 +157,89 @@ export default function Job({
     </div>
   )
 
-  const jobFooter = (
-    <>
-      {editable && isExpired && (
-        <p id="job-expired-status" className="mt-4 opacity-60">
-          {`*This job post has expired and is no longer available.`}
-        </p>
-      )}
-      {!isExpired && job.endTime != 0 && (
-        <p id="job-posted-status" className="mt-4 opacity-60">
-          {`This job was posted ${
-            daysSincePosting === 0
-              ? `today`
-              : daysSincePosting === 1
-              ? `${daysSincePosting} day ago`
-              : `${daysSincePosting} days ago`
-          }`}
-        </p>
-      )}
-    </>
-  )
+  if (!isActive) return null
 
   return (
     <>
-      <StandardCard
-        title={job.title}
-        headerLink={showTeam && teamNFT ? `/team/${job.teamId}` : undefined}
-        headerLinkLabel={
-          showTeam && teamNFT ? teamNFT.metadata.name : undefined
-        }
-        paragraph={job.description}
-        footer={jobFooter}
-        actions={jobActions}
-        fullParagraph
-        inline
-      />
+      <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-xl border border-slate-600/30 p-5 flex flex-col h-full hover:border-slate-500/50 transition-all duration-200">
+        {/* Header with title and team link */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            {showTeam && teamNFT && (
+              <Link
+                href={`/team/${job.teamId}`}
+                className="text-xs text-blue-400 hover:text-blue-300 mb-1 block"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {teamNFT.metadata.name}
+              </Link>
+            )}
+            <h3 className="font-GoodTimes text-white text-base leading-tight">
+              {job.title}
+            </h3>
+            {job.tag && (
+              <span className="inline-block mt-2 px-2 py-1 text-xs bg-blue-500/20 text-blue-300 rounded-md border border-blue-500/30">
+                {job.tag}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="flex-1 mb-4">
+          <p className="text-sm text-slate-300 line-clamp-3 leading-relaxed">
+            {job.description}
+          </p>
+        </div>
+
+        {/* Metadata (compensation, location) */}
+        {job.metadata && (
+          <div className="mb-4 space-y-1">
+            {(() => {
+              try {
+                const metadata = JSON.parse(job.metadata)
+                return (
+                  <>
+                    {metadata.compensation && (
+                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <span className="font-semibold">💰</span>
+                        <span>{metadata.compensation}</span>
+                      </div>
+                    )}
+                    {metadata.location && (
+                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <span className="font-semibold">📍</span>
+                        <span>{metadata.location}</span>
+                      </div>
+                    )}
+                  </>
+                )
+              } catch {
+                return null
+              }
+            })()}
+          </div>
+        )}
+
+        {/* Footer with actions and timestamp */}
+        <div className="pt-3 border-t border-slate-600/30">
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-xs text-slate-500">
+              {daysSincePosting === 0
+                ? 'Posted today'
+                : daysSincePosting === 1
+                ? '1 day ago'
+                : `${daysSincePosting} days ago`}
+            </div>
+            {jobActions}
+          </div>
+          {editable && isExpired && (
+            <p className="text-xs text-red-400 mt-2">
+              This job post has expired
+            </p>
+          )}
+        </div>
+      </div>
 
       {enabledEditJobModal && (
         <TeamJobModal
