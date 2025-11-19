@@ -24,12 +24,14 @@ export default function VotingResults({
   threshold = 0,
   onRefetch,
 }: VotingResultsProps) {
+    console.log('votingInfo', votingInfo)
   if (!votingInfo || votingInfo.state !== 'closed') return null
 
   const totalVotes = votingInfo.scores_total
   const forVotes = votingInfo.scores[0] || 0
   const againstVotes = votingInfo.scores[1] || 0
   const abstainVotes = votingInfo.scores[2] || 0
+    console.log('totalVotes', totalVotes)
 
   const forPercentage =
     totalVotes > 0 ? ((forVotes / totalVotes) * 100).toFixed(1) : '0.0'
@@ -73,14 +75,6 @@ export default function VotingResults({
             </p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-white">
-              {formatNumberUSStyle(totalVotes, true)}
-            </p>
-            <p className="text-xs text-gray-400 uppercase tracking-wide">
-              Total VP
-            </p>
-          </div>
-          <div className="text-center">
             <p
               className={`text-2xl font-bold ${
                 passed ? 'text-green-400' : 'text-red-400'
@@ -116,7 +110,7 @@ export default function VotingResults({
             </div>
             <p className="text-xs text-gray-500 mt-1">
               {formatNumberUSStyle(totalVotes)} /{' '}
-              {formatNumberUSStyle(threshold)} VP (
+              {formatNumberUSStyle(threshold)} % (
               {((totalVotes / threshold) * 100).toFixed(1)}%)
             </p>
           </div>
@@ -144,7 +138,7 @@ export default function VotingResults({
             <p className="font-bold text-white">
               {formatNumberUSStyle(forVotes, true)}
             </p>
-            <p className="text-xs text-gray-400">VP</p>
+            <p className="text-xs text-gray-400">%</p>
           </div>
         </div>
 
@@ -163,7 +157,7 @@ export default function VotingResults({
             <p className="font-bold text-white">
               {formatNumberUSStyle(againstVotes, true)}
             </p>
-            <p className="text-xs text-gray-400">VP</p>
+            <p className="text-xs text-gray-400">%</p>
           </div>
         </div>
 
@@ -183,7 +177,7 @@ export default function VotingResults({
               <p className="font-bold text-white">
                 {formatNumberUSStyle(abstainVotes, true)}
               </p>
-              <p className="text-xs text-gray-400">VP</p>
+              <p className="text-xs text-gray-400">%</p>
             </div>
           </div>
         )}
@@ -203,21 +197,12 @@ export default function VotingResults({
             />
           </div>
         </div>
-
-        {/* Individual Votes Section */}
-        {votesData && (
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <h4 className="text-lg font-semibold text-white font-GoodTimes mb-4">
-              Individual Votes
-            </h4>
-            <ProposalVotes
-              votesOfProposal={votesData}
-              refetch={onRefetch || (() => {})}
-              threshold={threshold}
-            />
-          </div>
-        )}
       </div>
     </div>
   )
 }
+            //<ProposalVotes
+              //votesOfProposal={votesData}
+              //refetch={onRefetch || (() => {})}
+              //threshold={threshold}
+            ///>

@@ -15,11 +15,11 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { normalizeJsonString } from '@/lib/utils/rewards'
 import NumberStepper from '../layout/NumberStepper'
 import StandardButton from '../layout/StandardButton'
+import TempCheck from '@/components/project/TempCheck'
 
 type ProjectCardProps = {
   project: Project | undefined
   projectContract: any
-  proposalContract
   hatsContract: any
   distribute?: boolean
   userContributed?: boolean
@@ -28,8 +28,6 @@ type ProjectCardProps = {
   userHasVotingPower?: any
   isVotingPeriod?: boolean
   active?: boolean
-  proposalData?: any
-  refetch?: () => void
 }
 
 const ProjectCardContent = memo(
@@ -44,9 +42,6 @@ const ProjectCardContent = memo(
     isMembershipDataLoading,
     isVotingPeriod,
     active,
-    proposalData,
-    proposalContract,
-    refetch,
   }: any) => {
     const account = useActiveAccount()
     const [isExpanded, setIsExpanded] = useState(false)
@@ -72,21 +67,6 @@ const ProjectCardContent = memo(
         return () => window.removeEventListener('resize', handleResize)
       }
     }, [])
-    const handleSubmit = (pass: boolean) => {
-      return async () => {
-        const transaction = prepareContractCall({
-          contract: proposalContract,
-          method: 'voteTempCheck' as string,
-          params: [project.MDP, pass],
-        })
-        const receipt = await sendAndConfirmTransaction({
-          transaction,
-          account,
-        })
-        refetch()
-        console.log('submit', pass)
-      }
-    }
 
     const isLongText = description.length > characterLimit
     const shouldTruncate = isLongText && !isExpanded
@@ -132,35 +112,11 @@ const ProjectCardContent = memo(
               </div>
             ) : (
               <div className="px-3 py-2 bg-blue-600/20 border border-blue-500/30 rounded-lg">
-                <p className="text-sm text-blue-400 font-medium">🤔 Proposal</p>
-                <div>Temp check</div>
-
-                <PrivyWeb3Button
-                  action={handleSubmit(true)}
-                  requiredChain={DEFAULT_CHAIN_V5}
-                  className="rounded-full bg-red-500 hover:bg-red-600 mr-2"
-                  label={
-                    '👍' +
-                    ('tempCheckApprovalCount' in proposalData
-                      ? proposalData?.tempCheckApprovalCount?.toString()
-                      : '')
-                  }
-                />
-                <PrivyWeb3Button
-                  action={handleSubmit(false)}
-                  requiredChain={DEFAULT_CHAIN_V5}
-                  className="rounded-full bg-red-500 hover:bg-red-600"
-                  label={
-                    '👎' +
-                    ('tempCheckApprovalCount' in proposalData
-                      ? (
-                          proposalData?.tempCheckVoteCount -
-                          proposalData?.tempCheckApprovalCount
-                        )?.toString()
-                      : '')
-                  }
+                <TempCheck
+                  mdp={project.MDP}
                 />
               </div>
+
             )}
           </div>
           {distribute &&
@@ -243,7 +199,6 @@ ProjectCardContent.displayName = 'ProjectCardContent'
 export default function ProjectCard({
   project,
   projectContract,
-  proposalContract,
   hatsContract,
   distribute,
   distribution,
@@ -255,11 +210,6 @@ export default function ProjectCard({
   const account = useActiveAccount()
   const address = account?.address
 
-  const { proposalData, isLoading, refetch } = useProposalData(
-    proposalContract,
-    project.MDP
-  )
-  console.log('proposalData', proposalData)
   const { adminHatId, proposalJSON } = useProjectData(
     projectContract,
     hatsContract,
@@ -343,8 +293,6 @@ export default function ProjectCard({
             userHasVotingPower={userHasVotingPower}
             isVotingPeriod={isVotingPeriod}
             active={active}
-            proposalData={proposalData}
-            proposalContract={proposalContract}
           />
         </Link>
       ) : (
@@ -352,12 +300,9 @@ export default function ProjectCard({
           <ProjectCardContent
             project={project}
             proposalJSON={proposalJSON}
-            refetch={refetch}
             userHasVotingPower={userHasVotingPower}
             isVotingPeriod={isVotingPeriod}
             active={active}
-            proposalData={proposalData}
-            proposalContract={proposalContract}
           />
         </Link>
       )}

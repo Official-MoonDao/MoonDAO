@@ -1,8 +1,14 @@
 import Safe from '@safe-global/protocol-kit'
 import CitizenABI from 'const/abis/Citizen.json'
+import ProposalInfo from '@/components/nance/ProposalInfo'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
+import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
+import { runQuadraticVoting } from '@/lib/utils/rewards'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
+import VotingResults from '@/components/nance/VotingResults'
+import ProposalVotes from '@/components/nance/ProposalVotes'
+import ProposalsABI from 'const/abis/Proposals.json'
 import {
   CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
@@ -10,6 +16,8 @@ import {
   PROJECT_ADDRESSES,
   PROJECT_CREATOR_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
+  PROPOSALS_ADDRESSES,
+  PROPOSALS_TABLE_NAMES,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -41,12 +49,18 @@ import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
+import { PROJECT_PENDING, PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
+import TempCheck from '@/components/project/TempCheck'
 
 type ProjectProfileProps = {
   tokenId: string
   project: Project
   safeOwners: string[]
-  proposal: string
+  proposal: any
+  votes: any[]
+  voteOutcome: any
+  tempCheckState: string
+  proposalStatus: any
 }
 
 export default function ProjectProfile({
@@ -54,6 +68,10 @@ export default function ProjectProfile({
   project,
   safeOwners,
   proposal,
+  votes,
+  voteOutcome,
+  tempCheckState,
+  proposalStatus,
 }: ProjectProfileProps) {
   const account = useActiveAccount()
   const address = account?.address
@@ -106,6 +124,7 @@ export default function ProjectProfile({
     isLoading: isLoadingProjectData,
   } = useProjectData(projectContract, hatsContract, project)
 
+  console.log('proposal', proposal)
   const safeData = useSafe(owner)
   const isSigner = safeOwners.includes(address || '')
   //Hats
@@ -115,6 +134,18 @@ export default function ProjectProfile({
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded)
+  }
+  const tallyVotes = async () => {
+    const res = await fetch(`/api/proposals/vote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', // Important: Specify the content type
+      },
+      body: JSON.stringify({
+        mdp: project?.MDP,
+      }),
+    })
+    const resJson = await res.json()
   }
 
   //Profile Header Section
@@ -152,14 +183,33 @@ export default function ProjectProfile({
       </Frame>
     </div>
   )
+  const gridCols = votes ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2'
 
+  console.log('proposalStatus', proposalStatus)
   return (
     <Container>
       <Head title={project.name} description={project.description} />
       <ContentLayout
         header={project.name}
         headerSize="max(20px, 3vw)"
-        description={ProfileHeader}
+        description={
+          <ProposalInfo
+            proposalPacket={{
+              authorAddress: proposal.authorAddress || '0x0000000000000000000000000000000000000000',
+              // FIXME set status
+              status: proposalStatus,
+              budget: proposal.budget,
+            }}
+            project={project}
+            votingInfo={votes?.proposal}
+            linkDisabled
+            sponsorDisabled={false}
+            coauthorsDisabled={false}
+            showTitle={false}
+            showStatus={true}
+          />
+          //'prop'
+        }
         mainPadding
         mode="compact"
         popOverEffect={false}
@@ -181,22 +231,47 @@ export default function ProjectProfile({
           className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]"
         >
           {/* Project Overview */}
-          <SectionCard
-            header="Proposal"
-            iconSrc="/assets/icon-star.svg"
-            action={
-              <Link
-                className="flex gap-2 items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm"
-                href={`/proposal/${MDP}`}
-                passHref
-              >
-                <Image src="/assets/report.png" alt="Report Icon" width={16} height={16} />
-                <span>Review Original Proposal</span>
-              </Link>
-            }
-          >
-            <div className="prose prose-invert max-w-none">
-              <MarkdownWithTOC body={proposal || ''} />
+          <SectionCard header="Proposal" iconSrc="/assets/icon-star.svg">
+            <div className="mt-10 mb-10">
+              <div className={`grid ${gridCols} gap-8`}>
+                <div className="lg:col-span-2 relative">
+                  <div>
+                    <MarkdownWithTOC body={proposal.body || ''} />
+                  </div>
+                </div>
+                <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] flex flex-col h-fit">
+                  <div className="px-[10px] p-5">
+                    {project.active == PROJECT_PENDING ? (
+                      tempCheckState === 'temp-check' ?
+                      (
+                        <TempCheck
+                          mdp={project.MDP}
+                        />)
+                        :
+                    (<>
+                        <ProposalVotes
+                          state={tempCheckState}
+                          project={project}
+                          votesOfProposal={{ votes: votes }}
+                          refetch={() => mutate()}
+                        />
+                        <button onClick={tallyVotes}>Tally votes</button>
+                      </>)
+                    ) : (
+                      <VotingResults
+                        votingInfo={{
+                          scores_total: 100,
+                          scores: [voteOutcome[1], voteOutcome[2], voteOutcome[3]],
+                          state: 'closed',
+                        }}
+                        votesData={[]}
+                        threshold={0}
+                        onRefetch={() => mutate()}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </SectionCard>
           {finalReportMarkdown && (
@@ -279,6 +354,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     method: 'getTableName' as string,
     params: [],
   })
+  const proposalContract = getContract({
+    client: serverClient,
+    address: PROPOSALS_ADDRESSES[chainSlug],
+    abi: ProposalsABI.abi as any,
+    chain: chain,
+  })
 
   const statement = `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`
 
@@ -290,6 +371,52 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       notFound: true,
     }
   }
+
+  const mdp = project.MDP
+  const tempCheckApproved = await readContract({
+    contract: proposalContract,
+    method: 'tempCheckApproved' as string,
+    params: [mdp],
+  })
+  const tempCheckFailed = await readContract({
+    contract: proposalContract,
+    method: 'tempCheckFailed' as string,
+    params: [mdp],
+  })
+  const tempCheckApprovedTimestamp = await readContract({
+    contract: proposalContract,
+    method: 'tempCheckApprovedTimestamp' as string,
+    params: [mdp],
+  })
+  const tempCheckState = tempCheckApproved
+    ? 'temp-check-passed'
+    : tempCheckFailed
+    ? 'temp-check-failed'
+    : 'temp-check'
+  let proposalStatus = ''
+  if (project.active == PROJECT_PENDING) {
+    if (tempCheckApproved) {
+      proposalStatus = 'Voting'
+    } else if (tempCheckFailed) {
+      proposalStatus = 'Cancelled'
+    } else {
+      proposalStatus = 'Temperature Check'
+    }
+  } else if (project.active == PROJECT_ACTIVE) {
+    proposalStatus = 'Approved'
+  } else {
+    proposalStatus = 'Archived'
+  }
+  const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
+  const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+  const voteAddresses = votes.map((pv) => pv.address)
+  const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
+  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)
+  const addressToQuadraticVotingPower = Object.fromEntries(
+    voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
+  )
+  const SUM_TO_ONE_HUNDRED = 100
+  const voteOutcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
 
   const projectContract = getContract({
     client: serverClient,
@@ -316,15 +443,18 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
   const safeOwners = await safe.getOwners()
   const proposalResponse = await fetch(project.proposalIPFS)
-  const proposalJson = await proposalResponse.json()
-  const proposal = proposalJson.body
+  const proposal = await proposalResponse.json()
 
   return {
     props: {
       project,
       tokenId,
       safeOwners,
+      votes,
+      tempCheckState,
+      proposalStatus,
       proposal,
+      voteOutcome,
     },
   }
 }

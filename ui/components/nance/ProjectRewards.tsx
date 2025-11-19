@@ -200,11 +200,6 @@ export function ProjectRewards({
     chain: chain,
     abi: ProjectABI as any,
   })
-  const proposalContract = useContract({
-    address: PROPOSALS_ADDRESSES[chainSlug],
-    chain: chain,
-    abi: ProposalsABI.abi as any,
-  })
   const distributionTableContract = useContract({
     address: DISTRIBUTION_TABLE_ADDRESSES[chainSlug],
     chain: chain,
@@ -481,7 +476,6 @@ export function ProjectRewards({
                         key={`project-card-${i}`}
                         project={project}
                         projectContract={projectContract}
-                        proposalContract={proposalContract}
                         hatsContract={hatsContract}
                         distribute={active && project.eligible}
                         distribution={
@@ -525,7 +519,6 @@ export function ProjectRewards({
                         key={`project-card-${i}`}
                         project={project}
                         projectContract={projectContract}
-                        proposalContract={proposalContract}
                         hatsContract={hatsContract}
                         distribute={active && project.eligible}
                         distribution={

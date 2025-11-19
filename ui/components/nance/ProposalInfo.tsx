@@ -2,12 +2,7 @@ import { CalendarDaysIcon } from '@heroicons/react/24/outline'
 import { Project } from '@/lib/project/useProjectData'
 import { useProposalUpload, useSpaceInfo } from '@nance/nance-hooks'
 import { ProposalPacket } from '@nance/nance-sdk'
-import {
-  add,
-  differenceInDays,
-  formatDistanceToNow,
-  fromUnixTime,
-} from 'date-fns'
+import { add, differenceInDays, formatDistanceToNow, fromUnixTime } from 'date-fns'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -105,9 +100,7 @@ export default function ProposalInfo({
   const { data: spaceInfoData } = useSpaceInfo({ space: NANCE_SPACE_NAME })
   const spaceInfo = spaceInfoData?.data
   const { nextEvents, currentEvent } = spaceInfo || {}
-  let nextSnapshotVote = nextEvents?.find(
-    (event) => event.title === 'Snapshot Vote'
-  )
+  let nextSnapshotVote = nextEvents?.find((event) => event.title === 'Snapshot Vote')
   const nextProposalId = spaceInfo?.nextProposalId
   if (currentEvent?.title === 'Temperature Check') {
     const days = differenceInDays(
@@ -193,10 +186,7 @@ export default function ProposalInfo({
                 {`${preTitleDisplay}${project.name}`}
               </Link>
             ) : (
-              <span
-                className="text-lg font-semibold text-white"
-                style={{ fontFamily: 'Lato' }}
-              >
+              <span className="text-lg font-semibold text-white" style={{ fontFamily: 'Lato' }}>
                 {`${preTitleDisplay}${project.name}`}
               </span>
             ))}
@@ -207,9 +197,7 @@ export default function ProposalInfo({
           {!compact && (
             <div className="flex items-center gap-x-1">
               <Image
-                src={`https://cdn.stamp.fyi/avatar/${
-                  proposalPacket.authorAddress || ZERO_ADDRESS
-                }`}
+                src={`https://cdn.stamp.fyi/avatar/${proposalPacket.authorAddress || ZERO_ADDRESS}`}
                 alt=""
                 className="h-6 w-6 flex-none rounded-full bg-gray-50"
                 width={75}
@@ -239,9 +227,7 @@ export default function ProposalInfo({
           )}
           {/* Tokens */}
           <div className="mt-2 md:mt-0">
-            {proposalPacket.actions && (
-              <RequestingTokensOfProposal actions={proposalPacket.actions} />
-            )}
+            {proposalPacket.budget && <RequestingTokensOfProposal budget={proposalPacket.budget} />}
           </div>
           {/* Delegate this proposal if it doesn't have an author */}
           {!proposalPacket.authorAddress && isLinked && !sponsorDisabled && (
@@ -253,9 +239,7 @@ export default function ProposalInfo({
                 signAndSendProposal()
               }}
             >
-              {signingStatus === 'loading'
-                ? 'Sponsor Proposal...'
-                : 'Sponsor Proposal'}
+              {signingStatus === 'loading' ? 'Sponsor Proposal...' : 'Sponsor Proposal'}
             </button>
           )}
         </div>
@@ -281,7 +265,7 @@ export default function ProposalInfo({
   )
 }
 
-function ProposalStatus({ status }: { status: string }) {
+function ProposalStatus({ status }: { status: number }) {
   const statusConfig = {
     Voting: {
       bg: 'bg-emerald-500/10',

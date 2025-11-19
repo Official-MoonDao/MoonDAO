@@ -200,6 +200,7 @@ export default function ProposalEditor() {
     const fileContents = JSON.stringify({
       body: header + body,
       budget: getValues()['budget'],
+      authorAddress: address,
     })
     const file = new File([fileContents], fileName, {
       type: 'application/json',

@@ -80,7 +80,8 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   // FIXME how long is the voting period? at least 5 days but in practice how long?
   const votingPeriodClosedTimestamp =
     parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
-  if (currentTimestamp <= votingPeriodClosedTimestamp) {
+  // Don't require voting period for testnet
+  if (process.env.NEXT_PUBLIC_CHAIN === 'mainnet' && currentTimestamp <= votingPeriodClosedTimestamp) {
     return res.status(400).json({
       error: 'Voting period has not ended.',
     })
@@ -98,6 +99,11 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     addressToQuadraticVotingPower,
     SUM_TO_ONE_HUNDRED
   )
+  if (req.method === 'GET') {
+    res.status(200).json({
+      outcome
+    })
+  }
   if (outcome[1] >= 66.6) {
     const account = await createHSMWallet()
     const transaction = prepareContractCall({

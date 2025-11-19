@@ -103,7 +103,7 @@ export default function RequestBudgetActionForm({
           >
             <div className="flex items-center gap-2">
               <PlusCircleIcon className="w-6 h-6" />
-              Add budget
+              Add budget item
             </div>
           </StandardButton>
         </div>
