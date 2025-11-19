@@ -1,7 +1,10 @@
 import { FixedInt } from 'fpnum'
 import { getTokenAToBQuote, ReservedPercent, RulesetWeight } from 'juice-sdk-core'
 
-export function calculateTokensFromPayment(paymentAmount: string | bigint, ruleset: any[]): string {
+export function calculateTokensFromPayment(
+  paymentAmount: string | bigint,
+  ruleset: readonly any[]
+): string {
   if (!paymentAmount || !ruleset || !ruleset[0] || !ruleset[1]) return '0'
 
   try {
