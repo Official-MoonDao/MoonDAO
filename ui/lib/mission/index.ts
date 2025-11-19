@@ -58,7 +58,8 @@ export async function getBackers(projectId: any, missionId?: any) {
     const missionTableContract = getContract({
       client: serverClient,
       address: MISSION_TABLE_ADDRESSES[chainSlug],
-      abi: MissionTableABI,
+      abi: MissionTableABI as any,
+      chain,
     })
     const missionTableName = await readContract({
       contract: missionTableContract,
