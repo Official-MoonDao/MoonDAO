@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { NANCE_SPACE_NAME } from '../nance/constants'
-import useProposalJSON from '../nance/useProposalJSON'
 import { PROJECT_ACTIVE } from '@/lib/nance/types'
 
 export type Project = {

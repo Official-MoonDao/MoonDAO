@@ -87,7 +87,6 @@ export default function ProposalList({
   proposalLimit?: number
   proposals?: any[]
 }) {
-  console.log('proposals', proposals)
   const router = useRouter()
   const [query, setQuery] = useQueryParams({
     keyword: StringParam,
@@ -141,7 +140,7 @@ export default function ProposalList({
               >
                 {proposals.map((proposal) => (
                   <div
-                    key={proposal.uuid}
+                    key={proposal.id}
                     className={`h-auto bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02]`}
                   >
                     <Proposal proposal={proposal} />
