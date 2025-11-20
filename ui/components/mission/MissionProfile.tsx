@@ -1026,16 +1026,6 @@ export default function MissionProfile({
                           <TwitterIcon />
                         </Link>
                       )}
-                      {teamSocials.website && (
-                        <Link
-                          className="flex gap-2 hover:scale-105 transition-all duration-200"
-                          href={teamSocials.website}
-                          target="_blank"
-                          passHref
-                        >
-                          <GlobeAltIcon height={25} width={25} />
-                        </Link>
-                      )}
                     </div>
                   </div>
                 </div>
