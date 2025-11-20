@@ -97,16 +97,40 @@ describe('useMissionData', () => {
     _fundingGoal: 1000000000000000000,
     _ruleset: [{ weight: 1000 }, { reservedPercent: 0 }],
     _backers: [],
+    projectMetadata: {
+      name: 'Test Mission',
+      description: 'Test Description',
+    },
   }
 
   beforeEach(() => {
     cy.mountNextRouter('/')
     cy.intercept('GET', '**/api/mission/backers**', { body: { backers: [] } }).as('backersApi')
-    cy.intercept('POST', '**', (req) => {
-      if (req.body && req.body.method === 'stage') {
-        req.reply({ result: '0x1' })
+    cy.intercept('GET', '**/api/juicebox/query**', { body: { projects: { items: [] } } }).as('juiceboxQuery')
+    cy.intercept('GET', '**', (req) => {
+      if (req.url.includes('ipfs://') || req.url.includes('ipfs.io')) {
+        req.reply({ body: { name: 'Test Mission', description: 'Test Description' } })
       }
-    }).as('contractCalls')
+    })
+    cy.intercept('POST', '**', (req) => {
+      if (req.body && typeof req.body === 'object') {
+        if (req.body.method === 'stage') {
+          req.reply({ result: '0x1' })
+        } else if (req.body.method === 'uriOf') {
+          req.reply({ result: 'ipfs://test-metadata-uri' })
+        } else if (req.body.method === 'currentRulesetOf') {
+          req.reply({ result: [{ weight: 1000 }, { reservedPercent: 0 }] })
+        } else if (req.body.method === 'tokenOf') {
+          req.reply({ result: '0x1234567890123456789012345678901234567890' })
+        } else if (req.body.method === 'primaryTerminalOf') {
+          req.reply({ result: '0x1234567890123456789012345678901234567890' })
+        } else if (req.body.method === 'missionIdToPayHook') {
+          req.reply({ result: '0x1234567890123456789012345678901234567890' })
+        } else if (req.body.method === 'deadline' || req.body.method === 'refundPeriod') {
+          req.reply({ result: '0x' + Math.floor(Date.now() / 1000).toString(16) })
+        }
+      }
+    })
   })
 
   it('initializes with provided props', () => {
@@ -127,7 +151,10 @@ describe('useMissionData', () => {
       </TestnetProviders>
     )
 
-    cy.get('[data-testid="refresh-stage-btn"]').should('exist').click()
+    cy.get('[data-testid="refresh-stage-btn"]').should('exist')
+    cy.get('[data-testid="stage"]').should('exist')
+    cy.get('[data-testid="refresh-stage-btn"]').click()
+    cy.get('[data-testid="stage"]').should('exist')
   })
 
   it('provides refreshBackers function', () => {
@@ -137,7 +164,9 @@ describe('useMissionData', () => {
       </TestnetProviders>
     )
 
-    cy.get('[data-testid="refresh-backers-btn"]').should('exist').click()
+    cy.get('[data-testid="refresh-backers-btn"]').should('exist')
+    cy.get('[data-testid="stage"]').should('exist')
+    cy.get('[data-testid="refresh-backers-btn"]').click()
     cy.wait('@backersApi')
   })
 
