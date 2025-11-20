@@ -59,9 +59,9 @@ export default function Launch({ missions, featuredMissionData }: any) {
   const router = useRouter()
   const shallowQuery = useShallowQueryRoute()
 
-  const [status, setStatus] = useState<
-    'idle' | 'loggingIn' | 'apply' | 'create'
-  >(router.query.status as any)
+  const [status, setStatus] = useState<'idle' | 'loggingIn' | 'apply' | 'create'>(
+    router.query.status as any
+  )
 
   const account = useActiveAccount()
   const address = account?.address
@@ -114,8 +114,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
   )
 
   const [userTeamsAsManager, setUserTeamsAsManager] = useState<any>()
-  const [userTeamsAsManagerLoading, setUserTeamsAsManagerLoading] =
-    useState(false)
+  const [userTeamsAsManagerLoading, setUserTeamsAsManagerLoading] = useState(false)
 
   const { data: ethPrice } = useETHPrice(1)
 
@@ -127,8 +126,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
 
       const teamChecks = await Promise.all(
         userTeams.map(async (hat: any) => {
-          if (!hat?.teamId || !hat.hats?.[0].id)
-            return { hat, isManager: false }
+          if (!hat?.teamId || !hat.hats?.[0].id) return { hat, isManager: false }
 
           const managerHatId: any = await readContract({
             contract: teamContract,
@@ -142,9 +140,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
         })
       )
 
-      const teamsAsManager = teamChecks
-        .filter(({ isManager }) => isManager)
-        .map(({ hat }) => hat)
+      const teamsAsManager = teamChecks.filter(({ isManager }) => isManager).map(({ hat }) => hat)
 
       setUserTeamsAsManager(teamsAsManager)
       setUserTeamsAsManagerLoading(false)
@@ -164,10 +160,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
     }
     //Check if wallet is whitelisted or is a manager of a team
     const isWhitelisted = true
-    if (
-      (userTeamsAsManager && userTeamsAsManager.length > 0) ||
-      isWhitelisted
-    ) {
+    if ((userTeamsAsManager && userTeamsAsManager.length > 0) || isWhitelisted) {
       setStatus('create')
     } else {
       setStatus('apply')
@@ -199,11 +192,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
   }, [router.query.status, user])
 
   useEffect(() => {
-    if (
-      (router.query.status === 'create' ||
-        router.query.status === 'loggingIn') &&
-      !account
-    ) {
+    if ((router.query.status === 'create' || router.query.status === 'loggingIn') && !account) {
       login()
     }
   }, [router.query.status, account, login])
@@ -218,9 +207,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
         setStatus={setStatus}
         userTeams={userTeams}
         userTeamsAsManager={userTeamsAsManager}
-        userTeamsAsManagerLoading={
-          userTeamsLoading || userTeamsAsManagerLoading
-        }
+        userTeamsAsManagerLoading={userTeamsLoading || userTeamsAsManagerLoading}
       />
     )
   }
@@ -263,8 +250,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
 
               {/* Description */}
               <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-white/90 mb-6 md:mb-8 leading-relaxed max-w-xl">
-                Fund the future of space exploration with decentralized
-                crowdfunding.
+                Fund the future of space exploration with decentralized crowdfunding.
               </p>
 
               {/* CTA Button - enhanced with flair */}
@@ -324,8 +310,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
           <div
             className="flex flex-col items-center text-white/70 hover:text-white/90 transition-colors duration-300 cursor-pointer group"
             onClick={() => {
-              const featuredMissionSection =
-                document.getElementById('featured-mission')
+              const featuredMissionSection = document.getElementById('featured-mission')
               if (featuredMissionSection) {
                 featuredMissionSection.scrollIntoView({
                   behavior: 'smooth',
@@ -364,10 +349,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
       </section>
 
       {/* Featured Mission Section */}
-      <FeaturedMissionSection
-        missions={missions}
-        featuredMissionData={featuredMissionData}
-      />
+      <FeaturedMissionSection missions={missions} featuredMissionData={featuredMissionData} />
 
       {/* Go Further Together Section - Fullscreen Space Theme */}
       <section className="relative min-h-screen overflow-hidden">
@@ -412,9 +394,8 @@ export default function Launch({ missions, featuredMissionData }: any) {
                       Finance
                     </h3>
                     <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                      Fund with your debit card, even if you've never used
-                      crypto. Get refunded if a mission fails to reach its
-                      funding goal.
+                      Fund with your debit card, even if you've never used crypto. Get refunded if a
+                      mission fails to reach its funding goal.
                     </p>
                   </div>
                 </div>
@@ -437,9 +418,8 @@ export default function Launch({ missions, featuredMissionData }: any) {
                       Coordinate
                     </h3>
                     <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                      Contributions earn mission tokens that give you a stake in
-                      the journey, allowing you to help shape and govern the
-                      outcome.
+                      Contributions earn mission tokens that give you a stake in the journey,
+                      allowing you to help shape and govern the outcome.
                     </p>
                   </div>
                 </div>
@@ -462,9 +442,8 @@ export default function Launch({ missions, featuredMissionData }: any) {
                       Verify
                     </h3>
                     <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                      Secured by code, not promises. 100% transparent use of
-                      funds onchain, allowing contributors to trace how funds
-                      were spent.
+                      Secured by code, not promises. 100% transparent use of funds onchain, allowing
+                      contributors to trace how funds were spent.
                     </p>
                   </div>
                 </div>
@@ -476,16 +455,15 @@ export default function Launch({ missions, featuredMissionData }: any) {
           <div className="flex flex-col items-center mt-12 md:mt-16 lg:mt-20 px-4">
             <p className="text-center max-w-2xl md:max-w-3xl lg:max-w-4xl text-white/90 text-sm md:text-lg lg:text-xl xl:text-2xl font-semibold leading-relaxed">
               <span className="hidden md:inline">
-                Join a revolution in space funding. Unlike traditional
-                fundraising, your community can
+                Join a revolution in space funding. Unlike traditional fundraising, your community
+                can
                 <br />
-                immediately coordinate governance, access liquidity, and grow
-                into a viral movement.
+                immediately coordinate governance, access liquidity, and grow into a viral movement.
               </span>
               <span className="inline md:hidden">
-                Join a revolution in space funding. Unlike traditional
-                fundraising, your community can immediately coordinate
-                governance, access liquidity, and grow into a viral movement.
+                Join a revolution in space funding. Unlike traditional fundraising, your community
+                can immediately coordinate governance, access liquidity, and grow into a viral
+                movement.
               </span>
             </p>
           </div>
@@ -623,16 +601,14 @@ export default function Launch({ missions, featuredMissionData }: any) {
           <div className="text-center mt-12 md:mt-16 lg:mt-20 px-4">
             <p className="max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl text-white/90 text-sm md:text-lg lg:text-xl xl:text-2xl font-semibold leading-relaxed mx-auto">
               <span className="hidden md:inline">
-                MoonDAO's journey from concept to space, powered by
-                decentralized funding.
+                MoonDAO's journey from concept to space, powered by decentralized funding.
                 <br />
-                We raised millions, engaged thousands, funded over 80 projects,
-                and sent two people to space.
+                We raised millions, engaged thousands, funded over 80 projects, and sent two people
+                to space.
               </span>
               <span className="inline md:hidden">
-                MoonDAO's journey from concept to space, powered by
-                decentralized funding. We raised millions, engaged thousands,
-                funded over 80 projects, and sent two people to space.
+                MoonDAO's journey from concept to space, powered by decentralized funding. We raised
+                millions, engaged thousands, funded over 80 projects, and sent two people to space.
               </span>
             </p>
           </div>
@@ -664,8 +640,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
               The Power of Decentralization
             </h2>
             <p className="text-white/80 text-sm md:text-base lg:text-lg xl:text-xl text-center max-w-3xl mx-auto">
-              Experience the advantages of transparent, community-driven space
-              funding.
+              Experience the advantages of transparent, community-driven space funding.
             </p>
           </div>
 
@@ -691,8 +666,8 @@ export default function Launch({ missions, featuredMissionData }: any) {
                         Global Access
                       </h3>
                       <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                        Tap into a global crypto network with trillions of
-                        dollars at your fingertips.
+                        Tap into a global crypto network with trillions of dollars at your
+                        fingertips.
                       </p>
                     </div>
                   </div>
@@ -718,8 +693,8 @@ export default function Launch({ missions, featuredMissionData }: any) {
                         Trustless
                       </h3>
                       <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                        All transactions are onchain, ensuring that everyone can
-                        see how funds are spent.
+                        All transactions are onchain, ensuring that everyone can see how funds are
+                        spent.
                       </p>
                     </div>
                   </div>
@@ -745,8 +720,8 @@ export default function Launch({ missions, featuredMissionData }: any) {
                         Battle Tested
                       </h3>
                       <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                        Powered by Juicebox, a proven and audited platform with
-                        over 1,000+ projects and over $200,000,000+ raised.
+                        Powered by Juicebox, a proven and audited platform with over 1,000+ projects
+                        and over $200,000,000+ raised.
                       </p>
                     </div>
                   </div>
@@ -772,8 +747,8 @@ export default function Launch({ missions, featuredMissionData }: any) {
                         Scalable
                       </h3>
                       <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                        Adapt your fundraising strategy as your mission evolves
-                        with our quick launch guidelines and templates.
+                        Adapt your fundraising strategy as your mission evolves with our quick
+                        launch guidelines and templates.
                       </p>
                     </div>
                   </div>
@@ -799,9 +774,8 @@ export default function Launch({ missions, featuredMissionData }: any) {
                         Power of the Network
                       </h3>
                       <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                        The Space Acceleration Network brings leading space
-                        companies, enthusiasts, and professionals onchain from
-                        around the globe.
+                        The Space Acceleration Network brings leading space companies, enthusiasts,
+                        and professionals onchain from around the globe.
                       </p>
                     </div>
                   </div>
@@ -827,8 +801,8 @@ export default function Launch({ missions, featuredMissionData }: any) {
                         Internet Speed
                       </h3>
                       <p className="text-white/80 text-xs md:text-sm lg:text-base leading-relaxed">
-                        Launch and fund your mission in minutes, not months,
-                        with instant global access to capital.
+                        Launch and fund your mission in minutes, not months, with instant global
+                        access to capital.
                       </p>
                     </div>
                   </div>
@@ -876,8 +850,8 @@ export default function Launch({ missions, featuredMissionData }: any) {
                 Get Started Today
               </h2>
               <p className="text-white/90 text-sm md:text-lg lg:text-xl xl:text-2xl max-w-3xl mx-auto leading-relaxed px-4">
-                The next great space mission starts here. Join the decentralized
-                space race and fund your mission with the Launchpad.
+                The next great space mission starts here. Join the decentralized space race and fund
+                your mission with the Launchpad.
               </p>
 
               {/* CTA Button */}
@@ -994,9 +968,7 @@ export default function Launch({ missions, featuredMissionData }: any) {
   )
 }
 
-export const getStaticProps: GetStaticProps = async (): Promise<
-  GetStaticPropsResult<any>
-> => {
+export const getStaticProps: GetStaticProps = async (): Promise<GetStaticPropsResult<any>> => {
   try {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
@@ -1095,7 +1067,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
           mission.fundingGoal &&
           mission.fundingGoal > 0
       ) ||
-      (filteredMissions.length > 0
+      (filteredMissions.length > 0 && FEATURED_MISSION_INDEX !== null
         ? filteredMissions[FEATURED_MISSION_INDEX] || filteredMissions[0]
         : null)
 
@@ -1122,47 +1094,39 @@ export const getStaticProps: GetStaticProps = async (): Promise<
           chain: chain,
         })
 
-        const [
-          stage,
-          payHookAddress,
-          tokenAddress,
-          primaryTerminalAddress,
-          ruleset,
-        ] = await Promise.all([
-          readContract({
-            contract: missionCreatorContract,
-            method: 'stage' as string,
-            params: [featuredMission.id],
-          }).catch(() => null),
-          readContract({
-            contract: missionCreatorContract,
-            method: 'missionIdToPayHook' as string,
-            params: [featuredMission.id],
-          }).catch(() => null),
-          readContract({
-            contract: jbTokensContract,
-            method: 'tokenOf' as string,
-            params: [featuredMission.projectId],
-          }).catch(() => null),
-          readContract({
-            contract: jbDirectoryContract,
-            method: 'primaryTerminalOf' as string,
-            params: [featuredMission.projectId, JB_NATIVE_TOKEN_ADDRESS],
-          }).catch(() => '0x0000000000000000000000000000000000000000'),
-          readContract({
-            contract: jbV5ControllerContract,
-            method: 'currentRulesetOf' as string,
-            params: [featuredMission.projectId],
-          }).catch(() => null),
-        ])
+        const [stage, payHookAddress, tokenAddress, primaryTerminalAddress, ruleset] =
+          await Promise.all([
+            readContract({
+              contract: missionCreatorContract,
+              method: 'stage' as string,
+              params: [featuredMission.id],
+            }).catch(() => null),
+            readContract({
+              contract: missionCreatorContract,
+              method: 'missionIdToPayHook' as string,
+              params: [featuredMission.id],
+            }).catch(() => null),
+            readContract({
+              contract: jbTokensContract,
+              method: 'tokenOf' as string,
+              params: [featuredMission.projectId],
+            }).catch(() => null),
+            readContract({
+              contract: jbDirectoryContract,
+              method: 'primaryTerminalOf' as string,
+              params: [featuredMission.projectId, JB_NATIVE_TOKEN_ADDRESS],
+            }).catch(() => '0x0000000000000000000000000000000000000000'),
+            readContract({
+              contract: jbV5ControllerContract,
+              method: 'currentRulesetOf' as string,
+              params: [featuredMission.projectId],
+            }).catch(() => null),
+          ])
 
         let deadline: number | undefined = undefined
         let refundPeriod: number | undefined = undefined
 
-        if (
-          payHookAddress &&
-          payHookAddress !== '0x0000000000000000000000000000000000000000'
-        ) {
+        if (payHookAddress && payHookAddress !== '0x0000000000000000000000000000000000000000') {
           try {
             const payHookContract = getContract({
               client: serverClient,
@@ -1198,10 +1162,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
           tokenSupply: '',
         }
 
-        if (
-          tokenAddress &&
-          tokenAddress !== '0x0000000000000000000000000000000000000000'
-        ) {
+        if (tokenAddress && tokenAddress !== '0x0000000000000000000000000000000000000000') {
           try {
             const tokenContract = getContract({
               client: serverClient,
@@ -1210,24 +1171,23 @@ export const getStaticProps: GetStaticProps = async (): Promise<
               chain: chain,
             })
 
-            const [nameResult, symbolResult, supplyResult] =
-              await Promise.allSettled([
-                readContract({
-                  contract: tokenContract,
-                  method: 'name' as string,
-                  params: [],
-                }),
-                readContract({
-                  contract: tokenContract,
-                  method: 'symbol' as string,
-                  params: [],
-                }),
-                readContract({
-                  contract: tokenContract,
-                  method: 'totalSupply' as string,
-                  params: [],
-                }),
-              ])
+            const [nameResult, symbolResult, supplyResult] = await Promise.allSettled([
+              readContract({
+                contract: tokenContract,
+                method: 'name' as string,
+                params: [],
+              }),
+              readContract({
+                contract: tokenContract,
+                method: 'symbol' as string,
+                params: [],
+              }),
+              readContract({
+                contract: tokenContract,
+                method: 'totalSupply' as string,
+                params: [],
+              }),
+            ])
 
             if (nameResult.status === 'fulfilled' && nameResult.value) {
               tokenData.tokenName = nameResult.value
@@ -1252,10 +1212,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
 
         let _backers: any[] = []
         try {
-          _backers = await getBackers(
-            featuredMission.projectId,
-            featuredMission.id
-          )
+          _backers = await getBackers(featuredMission.projectId, featuredMission.id)
         } catch (err) {
           console.warn('Failed to fetch backers:', err)
         }
@@ -1297,8 +1254,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
             projectId: null,
             metadata: {
               name: 'MoonDAO Launchpad',
-              description:
-                'Welcome to the MoonDAO Launchpad. Mission data is being loaded.',
+              description: 'Welcome to the MoonDAO Launchpad. Mission data is being loaded.',
               image: '/Original.png',
             },
           },

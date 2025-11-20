@@ -13,7 +13,8 @@ export default function MissionBanner() {
   if (
     !isVisible ||
     isOnMissionPage ||
-    process.env.NEXT_PUBLIC_HIDE_BANNER === 'true'
+    process.env.NEXT_PUBLIC_HIDE_BANNER === 'true' ||
+    !FEATURED_MISSION
   ) {
     return null
   }
@@ -55,9 +56,7 @@ export default function MissionBanner() {
                 <span className="text-xs sm:text-sm font-medium text-slate-300">
                   Featured Mission:
                 </span>
-                <span className="text-sm sm:text-base font-semibold">
-                  {FEATURED_MISSION.name}
-                </span>
+                <span className="text-sm sm:text-base font-semibold">{FEATURED_MISSION.name}</span>
                 <span className="mx-1 sm:mx-2">•</span>
                 <span className="text-xs sm:text-sm text-slate-400">
                   {FEATURED_MISSION.description}
@@ -72,9 +71,7 @@ export default function MissionBanner() {
                 <span className="text-xs sm:text-sm font-medium text-slate-300">
                   Featured Mission:
                 </span>
-                <span className="text-sm sm:text-base font-semibold">
-                  {FEATURED_MISSION.name}
-                </span>
+                <span className="text-sm sm:text-base font-semibold">{FEATURED_MISSION.name}</span>
                 <span className="mx-1 sm:mx-2">•</span>
                 <span className="text-xs sm:text-sm text-slate-400">
                   {FEATURED_MISSION.description}

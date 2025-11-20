@@ -3,7 +3,7 @@ import JBV5Directory from 'const/abis/JBV5Directory.json'
 import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
-import { DEFAULT_CHAIN_V5, FEATURED_MISSION_INDEX } from 'const/config'
+import { DEFAULT_CHAIN_V5, FEATURED_MISSION, FEATURED_MISSION_INDEX } from 'const/config'
 import {
   JBV5_CONTROLLER_ADDRESS,
   JBV5_DIRECTORY_ADDRESS,
@@ -21,10 +21,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import StandardButton from '@/components/layout/StandardButton'
 
-export default function FeaturedMissionSection({
-  missions,
-  featuredMissionData,
-}: any) {
+export default function FeaturedMissionSection({ missions, featuredMissionData }: any) {
   const router = useRouter()
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
@@ -60,7 +57,8 @@ export default function FeaturedMissionSection({
   })
 
   const featuredMission =
-    featuredMissionData?.mission || missions?.[FEATURED_MISSION_INDEX] || null
+    featuredMissionData?.mission ||
+    (FEATURED_MISSION_INDEX !== null ? missions?.[FEATURED_MISSION_INDEX] : null)
 
   const {
     subgraphData: featuredMissionSubgraphData,
@@ -118,10 +116,7 @@ export default function FeaturedMissionSection({
           </h2>
         </div>
 
-        <JuiceProviders
-          projectId={featuredMission?.projectId || 0}
-          selectedChain={selectedChain}
-        >
+        <JuiceProviders projectId={featuredMission?.projectId || 0} selectedChain={selectedChain}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 lg:gap-12 items-center">
             {/* Left Column - Mission Image */}
             <div className="flex justify-center lg:justify-start order-1 lg:order-1 px-4 md:px-0">
@@ -129,9 +124,8 @@ export default function FeaturedMissionSection({
                 <div className="relative rounded-3xl overflow-hidden shadow-2xl">
                   <Image
                     src={
-                      getIPFSGateway(
-                        featuredMission?.metadata?.logoUri
-                      ) || '/assets/project-default.png'
+                      getIPFSGateway(featuredMission?.metadata?.logoUri) ||
+                      '/assets/project-default.png'
                     }
                     alt={featuredMission?.metadata?.name || 'Mission'}
                     width={500}
@@ -145,9 +139,7 @@ export default function FeaturedMissionSection({
                 {featuredMission?.team?.metadata?.logoUri && (
                   <div className="absolute -bottom-4 -right-4 bg-white/10 backdrop-blur-sm rounded-full p-2 shadow-lg border border-white/20">
                     <Image
-                      src={getIPFSGateway(
-                        featuredMission?.team?.metadata?.logoUri
-                      )}
+                      src={getIPFSGateway(featuredMission?.team?.metadata?.logoUri)}
                       alt={featuredMission?.team?.metadata?.name || 'Team'}
                       width={48}
                       height={48}
@@ -163,14 +155,11 @@ export default function FeaturedMissionSection({
               {/* Mission Title & Tagline */}
               <div className="space-y-2 md:space-y-3 lg:space-y-4">
                 <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-GoodTimes text-white leading-tight">
-                  {featuredMission?.metadata?.name ||
-                    'Welcome to the MoonDAO Launchpad'}
+                  {featuredMission?.metadata?.name || 'Welcome to the MoonDAO Launchpad'}
                 </h1>
-                {(featuredMission?.metadata?.tagline ||
-                  featuredMission?.metadata?.description) && (
+                {(featuredMission?.metadata?.tagline || featuredMission?.metadata?.description) && (
                   <p className="text-sm md:text-lg lg:text-xl xl:text-2xl text-white/80 font-light">
-                    {featuredMission?.metadata?.tagline ||
-                      featuredMission?.metadata?.description}
+                    {featuredMission?.metadata?.tagline || featuredMission?.metadata?.description}
                   </p>
                 )}
               </div>
@@ -181,9 +170,8 @@ export default function FeaturedMissionSection({
                   <div className="relative">
                     <Image
                       src={
-                        getIPFSGateway(
-                          featuredMission?.team?.metadata?.logoUri
-                        ) || '/assets/project-default.png'
+                        getIPFSGateway(featuredMission?.team?.metadata?.logoUri) ||
+                        '/assets/project-default.png'
                       }
                       alt={featuredMission?.team?.metadata?.name || 'Team'}
                       width={64}
@@ -243,10 +231,7 @@ export default function FeaturedMissionSection({
                   </div>
                   <p className="text-sm md:text-lg lg:text-2xl font-bold text-white">
                     {featuredMissionFundingGoal
-                      ? truncateTokenValue(
-                          featuredMissionFundingGoal / 1e18,
-                          'ETH'
-                        )
+                      ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
                       : '0'}{' '}
                     ETH
                   </p>
@@ -279,8 +264,7 @@ export default function FeaturedMissionSection({
                     Funding Progress
                   </span>
                   <span className="text-white font-bold text-sm md:text-base">
-                    {featuredMissionFundingGoal &&
-                    featuredMissionFundingGoal > 0
+                    {featuredMissionFundingGoal && featuredMissionFundingGoal > 0
                       ? Math.round(
                           (Number(featuredMissionSubgraphData?.volume || 0) /
                             featuredMissionFundingGoal) *
@@ -295,12 +279,9 @@ export default function FeaturedMissionSection({
                     className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] h-full rounded-full transition-all duration-1000"
                     style={{
                       width: `${
-                        featuredMissionFundingGoal &&
-                        featuredMissionFundingGoal > 0
+                        featuredMissionFundingGoal && featuredMissionFundingGoal > 0
                           ? Math.min(
-                              (Number(
-                                featuredMissionSubgraphData?.volume || 0
-                              ) /
+                              (Number(featuredMissionSubgraphData?.volume || 0) /
                                 featuredMissionFundingGoal) *
                                 100,
                               100

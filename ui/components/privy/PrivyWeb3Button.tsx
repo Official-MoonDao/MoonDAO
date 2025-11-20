@@ -81,8 +81,7 @@ export function PrivyWeb3Button({
   const { user, authenticated } = usePrivy()
   const { login } = useLogin({
     onComplete: (user, isNewUser, wasAlreadyAuthenticated) => {
-      const isLoggingInViaWeb3Button =
-        router.query.loggingInViaWeb3Button === 'true'
+      const isLoggingInViaWeb3Button = router.query.loggingInViaWeb3Button === 'true'
       if (user && !wasAlreadyAuthenticated && isLoggingInViaWeb3Button) {
         const { loggingInViaWeb3Button, ...restQuery } = router.query
         router.replace(
@@ -118,10 +117,7 @@ export function PrivyWeb3Button({
 
     if (!user) {
       setBtnState(0)
-    } else if (
-      !skipNetworkCheck &&
-      chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]
-    ) {
+    } else if (!skipNetworkCheck && chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]) {
       setBtnState(1)
     } else if (
       !skipNetworkCheck &&
@@ -180,24 +176,47 @@ export function PrivyWeb3Button({
           type="button"
           className={className}
           onClick={async () => {
-            if (requiredChain) {
-              setSelectedChain(requiredChain)
-            }
-
+            setIsLoading(true)
             try {
-              const success = await addNetworkToWallet(selectedChain)
+              const targetChain = requiredChain || selectedChain
+              if (requiredChain) {
+                setSelectedChain(requiredChain)
+              }
+
+              const success = await addNetworkToWallet(targetChain)
               if (success) {
-                await wallets[selectedWallet]?.switchChain(selectedChain?.id)
+                await wallets[selectedWallet]?.switchChain(targetChain?.id)
+
+                const maxAttempts = 50
+                const pollInterval = 100
+                let attempts = 0
+
+                while (attempts < maxAttempts) {
+                  await new Promise((resolve) => setTimeout(resolve, pollInterval))
+                  const currentChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
+                  if (currentChainId === targetChain.id) {
+                    break
+                  }
+                  attempts++
+                }
               }
             } catch (err: any) {
               console.error('Error switching network:', err.message)
+            } finally {
+              setIsLoading(false)
             }
           }}
-          isDisabled={isDisabled}
+          isDisabled={isDisabled || isLoading}
           noPadding={noPadding}
           noGradient={noGradient}
         >
-          Switch Network
+          {isLoading ? (
+            <div className="w-full">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            'Switch Network'
+          )}
         </Button>
       )}
       {btnState === 2 && (
