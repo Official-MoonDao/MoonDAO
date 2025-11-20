@@ -1,17 +1,11 @@
 import { CalendarDaysIcon } from '@heroicons/react/24/outline'
 import { Project } from '@/lib/project/useProjectData'
-import { useProposalUpload, useSpaceInfo } from '@nance/nance-hooks'
 import { ProposalPacket } from '@nance/nance-sdk'
 import { add, differenceInDays, formatDistanceToNow, fromUnixTime } from 'date-fns'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { useState } from 'react'
-import toast from 'react-hot-toast'
-import toastStyle from '../../lib/marketplace/marketplace-utils/toastConfig'
-import { NANCE_SPACE_NAME } from '../../lib/nance/constants'
 import useAccount from '../../lib/nance/useAccountAddress'
-import { useSignProposal } from '../../lib/nance/useSignProposal'
 import { SnapshotGraphqlProposalVotingInfo } from '@/lib/snapshot'
 import { AddressLink } from './AddressLink'
 import RequestingTokensOfProposal from './RequestingTokensOfProposal'
@@ -84,87 +78,7 @@ export default function ProposalInfo({
   showStatus?: boolean
   compact?: boolean
 }) {
-  //const { proposalInfo, ...proposal } = proposalPacket
-  const proposal = project
-  const preTitleDisplay = project.MDP ? `MDP${project.MDP}: ` : ''
-  const router = useRouter()
-  proposal.voteSetup = {
-    type: 'weighted', // could make this dynamic in the future
-    choices: ['Yes', 'No', 'Abstain'], // could make this dynamic in the future
-  }
   const { isLinked, wallet } = useAccount()
-  const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
-
-  // Get space info to find next Snapshot Vote
-  // We need this to be compliant with the proposal signing format of Snapshot
-  const { data: spaceInfoData } = useSpaceInfo({ space: NANCE_SPACE_NAME })
-  const spaceInfo = spaceInfoData?.data
-  const { nextEvents, currentEvent } = spaceInfo || {}
-  let nextSnapshotVote = nextEvents?.find((event) => event.title === 'Snapshot Vote')
-  const nextProposalId = spaceInfo?.nextProposalId
-  if (currentEvent?.title === 'Temperature Check') {
-    const days = differenceInDays(
-      new Date(nextEvents?.slice(-1)[0]?.start || ''),
-      new Date(currentEvent.start)
-    )
-    nextSnapshotVote = {
-      title: 'Snapshot Vote',
-      start: add(new Date(nextSnapshotVote?.start || ''), {
-        days,
-      }).toISOString(),
-      end: add(new Date(nextSnapshotVote?.end || ''), { days }).toISOString(),
-    }
-  }
-
-  // Proposal upload
-  const { signProposalAsync } = useSignProposal(wallet)
-  const { trigger } = useProposalUpload(NANCE_SPACE_NAME, proposal?.uuid)
-  const buttonsDisabled = !wallet?.linked || signingStatus === 'loading'
-
-  async function signAndSendProposal() {
-    if (!nextSnapshotVote) return
-    setSigningStatus('loading')
-    const proposalId = proposal.proposalId || nextProposalId
-    const preTitle = `MDP${proposalId}: `
-    signProposalAsync(proposal, preTitle, nextSnapshotVote)
-      .then((res) => {
-        const { signature, message, address } = res
-        trigger({
-          proposal,
-          envelope: {
-            type: 'SnapshotSubmitProposal',
-            address,
-            signature,
-            message,
-          },
-        })
-          .then((res) => {
-            if (res.success) {
-              setSigningStatus('success')
-              toast.success('Proposal submitted successfully!', {
-                style: toastStyle,
-              })
-              // Next router push
-              router.push(`/proposal/${res.data.uuid}`)
-            } else {
-              setSigningStatus('error')
-              toast.error('Error saving draft.', { style: toastStyle })
-            }
-          })
-          .catch((error) => {
-            setSigningStatus('error')
-            toast.error(`[API] Error submitting proposal:\n${error}`, {
-              style: toastStyle,
-            })
-          })
-      })
-      .catch((error) => {
-        setSigningStatus('idle')
-        toast.error(`[Wallet] Error signing proposal:\n${error}`, {
-          style: toastStyle,
-        })
-      })
-  }
 
   return (
     <div className="flex min-w-0 flex-col gap-x-4 sm:flex-row">
@@ -229,33 +143,7 @@ export default function ProposalInfo({
           <div className="mt-2 md:mt-0">
             {proposalPacket.budget && <RequestingTokensOfProposal budget={proposalPacket.budget} />}
           </div>
-          {/* Delegate this proposal if it doesn't have an author */}
-          {!proposalPacket.authorAddress && isLinked && !sponsorDisabled && (
-            <button
-              type="button"
-              className={`px-5 py-3 bg-moon-orange border border-transparent font-RobotoMono rounded-sm hover:rounded-tl-[22px] hover:rounded-br-[22px] duration-300 disabled:cursor-not-allowed disabled:hover:rounded-sm disabled:opacity-40`}
-              disabled={buttonsDisabled}
-              onClick={() => {
-                signAndSendProposal()
-              }}
-            >
-              {signingStatus === 'loading' ? 'Sponsor Proposal...' : 'Sponsor Proposal'}
-            </button>
-          )}
         </div>
-        {/* Coauthor */}
-        {!coauthorsDisabled && proposal.coauthors && (
-          <div className="text-xs ml-7 font-RobotoMono">
-            <p className="text-gray-400">Sponsor</p>
-            {proposal.coauthors.map((coauthor, index) => {
-              return (
-                <p key={index} className="text-white">
-                  <AddressLink address={coauthor} />
-                </p>
-              )
-            })}
-          </div>
-        )}
         {/* Votes */}
         <div className="mt-2">
           <VotingInfo votingInfo={votingInfo} />

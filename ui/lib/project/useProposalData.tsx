@@ -2,7 +2,6 @@ import { useProposal } from '@nance/nance-hooks'
 import { useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import { NANCE_SPACE_NAME } from '../nance/constants'
 import useProposalJSON from '../nance/useProposalJSON'
 
 export default function useProposalData(proposalContract: any, mdp: any) {
@@ -70,6 +69,6 @@ export default function useProposalData(proposalContract: any, mdp: any) {
   return {
     proposalData,
     isLoading,
-    refetch
+    refetch,
   }
 }

@@ -26,9 +26,9 @@ export default function FinalReportsPage({
 
   return (
     <>
-      <WebsiteHead 
-        title={title} 
-        description="Submit the final report for your completed project. Document project outcomes, deliverables, and team contributions for transparency and accountability." 
+      <WebsiteHead
+        title={title}
+        description="Submit the final report for your completed project. Document project outcomes, deliverables, and team contributions for transparency and accountability."
       />
       <section className="flex flex-col justify-start px-5 mt-5 items-start animate-fadeIn w-[90vw] md:w-full">
         <Container>
@@ -37,7 +37,8 @@ export default function FinalReportsPage({
             headerSize="40px"
             description={
               <div className="text-gray-300 text-lg leading-relaxed">
-                Submit the final report for your completed project. Document project outcomes, deliverables, and team contributions for transparency and accountability.
+                Submit the final report for your completed project. Document project outcomes,
+                deliverables, and team contributions for transparency and accountability.
               </div>
             }
             mainPadding
@@ -47,7 +48,8 @@ export default function FinalReportsPage({
             <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
               <div className="mb-8 flex flex-col items-center bg-black/20 rounded-xl p-6 border border-white/10">
                 <p className="text-gray-300 leading-relaxed text-center">
-                  Submit the final report for your completed project. Document outcomes, deliverables, and team contributions for transparency and accountability.
+                  Submit the final report for your completed project. Document outcomes,
+                  deliverables, and team contributions for transparency and accountability.
                 </p>
                 <p className="text-gray-300 leading-relaxed text-center mt-4">
                   For more information, check the{' '}
@@ -56,8 +58,8 @@ export default function FinalReportsPage({
                     href="/project-system-docs"
                   >
                     Project System
-                  </Link>
-                  {' '}guide. Start with our{' '}
+                  </Link>{' '}
+                  guide. Start with our{' '}
                   <Link
                     className="text-blue-400 hover:text-blue-300 underline"
                     href="https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit?usp=sharing"
@@ -69,12 +71,10 @@ export default function FinalReportsPage({
                   .
                 </p>
               </div>
-              <FinalReportEditor
-                projectsFromLastQuarter={projectsFromLastQuarter}
-              />
+              <FinalReportEditor projectsFromLastQuarter={projectsFromLastQuarter} />
             </div>
           </ContentLayout>
-          <NoticeFooter 
+          <NoticeFooter
             defaultImage="../assets/MoonDAO-Logo-White.svg"
             defaultTitle="Need Help?"
             defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
@@ -105,7 +105,8 @@ export async function getStaticProps() {
       method: 'getTableName',
     })
 
-    const { quarter, year } = getRelativeQuarter(-1)
+    //const { quarter, year } = getRelativeQuarter(-1)
+    const { quarter, year } = getRelativeQuarter(0)
 
     const statement = `SELECT * FROM ${projectTableName} WHERE quarter = ${quarter} AND year = ${year}`
     const projectsFromLastQuarter = await queryTable(chain, statement)

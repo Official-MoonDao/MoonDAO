@@ -11,7 +11,6 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
-import { NANCE_SPACE_NAME } from '@/lib/nance/constants'
 import { SnapshotGraphqlProposalVotingInfo, useVotingInfoOfProposals } from '@/lib/snapshot'
 import PaginationButtons from '@/components/layout/PaginationButtons'
 import Proposal from './Proposal'

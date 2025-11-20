@@ -8,31 +8,34 @@ import {
   ArchiveBoxArrowDownIcon,
 } from '@heroicons/react/24/outline'
 import { useProposalDelete, useProposalUpload } from '@nance/nance-hooks'
-import { ProposalPacket } from '@nance/nance-sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { Fragment } from 'react'
 import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { NANCE_SPACE_NAME } from '@/lib/nance/constants'
 import useAccount from '@/lib/nance/useAccountAddress'
 import { useSignArchiveProposal } from '@/lib/nance/useSignArchiveProposal'
 import { useSignDeleteProposal } from '@/lib/nance/useSignDeleteProposal'
+import { Project } from '@/lib/project/useProjectData'
 
-export default function DropDownMenu({ proposalPacket }: { proposalPacket: ProposalPacket }) {
-  const space = NANCE_SPACE_NAME
+export default function DropDownMenu({
+  project,
+  proposalStatus,
+}: {
+  project: Project
+  proposalStatus: string
+}) {
   const { wallet, isLinked } = useAccount()
   const router = useRouter()
 
-  const { status } = proposalPacket
   const showVariableActions =
     isLinked &&
-    (status === 'Archived' ||
-      status === 'Draft' ||
-      status === 'Discussion' ||
-      status === 'Temperature Check')
+    (proposalStatus === 'Archived' ||
+      proposalStatus === 'Draft' ||
+      proposalStatus === 'Discussion' ||
+      proposalStatus === 'Temperature Check')
 
-  const handleEditProposal = async () => {
+  const handleDeleteProposal = async () => {
     // Show loading toast
     const loadingToastId = toast.loading('Signing...', { style: toastStyle })
     try {
@@ -113,7 +116,7 @@ export default function DropDownMenu({ proposalPacket }: { proposalPacket: Propo
                       className={`${
                         focus ? 'bg-moon-blue text-white' : 'text-gray-900'
                       } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                      href={`/propose?proposalId=${proposalPacket.uuid}`}
+                      href={`/propose?tokenId=${project.id}`}
                       passHref
                     >
                       <PencilIcon className="mr-2 h-5 w-5" aria-hidden="true" />
@@ -125,26 +128,10 @@ export default function DropDownMenu({ proposalPacket }: { proposalPacket: Propo
                   {({ focus }) => (
                     <button
                       className={`${
-                        focus ? 'bg-moon-gold text-white' : 'text-gray-900'
-                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                      onClick={() => {
-                        handleEditProposal()
-                      }}
-                    >
-                      <ArchiveBoxArrowDownIcon className="mr-2 h-5 w-5" aria-hidden="true" />
-                      Archive
-                    </button>
-                  )}
-                </MenuItem>
-                <MenuItem>
-                  {({ focus }) => (
-                    <button
-                      className={`${
                         focus ? 'bg-moon-orange text-white' : 'text-gray-900'
                       } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                       onClick={() => {
-                        handleEditProposal()
-                        //handleDeleteProposal()
+                        handleDeleteProposal()
                       }}
                     >
                       <TrashIcon className="mr-2 h-5 w-5" aria-hidden="true" />

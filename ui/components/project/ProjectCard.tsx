@@ -34,7 +34,6 @@ const ProjectCardContent = memo(
     project,
     distribution,
     handleDistributionChange,
-    proposalJSON,
     distribute,
     userContributed,
     userHasVotingPower,
@@ -45,9 +44,7 @@ const ProjectCardContent = memo(
     const account = useActiveAccount()
     const [isExpanded, setIsExpanded] = useState(false)
     const description =
-      project && project.MDP < 13
-        ? project.description
-        : proposalJSON?.abstract || project?.description || ''
+      project && project.MDP < 13 ? project.description : project?.description || ''
 
     // Set character limits that better match the new card height
     const [characterLimit, setCharacterLimit] = useState(380)
@@ -202,7 +199,7 @@ export default function ProjectCard({
   const account = useActiveAccount()
   const address = account?.address
 
-  const { adminHatId, proposalJSON } = useProjectData(projectContract, hatsContract, project)
+  const { adminHatId } = useProjectData(projectContract, hatsContract, project)
   const { authenticated } = usePrivy()
 
   const { selectedChain } = useContext(ChainContextV5)

@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import { NANCE_SPACE_NAME } from '../nance/constants'
 import { PROJECT_ACTIVE } from '@/lib/nance/types'
 
 export type Project = {
@@ -40,18 +39,16 @@ export default function useProjectData(
   const [managerHatId, setManagerHatId] = useState<any>()
 
   const [finalReportMarkdown, setFinalReportMarkdown] = useState<string>()
-  const [proposalJSON, setProposalJSON] = useState<string>()
   const [totalBudget, setTotalBudget] = useState<number>()
 
   useEffect(() => {
     async function getProposalJSON() {
       const proposalResponse = await fetch(project.proposalIPFS)
       const proposal = await proposalResponse.json()
-      setFinalReportMarkdown(proposal.body)
       let budget = 0
       if (proposal.budget) {
         proposal.budget.forEach((item: any) => {
-          budget += b.token === 'ETH' ? Number(b.amount) : 0
+          budget += item.token === 'ETH' ? Number(item.amount) : 0
         })
         setTotalBudget(budget)
       }
@@ -142,7 +139,6 @@ export default function useProjectData(
     hatTreeId,
     adminHatId,
     managerHatId,
-    proposalJSON,
     finalReportMarkdown,
     totalBudget,
     isLoading,

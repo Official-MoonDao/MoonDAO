@@ -76,6 +76,7 @@ export default function ProjectProfile({
 }: ProjectProfileProps) {
   const account = useActiveAccount()
   const address = account?.address
+  console.log('proposalStatus', proposalStatus)
 
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
@@ -183,7 +184,6 @@ export default function ProjectProfile({
   )
   const gridCols = votes ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2'
 
-  console.log('proposalStatus', proposalStatus)
   return (
     <Container>
       <Head title={project.name} description={project.description} />
@@ -234,7 +234,7 @@ export default function ProjectProfile({
               <div className={`grid ${gridCols} gap-8`}>
                 <div className="lg:col-span-2 relative">
                   <div className="absolute top-2 right-[20px]">
-                    <DropDownMenu proposalPacket={proposalPacket} />
+                    <DropDownMenu project={project} proposalStatus={proposalStatus} />
                   </div>
                   <div>
                     <MarkdownWithTOC body={proposal.body || ''} />
@@ -390,8 +390,8 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const tempCheckState = tempCheckApproved
     ? 'temp-check-passed'
     : tempCheckFailed
-    ? 'temp-check-failed'
-    : 'temp-check'
+      ? 'temp-check-failed'
+      : 'temp-check'
   let proposalStatus = ''
   if (project.active == PROJECT_PENDING) {
     if (tempCheckApproved) {
