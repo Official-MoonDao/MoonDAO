@@ -38,10 +38,7 @@ module.exports = defineConfig({
             const formData = new FormData()
 
             // Create a test file or use existing file
-            const testFilePath = path.join(
-              __dirname,
-              'cypress/fixtures/images/Original.png'
-            )
+            const testFilePath = path.join(__dirname, 'cypress/fixtures/images/Original.png')
 
             // Check if file exists
             if (!fs.existsSync(testFilePath)) {
@@ -63,17 +60,13 @@ module.exports = defineConfig({
             })
 
             // Use axios instead of fetch - axios handles FormData much better
-            const response = await axios.post(
-              `${baseUrl}/api/google/storage/upload`,
-              formData,
-              {
-                headers: {
-                  ...formData.getHeaders(),
-                },
-                timeout: 30000, // 30 second timeout
-                validateStatus: () => true, // Don't throw on error status codes
-              }
-            )
+            const response = await axios.post(`${baseUrl}/api/google/storage/upload`, formData, {
+              headers: {
+                ...formData.getHeaders(),
+              },
+              timeout: 30000, // 30 second timeout
+              validateStatus: () => true, // Don't throw on error status codes
+            })
 
             return {
               status: response.status,
@@ -98,14 +91,11 @@ module.exports = defineConfig({
             if (url) requestBody.url = url
 
             // Use axios for delete as well
-            const response = await axios.delete(
-              `${baseUrl}/api/google/storage/delete`,
-              {
-                data: requestBody,
-                timeout: 30000,
-                validateStatus: () => true,
-              }
-            )
+            const response = await axios.delete(`${baseUrl}/api/google/storage/delete`, {
+              data: requestBody,
+              timeout: 30000,
+              validateStatus: () => true,
+            })
 
             return {
               status: response.status,
@@ -172,5 +162,6 @@ module.exports = defineConfig({
       bundler: 'webpack',
     },
     supportFile: 'cypress/support/component.ts',
+    excludeSpecPattern: ['**/node_modules/**', '**/dist/**'],
   },
 })

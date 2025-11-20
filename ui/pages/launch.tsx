@@ -1,7 +1,6 @@
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
-import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
@@ -15,24 +14,24 @@ import { GetStaticProps, GetStaticPropsResult } from 'next'
 import { useContext } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import { useLaunchpadAccess } from '@/lib/launchpad/useLaunchpadAccess'
-import { useLaunchStatus } from '@/lib/launchpad/useLaunchStatus'
-import { useTeamManagerCheck } from '@/lib/launchpad/useTeamManagerCheck'
 import { fetchFeaturedMissionData } from '@/lib/launchpad/fetchFeaturedMission'
 import { fetchMissions } from '@/lib/launchpad/fetchMissions'
+import { FeaturedMissionData, Mission } from '@/lib/launchpad/types'
+import { useLaunchStatus } from '@/lib/launchpad/useLaunchStatus'
+import { useLaunchpadAccess } from '@/lib/launchpad/useLaunchpadAccess'
+import { useTeamManagerCheck } from '@/lib/launchpad/useTeamManagerCheck'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import FeaturedMissionSection from '@/components/home/FeaturedMissionSection'
+import GetStartedToday from '@/components/launchpad/GetStartedToday'
+import GoFurtherTogether from '@/components/launchpad/GoFurtherTogether'
+import LaunchHero from '@/components/launchpad/LaunchHero'
+import LaunchpadFAQ from '@/components/launchpad/LaunchpadFAQ'
+import PowerOfDecentralization from '@/components/launchpad/PowerOfDecentralization'
+import ProvenFinancingModel from '@/components/launchpad/ProvenFinancingModel'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import CreateMission from '@/components/mission/CreateMission'
-import LaunchHero from '@/components/launchpad/LaunchHero'
-import GoFurtherTogether from '@/components/launchpad/GoFurtherTogether'
-import ProvenFinancingModel from '@/components/launchpad/ProvenFinancingModel'
-import PowerOfDecentralization from '@/components/launchpad/PowerOfDecentralization'
-import GetStartedToday from '@/components/launchpad/GetStartedToday'
-import LaunchpadFAQ from '@/components/launchpad/LaunchpadFAQ'
-import { FeaturedMissionData, Mission } from '@/lib/launchpad/types'
 
 type LaunchProps = {
   missions: Mission[]
@@ -100,18 +99,12 @@ export default function Launch({ missions, featuredMissionData }: LaunchProps) {
 
   return (
     <>
-      <LaunchHero
-        citizenHasAccess={citizenHasAccess}
-        onLaunchClick={handleCreateMission}
-      />
+      <LaunchHero citizenHasAccess={citizenHasAccess} onLaunchClick={handleCreateMission} />
       <FeaturedMissionSection missions={missions} featuredMissionData={featuredMissionData} />
       <GoFurtherTogether />
       <ProvenFinancingModel />
       <PowerOfDecentralization />
-      <GetStartedToday
-        citizenHasAccess={citizenHasAccess}
-        onLaunchClick={handleCreateMission}
-      />
+      <GetStartedToday citizenHasAccess={citizenHasAccess} onLaunchClick={handleCreateMission} />
       <LaunchpadFAQ />
       <ExpandedFooter
         callToActionTitle="Join the Network"
@@ -125,7 +118,9 @@ export default function Launch({ missions, featuredMissionData }: LaunchProps) {
   )
 }
 
-export const getStaticProps: GetStaticProps = async (): Promise<GetStaticPropsResult<LaunchProps>> => {
+export const getStaticProps: GetStaticProps = async (): Promise<
+  GetStaticPropsResult<LaunchProps>
+> => {
   try {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)

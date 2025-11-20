@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import { CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
-import { useTeamManagerCheck } from '@/lib/launchpad/useTeamManagerCheck'
-import { UserTeam } from '@/lib/launchpad/types'
+import { useEffect } from 'react'
 import * as thirdweb from 'thirdweb'
+import { UserTeam } from '@/lib/launchpad/types'
+import { useTeamManagerCheck } from '@/lib/launchpad/useTeamManagerCheck'
 
 const mockTeamContract = {
   address: '0x123',
@@ -155,4 +155,3 @@ describe('useTeamManagerCheck', () => {
     cy.get('@onResult').should('have.been.called')
   })
 })
-

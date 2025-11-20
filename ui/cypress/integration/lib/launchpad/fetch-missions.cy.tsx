@@ -1,8 +1,8 @@
-import { fetchMissions } from '@/lib/launchpad/fetchMissions'
 import { CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
-import { getChainSlug } from '@/lib/thirdweb/chain'
 import * as thirdweb from 'thirdweb'
+import { fetchMissions } from '@/lib/launchpad/fetchMissions'
 import * as queryTableModule from '@/lib/tableland/queryTable'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 
 describe('fetchMissions', () => {
   const chain = CYPRESS_CHAIN_V5
@@ -29,7 +29,12 @@ describe('fetchMissions', () => {
     cy.stub(thirdweb, 'getContract').returns({} as any)
     cy.stub(thirdweb, 'readContract').resolves('test-table-name')
     cy.stub(global, 'fetch').resolves({
-      json: () => Promise.resolve({ name: 'Test Mission', description: 'Test Description', image: '/test.png' }),
+      json: () =>
+        Promise.resolve({
+          name: 'Test Mission',
+          description: 'Test Description',
+          image: '/test.png',
+        }),
     } as Response)
   })
 
@@ -66,20 +71,10 @@ describe('fetchMissions', () => {
   })
 
   it('Fetches and returns missions with correct structure and metadata', () => {
-    const mockMetadata = {
-      name: 'Test Mission',
-      description: 'Test Description',
-      image: '/test.png',
-    }
-
-    cy.stub(global, 'fetch').resolves({
-      json: () => Promise.resolve(mockMetadata),
-    } as Response)
-
     fetchMissions(chain, chainSlug, missionTableAddress, jbV5ControllerAddress).then((result) => {
       expect(result).to.be.an('array')
       expect(result.length).to.be.greaterThan(0)
-      
+
       if (result.length > 0) {
         const mission = result[0]
         expect(mission).to.have.property('id')
@@ -119,13 +114,4 @@ describe('fetchMissions', () => {
       }
     })
   })
-
-  it('Handles rate limiting delays', () => {
-    const startTime = Date.now()
-    fetchMissions(chain, chainSlug, missionTableAddress, jbV5ControllerAddress).then((result) => {
-      const endTime = Date.now()
-      expect(result).to.be.an('array')
-    })
-  })
 })
-
