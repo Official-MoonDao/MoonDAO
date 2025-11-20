@@ -1,7 +1,10 @@
 import {
+  BuildingLibraryIcon,
+  BuildingStorefrontIcon,
   CircleStackIcon,
+  ClipboardDocumentListIcon,
+  DocumentIcon,
   FolderIcon,
-  HomeIcon,
   PlusIcon,
   RocketLaunchIcon,
   WrenchScrewdriverIcon,
@@ -18,25 +21,39 @@ export default function useNavigation(citizen: any) {
         icon: PlusIcon,
       },
       {
-        name: 'Dashboard',
-        href: '/',
-        icon: HomeIcon,
-      },
-      {
-        name: 'Citizenship',
+        name: 'Network',
         href: '/network',
         icon: IconOrg,
         children: [
-          { name: 'Become a Citizen', href: '/citizen' },
+          { name: 'Join Network', href: '/join' },
+          { name: 'Explore Network', href: '/network' },
           { name: 'Create a Team', href: '/team' },
-          { name: 'Explore Citizens', href: '/network' },
+          {
+            name: 'Submit Contribution',
+            href: '/contributions',
+          },
           {
             name: 'Jobs',
             href: '/jobs',
           },
+        ],
+      },
+      {
+        name: 'Govern',
+        icon: BuildingLibraryIcon,
+        href: '/governance',
+        children: [
           {
-            name: 'Marketplace',
-            href: '/marketplace',
+            name: 'Governance Overview',
+            href: '/governance',
+          },
+          {
+            name: 'Proposals',
+            href: '/vote',
+          },
+          {
+            name: 'Constitution',
+            href: '/constitution',
           },
         ],
       },
@@ -46,11 +63,11 @@ export default function useNavigation(citizen: any) {
         href: '/mooney',
         children: [
           {
-            name: 'Get $MOONEY',
+            name: 'Buy',
             href: '/mooney',
           },
-          { name: 'Lock $MOONEY', href: '/lock' },
-          { name: 'Bridge $MOONEY', href: '/bridge' },
+          { name: 'Lock', href: '/lock' },
+          { name: 'Bridge', href: '/bridge' },
         ],
       },
       {
@@ -59,20 +76,16 @@ export default function useNavigation(citizen: any) {
         href: '/projects-overview',
         children: [
           {
-            name: 'Propose Project',
-            href: '/proposals',
-          },
-          {
-            name: 'Projects',
+            name: 'Projects Overview',
             href: '/projects-overview',
           },
           {
-            name: 'Proposals',
-            href: '/vote',
+            name: 'Project Rewards',
+            href: '/projects',
           },
           {
-            name: 'Submit Contribution',
-            href: '/contributions',
+            name: 'Propose Project',
+            href: '/proposals',
           },
         ],
       },
@@ -86,12 +99,13 @@ export default function useNavigation(citizen: any) {
           { name: 'Events', href: '/events' },
           { name: 'Analytics', href: '/analytics' },
           { name: 'Resources', href: '/resources' },
-          { name: 'Constitution', href: '/constitution' },
-          { name: 'Network Overview', href: '/join' },
-          { name: 'Token Overview', href: '/mooney' },
-          { name: 'Governance Overview', href: '/governance' },
-          { name: 'Projects Overview', href: '/projects-overview' },
         ],
+      },
+      {
+        name: 'Marketplace',
+
+        icon: BuildingStorefrontIcon,
+        href: '/marketplace',
       },
       {
         name: 'Launchpad',
