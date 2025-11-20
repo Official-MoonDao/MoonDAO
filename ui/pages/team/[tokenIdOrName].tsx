@@ -1,14 +1,17 @@
 // Team Profile Page
 import {
-  ArrowUpRightIcon,
   BanknotesIcon,
   BuildingStorefrontIcon,
   ChatBubbleLeftIcon,
   ClipboardDocumentListIcon,
   GlobeAltIcon,
   PencilIcon,
+  UserGroupIcon,
+  BriefcaseIcon,
+  ShoppingBagIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline'
-import Safe, { SafeConfig } from '@safe-global/protocol-kit'
+import Safe from '@safe-global/protocol-kit'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
@@ -35,7 +38,6 @@ import {
   MISSION_CREATOR_ADDRESSES,
 } from 'const/config'
 import { BLOCKED_TEAMS } from 'const/whitelist'
-import { ethers } from 'ethers'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -43,13 +45,11 @@ import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
-import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { getRpcUrlForChain } from 'thirdweb/chains'
-import { getNFT } from 'thirdweb/extensions/erc721'
-import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
-import { privateKeyToAccount } from 'thirdweb/wallets'
+import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
+import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import useSafe from '@/lib/safe/useSafe'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { teamRowToNFT } from '@/lib/tableland/convertRow'
@@ -57,25 +57,23 @@ import queryTable from '@/lib/tableland/queryTable'
 import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import client, { serverClient } from '@/lib/thirdweb/client'
+import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
-import { serialize } from '@/lib/utils/serialize'
 import { TwitterIcon } from '@/components/assets'
+import DashboardCard from '@/components/dashboard/DashboardCard'
+import StatsCard from '@/components/dashboard/StatsCard'
 import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
-import SafeModal from '@/components/safe/SafeModal'
 import Action from '@/components/subscription/Action'
 import GeneralActions from '@/components/subscription/GeneralActions'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
-import TeamDonation from '@/components/subscription/TeamDonation'
 import TeamJobModal from '@/components/subscription/TeamJobModal'
 import TeamJobs from '@/components/subscription/TeamJobs'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
@@ -179,9 +177,21 @@ export default function TeamDetailPage({
     subIsValid,
     isLoading: isLoadingTeamData,
     hasFullAccess,
-  } = useTeamData(teamContract, hatsContract, nft, citizen)
+    jobs,
+    listings,
+    missions,
+    isLoadingActivityData,
+  } = useTeamData(teamContract, hatsContract, nft, citizen, {
+    teamId: tokenId,
+    selectedChain,
+    jobTableContract,
+    marketplaceTableContract,
+    missionTableContract,
+    jbControllerContract,
+  })
 
   const hats = useSubHats(selectedChain, adminHatId, true)
+  const wearers = useUniqueHatWearers(hats)
 
   const safeData = useSafe(nft?.owner)
 
@@ -193,6 +203,15 @@ export default function TeamDetailPage({
     method: 'expiresAt',
     params: [tokenId],
   })
+
+  // Calculate stats from fetched data
+  const teamStats = {
+    memberCount: wearers?.length || 0,
+    jobCount: jobs?.length || 0,
+    listingCount: listings?.length || 0,
+    missionCount: missions?.length || 0,
+    treasuryBalance: '0',
+  }
 
   useChainDefault()
 
@@ -476,54 +495,89 @@ export default function TeamDetailPage({
           id="page-container"
           className="animate-fadeIn flex flex-col gap-5 w-full max-w-[1080px]"
         >
+          {/* Team Statistics Overview */}
+          {!isDeleted && subIsValid && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatsCard
+                title="Team Members"
+                value={teamStats.memberCount}
+                icon={<UserGroupIcon className="w-6 h-6 text-blue-400" />}
+                subtitle="Active members"
+              />
+              <StatsCard
+                title="Open Jobs"
+                value={teamStats.jobCount}
+                icon={<BriefcaseIcon className="w-6 h-6 text-green-400" />}
+                subtitle="Hiring opportunities"
+              />
+              <StatsCard
+                title="Marketplace Items"
+                value={teamStats.listingCount}
+                icon={<ShoppingBagIcon className="w-6 h-6 text-purple-400" />}
+                subtitle="Active listings"
+              />
+              <StatsCard
+                title="Active Missions"
+                value={teamStats.missionCount}
+                icon={<ChartBarIcon className="w-6 h-6 text-orange-400" />}
+                subtitle="Fundraising campaigns"
+              />
+            </div>
+          )}
+
           {!isDeleted && subIsValid && (
             <div id="entity-actions-container" className=" z-30">
               {isManager || address === nft.owner ? (
-                <div
-                  id="team-actions-container"
-                  className="px-5 pt-5 md:px-0 md:pt-0"
+                <DashboardCard
+                  title="Quick Actions"
+                  icon={
+                    <Image
+                      src="/assets/icon-rocket.svg"
+                      alt="Actions"
+                      width={30}
+                      height={30}
+                    />
+                  }
                 >
-                  <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                      <Action
-                        title="Fund"
-                        description="Launch a mission to raise funds."
-                        icon={
-                          <BanknotesIcon
-                            height={24}
-                            width={24}
-                            className="text-white"
-                          />
-                        }
-                        onClick={() => router.push('/launch?status=create')}
-                      />
-                      <Action
-                        title="Hire"
-                        description="List job openings or contracts to a global talent pool."
-                        icon={
-                          <ClipboardDocumentListIcon
-                            height={24}
-                            width={24}
-                            className="text-white"
-                          />
-                        }
-                        onClick={() => setTeamJobModalEnabled(true)}
-                      />
-                      <Action
-                        title="Sell"
-                        description="List products, services, or ticketed events for sale."
-                        icon={
-                          <BuildingStorefrontIcon
-                            height={24}
-                            width={24}
-                            className="text-white"
-                          />
-                        }
-                        onClick={() => setTeamListingModalEnabled(true)}
-                      />
-                    </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <Action
+                      title="Fund"
+                      description="Launch a mission to raise funds."
+                      icon={
+                        <BanknotesIcon
+                          height={24}
+                          width={24}
+                          className="text-white"
+                        />
+                      }
+                      onClick={() => router.push('/launch?status=create')}
+                    />
+                    <Action
+                      title="Hire"
+                      description="List job openings or contracts to a global talent pool."
+                      icon={
+                        <ClipboardDocumentListIcon
+                          height={24}
+                          width={24}
+                          className="text-white"
+                        />
+                      }
+                      onClick={() => setTeamJobModalEnabled(true)}
+                    />
+                    <Action
+                      title="Sell"
+                      description="List products, services, or ticketed events for sale."
+                      icon={
+                        <BuildingStorefrontIcon
+                          height={24}
+                          width={24}
+                          className="text-white"
+                        />
+                      }
+                      onClick={() => setTeamListingModalEnabled(true)}
+                    />
                   </div>
-                </div>
+                </DashboardCard>
               ) : (
                 ''
               )}
@@ -554,6 +608,7 @@ export default function TeamDetailPage({
                 jbDirectoryContract={jbDirectoryContract}
                 jbTokensContract={jbTokensContract}
                 teamContract={teamContract}
+                missions={missions}
               />
             </div>
           )}
@@ -620,6 +675,7 @@ export default function TeamDetailPage({
                   isManager={isManager}
                   isCitizen={citizen}
                   hasFullAccess={hasFullAccess}
+                  jobs={jobs}
                 />
               </div>
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
@@ -630,6 +686,7 @@ export default function TeamDetailPage({
                   isManager={isManager}
                   teamId={tokenId}
                   isCitizen={citizen}
+                  listings={listings}
                 />
               </div>
               {/* General Actions */}

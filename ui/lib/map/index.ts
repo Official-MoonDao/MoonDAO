@@ -61,17 +61,25 @@ export async function getCitizensLocationData() {
           citizens.push(citizenRowToNFT(citizen as CitizenRow))
       }
 
-      const filteredValidCitizens = citizens.filter(async (c: any) => {
-        const now = Math.floor(Date.now() / 1000)
-        const expiresAt = await readContract({
-          contract: citizenContract,
-          method: 'expiresAt',
-          params: [c.metadata.id],
+      // Filter valid citizens (async filter needs Promise.all)
+      const filteredValidCitizens = await Promise.all(
+        citizens.map(async (c: any) => {
+          try {
+            const now = Math.floor(Date.now() / 1000)
+            const expiresAt = await readContract({
+              contract: citizenContract,
+              method: 'expiresAt',
+              params: [c.metadata.id],
+            })
+            const isValid =
+              +expiresAt.toString() > now && !BLOCKED_CITIZENS.has(c.metadata.id)
+            return isValid ? c : null
+          } catch (error) {
+            console.error(`Error checking citizen ${c.metadata.id}:`, error)
+            return null
+          }
         })
-        return (
-          +expiresAt.toString() > now && !BLOCKED_CITIZENS.has(c.metadata.id)
-        )
-      })
+      ).then((results) => results.filter((c) => c !== null))
 
       // Get location data for each citizen
       for (const citizen of filteredValidCitizens) {
