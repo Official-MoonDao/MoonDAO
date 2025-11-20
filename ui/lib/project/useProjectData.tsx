@@ -57,7 +57,7 @@ export default function useProjectData(
         setTotalBudget(budget)
       }
     }
-    if (project?.proposalIPFS) getFinalReportMarkdown()
+    if (project?.proposalIPFS) getProposalJSON()
   }, [project?.proposalIPFS])
 
   const isActive = useMemo(() => {

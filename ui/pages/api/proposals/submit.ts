@@ -1,6 +1,12 @@
 import ProjectTeamCreatorABI from 'const/abis/ProjectTeamCreator.json'
 import queryTable from '@/lib/tableland/queryTable'
-import { PROJECT_TABLE_NAMES, DEFAULT_CHAIN_V5, PROJECT_CREATOR_ADDRESSES } from 'const/config'
+import {
+  PROJECT_TABLE_ADDRESSES,
+  PROJECT_TABLE_NAMES,
+  DEFAULT_CHAIN_V5,
+  PROJECT_CREATOR_ADDRESSES,
+} from 'const/config'
+import ProjectTableABI from 'const/abis/ProjectTable.json'
 import { ethers } from 'ethers'
 import { getRelativeQuarter } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
@@ -120,131 +126,159 @@ async function getAddresses(
 
 async function POST(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { address, proposalTitle, proposalIPFS, budget, body } = req.body
-
-    const projectTeamCreatorContract = getContract({
-      client: serverClient,
-      address: PROJECT_CREATOR_ADDRESSES[chainSlug],
-      abi: ProjectTeamCreatorABI as any,
-      chain: chain,
-    })
-    const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} ORDER BY MDP DESC`
-    const projects = await queryTable(chain, projectStatement)
-    let proposalId = 1
-    if (projects.length) {
-      proposalId = projects[0].MDP + 1
-    }
-    var members = []
-    var membersUsernames = []
-    const [leads, leadsUsernames] = await getAddresses(body, ['Team Rocketeer', 'Project Lead'])
-    ;[members, membersUsernames] = await getAddresses(body, ['Initial Team'])
-    // Only allow the first lead to be the lead for smart contract purposes
-    if (leads.length > 1) {
-      members = [...leads.slice(1), ...members]
-      membersUsernames = [...leadsUsernames.slice(1), ...membersUsernames]
-    }
-    const [signers, signersUsernames] = await getAddresses(body, ['Multi-sig signers'])
-    const abstractText = (await getAbstract(body)).slice(0, 1000)
-
-    const membersValid = members.map((address) => ethers.utils.isAddress(address)).every(Boolean)
-    if (!membersValid) {
-      return res.status(400).json({
-        error: `Could not parse team members. Found: ${members}`,
-      })
-    }
-    const signersValid = signers.map((address) => ethers.utils.isAddress(address)).every(Boolean)
-    if (!signersValid) {
-      return res.status(400).json({
-        error: `Could not parse multi-sig signers. Found: ${signers}`,
-      })
-    }
-    const abstractValid = abstractText !== null && abstractText !== 'null'
-    if (!abstractValid) {
-      return res.status(400).json({
-        error: `Could not parse abstract. Found: ${abstractText}`,
-      })
-    }
-
-    // parse out tables from proposal body which is in markdown format
-    const getHatMetadataIPFS = async function (hatType: string) {
-      const hatMetadataBlob = new Blob(
-        [
-          JSON.stringify({
-            type: '1.0',
-            data: {
-              name: 'MDP-' + proposalId + ' ' + hatType,
-              description: proposalTitle,
-            },
-          }),
-        ],
-        {
-          type: 'application/json',
-        }
-      )
-      const name = `MDP-${proposalId}-${hatType}.json`
-      const { cid: hatMetadataIpfsHash } = await pinBlobOrFile(hatMetadataBlob, name)
-      return 'ipfs://' + hatMetadataIpfsHash
-    }
-    const { quarter, year } = getRelativeQuarter(0)
-    // FIXME handle budget
-    const upfrontPayment = ''
-    //proposal.upfrontPayment
-    //? JSON.stringify(proposal.upfrontPayment)
-    //: ''
-    // FIXME pinipfs not working here
-    const [adminHatMetadataIpfs, managerHatMetadataIpfs, memberHatMetadataIpfs] =
-      await Promise.allSettled([
-        getHatMetadataIPFS('Admin'),
-        getHatMetadataIPFS('Manager'),
-        getHatMetadataIPFS('Member'),
-      ])
-    if (
-      adminHatMetadataIpfs.status !== 'fulfilled' ||
-      managerHatMetadataIpfs.status !== 'fulfilled' ||
-      memberHatMetadataIpfs.status !== 'fulfilled'
-    ) {
-      console.error(
-        'Failed to pin hat metadata IPFS: ',
-        adminHatMetadataIpfs,
-        managerHatMetadataIpfs,
-        memberHatMetadataIpfs
-      )
-    }
-    console.log(
-      `Create project for proposal ${proposalId} ${proposalTitle}?\n\nlead ${leads[0]}\nmembers [${
-        members.length > 0 ? members : [address]
-      }]\n (${membersUsernames})\nsigners [${signers}]\n (${signersUsernames})\nabstract:\n ${abstractText}\n (y/n)`
-    )
-    const transaction = prepareContractCall({
-      contract: projectTeamCreatorContract,
-      method: 'createProjectTeam',
-      params: [
-        'ipfs://QmUMm4rHbbkcfBCszfFHmBNvHSyPGNVXJZHpcCG4BMEaNY',
-        'ipfs://QmT7LKxDAzaJsBafMbe2B1thaoqkvKgj7Y72QQiuQusnzE',
-        'ipfs://QmVjgE2pPQjueixuUcpo6h3z4NBMB5S6BeH617vHSwW74m',
-        proposalTitle,
-        abstractText, // description
-        '', // image
-        quarter,
-        year,
-        proposalId,
-        proposalIPFS, // proposal ipfs
-        'https://moondao.com/proposal/' + proposalId,
-        upfrontPayment,
-        leads[0] || '', // leadAddress,
-        members.length > 0 ? members : [address], // members
-        signers.length > 0 ? signers : [address], // signers,
-      ],
-    })
     const account = await createHSMWallet()
-    const receipt = await sendAndConfirmTransaction({
-      transaction,
-      account,
-    })
-    res.status(200).json({
-      url: 'https://moondao.com/proposal/' + proposalId,
-      proposalId: proposalId,
-    })
+    if (req.body.proposalId) {
+      // UPDATE
+      const { proposalId, proposalIPFS } = req.body
+      const projectTableContract = getContract({
+        client: serverClient,
+        address: PROJECT_TABLE_ADDRESSES[chainSlug],
+        abi: ProjectTableABI,
+        chain: chain,
+      })
+      const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE MDP = ${proposalId}`
+
+      const projects = await queryTable(chain, projectStatement)
+      const project = projects[0]
+      const transaction = prepareContractCall({
+        contract: projectTableContract,
+        method: 'updateTableCol',
+        params: [project.id, 'proposalIPFS', proposalIPFS],
+      })
+      const receipt = await sendAndConfirmTransaction({
+        transaction,
+        account,
+      })
+      res.status(200).json({
+        proposalId: proposalId,
+      })
+    } else {
+      // CREATE
+      const { address, proposalTitle, proposalIPFS, body } = req.body
+
+      const projectTeamCreatorContract = getContract({
+        client: serverClient,
+        address: PROJECT_CREATOR_ADDRESSES[chainSlug],
+        abi: ProjectTeamCreatorABI as any,
+        chain: chain,
+      })
+      const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} ORDER BY MDP DESC`
+      const projects = await queryTable(chain, projectStatement)
+      let proposalId = 1
+      if (projects.length) {
+        proposalId = projects[0].MDP + 1
+      }
+      var members = []
+      var membersUsernames = []
+      const [leads, leadsUsernames] = await getAddresses(body, ['Team Rocketeer', 'Project Lead'])
+      ;[members, membersUsernames] = await getAddresses(body, ['Initial Team'])
+      // Only allow the first lead to be the lead for smart contract purposes
+      if (leads.length > 1) {
+        members = [...leads.slice(1), ...members]
+        membersUsernames = [...leadsUsernames.slice(1), ...membersUsernames]
+      }
+      const [signers, signersUsernames] = await getAddresses(body, ['Multi-sig signers'])
+      const abstractText = (await getAbstract(body)).slice(0, 1000)
+
+      const membersValid = members.map((address) => ethers.utils.isAddress(address)).every(Boolean)
+      if (!membersValid) {
+        return res.status(400).json({
+          error: `Could not parse team members. Found: ${members}`,
+        })
+      }
+      const signersValid = signers.map((address) => ethers.utils.isAddress(address)).every(Boolean)
+      if (!signersValid) {
+        return res.status(400).json({
+          error: `Could not parse multi-sig signers. Found: ${signers}`,
+        })
+      }
+      const abstractValid = abstractText !== null && abstractText !== 'null'
+      if (!abstractValid) {
+        return res.status(400).json({
+          error: `Could not parse abstract. Found: ${abstractText}`,
+        })
+      }
+
+      // parse out tables from proposal body which is in markdown format
+      const getHatMetadataIPFS = async function (hatType: string) {
+        const hatMetadataBlob = new Blob(
+          [
+            JSON.stringify({
+              type: '1.0',
+              data: {
+                name: 'MDP-' + proposalId + ' ' + hatType,
+                description: proposalTitle,
+              },
+            }),
+          ],
+          {
+            type: 'application/json',
+          }
+        )
+        const name = `MDP-${proposalId}-${hatType}.json`
+        const { cid: hatMetadataIpfsHash } = await pinBlobOrFile(hatMetadataBlob, name)
+        return 'ipfs://' + hatMetadataIpfsHash
+      }
+      const { quarter, year } = getRelativeQuarter(0)
+      const upfrontPayment = ''
+      //proposal.upfrontPayment
+      //? JSON.stringify(proposal.upfrontPayment)
+      //: ''
+      // FIXME pinipfs not working here
+      const [adminHatMetadataIpfs, managerHatMetadataIpfs, memberHatMetadataIpfs] =
+        await Promise.allSettled([
+          getHatMetadataIPFS('Admin'),
+          getHatMetadataIPFS('Manager'),
+          getHatMetadataIPFS('Member'),
+        ])
+      if (
+        adminHatMetadataIpfs.status !== 'fulfilled' ||
+        managerHatMetadataIpfs.status !== 'fulfilled' ||
+        memberHatMetadataIpfs.status !== 'fulfilled'
+      ) {
+        console.error(
+          'Failed to pin hat metadata IPFS: ',
+          adminHatMetadataIpfs,
+          managerHatMetadataIpfs,
+          memberHatMetadataIpfs
+        )
+      }
+      console.log(
+        `Create project for proposal ${proposalId} ${proposalTitle}?\n\nlead ${
+          leads[0]
+        }\nmembers [${
+          members.length > 0 ? members : [address]
+        }]\n (${membersUsernames})\nsigners [${signers}]\n (${signersUsernames})\nabstract:\n ${abstractText}\n (y/n)`
+      )
+      const transaction = prepareContractCall({
+        contract: projectTeamCreatorContract,
+        method: 'createProjectTeam',
+        params: [
+          'ipfs://QmUMm4rHbbkcfBCszfFHmBNvHSyPGNVXJZHpcCG4BMEaNY',
+          'ipfs://QmT7LKxDAzaJsBafMbe2B1thaoqkvKgj7Y72QQiuQusnzE',
+          'ipfs://QmVjgE2pPQjueixuUcpo6h3z4NBMB5S6BeH617vHSwW74m',
+          proposalTitle,
+          abstractText, // description
+          '', // image
+          quarter,
+          year,
+          proposalId,
+          proposalIPFS, // proposal ipfs
+          'https://moondao.com/proposal/' + proposalId,
+          upfrontPayment,
+          leads[0] || '', // leadAddress,
+          members.length > 0 ? members : [address], // members
+          signers.length > 0 ? signers : [address], // signers,
+        ],
+      })
+      const receipt = await sendAndConfirmTransaction({
+        transaction,
+        account,
+      })
+      res.status(200).json({
+        proposalId: proposalId,
+      })
+    }
   } catch (e) {
     console.log('error', e)
     return res.status(400).json({
