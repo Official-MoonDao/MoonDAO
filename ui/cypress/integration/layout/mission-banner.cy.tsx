@@ -18,7 +18,7 @@ describe('<MissionBanner />', () => {
   })
 
   it('Does not render when on mission page', () => {
-    cy.mountNextRouter('/mission/3')
+    cy.mountNextRouter('/mission/[tokenId]')
 
     cy.mount(<MissionBanner />)
 
