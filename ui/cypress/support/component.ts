@@ -52,6 +52,13 @@ Cypress.Commands.add('getById', (input: any) => {
 Cypress.Commands.add('mountNextRouter', (pathname: string) => {
   const push = cy.stub().resolves()
   const replace = cy.stub().resolves()
+  
+  // Restore if already stubbed to avoid "already wrapped" error
+  const useRouter = NextRouter.useRouter as any
+  if (useRouter && typeof useRouter.restore === 'function') {
+    useRouter.restore()
+  }
+  
   cy.stub(NextRouter, 'useRouter').returns({ 
     pathname, 
     query: {},
