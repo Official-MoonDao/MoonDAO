@@ -79,14 +79,14 @@ export default function SafeTransactions({
 
   return (
     <div
-      className="max-h-[800px] overflow-y-auto"
+      className="max-h-[600px] overflow-y-auto"
       data-testid="transactions-section"
     >
       <h3
         data-testid="transactions-title"
-        className="text-xl font-GoodTimes mb-4"
+        className="text-lg font-GoodTimes mb-3 text-white"
       >
-        Transactions
+        Recent Transactions
       </h3>
 
       {pendingTransactions.length > 0 && (
@@ -302,10 +302,10 @@ export default function SafeTransactions({
       )}
 
       {isNetworkMismatch ? (
-        <div>
-          <p>Please switch to {selectedChain.name} to view transactions.</p>
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+          <p className="text-yellow-500 mb-3">Please switch to {selectedChain.name} to view transactions.</p>
           <StandardButton
-            className="mt-2 gradient-2 rounded-full"
+            className="gradient-2 rounded-lg text-sm"
             onClick={() => {
               wallets[selectedWallet].switchChain(selectedChain.id)
             }}
@@ -314,9 +314,11 @@ export default function SafeTransactions({
           </StandardButton>
         </div>
       ) : pendingTransactions.length === 0 ? (
-        <p data-testid="no-transactions-message" className="text-gray-400">
-          No pending transactions
-        </p>
+        <div className="bg-slate-600/10 rounded-lg p-4 text-center">
+          <p data-testid="no-transactions-message" className="text-slate-400 text-sm">
+            No pending transactions
+          </p>
+        </div>
       ) : (
         <></>
       )}

@@ -755,30 +755,25 @@ export async function getHistoricalRevenue(
       combinedHistory.set(point.timestamp, existing)
     })
 
-    const weeklyRevenueHistory = Array.from(combinedHistory.values())
-      .sort((a, b) => a.timestamp - b.timestamp)
-      .filter((point) => {
-        const cutoffDate = Date.now() - days * 24 * 60 * 60 * 1000
-        return point.timestamp >= cutoffDate
-      })
+    // Calculate annual totals from ALL revenue history (not filtered by days)
+    // This ensures we get the full annual revenue regardless of chart range
+    const allWeeklyRevenueHistory = Array.from(combinedHistory.values()).sort(
+      (a, b) => a.timestamp - b.timestamp
+    )
 
-    const revenueHistory = convertToCumulativeRevenue(weeklyRevenueHistory)
-
-    // Calculate annual totals by summing the weekly history (consistent with chart data)
-    // This ensures the final chart point matches the annual calculation
-    const finalCitizenRevenue = weeklyRevenueHistory.reduce(
+    const finalCitizenRevenue = allWeeklyRevenueHistory.reduce(
       (sum, point) => sum + point.citizenRevenue,
       0
     )
-    const finalTeamRevenue = weeklyRevenueHistory.reduce(
+    const finalTeamRevenue = allWeeklyRevenueHistory.reduce(
       (sum, point) => sum + point.teamRevenue,
       0
     )
-    const finalDefiRevenue = weeklyRevenueHistory.reduce(
+    const finalDefiRevenue = allWeeklyRevenueHistory.reduce(
       (sum, point) => sum + point.defiRevenue,
       0
     )
-    const finalStakingRevenue = weeklyRevenueHistory.reduce(
+    const finalStakingRevenue = allWeeklyRevenueHistory.reduce(
       (sum, point) => sum + point.stakingRevenue,
       0
     )
@@ -787,6 +782,14 @@ export async function getHistoricalRevenue(
       finalTeamRevenue +
       finalDefiRevenue +
       finalStakingRevenue
+
+    // Filter revenue history for chart display only (based on days parameter)
+    const weeklyRevenueHistory = allWeeklyRevenueHistory.filter((point) => {
+      const cutoffDate = Date.now() - days * 24 * 60 * 60 * 1000
+      return point.timestamp >= cutoffDate
+    })
+
+    const revenueHistory = convertToCumulativeRevenue(weeklyRevenueHistory)
 
     console.log(
       `\n📊 FINAL REVENUE SUMMARY (ETH Price: $${ethPrice.toFixed(2)})`
