@@ -105,6 +105,7 @@ export async function getStaticProps() {
       method: 'getTableName',
     })
 
+    // FIXME use last quarter
     //const { quarter, year } = getRelativeQuarter(-1)
     const { quarter, year } = getRelativeQuarter(0)
 
