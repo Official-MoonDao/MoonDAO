@@ -25,8 +25,7 @@ export default function MooneyBalances({
   isVotingPowerLoading,
 }: MooneyBalancesProps) {
   const totalMooney = (unlockedMooney || 0) + (lockedMooney || 0)
-  const unlockedShare =
-    totalMooney > 0 ? (unlockedMooney || 0) / totalMooney : 0
+  const unlockedShare = totalMooney > 0 ? (unlockedMooney || 0) / totalMooney : 0
   const lockedShare = totalMooney > 0 ? (lockedMooney || 0) / totalMooney : 0
 
   const formattedUnlocked = formatToken(unlockedMooney)
@@ -53,7 +52,7 @@ export default function MooneyBalances({
     (votingPower === 0 && isVotingPowerLoading === undefined)
 
   return (
-    <div className="flex flex-col items-left justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 sm:px-4 sm:py-2.5 text-white backdrop-blur-xl">
+    <div className="flex flex-col items-left justify-between gap-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 sm:px-4 sm:py-2.5 text-white backdrop-blur-xl">
       <div className="flex items-center gap-3 w-full">
         <h3 className="text-white/80 font-medium font-GoodTimes">MOONEY</h3>
         {/* MOONEY Logo */}
@@ -89,75 +88,73 @@ export default function MooneyBalances({
       </div>
 
       {/* Metrics */}
-      <div className="flex items-center gap-2 sm:gap-3 text-xs text-white/80 min-w-0 flex-wrap">
+      <div className="flex items-center gap-2 sm:gap-3 text-xs text-white/80 min-w-0 flex-wrap xl:flex-nowrap">
         {/* Available */}
         <Link
           href="/mooney"
-          className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group"
+          className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group flex-shrink-0"
         >
           <div className="h-2 w-2 rounded-full bg-gradient-to-r from-sky-400 to-blue-500 flex-shrink-0" />
           {showUnlockedSkeleton ? (
             <SkeletonText width="w-16" />
           ) : (
-            <span className="font-medium whitespace-nowrap min-w-[4rem]">
-              {formattedUnlocked}
-            </span>
+            <span className="font-medium whitespace-nowrap min-w-[4rem]">{formattedUnlocked}</span>
           )}
-          <span className="text-white/60 group-hover:underline font-semibold">
+          <span className="text-white/60 group-hover:underline font-semibold whitespace-nowrap">
             Available
           </span>
         </Link>
 
-        <div className="hidden lg:block h-4 w-px bg-white/20" />
+        <div className="hidden lg:block h-4 w-px bg-white/20 flex-shrink-0" />
 
         {/* Locked */}
         <Link
           href="/lock"
-          className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group"
+          className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group flex-shrink-0"
         >
           <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex-shrink-0" />
           {showLockedSkeleton ? (
             <SkeletonText width="w-16" />
           ) : (
-            <span className="font-medium whitespace-nowrap min-w-[4rem]">
-              {formattedLocked}
-            </span>
+            <span className="font-medium whitespace-nowrap min-w-[4rem]">{formattedLocked}</span>
           )}
-          <span className="text-white/60 group-hover:underline font-semibold">
+          <span className="text-white/60 group-hover:underline font-semibold whitespace-nowrap">
             Locked
           </span>
         </Link>
 
-        <div className="hidden lg:block h-4 w-px bg-white/20" />
+        <div className="hidden lg:block h-4 w-px bg-white/20 flex-shrink-0" />
 
         {/* Voting Power */}
-        <Link
-          href="/vote"
-          className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
-        >
-          <div className="group flex items-center justify-center gap-1">
-            <BoltIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-400/90" />
-            {showVotingPowerSkeleton ? (
-              <SkeletonText width="w-16" />
-            ) : (
-              <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white group-hover:bg-white/20 transition-colors min-w-[3rem]">
-                {formattedVotingPower}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <Link
+            href="/vote"
+            className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+          >
+            <div className="group flex items-center justify-center gap-1">
+              <BoltIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-yellow-400/90 flex-shrink-0" />
+              {showVotingPowerSkeleton ? (
+                <SkeletonText width="w-16" />
+              ) : (
+                <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white group-hover:bg-white/20 transition-colors min-w-[3rem] whitespace-nowrap">
+                  {formattedVotingPower}
+                </span>
+              )}
+              <span className="font-semibold tracking-wide text-white/75 group-hover:underline whitespace-nowrap">
+                Voting Power
               </span>
-            )}
-            <span className="font-semibold tracking-wide text-white/75 group-hover:underline">
-              Voting Power
-            </span>
-          </div>
-        </Link>
-        <Tooltip
-          buttonClassName="scale-75"
-          text={`Your voting power is the square root of your vMOONEY balance: ${
-            isVMOONEYLoading ? '...' : formattedVMOONEY
-          } vMOONEY`}
-          compact
-        >
-          ?
-        </Tooltip>
+            </div>
+          </Link>
+          <Tooltip
+            buttonClassName="scale-75 flex-shrink-0"
+            text={`Your voting power is the square root of your vMOONEY balance: ${
+              isVMOONEYLoading ? '...' : formattedVMOONEY
+            } vMOONEY`}
+            compact
+          >
+            ?
+          </Tooltip>
+        </div>
       </div>
     </div>
   )
