@@ -32,6 +32,9 @@ import EditorMarkdownUpload from './EditorMarkdownUpload'
 import ProposalSubmissionCTA from './ProposalSubmissionCTA'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
 
+// FIXME what is this for?
+const DRAFTS_ENABLED = false
+
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
 const ProposalLocalCache = dynamic(import('@/components/nance/ProposalLocalCache'), { ssr: false })

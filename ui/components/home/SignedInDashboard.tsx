@@ -9,7 +9,6 @@ import {
   PencilIcon,
   BriefcaseIcon,
   TrophyIcon,
-  CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import HatsABI from 'const/abis/Hats.json'
@@ -63,9 +62,9 @@ import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
-import DashboardTeams from './DashboardTeams'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import DashboardQuests from './DashboardQuests'
+import DashboardTeams from './DashboardTeams'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
@@ -89,18 +88,17 @@ function countUniqueCountries(locations: any[]): number {
 }
 
 export default function SingedInDashboard({
-  newestNewsletters,
   newestCitizens,
   newestListings,
   newestJobs,
   citizenSubgraphData,
   aumData,
   revenueData,
-  citizensLocationData,
   filteredTeams,
   projects,
   missions,
   featuredMissionData,
+  citizensLocationData = [],
 }: any) {
   const proposals = []
   const currentProjects = []
@@ -120,7 +118,6 @@ export default function SingedInDashboard({
     }
     return a.eligible ? 1 : -1
   })
-  console.log('project', projects)
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
@@ -137,8 +134,8 @@ export default function SingedInDashboard({
   // Citizen metadata modal state
   const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
 
-  // Client-side newsletter state
-  const [clientNewsletters, setClientNewsletters] = useState<any[]>(newestNewsletters || [])
+  // Client-side newsletter state (fetch on client-side)
+  const [clientNewsletters, setClientNewsletters] = useState<any[]>([])
   const [newslettersLoading, setNewslettersLoading] = useState(false)
 
   // Fetch newsletters on client-side to get real ConvertKit data
@@ -605,7 +602,7 @@ export default function SingedInDashboard({
                         {/* Time */}
                         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
                           <div className="flex items-center gap-2 mb-2">
-                            <CalendarDaysIcon className="w-4 h-4 text-blue-400" />
+                            <TrophyIcon className="w-4 h-4 text-blue-400" />
                             <span className="text-blue-200 text-xs font-medium">Time</span>
                           </div>
                           <p className="text-white font-bold text-sm">
@@ -713,7 +710,7 @@ export default function SingedInDashboard({
                       </span>
                     </div>
                     <div className="h-20">
-                      <AUMChart compact={true} height={80} days={365} data={aumData.aumHistory} />
+                      <AUMChart compact={true} height={80} data={aumData.aumHistory} />
                     </div>
                   </div>
                 )}
@@ -1287,12 +1284,6 @@ export default function SingedInDashboard({
                   Join the community events and discussions
                 </p>
               </div>
-              <StandardButton
-                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
-                link="/events"
-              >
-                View All Events
-              </StandardButton>
             </div>
 
             <div className="relative">

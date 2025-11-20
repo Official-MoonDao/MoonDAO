@@ -259,13 +259,16 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
   sepolia: '0x1e638C6120d7eF07e0978b68e22CD80bf5E70986',
 }
 
-export const FEATURED_MISSION_INDEX = 3
-export const FEATURED_MISSION = {
-  id: '3',
-  name: 'Support the Inspiration4 Complex at Space Camp',
-  description:
-    'Donate to support real training hardware and inspire future astronauts at Space Camp, USA',
-}
+export const FEATURED_MISSION =
+  process.env.NEXT_PUBLIC_FEATURED_MISSION !== 'false'
+    ? {
+        id: '3',
+        name: 'Support the Inspiration4 Complex at Space Camp',
+        description:
+          'Donate to support real training hardware and inspire future astronauts at Space Camp, USA',
+      }
+    : null
+export const FEATURED_MISSION_INDEX = FEATURED_MISSION ? 3 : null
 
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionTable,
