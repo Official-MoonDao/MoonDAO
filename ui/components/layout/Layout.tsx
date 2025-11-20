@@ -118,7 +118,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
 
         {/* Main Content - Full width with top nav */}
         <main
-          className={`pt-16 pb-20 w-full min-h-screen ${
+          className={`pt-16 w-full min-h-screen ${
             isFullscreen || isHomepage ? '' : 'flex justify-center'
           }`}
         >
