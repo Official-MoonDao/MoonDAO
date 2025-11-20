@@ -38,10 +38,7 @@ module.exports = defineConfig({
             const formData = new FormData()
 
             // Create a test file or use existing file
-            const testFilePath = path.join(
-              __dirname,
-              'cypress/fixtures/images/Original.png'
-            )
+            const testFilePath = path.join(__dirname, 'cypress/fixtures/images/Original.png')
 
             // Check if file exists
             if (!fs.existsSync(testFilePath)) {
@@ -63,17 +60,13 @@ module.exports = defineConfig({
             })
 
             // Use axios instead of fetch - axios handles FormData much better
-            const response = await axios.post(
-              `${baseUrl}/api/google/storage/upload`,
-              formData,
-              {
-                headers: {
-                  ...formData.getHeaders(),
-                },
-                timeout: 30000, // 30 second timeout
-                validateStatus: () => true, // Don't throw on error status codes
-              }
-            )
+            const response = await axios.post(`${baseUrl}/api/google/storage/upload`, formData, {
+              headers: {
+                ...formData.getHeaders(),
+              },
+              timeout: 30000, // 30 second timeout
+              validateStatus: () => true, // Don't throw on error status codes
+            })
 
             return {
               status: response.status,
@@ -98,14 +91,11 @@ module.exports = defineConfig({
             if (url) requestBody.url = url
 
             // Use axios for delete as well
-            const response = await axios.delete(
-              `${baseUrl}/api/google/storage/delete`,
-              {
-                data: requestBody,
-                timeout: 30000,
-                validateStatus: () => true,
-              }
-            )
+            const response = await axios.delete(`${baseUrl}/api/google/storage/delete`, {
+              data: requestBody,
+              timeout: 30000,
+              validateStatus: () => true,
+            })
 
             return {
               status: response.status,
@@ -140,6 +130,9 @@ module.exports = defineConfig({
   },
   component: {
     setupNodeEvents(on, config) {
+      // Set environment variable to disable code splitting in Next.js config
+      process.env.CYPRESS_COMPONENT_TEST = 'true'
+
       config.env = {
         ...config.env,
         ...process.env,
@@ -170,6 +163,32 @@ module.exports = defineConfig({
     devServer: {
       framework: 'next',
       bundler: 'webpack',
+      webpackConfig: (webpackConfig) => {
+        // Disable code splitting to prevent ChunkLoadError in Cypress component tests
+        // This is a known issue where webpack chunks aren't served correctly by Cypress
+        if (!webpackConfig) {
+          return {}
+        }
+
+        // Ensure optimization exists
+        webpackConfig.optimization = webpackConfig.optimization || {}
+
+        // Completely disable code splitting by removing splitChunks
+        // This forces webpack to bundle everything into a single chunk
+        delete webpackConfig.optimization.splitChunks
+
+        // Disable runtime chunk
+        webpackConfig.optimization.runtimeChunk = false
+
+        // Ensure no chunkFilename is set in output
+        if (webpackConfig.output) {
+          delete webpackConfig.output.chunkFilename
+        } else {
+          webpackConfig.output = {}
+        }
+
+        return webpackConfig
+      },
     },
     supportFile: 'cypress/support/component.ts',
   },
