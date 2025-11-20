@@ -20,9 +20,8 @@ import { useLocalStorage } from 'react-use'
 import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { TEMPLATE, uuidGen } from '@/lib/nance'
+import { TEMPLATE } from '@/lib/nance'
 import useAccount from '@/lib/nance/useAccountAddress'
-import { useSignProposal } from '@/lib/nance/useSignProposal'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { classNames } from '@/lib/utils/tailwind'
 import '@nance/nance-editor/lib/css/dark.css'
@@ -117,7 +116,6 @@ export default function ProposalEditor({ project }) {
   }
 
   const { wallet } = useAccount()
-  const { signProposalAsync } = useSignProposal(wallet)
   const buttonsDisabled = !address || signingStatus === 'loading' || isUploadingImage
 
   async function submitProposal(e) {
@@ -318,7 +316,9 @@ export default function ProposalEditor({ project }) {
                   />
                 </Switch>
                 <Label as="span" className="ml-3 text-sm">
-                  <span className="font-medium text-gray-900 dark:text-white">Attach Budget</span>{' '}
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    Attach Budget
+                  </span>{' '}
                 </Label>
               </Field>
             </div>
@@ -382,8 +382,8 @@ export default function ProposalEditor({ project }) {
                     signingStatus === 'loading'
                       ? 'Submitting...'
                       : isUploadingImage
-                      ? 'Uploading image...'
-                      : 'You need to connect wallet first.'
+                        ? 'Uploading image...'
+                        : 'You need to connect wallet first.'
                   }
                 >
                   {signingStatus === 'loading' ? 'Submitting...' : 'Save Draft'}
@@ -414,8 +414,8 @@ export default function ProposalEditor({ project }) {
                     signingStatus === 'loading'
                       ? 'Submitting...'
                       : isUploadingImage
-                      ? 'Uploading image...'
-                      : 'You need to connect wallet first.'
+                        ? 'Uploading image...'
+                        : 'You need to connect wallet first.'
                   }
                 >
                   {signingStatus === 'loading' ? 'Submitting...' : 'Submit'}

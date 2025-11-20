@@ -9,7 +9,6 @@ import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatNumberUSStyle } from '@/lib/nance'
-import useVote from '@/lib/nance/useVote'
 import { Project } from '@/lib/project/useProjectData'
 import {
   SnapshotGraphqlProposalVotingInfo,
@@ -94,14 +93,6 @@ export default function VotingModal({
   )
   const vp = Math.sqrt(totalVMOONEY) || 0
 
-  const { trigger } = useVote(
-    spaceId,
-    proposal?.id,
-    proposal?.type,
-    choice as any,
-    reason,
-    proposal.privacy
-  )
   const handleSubmit = async () => {
     const totalPercentage = Object.values(choice).reduce(
       (sum, value) => sum + value,

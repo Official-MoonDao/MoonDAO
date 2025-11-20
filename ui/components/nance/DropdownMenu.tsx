@@ -14,8 +14,6 @@ import { Fragment } from 'react'
 import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useAccount from '@/lib/nance/useAccountAddress'
-import { useSignArchiveProposal } from '@/lib/nance/useSignArchiveProposal'
-import { useSignDeleteProposal } from '@/lib/nance/useSignDeleteProposal'
 import { Project } from '@/lib/project/useProjectData'
 
 export default function DropDownMenu({
