@@ -56,7 +56,7 @@ export default function useNavigation(citizen: any) {
       {
         name: 'Projects',
         icon: WrenchScrewdriverIcon,
-        href: '/projects-overview',
+        href: '/projects',
         children: [
           {
             name: 'Propose Project',
@@ -64,7 +64,7 @@ export default function useNavigation(citizen: any) {
           },
           {
             name: 'Projects',
-            href: '/projects-overview',
+            href: '/projects',
           },
           {
             name: 'Proposals',
