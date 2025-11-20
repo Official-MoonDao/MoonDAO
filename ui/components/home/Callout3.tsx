@@ -7,8 +7,8 @@ const indexCardData = [
     icon: '/assets/icon-astronaut.svg',
     iconAlt: 'Astronaut',
     header: 'Human Spaceflight',
-    link: '/sweepstakes',
-    hovertext: 'Meet the Astronauts',
+    link: '/marketplace',
+    hovertext: 'Explore Experiences',
     paragraph: (
       <>
         Sent the first crowdraised astronaut to space, selected via onchain voting, and a second everyday person randomly via onchain sweepstakes.
@@ -32,7 +32,7 @@ const indexCardData = [
     icon: '/assets/icon-plane.svg',
     iconAlt: 'Plane',
     header: 'Space Training',
-    link: '/zero-gravity',
+    link: '/marketplace',
     hovertext: 'Train for Space',
     paragraph: (
       <>
