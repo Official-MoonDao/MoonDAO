@@ -4,9 +4,9 @@ import { useRouter } from 'next/router'
 import React, { ReactNode, useState } from 'react'
 import { cardStyles, spacing, commonCombinations } from '@/lib/layout/styles'
 import { CardVariant, CardSize, CardLayout, cardSizes } from '@/lib/layout/variants'
+import AdaptiveImage from './AdaptiveImage'
 import CollapsibleContainer from './CollapsibleContainer'
 import Frame from './Frame'
-import SmartImage from './SmartImage'
 import StandardButton from './StandardButton'
 
 export interface CardProps {
@@ -79,7 +79,7 @@ function renderCardImage({
 }) {
   if (image) {
     return (
-      <SmartImage
+      <AdaptiveImage
         src={image}
         alt={title || (profile ? 'Anon' : '')}
         width={width}
@@ -579,7 +579,7 @@ export default function Card({
               {image && (
                 <div id="team-citizen-image-container" className="z-40">
                   <Frame noPadding marginBottom="0px" className="aspect-square">
-                    <SmartImage
+                    <AdaptiveImage
                       src={image}
                       alt={title || ''}
                       width={500}
@@ -742,7 +742,7 @@ export default function Card({
         {image && (
           <div className="z-40 mb-4">
             <Frame noPadding marginBottom="0px" className="aspect-square">
-              <SmartImage
+              <AdaptiveImage
                 src={image}
                 alt={title || ''}
                 width={500}

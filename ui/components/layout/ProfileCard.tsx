@@ -8,7 +8,7 @@ import {
 } from '@/lib/subscription/pretty-links'
 import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
-import SmartImage from './SmartImage'
+import AdaptiveImage from './AdaptiveImage'
 
 interface CardProps {
   icon?: string
@@ -99,7 +99,7 @@ export default function Card({
                 {metadata?.image && (
                   <div id="entity-citizen-image-container" className="z-40">
                     <Frame noPadding marginBottom="0px" className="">
-                      <SmartImage
+                      <AdaptiveImage
                         alt="Entity Image"
                         className=""
                         src={metadata.image}

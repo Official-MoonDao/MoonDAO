@@ -34,7 +34,7 @@ type JobData = {
 
 type TeamJobModalProps = {
   teamId: string
-  setEnabled: Function
+  setEnabled: (enabled: boolean) => void
   refreshJobs: Function
   jobTableContract: any
   edit?: boolean

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import Frame from '@/components/layout/Frame'
-import SmartImage from './SmartImage'
+import AdaptiveImage from './AdaptiveImage'
 
 type StandardDetailCardProps = {
   title?: string
@@ -34,7 +34,7 @@ export default function StandardDetailCard({
       <div className="flex flex-row items-start gap-4 w-full h-full">
         {image && (
           <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] md:w-[120px] md:h-[120px] flex-shrink-0">
-            <SmartImage
+            <AdaptiveImage
               className="w-full h-full object-cover rounded-xl border border-slate-600/50"
               src={image}
               width={500}

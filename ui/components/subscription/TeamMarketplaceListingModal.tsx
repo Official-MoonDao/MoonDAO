@@ -41,7 +41,7 @@ type ListingData = {
 
 type TeamMarketplaceListingModalProps = {
   teamId: number
-  setEnabled: Function
+  setEnabled: (enabled: boolean) => void
   refreshListings: Function
   marketplaceTableContract: any
   edit?: boolean

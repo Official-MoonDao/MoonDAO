@@ -7,7 +7,7 @@ import Modal from '../layout/Modal'
 
 type ApplyModalProps = {
   type: string
-  setEnabled: Function
+  setEnabled: (enabled: boolean) => void
 }
 
 export default function ApplyModal({ type, setEnabled }: ApplyModalProps) {
