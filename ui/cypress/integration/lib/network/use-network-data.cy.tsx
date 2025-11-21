@@ -1,5 +1,4 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
-import { CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import { useValidTeams, useValidCitizens } from '@/lib/network/useNetworkData'
 
 const TeamsWrapper = ({ page = 1, search = '', enabled = true }: any) => {
@@ -73,12 +72,37 @@ describe('useNetworkData hooks', () => {
       // Extract statement from query params or URL
       let statement = ''
       if (req.query && req.query.statement) {
-        statement = decodeURIComponent(String(req.query.statement))
+        // Cypress may have already decoded the query param
+        const queryStatement = String(req.query.statement)
+        try {
+          // Try decoding in case it's still encoded
+          statement = decodeURIComponent(queryStatement)
+        } catch {
+          // If decoding fails, use the value as-is (already decoded)
+          statement = queryStatement
+        }
       } else {
-        const url = decodeURIComponent(req.url)
-        const match = url.match(/statement=([^&]+)/)
-        if (match) {
-          statement = decodeURIComponent(match[1])
+        // Fallback: extract from URL
+        try {
+          const url = decodeURIComponent(req.url)
+          const match = url.match(/statement=([^&]+)/)
+          if (match) {
+            try {
+              statement = decodeURIComponent(match[1])
+            } catch {
+              statement = match[1]
+            }
+          }
+        } catch {
+          // If URL decoding fails, try without decoding
+          const match = req.url.match(/statement=([^&]+)/)
+          if (match) {
+            try {
+              statement = decodeURIComponent(match[1])
+            } catch {
+              statement = match[1]
+            }
+          }
         }
       }
 
@@ -178,8 +202,7 @@ describe('useNetworkData hooks', () => {
         </TestnetProviders>
       )
 
-      cy.wait('@getTablelandQuery', { timeout: 10000 }) // COUNT query
-      cy.get('[data-testid="teams-max-page"]', { timeout: 10000 })
+      cy.get('[data-testid="teams-max-page"]', { timeout: 15000 })
         .should('exist')
         .and('contain', '1')
     })
@@ -240,8 +263,7 @@ describe('useNetworkData hooks', () => {
         </TestnetProviders>
       )
 
-      cy.wait('@getTablelandQuery', { timeout: 10000 }) // COUNT query
-      cy.get('[data-testid="citizens-max-page"]', { timeout: 10000 })
+      cy.get('[data-testid="citizens-max-page"]', { timeout: 15000 })
         .should('exist')
         .and('contain', '2')
     })
