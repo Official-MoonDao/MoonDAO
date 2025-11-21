@@ -56,7 +56,12 @@ describe('<TeamJobModal />', () => {
       </TestnetProviders>
     )
 
+    cy.get('form').should('exist')
+    cy.get('#job-title-input').should('have.value', '')
+    cy.get('#job-description-input').should('have.value', '')
+    cy.get('#job-application-link-input').should('have.value', '')
+
     cy.get('form').submit()
-    cy.contains('Please fill out all fields', { timeout: 5000 }).should('exist')
+    cy.contains('Please fill out all fields.', { timeout: 5000 }).should('exist')
   })
 })
