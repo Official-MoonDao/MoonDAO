@@ -694,6 +694,12 @@ export default function Join({
           </div>
         </div>
       </Container>
+
+      <div className="w-full flex justify-center bg-dark-cool">
+        <div className="w-full max-w-[1200px]">
+          <NoticeFooter />
+        </div>
+      </div>
     </section>
   )
 }
