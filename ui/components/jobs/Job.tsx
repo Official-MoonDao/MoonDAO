@@ -9,7 +9,7 @@ import { daysSinceTimestamp } from '@/lib/utils/timestamp'
 import Frame from '../layout/Frame'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import StandardButton from '../layout/StandardButton'
-import StandardCard from '../layout/StandardCard'
+import Card from '../layout/Card'
 import TeamJobModal from '../subscription/TeamJobModal'
 
 export type Job = {

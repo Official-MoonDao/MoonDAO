@@ -1,7 +1,7 @@
 import useTranslation from 'next-translate/useTranslation'
 import React, { useMemo, useState } from 'react'
 import { useAssets } from '../../../lib/dashboard/hooks'
-import SectionCard from '@/components/layout/SectionCard'
+import Card from '@/components/layout/Card'
 import AnalyticsChainSelector from './AnalyticsChainSelector'
 import { AnalyticsProgress } from './AnalyticsProgress'
 import AnalyticsSkeleton from './AnalyticsSkeleton'
@@ -40,15 +40,15 @@ export default function AnalyticsPage({ vMooneyData }: any) {
 
   return (
     <>
-      <SectionCard>
+      <Card>
         <h2 className="font-GoodTimes text-4xl text-center sm:text-left">
           {'Voting Power Over Time'}
         </h2>
         <div className="w-full">
           <BarChart holdersData={vMooneyData.holders} />
         </div>
-      </SectionCard>
-      <SectionCard>
+      </Card>
+      <Card>
         <div className="flex flex-col md:flex-row justify-between">
           <h2 className="font-GoodTimes text-4xl text-center sm:text-left">
             {'$MOONEY Key Figures'}
@@ -87,7 +87,7 @@ export default function AnalyticsPage({ vMooneyData }: any) {
             value={'2,618,757,244'}
           />
         </div>
-      </SectionCard>
+      </Card>
     </>
   )
 }

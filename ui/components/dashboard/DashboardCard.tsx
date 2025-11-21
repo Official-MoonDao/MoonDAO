@@ -1,3 +1,4 @@
+import Card from '@/components/layout/Card'
 import React from 'react'
 
 type DashboardCardProps = {
@@ -16,17 +17,14 @@ export default function DashboardCard({
   className = '',
 }: DashboardCardProps) {
   return (
-    <div
-      className={`bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6 ${className}`}
+    <Card
+      variant="slateBorder"
+      title={title}
+      icon={icon}
+      actions={actions}
+      className={className}
     >
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-4">
-          {icon && <div className="opacity-70">{icon}</div>}
-          <h2 className="font-GoodTimes text-2xl text-white">{title}</h2>
-        </div>
-        {actions && <div className="flex gap-3">{actions}</div>}
-      </div>
       {children}
-    </div>
+    </Card>
   )
 }

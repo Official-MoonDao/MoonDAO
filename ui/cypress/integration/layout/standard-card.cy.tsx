@@ -1,11 +1,12 @@
 import React from 'react'
-import StandardCard from '../../../components/layout/StandardCard'
+import Card from '../../../components/layout/Card'
 
-describe('<StandardCard />', () => {
+describe('<Card />', () => {
   it('renders with basic props', () => {
     cy.mountNextRouter('/')
     cy.mount(
-      <StandardCard
+      <Card
+        variant="gradient"
         id="card-container"
         icon="/assets/test-icon.svg"
         header="Test Header"
@@ -22,7 +23,7 @@ describe('<StandardCard />', () => {
   it('renders organization image when provided', () => {
     cy.mountNextRouter('/')
     cy.mount(
-      <StandardCard
+      <Card variant="gradient"
         id="card-container"
         orgimage="/test-org-image.jpg"
         header="Org Card"
@@ -38,7 +39,7 @@ describe('<StandardCard />', () => {
   it('renders header link when provided', () => {
     cy.mountNextRouter('/')
     cy.mount(
-      <StandardCard
+      <Card variant="gradient"
         id="card-container"
         header="Link Test"
         headerLink="/test-link"
@@ -53,7 +54,7 @@ describe('<StandardCard />', () => {
     cy.mountNextRouter('/')
     cy.viewport('macbook-15')
     cy.mount(
-      <StandardCard
+      <Card variant="gradient"
         id="card-container"
         header="Hover Test"
         hovertext="Test hovertext"
@@ -71,7 +72,7 @@ describe('<StandardCard />', () => {
     cy.mountNextRouter('/')
     cy.viewport('iphone-x')
     cy.mount(
-      <StandardCard
+      <Card variant="gradient"
         id="card-container"
         header="Mobile Test"
         hovertext="Test hovertext"
@@ -85,7 +86,7 @@ describe('<StandardCard />', () => {
   it('renders link when provided', () => {
     cy.mountNextRouter('/')
     cy.mount(
-      <StandardCard id="card-container" header="Link Test" link="/test-link" />
+      <Card variant="gradient" id="card-container" header="Link Test" link="/test-link" />
     )
 
     cy.get('#card-link').should('have.attr', 'href', '/test-link')
@@ -95,7 +96,7 @@ describe('<StandardCard />', () => {
     const onClickSpy = cy.spy().as('onClickSpy')
     cy.mountNextRouter('/')
     cy.mount(
-      <StandardCard
+      <Card variant="gradient"
         id="card-container"
         header="Click Test"
         onClick={onClickSpy}

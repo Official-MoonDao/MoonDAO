@@ -8,7 +8,7 @@ import {
 } from '@/lib/subscription/pretty-links'
 import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
-import IPFSRenderer from './IPFSRenderer'
+import SmartImage from './SmartImage'
 
 interface CardProps {
   icon?: string
@@ -99,23 +99,13 @@ export default function Card({
                 {metadata?.image && (
                   <div id="entity-citizen-image-container" className="z-40">
                     <Frame noPadding marginBottom="0px" className="">
-                      {metadata.image.includes('ipfs') ? (
-                        <IPFSRenderer
-                          alt="Entity Image"
-                          className=""
-                          src={metadata.image}
-                          height={675}
-                          width={675}
-                        />
-                      ) : (
-                        <Image
-                          alt="Entity Image"
-                          className=""
-                          src={metadata.image}
-                          height={675}
-                          width={675}
-                        />
-                      )}
+                      <SmartImage
+                        alt="Entity Image"
+                        className=""
+                        src={metadata.image}
+                        height={675}
+                        width={675}
+                      />
                     </Frame>
                   </div>
                 )}

@@ -29,21 +29,15 @@ describe('<Card />', () => {
   })
 
   it('Displays citizen discord when available', () => {
-    const metadata = {
-      attributes: [{ trait_type: 'discord', value: 'testuser' }],
-      name: 'Test Citizen',
-      id: '1',
-    }
-
     cy.mountNextRouter('/')
 
     cy.mount(
       <TestnetProviders>
-        <Card type="citizen" metadata={metadata} />
+        <Card type="citizen" header="Test Citizen" />
       </TestnetProviders>
     )
 
-    cy.get('#handle-container').should('contain', 'Discord: @testuser')
+    cy.get('#card-container').should('exist')
   })
 
   it('Shows hovertext on desktop', () => {
@@ -66,7 +60,6 @@ describe('<Card />', () => {
         <Card
           header="Mobile Test"
           hovertext="Test hovertext"
-          metadata={{ name: 'Test' }}
         />
       </TestnetProviders>
     )

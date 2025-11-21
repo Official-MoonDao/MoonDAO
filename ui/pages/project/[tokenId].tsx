@@ -34,7 +34,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import SectionCard from '@/components/layout/SectionCard'
+import Card from '@/components/layout/Card'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
@@ -185,7 +185,7 @@ export default function ProjectProfile({
           className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]"
         >
           {/* Project Overview */}
-          <SectionCard
+          <Card
             header="Proposal"
             iconSrc="/assets/icon-star.svg"
             action={
@@ -207,20 +207,20 @@ export default function ProjectProfile({
             <div className="prose prose-invert max-w-none">
               <MarkdownWithTOC body={nanceProposal?.body || ''} />
             </div>
-          </SectionCard>
+          </Card>
           {finalReportMarkdown && (
-            <SectionCard
+            <Card
               header="Final Report"
               iconSrc="/assets/icon-star.svg"
             >
               <div className="prose prose-invert max-w-none">
                 <MarkdownWithTOC body={finalReportMarkdown} />
               </div>
-            </SectionCard>
+            </Card>
           )}
 
           <div className="z-50 flex flex-col gap-6 mb-[50px]">
-            <SectionCard
+            <Card
               header="Meet the Team"
               iconSrc="/assets/icon-team.svg"
               action={
@@ -252,7 +252,7 @@ export default function ProjectProfile({
                   )}
                 </div>
               </SlidingCardMenu>
-            </SectionCard>
+            </Card>
             {/* Mooney and Voting Power */}
             <TeamTreasury
               isSigner={isSigner}

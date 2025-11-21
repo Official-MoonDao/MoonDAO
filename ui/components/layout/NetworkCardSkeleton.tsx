@@ -1,4 +1,10 @@
+import Skeleton from './Skeleton'
+
 export default function NetworkCardSkeleton() {
+  return <Skeleton variant="network" />
+}
+
+export function NetworkCardSkeletonOld() {
   return (
     <div className="w-full h-full p-4 bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 animate-pulse">
       <div className="flex flex-row items-start gap-4 w-full h-full">
