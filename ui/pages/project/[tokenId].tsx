@@ -1,5 +1,6 @@
 import Safe from '@safe-global/protocol-kit'
 import CitizenABI from 'const/abis/Citizen.json'
+import { DistributionVote } from '@/lib/tableland/types'
 import ProposalInfo from '@/components/nance/ProposalInfo'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
@@ -194,8 +195,6 @@ export default function ProjectProfile({
             proposalStatus={proposalStatus}
             project={project}
             linkDisabled
-            sponsorDisabled={false}
-            coauthorsDisabled={false}
             showTitle={false}
             showStatus={true}
           />
@@ -244,7 +243,6 @@ export default function ProjectProfile({
                             project={project}
                             votes={votes}
                             proposalStatus={proposalStatus}
-                            refetch={() => mutate()}
                           />
                           {/*FIXME run on cron */}
                           <button onClick={tallyVotes}>Tally votes</button>
@@ -252,14 +250,9 @@ export default function ProjectProfile({
                       )
                     ) : (
                       <VotingResults
-                        votingInfo={{
-                          scores_total: 100,
-                          scores: [voteOutcome[1], voteOutcome[2], voteOutcome[3]],
-                          state: 'closed',
-                        }}
-                        votesData={[]}
+                        voteOutcome={voteOutcome}
+                        votes={votes}
                         threshold={0}
-                        onRefetch={() => mutate()}
                       />
                     )}
                   </div>
@@ -386,6 +379,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
   const voteAddresses = votes.map((pv) => pv.address)
   const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
+  console.log('voteAddresses', voteAddresses)
   const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)
   const addressToQuadraticVotingPower = Object.fromEntries(
     voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])

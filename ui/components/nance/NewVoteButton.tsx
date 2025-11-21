@@ -12,13 +12,11 @@ export default function NewVoteButton({
   votes,
   proposalStatus,
   project,
-  refetch,
   isSmall = false,
 }: {
   votes: any[]
   proposalStatus: ProposalStatus
   project: Project
-  refetch: (option?: any) => void
   isSmall?: boolean
 }) {
   const [modalIsOpen, setModalIsOpen] = useState(false)
@@ -87,7 +85,6 @@ export default function NewVoteButton({
           project={project}
           address={address}
           spaceHideAbstain={true}
-          refetch={refetch}
           totalVMOONEY={totalVMOONEY}
         />
       )}

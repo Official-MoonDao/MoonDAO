@@ -15,7 +15,7 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { PROJECT_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { Project } from '@/lib/project/useProjectData'
 
-export default function ProposalsPage({ project }) {
+export default function ProposalsPage({ project }: {project: Project}) {
   const title = 'Propose Project'
 
   useChainDefault()

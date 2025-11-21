@@ -43,6 +43,9 @@ export default function useProjectData(
 
   useEffect(() => {
     async function getProposalJSON() {
+      if (!project?.proposalIPFS) {
+        return
+      }
       const proposalResponse = await fetch(project.proposalIPFS)
       const proposal = await proposalResponse.json()
       let budget = 0

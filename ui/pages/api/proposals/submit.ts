@@ -1,5 +1,6 @@
 import ProjectTeamCreatorABI from 'const/abis/ProjectTeamCreator.json'
 import queryTable from '@/lib/tableland/queryTable'
+import { DISCORD_TO_ETH_ADDRESS } from 'const/usernames'
 import {
   PROJECT_TABLE_ADDRESSES,
   PROJECT_TABLE_NAMES,
@@ -106,8 +107,8 @@ async function getAddresses(
       let address = item.address
 
       // If no address but we have a username, try to resolve from mapping
-      if (!address && username && discordToEthAddress[usernameWithoutAt]) {
-        address = discordToEthAddress[usernameWithoutAt]
+      if (!address && username && DISCORD_TO_ETH_ADDRESS[usernameWithoutAt]) {
+        address = DISCORD_TO_ETH_ADDRESS[usernameWithoutAt]
       }
       if (!address && ens) {
         address = await provider.resolveName(ens)
@@ -133,7 +134,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       const projectTableContract = getContract({
         client: serverClient,
         address: PROJECT_TABLE_ADDRESSES[chainSlug],
-        abi: ProjectTableABI,
+        abi: ProjectTableABI as any,
         chain: chain,
       })
       const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE MDP = ${proposalId}`
@@ -178,7 +179,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         membersUsernames = [...leadsUsernames.slice(1), ...membersUsernames]
       }
       const [signers, signersUsernames] = await getAddresses(body, ['Multi-sig signers'])
-      const abstractText = (await getAbstract(body)).slice(0, 1000)
+      const abstractText = (await getAbstract(body))?.slice(0, 1000)
 
       const membersValid = members.map((address) => ethers.utils.isAddress(address)).every(Boolean)
       if (!membersValid) {
@@ -215,8 +216,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
             type: 'application/json',
           }
         )
-        const name = `MDP-${proposalId}-${hatType}.json`
-        const { cid: hatMetadataIpfsHash } = await pinBlobOrFile(hatMetadataBlob, name)
+        const { cid: hatMetadataIpfsHash } = await pinBlobOrFile(hatMetadataBlob)
         return 'ipfs://' + hatMetadataIpfsHash
       }
       const { quarter, year } = getRelativeQuarter(0)

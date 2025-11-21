@@ -1,5 +1,6 @@
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import { runQuadraticVoting } from '@/lib/utils/rewards'
+import { DistributionVote } from '@/lib/tableland/types'
 import ProposalsABI from 'const/abis/Proposals.json'
 import ProjectTeamCreatorABI from 'const/abis/ProjectTeamCreator.json'
 import queryTable from '@/lib/tableland/queryTable'

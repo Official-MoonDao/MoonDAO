@@ -28,9 +28,7 @@ const getColorOfChoice = (choice: string | undefined) => {
 export default function ProposalVotes({
   votes,
   proposalStatus,
-  state,
   project,
-  refetch,
   threshold = 0,
   showContainer,
   title,
@@ -40,9 +38,7 @@ export default function ProposalVotes({
 }: {
   votes: any[]
   proposalStatus: ProposalStatus
-  state: any
   project: Project
-  refetch: () => void
   threshold?: number
   showContainer?: boolean
   title?: string
@@ -105,7 +101,6 @@ export default function ProposalVotes({
       proposalStatus={proposalStatus}
       votes={votes}
       project={project}
-      refetch={refetch}
     />
   )
 

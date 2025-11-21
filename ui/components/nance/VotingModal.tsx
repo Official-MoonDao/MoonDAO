@@ -21,7 +21,6 @@ interface VotingProps {
   spaceHideAbstain: boolean
   project: Project
   votes: any[]
-  refetch: (option?: any) => void
   totalVMOONEY: any
 }
 
@@ -34,7 +33,6 @@ export default function VotingModal({
   spaceHideAbstain,
   project,
   votes,
-  refetch,
   totalVMOONEY,
 }: VotingProps) {
   // state
@@ -118,7 +116,10 @@ export default function VotingModal({
     }
   }
 
-  const proposalType = 'quadratic'
+  let proposalType
+  if (true) {
+    proposalType = 'quadratic'
+  }
 
   const renderVoteButton = () => {
     let canVote = false

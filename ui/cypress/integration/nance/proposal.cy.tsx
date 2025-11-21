@@ -28,17 +28,6 @@ describe('<Proposal />', () => {
       year: 2025,
     }
 
-    mockPacket = {
-      proposalInfo: {
-        proposalIdPrefix: 'MDP-',
-        minTokenPassingAmount: 1000000,
-        nextProposalId: 43,
-        snapshotSpace: 'tomoondao.eth',
-      },
-      proposals: [mockProject],
-      hasMore: false,
-    }
-
     mockVotingInfo = {
       id: '0xtest123',
       title: 'Test Proposal for Component Testing',
@@ -62,7 +51,7 @@ describe('<Proposal />', () => {
     it('Should render the proposal component with all essential elements', () => {
       cy.mount(
         <TestnetProviders>
-          <Proposal project={mockProject} packet={mockPacket} votingInfo={mockVotingInfo} />
+          <Proposal project={mockProject} />
         </TestnetProviders>
       )
 
@@ -75,7 +64,7 @@ describe('<Proposal />', () => {
     it('Should display proposal status correctly', () => {
       cy.mount(
         <TestnetProviders>
-          <Proposal project={mockProject} packet={mockPacket} votingInfo={mockVotingInfo} />
+          <Proposal project={mockProject} />
         </TestnetProviders>
       )
 
@@ -89,7 +78,7 @@ describe('<Proposal />', () => {
 
       cy.mount(
         <TestnetProviders>
-          <Proposal project={votingProposal} packet={mockPacket} votingInfo={mockVotingInfo} />
+          <Proposal project={votingProposal} />
         </TestnetProviders>
       )
 
@@ -108,7 +97,7 @@ describe('<Proposal />', () => {
 
       cy.mount(
         <TestnetProviders>
-          <Proposal project={tempCheckProposal} packet={mockPacket} votingInfo={mockVotingInfo} />
+          <Proposal project={tempCheckProposal} />
         </TestnetProviders>
       )
 
@@ -130,7 +119,7 @@ describe('<Proposal />', () => {
 
       cy.mount(
         <TestnetProviders>
-          <Proposal project={mockProject} packet={mockPacket} votingInfo={closedVotingInfo} />
+          <Proposal project={mockProject} />
         </TestnetProviders>
       )
 
@@ -147,7 +136,7 @@ describe('<Proposal />', () => {
     it('Should show last edited time for non-voting proposals', () => {
       cy.mount(
         <TestnetProviders>
-          <Proposal project={mockProject} packet={mockPacket} votingInfo={mockVotingInfo} />
+          <Proposal project={mockProject} />
         </TestnetProviders>
       )
 
@@ -166,7 +155,7 @@ describe('<Proposal />', () => {
 
         cy.mount(
           <TestnetProviders>
-            <Proposal project={statusProposal} packet={mockPacket} votingInfo={mockVotingInfo} />
+            <Proposal project={statusProposal} />
           </TestnetProviders>
         )
 
@@ -179,7 +168,7 @@ describe('<Proposal />', () => {
     it('Should pass correct props to ProposalInfo component', () => {
       cy.mount(
         <TestnetProviders>
-          <Proposal project={mockProject} packet={mockPacket} votingInfo={mockVotingInfo} />
+          <Proposal project={mockProject} />
         </TestnetProviders>
       )
 
@@ -202,7 +191,7 @@ describe('<Proposal />', () => {
     it('Should show title when showTitle is true', () => {
       cy.mount(
         <TestnetProviders>
-          <Proposal project={mockProject} packet={mockPacket} votingInfo={mockVotingInfo} />
+          <Proposal project={mockProject} />
         </TestnetProviders>
       )
 
@@ -212,7 +201,7 @@ describe('<Proposal />', () => {
     it('Should hide status in ProposalInfo when showStatus is false', () => {
       cy.mount(
         <TestnetProviders>
-          <Proposal project={mockProject} packet={mockPacket} votingInfo={mockVotingInfo} />
+          <Proposal project={mockProject} />
         </TestnetProviders>
       )
 
@@ -228,7 +217,7 @@ describe('<Proposal />', () => {
     it('Should display chevron icon', () => {
       cy.mount(
         <TestnetProviders>
-          <Proposal project={mockProject} packet={mockPacket} votingInfo={mockVotingInfo} />
+          <Proposal project={mockProject} />
         </TestnetProviders>
       )
 
@@ -243,12 +232,7 @@ describe('<Proposal />', () => {
     it('Should render in compact mode when compact prop is true', () => {
       cy.mount(
         <TestnetProviders>
-          <Proposal
-            project={mockProject}
-            packet={mockPacket}
-            votingInfo={mockVotingInfo}
-            compact={true}
-          />
+          <Proposal project={mockProject} />
         </TestnetProviders>
       )
 
@@ -260,12 +244,7 @@ describe('<Proposal />', () => {
     it('Should render in normal mode when compact prop is false', () => {
       cy.mount(
         <TestnetProviders>
-          <Proposal
-            project={mockProject}
-            packet={mockPacket}
-            votingInfo={mockVotingInfo}
-            compact={false}
-          />
+          <Proposal project={mockProject} />
         </TestnetProviders>
       )
 
@@ -284,11 +263,7 @@ describe('<Proposal />', () => {
 
       cy.mount(
         <TestnetProviders>
-          <Proposal
-            project={proposalWithoutLastEdit}
-            packet={mockPacket}
-            votingInfo={mockVotingInfo}
-          />
+          <Proposal project={proposalWithoutLastEdit} />
         </TestnetProviders>
       )
 
@@ -299,7 +274,7 @@ describe('<Proposal />', () => {
     it('Should handle undefined votingInfo', () => {
       cy.mount(
         <TestnetProviders>
-          <Proposal project={mockProject} packet={mockPacket} votingInfo={undefined} />
+          <Proposal project={mockProject} />
         </TestnetProviders>
       )
 
@@ -316,7 +291,7 @@ describe('<Proposal />', () => {
 
       cy.mount(
         <TestnetProviders>
-          <Proposal project={proposalWithoutId} packet={mockPacket} votingInfo={mockVotingInfo} />
+          <Proposal project={proposalWithoutId} />
         </TestnetProviders>
       )
 
@@ -333,11 +308,7 @@ describe('<Proposal />', () => {
 
       cy.mount(
         <TestnetProviders>
-          <Proposal
-            project={discussionProposal}
-            packet={mockPacket}
-            votingInfo={closedVotingInfo}
-          />
+          <Proposal project={discussionProposal} />
         </TestnetProviders>
       )
 
@@ -358,11 +329,7 @@ describe('<Proposal />', () => {
 
       cy.mount(
         <TestnetProviders>
-          <Proposal
-            project={proposalWithFixedDate}
-            packet={mockPacket}
-            votingInfo={mockVotingInfo}
-          />
+          <Proposal project={proposalWithFixedDate} />
         </TestnetProviders>
       )
 

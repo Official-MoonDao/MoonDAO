@@ -660,7 +660,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       nft,
       tokenId,
       hats: [],
-      proposals,
+      proposals: [],
     },
   }
 }

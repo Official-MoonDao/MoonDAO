@@ -94,53 +94,18 @@ export function useTotalVMOONEY(
   }
 }
 
-export function useTotalVMOONEYs(addresses: string[] | undefined): {
-  totalVMOONEYs: number
-  isLoading: boolean
-} {
-  const [totalVMOONEYs, setTotalVMOONEYs] = useState<number[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-
-    if (!addresses) {
-      setTotalVMOONEYs([])
-      setIsLoading(false)
-      return
-    }
-
-    async function fetchVMOONEYs() {
-      setIsLoading(true)
-      const totals = await fetchTotalVMOONEYs(addresses)
-      setTotalVMOONEYs(totals)
-      setIsLoading(false)
-    }
-    fetchVMOONEYs()
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  return {
-    totalVMOONEYs,
-    isLoading,
-  }
-}
-
-export async function fetchTotalVMOONEYs(
-  addresses: string[],
-  timestamp: number
-) {
+export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number) {
   try {
     const chains = [arbitrum, ethereum, base, polygon]
-    const results = await Promise.allSettled(
+    const results = await Promise.all(
       chains.map(async (chain) => {
         const chainSlug = getChainSlug(chain)
         const chainId = chain.id
         const tokenAddress = VMOONEY_ADDRESSES[chainSlug]
         const url = 'https://engine.thirdweb.com/v1/read/contract'
+        if (!process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET) {
+          return
+        }
         const response = await fetch(url, {
           method: 'POST',
           headers: {
@@ -167,11 +132,12 @@ export async function fetchTotalVMOONEYs(
         return jsonResponse.result
       })
     )
-    const values = results.map((r) => r.value.map((v) => parseInt(v.result)))
+    const values = results.map((r) => r.map((v: any) => parseInt(v.result)))
 
+    // Sum across chains
     const totals = values.reduce((accumulator, value) => {
-      value.forEach((v, i) => {
-        accumulator[i] = (accumulator[i] || 0) + value[i]
+      value.forEach((v: any, i: number) => {
+        accumulator[i] = (accumulator[i] || 0) + (value[i] as number)
       })
       return accumulator
     })

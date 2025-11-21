@@ -50,7 +50,11 @@ export function useProposalStatus(project: any) {
   return proposalStatus
 }
 
-export function getProposalStatus(active, tempCheckApproved, tempCheckFailed) {
+export function getProposalStatus(
+  active: number,
+  tempCheckApproved: number,
+  tempCheckFailed: number
+) {
   let status: ProposalStatus = 'Archived'
   if (active == PROJECT_PENDING) {
     if (tempCheckApproved) {

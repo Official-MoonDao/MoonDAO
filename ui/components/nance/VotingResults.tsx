@@ -4,28 +4,26 @@ import { SnapshotGraphqlProposalVotingInfo, VotesOfProposal } from '@/lib/snapsh
 import ColorBar from './ColorBar'
 
 interface VotingResultsProps {
-  votingInfo: SnapshotGraphqlProposalVotingInfo
-  votesData?: VotesOfProposal
+  voteOutcome: any
+  votes?: any[]
   threshold?: number
   onRefetch?: () => void
 }
 
 export default function VotingResults({
-  votingInfo,
-  votesData,
+  voteOutcome,
+  votes,
   threshold = 0,
   onRefetch,
 }: VotingResultsProps) {
-  if (!votingInfo || votingInfo.state !== 'closed') return null
+  const totalVotes = 100
+  const forVotes = voteOutcome[1] || 0
+  const againstVotes = voteOutcome[2] || 0
+  const abstainVotes = voteOutcome[3] || 0
 
-  const totalVotes = votingInfo.scores_total
-  const forVotes = votingInfo.scores[0] || 0
-  const againstVotes = votingInfo.scores[1] || 0
-  const abstainVotes = votingInfo.scores[2] || 0
-
-  const forPercentage = totalVotes > 0 ? ((forVotes / totalVotes) * 100).toFixed(1) : '0.0'
-  const againstPercentage = totalVotes > 0 ? ((againstVotes / totalVotes) * 100).toFixed(1) : '0.0'
-  const abstainPercentage = totalVotes > 0 ? ((abstainVotes / totalVotes) * 100).toFixed(1) : '0.0'
+  const forPercentage = ((forVotes / totalVotes) * 100).toFixed(1)
+  const againstPercentage = ((againstVotes / totalVotes) * 100).toFixed(1)
+  const abstainPercentage = ((abstainVotes / totalVotes) * 100).toFixed(1)
 
   const passed = forVotes > againstVotes
   const quorumMet = threshold === 0 || totalVotes >= threshold // If no quorum set, consider it met
@@ -54,7 +52,7 @@ export default function VotingResults({
         {/* Summary Stats - Moved to top */}
         <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-white/5 rounded-lg">
           <div className="text-center">
-            <p className="text-2xl font-bold text-white">{votingInfo.votes}</p>
+            <p className="text-2xl font-bold text-white">{votes?.length || 0}</p>
             <p className="text-xs text-gray-400 uppercase tracking-wide">Total Voters</p>
           </div>
           <div className="text-center">
