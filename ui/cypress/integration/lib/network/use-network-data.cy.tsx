@@ -68,25 +68,54 @@ describe('useNetworkData hooks', () => {
 
   beforeEach(() => {
     cy.mountNextRouter('/')
-    
-    cy.intercept('GET', '/api/tableland/query?statement=*SELECT*FROM*TEAMTABLE*', {
-      statusCode: 200,
-      body: [mockTeamRow],
-    }).as('getTeams')
-
-    cy.intercept('GET', '/api/tableland/query?statement=*SELECT*FROM*CITIZENTABLE*', {
-      statusCode: 200,
-      body: [mockCitizenRow],
-    }).as('getCitizens')
 
     cy.intercept('GET', '/api/tableland/query*', (req) => {
-      const url = decodeURIComponent(req.url)
-      if (url.includes('COUNT') && url.includes('TEAMTABLE')) {
-        req.reply({ statusCode: 200, body: [{ count: 10 }] })
-      } else if (url.includes('COUNT') && url.includes('CITIZENTABLE')) {
-        req.reply({ statusCode: 200, body: [{ count: 20 }] })
+      // Extract statement from query params or URL
+      let statement = ''
+      if (req.query && req.query.statement) {
+        statement = decodeURIComponent(String(req.query.statement))
+      } else {
+        const url = decodeURIComponent(req.url)
+        const match = url.match(/statement=([^&]+)/)
+        if (match) {
+          statement = decodeURIComponent(match[1])
+        }
       }
-    }).as('getCount')
+
+      // Handle COUNT queries for teams
+      if (statement.includes('COUNT') && statement.includes('TEAMTABLE')) {
+        req.reply({ statusCode: 200, body: [{ count: 10 }] })
+        return
+      }
+
+      // Handle COUNT queries for citizens
+      if (statement.includes('COUNT') && statement.includes('CITIZENTABLE')) {
+        req.reply({ statusCode: 200, body: [{ count: 20 }] })
+        return
+      }
+
+      // Handle SELECT queries for teams (not COUNT)
+      if (
+        statement.includes('SELECT') &&
+        statement.includes('FROM') &&
+        statement.includes('TEAMTABLE') &&
+        !statement.includes('COUNT')
+      ) {
+        req.reply({ statusCode: 200, body: [mockTeamRow] })
+        return
+      }
+
+      // Handle SELECT queries for citizens (not COUNT)
+      if (
+        statement.includes('SELECT') &&
+        statement.includes('FROM') &&
+        statement.includes('CITIZENTABLE') &&
+        !statement.includes('COUNT')
+      ) {
+        req.reply({ statusCode: 200, body: [mockCitizenRow] })
+        return
+      }
+    }).as('getTablelandQuery')
 
     cy.intercept('POST', '**', (req) => {
       if (req.body && typeof req.body === 'object') {
@@ -112,10 +141,10 @@ describe('useNetworkData hooks', () => {
         </TestnetProviders>
       )
 
-      cy.wait('@getCount', { timeout: 10000 })
-      cy.wait('@getTeams', { timeout: 10000 })
+      cy.wait('@getTablelandQuery', { timeout: 10000 }) // COUNT query
+      cy.wait('@getTablelandQuery', { timeout: 10000 }) // SELECT query
       cy.get('[data-testid="teams-loading"]', { timeout: 15000 }).should('contain', 'loaded')
-      
+
       cy.get('[data-testid="teams-count"]').should('contain', '1')
       cy.get('[data-testid="team-0"]').should('contain', 'Test Team')
     })
@@ -131,18 +160,14 @@ describe('useNetworkData hooks', () => {
     })
 
     it('should handle search query', () => {
-      cy.intercept('GET', '/api/tableland/query?statement=*WHERE*name*LIKE*Test*', {
-        statusCode: 200,
-        body: [mockTeamRow],
-      }).as('getTeamsSearch')
-
       cy.mount(
         <TestnetProviders>
           <TeamsWrapper page={1} search="Test" enabled={true} />
         </TestnetProviders>
       )
 
-      cy.wait('@getTeamsSearch')
+      cy.wait('@getTablelandQuery', { timeout: 10000 }) // COUNT query with search
+      cy.wait('@getTablelandQuery', { timeout: 10000 }) // SELECT query with search
       cy.get('[data-testid="teams-count"]').should('exist')
     })
 
@@ -153,8 +178,10 @@ describe('useNetworkData hooks', () => {
         </TestnetProviders>
       )
 
-      cy.wait('@getCount', { timeout: 10000 })
-      cy.get('[data-testid="teams-max-page"]').should('exist')
+      cy.wait('@getTablelandQuery', { timeout: 10000 }) // COUNT query
+      cy.get('[data-testid="teams-max-page"]', { timeout: 10000 })
+        .should('exist')
+        .and('contain', '1')
     })
 
     it('should not fetch when disabled', () => {
@@ -176,10 +203,10 @@ describe('useNetworkData hooks', () => {
         </TestnetProviders>
       )
 
-      cy.wait('@getCount', { timeout: 10000 })
-      cy.wait('@getCitizens', { timeout: 10000 })
+      cy.wait('@getTablelandQuery', { timeout: 10000 }) // COUNT query
+      cy.wait('@getTablelandQuery', { timeout: 10000 }) // SELECT query
       cy.get('[data-testid="citizens-loading"]', { timeout: 15000 }).should('contain', 'loaded')
-      
+
       cy.get('[data-testid="citizens-count"]').should('contain', '1')
       cy.get('[data-testid="citizen-0"]').should('contain', 'Test Citizen')
     })
@@ -195,18 +222,14 @@ describe('useNetworkData hooks', () => {
     })
 
     it('should handle search query', () => {
-      cy.intercept('GET', '/api/tableland/query?statement=*WHERE*name*LIKE*Test*', {
-        statusCode: 200,
-        body: [mockCitizenRow],
-      }).as('getCitizensSearch')
-
       cy.mount(
         <TestnetProviders>
           <CitizensWrapper page={1} search="Test" enabled={true} />
         </TestnetProviders>
       )
 
-      cy.wait('@getCitizensSearch')
+      cy.wait('@getTablelandQuery', { timeout: 10000 }) // COUNT query with search
+      cy.wait('@getTablelandQuery', { timeout: 10000 }) // SELECT query with search
       cy.get('[data-testid="citizens-count"]').should('exist')
     })
 
@@ -217,8 +240,10 @@ describe('useNetworkData hooks', () => {
         </TestnetProviders>
       )
 
-      cy.wait('@getCount', { timeout: 10000 })
-      cy.get('[data-testid="citizens-max-page"]').should('exist')
+      cy.wait('@getTablelandQuery', { timeout: 10000 }) // COUNT query
+      cy.get('[data-testid="citizens-max-page"]', { timeout: 10000 })
+        .should('exist')
+        .and('contain', '2')
     })
 
     it('should not fetch when disabled', () => {
@@ -232,4 +257,3 @@ describe('useNetworkData hooks', () => {
     })
   })
 })
-
