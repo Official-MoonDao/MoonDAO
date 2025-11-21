@@ -1,119 +1,82 @@
 import { PlusCircleIcon } from '@heroicons/react/20/solid'
+import { GlobeAmericasIcon, ListBulletIcon, MoonIcon } from '@heroicons/react/24/outline'
 import {
-  GlobeAmericasIcon,
-  ListBulletIcon,
-  MoonIcon,
-} from '@heroicons/react/24/outline'
-import CitizenTableABI from 'const/abis/CitizenTable.json'
-import TeamTableABI from 'const/abis/TeamTable.json'
-import {
-  CITIZEN_ADDRESSES,
-  CITIZEN_TABLE_ADDRESSES,
   DEFAULT_CHAIN_V5,
-  JOBS_TABLE_ADDRESSES,
-  TEAM_ADDRESSES,
+  TEAM_TABLE_NAMES,
+  CITIZEN_TABLE_NAMES,
   TEAM_TABLE_ADDRESSES,
+  CITIZEN_TABLE_ADDRESSES,
 } from 'const/config'
-import {
-  BLOCKED_CITIZENS,
-  BLOCKED_TEAMS,
-  FEATURED_TEAMS,
-} from 'const/whitelist'
+import { GetStaticProps } from 'next'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useState, useEffect, useCallback, useContext } from 'react'
-import { getContract, NFT, readContract } from 'thirdweb'
-import CitizenContext from '@/lib/citizen/citizen-context'
-import {
-  generatePrettyLink,
-  generatePrettyLinkWithId,
-} from '@/lib/subscription/pretty-links'
-import { citizenRowToNFT, teamRowToNFT } from '@/lib/tableland/convertRow'
-import queryTable from '@/lib/tableland/queryTable'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useDebounce } from 'react-use'
+import { NetworkTab } from '@/lib/network/types'
+import { useMapData } from '@/lib/network/useMapData'
+import { useValidTeams, useValidCitizens } from '@/lib/network/useNetworkData'
+import { filterBlockedTeams, filterBlockedCitizens } from '@/lib/network/utils'
+import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { teamRowToNFT, citizenRowToNFT } from '@/lib/tableland/convertRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
-import { getAttribute } from '@/lib/utils/nft'
-import Job, { Job as JobType } from '../components/jobs/Job'
-import Card from '../components/layout/Card'
 import Container from '../components/layout/Container'
 import Frame from '../components/layout/Frame'
 import Head from '../components/layout/Head'
 import CardGridContainer from '@/components/layout/CardGridContainer'
-import CardSkeleton from '@/components/layout/CardSkeleton'
+import NetworkCardSkeleton from '@/components/layout/NetworkCardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import PaginationButtons from '@/components/layout/PaginationButtons'
 import Search from '@/components/layout/Search'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import Tab from '@/components/layout/Tab'
-import CitizenABI from '../const/abis/Citizen.json'
-import JobsABI from '../const/abis/JobBoardTable.json'
-import TeamABI from '../const/abis/Team.json'
 
-// Dynamic imports for globe components
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 const Moon = dynamic(() => import('@/components/globe/Moon'), { ssr: false })
 
-type NetworkProps = {
-  filteredTeams: any[]
-  filteredCitizens: any[]
-  jobs: JobType[]
-  citizensLocationData?: any[]
-}
-
 export default function Network({
-  filteredTeams,
-  filteredCitizens,
-  jobs,
-  citizensLocationData,
-}: NetworkProps) {
+  initialTeams,
+  initialCitizens,
+}: {
+  initialTeams?: any[]
+  initialCitizens?: any[]
+}) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
-  const { citizen } = useContext(CitizenContext)
 
   const [input, setInput] = useState('')
-  function filterBySearch(nfts: any[]) {
-    return nfts.filter((nft) => {
-      return nft.metadata.name
-        ?.toString()
-        .toLowerCase()
-        .includes(input.toLowerCase())
-    })
-  }
+  const [debouncedSearch, setDebouncedSearch] = useState('')
 
-  const [tab, setTab] = useState<string>('citizens')
-  const [mapView, setMapView] = useState<string>('earth') // For map sub-tabs
+  useDebounce(
+    () => {
+      setDebouncedSearch(input)
+      if (pageIdx !== 1) {
+        handlePageChange(1)
+      }
+    },
+    500,
+    [input]
+  )
 
-  function loadByTab(tab: string) {
-    if (tab === 'teams') {
-      setCachedNFTs(input != '' ? filterBySearch(filteredTeams) : filteredTeams)
-    } else if (tab === 'citizens') {
-      setCachedNFTs(
-        input != '' ? filterBySearch(filteredCitizens) : filteredCitizens
-      )
-    } else if (tab === 'map') {
-      // For map tab, we don't need to set cachedNFTs as it shows the globe
-      setCachedNFTs([])
-    } else {
-      const nfts =
-        filteredTeams?.[0] && filteredCitizens?.[0]
-          ? [...filteredTeams, ...filteredCitizens]
-          : filteredCitizens?.[0]
-          ? filteredCitizens
-          : filteredTeams?.[0]
-          ? filteredTeams
-          : []
-      setCachedNFTs(input != '' ? filterBySearch(nfts) : nfts)
+  const [tab, setTab] = useState<NetworkTab>('citizens')
+  const [mapView, setMapView] = useState<string>('earth')
+  const [pageIdx, setPageIdx] = useState(1)
+
+  useEffect(() => {
+    const { tab: urlTab, page: urlPage } = router.query
+    if (urlTab && (urlTab === 'teams' || urlTab === 'citizens' || urlTab === 'map')) {
+      setTab(urlTab as NetworkTab)
     }
-  }
+    if (urlPage && !isNaN(Number(urlPage))) {
+      setPageIdx(Number(urlPage))
+    }
+  }, [router.query])
 
   const handleTabChange = useCallback(
     (newTab: string) => {
-      setTab(newTab)
+      setTab(newTab as NetworkTab)
       setPageIdx(1)
       shallowQueryRoute({ tab: newTab, page: '1' })
     },
@@ -124,93 +87,62 @@ export default function Network({
     (newPage: number) => {
       setPageIdx(newPage)
       shallowQueryRoute({ tab, page: newPage.toString() })
-
-      // Scroll to the controls section to keep the user focused on the network browsing area
-      setTimeout(() => {
-        const controls = document.getElementById('network-controls')
-        if (controls) {
-          controls.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }
-      }, 100)
     },
     [shallowQueryRoute, tab]
   )
 
-  const [maxPage, setMaxPage] = useState(1)
+  const isTeamsTab = tab === 'teams'
+  const isCitizensTab = tab === 'citizens'
+  const isMapTab = tab === 'map'
 
-  useEffect(() => {
-    const totalTeams =
-      input != '' ? filterBySearch(filteredTeams).length : filteredTeams.length
-    const totalCitizens =
-      input != ''
-        ? filterBySearch(filteredCitizens).length
-        : filteredCitizens.length
+  const teamsResult = useValidTeams({
+    page: isTeamsTab ? pageIdx : 1,
+    search: isTeamsTab ? debouncedSearch : '',
+    enabled: isTeamsTab || isMapTab,
+    initialData: initialTeams,
+  })
 
-    if (tab === 'teams') setMaxPage(Math.ceil(totalTeams / 10))
-    else if (tab === 'citizens') setMaxPage(Math.ceil(totalCitizens / 10))
-    else if (tab === 'map') setMaxPage(1) // Map doesn't need pagination
-  }, [tab, input, filteredCitizens, filteredTeams])
+  const citizensResult = useValidCitizens({
+    page: isCitizensTab ? pageIdx : 1,
+    search: isCitizensTab ? debouncedSearch : '',
+    enabled: isCitizensTab || isMapTab,
+    initialData: initialCitizens,
+  })
 
-  const [cachedNFTs, setCachedNFTs] = useState<any[]>([])
+  const mapData = useMapData(isMapTab)
 
-  const [pageIdx, setPageIdx] = useState(1)
-
-  useEffect(() => {
-    const { tab: urlTab, page: urlPage } = router.query
-    if (
-      urlTab &&
-      (urlTab === 'teams' || urlTab === 'citizens' || urlTab === 'map')
-    ) {
-      setTab(urlTab as string)
-    }
-    if (urlPage && !isNaN(Number(urlPage))) {
-      setPageIdx(Number(urlPage))
-    }
-  }, [router.query])
-
-  useEffect(() => {
-    loadByTab(tab)
-  }, [tab, input, filteredTeams, filteredCitizens, router.query])
+  const currentData = isTeamsTab
+    ? teamsResult
+    : isCitizensTab
+    ? citizensResult
+    : { data: [], isLoading: false, error: null, maxPage: 1 }
 
   useChainDefault()
 
   function renderNFTs() {
-    const nfts = cachedNFTs
+    const nfts = currentData.data
 
-    // Show loading state if no NFTs and we're not on the map tab
-    if ((!nfts || nfts.length === 0) && tab !== 'map') {
-      return Array.from({ length: 4 }, (_, i) => <CardSkeleton key={i} />)
+    if (currentData.isLoading && nfts.length === 0) {
+      return Array.from({ length: 10 }, (_, i) => <NetworkCardSkeleton key={i} />)
     }
 
-    // Calculate pagination
-    const startIndex = (pageIdx - 1) * 10
-    const endIndex = startIndex + 10
-    const paginatedNFTs = nfts.slice(startIndex, endIndex)
-
-    if (paginatedNFTs.length === 0 && tab !== 'map') {
+    if (nfts.length === 0 && !currentData.isLoading) {
       return (
         <div className="col-span-full text-center py-12">
           <div className="text-slate-400 mb-4">
             <ListBulletIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
           </div>
-          <h3 className="text-xl font-GoodTimes text-white mb-2">
-            No {tab} found
-          </h3>
+          <h3 className="text-xl font-GoodTimes text-white mb-2">No {tab} found</h3>
           <p className="text-slate-400">
-            {input
-              ? `No results for "${input}"`
+            {debouncedSearch
+              ? `No results for "${debouncedSearch}"`
               : `No ${tab} available at the moment.`}
           </p>
         </div>
       )
     }
 
-    return paginatedNFTs.map((nft, i) => {
-      const teamTier = getAttribute(
-        nft?.metadata?.attributes as any[],
-        'Team Tier'
-      )?.value
-      const isFeatured = FEATURED_TEAMS.includes(Number(nft.metadata.name))
+    return nfts.map((nft, i) => {
       const link = `/${tab === 'teams' ? 'team' : 'citizen'}/${
         tab === 'teams'
           ? generatePrettyLink(nft.metadata.name)
@@ -218,10 +150,7 @@ export default function Network({
       }`
 
       return (
-        <div
-          className="w-full h-full"
-          key={`${nft.metadata.name}-${nft.id}-${i}`}
-        >
+        <div className="w-full h-full" key={`${nft.metadata.name}-${nft.id}-${i}`}>
           <StandardDetailCard
             title={nft.metadata.name}
             paragraph={nft.metadata.description}
@@ -243,26 +172,21 @@ export default function Network({
 
       <Container>
         <Frame noPadding>
-          {/* Compact Header Section */}
           <div className="relative py-8 px-6">
             <div className="max-w-6xl mx-auto text-center">
-              <h1 className="header font-GoodTimes text-white mb-3">
-                Explore the Network
-              </h1>
+              <h1 className="header font-GoodTimes text-white mb-3">Explore the Network</h1>
               <p className="sub-header text-white/80 max-w-3xl mx-auto mb-6">
-                Discover and connect with citizens and teams building the future
-                of space exploration
+                Discover and connect with citizens and teams building the future of space
+                exploration
               </p>
             </div>
           </div>
 
-          {/* Controls Section */}
           <div id="network-controls" className="max-w-6xl mx-auto mb-8 px-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-              {/* Search Bar - Always present but invisible for map tab */}
               <div
                 className={`w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3 ${
-                  tab === 'map' ? 'invisible' : ''
+                  isMapTab ? 'invisible' : ''
                 }`}
               >
                 <Search
@@ -270,16 +194,15 @@ export default function Network({
                   input={input}
                   setInput={setInput}
                   placeholder={
-                    tab === 'teams'
+                    isTeamsTab
                       ? 'Search teams'
-                      : tab === 'citizens'
+                      : isCitizensTab
                       ? 'Search citizens'
                       : 'Search network'
                   }
                 />
               </div>
 
-              {/* Tabs - Always centered */}
               <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
                 <div className="flex text-sm gap-1">
                   <Tab
@@ -309,7 +232,6 @@ export default function Network({
                 </div>
               </div>
 
-              {/* Join Button - Compact */}
               <div className="w-full lg:w-auto min-w-0 max-w-[320px] flex justify-end">
                 <StandardButton
                   className="gradient-2 rounded-xl hover:scale-105 transition-transform"
@@ -325,10 +247,8 @@ export default function Network({
             </div>
           </div>
 
-          {/* Content Section - Either Grid or Map */}
           <div id="network-content" className="max-w-6xl mx-auto px-6 pb-16">
-            {tab === 'map' ? (
-              /* Map View */
+            {isMapTab ? (
               <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
                 <div className="mb-6">
                   <div className="flex justify-center">
@@ -361,7 +281,7 @@ export default function Network({
                         mapView !== 'earth' && 'hidden'
                       }`}
                     >
-                      <Earth pointsData={citizensLocationData || []} />
+                      <Earth pointsData={mapData.data || []} />
                     </div>
                     <div className={`${mapView !== 'moon' && 'hidden'}`}>
                       <Moon />
@@ -370,21 +290,12 @@ export default function Network({
                 </div>
               </div>
             ) : (
-              /* Network Grid View */
               <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
-                <CardGridContainer
-                  xsCols={1}
-                  smCols={1}
-                  mdCols={2}
-                  lgCols={2}
-                  maxCols={2}
-                  center
-                >
+                <CardGridContainer xsCols={1} smCols={1} mdCols={2} lgCols={2} maxCols={2} center>
                   {renderNFTs()}
                 </CardGridContainer>
 
-                {/* Pagination - Only for non-map tabs */}
-                {tab !== 'map' && (
+                {!isMapTab && (
                   <div className="w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mt-8">
                     <div className="w-full flex font-GoodTimes text-2xl flex-row justify-center items-center lg:space-x-8">
                       <button
@@ -394,9 +305,7 @@ export default function Network({
                           }
                         }}
                         className={`pagination-button transition-opacity hover:scale-110 ${
-                          pageIdx === 1
-                            ? 'opacity-30'
-                            : 'cursor-pointer opacity-100'
+                          pageIdx === 1 ? 'opacity-30' : 'cursor-pointer opacity-100'
                         }`}
                         disabled={pageIdx === 1}
                       >
@@ -408,20 +317,20 @@ export default function Network({
                         />
                       </button>
                       <p id="page-number" className="px-5 font-bold text-white">
-                        Page {pageIdx} of {maxPage}
+                        Page {pageIdx} of {currentData.maxPage}
                       </p>
                       <button
                         onClick={() => {
-                          if (pageIdx < maxPage) {
+                          if (pageIdx < currentData.maxPage) {
                             handlePageChange(pageIdx + 1)
                           }
                         }}
                         className={`pagination-button transition-opacity hover:scale-110 ${
-                          pageIdx === maxPage
+                          pageIdx === currentData.maxPage
                             ? 'opacity-30'
                             : 'cursor-pointer opacity-100'
                         }`}
-                        disabled={pageIdx === maxPage}
+                        disabled={pageIdx === currentData.maxPage}
                       >
                         <Image
                           src="/assets/icon-right.svg"
@@ -438,7 +347,6 @@ export default function Network({
           </div>
         </Frame>
 
-        {/* Footer */}
         <div className="flex justify-center w-full">
           <NoticeFooter
             defaultImage="../assets/MoonDAO-Logo-White.svg"
@@ -455,284 +363,84 @@ export default function Network({
   )
 }
 
-export async function getServerSideProps() {
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
-
+export const getStaticProps: GetStaticProps = async () => {
   try {
-    // Get team table name and query
-    const teamTableContract = getContract({
-      client: serverClient,
-      address: TEAM_TABLE_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: TeamTableABI as any,
-    })
+    // Dynamic imports for large/server-only dependencies to reduce client bundle size
+    const { getContract, readContract } = await import('thirdweb')
+    const { serverClient } = await import('@/lib/thirdweb/client')
+    const TeamTableABI = (await import('const/abis/TeamTable.json')).default
+    const CitizenTableABI = (await import('const/abis/CitizenTable.json')).default
+    const queryTable = (await import('@/lib/tableland/queryTable')).default
 
-    const teamTableName = await readContract({
-      contract: teamTableContract,
-      method: 'getTableName',
-    })
+    const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
+    const PAGE_SIZE = 10
 
-    const teamRows = await queryTable(chain, `SELECT * FROM ${teamTableName}`)
+    let teamTableName = TEAM_TABLE_NAMES[chainSlug]
+    let citizenTableName = CITIZEN_TABLE_NAMES[chainSlug]
 
-    // Get citizen table name and query
-    const citizenTableContract = getContract({
-      client: serverClient,
-      address: CITIZEN_TABLE_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: CitizenTableABI as any,
-    })
-
-    const citizenTableName = await readContract({
-      contract: citizenTableContract,
-      method: 'getTableName',
-    })
-
-    const citizenRows: any = await queryTable(
-      chain,
-      `SELECT * FROM ${citizenTableName}`
-    )
-
-    // Get jobs table name and query
-    const jobsTableContract = getContract({
-      client: serverClient,
-      address: JOBS_TABLE_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: JobsABI as any,
-    })
-
-    const jobsTableName = await readContract({
-      contract: jobsTableContract,
-      method: 'getTableName',
-    })
-
-    const jobs = await queryTable(chain, `SELECT * FROM ${jobsTableName}`)
-
-    // Get current timestamp for expiration checks
-    const now = Math.floor(Date.now() / 1000)
-
-    // Convert team rows to NFTs
-    const teamNFTs: NFT[] = []
-    if (teamRows && teamRows.length > 0) {
-      for (const team of teamRows) {
-        try {
-          const teamNFT = teamRowToNFT(team)
-          teamNFTs.push(teamNFT)
-        } catch (error) {
-          console.error(`Error converting team ${team.id}:`, error)
-        }
-      }
-    }
-
-    // Get team contract for expiration checks
-    const teamContract = getContract({
-      client: serverClient,
-      address: TEAM_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: TeamABI as any,
-    })
-
-    // Filter for valid (non-expired) teams
-    const filteredValidTeams: any = teamNFTs?.filter(async (nft: any) => {
-      try {
-        const expiresAt = await readContract({
-          contract: teamContract,
-          method: 'expiresAt',
-          params: [nft?.metadata?.id],
-        })
-        return +expiresAt.toString() > now
-      } catch (error) {
-        console.error(
-          `Error checking expiration for team ${nft?.metadata?.id}:`,
-          error
-        )
-        return false
-      }
-    })
-
-    // Sort teams with newest first and featured teams prioritized
-    const filteredTeams = filteredValidTeams
-      .reverse()
-      .sort((a: any, b: any) => {
-        const aIsFeatured = FEATURED_TEAMS.includes(Number(a.metadata.id))
-        const bIsFeatured = FEATURED_TEAMS.includes(Number(b.metadata.id))
-
-        if (aIsFeatured && bIsFeatured) {
-          return (
-            FEATURED_TEAMS.indexOf(Number(a.metadata.id)) -
-            FEATURED_TEAMS.indexOf(Number(b.metadata.id))
-          )
-        } else if (aIsFeatured) {
-          return -1
-        } else if (bIsFeatured) {
-          return 1
-        } else {
-          return 0
-        }
+    if (!teamTableName && TEAM_TABLE_ADDRESSES[chainSlug]) {
+      const teamTableContract = getContract({
+        client: serverClient,
+        address: TEAM_TABLE_ADDRESSES[chainSlug],
+        chain,
+        abi: TeamTableABI as any,
       })
-
-    // Convert citizen rows to NFTs
-    const citizenNFTs: NFT[] = []
-    if (citizenRows && citizenRows.length > 0) {
-      for (const citizen of citizenRows) {
-        try {
-          const citizenNFT = citizenRowToNFT(citizen)
-          citizenNFTs.push(citizenNFT)
-        } catch (error) {
-          console.error(`Error converting citizen ${citizen.id}:`, error)
-        }
-      }
+      teamTableName = (await readContract({
+        contract: teamTableContract,
+        method: 'getTableName',
+      })) as string
     }
 
-    // Get citizen contract for expiration checks
-    const citizenContract = getContract({
-      client: serverClient,
-      address: CITIZEN_ADDRESSES[chainSlug],
-      chain: chain,
-      abi: CitizenABI as any,
-    })
-
-    // Filter for valid (non-expired) citizens
-    const filteredValidCitizens: any = citizenNFTs?.filter(async (nft: any) => {
-      try {
-        const expiresAt = await readContract({
-          contract: citizenContract,
-          method: 'expiresAt',
-          params: [nft?.metadata?.id],
-        })
-        return +expiresAt.toString() > now
-      } catch (error) {
-        console.error(
-          `Error checking expiration for citizen ${nft?.metadata?.id}:`,
-          error
-        )
-        return false
-      }
-    })
-
-    const filteredCitizens = filteredValidCitizens.reverse() // Show newest citizens first
-
-    // Get citizens location data for the map
-    let citizensLocationData: any[] = []
-
-    if (
-      process.env.NEXT_PUBLIC_ENV === 'prod' ||
-      process.env.NEXT_PUBLIC_TEST_ENV === 'true'
-    ) {
-      // Get location data for each citizen
-      for (const citizen of filteredCitizens) {
-        const citizenLocation = getAttribute(
-          citizen?.metadata?.attributes as unknown as any[],
-          'location'
-        )?.value
-
-        let locationData
-
-        if (
-          citizenLocation &&
-          citizenLocation !== '' &&
-          !citizenLocation?.startsWith('{')
-        ) {
-          locationData = {
-            results: [
-              {
-                formatted_address: citizenLocation,
-              },
-            ],
-          }
-        } else if (citizenLocation?.startsWith('{')) {
-          const parsedLocationData = JSON.parse(citizenLocation)
-          locationData = {
-            results: [
-              {
-                formatted_address: parsedLocationData.name,
-                geometry: {
-                  location: {
-                    lat: parsedLocationData.lat,
-                    lng: parsedLocationData.lng,
-                  },
-                },
-              },
-            ],
-          }
-        } else {
-          locationData = {
-            results: [
-              {
-                formatted_address: 'Antarctica',
-                geometry: { location: { lat: -90, lng: 0 } },
-              },
-            ],
-          }
-        }
-
-        citizensLocationData.push({
-          id: citizen.metadata.id,
-          name: citizen.metadata.name,
-          location: citizenLocation,
-          formattedAddress:
-            locationData.results?.[0]?.formatted_address || 'Antarctica',
-          image: citizen.metadata.image,
-          lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
-          lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
-        })
-      }
-
-      // Group citizens by lat and lng
-      const locationMap = new Map()
-
-      for (const citizen of citizensLocationData) {
-        const key = `${citizen.lat},${citizen.lng}`
-        if (!locationMap.has(key)) {
-          locationMap.set(key, {
-            citizens: [citizen],
-            names: [citizen.name],
-            formattedAddress: citizen.formattedAddress,
-            lat: citizen.lat,
-            lng: citizen.lng,
-          })
-        } else {
-          const existing = locationMap.get(key)
-          existing.names.push(citizen.name)
-          existing.citizens.push(citizen)
-        }
-      }
-
-      // Convert the map back to an array
-      citizensLocationData = Array.from(locationMap.values()).map(
-        (entry: any) => ({
-          ...entry,
-          color:
-            entry.citizens.length > 3
-              ? '#6a3d79'
-              : entry.citizens.length > 1
-              ? '#5e4dbf'
-              : '#5556eb',
-          size:
-            entry.citizens.length > 1
-              ? Math.min(entry.citizens.length * 0.01, 0.4)
-              : 0.01,
-        })
-      )
+    if (!citizenTableName && CITIZEN_TABLE_ADDRESSES[chainSlug]) {
+      const citizenTableContract = getContract({
+        client: serverClient,
+        address: CITIZEN_TABLE_ADDRESSES[chainSlug],
+        chain,
+        abi: CitizenTableABI as any,
+      })
+      citizenTableName = (await readContract({
+        contract: citizenTableContract,
+        method: 'getTableName',
+      })) as string
     }
 
+    // Fetch 3 pages worth of data (30 items) for pre-rendering
+    const PRE_RENDER_PAGES = 3
+    const PRE_RENDER_LIMIT = PAGE_SIZE * PRE_RENDER_PAGES
+
+    const [teamRows, citizenRows] = await Promise.all([
+      teamTableName
+        ? queryTable(
+            chain,
+            `SELECT * FROM ${teamTableName} ORDER BY id DESC LIMIT ${PRE_RENDER_LIMIT}`
+          )
+        : Promise.resolve([]),
+      citizenTableName
+        ? queryTable(
+            chain,
+            `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT ${PRE_RENDER_LIMIT}`
+          )
+        : Promise.resolve([]),
+    ])
+
+    // Pass raw rows as initialData - the hooks will convert and filter them
+    // This matches the format expected by useTablelandQuery fallbackData
     return {
       props: {
-        filteredTeams,
-        filteredCitizens,
-        jobs,
-        citizensLocationData,
+        initialTeams: teamRows || [],
+        initialCitizens: citizenRows || [],
       },
+      revalidate: 60,
     }
   } catch (error) {
-    console.error('Error in getServerSideProps:', error)
+    console.error('Error in getStaticProps for network page:', error)
     return {
       props: {
-        filteredTeams: [],
-        filteredCitizens: [],
-        jobs: [],
-        citizensLocationData: [],
+        initialTeams: [],
+        initialCitizens: [],
       },
+      revalidate: 60,
     }
   }
 }

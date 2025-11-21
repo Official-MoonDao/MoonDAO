@@ -6,6 +6,7 @@ export type UseTablelandQueryOptions = {
   refreshInterval?: number
   revalidateOnFocus?: boolean
   revalidateOnReconnect?: boolean
+  fallbackData?: any
 }
 
 export function useTablelandQuery(
@@ -16,6 +17,7 @@ export function useTablelandQuery(
     refreshInterval,
     revalidateOnFocus = false,
     revalidateOnReconnect = false,
+    fallbackData,
   } = options
 
   // Build the API URL with the statement parameter
@@ -27,6 +29,7 @@ export function useTablelandQuery(
     refreshInterval,
     revalidateOnFocus,
     revalidateOnReconnect,
+    fallbackData,
   })
 
   return {
