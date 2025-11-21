@@ -1,18 +1,15 @@
 import { CalendarDaysIcon } from '@heroicons/react/24/outline'
 import { Project } from '@/lib/project/useProjectData'
-import { ProposalPacket } from '@nance/nance-sdk'
 import { add, differenceInDays, formatDistanceToNow, fromUnixTime } from 'date-fns'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
 import useAccount from '../../lib/nance/useAccountAddress'
-import { SnapshotGraphqlProposalVotingInfo } from '@/lib/snapshot'
 import { AddressLink } from './AddressLink'
 import RequestingTokensOfProposal from './RequestingTokensOfProposal'
-import VotingInfo from './VotingInfo'
+import { STATUS_CONFIG, ProposalStatus } from '@/lib/nance/useProposalStatus'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
 export function ProposalInfoSkeleton() {
   return (
@@ -58,22 +55,18 @@ export function ProposalInfoSkeleton() {
 }
 
 export default function ProposalInfo({
-  proposalPacket,
+  proposalJSON,
+  proposalStatus,
   project,
-  votingInfo,
   linkDisabled = false,
-  sponsorDisabled = true,
-  coauthorsDisabled = true,
   showTitle = true,
   showStatus = true,
   compact = false,
 }: {
-  proposalPacket: ProposalPacket
+  proposalJSON: any
+  proposalStatus: ProposalStatus
   project: Project
-  votingInfo: SnapshotGraphqlProposalVotingInfo | undefined
   linkDisabled?: boolean
-  sponsorDisabled?: boolean
-  coauthorsDisabled?: boolean
   showTitle?: boolean
   showStatus?: boolean
   compact?: boolean
@@ -86,7 +79,7 @@ export default function ProposalInfo({
         {/* Title and Status */}
         <div className="flex items-center">
           <div className="mr-2">
-            {showStatus && <ProposalStatus status={proposalPacket.status} />}
+            {showStatus && <ProposalStatusDisplay status={proposalStatus} />}
           </div>
           {showTitle &&
             (!linkDisabled ? (
@@ -97,11 +90,11 @@ export default function ProposalInfo({
                 style={{ fontFamily: 'Lato' }}
               >
                 <span className="absolute inset-x-0 -top-px bottom-0" />
-                {`${preTitleDisplay}${project.name}`}
+                {`MDP${project.MDP}: ${project.name}`}
               </Link>
             ) : (
               <span className="text-lg font-semibold text-white" style={{ fontFamily: 'Lato' }}>
-                {`${preTitleDisplay}${project.name}`}
+                {`MDP${project.MDP}: ${project.name}`}
               </span>
             ))}
         </div>
@@ -111,7 +104,7 @@ export default function ProposalInfo({
           {!compact && (
             <div className="flex items-center gap-x-1">
               <Image
-                src={`https://cdn.stamp.fyi/avatar/${proposalPacket.authorAddress || ZERO_ADDRESS}`}
+                src={`https://cdn.stamp.fyi/avatar/${proposalJSON.authorAddress || ZERO_ADDRESS}`}
                 alt=""
                 className="h-6 w-6 flex-none rounded-full bg-gray-50"
                 width={75}
@@ -120,80 +113,23 @@ export default function ProposalInfo({
               <div>
                 <p className="text-gray-400 font-RobotoMono">Author</p>
                 <div className="text-center text-white font-RobotoMono">
-                  <AddressLink address={proposalPacket.authorAddress} />
-                </div>
-              </div>
-            </div>
-          )}
-          {/* Due / Cycle */}
-          {proposalPacket.status === 'Voting' && votingInfo?.end && (
-            <div className="flex items-center gap-x-1">
-              <CalendarDaysIcon className="h-6 w-6 flex-none rounded-full text-gray-900 dark:text-white" />
-              <div>
-                <p className="text-gray-400 font-RobotoMono">Due</p>
-                <div className="text-center text-white font-RobotoMono">
-                  {formatDistanceToNow(fromUnixTime(votingInfo.end), {
-                    addSuffix: true,
-                  })}
+                  <AddressLink address={proposalJSON.authorAddress} />
                 </div>
               </div>
             </div>
           )}
           {/* Tokens */}
           <div className="mt-2 md:mt-0">
-            {proposalPacket.budget && <RequestingTokensOfProposal budget={proposalPacket.budget} />}
+            {proposalJSON.budget && <RequestingTokensOfProposal budget={proposalJSON.budget} />}
           </div>
-        </div>
-        {/* Votes */}
-        <div className="mt-2">
-          <VotingInfo votingInfo={votingInfo} />
         </div>
       </div>
     </div>
   )
 }
 
-function ProposalStatus({ status }: { status: number }) {
-  const statusConfig = {
-    Voting: {
-      bg: 'bg-emerald-500/10',
-      border: 'border-emerald-500/30',
-      text: 'text-emerald-400',
-      dot: 'bg-emerald-500',
-    },
-    'Temperature Check': {
-      bg: 'bg-orange-500/10',
-      border: 'border-orange-500/30',
-      text: 'text-orange-400',
-      dot: 'bg-orange-500',
-    },
-    Archived: {
-      bg: 'bg-gray-500/10',
-      border: 'border-gray-500/30',
-      text: 'text-gray-400',
-      dot: 'bg-gray-500',
-    },
-    Approved: {
-      bg: 'bg-green-500/10',
-      border: 'border-green-500/30',
-      text: 'text-green-400',
-      dot: 'bg-green-500',
-    },
-    Discussion: {
-      bg: 'bg-blue-500/10',
-      border: 'border-blue-500/30',
-      text: 'text-blue-400',
-      dot: 'bg-blue-500',
-    },
-    Cancelled: {
-      bg: 'bg-red-500/10',
-      border: 'border-red-500/30',
-      text: 'text-red-400',
-      dot: 'bg-red-500',
-    },
-  }
-
-  const config = statusConfig[status as keyof typeof statusConfig] || {
+function ProposalStatusDisplay({ status }: { status: ProposalStatus }) {
+  const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] || {
     bg: 'bg-gray-500/10',
     border: 'border-gray-500/30',
     text: 'text-gray-400',

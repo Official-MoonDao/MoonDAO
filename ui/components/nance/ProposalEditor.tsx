@@ -1,9 +1,9 @@
 import { Field, Label, Switch } from '@headlessui/react'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
+import { ProposalStatus } from '@/lib/nance/useProposalStatus'
 import { useProposal, useProposalUpload, useSpaceInfo } from '@nance/nance-hooks'
 import {
   Action,
-  ProposalStatus,
   RequestBudget,
   actionsToYaml,
   getActionsFromBody,
@@ -67,7 +67,7 @@ export type ProposalCache = {
   timestamp: number
 }
 
-export default function ProposalEditor({ project }) {
+export default function ProposalEditor({ project }: { project: Project }) {
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
@@ -121,7 +121,7 @@ export default function ProposalEditor({ project }) {
   const { wallet } = useAccount()
   const buttonsDisabled = !address || signingStatus === 'loading' || isUploadingImage
 
-  async function submitProposal(e) {
+  async function submitProposal(e: any) {
     let body = getMarkdown()
     e.preventDefault()
     setSigningStatus('loading')
@@ -329,7 +329,7 @@ export default function ProposalEditor({ project }) {
             {attachBudget && (
               <FormProvider {...methods}>
                 <div className="my-10 p-5 rounded-[20px] bg-dark-cool">
-                  <RequestBudgetActionForm disableRequiredFields={proposalStatus === 'Draft'} />
+                  <RequestBudgetActionForm disableRequiredFields={false} />
                 </div>
               </FormProvider>
             )}
@@ -364,33 +364,6 @@ export default function ProposalEditor({ project }) {
 
               {/* Submit buttons */}
               <div className="flex justify-end space-x-4">
-                {/*  DRAFT */}
-                <button
-                  type="submit"
-                  className={classNames(
-                    buttonsDisabled && 'tooltip',
-                    'text-sm px-6 py-3 bg-black/30 hover:bg-black/40 border border-white/20 hover:border-white/30 text-white/80 hover:text-white font-RobotoMono rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl'
-                  )}
-                  onClick={() => {
-                    console.log('Save Draft button clicked', {
-                      buttonsDisabled,
-                      address: !!address,
-                      signingStatus,
-                      isUploadingImage,
-                    })
-                    setProposalStatus('Draft')
-                  }}
-                  disabled={buttonsDisabled}
-                  data-tip={
-                    signingStatus === 'loading'
-                      ? 'Submitting...'
-                      : isUploadingImage
-                        ? 'Uploading image...'
-                        : 'You need to connect wallet first.'
-                  }
-                >
-                  {signingStatus === 'loading' ? 'Submitting...' : 'Save Draft'}
-                </button>
                 {/* SUBMIT */}
                 <button
                   type="submit"
@@ -398,20 +371,7 @@ export default function ProposalEditor({ project }) {
                     buttonsDisabled && 'tooltip',
                     'px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0'
                   )}
-                  onClick={() => {
-                    //console.log('Submit button clicked', {
-                    //buttonsDisabled,
-                    //address: !!address,
-                    //signingStatus,
-                    //isUploadingImage,
-                    //loadedProposalStatus: loadedProposal?.status,
-                    //})
-                    //const status =
-                    //loadedProposal?.status === 'Temperature Check'
-                    //? 'Temperature Check'
-                    //: 'Discussion'
-                    //setProposalStatus(status || 'Discussion')
-                  }}
+                  onClick={() => {}}
                   disabled={buttonsDisabled}
                   data-tip={
                     signingStatus === 'loading'

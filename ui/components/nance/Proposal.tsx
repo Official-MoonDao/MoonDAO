@@ -3,16 +3,16 @@ import { ProposalsPacket } from '@nance/nance-sdk'
 import { formatDistanceStrict } from 'date-fns'
 import { SnapshotGraphqlProposalVotingInfo } from '@/lib/snapshot'
 import ProposalInfo from './ProposalInfo'
-import useProposalStatus from '@/lib/nance/useProposalStatus'
+import { useProposalStatus } from '@/lib/nance/useProposalStatus'
 import useProposalJSON from '@/lib/nance/useProposalJSON'
 
 type ProposalProps = {
-  proposal: any
+  project: any
 }
 
-export default function Proposal({ proposal }: ProposalProps) {
-  const proposalStatus = useProposalStatus(proposal)
-  const proposalJSON = useProposalJSON(proposal)
+export default function Proposal({ project }: ProposalProps) {
+  const proposalStatus = useProposalStatus(project)
+  const proposalJSON = useProposalJSON(project)
   return (
     <div
       id="proposal-card"
@@ -22,13 +22,9 @@ export default function Proposal({ proposal }: ProposalProps) {
         <ProposalInfo
           showTitle={true}
           showStatus={false}
-          proposalPacket={{
-            authorAddress: proposal.authorAddress || '0x0000000000000000000000000000000000000000',
-            // FIXME set status
-            status: proposalStatus,
-            budget: proposal.budget,
-          }}
-          project={proposal}
+          proposalJSON={proposalJSON}
+          proposalStatus={proposalStatus}
+          project={project}
           compact={true}
         />
       </div>

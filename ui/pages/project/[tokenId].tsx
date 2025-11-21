@@ -57,10 +57,9 @@ type ProjectProfileProps = {
   tokenId: string
   project: Project
   safeOwners: string[]
-  proposal: any
+  proposalJSON: any
   votes: any[]
   voteOutcome: any
-  tempCheckState: string
   proposalStatus: any
 }
 
@@ -68,15 +67,13 @@ export default function ProjectProfile({
   tokenId,
   project,
   safeOwners,
-  proposal,
+  proposalJSON,
   votes,
   voteOutcome,
-  tempCheckState,
   proposalStatus,
 }: ProjectProfileProps) {
   const account = useActiveAccount()
   const address = account?.address
-  console.log('proposalStatus', proposalStatus)
 
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
@@ -192,14 +189,9 @@ export default function ProjectProfile({
         headerSize="max(20px, 3vw)"
         description={
           <ProposalInfo
-            proposalPacket={{
-              authorAddress: proposal.authorAddress || '0x0000000000000000000000000000000000000000',
-              // FIXME set status
-              status: proposalStatus,
-              budget: proposal.budget,
-            }}
+            proposalJSON={proposalJSON}
+            proposalStatus={proposalStatus}
             project={project}
-            votingInfo={votes?.proposal}
             linkDisabled
             sponsorDisabled={false}
             coauthorsDisabled={false}
@@ -243,16 +235,12 @@ export default function ProjectProfile({
                 <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] flex flex-col h-fit">
                   <div className="px-[10px] p-5">
                     {project.active == PROJECT_PENDING ? (
-                      tempCheckState === 'temp-check' ? (
+                      proposalStatus === 'Temperature Check' ? (
                         <TempCheck mdp={project.MDP} />
                       ) : (
                         <>
-                          <ProposalVotes
-                            state={tempCheckState}
-                            project={project}
-                            votesOfProposal={{ votes: votes }}
-                            refetch={() => mutate()}
-                          />
+                          <ProposalVotes project={project} votes={votes} refetch={() => mutate()} />
+                          {/*FIXME run on cron */}
                           <button onClick={tallyVotes}>Tally votes</button>
                         </>
                       )
@@ -387,11 +375,6 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     method: 'tempCheckApprovedTimestamp' as string,
     params: [mdp],
   })
-  const tempCheckState = tempCheckApproved
-    ? 'temp-check-passed'
-    : tempCheckFailed
-      ? 'temp-check-failed'
-      : 'temp-check'
   let proposalStatus = ''
   if (project.active == PROJECT_PENDING) {
     if (tempCheckApproved) {
@@ -442,7 +425,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
   const safeOwners = await safe.getOwners()
   const proposalResponse = await fetch(project.proposalIPFS)
-  const proposal = await proposalResponse.json()
+  const proposalJSON = await proposalResponse.json()
 
   return {
     props: {
@@ -450,9 +433,8 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       tokenId,
       safeOwners,
       votes,
-      tempCheckState,
       proposalStatus,
-      proposal,
+      proposalJSON,
       voteOutcome,
     },
   }

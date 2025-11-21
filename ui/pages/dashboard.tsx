@@ -338,6 +338,7 @@ export async function getStaticProps() {
     newestListings = listings
     newestJobs = jobs
     newestTeams = teams
+    allProjects = projects
 
     // Process missions data - simplified to just pass basic data to client
     if (missionRows && missionRows.length > 0) {

@@ -6,11 +6,7 @@ import StandardButton from '../layout/StandardButton'
 import SafeTokenForm from './form/SafeTokenForm'
 import StringForm from './form/StringForm'
 
-// import { useEffect } from "react"
-
-export default function RequestBudgetActionForm({
-  disableRequiredFields = false,
-}) {
+export default function RequestBudgetActionForm({ disableRequiredFields = false }) {
   // form
 
   const { control } = useFormContext()
@@ -34,18 +30,13 @@ export default function RequestBudgetActionForm({
     <div>
       <div className="space-y-12">
         <div className="pb-10">
-          <h2 className="text-base font-semibold font-GoodTimes leading-7 text-white">
-            Budget
-          </h2>
+          <h2 className="text-base font-semibold font-GoodTimes leading-7 text-white">Budget</h2>
           <p className="mt-1 text-sm leading-6 text-gray-400">
             Tokens will be sent to the newly created multisig.
           </p>
 
           {budgetFields.map((field, index) => (
-            <div
-              key={field.id}
-              className="mt-5 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-8"
-            >
+            <div key={field.id} className="mt-5 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-8">
               <div className="sm:col-span-2">
                 <StringForm
                   label="Amount"
@@ -58,16 +49,7 @@ export default function RequestBudgetActionForm({
                 <SafeTokenForm
                   address="0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9"
                   fieldName={`budget.${index}.token`}
-                  acceptedTokens={[
-                    'ETH',
-                    'USDC',
-                    'USDT',
-                    'DAI',
-                    'MOONEY',
-                    'SAFE',
-                    'WBTC',
-                    'MATIC',
-                  ]}
+                  acceptedTokens={['ETH', 'USDC', 'USDT', 'DAI', 'MOONEY', 'SAFE', 'WBTC', 'MATIC']}
                 />
               </div>
 

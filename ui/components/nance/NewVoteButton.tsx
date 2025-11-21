@@ -7,15 +7,13 @@ import VotingModal from './VotingModal'
 
 export default function NewVoteButton({
   snapshotProposal,
-  votesOfProposal,
+  votes,
   project,
-  snapshotSpace,
   refetch,
   isSmall = false,
 }: {
   snapshotProposal: any
-  votesOfProposal: any
-  snapshotSpace: string
+  votes: any[]
   project: Project
   refetch: (option?: any) => void
   isSmall?: boolean
@@ -27,7 +25,6 @@ export default function NewVoteButton({
   const { connectWallet: openConnectModal } = usePrivy()
   const [edit, setEdit] = useState(false)
 
-  const votes = votesOfProposal.votes
   useEffect(() => {
     if (votes && address) {
       for (const v of votes) {
@@ -82,10 +79,9 @@ export default function NewVoteButton({
         <VotingModal
           modalIsOpen={modalIsOpen}
           closeModal={() => setModalIsOpen(false)}
-          votesOfProposal={votesOfProposal}
+          votes={votes}
           project={project}
           address={address}
-          spaceId={snapshotSpace}
           proposal={snapshotProposal}
           spaceHideAbstain={true}
           refetch={refetch}

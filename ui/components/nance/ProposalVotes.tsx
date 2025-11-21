@@ -1,25 +1,15 @@
 import { CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
-import {
-  useQueryParams,
-  withDefault,
-  NumberParam,
-  createEnumParam,
-} from 'next-query-params'
+import { useQueryParams, withDefault, NumberParam, createEnumParam } from 'next-query-params'
 import Link from 'next/link'
 import { ReactNode, useEffect, useState, useMemo } from 'react'
 import { SNAPSHOT_SPACE_NAME } from '../../lib/nance/constants'
 import { formatNumberUSStyle } from '@/lib/nance'
 import { Project } from '@/lib/project/useProjectData'
-import { VotesOfProposal } from '@/lib/snapshot'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { classNames } from '@/lib/utils/tailwind'
-import Votes, {
-  VoteItem,
-  VoteItemHeader,
-  VoteItemDetails,
-} from '@/components/layout/Votes'
+import Votes, { VoteItem, VoteItemHeader, VoteItemDetails } from '@/components/layout/Votes'
 import { AddressLink } from './AddressLink'
 import ColorBar from './ColorBar'
 import NewVoteButton from './NewVoteButton'
@@ -37,7 +27,7 @@ const getColorOfChoice = (choice: string | undefined) => {
 }
 
 export default function ProposalVotes({
-  votesOfProposal,
+  votes,
   state,
   project,
   refetch,
@@ -48,8 +38,8 @@ export default function ProposalVotes({
   onTitleClick,
   containerClassName,
 }: {
-  votesOfProposal: VotesOfProposal
-  state: ProposalState
+  votes: any[]
+  state: any
   project: Project
   refetch: () => void
   threshold?: number
@@ -69,28 +59,17 @@ export default function ProposalVotes({
   })
 
   const statement = useMemo(() => {
-    if (votesOfProposal.votes.length === 0) return null
-    return `SELECT id, name, owner FROM ${
-      CITIZEN_TABLE_NAMES[chainSlug]
-    } WHERE owner IN (${votesOfProposal.votes
+    if (votes.length === 0) return null
+    return `SELECT id, name, owner FROM ${CITIZEN_TABLE_NAMES[chainSlug]} WHERE owner IN (${votes
       .map((v) => `'${v.address.toLowerCase()}'`)
       .join(',')})`
-  }, [votesOfProposal.votes, chainSlug])
+  }, [votes, chainSlug])
 
   const { data: votingCitizens = [] } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
   })
 
-  const proposalInfo = votesOfProposal.proposal
-  const proposalType = proposalInfo?.type ?? ''
-  const isSimpleVoting = ![
-    'approval',
-    'ranked-choice',
-    'quadratic',
-    'weighted',
-  ].includes(proposalType)
-
-  let votes = votesOfProposal.votes
+  const isSimpleVoting = false
   if (query.filterBy === 'for') {
     votes = votes.filter((v) => v.choice === 1)
   } else if (query.filterBy === 'against') {
@@ -125,9 +104,7 @@ export default function ProposalVotes({
   }
 
   const Voter = ({ address }: { address: string }) => {
-    const citizen = votingCitizens.find(
-      (c: any) => c.owner.toLowerCase() === address.toLowerCase()
-    )
+    const citizen = votingCitizens.find((c: any) => c.owner.toLowerCase() === address.toLowerCase())
     return citizen ? (
       <Link
         href={`/citizen/${generatePrettyLinkWithId(citizen.name, citizen.id)}`}
@@ -139,75 +116,27 @@ export default function ProposalVotes({
       <AddressLink address={address} />
     )
   }
+  const SCORES_TOTAL = 100
 
   // Summary section component
   const summarySection = (
     <>
-      {isSimpleVoting && (
-        <>
-          <div className="flex justify-between">
-            <p
-              className={classNames(
-                'cursor-pointer text-sm text-green-500',
-                query.filterBy === 'for' ? 'underline' : ''
-              )}
-              onClick={() => {
-                if (query.filterBy === 'for') setQuery({ filterBy: '' })
-                else setQuery({ filterBy: 'for' })
-              }}
-            >
-              FOR {formatNumberUSStyle(proposalInfo?.scores[0] || 0, true)}
-            </p>
-
-            <p
-              className={classNames(
-                'cursor-pointer text-sm text-red-500',
-                query.filterBy === 'against' ? 'underline' : ''
-              )}
-              onClick={() => {
-                if (query.filterBy === 'against') setQuery({ filterBy: '' })
-                else setQuery({ filterBy: 'against' })
-              }}
-            >
-              AGAINST {formatNumberUSStyle(proposalInfo?.scores[1] || 0, true)}
-            </p>
-          </div>
-
-          <div className="p-3 text-sm text-gray-500">
-            <ColorBar
-              greenScore={proposalInfo?.scores[0] || 0}
-              redScore={proposalInfo?.scores[1] || 0}
-              threshold={threshold}
-              noTooltip
-            />
-          </div>
-        </>
-      )}
-
       {!isSimpleVoting && (
         <>
           <div className="flex justify-between">
             <p className="text-sm text-green-500">
-              VOTES {formatNumberUSStyle(proposalInfo?.scores_total || 0, true)}
+              VOTES {formatNumberUSStyle(SCORES_TOTAL, true)}
             </p>
           </div>
 
           <div className="p-3 text-sm text-gray-500">
-            <ColorBar
-              greenScore={proposalInfo?.scores_total || 0}
-              redScore={0}
-              threshold={threshold}
-              noTooltip
-            />
+            <ColorBar greenScore={SCORES_TOTAL} redScore={0} threshold={threshold} noTooltip />
           </div>
         </>
       )}
 
       <div className="flex justify-between">
-        <p className="text-sm">QUORUM {formatNumberUSStyle(threshold)}</p>
-        <p className="text-sm">
-          VOTERS {formatNumberUSStyle(proposalInfo?.votes || 0, true)}
-        </p>
+        <p className="text-sm">VOTERS {formatNumberUSStyle(votes.length || 0, true)}</p>
       </div>
     </>
   )
@@ -232,9 +161,7 @@ export default function ProposalVotes({
         <button
           className={classNames(
             'cursor-pointer',
-            query.sortBy === 'vp'
-              ? 'text-blue-500 underline'
-              : 'text-gray-400 hover:text-gray-600'
+            query.sortBy === 'vp' ? 'text-blue-500 underline' : 'text-gray-400 hover:text-gray-600'
           )}
           onClick={() => setQuery({ sortBy: 'vp' })}
         >
@@ -267,9 +194,7 @@ export default function ProposalVotes({
                   <Voter address={vote.address} />
                 </div>
                 &nbsp;
-                <span
-                  className={classNames(getColorOfChoice(vote.choiceLabel), '')}
-                >
+                <span className={classNames(getColorOfChoice(vote.choiceLabel), '')}>
                   voted {vote.choiceLabel}
                 </span>
               </div>
@@ -285,7 +210,7 @@ export default function ProposalVotes({
                 <div className="text-sm text-slate-500">
                   {`${formatNumberUSStyle(vote.vp, true)} (${(
                     (vote.vp * 100) /
-                    (proposalInfo?.scores_total ?? 1)
+                    SCORES_TOTAL
                   ).toFixed()}%)`}{' '}
                   total
                 </div>
@@ -301,13 +226,11 @@ export default function ProposalVotes({
       </VoteItem>
     )) || []
 
-  console.log('statele', state)
   // Footer section
   const footerSection = (
     <NewVoteButton
-      snapshotSpace={SNAPSHOT_SPACE_NAME}
       snapshotProposal={{ state: state, type: 'quadratic' }}
-      votesOfProposal={votesOfProposal}
+      votes={votes}
       project={project}
       refetch={refetch}
     />

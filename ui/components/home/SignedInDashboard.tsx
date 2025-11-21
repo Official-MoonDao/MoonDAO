@@ -933,7 +933,7 @@ export default function SingedInDashboard({
                 </StandardButton>
               </div>
 
-              <ProposalList noPagination compact proposalLimit={2} proposals={proposals} />
+              <ProposalList noPagination compact proposalLimit={2} projects={proposals} />
             </div>
           </div>
 

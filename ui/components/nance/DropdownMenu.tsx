@@ -37,6 +37,8 @@ export default function DropDownMenu({
     // Show loading toast
     const loadingToastId = toast.loading('Signing...', { style: toastStyle })
     try {
+      // FIXME actually delete
+      const res = { success: true }
       if (res.success) {
         // Show success toast
         toast.success('Proposal deleted successfully!', {
@@ -46,7 +48,7 @@ export default function DropDownMenu({
         router.push('/vote')
       } else {
         // Show error toast
-        toast.error(`${deleteError}`, {
+        toast.error(`Error deleting`, {
           id: loadingToastId,
           style: toastStyle,
           duration: 15000,

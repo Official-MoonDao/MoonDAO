@@ -14,7 +14,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { SnapshotGraphqlProposalVotingInfo, useVotingInfoOfProposals } from '@/lib/snapshot'
 import PaginationButtons from '@/components/layout/PaginationButtons'
 import Proposal from './Proposal'
-import ProposalInfo, { ProposalInfoSkeleton } from './ProposalInfo'
+import { ProposalInfoSkeleton } from './ProposalInfo'
 
 function NoResults() {
   return (
@@ -79,12 +79,12 @@ export default function ProposalList({
   noPagination = false,
   compact = false,
   proposalLimit = 1000,
-  proposals = [],
+  projects = [],
 }: {
   noPagination?: boolean
   compact?: boolean
   proposalLimit?: number
-  proposals?: any[]
+  projects?: any[]
 }) {
   const router = useRouter()
   const [query, setQuery] = useQueryParams({
@@ -118,7 +118,7 @@ export default function ProposalList({
     [setQuery]
   )
 
-  if (proposals.length === 0) {
+  if (projects.length === 0) {
     return <NoResults />
   } else {
     return (
@@ -137,12 +137,12 @@ export default function ProposalList({
                   compact ? 'grid-cols-1' : 'lg:grid-cols-2'
                 }`}
               >
-                {proposals.map((proposal) => (
+                {projects.map((project) => (
                   <div
-                    key={proposal.id}
+                    key={project.id}
                     className={`h-auto bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02]`}
                   >
-                    <Proposal proposal={proposal} />
+                    <Proposal project={project} />
                   </div>
                 ))}
               </div>

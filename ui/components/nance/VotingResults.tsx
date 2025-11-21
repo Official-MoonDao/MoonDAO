@@ -1,15 +1,7 @@
-import {
-  CheckCircleIcon,
-  XCircleIcon,
-  MinusCircleIcon,
-} from '@heroicons/react/24/outline'
+import { CheckCircleIcon, XCircleIcon, MinusCircleIcon } from '@heroicons/react/24/outline'
 import { formatNumberUSStyle } from '@/lib/nance'
-import {
-  SnapshotGraphqlProposalVotingInfo,
-  VotesOfProposal,
-} from '@/lib/snapshot'
+import { SnapshotGraphqlProposalVotingInfo, VotesOfProposal } from '@/lib/snapshot'
 import ColorBar from './ColorBar'
-import ProposalVotes from './ProposalVotes'
 
 interface VotingResultsProps {
   votingInfo: SnapshotGraphqlProposalVotingInfo
@@ -24,21 +16,16 @@ export default function VotingResults({
   threshold = 0,
   onRefetch,
 }: VotingResultsProps) {
-    console.log('votingInfo', votingInfo)
   if (!votingInfo || votingInfo.state !== 'closed') return null
 
   const totalVotes = votingInfo.scores_total
   const forVotes = votingInfo.scores[0] || 0
   const againstVotes = votingInfo.scores[1] || 0
   const abstainVotes = votingInfo.scores[2] || 0
-    console.log('totalVotes', totalVotes)
 
-  const forPercentage =
-    totalVotes > 0 ? ((forVotes / totalVotes) * 100).toFixed(1) : '0.0'
-  const againstPercentage =
-    totalVotes > 0 ? ((againstVotes / totalVotes) * 100).toFixed(1) : '0.0'
-  const abstainPercentage =
-    totalVotes > 0 ? ((abstainVotes / totalVotes) * 100).toFixed(1) : '0.0'
+  const forPercentage = totalVotes > 0 ? ((forVotes / totalVotes) * 100).toFixed(1) : '0.0'
+  const againstPercentage = totalVotes > 0 ? ((againstVotes / totalVotes) * 100).toFixed(1) : '0.0'
+  const abstainPercentage = totalVotes > 0 ? ((abstainVotes / totalVotes) * 100).toFixed(1) : '0.0'
 
   const passed = forVotes > againstVotes
   const quorumMet = threshold === 0 || totalVotes >= threshold // If no quorum set, consider it met
@@ -47,9 +34,7 @@ export default function VotingResults({
     <div className="p-6">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-white font-GoodTimes">
-            Voting Results
-          </h3>
+          <h3 className="text-xl font-bold text-white font-GoodTimes">Voting Results</h3>
           <div
             className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
               passed && quorumMet
@@ -70,21 +55,13 @@ export default function VotingResults({
         <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-white/5 rounded-lg">
           <div className="text-center">
             <p className="text-2xl font-bold text-white">{votingInfo.votes}</p>
-            <p className="text-xs text-gray-400 uppercase tracking-wide">
-              Total Voters
-            </p>
+            <p className="text-xs text-gray-400 uppercase tracking-wide">Total Voters</p>
           </div>
           <div className="text-center">
-            <p
-              className={`text-2xl font-bold ${
-                passed ? 'text-green-400' : 'text-red-400'
-              }`}
-            >
+            <p className={`text-2xl font-bold ${passed ? 'text-green-400' : 'text-red-400'}`}>
               {forPercentage}%
             </p>
-            <p className="text-xs text-gray-400 uppercase tracking-wide">
-              Support
-            </p>
+            <p className="text-xs text-gray-400 uppercase tracking-wide">Support</p>
           </div>
         </div>
 
@@ -100,25 +77,21 @@ export default function VotingResults({
             </p>
             <div className="w-full bg-gray-700 rounded-full h-2">
               <div
-                className={`h-2 rounded-full ${
-                  quorumMet ? 'bg-green-500' : 'bg-yellow-500'
-                }`}
+                className={`h-2 rounded-full ${quorumMet ? 'bg-green-500' : 'bg-yellow-500'}`}
                 style={{
                   width: `${Math.min((totalVotes / threshold) * 100, 100)}%`,
                 }}
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              {formatNumberUSStyle(totalVotes)} /{' '}
-              {formatNumberUSStyle(threshold)} % (
+              {formatNumberUSStyle(totalVotes)} / {formatNumberUSStyle(threshold)} % (
               {((totalVotes / threshold) * 100).toFixed(1)}%)
             </p>
           </div>
         ) : (
           <div className="mb-4">
             <p className="text-sm text-gray-400 mb-1">
-              No minimum threshold required - every vote contributes to the
-              outcome
+              No minimum threshold required - every vote contributes to the outcome
             </p>
           </div>
         )}
@@ -135,9 +108,7 @@ export default function VotingResults({
             </div>
           </div>
           <div className="text-right">
-            <p className="font-bold text-white">
-              {formatNumberUSStyle(forVotes, true)}
-            </p>
+            <p className="font-bold text-white">{formatNumberUSStyle(forVotes, true)}</p>
             <p className="text-xs text-gray-400">%</p>
           </div>
         </div>
@@ -148,15 +119,11 @@ export default function VotingResults({
             <XCircleIcon className="w-5 h-5 text-red-400" />
             <div>
               <p className="font-medium text-red-400">Against</p>
-              <p className="text-sm text-gray-300">
-                {againstPercentage}% of votes
-              </p>
+              <p className="text-sm text-gray-300">{againstPercentage}% of votes</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="font-bold text-white">
-              {formatNumberUSStyle(againstVotes, true)}
-            </p>
+            <p className="font-bold text-white">{formatNumberUSStyle(againstVotes, true)}</p>
             <p className="text-xs text-gray-400">%</p>
           </div>
         </div>
@@ -168,15 +135,11 @@ export default function VotingResults({
               <MinusCircleIcon className="w-5 h-5 text-gray-400" />
               <div>
                 <p className="font-medium text-gray-400">Abstain</p>
-                <p className="text-sm text-gray-300">
-                  {abstainPercentage}% of votes
-                </p>
+                <p className="text-sm text-gray-300">{abstainPercentage}% of votes</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="font-bold text-white">
-                {formatNumberUSStyle(abstainVotes, true)}
-              </p>
+              <p className="font-bold text-white">{formatNumberUSStyle(abstainVotes, true)}</p>
               <p className="text-xs text-gray-400">%</p>
             </div>
           </div>
@@ -201,8 +164,3 @@ export default function VotingResults({
     </div>
   )
 }
-            //<ProposalVotes
-              //votesOfProposal={votesData}
-              //refetch={onRefetch || (() => {})}
-              //threshold={threshold}
-            ///>

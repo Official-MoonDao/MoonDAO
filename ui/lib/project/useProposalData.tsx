@@ -2,7 +2,6 @@ import { useProposal } from '@nance/nance-hooks'
 import { useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import useProposalJSON from '../nance/useProposalJSON'
 
 export default function useProposalData(proposalContract: any, mdp: any) {
   const account = useActiveAccount()
