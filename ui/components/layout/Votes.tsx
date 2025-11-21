@@ -9,7 +9,6 @@ export interface SummaryData {
 
 export interface VotesProps {
   summarySection?: ReactNode
-  controlsSection?: ReactNode
   voteItems: ReactNode[]
   footerSection?: ReactNode
   emptyStateMessage?: string
@@ -23,7 +22,6 @@ export interface VotesProps {
 
 export default function Votes({
   summarySection,
-  controlsSection,
   voteItems,
   footerSection,
   emptyStateMessage = 'No votes found.',
@@ -38,11 +36,8 @@ export default function Votes({
     <div className="flex flex-col h-full">
       {summarySection && <div className="mb-4">{summarySection}</div>}
       {/* Controls Section */}
-      {controlsSection && <div className="mb-4">{controlsSection}</div>}
       <div className="h-full overflow-y-scroll max-h-[calc(100vh-25rem)] pr-2">
-        {isLoading && (
-          <div className="text-center text-gray-500 py-8">Loading votes...</div>
-        )}
+        {isLoading && <div className="text-center text-gray-500 py-8">Loading votes...</div>}
 
         {/* Votes List */}
         {!isLoading && voteItems.length > 0 && (
@@ -55,15 +50,11 @@ export default function Votes({
 
         {/* Empty State */}
         {!isLoading && voteItems.length === 0 && (
-          <div className="text-center text-gray-500 py-8">
-            {emptyStateMessage}
-          </div>
+          <div className="text-center text-gray-500 py-8">{emptyStateMessage}</div>
         )}
       </div>
 
-      {footerSection && (
-        <div className="mr-0 md:mt-auto pt-4">{footerSection}</div>
-      )}
+      {footerSection && <div className="mr-0 md:mt-auto pt-4">{footerSection}</div>}
     </div>
   )
 
@@ -88,9 +79,7 @@ export default function Votes({
           disabled={!onTitleClick}
         >
           <h3 className="font-GoodTimes pb-2 text-gray-400">{title}</h3>
-          {subtitle && (
-            <span className="text-xs text-gray-300">{subtitle}</span>
-          )}
+          {subtitle && <span className="text-xs text-gray-300">{subtitle}</span>}
         </button>
       )}
       <div className="pb-5">{votesContent}</div>
@@ -105,9 +94,7 @@ export function VoteItem({
   children: ReactNode
   className?: string
 }) {
-  return (
-    <div className={classNames('flex flex-col', className)}>{children}</div>
-  )
+  return <div className={classNames('flex flex-col', className)}>{children}</div>
 }
 
 export function VoteItemHeader({

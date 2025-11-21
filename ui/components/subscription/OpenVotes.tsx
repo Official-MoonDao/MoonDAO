@@ -33,9 +33,7 @@ export default function OpenVotes({ proposals }: any) {
             loader={<p className="text-center mt-5  animate-pulse">Loading...</p>}
             scrollableTarget="scrollableUl"
           >
-            {proposals?.map((proposal: any) => (
-              <Proposal key={proposal.id} proposal={proposal} />
-            ))}
+            {proposals?.map((proposal: any) => <Proposal key={proposal.id} project={proposal} />)}
           </InfiniteScroll>
         </ul>
       ) : (

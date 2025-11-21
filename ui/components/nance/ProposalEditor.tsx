@@ -109,7 +109,6 @@ export default function ProposalEditor({ project }: { project: Project }) {
   const { handleSubmit, reset, getValues, watch } = methods
 
   function restoreFromTitleAndBody(t: string, b: string) {
-    console.log('restoring')
     setProposalTitle(t)
     setMarkdown?.(trimActionsFromBody(b))
     const actions = getActionsFromBody(b)

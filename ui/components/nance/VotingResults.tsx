@@ -64,37 +64,6 @@ export default function VotingResults({
             <p className="text-xs text-gray-400 uppercase tracking-wide">Support</p>
           </div>
         </div>
-
-        {threshold > 0 ? (
-          <div className="mb-4">
-            <p className="text-sm text-gray-400 mb-1">
-              Quorum: {formatNumberUSStyle(threshold)} VP
-              {quorumMet ? (
-                <span className="text-green-400 ml-2">✓ Met</span>
-              ) : (
-                <span className="text-red-400 ml-2">✗ Not Met</span>
-              )}
-            </p>
-            <div className="w-full bg-gray-700 rounded-full h-2">
-              <div
-                className={`h-2 rounded-full ${quorumMet ? 'bg-green-500' : 'bg-yellow-500'}`}
-                style={{
-                  width: `${Math.min((totalVotes / threshold) * 100, 100)}%`,
-                }}
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {formatNumberUSStyle(totalVotes)} / {formatNumberUSStyle(threshold)} % (
-              {((totalVotes / threshold) * 100).toFixed(1)}%)
-            </p>
-          </div>
-        ) : (
-          <div className="mb-4">
-            <p className="text-sm text-gray-400 mb-1">
-              No minimum threshold required - every vote contributes to the outcome
-            </p>
-          </div>
-        )}
       </div>
 
       <div className="space-y-4">

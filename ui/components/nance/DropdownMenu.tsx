@@ -7,7 +7,6 @@ import {
   TrashIcon,
   ArchiveBoxArrowDownIcon,
 } from '@heroicons/react/24/outline'
-import { useProposalDelete, useProposalUpload } from '@nance/nance-hooks'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { Fragment } from 'react'

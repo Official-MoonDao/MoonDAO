@@ -10,11 +10,8 @@ import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatNumberUSStyle } from '@/lib/nance'
 import { Project } from '@/lib/project/useProjectData'
-import { SnapshotGraphqlProposalVotingInfo, useVotingPower } from '@/lib/snapshot'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import { useTotalLockedMooney } from '@/lib/tokens/hooks/useTotalLockedMooney'
-import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { classNames } from '@/lib/utils/tailwind'
 
 interface VotingProps {
@@ -22,10 +19,10 @@ interface VotingProps {
   closeModal: () => void
   address: string | undefined
   spaceHideAbstain: boolean
-  proposal: SnapshotGraphqlProposalVotingInfo
   project: Project
   votes: any[]
   refetch: (option?: any) => void
+  totalVMOONEY: any
 }
 
 const SUPPORTED_VOTING_TYPES = ['single-choice', 'basic', 'weighted', 'quadratic', 'ranked-choice']
@@ -35,10 +32,10 @@ export default function VotingModal({
   closeModal,
   address,
   spaceHideAbstain,
-  proposal,
   project,
   votes,
   refetch,
+  totalVMOONEY,
 }: VotingProps) {
   // state
   const [choice, setChoice] = useState()
@@ -66,22 +63,18 @@ export default function VotingModal({
     }
   }, [userAddress, votes])
 
-  proposal.choices = ['Yes', 'No', 'Abstain'] // could make this dynamic in the future
+  const choices = ['Yes', 'No', 'Abstain'] // could make this dynamic in the future
   // external
-  const {
-    totalLockedMooney: lockedMooneyAmount,
-    nextUnlockDate: lockedMooneyUnlockDate,
-    breakdown: lockedMooneyBreakdown,
-    isLoading: isLoadingLockedMooney,
-  } = useTotalLockedMooney(address)
-  const { totalVMOONEY, isLoading: isLoadingVMOONEY } = useTotalVMOONEY(
-    address,
-    lockedMooneyBreakdown
-  )
   const vp = Math.sqrt(totalVMOONEY) || 0
 
   const handleSubmit = async () => {
-    const totalPercentage = Object.values(choice).reduce((sum, value) => sum + value, 0)
+    if (!choice) {
+      return
+    }
+    const totalPercentage = Object.values(choice as Record<string, number>).reduce(
+      (sum, value) => sum + (value as number),
+      0
+    )
     if (totalPercentage !== 100) {
       toast.error('Total distribution must equal 100%.', {
         style: toastStyle,
@@ -102,6 +95,7 @@ export default function VotingModal({
           transaction,
           account,
         })
+        toast.success('Vote updated!')
       } else {
         const transaction = prepareContractCall({
           contract: proposalTableContract,
@@ -112,6 +106,7 @@ export default function VotingModal({
           transaction,
           account,
         })
+        toast.success('Vote submitted!')
       }
       setSubmitting(false)
     } catch (error) {
@@ -119,18 +114,11 @@ export default function VotingModal({
       toast.error('Error submitting distribution. Please try again.', {
         style: toastStyle,
       })
+      setSubmitting(false)
     }
   }
 
-  if (proposal === undefined) {
-    return <div className="hidden">Proposal not selected</div>
-  }
-
-  const hideAbstain = spaceHideAbstain && proposal.type === 'basic'
-  const totalScore = hideAbstain
-    ? proposal.scores_total - (proposal?.scores[2] ?? 0)
-    : proposal.scores_total
-  const symbol = 'VP' // VP stands for Voting Power
+  const proposalType = 'quadratic'
 
   const renderVoteButton = () => {
     let canVote = false
@@ -138,7 +126,7 @@ export default function VotingModal({
 
     if (address == '') {
       label = 'Wallet not connected'
-    } else if (!SUPPORTED_VOTING_TYPES.includes(proposal.type)) {
+    } else if (!SUPPORTED_VOTING_TYPES.includes(proposalType)) {
       label = 'Not supported'
     } else if (choice === undefined) {
       label = 'You need to select a choice'
@@ -219,9 +207,9 @@ export default function VotingModal({
                         </div>
                       </div>
 
-                      {/* Proposal Title */}
+                      {/* Proposal Name */}
                       <div className="bg-black/20 rounded-lg p-3 mb-4 border border-white/5">
-                        <h3 className="text-base font-semibold text-white">{proposal.title}</h3>
+                        <h3 className="text-base font-semibold text-white">{project.name}</h3>
                       </div>
 
                       {/* Proposal Stats */}
@@ -231,7 +219,7 @@ export default function VotingModal({
                         </h3>
 
                         <div className="bg-black/20 rounded-lg p-3 border border-white/5">
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
+                          <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 text-center">
                             <div>
                               <p className="text-gray-300 text-xs font-medium uppercase tracking-wide whitespace-nowrap">
                                 Your Voting Power
@@ -247,15 +235,6 @@ export default function VotingModal({
                                 <span className="sm:hidden">Votes</span>
                               </p>
                               <p className="text-lg font-bold text-white">{votes.length}</p>
-                            </div>
-
-                            <div className="hidden sm:block">
-                              <p className="text-gray-300 text-xs font-medium uppercase tracking-wide whitespace-nowrap">
-                                Total Voting Power
-                              </p>
-                              <p className="text-lg font-bold text-white">
-                                {formatNumberUSStyle(totalScore, true)}
-                              </p>
                             </div>
                           </div>
                         </div>
@@ -273,59 +252,29 @@ export default function VotingModal({
                             <h4 className="text-gray-300 font-medium text-xs uppercase tracking-wide mb-3">
                               Select Your Choice
                             </h4>
-                            <p> {proposal.type}</p>
-                            {(proposal.type == 'single-choice' || proposal.type == 'basic') && (
+                            {(proposalType == 'single-choice' || proposalType == 'basic') && (
                               <BasicChoiceSelector
                                 value={choice}
                                 setValue={setChoice}
-                                choices={proposal.choices}
+                                choices={choices}
                               />
                             )}
-                            {proposal.type == 'weighted' ||
-                              (proposal.type == 'quadratic' && (
+                            {proposalType == 'weighted' ||
+                              (proposalType == 'quadratic' && (
                                 <WeightedChoiceSelector
                                   value={choice}
                                   setValue={setChoice}
-                                  choices={proposal.choices}
+                                  choices={choices}
                                 />
                               ))}
-                            {proposal.type == 'ranked-choice' && (
+                            {proposalType == 'ranked-choice' && (
                               <RankedChoiceSelector
                                 value={choice || []}
                                 setValue={setChoice}
-                                choices={proposal.choices}
+                                choices={choices}
                               />
                             )}
                           </div>
-
-                          {/* Votes under shutter mode won't have reason */}
-                          {proposal.privacy !== 'shutter' && (
-                            <div>
-                              <label
-                                htmlFor="comment"
-                                className="block text-gray-300 font-medium text-xs uppercase tracking-wide mb-2"
-                              >
-                                Reason (Optional)
-                              </label>
-                              <div>
-                                <textarea
-                                  rows={2}
-                                  maxLength={140}
-                                  name="reason"
-                                  id="reason"
-                                  placeholder="Share your reasoning for this vote..."
-                                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none"
-                                  value={reason}
-                                  onChange={(e) => setReason(e.target.value)}
-                                />
-                                <div className="mt-1 text-right">
-                                  <span className="text-xs text-gray-400">
-                                    {reason.length}/140 characters
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
 
                           {/* Vote button */}
                           <div className="pt-2">{renderVoteButton()}</div>

@@ -87,7 +87,7 @@ function countUniqueCountries(locations: any[]): number {
   }
 }
 
-export default function SingedInDashboard({
+export default function SignedInDashboard({
   newestCitizens,
   newestListings,
   newestJobs,
@@ -102,6 +102,7 @@ export default function SingedInDashboard({
 }: any) {
   const proposals = []
   const currentProjects = []
+  console.log('projects', projects)
   for (let i = 0; i < projects.length; i++) {
     if (!BLOCKED_PROJECTS.has(projects[i].id)) {
       const activeStatus = projects[i].active
@@ -112,6 +113,7 @@ export default function SingedInDashboard({
       }
     }
   }
+  console.log('proposals', proposals)
   currentProjects.sort((a, b) => {
     if (a.eligible === b.eligible) {
       return 0

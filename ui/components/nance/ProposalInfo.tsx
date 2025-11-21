@@ -84,7 +84,7 @@ export default function ProposalInfo({
           {showTitle &&
             (!linkDisabled ? (
               <Link
-                href={`/proposal/${project.id}`}
+                href={`/project/${project.id}`}
                 passHref
                 className="text-lg font-semibold text-white hover:text-gray-300 transition-colors"
                 style={{ fontFamily: 'Lato' }}
@@ -104,7 +104,7 @@ export default function ProposalInfo({
           {!compact && (
             <div className="flex items-center gap-x-1">
               <Image
-                src={`https://cdn.stamp.fyi/avatar/${proposalJSON.authorAddress || ZERO_ADDRESS}`}
+                src={`https://cdn.stamp.fyi/avatar/${proposalJSON?.authorAddress || ZERO_ADDRESS}`}
                 alt=""
                 className="h-6 w-6 flex-none rounded-full bg-gray-50"
                 width={75}
@@ -113,14 +113,14 @@ export default function ProposalInfo({
               <div>
                 <p className="text-gray-400 font-RobotoMono">Author</p>
                 <div className="text-center text-white font-RobotoMono">
-                  <AddressLink address={proposalJSON.authorAddress} />
+                  <AddressLink address={proposalJSON?.authorAddress} />
                 </div>
               </div>
             </div>
           )}
           {/* Tokens */}
           <div className="mt-2 md:mt-0">
-            {proposalJSON.budget && <RequestingTokensOfProposal budget={proposalJSON.budget} />}
+            {proposalJSON?.budget && <RequestingTokensOfProposal budget={proposalJSON?.budget} />}
           </div>
         </div>
       </div>

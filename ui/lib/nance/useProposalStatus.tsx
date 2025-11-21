@@ -3,7 +3,12 @@ import ProposalsABI from 'const/abis/Proposals.json'
 import client from '@/lib/thirdweb/client'
 import { PROPOSALS_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
-import { PROJECT_PENDING, PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
+import {
+  PROJECT_PENDING,
+  PROJECT_ACTIVE,
+  PROJECT_ENDED,
+  PROJECT_VOTE_FAILED,
+} from '@/lib/nance/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 
 export type ProposalStatus =
@@ -36,26 +41,31 @@ export function useProposalStatus(project: any) {
         method: 'tempCheckFailed' as string,
         params: [mdp],
       })
-      let status: ProposalStatus = 'Archived'
-      if (project.active == PROJECT_PENDING) {
-        if (tempCheckApproved) {
-          status = 'Voting'
-        } else if (tempCheckFailed) {
-          status = 'Cancelled'
-        } else {
-          status = 'Temperature Check'
-        }
-      } else if (project.active == PROJECT_VOTE_FAILED) {
-        status = 'Cancelled'
-      } else if (project.active == PROJECT_ACTIVE) {
-        status = 'Approved'
-      }
+      const status = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
       setProposalStatus(status)
     }
     fetchData()
   }, [project])
 
   return proposalStatus
+}
+
+export function getProposalStatus(active, tempCheckApproved, tempCheckFailed) {
+  let status: ProposalStatus = 'Archived'
+  if (active == PROJECT_PENDING) {
+    if (tempCheckApproved) {
+      status = 'Voting'
+    } else if (tempCheckFailed) {
+      status = 'Cancelled'
+    } else {
+      status = 'Temperature Check'
+    }
+  } else if (active == PROJECT_VOTE_FAILED) {
+    status = 'Cancelled'
+  } else if (active == PROJECT_ACTIVE) {
+    status = 'Approved'
+  }
+  return status
 }
 
 export const STATUS_CONFIG = {

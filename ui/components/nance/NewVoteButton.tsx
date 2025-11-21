@@ -1,29 +1,32 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useState, useEffect } from 'react'
+import { ProposalStatus } from '@/lib/nance/useProposalStatus'
 import { Project } from '@/lib/project/useProjectData'
 import useAccountAddress from '../../lib/nance/useAccountAddress'
 import { classNames } from '../../lib/utils/tailwind'
+import { useTotalLockedMooney } from '@/lib/tokens/hooks/useTotalLockedMooney'
+import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import VotingModal from './VotingModal'
 
 export default function NewVoteButton({
-  snapshotProposal,
   votes,
+  proposalStatus,
   project,
   refetch,
   isSmall = false,
 }: {
-  snapshotProposal: any
   votes: any[]
+  proposalStatus: ProposalStatus
   project: Project
   refetch: (option?: any) => void
   isSmall?: boolean
 }) {
-  // state
   const [modalIsOpen, setModalIsOpen] = useState(false)
-  // external hook
   const { address, isConnected } = useAccountAddress()
   const { connectWallet: openConnectModal } = usePrivy()
   const [edit, setEdit] = useState(false)
+  const { breakdown: lockedMooneyBreakdown } = useTotalLockedMooney(address)
+  const { totalVMOONEY } = useTotalVMOONEY(address, lockedMooneyBreakdown)
 
   useEffect(() => {
     if (votes && address) {
@@ -37,12 +40,12 @@ export default function NewVoteButton({
   }, [address, votes])
 
   let buttonLabel = 'Vote'
-  if (snapshotProposal === undefined) {
+  if (proposalStatus === undefined) {
     buttonLabel = 'Loading'
   }
-  if (snapshotProposal?.state == 'temp-check') {
-    buttonLabel = 'Temp Check'
-  } else if (snapshotProposal?.state !== 'temp-check-passed') {
+  if (proposalStatus == 'Temperature Check') {
+    buttonLabel = proposalStatus
+  } else if (proposalStatus !== 'Voting') {
     buttonLabel = 'Voting Closed'
   } else if (address) {
     if (edit) {
@@ -53,6 +56,7 @@ export default function NewVoteButton({
   } else {
     buttonLabel = 'Connect Wallet'
   }
+  console.log('new vote button')
 
   return (
     <div className={isSmall ? '' : 'my-4'}>
@@ -70,7 +74,7 @@ export default function NewVoteButton({
             openConnectModal?.()
           }
         }}
-        disabled={snapshotProposal?.state !== 'temp-check-passed'}
+        disabled={proposalStatus !== 'Voting'}
       >
         <span>{buttonLabel}</span>
       </button>
@@ -82,9 +86,9 @@ export default function NewVoteButton({
           votes={votes}
           project={project}
           address={address}
-          proposal={snapshotProposal}
           spaceHideAbstain={true}
           refetch={refetch}
+          totalVMOONEY={totalVMOONEY}
         />
       )}
     </div>

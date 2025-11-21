@@ -23,6 +23,7 @@ import {
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
+import { getProposalStatus } from '@/lib/nance/useProposalStatus'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
@@ -229,7 +230,7 @@ export default function ProjectProfile({
                     <DropDownMenu project={project} proposalStatus={proposalStatus} />
                   </div>
                   <div>
-                    <MarkdownWithTOC body={proposal.body || ''} />
+                    <MarkdownWithTOC body={proposalJSON.body || ''} />
                   </div>
                 </div>
                 <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] flex flex-col h-fit">
@@ -239,7 +240,12 @@ export default function ProjectProfile({
                         <TempCheck mdp={project.MDP} />
                       ) : (
                         <>
-                          <ProposalVotes project={project} votes={votes} refetch={() => mutate()} />
+                          <ProposalVotes
+                            project={project}
+                            votes={votes}
+                            proposalStatus={proposalStatus}
+                            refetch={() => mutate()}
+                          />
                           {/*FIXME run on cron */}
                           <button onClick={tallyVotes}>Tally votes</button>
                         </>
@@ -375,20 +381,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     method: 'tempCheckApprovedTimestamp' as string,
     params: [mdp],
   })
-  let proposalStatus = ''
-  if (project.active == PROJECT_PENDING) {
-    if (tempCheckApproved) {
-      proposalStatus = 'Voting'
-    } else if (tempCheckFailed) {
-      proposalStatus = 'Cancelled'
-    } else {
-      proposalStatus = 'Temperature Check'
-    }
-  } else if (project.active == PROJECT_ACTIVE) {
-    proposalStatus = 'Approved'
-  } else {
-    proposalStatus = 'Archived'
-  }
+  const proposalStatus = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
   const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
   const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
   const voteAddresses = votes.map((pv) => pv.address)

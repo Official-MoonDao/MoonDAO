@@ -140,7 +140,7 @@ export const PROJECT_CREATOR_ADDRESSES: Index = {
 
 export const SENATORS_ADDRESSES: Index = {
   //arbitrum: '...',
-  sepolia: 0x919708b87902c1b965fdf0698fe8ed39cf3c5292,
+  sepolia: '0x919708b87902c1b965fdf0698fe8ed39cf3c5292',
 }
 
 export const PROPOSALS_ADDRESSES: Index = {

@@ -14,7 +14,6 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { normalizeJsonString } from '@/lib/utils/rewards'
 import NumberStepper from '../layout/NumberStepper'
 import StandardButton from '../layout/StandardButton'
-import TempCheck from '@/components/project/TempCheck'
 
 type ProjectCardProps = {
   project: Project | undefined
@@ -262,7 +261,6 @@ export default function ProjectCard({
           userContributed={userContributed}
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}
-          proposalJSON={proposalJSON}
           userHasVotingPower={userHasVotingPower}
           isMembershipDataLoading={isMembershipDataLoading}
           isVotingPeriod={isVotingPeriod}
@@ -272,7 +270,6 @@ export default function ProjectCard({
         <Link href={`/project/${project?.id}`} passHref>
           <ProjectCardContent
             project={project}
-            proposalJSON={proposalJSON}
             userHasVotingPower={userHasVotingPower}
             isVotingPeriod={isVotingPeriod}
             active={active}

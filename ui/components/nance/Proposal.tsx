@@ -1,5 +1,4 @@
 import { ChevronRightIcon } from '@heroicons/react/24/outline'
-import { ProposalsPacket } from '@nance/nance-sdk'
 import { formatDistanceStrict } from 'date-fns'
 import { SnapshotGraphqlProposalVotingInfo } from '@/lib/snapshot'
 import ProposalInfo from './ProposalInfo'

@@ -83,14 +83,10 @@ export default function ColorBar({
   backgroundColor,
 }: ColorBarProps) {
   const totalScore = greenScore + redScore
-  const hasPass =
-    totalScore >= threshold && greenScore / totalScore >= approvalPercent
+  const hasPass = totalScore >= threshold && greenScore / totalScore >= approvalPercent
   const shouldDisplayVerticalLine =
     totalScore >= threshold && greenScore / totalScore < approvalPercent
-  const colorWidth = Math.min(
-    TOTAL_WIDTH,
-    Math.round((totalScore / threshold) * TOTAL_WIDTH)
-  )
+  const colorWidth = Math.min(TOTAL_WIDTH, Math.round((totalScore / threshold) * TOTAL_WIDTH))
   const grayWidth = TOTAL_WIDTH - colorWidth
 
   const greenWidth = Math.round((greenScore / totalScore) * colorWidth)
@@ -98,14 +94,14 @@ export default function ColorBar({
 
   const renderBar = () => (
     <>
-      <div className={`flex h-3 w-full min-w-[5rem] flex-row rounded-full ${backgroundColor || 'bg-gray-200 dark:bg-gray-700'}`}>
+      <div
+        className={`flex h-3 w-full min-w-[14rem] flex-row rounded-full ${backgroundColor || 'bg-gray-200 dark:bg-gray-700'}`}
+      >
         <ColorDiv color="green" width={greenWidth} />
         <ColorDiv color="red" width={redWidth} />
         <ColorDiv color="gray" width={grayWidth} />
       </div>
-      {shouldDisplayVerticalLine && (
-        <div className="relative z-10 -mt-3 h-3 w-8/12 border-r-2" />
-      )}
+      {shouldDisplayVerticalLine && <div className="relative z-10 -mt-3 h-3 w-8/12 border-r-2" />}
     </>
   )
 
@@ -115,23 +111,7 @@ export default function ColorBar({
 
   return (
     <div
-      data-tip={
-        <div className="flex flex-col">
-          <div>
-            {`${hasPass ? '✅' : '❌'}
-            For ${formatNumberUSStyle(greenScore)}
-            (${((greenScore / (greenScore + redScore)) * 100).toFixed()}%)`}
-          </div>
-          <div>
-            {`Against ${formatNumberUSStyle(redScore)}
-            (${((redScore / (greenScore + redScore)) * 100).toFixed()}%)`}
-          </div>
-          <div>
-            {`Total ${formatNumberUSStyle(totalScore)}
-            (${((totalScore / threshold) * 100).toFixed()}% of quorum)`}
-          </div>
-        </div>
-      }
+      data-tip={`${hasPass ? '✅' : '❌'} For ${((greenScore / (greenScore + redScore)) * 100).toFixed()}%, Against ${((redScore / (greenScore + redScore)) * 100).toFixed()}%`}
       className="tooltip"
     >
       {renderBar()}

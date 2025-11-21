@@ -1,4 +1,3 @@
-import { useProposal } from '@nance/nance-hooks'
 import { useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'

@@ -24,6 +24,9 @@ export default function TempCheck({ mdp }: TempCheckProps) {
   const { proposalData, isLoading, refetch } = useProposalData(proposalContract, mdp)
   const handleSubmit = (pass: boolean) => {
     return async () => {
+      if (!account) {
+        return
+      }
       const transaction = prepareContractCall({
         contract: proposalContract,
         method: 'voteTempCheck' as string,
