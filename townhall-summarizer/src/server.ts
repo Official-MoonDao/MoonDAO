@@ -175,26 +175,8 @@ app.post(
   }
 );
 
-// Legacy endpoint: Just extract audio URL (for backward compatibility)
-app.get("/", async (req: Request, res: Response) => {
-  const { videoId } = req.query;
-
-  if (!videoId || typeof videoId !== "string") {
-    return res.status(400).send("videoId parameter is required");
-  }
-
-  try {
-    const audioUrl = await extractAudioUrl(videoId);
-    res.setHeader("Content-Type", "text/plain");
-    res.send(audioUrl);
-  } catch (error) {
-    console.error("Error extracting audio:", error);
-    res
-      .status(500)
-      .send(
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
-  }
+app.get("/", (req: Request, res: Response) => {
+  res.status(200).json({ status: "running", service: "townhall-summarizer" });
 });
 
 // Health check endpoint
