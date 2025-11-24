@@ -61,7 +61,14 @@ export default function TeamTreasury({
       <section className="p-6">
         <div className="w-full flex flex-col gap-5">
           <div className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
-            <div className="flex gap-5">
+            <div
+              className="flex gap-5"
+              onClick={() => {
+                toast.promise(navigator.clipboard.writeText(multisigAddress), {
+                  success: 'Copied!',
+                })
+              }}
+            >
               <Image
                 src={'/assets/icon-treasury.svg'}
                 alt="Treasury icon"
