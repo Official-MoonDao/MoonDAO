@@ -6,6 +6,10 @@ A Google Cloud Run service that handles the complete townhall processing pipelin
 3. Summarizes transcripts using OpenAI GPT-4
 4. Creates and sends ConvertKit email broadcasts
 
+## Credits
+
+This feature was inspired by [@wonderofme](https://github.com/wonderofme)'s original proposal and prototype repository ([Moondao-Weekly](https://github.com/wonderofme/Moondao-Weekly)). While the final implementation took a different direction, their work was instrumental in sparking this feature.
+
 ## Setup
 
 ### Configuration
