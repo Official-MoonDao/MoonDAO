@@ -179,6 +179,27 @@ app.get("/", (req: Request, res: Response) => {
   res.status(200).json({ status: "running", service: "townhall-summarizer" });
 });
 
+// Audio extraction endpoint
+app.get("/audio", async (req: Request, res: Response) => {
+  try {
+    const videoId = req.query.videoId as string;
+
+    if (!videoId) {
+      return res
+        .status(400)
+        .json({ error: "videoId query parameter is required" });
+    }
+
+    const audioUrl = await extractAudioUrl(videoId);
+    res.status(200).send(audioUrl);
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to extract audio",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
 // Health check endpoint
 app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "ok" });

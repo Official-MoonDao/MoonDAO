@@ -68,9 +68,9 @@ Processes a complete townhall: extracts audio, transcribes, summarizes, and send
 }
 ```
 
-**Legacy Audio Extraction Endpoint**: `GET /?videoId=<youtube-video-id>`
+**Audio Extraction Endpoint**: `GET /audio?videoId=<youtube-video-id>`
 
-Returns direct audio stream URL as plain text (for backward compatibility).
+Returns direct audio stream URL as plain text. Useful for extracting audio from YouTube videos without running the full pipeline.
 
 **Health Check**: `GET /health`
 
@@ -137,7 +137,7 @@ Returns `{ "status": "ok" }` if the service is running.
 
 7. **Test Audio Extraction Only**:
    ```bash
-   curl "http://localhost:8080/?videoId=dQw4w9WgXcQ"
+   curl "http://localhost:8080/audio?videoId=dQw4w9WgXcQ"
    ```
 
 ### Retroactive Processing
