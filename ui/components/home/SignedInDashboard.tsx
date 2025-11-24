@@ -798,6 +798,12 @@ export default function SingedInDashboard({
                   >
                     Subscribe
                   </StandardButton>
+                  <StandardButton
+                    className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
+                    link="/townhall"
+                  >
+                    Town Hall
+                  </StandardButton>
                 </div>
               </div>
 
