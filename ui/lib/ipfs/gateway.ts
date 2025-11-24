@@ -3,8 +3,8 @@ import { IPFS_GATEWAY } from 'const/config'
 export function getIPFSGateway(ipfsString: string) {
   if (!ipfsString) return ''
 
-  // Return local paths and blob URLs as-is
-  if (ipfsString.startsWith('/') || ipfsString.startsWith('blob:')) {
+  // Return blob URLs as-is
+  if (ipfsString.startsWith('blob:')) {
     return ipfsString
   }
 
@@ -18,7 +18,13 @@ export function getIPFSGateway(ipfsString: string) {
     return ipfsString
   }
 
-  // Process IPFS hashes
+  // Return known local asset paths as-is (e.g., /assets/, /images/, etc.)
+  const localAssetPaths = ['/assets/', '/images/', '/public/']
+  if (ipfsString.startsWith('/') && localAssetPaths.some((path) => ipfsString.startsWith(path))) {
+    return ipfsString
+  }
+
+  // Process IPFS hashes (including paths starting with / that aren't local assets)
   let hash = ipfsString.startsWith('ipfs://') ? ipfsString.split('ipfs://')[1] : ipfsString
   return `${IPFS_GATEWAY}${hash}`
 }
