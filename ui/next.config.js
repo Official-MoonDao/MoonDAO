@@ -41,6 +41,7 @@ module.exports = withTM(
         'gray-main-toad-36.mypinata.cloud',
         'tan-collective-smelt-690.mypinata.cloud',
         'safe-transaction-assets.safe.global',
+        'test.com',
       ],
     },
     output: 'standalone',
