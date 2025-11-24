@@ -70,6 +70,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     router.pathname === '/get-mooney' ||
     router.pathname === '/lock' ||
     router.pathname === '/dashboard'
+  router.pathname === '/bridge'
 
   const isHomepage = router.pathname === '/'
 
@@ -83,9 +84,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const layout = (
     <div
       id="app-layout"
-      className={`${
-        !lightMode ? 'dark background-dark' : 'background-light'
-      } min-h-screen`}
+      className={`${!lightMode ? 'dark background-dark' : 'background-light'} min-h-screen`}
     >
       <>
         {/* Mobile menu top bar - for screens smaller than xl */}
