@@ -49,7 +49,7 @@ import ExplainerIcon from '@/components/launchpad/ExplainerIcon'
 import FeatureIcon from '@/components/launchpad/FeatureIcon'
 import LaunchpadBenefit from '@/components/launchpad/LaunchpadBenefit'
 import LaunchpadFAQs from '@/components/launchpad/LaunchpadFAQs'
-import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import StandardButton from '@/components/layout/StandardButton'
 import VerticalProgressScrollBar from '@/components/layout/VerticalProgressScrollBar'
 import CreateMission from '@/components/mission/CreateMission'
@@ -956,14 +956,9 @@ export default function Launch({ missions, featuredMissionData }: any) {
         <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black/50 to-transparent"></div>
         <div className="absolute top-0 right-0 w-full h-32 bg-gradient-to-b from-black/50 to-transparent"></div>
       </section>
-      <ExpandedFooter
-        callToActionTitle="Join the Network"
-        callToActionBody="Be part of the space acceleration network and play a role in establishing a permanent human presence on the moon and beyond!"
-        callToActionImage="/assets/SAN-logo-dark.svg"
-        callToActionButtonText="Join the Network"
-        callToActionButtonLink="/join"
-        hasCallToAction={true}
-      />
+      <div className="flex justify-center w-full">
+        <NoticeFooter />
+      </div>
     </>
   )
 }
