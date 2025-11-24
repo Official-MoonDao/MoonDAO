@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  townhall-summarizer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - NODE_ENV=production
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ALLOWED_YOUTUBE_CHANNEL_ID=${ALLOWED_YOUTUBE_CHANNEL_ID}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+    restart: unless-stopped

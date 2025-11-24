@@ -7,7 +7,14 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
-    "test": "ts-node src/test.ts"
+    "test": "ts-node src/test.ts",
+    "retro": "ts-node src/retro.ts",
+    "get-channel-id": "ts-node src/utils/get-channel-id.ts",
+    "docker:up": "docker-compose up",
+    "docker:down": "docker-compose down",
+    "docker:build": "docker-compose build",
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "docker-compose restart"
   },
   "dependencies": {
     "express": "^4.18.2",

@@ -8,54 +8,6 @@ A Google Cloud Run service that handles the complete townhall processing pipelin
 
 ## Setup
 
-### Google Cloud Configuration
-
-1. **Enable Required APIs**:
-   ```bash
-   gcloud services enable cloudbuild.googleapis.com
-   gcloud services enable run.googleapis.com
-   gcloud services enable secretmanager.googleapis.com
-   ```
-
-2. **Set Project** (if not already set):
-   ```bash
-   gcloud config set project YOUR_PROJECT_ID
-   ```
-
-3. **Create Secret for OpenAI API Key**:
-   ```bash
-   echo -n "your-openai-api-key" | gcloud secrets create openai-api-key \
-     --data-file=- \
-     --replication-policy="automatic"
-   ```
-
-   Grant Cloud Run access to the secret:
-   ```bash
-   gcloud secrets add-iam-policy-binding openai-api-key \
-     --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
-     --role="roles/secretmanager.secretAccessor"
-   ```
-
-   Replace `PROJECT_NUMBER` with your project number (find it with `gcloud projects describe YOUR_PROJECT_ID --format="value(projectNumber)"`).
-
-### Deployment
-
-1. **Build and Deploy**:
-   ```bash
-   cd townhall-summarizer
-   gcloud builds submit --config cloudbuild.yaml
-   ```
-
-2. **Verify Deployment**:
-   ```bash
-   gcloud run services describe townhall-summarizer --region us-central1
-   ```
-
-3. **Get Service URL**:
-   ```bash
-   gcloud run services describe townhall-summarizer --region us-central1 --format 'value(status.url)'
-   ```
-
 ### Configuration
 
 The service URL will be in the format:
@@ -67,6 +19,7 @@ Set this URL as the `TOWNHALL_PROCESSING_SERVICE_URL` environment variable in Ve
 
 **Required Environment Variables (in Cloud Run):**
 - `OPENAI_API_KEY` - OpenAI API key for transcription and summarization
+- `ALLOWED_YOUTUBE_CHANNEL_ID` - YouTube channel ID to restrict processing to (e.g., for @officialmoondao). If not set, any channel is allowed.
 
 **Required Environment Variables (in Vercel):**
 - `TOWNHALL_PROCESSING_SERVICE_URL` - URL of this Cloud Run service
@@ -123,7 +76,7 @@ Returns `{ "status": "ok" }` if the service is running.
 
 1. **Install Dependencies**:
    ```bash
-   npm install
+   yarn install
    ```
 
 2. **Install yt-dlp** (required):
@@ -138,30 +91,37 @@ Returns `{ "status": "ok" }` if the service is running.
 3. **Set Environment Variables**:
    ```bash
    export OPENAI_API_KEY=your-openai-api-key
+   export ALLOWED_YOUTUBE_CHANNEL_ID=UC_xxxxx  # Optional: restrict to specific channel
    ```
+
+   To find the channel ID for a YouTube handle (e.g., @officialmoondao), you can:
+   - Use the helper script: `yarn get-channel-id @officialmoondao` (requires YOUTUBE_API_KEY)
+   - Or use an online tool like [this](https://commentpicker.com/youtube-channel-id.php)
+   
+   The channel ID is required to restrict processing to a specific channel. If not set, the service will process videos from any channel.
 
 4. **Build TypeScript**:
    ```bash
-   npm run build
+   yarn build
    ```
 
 5. **Run Locally** (production mode):
    ```bash
-   npm start
+   yarn start
    ```
 
    Or run in development mode (with ts-node):
    ```bash
-   npm run dev
+   yarn dev
    ```
 
 6. **Test the Full Pipeline** (without sending emails):
    ```bash
    # Test with a YouTube video ID
-   npm test dQw4w9WgXcQ
+   yarn test dQw4w9WgXcQ
    
    # Or specify a custom service URL
-   SERVICE_URL=http://localhost:8080 npm test dQw4w9WgXcQ
+   SERVICE_URL=http://localhost:8080 yarn test dQw4w9WgXcQ
    ```
 
    The test script will:
@@ -175,6 +135,72 @@ Returns `{ "status": "ok" }` if the service is running.
    ```bash
    curl "http://localhost:8080/?videoId=dQw4w9WgXcQ"
    ```
+
+### Retroactive Processing
+
+Process multiple historical townhall videos retroactively using the retro script.
+
+1. **Set Required Environment Variables**:
+   ```bash
+   export OPENAI_API_KEY=your-openai-api-key
+   export YOUTUBE_API_KEY=your-youtube-api-key
+   export CONVERT_KIT_API_KEY=your-convertkit-api-key
+   export TOWNHALL_CONVERTKIT_TAG_ID=your-tag-id
+   export ALLOWED_YOUTUBE_CHANNEL_ID=UC_xxxxx  # Optional: restrict to specific channel
+   ```
+
+2. **Run Retro Script**:
+   ```bash
+   yarn retro https://youtube.com/watch?v=VIDEO_ID_1 https://youtube.com/watch?v=VIDEO_ID_2
+   ```
+
+   The script will:
+   - Extract video IDs from URLs
+   - Check if videos are already processed (skips if broadcast exists)
+   - Get video metadata from YouTube
+   - Process each video: extract audio, transcribe, summarize, create ConvertKit broadcast
+   - Output results summary
+
+3. **Example**:
+   ```bash
+   yarn retro \
+     https://www.youtube.com/watch?v=dQw4w9WgXcQ \
+     https://youtu.be/abc123def45
+   ```
+
+The script automatically skips videos that have already been processed (checks for existing ConvertKit broadcasts).
+
+### Docker Compose
+
+Run the service using Docker Compose for containerized local development.
+
+1. **Set Environment Variables**:
+   ```bash
+   export OPENAI_API_KEY=your-openai-api-key
+   ```
+
+2. **Build and Start**:
+   ```bash
+   yarn docker:build
+   yarn docker:up
+   ```
+
+3. **View Logs**:
+   ```bash
+   yarn docker:logs
+   ```
+
+4. **Stop the Service**:
+   ```bash
+   yarn docker:down
+   ```
+
+5. **Restart the Service**:
+   ```bash
+   yarn docker:restart
+   ```
+
+The service will be available at `http://localhost:8080`.
 
 ### Error Handling
 - Missing `videoId` parameter: Returns 400

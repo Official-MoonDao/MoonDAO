@@ -1,12 +1,19 @@
 import express, { Request, Response } from "express";
-import { exec } from "child_process";
-import { promisify } from "util";
 import OpenAI from "openai";
+import {
+  extractAudioUrl,
+  transcribeAudio,
+  summarizeTranscript,
+  formatSummaryForConvertKit,
+} from "./utils/processing";
+import {
+  createConvertKitBroadcast,
+  ConvertKitBroadcast,
+} from "./utils/convertkit";
+import { getVideoMetadata, validateVideoChannel } from "./utils/youtube";
 
 const app = express();
 app.use(express.json());
-
-const execAsync = promisify(exec);
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -23,15 +30,6 @@ interface ProcessRequestBody {
   testMode?: boolean;
 }
 
-interface ConvertKitBroadcast {
-  id: string;
-  subject: string;
-  content: string;
-  public: boolean;
-  published_at?: string;
-  created_at: string;
-}
-
 interface ProcessResponse {
   success: boolean;
   videoId: string;
@@ -41,201 +39,6 @@ interface ProcessResponse {
   formattedSummary?: string;
   transcript?: string;
   testMode: boolean;
-}
-
-// Extract audio URL from YouTube video
-async function extractAudioUrl(videoId: string): Promise<string> {
-  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  console.log(`Extracting audio URL for video: ${videoId}`);
-
-  const { stdout } = await execAsync(
-    `yt-dlp -g -f "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio" "${videoUrl}"`
-  );
-
-  const audioUrl = stdout.trim().split("\n")[0];
-  if (!audioUrl) {
-    throw new Error("Failed to extract audio URL - empty response");
-  }
-
-  console.log(`Successfully extracted audio URL for video: ${videoId}`);
-  return audioUrl;
-}
-
-// Transcribe audio using OpenAI Whisper
-async function transcribeAudio(
-  audioUrl: string,
-  model: string = "whisper-1"
-): Promise<string> {
-  console.log("Fetching audio for transcription...");
-  const response = await fetch(audioUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch audio: ${response.statusText}`);
-  }
-
-  const audioBuffer = Buffer.from(await response.arrayBuffer());
-
-  // Create a File-like object for OpenAI SDK (Node.js 18+ has File global)
-  const audioFile = new File([audioBuffer], "audio.mp3", {
-    type: "audio/mpeg",
-  });
-
-  console.log("Transcribing audio with OpenAI Whisper...");
-  const transcription = await openai.audio.transcriptions.create({
-    file: audioFile,
-    model: model,
-    response_format: "text",
-  });
-
-  const transcript = transcription as string;
-  console.log(`Transcription complete (${transcript.length} characters)`);
-  return transcript;
-}
-
-// Summarize transcript using OpenAI
-function getTownHallSummaryPrompt(transcript: string): string {
-  return `You are summarizing a MoonDAO Town Hall meeting transcript. Please provide a comprehensive summary that includes:
-
-1. **Key Topics Discussed**: List the main topics and themes covered in the town hall.
-
-2. **Decisions Made**: Any decisions, votes, or resolutions that were reached during the meeting.
-
-3. **Action Items**: Specific action items for community members, including:
-   - Tasks assigned to individuals or teams
-   - Deadlines mentioned
-   - Next steps for the community
-
-4. **Important Updates**: Significant announcements, updates, or news shared during the meeting.
-
-5. **Next Steps**: What the community should expect or prepare for next.
-
-Format your response in clear, well-structured sections with headers. Use bullet points for lists. Make it easy to scan and understand.
-
-Transcript:
-${transcript}
-
-Please provide the summary now:`;
-}
-
-async function summarizeTranscript(
-  transcript: string,
-  model: string = "gpt-4"
-): Promise<string> {
-  console.log("Generating summary with OpenAI...");
-  const prompt = getTownHallSummaryPrompt(transcript);
-
-  const response = await openai.chat.completions.create({
-    model: model,
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a helpful assistant that summarizes Town Hall meetings for the MoonDAO community. Provide clear, structured summaries with actionable information.",
-      },
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
-    temperature: 0.7,
-    max_tokens: 2000,
-  });
-
-  const summary = response.choices[0]?.message?.content;
-  if (!summary) {
-    throw new Error("No summary generated from OpenAI");
-  }
-
-  console.log("Summary generated successfully");
-  return summary;
-}
-
-// Format summary for ConvertKit
-function formatSummaryForConvertKit(
-  summary: string,
-  videoTitle: string,
-  videoDate: string,
-  videoId?: string
-): string {
-  const formattedDate = new Date(videoDate).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  const videoIdComment = videoId ? `<!-- TOWNHALL_VIDEO_ID:${videoId} -->` : "";
-
-  return `
-${videoIdComment}
-<h1>Town Hall Summary - ${formattedDate}</h1>
-<h2>${videoTitle}</h2>
-
-${summary}
-
-<hr>
-
-<p><em>This summary was automatically generated from the Town Hall transcript. Watch the full video on <a href="https://youtube.com/@officialmoondao">YouTube</a>.</em></p>
-`;
-}
-
-// Create ConvertKit broadcast and send email
-async function createConvertKitBroadcast(
-  subject: string,
-  content: string,
-  tagId: string | undefined,
-  apiKey: string
-): Promise<ConvertKitBroadcast> {
-  console.log("Creating ConvertKit broadcast...");
-  const broadcastEndpoint = "https://api.convertkit.com/v4/broadcasts";
-
-  const body = {
-    subject: subject,
-    content: content,
-    public: true,
-    send_at: null, // null means send immediately
-  };
-
-  const response = await fetch(broadcastEndpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Kit-Api-Key": apiKey,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`ConvertKit API error: ${response.status} ${errorText}`);
-  }
-
-  const data = (await response.json()) as { broadcast: ConvertKitBroadcast };
-  const broadcast = data.broadcast;
-
-  if (tagId && broadcast?.id) {
-    await tagBroadcast(broadcast.id, tagId, apiKey);
-  }
-
-  console.log(`Broadcast created successfully: ${broadcast.id}`);
-  return broadcast;
-}
-
-async function tagBroadcast(
-  broadcastId: string,
-  tagId: string,
-  apiKey: string
-): Promise<void> {
-  const tagEndpoint = `https://api.convertkit.com/v4/broadcasts/${broadcastId}/tags`;
-
-  await fetch(tagEndpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Kit-Api-Key": apiKey,
-    },
-    body: JSON.stringify({
-      tag_id: tagId,
-    }),
-  });
 }
 
 app.post(
@@ -266,13 +69,40 @@ app.post(
           .json({ error: "convertKitApiKey is required" } as any);
       }
 
+      const allowedChannelId = process.env.ALLOWED_YOUTUBE_CHANNEL_ID;
+      if (allowedChannelId) {
+        const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+        if (!youtubeApiKey) {
+          return res.status(400).json({
+            error: "YOUTUBE_API_KEY is required for channel validation",
+          } as any);
+        }
+
+        const videoMetadata = await getVideoMetadata(videoId, youtubeApiKey);
+        if (!videoMetadata) {
+          return res.status(404).json({ error: "Video not found" } as any);
+        }
+
+        const isValidChannel = await validateVideoChannel(
+          videoMetadata,
+          allowedChannelId
+        );
+        if (!isValidChannel) {
+          return res.status(403).json({
+            error: "Video is not from the allowed YouTube channel",
+            channelId: videoMetadata.channelId,
+            channelTitle: videoMetadata.channelTitle,
+          } as any);
+        }
+      }
+
       console.log(`Starting full pipeline for video: ${videoId}`);
 
       // Step 1: Extract audio URL
       const audioUrl = await extractAudioUrl(videoId);
 
       // Step 2: Transcribe
-      const transcript = await transcribeAudio(audioUrl, whisperModel);
+      const transcript = await transcribeAudio(audioUrl, openai, whisperModel);
 
       if (!transcript || transcript.trim().length === 0) {
         return res
@@ -281,7 +111,11 @@ app.post(
       }
 
       // Step 3: Summarize
-      const summary = await summarizeTranscript(transcript, openaiModel);
+      const summary = await summarizeTranscript(
+        transcript,
+        openai,
+        openaiModel
+      );
 
       if (!summary) {
         return res
@@ -311,8 +145,8 @@ app.post(
         broadcast = await createConvertKitBroadcast(
           broadcastSubject,
           formattedSummary,
-          convertKitTagId,
-          convertKitApiKey!
+          convertKitApiKey!,
+          convertKitTagId
         );
         console.log(`Broadcast created successfully: ${broadcast.id}`);
       } else {
