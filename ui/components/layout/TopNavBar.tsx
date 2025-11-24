@@ -104,7 +104,7 @@ const TopNavBar = ({
 
           {/* Navigation Links - Show on large screens and up (1024px+) */}
           <div className="hidden lg:flex items-center space-x-1 xl:space-x-2 flex-1 justify-center max-w-[1024px] mx-auto">
-            {navigation.filter(item => item && item.name !== 'Join').map((item, i) => {
+            {navigation.map((item, i) => {
               if (!item) return null
               
               const isActive = 
