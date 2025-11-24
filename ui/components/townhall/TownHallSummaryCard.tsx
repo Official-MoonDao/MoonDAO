@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import { useState } from 'react'
 
 interface TownHallSummary {
   id: string
@@ -9,6 +9,7 @@ interface TownHallSummary {
   publishedAt: string
   url?: string
   createdAt: string
+  videoId?: string
 }
 
 interface TownHallSummaryCardProps {
@@ -24,10 +25,11 @@ export default function TownHallSummaryCard({ summary }: TownHallSummaryCardProp
     day: 'numeric',
   })
 
-  const previewContent = summary.content
-    .replace(/<[^>]*>/g, '')
-    .substring(0, 200)
-    .trim() + '...'
+  const previewContent =
+    summary.content
+      .replace(/<[^>]*>/g, '')
+      .substring(0, 200)
+      .trim() + '...'
 
   return (
     <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 rounded-2xl p-6 hover:border-slate-600/70 transition-all duration-200">
@@ -73,16 +75,19 @@ export default function TownHallSummaryCard({ summary }: TownHallSummaryCardProp
             </Link>
           )}
           <Link
-            href={`https://youtube.com/@officialmoondao`}
+            href={
+              summary.videoId
+                ? `https://youtube.com/watch?v=${summary.videoId}`
+                : `https://youtube.com/@officialmoondao`
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
           >
-            Watch on YouTube →
+            {summary.videoId ? 'Watch Video on YouTube →' : 'Watch on YouTube →'}
           </Link>
         </div>
       </div>
     </div>
   )
 }
-

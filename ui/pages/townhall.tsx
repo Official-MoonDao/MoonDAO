@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
-import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import TownHallSummaryCard from '../components/townhall/TownHallSummaryCard'
 import { LoadingSpinner } from '../components/layout/LoadingSpinner'
+import TownHallSummaryCard from '../components/townhall/TownHallSummaryCard'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 interface TownHallSummary {
   id: string
@@ -13,6 +13,7 @@ interface TownHallSummary {
   publishedAt: string
   url?: string
   createdAt: string
+  videoId?: string
 }
 
 export default function TownHall() {
@@ -53,10 +54,9 @@ export default function TownHall() {
             headerSize="max(20px, 3vw)"
             description={
               <>
-                Weekly summaries of our Town Hall meetings, automatically generated
-                from transcripts. Each summary includes key topics discussed,
-                decisions made, action items, and important updates for community
-                members.
+                Weekly summaries of our Town Hall meetings, automatically generated from
+                transcripts. Each summary includes key topics discussed, decisions made, action
+                items, and important updates for community members.
               </>
             }
             preFooter={
@@ -103,4 +103,3 @@ export default function TownHall() {
     </>
   )
 }
-

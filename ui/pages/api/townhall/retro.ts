@@ -1,14 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { extractVideoId, getVideoMetadata } from '../../../lib/townhall/youtube'
-import { transcribeYouTubeVideo, summarizeTranscript } from '../../../lib/townhall/openai'
-import { createTownHallBroadcast, findBroadcastByVideoId } from '../../../lib/townhall/convertkit'
-import { formatSummaryForConvertKit } from '../../../lib/townhall/prompts'
 import apiKeyMiddleware from '../../../lib/mongodb/models/middleware'
+import { findBroadcastByVideoId } from '../../../lib/townhall/convertkit'
+import { extractVideoId, getVideoMetadata } from '../../../lib/townhall/youtube'
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' })
   }
@@ -29,10 +24,17 @@ export default async function handler(
     const openaiModel = process.env.OPENAI_MODEL || 'gpt-4'
     const whisperModel = process.env.WHISPER_MODEL || 'whisper-1'
     const tagId = process.env.TOWNHALL_CONVERTKIT_TAG_ID
+    const processingServiceUrl = process.env.TOWNHALL_PROCESSING_SERVICE_URL
 
     if (!youtubeApiKey) {
       return res.status(500).json({
         message: 'Missing YOUTUBE_API_KEY environment variable',
+      })
+    }
+
+    if (!processingServiceUrl) {
+      return res.status(500).json({
+        message: 'Missing TOWNHALL_PROCESSING_SERVICE_URL environment variable',
       })
     }
 
@@ -73,63 +75,41 @@ export default async function handler(
           continue
         }
 
-        const transcript = await transcribeYouTubeVideo(videoId, whisperModel)
-        if (!transcript || transcript.trim().length === 0) {
+        // Call the Cloud Run service to handle the full pipeline
+        const processingResponse = await fetch(`${processingServiceUrl}/process`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            videoId: videoId,
+            videoTitle: videoMetadata.title,
+            videoDate: videoMetadata.publishedAt,
+            openaiModel: openaiModel,
+            whisperModel: whisperModel,
+            convertKitApiKey: process.env.CONVERT_KIT_API_KEY || process.env.CONVERT_KIT_V4_API_KEY,
+            convertKitTagId: tagId,
+          }),
+        })
+
+        if (!processingResponse.ok) {
+          const errorText = await processingResponse.text()
           results.push({
             videoUrl,
             videoId,
             success: false,
-            error: 'Empty transcript',
+            error: `Processing failed: ${errorText}`,
           })
           continue
         }
 
-        const summary = await summarizeTranscript(transcript, openaiModel)
-        if (!summary) {
-          results.push({
-            videoUrl,
-            videoId,
-            success: false,
-            error: 'Failed to generate summary',
-          })
-          continue
-        }
-
-        const formattedSummary = formatSummaryForConvertKit(
-          summary,
-          videoMetadata.title,
-          videoMetadata.publishedAt,
-          videoId
-        )
-
-        const broadcastSubject = `Town Hall Summary - ${new Date(videoMetadata.publishedAt).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })}`
-
-        const broadcast = await createTownHallBroadcast(
-          broadcastSubject,
-          formattedSummary,
-          tagId,
-          false
-        )
-
-        if (!broadcast) {
-          results.push({
-            videoUrl,
-            videoId,
-            success: false,
-            error: 'Failed to create ConvertKit broadcast',
-          })
-          continue
-        }
+        const result = await processingResponse.json()
 
         results.push({
           videoUrl,
           videoId,
           success: true,
-          broadcastId: broadcast.id,
+          broadcastId: result.broadcastId,
         })
       } catch (error) {
         results.push({
@@ -141,7 +121,7 @@ export default async function handler(
     }
 
     return res.status(200).json({
-      message: 'Retroactive processing completed',
+      message: 'Retroactive processing completed!',
       results,
       total: videoUrls.length,
       successful: results.filter((r) => r.success).length,
@@ -155,4 +135,3 @@ export default async function handler(
     })
   }
 }
-

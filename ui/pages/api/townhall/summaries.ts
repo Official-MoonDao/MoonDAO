@@ -1,7 +1,7 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
-import { getTownHallBroadcasts } from '../../../lib/townhall/convertkit'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
+import type { NextApiRequest, NextApiResponse } from 'next'
+import { getTownHallBroadcasts } from '../../../lib/townhall/convertkit'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -24,14 +24,27 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
       .slice(offset, offset + limit)
 
-    const summaries = filteredBroadcasts.map((broadcast) => ({
-      id: broadcast.id,
-      title: broadcast.subject,
-      content: broadcast.content,
-      publishedAt: broadcast.published_at || broadcast.created_at,
-      url: broadcast.public_url,
-      createdAt: broadcast.created_at,
-    }))
+    const summaries = filteredBroadcasts.map((broadcast) => {
+      // Extract video ID from broadcast content
+      // Format: <!-- TOWNHALL_VIDEO_ID:abc123 -->
+      let videoId: string | undefined
+      if (broadcast.content) {
+        const videoIdMatch = broadcast.content.match(/<!-- TOWNHALL_VIDEO_ID:([^>]+) -->/)
+        if (videoIdMatch && videoIdMatch[1]) {
+          videoId = videoIdMatch[1]
+        }
+      }
+
+      return {
+        id: broadcast.id,
+        title: broadcast.subject,
+        content: broadcast.content,
+        publishedAt: broadcast.published_at || broadcast.created_at,
+        url: broadcast.public_url,
+        createdAt: broadcast.created_at,
+        videoId: videoId,
+      }
+    })
 
     return res.status(200).json({
       summaries,
@@ -49,4 +62,3 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 }
 
 export default withMiddleware(handler, rateLimit)
-
