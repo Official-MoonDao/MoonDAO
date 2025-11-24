@@ -133,6 +133,7 @@ export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number)
       })
     )
     const values = results.map((r) => r.map((v: any) => parseInt(v.result)))
+    console.log('values', values)
 
     // Sum across chains
     const totals = values.reduce((accumulator, value) => {

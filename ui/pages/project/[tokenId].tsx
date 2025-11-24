@@ -249,11 +249,7 @@ export default function ProjectProfile({
                         </>
                       )
                     ) : (
-                      <VotingResults
-                        voteOutcome={voteOutcome}
-                        votes={votes}
-                        threshold={0}
-                      />
+                      <VotingResults voteOutcome={voteOutcome} votes={votes} threshold={0} />
                     )}
                   </div>
                 </div>
@@ -377,13 +373,27 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const proposalStatus = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
   const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
   const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
-  const voteAddresses = votes.map((pv) => pv.address)
+  const voteAddresses = [
+    '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89',
+    '0x679d87d8640e66778c3419d164998e720d7495f6',
+    '0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6',
+  ]
+  //const voteAddresses = votes.map((pv) => pv.address)
   const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
   console.log('voteAddresses', voteAddresses)
-  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)
+  const vMOONEYs = await fetchTotalVMOONEYs(
+    [
+      '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89',
+      '0x679d87d8640e66778c3419d164998e720d7495f6',
+      '0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6',
+    ],
+    1764016844
+  )
   const addressToQuadraticVotingPower = Object.fromEntries(
     voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
   )
+  console.log('addressToQuadraticVotingPower')
+  console.log(addressToQuadraticVotingPower)
   const SUM_TO_ONE_HUNDRED = 100
   const voteOutcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
 
