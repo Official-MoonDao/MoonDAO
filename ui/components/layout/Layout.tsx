@@ -68,7 +68,8 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     router.pathname === '/governance' ||
     router.pathname === '/projects-overview' ||
     router.pathname === '/get-mooney' ||
-    router.pathname === '/lock'
+    router.pathname === '/lock' ||
+    router.pathname === '/dashboard'
 
   const isHomepage = router.pathname === '/'
 
