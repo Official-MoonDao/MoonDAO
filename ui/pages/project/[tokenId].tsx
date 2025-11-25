@@ -377,18 +377,11 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89',
     '0x679d87d8640e66778c3419d164998e720d7495f6',
     '0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6',
+    '0xb2d3900807094d4fe47405871b0c8adb58e10d42',
   ]
   //const voteAddresses = votes.map((pv) => pv.address)
   const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
-  console.log('voteAddresses', voteAddresses)
-  const vMOONEYs = await fetchTotalVMOONEYs(
-    [
-      '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89',
-      '0x679d87d8640e66778c3419d164998e720d7495f6',
-      '0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6',
-    ],
-    1764016844
-  )
+  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, 1764016844)
   const addressToQuadraticVotingPower = Object.fromEntries(
     voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
   )
