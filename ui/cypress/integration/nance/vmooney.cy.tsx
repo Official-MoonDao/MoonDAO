@@ -7,6 +7,7 @@ describe('fetchTotalVMOONEYs', () => {
     ]
     const TIMESTAMP = 1764016844
     const vMOONEYs = await fetchTotalVMOONEYs(ADDRESSES, TIMESTAMP)
+
     expect(vMOONEYs[0]).to.equal(15065276.937865206)
     expect(vMOONEYs[1]).to.equal(13612548.02810334)
   })
