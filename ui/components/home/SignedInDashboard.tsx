@@ -720,6 +720,16 @@ export default function SingedInDashboard({
                     </div>
                   </div>
                 )}
+                
+                {/* Link to Treasury Page */}
+                <div className="pt-4">
+                  <Link
+                    href="/treasury"
+                    className="block w-full text-center py-3 px-4 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 hover:text-blue-200 rounded-lg transition-all duration-200 font-medium"
+                  >
+                    View Full Treasury Analytics →
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
