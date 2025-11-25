@@ -35,13 +35,18 @@ export default function StandardButton({
   styleOnly = false,
   type = 'button',
 }: StandardButtonProps) {
+  // Check if className already contains a gradient to avoid conflicts
+  const hasCustomGradient = className.includes('bg-gradient')
+  const effectiveBackgroundColor = hasCustomGradient ? '' : backgroundColor
+  const effectiveHoverColor = hasCustomGradient ? '' : hoverColor
+
   const buttonContent = (
     <button
       id={id}
       className={`
         px-4 py-2 font-medium transition-all duration-200 shadow-lg hover:shadow-xl
-        ${backgroundColor} 
-        ${hoverColor}
+        ${effectiveBackgroundColor} 
+        ${effectiveHoverColor}
         ${borderRadius} 
         ${textColor}
         ${className}
