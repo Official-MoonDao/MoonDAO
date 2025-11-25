@@ -1,7 +1,11 @@
 import express, { Request, Response } from "express";
 import OpenAI from "openai";
+import { exec } from "child_process";
+import { promisify } from "util";
+import { readFile, unlink } from "fs/promises";
+import { join } from "path";
+import { tmpdir } from "os";
 import {
-  extractAudioUrl,
   transcribeAudio,
   summarizeTranscript,
   formatSummaryForConvertKit,
@@ -11,6 +15,8 @@ import {
   ConvertKitBroadcast,
 } from "./utils/convertkit";
 import { getVideoMetadata, validateVideoChannel } from "./utils/youtube";
+
+const execAsync = promisify(exec);
 
 const app = express();
 app.use(express.json());
@@ -52,7 +58,7 @@ app.post(
         videoId,
         videoTitle,
         videoDate,
-        openaiModel = "gpt-4",
+        openaiModel = "gpt-4-turbo",
         whisperModel = "whisper-1",
         convertKitApiKey,
         convertKitTagId,
@@ -98,11 +104,8 @@ app.post(
 
       console.log(`Starting full pipeline for video: ${videoId}`);
 
-      // Step 1: Extract audio URL
-      const audioUrl = await extractAudioUrl(videoId);
-
-      // Step 2: Transcribe
-      const transcript = await transcribeAudio(audioUrl, openai, whisperModel);
+      // Step 1: Download and transcribe audio
+      const transcript = await transcribeAudio(videoId, openai, whisperModel);
 
       if (!transcript || transcript.trim().length === 0) {
         return res
@@ -181,18 +184,47 @@ app.get("/", (req: Request, res: Response) => {
 
 // Audio extraction endpoint
 app.get("/audio", async (req: Request, res: Response) => {
-  try {
-    const videoId = req.query.videoId as string;
+  const videoId = req.query.videoId as string;
 
-    if (!videoId) {
-      return res
-        .status(400)
-        .json({ error: "videoId query parameter is required" });
+  if (!videoId) {
+    return res
+      .status(400)
+      .json({ error: "videoId query parameter is required" });
+  }
+
+  const tempFile = join(tmpdir(), `audio-${videoId}-${Date.now()}.m4a`);
+
+  try {
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+    console.log(`Downloading audio for video: ${videoId}`);
+    await execAsync(
+      `yt-dlp -f "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio" -o "${tempFile}" --no-warnings "${videoUrl}"`
+    );
+
+    const audioBuffer = await readFile(tempFile);
+
+    // Clean up temp file
+    try {
+      await unlink(tempFile);
+    } catch (cleanupError) {
+      // Ignore cleanup errors
     }
 
-    const audioUrl = await extractAudioUrl(videoId);
-    res.status(200).send(audioUrl);
+    res.setHeader("Content-Type", "audio/m4a");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="audio-${videoId}.m4a"`
+    );
+    res.status(200).send(audioBuffer);
   } catch (error) {
+    // Clean up temp file on error
+    try {
+      await unlink(tempFile).catch(() => {});
+    } catch {
+      // Ignore cleanup errors
+    }
+
     return res.status(500).json({
       error: "Failed to extract audio",
       message: error instanceof Error ? error.message : "Unknown error",
