@@ -5,7 +5,9 @@ async function main() {
 
   if (!handle) {
     console.error("Usage: ts-node src/utils/get-channel-id.ts <@handle>");
-    console.error("Example: ts-node src/utils/get-channel-id.ts @officialmoondao");
+    console.error(
+      "Example: ts-node src/utils/get-channel-id.ts @officialmoondao"
+    );
     process.exit(1);
   }
 
@@ -26,10 +28,12 @@ async function main() {
       process.exit(1);
     }
   } catch (error) {
-    console.error("Error:", error instanceof Error ? error.message : "Unknown error");
+    console.error(
+      "Error:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
     process.exit(1);
   }
 }
 
 main();
-

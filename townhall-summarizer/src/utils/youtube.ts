@@ -98,7 +98,8 @@ export async function getVideoMetadata(
       duration: contentDetails?.duration || "",
       channelId: snippet.channelId || "",
       channelTitle: snippet.channelTitle || "",
-      liveBroadcastContent: snippet.liveBroadcastContent || status?.liveBroadcastContent,
+      liveBroadcastContent:
+        snippet.liveBroadcastContent || status?.liveBroadcastContent,
     };
   } catch (error) {
     console.error("Error fetching video metadata:", error);
@@ -120,24 +121,20 @@ export async function getChannelIdFromHandle(
   handle: string,
   apiKey: string
 ): Promise<string | null> {
-  try {
-    const channelHandle = handle.startsWith("@") ? handle.slice(1) : handle;
-    const url = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${channelHandle}&key=${apiKey}`;
+  const channelHandle = handle.startsWith("@") ? handle.slice(1) : handle;
+  const url = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${channelHandle}&key=${apiKey}`;
 
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`YouTube API error: ${response.status}`);
-    }
-
-    const data = (await response.json()) as YouTubeChannelResponse;
-    if (data.items && data.items.length > 0 && data.items[0].id) {
-      return data.items[0].id;
-    }
-
-    return null;
-  } catch (error) {
-    console.error("Error fetching channel ID from handle:", error);
-    return null;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`YouTube API error ${response.status}:`, errorText);
+    throw new Error(`YouTube API error: ${response.status} - ${errorText}`);
   }
-}
 
+  const data = (await response.json()) as YouTubeChannelResponse;
+  if (data.items && data.items.length > 0 && data.items[0].id) {
+    return data.items[0].id;
+  }
+
+  return null;
+}
