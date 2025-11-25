@@ -36,9 +36,31 @@ export default function StandardButton({
   type = 'button',
 }: StandardButtonProps) {
   // Check if className already contains a gradient to avoid conflicts
-  const hasCustomGradient = className.includes('bg-gradient')
-  const effectiveBackgroundColor = hasCustomGradient ? '' : backgroundColor
-  const effectiveHoverColor = hasCustomGradient ? '' : hoverColor
+  const hasCustomGradient = className.includes('bg-gradient') || className.includes('gradient-')
+
+  // Always keep fallback background, even when custom gradient is present
+  const effectiveBackgroundColor = backgroundColor
+  const effectiveHoverColor = hoverColor
+
+  // Determine if we should wrap in Link
+  const shouldWrapInLink = !styleOnly && link !== '#'
+
+  // This ensures backgrounds render even if CSS classes fail
+  const inlineStyle: React.CSSProperties = {}
+
+  // If custom gradient is detected, add fallback inline background
+  // This provides a safety net if the gradient class doesn't apply
+  if (hasCustomGradient) {
+    if (className.includes('gradient-2')) {
+      inlineStyle.background = 'linear-gradient(90deg, #425eeb 5%, #6d3f79 90%)'
+    } else if (className.includes('from-[#6C407D]')) {
+      inlineStyle.background = 'linear-gradient(to right, #6C407D, #5F4BA2, #4660E7)'
+    } else {
+      inlineStyle.background = 'linear-gradient(to right, #2563eb, #9333ea)'
+    }
+  } else {
+    inlineStyle.background = 'linear-gradient(to right, #2563eb, #9333ea)'
+  }
 
   const buttonContent = (
     <button
@@ -52,6 +74,7 @@ export default function StandardButton({
         ${className}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
       `}
+      style={inlineStyle}
       onClick={onClick || null}
       type={type as any}
       disabled={disabled}
@@ -60,9 +83,11 @@ export default function StandardButton({
     </button>
   )
 
-  return styleOnly ? (
-    buttonContent
-  ) : (
+  if (styleOnly || !shouldWrapInLink) {
+    return buttonContent
+  }
+
+  return (
     <Link href={link} target={target} rel="noopener noreferrer">
       {buttonContent}
     </Link>
