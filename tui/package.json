@@ -1,0 +1,42 @@
+{
+  "name": "moondao",
+  "version": "1.0.2",
+  "description": "MoonDAO Developer TUI - Terminal interface for MoonDAO developers",
+  "main": "dist/cli.js",
+  "bin": {
+    "moondao": "./dist/cli.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx src/cli.tsx",
+    "dev": "tsx src/cli.tsx",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "moondao",
+    "tui",
+    "cli",
+    "developer-tools"
+  ],
+  "author": "MoonDAO",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ink": "^4.4.1",
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.45",
+    "jimp": "^0.22.10",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}
