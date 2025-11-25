@@ -14,6 +14,9 @@
  *   OPENAI_API_KEY - Required for transcription and summarization
  */
 
+// @ts-ignore - undici types may not be available until package is installed
+import { Agent } from "undici";
+
 interface ProcessResponse {
   success: boolean;
   videoId: string;
@@ -36,15 +39,52 @@ if (!videoId) {
 
 const serviceUrl = process.env.SERVICE_URL || "http://localhost:8080";
 
+async function waitForService(maxAttempts = 30): Promise<void> {
+  console.log("⏳ Waiting for service to be ready...");
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const response = await fetch(`${serviceUrl}/health`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (response.ok) {
+        console.log("✅ Service is ready!\n");
+        return;
+      }
+    } catch (error) {
+      // Service not ready yet
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    process.stdout.write(".");
+  }
+  console.log("\n");
+  throw new Error("Service did not become ready in time");
+}
+
 async function testPipeline(): Promise<void> {
   console.log("🧪 Testing Townhall Processing Pipeline\n");
   console.log(`Service URL: ${serviceUrl}`);
   console.log(`Video ID: ${videoId}\n`);
 
   try {
+    await waitForService();
     console.log("📡 Calling /process endpoint with testMode=true...\n");
 
-    const response = await fetch(`${serviceUrl}/process`, {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1200000); // 20 minute timeout
+
+    // Configure fetch with longer timeout for long-running requests
+    // Node.js fetch uses undici which has default headers timeout of 30s
+    // We need to increase this for long-running operations
+    const dispatcher = new Agent({
+      connect: { timeout: 600000 }, // 10 minutes connection timeout
+      headersTimeout: 1200000, // 20 minutes headers timeout
+      bodyTimeout: 1200000, // 20 minutes body timeout
+    });
+
+    const fetchOptions: RequestInit = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -53,12 +93,19 @@ async function testPipeline(): Promise<void> {
         videoId: videoId,
         videoTitle: "Test Town Hall",
         videoDate: new Date().toISOString(),
-        openaiModel: process.env.OPENAI_MODEL || "gpt-4",
+        openaiModel: process.env.OPENAI_MODEL || "gpt-4-turbo",
         whisperModel: process.env.WHISPER_MODEL || "whisper-1",
         testMode: true,
         // convertKitApiKey and convertKitTagId not required in test mode
       }),
-    });
+      signal: controller.signal,
+      // @ts-ignore - undici dispatcher option
+      dispatcher: dispatcher,
+    };
+
+    const response = await fetch(`${serviceUrl}/process`, fetchOptions);
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();

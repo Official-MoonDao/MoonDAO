@@ -63,8 +63,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Call the Cloud Run service to handle the full pipeline
-    // This returns immediately, the service handles transcription, summarization, and email sending
-    const processingResponse = await fetch(`${processingServiceUrl}/process`, {
+    // Fire-and-forget: don't wait for response to avoid Vercel timeout limits
+    fetch(`${processingServiceUrl}/process`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -78,24 +78,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         convertKitApiKey: process.env.CONVERT_KIT_API_KEY || process.env.CONVERT_KIT_V4_API_KEY,
         convertKitTagId: tagId,
       }),
+    }).catch((error) => {
+      // Log errors but don't block the response
+      console.error('Error triggering processing service (non-blocking):', error)
     })
 
-    if (!processingResponse.ok) {
-      const errorText = await processingResponse.text()
-      console.error('Processing service error:', errorText)
-      return res.status(500).json({
-        message: 'Failed to process town hall',
-        error: errorText,
-      })
-    }
-
-    const result = await processingResponse.json()
-
-    return res.status(200).json({
+    return res.status(202).json({
       message: 'Town hall processing started successfully!',
       videoId: latestVideo.id,
-      broadcastId: result.broadcastId,
-      summary: result.summary,
+      note: 'Processing is running in the background. This may take 10-15 minutes for long videos.',
     })
   } catch (error) {
     console.error('Error processing town hall:', error)

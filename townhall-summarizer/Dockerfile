@@ -2,28 +2,30 @@ FROM node:18-slim
 
 WORKDIR /app
 
-# Install yt-dlp
+# Install Python, pip, yt-dlp, ffmpeg, and yarn
 RUN apt-get update && \
-    apt-get install -y yt-dlp && \
+    apt-get install -y python3 python3-pip ffmpeg && \
+    pip3 install --no-cache-dir --break-system-packages --upgrade yt-dlp && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    npm install -g yarn --force
 
 # Copy package files
-COPY package.json .
-COPY package-lock.json* .
+COPY package.json yarn.lock ./
 
-# Install all dependencies (including dev dependencies for TypeScript compilation)
-RUN npm ci
+# Install all dependencies
+RUN yarn install --frozen-lockfile
 
 # Copy TypeScript config and source files
 COPY tsconfig.json .
 COPY src ./src
 
 # Build TypeScript
-RUN npm run build
+RUN yarn build
 
-# Remove dev dependencies to reduce image size
-RUN npm prune --production
+# Remove dev dependencies to reduce image size (unless KEEP_DEV_DEPS is set)
+ARG KEEP_DEV_DEPS=false
+RUN if [ "$KEEP_DEV_DEPS" != "true" ]; then yarn install --production --frozen-lockfile; fi
 
 # Set environment variables
 ENV PORT=8080
@@ -32,5 +34,5 @@ ENV NODE_ENV=production
 # Expose port
 EXPOSE 8080
 
-CMD [ "npm", "start" ]
+CMD [ "yarn", "start" ]
 

@@ -206,6 +206,35 @@ Run the service using Docker Compose for containerized local development.
 
 The service will be available at `http://localhost:8080`.
 
+#### Testing with Docker
+
+Run the test script inside Docker containers:
+
+1. **Set Required Environment Variables**:
+   ```bash
+   export OPENAI_API_KEY=your-openai-api-key
+   ```
+   
+   **Optional (for channel validation)**:
+   ```bash
+   export YOUTUBE_API_KEY=your-youtube-api-key
+   export ALLOWED_YOUTUBE_CHANNEL_ID=UC_xxxxx
+   ```
+   
+   **Note**: If you set `ALLOWED_YOUTUBE_CHANNEL_ID`, you must also set `YOUTUBE_API_KEY` because channel validation requires the YouTube API.
+
+2. **Run the Test**:
+   ```bash
+   yarn docker:test VIDEO_ID
+   ```
+   
+   Example:
+   ```bash
+   yarn docker:test dQw4w9WgXcQ
+   ```
+
+**Note**: The `SERVICE_URL` is automatically set to `http://townhall-summarizer:8080` in the test container, so the test service connects to the main service running in Docker.
+
 ### Error Handling
 - Missing `videoId` parameter: Returns 400
 - Failed audio extraction: Returns 500 with error message
