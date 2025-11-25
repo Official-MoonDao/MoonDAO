@@ -58,9 +58,8 @@ export default function TeamTreasury({ isSigner, safeData, multisigAddress }: Te
             <div
               className="flex gap-5"
               onClick={() => {
-                toast.promise(navigator.clipboard.writeText(multisigAddress), {
-                  success: 'Copied!',
-                })
+                navigator.clipboard.writeText(multisigAddress)
+                toast.success('Address copied to clipboard.')
               }}
             >
               <Image
