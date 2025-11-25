@@ -112,9 +112,9 @@ describe('Main E2E Testing', () => {
         )
         expect(antarcticaLocations.length).to.be.lessThan(citizensData.length)
 
-        // Verify we have some valid coordinates
+        // Verify we have some valid coordinates (not Antarctica)
         const validLocations = citizensData.filter(
-          (location: any) => location.lat !== -90 && location.lng !== 0
+          (location: any) => !(location.lat === -90 && location.lng === 0)
         )
         expect(validLocations.length).to.be.greaterThan(0)
 

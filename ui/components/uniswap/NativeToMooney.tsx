@@ -87,7 +87,7 @@ export default function NativeToMooney({ selectedChain }: any) {
   }, [amount])
 
   return (
-    <div className="w-full max-w-2xl mt-6 px-4">
+    <div className="w-full max-w-2xl mx-auto mt-6 px-4">
       <div className="text-sm font-RobotoMono rounded-2xl animate-fadeIn p-4 md:p-6 flex flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white">
         {/* Header Section */}
         <div className="mb-6">

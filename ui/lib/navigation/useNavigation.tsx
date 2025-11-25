@@ -1,10 +1,7 @@
 import {
-  BuildingLibraryIcon,
-  BuildingStorefrontIcon,
   CircleStackIcon,
-  ClipboardDocumentListIcon,
-  DocumentIcon,
   FolderIcon,
+  HomeIcon,
   PlusIcon,
   RocketLaunchIcon,
   WrenchScrewdriverIcon,
@@ -15,45 +12,26 @@ import IconOrg from '@/components/assets/IconOrg'
 export default function useNavigation(citizen: any) {
   return useMemo(() => {
     return [
-      !citizen && {
-        name: 'Join',
-        href: '/join',
-        icon: PlusIcon,
+      {
+        name: citizen ? 'Dashboard' : 'Join',
+        href: citizen ? '/' : '/join',
+        icon: citizen ? HomeIcon : PlusIcon,
       },
       {
-        name: 'Network',
+        name: 'Citizenship',
         href: '/network',
         icon: IconOrg,
         children: [
-          { name: 'Join Network', href: '/join' },
-          { name: 'Explore Network', href: '/network' },
+          { name: 'Become a Citizen', href: '/citizen' },
           { name: 'Create a Team', href: '/team' },
-          {
-            name: 'Submit Contribution',
-            href: '/contributions',
-          },
+          { name: 'Explore Citizens', href: '/network' },
           {
             name: 'Jobs',
             href: '/jobs',
           },
-        ],
-      },
-      {
-        name: 'Govern',
-        icon: BuildingLibraryIcon,
-        href: '/governance',
-        children: [
           {
-            name: 'Governance Overview',
-            href: '/governance',
-          },
-          {
-            name: 'Proposals',
-            href: '/vote',
-          },
-          {
-            name: 'Constitution',
-            href: '/constitution',
+            name: 'Marketplace',
+            href: '/marketplace',
           },
         ],
       },
@@ -63,29 +41,33 @@ export default function useNavigation(citizen: any) {
         href: '/mooney',
         children: [
           {
-            name: 'Buy',
-            href: '/mooney',
+            name: 'Get $MOONEY',
+            href: '/get-mooney',
           },
-          { name: 'Lock', href: '/lock' },
-          { name: 'Bridge', href: '/bridge' },
+          { name: 'Lock $MOONEY', href: '/lock' },
+          { name: 'Bridge $MOONEY', href: '/bridge' },
         ],
       },
       {
         name: 'Projects',
         icon: WrenchScrewdriverIcon,
-        href: '/projects-overview',
+        href: '/projects',
         children: [
-          {
-            name: 'Projects Overview',
-            href: '/projects-overview',
-          },
-          {
-            name: 'Project Rewards',
-            href: '/projects',
-          },
           {
             name: 'Propose Project',
             href: '/proposals',
+          },
+          {
+            name: 'Projects',
+            href: '/projects',
+          },
+          {
+            name: 'Proposals',
+            href: '/vote',
+          },
+          {
+            name: 'Submit Contribution',
+            href: '/contributions',
           },
         ],
       },
@@ -99,13 +81,11 @@ export default function useNavigation(citizen: any) {
           { name: 'Events', href: '/events' },
           { name: 'Analytics', href: '/analytics' },
           { name: 'Resources', href: '/resources' },
+          { name: 'Constitution', href: '/constitution' },
+          { name: 'Token Overview', href: '/mooney' },
+          { name: 'Governance Overview', href: '/governance' },
+          { name: 'Projects Overview', href: '/projects-overview' },
         ],
-      },
-      {
-        name: 'Marketplace',
-
-        icon: BuildingStorefrontIcon,
-        href: '/marketplace',
       },
       {
         name: 'Launchpad',

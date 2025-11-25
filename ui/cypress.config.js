@@ -130,6 +130,9 @@ module.exports = defineConfig({
   },
   component: {
     setupNodeEvents(on, config) {
+      // Set environment variable to disable code splitting in Next.js config
+      process.env.CYPRESS_COMPONENT_TEST = 'true'
+
       config.env = {
         ...config.env,
         ...process.env,
@@ -160,10 +163,31 @@ module.exports = defineConfig({
     devServer: {
       framework: 'next',
       bundler: 'webpack',
-      webpackConfig: {
-        devServer: {
-          port: 3001,
-        },
+      webpackConfig: (webpackConfig) => {
+        // Disable code splitting to prevent ChunkLoadError in Cypress component tests
+        // This is a known issue where webpack chunks aren't served correctly by Cypress
+        if (!webpackConfig) {
+          return {}
+        }
+
+        // Ensure optimization exists
+        webpackConfig.optimization = webpackConfig.optimization || {}
+
+        // Completely disable code splitting by removing splitChunks
+        // This forces webpack to bundle everything into a single chunk
+        delete webpackConfig.optimization.splitChunks
+
+        // Disable runtime chunk
+        webpackConfig.optimization.runtimeChunk = false
+
+        // Ensure no chunkFilename is set in output
+        if (webpackConfig.output) {
+          delete webpackConfig.output.chunkFilename
+        } else {
+          webpackConfig.output = {}
+        }
+
+        return webpackConfig
       },
     },
     supportFile: 'cypress/support/component.ts',

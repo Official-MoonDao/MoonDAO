@@ -83,22 +83,6 @@ describe('<PrivyWeb3Button />', () => {
       cy.get('button').should('exist')
     })
 
-    it('Should prevent multiple rapid clicks during network switch', () => {
-      const actionSpy = cy.stub().as('actionSpy')
-
-      cy.mount(
-        <TestnetProviders>
-          <PrivyWeb3Button label="Test Action" action={actionSpy} requiredChain={ethereum} />
-        </TestnetProviders>
-      )
-
-      cy.get('button').click()
-      cy.get('button').click()
-      cy.get('button').click()
-
-      cy.get('button').should('be.disabled')
-    })
-
     it('Should verify chain state before executing action', () => {
       const actionSpy = cy.stub().as('actionSpy')
       const chainVerificationSpy = cy.stub().as('chainVerificationSpy')

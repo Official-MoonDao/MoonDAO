@@ -21,6 +21,7 @@ import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
+  FEATURED_MISSION,
   HATS_ADDRESS,
   JBV5_CONTROLLER_ADDRESS,
   JBV5_DIRECTORY_ADDRESS,
@@ -431,6 +432,7 @@ export default function SignedInDashboard({
         </div>
 
         {/* Launchpad Feature - Featured Mission */}
+        {FEATURED_MISSION && (
         <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 sm:p-6 lg:p-8 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="min-w-0 flex-1">
@@ -661,6 +663,7 @@ export default function SignedInDashboard({
             )}
           </div>
         </div>
+        )}
 
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">

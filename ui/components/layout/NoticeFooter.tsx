@@ -28,6 +28,7 @@ type NoticeFooterProps = {
   darkBackground?: boolean
   citizenNotice?: boolean
   disclaimerOnly?: boolean
+  isFullwidth?: boolean
 }
 
 export function NoticeFooter({
@@ -53,6 +54,7 @@ export function NoticeFooter({
   darkBackground = true,
   citizenNotice = false,
   disclaimerOnly = false,
+  isFullwidth = false,
 }: NoticeFooterProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const isCitizen = useCitizen(selectedChain)
@@ -112,7 +114,7 @@ export function NoticeFooter({
       callToActionButtonLink={notice.buttonLink}
       hasCallToAction={true}
       darkBackground={darkBackground}
-      isFullwidth={false}
+      isFullwidth={isFullwidth}
       disclaimerOnly={disclaimerOnly}
     />
   )

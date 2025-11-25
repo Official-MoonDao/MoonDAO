@@ -1,12 +1,14 @@
 import MissionTableABI from 'const/abis/MissionTable.json'
 import { DEFAULT_CHAIN_V5, MISSION_TABLE_ADDRESSES } from 'const/config'
 import { MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL } from 'const/config'
-import { readContract } from 'thirdweb'
+import { readContract, getContract } from 'thirdweb'
 import { createClient } from 'urql'
 import { cacheExchange, fetchExchange } from 'urql'
 import queryTable from '../tableland/queryTable'
 import { getChainSlug } from '../thirdweb/chain'
 import { serverClient } from '../thirdweb/client'
+
+export { formatContributionOutput } from '../utils/numbers'
 
 const subgraphClient = createClient({
   url: MOONDAO_MISSIONS_PAYMENT_TERMINAL_SUBGRAPH_URL,
@@ -56,7 +58,8 @@ export async function getBackers(projectId: any, missionId?: any) {
     const missionTableContract = getContract({
       client: serverClient,
       address: MISSION_TABLE_ADDRESSES[chainSlug],
-      abi: MissionTableABI,
+      abi: MissionTableABI as any,
+      chain,
     })
     const missionTableName = await readContract({
       contract: missionTableContract,
@@ -118,20 +121,4 @@ export async function getBackers(projectId: any, missionId?: any) {
     console.error('Failed to fetch backers:', error)
     throw new Error('Failed to fetch subgraph data')
   }
-}
-
-export function formatContributionOutput(output: number) {
-  if (!Number.isFinite(output) || output <= 0) return 0
-
-  if (output >= 1) {
-    return Math.floor(output).toLocaleString()
-  }
-  if (output < 0.01) {
-    return (Math.floor(output * 1000) / 1000).toFixed(3).toString()
-  }
-  if (output < 0.1) {
-    return (Math.floor(output * 100) / 100).toFixed(2).toString()
-  }
-
-  return (Math.floor(output * 10) / 10).toFixed(1).toString()
 }
