@@ -1,5 +1,6 @@
 import { COIN_ICONS } from 'const/icons'
 import Image from 'next/image'
+import toast from 'react-hot-toast'
 import { useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSafeBalances } from '@/lib/nance/SafeHooks'
@@ -17,11 +18,7 @@ type TeamTreasuryProps = {
   safeOwners: string[]
 }
 
-export default function TeamTreasury({
-  isSigner,
-  safeData,
-  multisigAddress,
-}: TeamTreasuryProps) {
+export default function TeamTreasury({ isSigner, safeData, multisigAddress }: TeamTreasuryProps) {
   const account = useActiveAccount()
   const address = account?.address
   const [safeModalEnabled, setSafeModalEnabled] = useState(false)
@@ -46,10 +43,7 @@ export default function TeamTreasury({
         />
       )}
       {safeReceiveModalEnabled && isSigner && (
-        <SafeReceiveModal
-          safeAddress={multisigAddress}
-          setEnabled={setSafeReceiveModalEnabled}
-        />
+        <SafeReceiveModal safeAddress={multisigAddress} setEnabled={setSafeReceiveModalEnabled} />
       )}
       {safeSendModalEnabled && isSigner && (
         <SafeSendModal
@@ -61,7 +55,14 @@ export default function TeamTreasury({
       <section className="p-6">
         <div className="w-full flex flex-col gap-5">
           <div className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
-            <div className="flex gap-5">
+            <div
+              className="flex gap-5"
+              onClick={() => {
+                toast.promise(navigator.clipboard.writeText(multisigAddress), {
+                  success: 'Copied!',
+                })
+              }}
+            >
               <Image
                 src={'/assets/icon-treasury.svg'}
                 alt="Treasury icon"
@@ -69,7 +70,11 @@ export default function TeamTreasury({
                 height={30}
                 className="opacity-70"
               />
-              <h2 className="font-GoodTimes text-2xl text-white">Treasury</h2>
+              <h2 className="font-GoodTimes text-2xl text-white">
+                Treasury
+                {multisigAddress &&
+                  ` ${multisigAddress.slice(0, 6)}...${multisigAddress.slice(-4)}`}
+              </h2>
             </div>
             {safeData && isSigner && (
               <div className="flex flex-col sm:flex-row gap-3">
@@ -100,10 +105,7 @@ export default function TeamTreasury({
               </div>
             )}
           </div>
-          <SafeBalances
-            safeBalances={safeBalances}
-            isLoading={isLoadingBalances}
-          />
+          <SafeBalances safeBalances={safeBalances} isLoading={isLoadingBalances} />
 
           {isSigner && safeData && (
             <div className="mt-4 pt-4 border-t border-slate-600/30">
