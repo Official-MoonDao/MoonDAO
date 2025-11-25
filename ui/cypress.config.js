@@ -179,6 +179,7 @@ module.exports = defineConfig({
 
         // Disable runtime chunk
         webpackConfig.optimization.runtimeChunk = false
+        webpackConfig.devServer.port = 3001
 
         // Ensure no chunkFilename is set in output
         if (webpackConfig.output) {
