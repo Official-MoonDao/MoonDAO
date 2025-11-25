@@ -17,7 +17,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
-import CitizenTier from '@/components/onboarding/CitizenTier'
+import StandardButton from '@/components/layout/StandardButton'
 import JobsABI from '../const/abis/JobBoardTable.json'
 import TeamABI from '../const/abis/Team.json'
 
@@ -55,7 +55,10 @@ export default function Jobs({ jobs }: JobsProps) {
 
   const descriptionSection = (
     <div className="pt-2">
-      <div className="w-fit max-w-[500px] bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 px-3 py-1">
+      <p className="text-slate-400 mb-4">
+        Explore opportunities with teams building the future of space exploration
+      </p>
+      <div className="w-fit max-w-[500px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-1">
         <Search
           input={input}
           setInput={setInput}
@@ -86,30 +89,57 @@ export default function Jobs({ jobs }: JobsProps) {
           popOverEffect={false}
           isProfile
         >
-          {citizen ? (
-            filteredJobs?.[0] ? (
-              <CardGridContainer>
-                {filteredJobs.map((job: JobType, i: number) => (
-                  <Job key={`job-${i}`} job={job} showTeam teamContract={teamContract} />
-                ))}
-              </CardGridContainer>
-            ) : (
-              <div className="mt-4 w-full h-[400px] flex justify-center items-center">
-                <p className="">No jobs found.</p>
+          <div className="relative">
+            {/* Blur overlay for non-citizens */}
+            {!citizen && (
+              <div className="absolute inset-0 z-10 bg-slate-900/40 backdrop-blur-[20px] rounded-2xl flex items-center justify-center">
+                <div className="text-center px-6 relative z-20">
+                  <div className="w-20 h-20 bg-blue-600/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg
+                      className="w-10 h-10 text-blue-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-GoodTimes text-white mb-4 drop-shadow-lg">Citizens Only</h3>
+                  <p className="text-slate-300 mb-6 max-w-md mx-auto drop-shadow-md">
+                    Become a MoonDAO Citizen to access the jobs board and connect with teams building the future of space exploration.
+                  </p>
+                  <StandardButton
+                    className="gradient-2 hover:opacity-90 transition-opacity"
+                    textColor="text-white"
+                    borderRadius="rounded-xl"
+                    hoverEffect={false}
+                    link="/citizen"
+                  >
+                    Become a Citizen
+                  </StandardButton>
+                </div>
               </div>
-            )
-          ) : (
-            <div className="md:mb-[5vw] 2xl:mb-[2vw]">
-              <p className="p-5 md:p-0">
-                {
-                  '⚠️ You must be a Citizen of the Space Acceleration Network to view the job board. If you are already a Citizen, please sign in.'
-                }
-              </p>
-              <Link href="/citizen" passHref>
-                <CitizenTier setSelectedTier={() => {}} compact />
-              </Link>
+            )}
+
+            <div className={citizen ? '' : 'pointer-events-none select-none'}>
+              {filteredJobs?.[0] ? (
+                <CardGridContainer>
+                  {filteredJobs.map((job: JobType, i: number) => (
+                    <Job key={`job-${i}`} job={job} showTeam teamContract={teamContract} />
+                  ))}
+                </CardGridContainer>
+              ) : (
+                <div className="mt-4 w-full h-[400px] flex justify-center items-center">
+                  <p className="">No jobs found.</p>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </ContentLayout>
       </Container>
     </section>
