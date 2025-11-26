@@ -79,7 +79,6 @@ export default function useNavigation(citizen: any) {
           { name: 'News', href: '/news' },
           { name: 'About', href: '/about' },
           { name: 'Events', href: '/events' },
-          { name: 'Analytics', href: '/analytics' },
           { name: 'Resources', href: '/resources' },
           { name: 'Constitution', href: '/constitution' },
           { name: 'Token Overview', href: '/mooney' },

@@ -112,10 +112,10 @@ const searchMappings = [
     category: 'Learn'
   },
   {
-    keywords: ['analytics', 'data', 'statistics', 'metrics', 'dashboard', 'stats', 'numbers', 'tracking', 'performance'],
-    title: 'Analytics Dashboard',
-    description: 'View MoonDAO metrics and analytics',
-    link: '/analytics',
+    keywords: ['analytics', 'treasury', 'data', 'statistics', 'metrics', 'dashboard', 'stats', 'numbers', 'tracking', 'performance', 'finances', 'funds'],
+    title: 'Treasury Dashboard',
+    description: 'View MoonDAO treasury metrics and analytics',
+    link: '/treasury',
     category: 'Learn'
   },
   {
