@@ -752,7 +752,7 @@ export default function SingedInDashboard({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <StandardButton
                   className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/governance"
+                  link="/proposals"
                 >
                   <CheckBadgeIcon className="w-4 h-4" />
                   Propose
@@ -766,7 +766,7 @@ export default function SingedInDashboard({
                 </StandardButton>
                 <StandardButton
                   className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/network"
+                  link="/team"
                 >
                   <UserGroupIcon className="w-4 h-4" />
                   Join Team
