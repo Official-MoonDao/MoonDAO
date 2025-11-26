@@ -128,25 +128,39 @@ export const CITIZEN_TABLE_NAMES: Index = {
 
 export const PROJECT_ADDRESSES: Index = {
   arbitrum: '0xCb31829B312923C7502766ef4f36948A7A64cD6A',
-  sepolia: '0x19124F594c3BbCb82078b157e526B278C8E9EfFc',
+  sepolia: '0xAf8A64BfeD40fF4129e624650B0C48F9036C0FE4',
   'arbitrum-sepolia': '0xDC35Dc4F7610678B0389157522734b79ea464101',
 }
 
 export const PROJECT_CREATOR_ADDRESSES: Index = {
   arbitrum: '0x2486149B23447c37932471eA6dF091267ebca953',
-  sepolia: '0xd1EfE13758b73F2Db9Ed19921eB756fbe4C26E2D',
+  sepolia: '0x421041750f6fe6Fb00968CC63d5ab7BfFDD35e96',
   'arbitrum-sepolia': '0xde26EcE3C1Ec58057348e3a7B28359c8cDfae56A',
+}
+
+export const SENATORS_ADDRESSES: Index = {
+  //arbitrum: '...',
+  sepolia: '0x919708b87902c1b965fdf0698fe8ed39cf3c5292',
+}
+
+export const PROPOSALS_ADDRESSES: Index = {
+  //arbitrum: '...',
+  sepolia: '0x2cb3090344De3D86010C8A974408BB65D6D5c9F1',
+}
+export const PROPOSALS_TABLE_NAMES: Index = {
+  //arbitrum: '...',
+  sepolia: 'Proposals_11155111_2032',
 }
 
 export const PROJECT_TABLE_ADDRESSES: Index = {
   arbitrum: '0x83755AF34867a3513ddCE921E9cAd28f0828CDdB',
-  sepolia: '0x17729AFF287d9873F5610c029A5Db814e428e97a',
+  sepolia: '0x784674bEa87F6A6D68970487a48E329F6fDc019E',
   'arbitrum-sepolia': '0x51a5cA8966cA71ac0A0D58DbeF2ec6a932e1490E',
 }
 
 export const PROJECT_TABLE_NAMES: Index = {
   arbitrum: 'PROJECT_42161_122',
-  sepolia: 'PROJECT_11155111_1888',
+  sepolia: 'PROJECT_11155111_2033',
   'arbitrum-sepolia': 'PROJECT_421614_1060',
 }
 

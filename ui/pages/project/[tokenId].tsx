@@ -1,8 +1,16 @@
 import Safe from '@safe-global/protocol-kit'
 import CitizenABI from 'const/abis/Citizen.json'
+import { DistributionVote } from '@/lib/tableland/types'
+import ProposalInfo from '@/components/nance/ProposalInfo'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
+import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
+import { runQuadraticVoting } from '@/lib/utils/rewards'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
+import VotingResults from '@/components/nance/VotingResults'
+import ProposalVotes from '@/components/nance/ProposalVotes'
+import ProposalsABI from 'const/abis/Proposals.json'
+import DropDownMenu from '@/components/nance/DropDownMenu'
 import {
   CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
@@ -10,10 +18,13 @@ import {
   PROJECT_ADDRESSES,
   PROJECT_CREATOR_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
+  PROPOSALS_ADDRESSES,
+  PROPOSALS_TABLE_NAMES,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
+import { getProposalStatus } from '@/lib/nance/useProposalStatus'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
@@ -41,17 +52,27 @@ import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
+import { PROJECT_PENDING, PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
+import TempCheck from '@/components/project/TempCheck'
 
 type ProjectProfileProps = {
   tokenId: string
   project: Project
   safeOwners: string[]
+  proposalJSON: any
+  votes: any[]
+  voteOutcome: any
+  proposalStatus: any
 }
 
 export default function ProjectProfile({
   tokenId,
   project,
   safeOwners,
+  proposalJSON,
+  votes,
+  voteOutcome,
+  proposalStatus,
 }: ProjectProfileProps) {
   const account = useActiveAccount()
   const address = account?.address
@@ -96,9 +117,7 @@ export default function ProjectProfile({
     managerHatId,
     isManager,
     isActive,
-    nanceProposal,
     finalReportMarkdown,
-    proposalJSON,
     totalBudget,
     MDP,
     isLoading: isLoadingProjectData,
@@ -114,6 +133,18 @@ export default function ProjectProfile({
   const toggleExpand = () => {
     setIsExpanded(!isExpanded)
   }
+  const tallyVotes = async () => {
+    const res = await fetch(`/api/proposals/vote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', // Important: Specify the content type
+      },
+      body: JSON.stringify({
+        mdp: project?.MDP,
+      }),
+    })
+    const resJson = await res.json()
+  }
 
   //Profile Header Section
   const ProfileHeader = (
@@ -128,10 +159,7 @@ export default function ProjectProfile({
         marginBottom="0px"
       >
         <div id="frame-content-container" className="w-full">
-          <div
-            id="frame-content"
-            className="w-full flex flex-col items-start justify-between"
-          >
+          <div id="frame-content" className="w-full flex flex-col items-start justify-between">
             <div
               id="profile-description-section"
               className="flex flex-col lg:flex-row items-start lg:items-center gap-4"
@@ -139,10 +167,7 @@ export default function ProjectProfile({
               <div id="team-name-container">
                 <div id="profile-container">
                   {project?.description ? (
-                    <p
-                      id="profile-description-container"
-                      className="mb-5 w-full lg:w-[80%]"
-                    >
+                    <p id="profile-description-container" className="mb-5 w-full lg:w-[80%]">
                       {project.description || ''}
                     </p>
                   ) : (
@@ -156,6 +181,7 @@ export default function ProjectProfile({
       </Frame>
     </div>
   )
+  const gridCols = votes ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2'
 
   return (
     <Container>
@@ -163,7 +189,17 @@ export default function ProjectProfile({
       <ContentLayout
         header={project.name}
         headerSize="max(20px, 3vw)"
-        description={ProfileHeader}
+        description={
+          <ProposalInfo
+            proposalJSON={proposalJSON}
+            proposalStatus={proposalStatus}
+            project={project}
+            linkDisabled
+            showTitle={false}
+            showStatus={true}
+          />
+          //'prop'
+        }
         mainPadding
         mode="compact"
         popOverEffect={false}
@@ -185,34 +221,43 @@ export default function ProjectProfile({
           className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]"
         >
           {/* Project Overview */}
-          <SectionCard
-            header="Proposal"
-            iconSrc="/assets/icon-star.svg"
-            action={
-              <Link
-                className="flex gap-2 items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm"
-                href={`/proposal/${MDP}`}
-                passHref
-              >
-                <Image
-                  src="/assets/report.png"
-                  alt="Report Icon"
-                  width={16}
-                  height={16}
-                />
-                <span>Review Original Proposal</span>
-              </Link>
-            }
-          >
-            <div className="prose prose-invert max-w-none">
-              <MarkdownWithTOC body={nanceProposal?.body || ''} />
+          <SectionCard header="Proposal" iconSrc="/assets/icon-star.svg">
+            <div className="mt-10 mb-10">
+              <div className={`grid ${gridCols} gap-8`}>
+                <div className="lg:col-span-2 relative">
+                  <div className="absolute top-2 right-[20px]">
+                    <DropDownMenu project={project} proposalStatus={proposalStatus} />
+                  </div>
+                  <div>
+                    <MarkdownWithTOC body={proposalJSON.body || ''} />
+                  </div>
+                </div>
+                <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] flex flex-col h-fit">
+                  <div className="px-[10px] p-5">
+                    {project.active == PROJECT_PENDING ? (
+                      proposalStatus === 'Temperature Check' ? (
+                        <TempCheck mdp={project.MDP} />
+                      ) : (
+                        <>
+                          <ProposalVotes
+                            project={project}
+                            votes={votes}
+                            proposalStatus={proposalStatus}
+                          />
+                          {/*FIXME run on cron */}
+                          <button onClick={tallyVotes}>Tally votes</button>
+                        </>
+                      )
+                    ) : (
+                      <VotingResults voteOutcome={voteOutcome} votes={votes} threshold={0} />
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </SectionCard>
           {finalReportMarkdown && (
-            <SectionCard
-              header="Final Report"
-              iconSrc="/assets/icon-star.svg"
-            >
+            <SectionCard header="Final Report" iconSrc="/assets/icon-star.svg">
               <div className="prose prose-invert max-w-none">
                 <MarkdownWithTOC body={finalReportMarkdown} />
               </div>
@@ -291,6 +336,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     method: 'getTableName' as string,
     params: [],
   })
+  const proposalContract = getContract({
+    client: serverClient,
+    address: PROPOSALS_ADDRESSES[chainSlug],
+    abi: ProposalsABI.abi as any,
+    chain: chain,
+  })
 
   const statement = `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`
 
@@ -302,6 +353,42 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       notFound: true,
     }
   }
+
+  const mdp = project.MDP
+  const tempCheckApproved = await readContract({
+    contract: proposalContract,
+    method: 'tempCheckApproved' as string,
+    params: [mdp],
+  })
+  const tempCheckFailed = await readContract({
+    contract: proposalContract,
+    method: 'tempCheckFailed' as string,
+    params: [mdp],
+  })
+  const tempCheckApprovedTimestamp = await readContract({
+    contract: proposalContract,
+    method: 'tempCheckApprovedTimestamp' as string,
+    params: [mdp],
+  })
+  const proposalStatus = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
+  const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
+  const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+  const voteAddresses = [
+    '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89',
+    '0x679d87d8640e66778c3419d164998e720d7495f6',
+    '0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6',
+    '0xb2d3900807094d4fe47405871b0c8adb58e10d42',
+  ]
+  //const voteAddresses = votes.map((pv) => pv.address)
+  const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
+  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, 1764016844)
+  const addressToQuadraticVotingPower = Object.fromEntries(
+    voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
+  )
+  console.log('addressToQuadraticVotingPower')
+  console.log(addressToQuadraticVotingPower)
+  const SUM_TO_ONE_HUNDRED = 100
+  const voteOutcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
 
   const projectContract = getContract({
     client: serverClient,
@@ -327,12 +414,18 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   })
 
   const safeOwners = await safe.getOwners()
+  const proposalResponse = await fetch(project.proposalIPFS)
+  const proposalJSON = await proposalResponse.json()
 
   return {
     props: {
       project,
       tokenId,
       safeOwners,
+      votes,
+      proposalStatus,
+      proposalJSON,
+      voteOutcome,
     },
   }
 }

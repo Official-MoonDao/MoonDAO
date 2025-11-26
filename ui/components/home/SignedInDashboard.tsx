@@ -10,6 +10,7 @@ import {
   BriefcaseIcon,
   TrophyIcon,
 } from '@heroicons/react/24/outline'
+import { BLOCKED_PROJECTS } from 'const/whitelist'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
@@ -62,6 +63,7 @@ import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
+import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import DashboardQuests from './DashboardQuests'
 import DashboardTeams from './DashboardTeams'
 
@@ -86,7 +88,7 @@ function countUniqueCountries(locations: any[]): number {
   }
 }
 
-export default function SingedInDashboard({
+export default function SignedInDashboard({
   newestCitizens,
   newestListings,
   newestJobs,
@@ -94,11 +96,31 @@ export default function SingedInDashboard({
   aumData,
   revenueData,
   filteredTeams,
-  currentProjects,
+  projects,
   missions,
   featuredMissionData,
   citizensLocationData = [],
 }: any) {
+  const proposals = []
+  const currentProjects = []
+  console.log('projects', projects)
+  for (let i = 0; i < projects.length; i++) {
+    if (!BLOCKED_PROJECTS.has(projects[i].id)) {
+      const activeStatus = projects[i].active
+      if (activeStatus == PROJECT_PENDING) {
+        proposals.push(projects[i])
+      } else if (activeStatus == PROJECT_ACTIVE) {
+        currentProjects.push(projects[i])
+      }
+    }
+  }
+  console.log('proposals', proposals)
+  currentProjects.sort((a, b) => {
+    if (a.eligible === b.eligible) {
+      return 0
+    }
+    return a.eligible ? 1 : -1
+  })
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
@@ -910,13 +932,13 @@ export default function SingedInDashboard({
                 <h3 className="text-xl font-bold text-white">Latest Proposals</h3>
                 <StandardButton
                   className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
-                  link="/governance"
+                  link="/projects"
                 >
                   View All
                 </StandardButton>
               </div>
 
-              <ProposalList noPagination compact proposalLimit={2} />
+              <ProposalList noPagination compact proposalLimit={2} projects={proposals} />
             </div>
           </div>
 
@@ -1175,12 +1197,12 @@ export default function SingedInDashboard({
                         </h4>
                         <span
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
-                            project.active
+                            project.active == PROJECT_ACTIVE
                               ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                               : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
                           }`}
                         >
-                          {project.active ? 'Active' : 'Inactive'}
+                          {project.active == PROJECT_ACTIVE ? 'Active' : 'Inactive'}
                         </span>
                       </div>
                       <p className="text-green-100 text-sm leading-relaxed flex-1 overflow-hidden">

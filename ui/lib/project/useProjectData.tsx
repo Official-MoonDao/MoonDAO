@@ -1,10 +1,8 @@
 //This hook fetches all project data based on a project tableland entry (not an NFT)
-import { useProposal } from '@nance/nance-hooks'
 import { useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import { NANCE_SPACE_NAME } from '../nance/constants'
-import useProposalJSON from '../nance/useProposalJSON'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
 
 export type Project = {
   MDP: number
@@ -34,14 +32,6 @@ export default function useProjectData(
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  const { data: nanceProposalResponse } = useProposal({
-    space: NANCE_SPACE_NAME,
-    uuid: String(project?.MDP) || '',
-  })
-  const nanceProposal = nanceProposalResponse?.data
-
-  const proposalJSON = useProposalJSON(nanceProposal?.body as string)
-
   const [isManager, setIsManager] = useState<boolean>(false)
   const [hatTreeId, setHatTreeId] = useState<any>()
 
@@ -49,24 +39,29 @@ export default function useProjectData(
   const [managerHatId, setManagerHatId] = useState<any>()
 
   const [finalReportMarkdown, setFinalReportMarkdown] = useState<string>()
+  const [totalBudget, setTotalBudget] = useState<number>()
+
+  useEffect(() => {
+    async function getProposalJSON() {
+      if (!project?.proposalIPFS) {
+        return
+      }
+      const proposalResponse = await fetch(project.proposalIPFS)
+      const proposal = await proposalResponse.json()
+      let budget = 0
+      if (proposal.budget) {
+        proposal.budget.forEach((item: any) => {
+          budget += item.token === 'ETH' ? Number(item.amount) : 0
+        })
+        setTotalBudget(budget)
+      }
+    }
+    if (project?.proposalIPFS) getProposalJSON()
+  }, [project?.proposalIPFS])
 
   const isActive = useMemo(() => {
-    return project?.active === 1
+    return project?.active === PROJECT_ACTIVE
   }, [project])
-
-  const totalBudget = useMemo(() => {
-    let budget = 0
-    if (nanceProposal?.actions && nanceProposal.actions.length > 0) {
-      nanceProposal.actions.forEach((action: any) => {
-        if (action.type === 'Request Budget') {
-          action.payload.budget.forEach(
-            (b: any) => (budget += b.token === 'ETH' ? Number(b.amount) : 0)
-          )
-        }
-      })
-    }
-    return budget
-  }, [nanceProposal])
 
   useEffect(() => {
     async function getFinalReportMarkdown() {
@@ -115,10 +110,8 @@ export default function useProjectData(
         }),
       ])
 
-      const adminHID =
-        results[0].status === 'fulfilled' ? results[0].value : null
-      const managerHID =
-        results[1].status === 'fulfilled' ? results[1].value : null
+      const adminHID = results[0].status === 'fulfilled' ? results[0].value : null
+      const managerHID = results[1].status === 'fulfilled' ? results[1].value : null
 
       setAdminHatId(adminHID)
       setManagerHatId(managerHID)
@@ -149,8 +142,6 @@ export default function useProjectData(
     hatTreeId,
     adminHatId,
     managerHatId,
-    nanceProposal,
-    proposalJSON,
     finalReportMarkdown,
     totalBudget,
     isLoading,

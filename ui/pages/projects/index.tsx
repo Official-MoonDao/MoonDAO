@@ -15,12 +15,11 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
-import {
-  ProjectRewards,
-  ProjectRewardsProps,
-} from '@/components/nance/ProjectRewards'
+import { ProjectRewards, ProjectRewardsProps } from '@/components/nance/ProjectRewards'
+import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
 
 export default function Projects({
+  proposals,
   currentProjects,
   pastProjects,
   distributions,
@@ -29,6 +28,7 @@ export default function Projects({
   useChainDefault()
   return (
     <ProjectRewards
+      proposals={proposals}
       currentProjects={currentProjects}
       pastProjects={pastProjects}
       distributions={distributions}
@@ -42,22 +42,23 @@ export async function getStaticProps() {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
-    const { quarter, year } = getRelativeQuarter(
-      isRewardsCycle(new Date()) ? -1 : 0
-    )
+    const { quarter, year } = getRelativeQuarter(isRewardsCycle(new Date()) ? -1 : 0)
 
     const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
     const projects = await queryTable(chain, projectStatement)
 
+    const proposals = []
     const currentProjects = []
     const pastProjects = []
     for (let i = 0; i < projects.length; i++) {
       if (!BLOCKED_PROJECTS.has(projects[i].id)) {
-        const current = projects[i].active
-        if (!current) {
-          pastProjects.push(projects[i])
-        } else {
+        const activeStatus = projects[i].active
+        if (activeStatus == PROJECT_PENDING) {
+          proposals.push(projects[i])
+        } else if (activeStatus == PROJECT_ACTIVE) {
           currentProjects.push(projects[i])
+        } else if (activeStatus == PROJECT_ENDED) {
+          pastProjects.push(projects[i])
         }
       }
     }
@@ -73,6 +74,7 @@ export async function getStaticProps() {
 
     return {
       props: {
+        proposals: proposals.reverse(),
         currentProjects: currentProjects.reverse(),
         pastProjects: pastProjects.reverse(),
         distributions,
@@ -83,6 +85,7 @@ export async function getStaticProps() {
     console.error('Error fetching projects or distributions:', error)
     return {
       props: {
+        proposals: [],
         currentProjects: [],
         pastProjects: [],
         distributions: [],
