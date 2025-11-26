@@ -1,8 +1,7 @@
-import { useEffect, useState, useMemo } from 'react'
-import { getContract, readContract, NFT } from 'thirdweb'
-import { useContext } from 'react'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import client from '@/lib/thirdweb/client'
+import CitizenABI from 'const/abis/Citizen.json'
+import CitizenTableABI from 'const/abis/CitizenTable.json'
+import TeamABI from 'const/abis/Team.json'
+import TeamTableABI from 'const/abis/TeamTable.json'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import {
   CITIZEN_TABLE_NAMES,
@@ -12,13 +11,15 @@ import {
   CITIZEN_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { useEffect, useState, useMemo } from 'react'
+import { useContext } from 'react'
+import { getContract, readContract } from 'thirdweb'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
-import CitizenTableABI from 'const/abis/CitizenTable.json'
-import TeamTableABI from 'const/abis/TeamTable.json'
-import CitizenABI from 'const/abis/Citizen.json'
-import TeamABI from 'const/abis/Team.json'
 import { citizenRowToNFT, teamRowToNFT } from '@/lib/tableland/convertRow'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import client from '@/lib/thirdweb/client'
+import { NetworkNFT, NetworkDataResult, UseNetworkDataOptions } from './types'
 import {
   buildSearchClause,
   buildPaginationClause,
@@ -27,7 +28,6 @@ import {
   filterBlockedTeams,
   filterBlockedCitizens,
 } from './utils'
-import { NetworkNFT, NetworkDataResult, UseNetworkDataOptions } from './types'
 
 const PAGE_SIZE = 10
 
@@ -59,10 +59,7 @@ export function useTableNames() {
           setTeamTableName(name as string)
         }
 
-        if (
-          !CITIZEN_TABLE_NAMES[chainSlug] &&
-          CITIZEN_TABLE_ADDRESSES[chainSlug]
-        ) {
+        if (!CITIZEN_TABLE_NAMES[chainSlug] && CITIZEN_TABLE_ADDRESSES[chainSlug]) {
           const citizenTableContract = getContract({
             client,
             address: CITIZEN_TABLE_ADDRESSES[chainSlug],
@@ -96,10 +93,9 @@ export function useTeamsCount(
     ? `SELECT COUNT(*) as count FROM ${teamTableName} ${searchClause}`
     : null
 
-  const { data, isLoading } = useTablelandQuery(
-    enabled && statement ? statement : null,
-    { revalidateOnFocus: false }
-  )
+  const { data, isLoading } = useTablelandQuery(enabled && statement ? statement : null, {
+    revalidateOnFocus: false,
+  })
 
   const count = data?.[0]?.count || 0
   return { count: Number(count), isLoading }
@@ -115,25 +111,16 @@ export function useCitizensCount(
     ? `SELECT COUNT(*) as count FROM ${citizenTableName} ${searchClause}`
     : null
 
-  const { data, isLoading } = useTablelandQuery(
-    enabled && statement ? statement : null,
-    { revalidateOnFocus: false }
-  )
+  const { data, isLoading } = useTablelandQuery(enabled && statement ? statement : null, {
+    revalidateOnFocus: false,
+  })
 
   const count = data?.[0]?.count || 0
   return { count: Number(count), isLoading }
 }
 
-export function useTeams(
-  options: UseNetworkDataOptions = {}
-): NetworkDataResult<NetworkNFT> {
-  const {
-    page = 1,
-    pageSize = PAGE_SIZE,
-    search = '',
-    enabled = true,
-    initialData,
-  } = options
+export function useTeams(options: UseNetworkDataOptions = {}): NetworkDataResult<NetworkNFT> {
+  const { page = 1, pageSize = PAGE_SIZE, search = '', enabled = true, initialData } = options
   const { teamTableName } = useTableNames()
   const { count, isLoading: countLoading } = useTeamsCount(search, enabled)
 
@@ -149,10 +136,14 @@ export function useTeams(
       ? initialData.slice((page - 1) * pageSize, page * pageSize)
       : undefined
 
-  const { data: rows, isLoading: rowsLoading, error } = useTablelandQuery(
-    enabled && statement ? statement : null,
-    { revalidateOnFocus: false, fallbackData }
-  )
+  const {
+    data: rows,
+    isLoading: rowsLoading,
+    error,
+  } = useTablelandQuery(enabled && statement ? statement : null, {
+    revalidateOnFocus: false,
+    fallbackData,
+  })
 
   const teams = useMemo(() => {
     if (!rows || !Array.isArray(rows)) return []
@@ -168,15 +159,9 @@ export function useTeams(
       .filter((team): team is NetworkNFT => team !== null)
   }, [rows])
 
-  const filteredTeams = useMemo(
-    () => filterBlockedTeams(teams),
-    [teams]
-  )
+  const filteredTeams = useMemo(() => filterBlockedTeams(teams), [teams])
 
-  const sortedTeams = useMemo(
-    () => sortTeamsWithFeatured(filteredTeams),
-    [filteredTeams]
-  )
+  const sortedTeams = useMemo(() => sortTeamsWithFeatured(filteredTeams), [filteredTeams])
 
   const maxPage = calculateMaxPage(count, pageSize)
 
@@ -189,16 +174,8 @@ export function useTeams(
   }
 }
 
-export function useCitizens(
-  options: UseNetworkDataOptions = {}
-): NetworkDataResult<NetworkNFT> {
-  const {
-    page = 1,
-    pageSize = PAGE_SIZE,
-    search = '',
-    enabled = true,
-    initialData,
-  } = options
+export function useCitizens(options: UseNetworkDataOptions = {}): NetworkDataResult<NetworkNFT> {
+  const { page = 1, pageSize = PAGE_SIZE, search = '', enabled = true, initialData } = options
   const { citizenTableName } = useTableNames()
   const { count, isLoading: countLoading } = useCitizensCount(search, enabled)
 
@@ -214,10 +191,14 @@ export function useCitizens(
       ? initialData.slice((page - 1) * pageSize, page * pageSize)
       : undefined
 
-  const { data: rows, isLoading: rowsLoading, error } = useTablelandQuery(
-    enabled && statement ? statement : null,
-    { revalidateOnFocus: false, fallbackData }
-  )
+  const {
+    data: rows,
+    isLoading: rowsLoading,
+    error,
+  } = useTablelandQuery(enabled && statement ? statement : null, {
+    revalidateOnFocus: false,
+    fallbackData,
+  })
 
   const citizens = useMemo(() => {
     if (!rows || !Array.isArray(rows)) return []
@@ -233,10 +214,7 @@ export function useCitizens(
       .filter((citizen): citizen is NetworkNFT => citizen !== null)
   }, [rows])
 
-  const filteredCitizens = useMemo(
-    () => filterBlockedCitizens(citizens),
-    [citizens]
-  )
+  const filteredCitizens = useMemo(() => filterBlockedCitizens(citizens), [citizens])
 
   const maxPage = calculateMaxPage(count, pageSize)
 
@@ -249,9 +227,7 @@ export function useCitizens(
   }
 }
 
-export function useValidTeams(
-  options: UseNetworkDataOptions = {}
-): NetworkDataResult<NetworkNFT> {
+export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataResult<NetworkNFT> {
   const { selectedChain } = useContext(ChainContextV5)
   const chain = selectedChain || DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
@@ -313,9 +289,9 @@ export function useValidTeams(
         const valid = validationResults
           .map((result) => (result.status === 'fulfilled' ? result.value : null))
           .filter((team): team is NetworkNFT => team !== null)
-        
+
         // Only update if we got valid results, otherwise keep optimistic data
-        if (valid.length > 0 || validationResults.every(r => r.status === 'rejected')) {
+        if (valid.length > 0 || validationResults.every((r) => r.status === 'rejected')) {
           setValidTeams(valid)
         }
       } catch (error) {
@@ -403,9 +379,9 @@ export function useValidCitizens(
         const valid = validationResults
           .map((result) => (result.status === 'fulfilled' ? result.value : null))
           .filter((citizen): citizen is NetworkNFT => citizen !== null)
-        
+
         // Only update if we got valid results, otherwise keep optimistic data
-        if (valid.length > 0 || validationResults.every(r => r.status === 'rejected')) {
+        if (valid.length > 0 || validationResults.every((r) => r.status === 'rejected')) {
           setValidCitizens(valid)
         }
       } catch (error) {
@@ -428,5 +404,3 @@ export function useValidCitizens(
     maxPage: citizensResult.maxPage,
   }
 }
-
-
