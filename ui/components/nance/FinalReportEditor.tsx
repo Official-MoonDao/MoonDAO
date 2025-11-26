@@ -74,7 +74,6 @@ export default function FinalReportEditor({ projectsFromLastQuarter }: FinalRepo
   const reportTitle = selectedProject?.name ? selectedProject?.name + ' Final Report' : ''
   useEffect(() => {
     async function checkIsManager() {
-      console.log('selectedProject', selectedProject)
       try {
         const results = await Promise.allSettled([
           readContract({
@@ -88,13 +87,9 @@ export default function FinalReportEditor({ projectsFromLastQuarter }: FinalRepo
             params: [selectedProject?.id],
           }),
         ])
-        console.log('results', results)
 
         const manager: any = results[0].status === 'fulfilled' ? results[0].value : false
         const owner: any = results[1].status === 'fulfilled' ? results[1].value : false
-        console.log('manager', manager)
-        console.log('owner', owner)
-        console.log('address', address)
 
         setIsManager(manager || owner === address)
       } catch (err) {
@@ -105,7 +100,6 @@ export default function FinalReportEditor({ projectsFromLastQuarter }: FinalRepo
       checkIsManager()
     }
   }, [selectedProject, address, projectContract])
-  console.log('isManager', isManager)
 
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
@@ -159,7 +153,6 @@ export default function FinalReportEditor({ projectsFromLastQuarter }: FinalRepo
     }
 
     setSigningStatus('loading')
-    console.log('FinalReport: Starting submission process')
 
     try {
       const header = `# ${reportTitle}\n\n`
@@ -167,46 +160,19 @@ export default function FinalReportEditor({ projectsFromLastQuarter }: FinalRepo
       const file = new File([header + markdown], fileName, {
         type: 'text/markdown',
       })
-
       const { cid: markdownIpfsHash } = await pinBlobOrFile(file)
 
-      // Get project data from Tableland
-      const projectsTableName = await readContract({
-        contract: projectTableContract,
-        method: 'getTableName' as string,
-        params: [],
-      })
-
-      const statement = `SELECT * FROM ${projectsTableName} WHERE MDP = ${selectedProject?.MDP}`
-      const projectRes = await fetch(`/api/tableland/query?statement=${statement}`)
-
-      if (!projectRes.ok) {
-        throw new Error(`Failed to fetch project data: ${projectRes.statusText}`)
-      }
-
-      const projectData = await projectRes.json()
-
-      if (!projectData || projectData.length === 0) {
-        throw new Error('Project not found in database')
-      }
-
-      const project = projectData[0]
-      console.log('FinalReport: Project data retrieved:', { projectId: project.id })
-
       // Update the project with final report IPFS hash
-      console.log('FinalReport: Updating project with final report IPFS hash')
       const transaction = prepareContractCall({
         contract: projectTableContract,
         method: 'updateFinalReportIPFS' as string,
-        params: [project.id, 'ipfs://' + markdownIpfsHash],
+        params: [selectedProject.id, 'ipfs://' + markdownIpfsHash],
       })
 
       const receipt = await sendAndConfirmTransaction({
         transaction,
         account,
       })
-
-      console.log('FinalReport: Transaction successful:', receipt.transactionHash)
 
       if (receipt) {
         // Reset form state
@@ -245,27 +211,7 @@ export default function FinalReportEditor({ projectsFromLastQuarter }: FinalRepo
 
   const buttonsDisabled = !address || signingStatus === 'loading' || !isManager || !selectedProject
 
-  // Debug logging for button state
-  useEffect(() => {
-    console.log('FinalReport: Button state debug', {
-      buttonsDisabled,
-      address: !!address,
-      signingStatus,
-      isManager,
-      selectedProject: !!selectedProject,
-      selectedProjectId: selectedProject?.id,
-      reportTitle,
-    })
-  }, [buttonsDisabled, address, signingStatus, isManager, selectedProject, reportTitle])
-
   const handleFormSubmit = async () => {
-    console.log('FinalReport: handleFormSubmit called', {
-      buttonsDisabled,
-      hasFormMethods: !!methods,
-      isManager,
-      selectedProject: !!selectedProject,
-    })
-
     // Use react-hook-form's handleSubmit to trigger validation
     await handleSubmit(onSubmit)()
   }
