@@ -1,5 +1,4 @@
 import { BanknotesIcon } from '@heroicons/react/24/outline'
-import { Action, RequestBudget } from '@nance/nance-sdk'
 import { formatNumberUSStyle } from '@/lib/nance'
 import { TokenSymbol } from './TokenSymbol'
 
@@ -18,7 +17,6 @@ export default function RequestingTokensOfProposal({ budget }: { budget: any[] }
 }
 
 export function TokensOfProposal({ budget }: { budget: any[] }) {
-  // we only parse RequestBudget action here
   const transferMap: { [key: string]: number } = {}
   budget.forEach(
     (transfer) =>

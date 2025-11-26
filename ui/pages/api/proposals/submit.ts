@@ -174,6 +174,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       const [leads, leadsUsernames] = await getAddresses(body, ['Team Rocketeer', 'Project Lead'])
       ;[members, membersUsernames] = await getAddresses(body, ['Initial Team'])
       // Only allow the first lead to be the lead for smart contract purposes
+      const lead = leads[0] || address
       if (leads.length > 1) {
         members = [...leads.slice(1), ...members]
         membersUsernames = [...leadsUsernames.slice(1), ...membersUsernames]
@@ -244,9 +245,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         )
       }
       console.log(
-        `Create project for proposal ${proposalId} ${proposalTitle}?\n\nlead ${
-          leads[0]
-        }\nmembers [${
+        `Create project for proposal ${proposalId} ${proposalTitle}?\n\nlead ${lead}\nmembers [${
           members.length > 0 ? members : [address]
         }]\n (${membersUsernames})\nsigners [${signers}]\n (${signersUsernames})\nabstract:\n ${abstractText}\n (y/n)`
       )
@@ -266,7 +265,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
           proposalIPFS, // proposal ipfs
           'https://moondao.com/proposal/' + proposalId,
           upfrontPayment,
-          leads[0] || '', // leadAddress,
+          lead, // leadAddress,
           members.length > 0 ? members : [address], // members
           signers.length > 0 ? signers : [address], // signers,
         ],
