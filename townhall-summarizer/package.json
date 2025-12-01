@@ -18,8 +18,9 @@
     "docker:test": "docker-compose --profile test build --no-cache townhall-summarizer test && docker-compose --profile test up -d townhall-summarizer && sleep 3 && docker-compose --profile test run --rm test yarn test"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "express": "^4.18.2",
-    "openai": "^4.20.0",
+    "groq-sdk": "^0.37.0",
     "undici": "^5.28.0"
   },
   "devDependencies": {

@@ -69,14 +69,14 @@ export async function createConvertKitBroadcast(
   apiKey: string,
   tagId?: string
 ): Promise<ConvertKitBroadcast> {
-  console.log("Creating ConvertKit broadcast...");
+  console.log("Creating ConvertKit broadcast as draft");
   const broadcastEndpoint = "https://api.convertkit.com/v4/broadcasts";
 
   const body = {
     subject: subject,
     content: content,
     public: true,
-    send_at: null,
+    send_at: null, // null = draft (requires manual send)
   };
 
   const response = await fetch(broadcastEndpoint, {
@@ -100,7 +100,9 @@ export async function createConvertKitBroadcast(
     await tagBroadcast(broadcast.id, tagId, apiKey);
   }
 
-  console.log(`Broadcast created successfully: ${broadcast.id}`);
+  console.log(
+    `Broadcast draft created successfully: ${broadcast.id} (requires manual send in ConvertKit)`
+  );
   return broadcast;
 }
 

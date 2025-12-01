@@ -25,4 +25,4 @@ steps:
       - "10"
       - "--allow-unauthenticated"
       - "--set-secrets"
-      - "OPENAI_API_KEY=openai-api-key:latest"
+      - "GROQ_API_KEY=groq-api-key:latest"

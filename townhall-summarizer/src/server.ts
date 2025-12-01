@@ -1,5 +1,6 @@
+import "dotenv/config";
 import express, { Request, Response } from "express";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 import { exec } from "child_process";
 import { promisify } from "util";
 import { readFile, unlink } from "fs/promises";
@@ -21,15 +22,15 @@ const execAsync = promisify(exec);
 const app = express();
 app.use(express.json());
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 });
 
 interface ProcessRequestBody {
   videoId: string;
   videoTitle?: string;
   videoDate?: string;
-  openaiModel?: string;
+  groqModel?: string;
   whisperModel?: string;
   convertKitApiKey?: string;
   convertKitTagId?: string;
@@ -58,8 +59,8 @@ app.post(
         videoId,
         videoTitle,
         videoDate,
-        openaiModel = "gpt-4-turbo",
-        whisperModel = "whisper-1",
+        groqModel = "llama-3.3-70b-versatile",
+        whisperModel = "whisper-large-v3",
         convertKitApiKey,
         convertKitTagId,
         testMode = false,
@@ -105,7 +106,7 @@ app.post(
       console.log(`Starting full pipeline for video: ${videoId}`);
 
       // Step 1: Download and transcribe audio
-      const transcript = await transcribeAudio(videoId, openai, whisperModel);
+      const transcript = await transcribeAudio(videoId, groq, whisperModel);
 
       if (!transcript || transcript.trim().length === 0) {
         return res
@@ -116,8 +117,8 @@ app.post(
       // Step 3: Summarize
       const summary = await summarizeTranscript(
         transcript,
-        openai,
-        openaiModel
+        groq,
+        groqModel
       );
 
       if (!summary) {
@@ -142,7 +143,7 @@ app.post(
         day: "numeric",
       })}`;
 
-      // Step 5: Create broadcast (skip in test mode)
+      // Step 5: Create broadcast draft (skip in test mode)
       let broadcast: ConvertKitBroadcast | null = null;
       if (!testMode) {
         broadcast = await createConvertKitBroadcast(
@@ -151,7 +152,6 @@ app.post(
           convertKitApiKey!,
           convertKitTagId
         );
-        console.log(`Broadcast created successfully: ${broadcast.id}`);
       } else {
         console.log("Test mode: Skipping ConvertKit broadcast creation");
       }

@@ -4,7 +4,8 @@ import { readFile, unlink } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 import { File } from "buffer";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
+import { rateLimiter } from "./rate-limiter";
 
 const execAsync = promisify(exec);
 
@@ -15,20 +16,21 @@ function estimateTokens(text: string): number {
 
 // Get context window size based on model
 function getContextWindow(model: string): number {
-  // GPT-4 Turbo and GPT-4o have 128k context window
+  // GROQ models with 128k context window
   if (
-    model.includes("turbo") ||
-    model.includes("gpt-4o") ||
-    model.includes("gpt-4o-")
+    model.includes("llama-3.3-70b") ||
+    model.includes("llama-3.1-8b") ||
+    model.includes("qwen") ||
+    model.includes("kimi")
   ) {
     return 128000;
   }
-  // Standard GPT-4 has 8k context window
-  if (model.startsWith("gpt-4") || model === "gpt-4") {
-    return 8192;
+  // GROQ models with 256k context window
+  if (model.includes("kimi-k2")) {
+    return 256000;
   }
-  // Default to 8k for other models
-  return 8000;
+  // Default to 128k for GROQ models
+  return 128000;
 }
 
 // Check if transcript might exceed context window and warn
@@ -48,7 +50,7 @@ function checkTranscriptLength(
       )}%)`
     );
     console.warn(
-      `   Consider using a model with a larger context window (e.g., gpt-4-turbo or gpt-4o)`
+      `   Consider using a model with a larger context window (e.g., llama-3.3-70b-versatile)`
     );
   } else if (usagePercent > 80) {
     console.warn(
@@ -127,8 +129,8 @@ export async function extractAudioUrl(videoId: string): Promise<string> {
 
 export async function transcribeAudio(
   videoId: string,
-  openai: OpenAI,
-  model: string = "whisper-1"
+  groq: Groq,
+  model: string = "whisper-large-v3"
 ): Promise<string> {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
   const timestamp = Date.now();
@@ -158,6 +160,9 @@ export async function transcribeAudio(
     );
     const durationSeconds = parseFloat(durationOutput.trim()) || 3600; // Fallback to 1 hour if can't get duration
     console.log(`Audio duration: ${Math.floor(durationSeconds / 60)} minutes`);
+
+    // Check rate limits before transcription
+    await rateLimiter.checkAndWaitWhisper(Math.ceil(durationSeconds));
 
     if (sizeMB > maxSizeMB) {
       console.log(
@@ -244,29 +249,51 @@ export async function transcribeAudio(
       `Compressed audio ready (${finalSizeMBFormatted} MB). Starting transcription...`
     );
 
-    // Create File object for OpenAI API
+    // Create File object for GROQ API
     const audioFile = new File([finalBuffer], "audio.mp3", {
       type: "audio/mpeg",
     });
 
-    console.log("Transcribing audio with OpenAI Whisper...");
+    console.log("Transcribing audio with GROQ Whisper...");
     const startTime = Date.now();
 
     // Retry logic for transcription
-    let transcription;
+    let transcription: string | undefined;
     const maxRetries = 3;
     let lastError;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        transcription = await openai.audio.transcriptions.create({
+        const response = await groq.audio.transcriptions.create({
           file: audioFile,
           model: model,
           response_format: "text",
         });
+        // When response_format is "text", GROQ returns a string
+        transcription = response as unknown as string;
+        // Record successful transcription for rate limiting
+        rateLimiter.recordWhisperRequest(Math.ceil(durationSeconds));
         break; // Success, exit retry loop
       } catch (error: any) {
         lastError = error;
+
+        // Check if it's a rate limit error from GROQ
+        const errorMessage = error.message || error.toString();
+        const rateLimitMatch = errorMessage.match(
+          /Please try again in ([\d.]+)s/
+        );
+
+        if (rateLimitMatch && attempt < maxRetries) {
+          const waitSeconds = Math.ceil(parseFloat(rateLimitMatch[1]));
+          console.log(
+            `⚠️  Rate limit exceeded. GROQ says to wait ${waitSeconds} seconds. Waiting...`
+          );
+          await new Promise((resolve) =>
+            setTimeout(resolve, waitSeconds * 1000)
+          );
+          continue; // Retry after waiting
+        }
+
         if (attempt < maxRetries) {
           const waitTime = attempt * 5; // Exponential backoff: 5s, 10s, 15s
           console.log(
@@ -275,6 +302,17 @@ export async function transcribeAudio(
           await new Promise((resolve) => setTimeout(resolve, waitTime * 1000));
         } else {
           console.error(`❌ Transcription failed after ${maxRetries} attempts`);
+
+          // Provide helpful error message for rate limits
+          if (
+            errorMessage.includes("rate_limit") ||
+            errorMessage.includes("Rate limit")
+          ) {
+            throw new Error(
+              `GROQ rate limit exceeded. ${errorMessage}. Consider upgrading to Dev Tier or waiting before retrying.`
+            );
+          }
+
           throw error;
         }
       }
@@ -287,8 +325,11 @@ export async function transcribeAudio(
       )} minutes ${elapsedSeconds % 60} seconds`
     );
 
-    const transcript = transcription as string;
-    console.log(`Transcription complete (${transcript.length} characters)`);
+    if (!transcription) {
+      throw new Error("No transcription generated");
+    }
+
+    console.log(`Transcription complete (${transcription.length} characters)`);
 
     // Clean up compressed file
     try {
@@ -297,7 +338,7 @@ export async function transcribeAudio(
       // Ignore cleanup errors
     }
 
-    return transcript;
+    return transcription;
   } catch (error: any) {
     // Clean up temp files on error
     try {
@@ -353,8 +394,8 @@ ${transcript}
 Please provide the summary now:`;
 }
 
-// Helper function to retry OpenAI API calls
-async function retryOpenAICall<T>(
+// Helper function to retry GROQ API calls
+async function retryGroqCall<T>(
   apiCall: () => Promise<T>,
   operation: string,
   maxRetries: number = 3
@@ -384,10 +425,10 @@ async function retryOpenAICall<T>(
 
 export async function summarizeTranscript(
   transcript: string,
-  openai: OpenAI,
-  model: string = "gpt-4-turbo"
+  groq: Groq,
+  model: string = "llama-3.3-70b-versatile"
 ): Promise<string> {
-  console.log("Generating summary with OpenAI...");
+  console.log("Generating summary with GROQ...");
 
   // Get context window for the model
   const contextWindow = getContextWindow(model);
@@ -411,8 +452,8 @@ export async function summarizeTranscript(
   );
 
   // Check if we need chunking based on context window
-  // TPM (Tokens Per Minute) is a rate limit, not a per-request limit
-  // Only chunk if we exceed the context window
+  // With dev tier, TPM limits are much higher, so we only chunk based on context window
+  // Only chunk if transcript exceeds the context window (128K tokens)
   const useChunking = totalTokens > contextWindow;
 
   if (useChunking) {
@@ -441,9 +482,12 @@ export async function summarizeTranscript(
         await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 second delay
       }
 
-      const response = await retryOpenAICall(
+      const chunkTokens = estimateTokens(chunkPrompt) + systemTokens + 2000;
+      await rateLimiter.checkAndWaitLLM(chunkTokens);
+
+      const response = await retryGroqCall(
         () =>
-          openai.chat.completions.create({
+          groq.chat.completions.create({
             model: model,
             messages: [
               {
@@ -466,18 +510,21 @@ export async function summarizeTranscript(
         throw new Error(`No summary generated for chunk ${i + 1}`);
       }
 
+      // Record token usage for rate limiting
+      const responseTokens = estimateTokens(chunkSummary);
+      rateLimiter.recordLLMRequest(chunkTokens + responseTokens);
+
       chunkSummaries.push(chunkSummary);
       console.log(`✅ Chunk ${i + 1}/${chunks.length} summarized`);
     }
 
-    // Combine chunk summaries into final summary
-    console.log("Combining chunk summaries into final summary...");
+    // Always consolidate chunk summaries into a single, unified summary
+    console.log("Consolidating chunk summaries into final summary...");
     const combinedSummary = chunkSummaries.join("\n\n");
 
-    // Optionally, create a final summary of the combined summaries if it's too long
-    if (estimateTokens(combinedSummary) > 5000) {
-      console.log("Creating final consolidated summary...");
-      const finalPrompt = `You are summarizing multiple summaries from a MoonDAO Town Hall meeting. Please consolidate these summaries into a single, well-organized summary following the same format:
+    // Create a final consolidated summary from all chunk summaries
+    console.log("Creating final consolidated summary...");
+    const finalPrompt = `You are consolidating multiple summaries from a MoonDAO Town Hall meeting. These summaries were created by splitting a long transcript into chunks. Please merge them into a single, well-organized summary following the same format. Remove any duplicate information and ensure the summary flows naturally:
 
 **Guest Speaker**
 - Name and background of the guest
@@ -507,44 +554,47 @@ ${combinedSummary}
 
 Please provide the consolidated summary now:`;
 
-      const finalResponse = await retryOpenAICall(
-        () =>
-          openai.chat.completions.create({
-            model: model,
-            messages: [
-              {
-                role: "system",
-                content: systemMessage,
-              },
-              {
-                role: "user",
-                content: finalPrompt,
-              },
-            ],
-            temperature: 0.7,
-            max_tokens: 2000,
-          }),
-        "Final summary consolidation"
-      );
+    const finalPromptTokens = estimateTokens(finalPrompt) + systemTokens + 2000;
+    await rateLimiter.checkAndWaitLLM(finalPromptTokens);
 
-      const finalSummary = finalResponse.choices[0]?.message?.content;
-      if (!finalSummary) {
-        throw new Error("No final summary generated");
-      }
+    const finalResponse = await retryGroqCall(
+      () =>
+        groq.chat.completions.create({
+          model: model,
+          messages: [
+            {
+              role: "system",
+              content: systemMessage,
+            },
+            {
+              role: "user",
+              content: finalPrompt,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 2000,
+        }),
+      "Final summary consolidation"
+    );
 
-      console.log("Summary generated successfully");
-      return finalSummary;
+    const finalSummary = finalResponse.choices[0]?.message?.content;
+    if (!finalSummary) {
+      throw new Error("No final summary generated");
     }
 
+    // Record token usage for rate limiting
+    const finalResponseTokens = estimateTokens(finalSummary);
+    rateLimiter.recordLLMRequest(finalPromptTokens + finalResponseTokens);
+
     console.log("Summary generated successfully");
-    return combinedSummary;
+    return finalSummary;
   } else {
     // Single request - no chunking needed
     const prompt = getTownHallSummaryPrompt(transcript);
 
-    const response = await retryOpenAICall(
+    const response = await retryGroqCall(
       () =>
-        openai.chat.completions.create({
+        groq.chat.completions.create({
           model: model,
           messages: [
             {
@@ -564,8 +614,12 @@ Please provide the consolidated summary now:`;
 
     const summary = response.choices[0]?.message?.content;
     if (!summary) {
-      throw new Error("No summary generated from OpenAI");
+      throw new Error("No summary generated from GROQ");
     }
+
+    // Record token usage for rate limiting
+    const responseTokens = estimateTokens(summary);
+    rateLimiter.recordLLMRequest(totalTokens + responseTokens);
 
     console.log("Summary generated successfully");
     return summary;

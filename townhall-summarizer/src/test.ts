@@ -11,10 +11,10 @@
  *
  * Environment variables:
  *   SERVICE_URL - URL of the service (default: http://localhost:8080)
- *   OPENAI_API_KEY - Required for transcription and summarization
+ *   GROQ_API_KEY - Required for transcription and summarization
  */
 
-// @ts-ignore - undici types may not be available until package is installed
+import "dotenv/config";
 import { Agent } from "undici";
 
 interface ProcessResponse {
@@ -93,8 +93,8 @@ async function testPipeline(): Promise<void> {
         videoId: videoId,
         videoTitle: "Test Town Hall",
         videoDate: new Date().toISOString(),
-        openaiModel: process.env.OPENAI_MODEL || "gpt-4-turbo",
-        whisperModel: process.env.WHISPER_MODEL || "whisper-1",
+        groqModel: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+        whisperModel: process.env.WHISPER_MODEL || "whisper-large-v3",
         testMode: true,
         // convertKitApiKey and convertKitTagId not required in test mode
       }),

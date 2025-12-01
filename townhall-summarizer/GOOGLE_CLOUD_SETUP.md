@@ -4,7 +4,7 @@
 
 - Google Cloud account with billing enabled
 - `gcloud` CLI installed and authenticated
-- Access to OpenAI API key
+- Access to GROQ API key (free tier available but you may exceed the ratelimits)
 - Access to YouTube Data API key
 - Access to ConvertKit API key
 
@@ -32,16 +32,16 @@
 
 ### 1.2 Create Secrets in Secret Manager
 
-1. **Create OpenAI API Key secret**:
+1. **Create GROQ API Key secret**:
    ```bash
-   echo -n "your-openai-api-key" | gcloud secrets create openai-api-key \
+   echo -n "your-groq-api-key" | gcloud secrets create groq-api-key \
      --data-file=- \
      --replication-policy="automatic"
    ```
 
 2. **Grant Cloud Run access to the secret**:
    ```bash
-   gcloud secrets add-iam-policy-binding openai-api-key \
+   gcloud secrets add-iam-policy-binding groq-api-key \
      --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
      --role="roles/secretmanager.secretAccessor"
    ```
@@ -100,7 +100,7 @@
    - Push it to Google Container Registry
    - Deploy to Cloud Run with the configured settings
    
-   **Note**: The default `cloudbuild.yaml` only includes `OPENAI_API_KEY`. If you want to enable channel validation (recommended for production), you need to add the YouTube secrets after deployment (see section 1.4).
+   **Note**: The default `cloudbuild.yaml` only includes `GROQ_API_KEY`. If you want to enable channel validation (recommended for production), you need to add the YouTube secrets after deployment (see section 1.4).
 
 3. **Verify deployment**:
    ```bash
@@ -128,7 +128,7 @@ If you need to update environment variables or secrets after deployment:
    ```bash
    gcloud run services update townhall-summarizer \
      --region us-central1 \
-     --set-secrets="OPENAI_API_KEY=openai-api-key:latest,YOUTUBE_API_KEY=youtube-api-key:latest,ALLOWED_YOUTUBE_CHANNEL_ID=allowed-youtube-channel-id:latest"
+     --set-secrets="GROQ_API_KEY=groq-api-key:latest,YOUTUBE_API_KEY=youtube-api-key:latest,ALLOWED_YOUTUBE_CHANNEL_ID=allowed-youtube-channel-id:latest"
    ```
    
    **Important**: 
@@ -185,10 +185,10 @@ Add these environment variables in your Vercel project settings:
    TOWNHALL_CONVERTKIT_TAG_ID=your-tag-id
    ```
 
-4. **OpenAI Model Configuration** (optional, defaults shown):
+4. **GROQ Model Configuration** (optional, defaults shown):
    ```
-   OPENAI_MODEL=gpt-4
-   WHISPER_MODEL=whisper-1
+   GROQ_MODEL=llama-3.3-70b-versatile
+   WHISPER_MODEL=whisper-large-v3
    ```
 
 5. **Cron Secret** (for scheduled processing):
@@ -325,14 +325,14 @@ gcloud run services describe townhall-summarizer --region us-central1
 
 ### Secrets Used
 
-- `openai-api-key` - OpenAI API key for transcription and summarization (required)
+- `groq-api-key` - GROQ API key for transcription and summarization (required, free tier available)
 - `youtube-api-key` - YouTube Data API key for channel validation (required if using channel restriction)
 - `allowed-youtube-channel-id` (optional) - YouTube channel ID restriction (requires youtube-api-key)
 
 ### Environment Variables (Cloud Run)
 
 Set via secrets:
-- `OPENAI_API_KEY` - From Secret Manager (required)
+- `GROQ_API_KEY` - From Secret Manager (required)
 - `YOUTUBE_API_KEY` - From Secret Manager (required if using channel validation)
 - `ALLOWED_YOUTUBE_CHANNEL_ID` - From Secret Manager (optional, but requires YOUTUBE_API_KEY if set)
 
@@ -343,15 +343,15 @@ Set via secrets:
 - `YOUTUBE_CHANNEL_ID` - YouTube channel ID
 - `CONVERT_KIT_API_KEY` or `CONVERT_KIT_V4_API_KEY` - ConvertKit API key
 - `TOWNHALL_CONVERTKIT_TAG_ID` - ConvertKit tag ID
-- `OPENAI_MODEL` - OpenAI model (default: gpt-4)
-- `WHISPER_MODEL` - Whisper model (default: whisper-1)
+- `GROQ_MODEL` - GROQ model (default: llama-3.3-70b-versatile)
+- `WHISPER_MODEL` - Whisper model (default: whisper-large-v3)
 - `TOWNHALL_CRON_SECRET` - Secret for cron authentication
 
 ## Part 6: Deployment Checklist
 
 - [ ] Google Cloud project created and billing enabled
 - [ ] Required APIs enabled (Cloud Build, Cloud Run, Secret Manager)
-- [ ] OpenAI API key secret created in Secret Manager
+- [ ] GROQ API key secret created in Secret Manager
 - [ ] YouTube API key secret created in Secret Manager (if using channel validation)
 - [ ] YouTube Channel ID secret created in Secret Manager (optional, but requires YouTube API key)
 - [ ] IAM permissions configured for all secrets

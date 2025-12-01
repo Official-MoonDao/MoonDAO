@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { getChannelIdFromHandle } from "./youtube";
 
 async function main() {
