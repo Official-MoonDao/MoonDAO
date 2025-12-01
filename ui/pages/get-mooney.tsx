@@ -24,10 +24,6 @@ export default function GetMooney() {
   const chainSlug = getChainSlug(selectedChain)
   const { fundWallet } = useFundWallet()
 
-  useEffect(() => {
-    setSelectedChain(ethereum)
-  }, [setSelectedChain])
-
   return (
     <>
       <WebsiteHead
@@ -45,8 +41,8 @@ export default function GetMooney() {
                   Buy MOONEY
                 </h1>
                 <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-                  Get MOONEY tokens to participate in MoonDAO governance. After
-                  buying, you can lock them for voting power.
+                  Get MOONEY tokens to participate in MoonDAO governance. After buying, you can lock
+                  them for voting power.
                 </p>
               </div>
 
@@ -54,9 +50,7 @@ export default function GetMooney() {
               <div className="w-full max-w-2xl mx-auto mb-8 px-4">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
                   <div className="flex-1 max-w-md">
-                    <h3 className="text-lg font-semibold text-white mb-2">
-                      Network Selection
-                    </h3>
+                    <h3 className="text-lg font-semibold text-white mb-2">Network Selection</h3>
                     <p className="text-gray-300 text-sm">
                       Select which network you want to buy MOONEY on
                     </p>
@@ -75,12 +69,9 @@ export default function GetMooney() {
               {/* Next Steps */}
               <div className="max-w-2xl mx-auto">
                 <div className="text-center mb-6">
-                  <h3 className="text-xl font-bold text-white mb-2">
-                    Next Steps
-                  </h3>
+                  <h3 className="text-xl font-bold text-white mb-2">Next Steps</h3>
                   <p className="text-gray-300 text-sm">
-                    After buying MOONEY, lock them to gain voting power in
-                    governance.
+                    After buying MOONEY, lock them to gain voting power in governance.
                   </p>
                 </div>
                 <div className="bg-gradient-to-br from-gray-900/50 to-purple-900/20 rounded-xl p-6 border border-white/10">
