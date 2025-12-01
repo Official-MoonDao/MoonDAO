@@ -24,6 +24,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: Install npm dependencies
+        run: |
+          cd fee-hook && npm install --legacy-peer-deps
       - name: Run apply_patch.sh
         run: |
           chmod +x ./fee-hook/apply_patch.sh
@@ -32,9 +35,6 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-      - name: Install npm dependencies
-        run: |
-          cd fee-hook && npm install --legacy-peer-deps
       - name: Build contracts
         run: |
           cd fee-hook && forge build --sizes --via-ir --optimize --optimizer-runs 200
