@@ -1081,28 +1081,6 @@ export default function SingedInDashboard({
           </div>
         </div>
 
-        {/* Citizen Teams */}
-        <div className="flex-grow order-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-            <div className="flex flex-col gap-4">
-              <div>
-                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <UserGroupIcon className="w-7 h-7" />
-                  Your Teams
-                </h3>
-              </div>
-
-              <div className="space-y-3">
-                <DashboardTeams
-                  selectedChain={selectedChain}
-                  hatsContract={hatsContract}
-                  teamContract={teamContract}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Quests Section */}
         <div className="flex-grow order-5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
           <div className="flex flex-col gap-4">
@@ -1253,9 +1231,9 @@ export default function SingedInDashboard({
           />
         </div>
 
-        {/* Events Section */}
-        <div className="mt-8 mb-8">
-          {/* Events Feature */}
+        {/* Events and Your Teams Section - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 mb-8">
+          {/* Events Section */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div className="min-w-0 flex-1">
@@ -1298,6 +1276,26 @@ export default function SingedInDashboard({
                     loadingDiv.style.display = 'none'
                   }
                 }}
+              />
+            </div>
+          </div>
+
+          {/* Your Teams Section */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
+            <div className="mb-6">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                  <UserGroupIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                  <span className="leading-tight">Your Teams</span>
+                </h3>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <DashboardTeams
+                selectedChain={selectedChain}
+                hatsContract={hatsContract}
+                teamContract={teamContract}
               />
             </div>
           </div>

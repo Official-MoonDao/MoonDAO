@@ -35,23 +35,34 @@ export default function DashboardTeams({
   return (
     <>
       {!isLoading && hats ? (
-        <div className="flex flex-col lg:flex-row gap-4 max-h-[400px] overflow-y-auto md:overflow-y-hidden md:overflow-x-auto">
-          {hats?.map((hat: any, index: number) => (
-            <div
-              key={hat.id || `hat-${index}`}
-              className="bg-slate-600/20 rounded-xl p-2 hover:bg-slate-600/30 transition-colors"
-            >
-              <Hat
-                selectedChain={selectedChain}
-                hat={hat}
-                hatsContract={hatsContract}
-                teamImage
-                teamContract={teamContract}
-                compact
-              />
-            </div>
-          ))}
-        </div>
+        hats.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2">
+            {hats?.map((hat: any, index: number) => (
+              <div
+                key={hat.id || `hat-${index}`}
+                className="bg-slate-600/20 rounded-xl p-4 hover:bg-slate-600/30 transition-colors w-full"
+              >
+                <Hat
+                  selectedChain={selectedChain}
+                  hat={hat}
+                  hatsContract={hatsContract}
+                  teamImage
+                  teamContract={teamContract}
+                  compact
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-400 text-sm mb-4">
+              You are not a member of any teams.
+            </p>
+            <StandardButton link="/team" className="inline-block">
+              Create a Team
+            </StandardButton>
+          </div>
+        )
       ) : (
         <div className="text-gray-400 text-sm text-center py-4">
           <LoadingSpinner />
