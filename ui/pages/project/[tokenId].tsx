@@ -133,19 +133,6 @@ export default function ProjectProfile({
   const toggleExpand = () => {
     setIsExpanded(!isExpanded)
   }
-  const tallyVotes = async () => {
-    const res = await fetch(`/api/proposals/vote`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json', // Important: Specify the content type
-      },
-      body: JSON.stringify({
-        mdp: project?.MDP,
-      }),
-    })
-    const resJson = await res.json()
-  }
-
   //Profile Header Section
   const ProfileHeader = (
     <div id="orgheader-container">
@@ -244,8 +231,6 @@ export default function ProjectProfile({
                             votes={votes}
                             proposalStatus={proposalStatus}
                           />
-                          {/*FIXME run on cron */}
-                          <button onClick={tallyVotes}>Tally votes</button>
                         </>
                       )
                     ) : (

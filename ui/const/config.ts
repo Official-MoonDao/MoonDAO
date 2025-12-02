@@ -8,8 +8,8 @@ const STAGING_ORIGIN = process.env.NEXT_PUBLIC_STAGING_ORIGIN
 export const DEPLOYED_ORIGIN = STAGING_ORIGIN
   ? STAGING_ORIGIN
   : process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-  ? 'https://moondao.com'
-  : 'https://moondao-git-mission-onramp-moondao.vercel.app'
+    ? 'https://moondao.com'
+    : 'https://moondao-git-mission-onramp-moondao.vercel.app'
 
 interface DeploymentConfig {
   MOONEYToken: string
@@ -140,16 +140,16 @@ export const PROJECT_CREATOR_ADDRESSES: Index = {
 
 export const SENATORS_ADDRESSES: Index = {
   //arbitrum: '...',
-  sepolia: '0x919708b87902c1b965fdf0698fe8ed39cf3c5292',
+  sepolia: '0x9164AC69B9fa9cA68fcb1f187DEAD57ddEF81E58',
 }
 
 export const PROPOSALS_ADDRESSES: Index = {
   //arbitrum: '...',
-  sepolia: '0x2cb3090344De3D86010C8A974408BB65D6D5c9F1',
+  sepolia: '0xCB4D10effE13ac3e0DbD7e0Fb4079eD2EE5f2e53',
 }
 export const PROPOSALS_TABLE_NAMES: Index = {
   //arbitrum: '...',
-  sepolia: 'Proposals_11155111_2032',
+  sepolia: 'Proposals_11155111_2036',
 }
 
 export const PROJECT_TABLE_ADDRESSES: Index = {

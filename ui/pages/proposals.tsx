@@ -15,7 +15,7 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { PROJECT_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { Project } from '@/lib/project/useProjectData'
 
-export default function ProposalsPage({ project }: {project: Project}) {
+export default function ProposalsPage({ project }: { project: Project }) {
   const title = 'Propose Project'
 
   useChainDefault()
@@ -125,19 +125,16 @@ export default function ProposalsPage({ project }: {project: Project}) {
 
 export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const tokenId: any = query?.tokenId
-  console.log('tokenId', tokenId)
   if (!tokenId) {
     return {
       props: {},
     }
   }
-  console.log('tokenId', tokenId)
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
   const statement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE id = ${tokenId}`
   const projects = await queryTable(chain, statement)
   const project = projects[0]
-  console.log('project', project)
   if (!projects.length) {
     return {
       props: {},

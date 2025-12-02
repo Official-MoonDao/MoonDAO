@@ -31,12 +31,8 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
-import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
-import {
-  getBudget,
-  getPayouts,
-  computeRewardPercentages,
-} from '@/lib/utils/rewards'
+import { getRelativeQuarter, isRewardsCycle, isApprovalActive } from '@/lib/utils/dates'
+import { getBudget, getPayouts, computeRewardPercentages } from '@/lib/utils/rewards'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -74,8 +70,7 @@ function formatValueForDisplay(value: string | number): {
   full: string
   abbreviated: string
 } {
-  const numValue =
-    typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
+  const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
 
   if (isNaN(numValue)) {
     return { full: value.toString(), abbreviated: value.toString() }
@@ -97,12 +92,7 @@ function formatValueForDisplay(value: string | number): {
   return { full, abbreviated: full }
 }
 
-function RewardAsset({
-  name,
-  value,
-  usdValue,
-  approximateUSD,
-}: RewardAssetProps) {
+function RewardAsset({ name, value, usdValue, approximateUSD }: RewardAssetProps) {
   const image = assetImageExtension[name]
     ? `/coins/${name}.${assetImageExtension[name]}`
     : '/coins/DEFAULT.png'
@@ -152,22 +142,30 @@ export function ProjectRewards({
   const account = useActiveAccount()
   const userAddress = account?.address
 
-  const [active, setActive] = useState(false)
-  const { quarter, year } = getRelativeQuarter(active ? -1 : 0)
+  const [rewardVotingActive, setRewardVotingActive] = useState(false)
+  const [approvalVotingActive, setApprovalVotingActive] = useState(false)
+  const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
 
   const [edit, setEdit] = useState(false)
-  const [distribution, setDistribution] = useState<{ [key: string]: number }>(
-    {}
-  )
+  const [distribution, setDistribution] = useState<{ [key: string]: number }>({})
+
+  //Check if its the approval cycle
+  useEffect(() => {
+    setApprovalVotingActive(isApprovalActive(new Date()))
+    const interval = setInterval(() => {
+      setApprovalVotingActive(isApprovalActive(new Date()))
+    }, 30000)
+    return () => clearInterval(interval)
+  })
 
   //Check if its the rewards cycle
   useEffect(() => {
-    setActive(isRewardsCycle(new Date()))
+    setRewardVotingActive(isRewardsCycle(new Date()))
     const interval = setInterval(() => {
-      setActive(isRewardsCycle(new Date()))
+      setRewardVotingActive(isRewardsCycle(new Date()))
     }, 30000)
     return () => clearInterval(interval)
-  }, [currentProjects, distributions])
+  })
 
   // Check if the user already has a distribution for the current quarter
   useEffect(() => {
@@ -185,6 +183,20 @@ export function ProjectRewards({
       }
     }
   }, [userAddress, distributions, quarter, year])
+  const tallyVotes = async () => {
+    const res = await fetch(`/api/proposals/vote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', // Important: Specify the content type
+      },
+      body: JSON.stringify({
+        quarter,
+        year,
+      }),
+    })
+    const resJson = await res.json()
+    console.log('res', resJson)
+  }
 
   const handleDistributionChange = (projectId: string, value: number) => {
     const newValue = Math.min(100, Math.max(0, +value))
@@ -205,6 +217,11 @@ export function ProjectRewards({
     chain: chain,
     abi: DistributionTableABI as any,
   })
+  const proposalContract = useContract({
+    address: PROPOSALS_ADDRESSES[chainSlug],
+    chain: chain,
+    abi: ProposalsABI.abi as any,
+  })
   const hatsContract = useContract({
     address: HATS_ADDRESS,
     chain: chain,
@@ -219,8 +236,7 @@ export function ProjectRewards({
   const addressToQuadraticVotingPower = Object.fromEntries(
     addresses.map((address, index) => [address, _vps[index]])
   )
-  const votingPowerSumIsNonZero =
-    _.sum(Object.values(addressToQuadraticVotingPower)) > 0
+  const votingPowerSumIsNonZero = _.sum(Object.values(addressToQuadraticVotingPower)) > 0
   const { walletVP: userVotingPower } = useTotalVP(userAddress || '')
   const userHasVotingPower = useMemo(() => {
     return userAddress && userVotingPower > 0
@@ -239,9 +255,7 @@ export function ProjectRewards({
   )
 
   let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
-  const nonCitizenDistributions = distributions?.filter(
-    (_, i) => !isCitizens[i]
-  )
+  const nonCitizenDistributions = distributions?.filter((_, i) => !isCitizens[i])
 
   const eligibleProjects = useMemo(
     () => currentProjects.filter((p) => p.eligible),
@@ -266,15 +280,14 @@ export function ProjectRewards({
     allProjectsHaveCitizenDistribution &&
     allProjectsHaveRewardDistribution &&
     communityCirclePopulated
-  const projectIdToEstimatedPercentage: { [key: string]: number } =
-    readyToRunVoting
-      ? computeRewardPercentages(
-          citizenDistributions,
-          nonCitizenDistributions,
-          eligibleProjects,
-          addressToQuadraticVotingPower
-        )
-      : {}
+  const projectIdToEstimatedPercentage: { [key: string]: number } = readyToRunVoting
+    ? computeRewardPercentages(
+        citizenDistributions,
+        nonCitizenDistributions,
+        eligibleProjects,
+        addressToQuadraticVotingPower
+      )
+    : {}
 
   const { tokens: mainnetTokens } = useAssets()
   const { tokens: arbitrumTokens } = useAssets(ARBITRUM_ASSETS_URL)
@@ -358,11 +371,8 @@ export function ProjectRewards({
     }
   }, [mooneyBudget, DAI, MOONEY])
 
-  const handleSubmit = async () => {
-    const totalPercentage = Object.values(distribution).reduce(
-      (sum, value) => sum + value,
-      0
-    )
+  const handleSubmit = async (contract) => {
+    const totalPercentage = Object.values(distribution).reduce((sum, value) => sum + value, 0)
     if (totalPercentage !== 100) {
       toast.error('Total distribution must equal 100%.', {
         style: toastStyle,
@@ -374,7 +384,7 @@ export function ProjectRewards({
       let receipt
       if (edit) {
         const transaction = prepareContractCall({
-          contract: distributionTableContract,
+          contract: contract,
           method: 'updateTableCol' as string,
           params: [quarter, year, JSON.stringify(distribution)],
         })
@@ -384,7 +394,7 @@ export function ProjectRewards({
         })
       } else {
         const transaction = prepareContractCall({
-          contract: distributionTableContract,
+          contract: contract,
           method: 'insertIntoTable' as string,
           params: [quarter, year, JSON.stringify(distribution)],
         })
@@ -437,6 +447,8 @@ export function ProjectRewards({
                   />
                   <span className="leading-none">Create Project</span>
                 </button>
+                {/*FIXME run on cron */}
+                <button onClick={tallyVotes}>Tally votes</button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -462,9 +474,7 @@ export function ProjectRewards({
               id="projects-container"
               className="bg-black/20 rounded-xl p-6 border border-white/10"
             >
-              <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
-                Proposals
-              </h1>
+              <h1 className="font-GoodTimes text-white/80 text-xl mb-6">Proposals</h1>
               <div className="flex flex-col gap-6">
                 {proposals && proposals.length > 0 ? (
                   proposals.map((project: any, i) => (
@@ -477,17 +487,13 @@ export function ProjectRewards({
                         project={project}
                         projectContract={projectContract}
                         hatsContract={hatsContract}
-                        distribute={active && project.eligible}
-                        distribution={
-                          userHasVotingPower ? distribution : undefined
-                        }
+                        distribute={approvalVotingActive}
+                        distribution={userHasVotingPower ? distribution : undefined}
                         handleDistributionChange={
-                          userHasVotingPower
-                            ? handleDistributionChange
-                            : undefined
+                          userHasVotingPower ? handleDistributionChange : undefined
                         }
                         userHasVotingPower={userHasVotingPower}
-                        isVotingPeriod={active}
+                        isVotingPeriod={approvalVotingActive}
                         active={false}
                       />
                     </div>
@@ -497,6 +503,30 @@ export function ProjectRewards({
                     <p>There are no active Proposals.</p>
                   </div>
                 )}
+                {approvalVotingActive && proposals && proposals.length > 0 && (
+                  <div className="mt-6 w-full flex justify-end">
+                    {userHasVotingPower ? (
+                      <span className="flex flex-col md:flex-row md:items-center gap-2">
+                        <PrivyWeb3Button
+                          action={() => handleSubmit(proposalContract)}
+                          requiredChain={chain}
+                          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                          label={edit ? 'Edit Distribution' : 'Submit Distribution'}
+                        />
+                      </span>
+                    ) : (
+                      <span>
+                        <PrivyWeb3Button
+                          v5
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          label="Get Voting Power"
+                          action={() => router.push('/lock')}
+                          className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                        />
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -504,9 +534,7 @@ export function ProjectRewards({
               id="projects-container"
               className="bg-black/20 rounded-xl p-6 border border-white/10"
             >
-              <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
-                Active Projects
-              </h1>
+              <h1 className="font-GoodTimes text-white/80 text-xl mb-6">Active Projects</h1>
 
               <div className="flex flex-col gap-6">
                 {currentProjects && currentProjects.length > 0 ? (
@@ -520,17 +548,17 @@ export function ProjectRewards({
                         project={project}
                         projectContract={projectContract}
                         hatsContract={hatsContract}
-                        distribute={active && project.eligible}
-                        distribution={
-                          userHasVotingPower ? distribution : undefined
+                        distribute={
+                          rewardVotingActive &&
+                          project.eligible &&
+                          (project!.finalReportLink || project!.finalReportIPFS)
                         }
+                        distribution={userHasVotingPower ? distribution : undefined}
                         handleDistributionChange={
-                          userHasVotingPower
-                            ? handleDistributionChange
-                            : undefined
+                          userHasVotingPower ? handleDistributionChange : undefined
                         }
                         userHasVotingPower={userHasVotingPower}
-                        isVotingPeriod={active}
+                        isVotingPeriod={rewardVotingActive}
                         active={true}
                       />
                     </div>
@@ -541,17 +569,15 @@ export function ProjectRewards({
                   </div>
                 )}
 
-                {active && eligibleProjects && eligibleProjects.length > 0 && (
+                {rewardVotingActive && eligibleProjects && eligibleProjects.length > 0 && (
                   <div className="mt-6 w-full flex justify-end">
                     {userHasVotingPower ? (
                       <span className="flex flex-col md:flex-row md:items-center gap-2">
                         <PrivyWeb3Button
-                          action={handleSubmit}
+                          action={() => handleSubmit(distributionTableContract)}
                           requiredChain={chain}
                           className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
-                          label={
-                            edit ? 'Edit Distribution' : 'Submit Distribution'
-                          }
+                          label={edit ? 'Edit Distribution' : 'Submit Distribution'}
                         />
                       </span>
                     ) : (

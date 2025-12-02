@@ -257,7 +257,7 @@ export default function ProjectCard({
       {distribute ? (
         <ProjectCardContent
           project={project}
-          distribute={distribute && (project!.finalReportLink || project!.finalReportIPFS)}
+          distribute={distribute}
           userContributed={userContributed}
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}

@@ -33,7 +33,7 @@ contract Proposals is ERC721Holder, Ownable {
     uint256 private _tableId;
     string private _TABLE_PREFIX;
     string private constant VOTE_SCHEMA =
-        "id integer primary key, mdp integer, address text, vote text, unique(address, mdp)";
+        "id integer primary key, quarter integer, year integer, address text, distribution text, unique(quarter, year, address)";
 
     constructor(string memory _table_prefix, address _senatorsAddress, uint256 _quorum, uint256 _threshold) Ownable(msg.sender)  {
         _TABLE_PREFIX = _table_prefix;
@@ -100,28 +100,30 @@ contract Proposals is ERC721Holder, Ownable {
         }
     }
 
-    function insertIntoTable(uint256 mdp, string memory vote) external {
+    function insertIntoTable(uint256 quarter, uint256 year, string memory distribution) external {
         TablelandDeployments.get().mutate(
             address(this), // Table owner, i.e., this contract
             _tableId,
             SQLHelpers.toInsert(
                 _TABLE_PREFIX,
                 _tableId,
-                "mdp,address,vote",
+                "quarter,year,address,distribution",
                 string.concat(
-                    Strings.toString(mdp),
+                    Strings.toString(quarter),
+                    ",",
+                    Strings.toString(year),
                     ",",
                     SQLHelpers.quote(Strings.toHexString(msg.sender)),
                     ",",
                     "json(",
-                    SQLHelpers.quote(vote),
+                    SQLHelpers.quote(distribution),
                     ")"
                 )
             )
         );
     }
 
-    function updateTableCol(uint256 mdp, string memory vote) external {
+    function updateTableCol(uint256 quarter, uint256 year, string memory distribution) external {
         TablelandDeployments.get().mutate(
             address(this), // Table owner, i.e., this contract
             _tableId,
@@ -129,14 +131,16 @@ contract Proposals is ERC721Holder, Ownable {
                 _TABLE_PREFIX,
                 _tableId,
                 string.concat(
-                "vote=",
+                "distribution=",
                     "json(",
-                    SQLHelpers.quote(vote),
+                    SQLHelpers.quote(distribution),
                     ")"
                 ),
                 string.concat(
-                    "mdp = ",
-                    Strings.toString(mdp),
+                    "quarter = ",
+                    Strings.toString(quarter),
+                    " AND year = ",
+                    Strings.toString(year),
                     " AND address = ",
                     SQLHelpers.quote(Strings.toHexString(msg.sender))
                 )
@@ -144,14 +148,16 @@ contract Proposals is ERC721Holder, Ownable {
         );
     }
 
-    function deleteFromTable(uint256 mdp) external {
+    function deleteFromTable(uint256 quarter, uint256 year) external {
         TablelandDeployments.get().mutate(
             address(this),
             _tableId,
             SQLHelpers.toDelete(_TABLE_PREFIX, _tableId,
                 string.concat(
-                    "mdp = ",
-                    Strings.toString(mdp),
+                    "quarter = ",
+                    Strings.toString(quarter),
+                    " AND year = ",
+                    Strings.toString(year),
                     " AND address = ",
                     SQLHelpers.quote(Strings.toHexString(msg.sender))
                 )
@@ -177,4 +183,3 @@ contract Proposals is ERC721Holder, Ownable {
     }
 
 }
-
