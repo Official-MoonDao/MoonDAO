@@ -19,7 +19,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const channelId = process.env.YOUTUBE_CHANNEL_ID
     const openaiModel = process.env.OPENAI_MODEL || 'gpt-4'
     const whisperModel = process.env.WHISPER_MODEL || 'whisper-1'
-    const tagId = process.env.TOWNHALL_CONVERTKIT_TAG_ID
     const processingServiceUrl = process.env.TOWNHALL_PROCESSING_SERVICE_URL
 
     if (!youtubeApiKey || !channelId) {
@@ -44,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     }
 
-    const existing = await findBroadcastByVideoId(latestVideo.id, tagId)
+    const existing = await findBroadcastByVideoId(latestVideo.id)
 
     if (existing) {
       return res.status(200).json({
@@ -76,7 +75,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         openaiModel: openaiModel,
         whisperModel: whisperModel,
         convertKitApiKey: process.env.CONVERT_KIT_API_KEY || process.env.CONVERT_KIT_V4_API_KEY,
-        convertKitTagId: tagId,
       }),
     }).catch((error) => {
       // Log errors but don't block the response

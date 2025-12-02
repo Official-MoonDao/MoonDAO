@@ -1,7 +1,7 @@
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { getTownHallBroadcasts } from '../../../lib/townhall/convertkit'
+import { getSummaries } from '../../../lib/townhall/summaries'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -9,49 +9,19 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   try {
-    const tagId = process.env.TOWNHALL_CONVERTKIT_TAG_ID
     const limit = parseInt(req.query.limit as string) || 20
     const offset = parseInt(req.query.offset as string) || 0
+    const search = req.query.search as string | undefined
 
-    const broadcasts = await getTownHallBroadcasts(tagId)
+    console.log(`[townhall/summaries] Fetching summaries with limit: ${limit}, offset: ${offset}, search: ${search || 'none'}`)
 
-    const filteredBroadcasts = broadcasts
-      .filter((broadcast) => broadcast.public)
-      .sort((a, b) => {
-        const dateA = new Date(a.published_at || a.created_at || 0).getTime()
-        const dateB = new Date(b.published_at || b.created_at || 0).getTime()
-        return dateB - dateA
-      })
-      .slice(offset, offset + limit)
+    const result = await getSummaries({ limit, offset, search })
 
-    const summaries = filteredBroadcasts.map((broadcast) => {
-      // Extract video ID from broadcast content
-      // Format: <!-- TOWNHALL_VIDEO_ID:abc123 -->
-      let videoId: string | undefined
-      if (broadcast.content) {
-        const videoIdMatch = broadcast.content.match(/<!-- TOWNHALL_VIDEO_ID:([^>]+) -->/)
-        if (videoIdMatch && videoIdMatch[1]) {
-          videoId = videoIdMatch[1]
-        }
-      }
+    console.log(
+      `[townhall/summaries] Found ${result.summaries.length} summaries out of ${result.total} total`
+    )
 
-      return {
-        id: broadcast.id,
-        title: broadcast.subject,
-        content: broadcast.content,
-        publishedAt: broadcast.published_at || broadcast.created_at,
-        url: broadcast.public_url,
-        createdAt: broadcast.created_at,
-        videoId: videoId,
-      }
-    })
-
-    return res.status(200).json({
-      summaries,
-      total: filteredBroadcasts.length,
-      limit,
-      offset,
-    })
+    return res.status(200).json(result)
   } catch (error) {
     console.error('Error fetching town hall summaries:', error)
     return res.status(500).json({
