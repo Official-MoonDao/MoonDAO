@@ -7,7 +7,6 @@ import ProjectABI from 'const/abis/Project.json'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { runQuadraticVoting } from '@/lib/utils/rewards'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
-import VotingResults from '@/components/nance/VotingResults'
 import ProposalVotes from '@/components/nance/ProposalVotes'
 import ProposalsABI from 'const/abis/Proposals.json'
 import DropDownMenu from '@/components/nance/DropDownMenu'
@@ -221,21 +220,8 @@ export default function ProjectProfile({
                 </div>
                 <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] flex flex-col h-fit">
                   <div className="px-[10px] p-5">
-                    {project.active == PROJECT_PENDING ? (
-                      proposalStatus === 'Temperature Check' ? (
-                        <TempCheck mdp={project.MDP} />
-                      ) : (
-                        <>
-                          <ProposalVotes
-                            project={project}
-                            votes={votes}
-                            proposalStatus={proposalStatus}
-                          />
-                        </>
-                      )
-                    ) : (
-                      <VotingResults voteOutcome={voteOutcome} votes={votes} threshold={0} />
-                    )}
+                    {project.active == PROJECT_PENDING &&
+                      proposalStatus === 'Temperature Check' && <TempCheck mdp={project.MDP} />}
                   </div>
                 </div>
               </div>
