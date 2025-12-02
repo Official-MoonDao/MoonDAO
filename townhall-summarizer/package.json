@@ -9,18 +9,22 @@
     "dev": "ts-node src/server.ts",
     "test": "ts-node src/test.ts",
     "retro": "ts-node src/retro.ts",
+    "tag-broadcast": "ts-node src/tag-broadcast.ts",
+    "delete-broadcast": "ts-node src/delete-broadcast.ts",
     "get-channel-id": "ts-node src/utils/get-channel-id.ts",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:build": "docker-compose build",
     "docker:logs": "docker-compose logs -f",
     "docker:restart": "docker-compose restart",
-    "docker:test": "docker-compose --profile test build --no-cache townhall-summarizer test && docker-compose --profile test up -d townhall-summarizer && sleep 3 && docker-compose --profile test run --rm test yarn test"
+    "docker:test": "docker-compose --profile test build --no-cache townhall-summarizer test && docker-compose --profile test up -d townhall-summarizer && sleep 3 && docker-compose --profile test run --rm test yarn test",
+    "docker:retro": "./docker-retro.sh"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
     "express": "^4.18.2",
     "groq-sdk": "^0.37.0",
+    "marked": "^17.0.1",
     "undici": "^5.28.0"
   },
   "devDependencies": {

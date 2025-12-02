@@ -34,17 +34,17 @@ const llmState: RateLimitState = {
 };
 
 const whisperLimits: RateLimits = {
-  rpm: 20,
-  rpd: 2000,
-  ash: 7200,
-  asd: 28800,
+  rpm: parseInt(process.env.GROQ_WHISPER_RPM || "300", 10),
+  rpd: parseInt(process.env.GROQ_WHISPER_RPD || "200000", 10),
+  ash: parseInt(process.env.GROQ_WHISPER_ASH || "200000", 10),
+  asd: parseInt(process.env.GROQ_WHISPER_ASD || "4000000", 10),
 };
 
 const llmLimits: RateLimits = {
-  rpm: 30,
-  rpd: 1000,
-  tpm: 12000,
-  tpd: 100000,
+  rpm: parseInt(process.env.GROQ_LLM_RPM || "1000", 10),
+  rpd: parseInt(process.env.GROQ_LLM_RPD || "500000", 10),
+  tpm: parseInt(process.env.GROQ_LLM_TPM || "300000", 10),
+  tpd: parseInt(process.env.GROQ_LLM_TPD || "10000000", 10),
 };
 
 function getCurrentMinute(): number {

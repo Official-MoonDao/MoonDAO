@@ -33,7 +33,6 @@ interface ProcessRequestBody {
   groqModel?: string;
   whisperModel?: string;
   convertKitApiKey?: string;
-  convertKitTagId?: string;
   testMode?: boolean;
 }
 
@@ -62,7 +61,6 @@ app.post(
         groqModel = "llama-3.3-70b-versatile",
         whisperModel = "whisper-large-v3",
         convertKitApiKey,
-        convertKitTagId,
         testMode = false,
       } = req.body;
 
@@ -149,8 +147,7 @@ app.post(
         broadcast = await createConvertKitBroadcast(
           broadcastSubject,
           formattedSummary,
-          convertKitApiKey!,
-          convertKitTagId
+          convertKitApiKey!
         );
       } else {
         console.log("Test mode: Skipping ConvertKit broadcast creation");

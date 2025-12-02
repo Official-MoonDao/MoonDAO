@@ -8,14 +8,35 @@ export interface ConvertKitBroadcast {
   public_url?: string;
 }
 
+/**
+ * Checks if a broadcast is a town hall summary by looking for content markers.
+ * Town hall summaries contain:
+ * - <!-- TOWNHALL_VIDEO_ID:... --> comment
+ * - <h1>Town Hall Summary - ...</h1> heading
+ */
+function isTownHallSummary(broadcast: ConvertKitBroadcast): boolean {
+  if (!broadcast.content) {
+    return false
+  }
+
+  // Check for TOWNHALL_VIDEO_ID marker (most reliable)
+  if (broadcast.content.includes('<!-- TOWNHALL_VIDEO_ID:')) {
+    return true
+  }
+
+  // Check for Town Hall Summary heading (fallback)
+  if (broadcast.content.includes('<h1>Town Hall Summary -')) {
+    return true
+  }
+
+  return false
+}
+
 export async function getTownHallBroadcasts(
-  apiKey: string,
-  tagId?: string
+  apiKey: string
 ): Promise<ConvertKitBroadcast[]> {
   try {
-    const endpoint = tagId
-      ? `https://api.convertkit.com/v4/broadcasts?tag_id=${tagId}`
-      : "https://api.convertkit.com/v4/broadcasts";
+    const endpoint = "https://api.convertkit.com/v4/broadcasts";
 
     const response = await fetch(endpoint, {
       method: "GET",
@@ -32,7 +53,11 @@ export async function getTownHallBroadcasts(
     const data = (await response.json()) as {
       broadcasts?: ConvertKitBroadcast[];
     };
-    return data.broadcasts || [];
+    const allBroadcasts = data.broadcasts || [];
+
+    // Filter broadcasts to only include town hall summaries
+    // We identify them by content markers, not tags (since ConvertKit doesn't support tagging broadcasts)
+    return allBroadcasts.filter(isTownHallSummary);
   } catch (error) {
     console.error("Error fetching ConvertKit broadcasts:", error);
     return [];
@@ -41,11 +66,10 @@ export async function getTownHallBroadcasts(
 
 export async function findBroadcastByVideoId(
   videoId: string,
-  apiKey: string,
-  tagId?: string
+  apiKey: string
 ): Promise<ConvertKitBroadcast | null> {
   try {
-    const broadcasts = await getTownHallBroadcasts(apiKey, tagId);
+    const broadcasts = await getTownHallBroadcasts(apiKey);
 
     for (const broadcast of broadcasts) {
       if (
@@ -66,8 +90,7 @@ export async function findBroadcastByVideoId(
 export async function createConvertKitBroadcast(
   subject: string,
   content: string,
-  apiKey: string,
-  tagId?: string
+  apiKey: string
 ): Promise<ConvertKitBroadcast> {
   console.log("Creating ConvertKit broadcast as draft");
   const broadcastEndpoint = "https://api.convertkit.com/v4/broadcasts";
@@ -96,10 +119,6 @@ export async function createConvertKitBroadcast(
   const data = (await response.json()) as { broadcast: ConvertKitBroadcast };
   const broadcast = data.broadcast;
 
-  if (tagId && broadcast?.id) {
-    await tagBroadcast(broadcast.id, tagId, apiKey);
-  }
-
   console.log(
     `Broadcast draft created successfully: ${broadcast.id} (requires manual send in ConvertKit)`
   );
@@ -113,7 +132,7 @@ export async function tagBroadcast(
 ): Promise<void> {
   const tagEndpoint = `https://api.convertkit.com/v4/broadcasts/${broadcastId}/tags`;
 
-  await fetch(tagEndpoint, {
+  const response = await fetch(tagEndpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -123,4 +142,37 @@ export async function tagBroadcast(
       tag_id: tagId,
     }),
   });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Failed to tag broadcast ${broadcastId} with tag ${tagId}: ${response.status} ${errorText}`
+    );
+  }
+
+  console.log(`✅ Successfully tagged broadcast ${broadcastId} with tag ${tagId}`);
+}
+
+export async function deleteBroadcast(
+  broadcastId: string,
+  apiKey: string
+): Promise<void> {
+  const deleteEndpoint = `https://api.convertkit.com/v4/broadcasts/${broadcastId}`;
+
+  const response = await fetch(deleteEndpoint, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Kit-Api-Key": apiKey,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Failed to delete broadcast ${broadcastId}: ${response.status} ${errorText}`
+    );
+  }
+
+  console.log(`✅ Successfully deleted broadcast ${broadcastId}`);
 }

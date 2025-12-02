@@ -145,6 +145,18 @@ Returns `{ "status": "ok" }` if the service is running.
 Process multiple historical townhall videos retroactively using the retro script.
 
 1. **Set Required Environment Variables**:
+   
+   **Option 1: Create a `.env` file (recommended)**:
+   Create a `.env` file in the `townhall-summarizer` directory:
+   ```bash
+   GROQ_API_KEY=your-groq-api-key
+   YOUTUBE_API_KEY=your-youtube-api-key
+   CONVERT_KIT_API_KEY=your-convertkit-api-key
+   TOWNHALL_CONVERTKIT_TAG_ID=your-tag-id
+   ALLOWED_YOUTUBE_CHANNEL_ID=UC_xxxxx  # Optional: restrict to specific channel
+   ```
+   
+   **Option 2: Export in your shell**:
    ```bash
    export GROQ_API_KEY=your-groq-api-key
    export YOUTUBE_API_KEY=your-youtube-api-key
@@ -152,8 +164,8 @@ Process multiple historical townhall videos retroactively using the retro script
    export TOWNHALL_CONVERTKIT_TAG_ID=your-tag-id
    export ALLOWED_YOUTUBE_CHANNEL_ID=UC_xxxxx  # Optional: restrict to specific channel
    ```
-
-   Or create a `.env` file in the `townhall-summarizer` directory with these variables.
+   
+   **Important**: The `.env` file is gitignored, so you'll need to create it locally. Docker Compose will automatically read from `.env` if it exists.
 
 2. **Run Retro Script**:
    ```bash
@@ -183,6 +195,30 @@ Process multiple historical townhall videos retroactively using the retro script
    ```
 
 **Note**: Broadcasts are created as drafts in ConvertKit and require manual review and sending. The script automatically skips videos that have already been processed (checks for existing ConvertKit broadcasts).
+
+### Video Processing Order
+
+**Important**: When processing multiple retro videos, they will be automatically sorted by their YouTube published date (oldest first) to ensure they appear in the correct chronological order on the website.
+
+The system uses the video's `publishedAt` date from YouTube as the primary sorting mechanism. Videos are processed in chronological order (oldest first), which ensures they appear correctly on the townhall summaries page.
+
+**How it works:**
+1. The script fetches metadata for all provided videos
+2. Videos are automatically sorted by their YouTube `publishedAt` date (oldest first)
+3. Videos are then processed in this sorted order
+4. On the website, summaries are displayed sorted by video publication date (newest first)
+
+**Best Practice**: You can provide videos in any order - the script will automatically sort them chronologically. However, processing them in order (oldest first) is recommended for consistency.
+
+**Example:**
+```bash
+# These will be automatically sorted by published date before processing
+yarn retro VIDEO_ID_3 VIDEO_ID_1 VIDEO_ID_2
+# Result: Videos will be processed in order: 1, 2, 3 (by published date)
+#         And displayed on website as: 3, 2, 1 (newest first)
+```
+
+**Fallback Sorting**: If video publication dates cannot be determined, the system falls back to using ConvertKit broadcast creation dates for sorting.
 
 ### Docker Compose
 
@@ -244,6 +280,63 @@ Run the test script inside Docker containers:
    ```
 
 **Note**: The `SERVICE_URL` is automatically set to `http://townhall-summarizer:8080` in the test container, so the test service connects to the main service running in Docker.
+
+#### Running Retro Script in Docker
+
+Run the retro script inside Docker for consistent environment and no local setup required.
+
+1. **Set Required Environment Variables**:
+   ```bash
+   export GROQ_API_KEY=your-groq-api-key
+   export YOUTUBE_API_KEY=your-youtube-api-key
+   export CONVERT_KIT_API_KEY=your-convertkit-api-key
+   export TOWNHALL_CONVERTKIT_TAG_ID=your-tag-id
+   export ALLOWED_YOUTUBE_CHANNEL_ID=UC_xxxxx  # Optional: restrict to specific channel
+   ```
+
+2. **Run Retro Script**:
+   
+   **Using yarn (recommended - passes arguments automatically)**:
+   ```bash
+   yarn docker:retro VIDEO_ID_1 VIDEO_ID_2
+   ```
+   
+   Example:
+   ```bash
+   yarn docker:retro dQw4w9WgXcQ KNejl2ThCf0
+   ```
+   
+   **Or using docker-compose directly**:
+   ```bash
+   docker-compose --profile retro build retro
+   docker-compose --profile retro run --rm retro yarn retro VIDEO_ID_1 VIDEO_ID_2
+   ```
+
+**Benefits of running retro in Docker:**
+- No need to install yt-dlp, ffmpeg, Python, or other dependencies locally
+- Consistent environment matching production
+- Isolated from your local system
+- Same Node version and dependencies as the production service
+
+**Note**: The retro script will automatically sort videos by their published date (oldest first) before processing, ensuring correct chronological order on the website.
+
+#### Tagging an Existing Broadcast
+
+If you created a broadcast without tagging it (e.g., `TOWNHALL_CONVERTKIT_TAG_ID` wasn't set), you can tag it manually:
+
+```bash
+# Set the tag ID
+export TOWNHALL_CONVERTKIT_TAG_ID=your-tag-id
+export CONVERT_KIT_API_KEY=your-api-key
+
+# Tag the broadcast
+yarn tag-broadcast 22037489
+```
+
+Or using Docker:
+```bash
+docker-compose --profile retro run --rm retro yarn tag-broadcast 22037489
+```
 
 ### Rate Limits
 

@@ -361,32 +361,37 @@ export async function transcribeAudio(
 export function getTownHallSummaryPrompt(transcript: string): string {
   return `You are summarizing a MoonDAO Town Hall meeting transcript. MoonDAO Townhalls follow a structured format. Please organize your summary accordingly:
 
-**Guest Speaker**
+## Guest Speaker
 - Name and background of the guest
 - Key topics discussed by the guest
 - Important points from their presentation or conversation with the MoonDAO team
 - Note: Sometimes there is no guest speaker
 
-**Project Updates**
+## Project Updates
 - List each active project and its current status
 - Updates from project leaders
 - Progress, milestones, or challenges mentioned
 - Note: Sometimes there are no project updates or no active projects
 
-**New Proposals**
+## New Proposals
 - Any proposals being presented for upcoming votes
 - Key details, rationale, and implications of each proposal
 - Voting timelines if mentioned
 - Budget if mentioned in ETH or ERC20(DIA, USDC, USDT, etc.), do not mention USD values
 - Note: Sometimes there are no new proposals
 
-**Additional Information**
+## Additional Information
 - Any other important announcements, updates, or community news
 - Action items or next steps for the community
 - Important dates or deadlines
 - Note: This section may not always be present
 
-Format your response with clear section headers (use **bold** for headers). Use bullet points for lists. If a section is not present in the transcript, omit it entirely (don't write "No guest speaker" or "No updates"). Make it easy to scan and understand.
+IMPORTANT FORMATTING RULES:
+- Use ## for section headers (not **bold**)
+- Use - for bullet points
+- Add TWO blank lines between sections
+- If a section is not present in the transcript, omit it entirely (don't write "No guest speaker" or "No updates")
+- Make it easy to scan and understand
 
 Transcript:
 ${transcript}
@@ -526,28 +531,32 @@ export async function summarizeTranscript(
     console.log("Creating final consolidated summary...");
     const finalPrompt = `You are consolidating multiple summaries from a MoonDAO Town Hall meeting. These summaries were created by splitting a long transcript into chunks. Please merge them into a single, well-organized summary following the same format. Remove any duplicate information and ensure the summary flows naturally:
 
-**Guest Speaker**
+## Guest Speaker
 - Name and background of the guest
 - Key topics discussed by the guest
 - Important points from their presentation or conversation with the MoonDAO team
 
-**Project Updates**
+## Project Updates
 - List each active project and its current status
 - Updates from project leaders
 - Progress, milestones, or challenges mentioned
 
-**New Proposals**
+## New Proposals
 - Any proposals being presented for upcoming votes
 - Key details, rationale, and implications of each proposal
 - Voting timelines if mentioned
 - Budget if mentioned in ETH or ERC20(DIA, USDC, USDT, etc.), do not mention USD values
 
-**Additional Information**
+## Additional Information
 - Any other important announcements, updates, or community news
 - Action items or next steps for the community
 - Important dates or deadlines
 
-Format your response with clear section headers (use **bold** for headers). Use bullet points for lists. If a section is not present, omit it entirely.
+IMPORTANT FORMATTING RULES:
+- Use ## for section headers (not **bold**)
+- Use - for bullet points
+- Add TWO blank lines between sections
+- If a section is not present, omit it entirely
 
 Summaries to consolidate:
 ${combinedSummary}
@@ -632,27 +641,43 @@ export function formatSummaryForConvertKit(
   videoDate: string,
   videoId?: string
 ): string {
-  const formattedDate = new Date(videoDate).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
   const videoIdComment = videoId ? `<!-- TOWNHALL_VIDEO_ID:${videoId} -->` : "";
+  const videoDateComment = `<!-- TOWNHALL_VIDEO_DATE:${videoDate} -->`;
 
   const videoUrl = videoId
     ? `https://www.youtube.com/watch?v=${videoId}`
     : "https://youtube.com/@officialmoondao";
 
+  // Convert markdown to HTML for ConvertKit
+  const { marked } = require("marked");
+
+  // Configure marked for ConvertKit compatibility
+  marked.setOptions({
+    breaks: true, // Convert \n to <br>
+    gfm: true, // GitHub Flavored Markdown
+  });
+
+  // Convert the markdown summary to HTML (use parseInline for synchronous parsing)
+  // marked.parse() is synchronous in v17, but returns string
+  let htmlSummary: string;
+  try {
+    htmlSummary = marked.parse(summary) as string;
+  } catch (error) {
+    // Fallback: if parsing fails, just use the original summary
+    console.warn("Failed to parse markdown, using original summary:", error);
+    htmlSummary = summary;
+  }
+
   return `
 ${videoIdComment}
-<h1>Town Hall Summary - ${formattedDate}</h1>
+${videoDateComment}
+<h1>Town Hall Summary</h1>
 <h2>${videoTitle}</h2>
 
-${summary}
+${htmlSummary}
 
 <hr>
 
-<p><em>This summary was automatically generated from the Town Hall transcript. Watch the full video on <a href="${videoUrl}">YouTube</a>.</em></p>
+<p><em>This summary was automatically generated from the Town Hall transcript. Watch the full video on <a href="${videoUrl}" target="_blank" rel="noopener noreferrer">YouTube</a>.</em></p>
 `;
 }

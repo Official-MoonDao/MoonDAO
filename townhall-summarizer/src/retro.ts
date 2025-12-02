@@ -31,7 +31,6 @@ async function processVideo(
   videoInput: string,
   youtubeApiKey: string,
   convertKitApiKey: string,
-  tagId: string | undefined,
   groqModel: string,
   whisperModel: string
 ): Promise<ProcessResult> {
@@ -45,12 +44,11 @@ async function processVideo(
       };
     }
 
-    const existing = await findBroadcastByVideoId(
-      videoId,
-      convertKitApiKey,
-      tagId
-    );
+    const existing = await findBroadcastByVideoId(videoId, convertKitApiKey);
     if (existing) {
+      console.log(
+        `⏭️  Skipping ${videoId}: Already processed (broadcast ID: ${existing.id})`
+      );
       return {
         videoInput,
         videoId,
@@ -108,8 +106,7 @@ async function processVideo(
     const broadcast = await createConvertKitBroadcast(
       broadcastSubject,
       formattedSummary,
-      convertKitApiKey,
-      tagId
+      convertKitApiKey
     );
 
     return {
@@ -145,7 +142,6 @@ async function main() {
     process.env.CONVERT_KIT_API_KEY || process.env.CONVERT_KIT_V4_API_KEY;
   const groqModel = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
   const whisperModel = process.env.WHISPER_MODEL || "whisper-large-v3";
-  const tagId = process.env.TOWNHALL_CONVERTKIT_TAG_ID;
 
   if (!youtubeApiKey) {
     console.error("Error: YOUTUBE_API_KEY environment variable is required");
@@ -164,27 +160,106 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Processing ${videoInputs.length} video(s)...\n`);
+  console.log(`Fetching metadata for ${videoInputs.length} video(s)...\n`);
+
+  // Fetch metadata for all videos first to sort them by published date
+  interface VideoWithMetadata {
+    videoInput: string;
+    videoId: string;
+    metadata: NonNullable<Awaited<ReturnType<typeof getVideoMetadata>>>;
+  }
+
+  const videosWithMetadata: VideoWithMetadata[] = [];
+  const invalidVideos: string[] = [];
+
+  for (const videoInput of videoInputs) {
+    const videoId = extractVideoId(videoInput);
+    if (!videoId) {
+      invalidVideos.push(videoInput);
+      continue;
+    }
+
+    try {
+      const metadata = await getVideoMetadata(videoId, youtubeApiKey);
+      if (!metadata) {
+        invalidVideos.push(videoInput);
+        continue;
+      }
+
+      const allowedChannelId = process.env.ALLOWED_YOUTUBE_CHANNEL_ID;
+      if (allowedChannelId) {
+        const isValidChannel = await validateVideoChannel(
+          metadata,
+          allowedChannelId
+        );
+        if (!isValidChannel) {
+          console.warn(
+            `Skipping video ${videoId}: not from allowed channel. Channel: ${metadata.channelTitle} (${metadata.channelId})`
+          );
+          invalidVideos.push(videoInput);
+          continue;
+        }
+      }
+
+      // TypeScript now knows metadata is non-null here
+      videosWithMetadata.push({ videoInput, videoId, metadata });
+    } catch (error) {
+      console.warn(`Failed to fetch metadata for ${videoInput}:`, error);
+      invalidVideos.push(videoInput);
+    }
+  }
+
+  if (invalidVideos.length > 0) {
+    console.warn(
+      `\n⚠️  Warning: ${invalidVideos.length} invalid video(s) will be skipped:`
+    );
+    invalidVideos.forEach((v) => console.warn(`  - ${v}`));
+  }
+
+  // Process videos in the order provided (preserves user's intended order)
+  console.log(
+    `\nProcessing ${videosWithMetadata.length} video(s) in provided order...\n`
+  );
+  console.log("Processing order:");
+  videosWithMetadata.forEach((v, i) => {
+    const date = new Date(v.metadata.publishedAt).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+    console.log(`  ${i + 1}. ${v.metadata.title} (${date})`);
+  });
+  console.log();
 
   const results: ProcessResult[] = [];
 
-  for (const videoInput of videoInputs) {
+  for (const { videoInput } of videosWithMetadata) {
     const result = await processVideo(
       videoInput,
       youtubeApiKey,
       convertKitApiKey,
-      tagId,
       groqModel,
       whisperModel
     );
     results.push(result);
   }
 
+  // Add errors for invalid videos
+  for (const videoInput of invalidVideos) {
+    results.push({
+      videoInput,
+      success: false,
+      error: "Invalid video URL/ID or metadata not found",
+    });
+  }
+
   console.log("\n" + "=".repeat(50));
   console.log("Retroactive processing completed!");
   console.log("=".repeat(50));
-  console.log(`Total: ${videoInputs.length}`);
-  console.log(`Successful: ${results.filter((r) => r.success).length}`);
+  console.log(`Total videos provided: ${videoInputs.length}`);
+  console.log(
+    `Successfully processed: ${results.filter((r) => r.success).length}`
+  );
   console.log(`Failed: ${results.filter((r) => !r.success).length}`);
   console.log("\nResults:");
   console.log(JSON.stringify(results, null, 2));
