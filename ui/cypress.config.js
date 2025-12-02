@@ -192,5 +192,6 @@ module.exports = defineConfig({
       },
     },
     supportFile: 'cypress/support/component.ts',
+    excludeSpecPattern: ['**/node_modules/**', '**/dist/**'],
   },
 })

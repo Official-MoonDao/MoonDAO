@@ -31,7 +31,7 @@ export default function WeeklyRewardPool() {
   const { wallets } = useWallets()
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
   const chains: Chain[] = useMemo(
-    () => (isTestnet ? [sepolia, arbitrumSepolia] : [ethereum]),
+    () => (isTestnet ? [sepolia, arbitrumSepolia] : [ethereum, arbitrum, base]),
     [isTestnet]
   )
 
