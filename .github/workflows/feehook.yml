@@ -3,10 +3,12 @@ name: FeeHook
 on:
   push:
     branches: [main]
-    paths-ignore: ['**.md']
+    paths:
+      - fee-hook/**
   pull_request:
     branches: [main]
-    paths-ignore: ['**.md']
+    paths:
+      - fee-hook/**
 
 env:
   FOUNDRY_PROFILE: ci
