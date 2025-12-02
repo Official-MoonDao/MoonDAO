@@ -1126,13 +1126,19 @@ export default function SingedInDashboard({
             {/* Buttons on the right */}
             <div className="flex gap-4">
               <StandardButton
-                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-8 py-4 rounded-xl font-medium transition-all text-base"
+                className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 px-8 py-4 rounded-xl font-medium transition-all text-base whitespace-nowrap"
+                link="/contributions"
+              >
+                Submit Contribution
+              </StandardButton>
+              <StandardButton
+                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-8 py-4 rounded-xl font-medium transition-all text-base whitespace-nowrap"
                 link="/proposals"
               >
                 Propose Project
               </StandardButton>
               <StandardButton
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg transition-all text-base"
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg transition-all text-base whitespace-nowrap"
                 link="/projects"
               >
                 View All Projects
@@ -1146,7 +1152,7 @@ export default function SingedInDashboard({
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {currentProjects.slice(0, 6).map((project: any, index: number) => (
                   <Link key={index} href={`/project/${project.id}`} passHref>
-                    <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 min-h-[200px] flex flex-col">
+                    <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 h-[280px] flex flex-col">
                       <div className="flex justify-between items-start mb-4">
                         <h4 className="font-bold text-white text-lg flex-1 mr-3 leading-tight">
                           {project.name}
@@ -1161,12 +1167,12 @@ export default function SingedInDashboard({
                           {project.active ? 'Active' : 'Inactive'}
                         </span>
                       </div>
-                      <p className="text-green-100 text-sm leading-relaxed flex-1 overflow-hidden">
+                      <p className="text-green-100 text-sm leading-relaxed flex-1 overflow-hidden line-clamp-6">
                         {project.description?.length > 180
                           ? `${project.description.substring(0, 180)}...`
                           : project.description || 'No description available'}
                       </p>
-                      <div className="mt-4 pt-4 border-t border-green-500/10">
+                      <div className="mt-4 pt-4 border-t border-green-500/10 flex-shrink-0">
                         <div className="text-green-300 text-xs font-medium hover:text-green-200 transition-colors">
                           Click to view details →
                         </div>
@@ -1177,7 +1183,7 @@ export default function SingedInDashboard({
 
                 {/* Show more projects indicator if there are more than 6 */}
                 {currentProjects.length > 6 && (
-                  <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 min-h-[200px] flex items-center justify-center hover:bg-black/40 hover:border-green-500/20 transition-all duration-300">
+                  <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 h-[280px] flex items-center justify-center hover:bg-black/40 hover:border-green-500/20 transition-all duration-300">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-300 mb-2">
                         +{currentProjects.length - 6}
