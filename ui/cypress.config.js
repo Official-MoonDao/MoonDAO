@@ -141,40 +141,12 @@ module.exports = defineConfig({
 
       const integrationPattern = 'cypress/integration/**/*.cy.{js,ts,jsx,tsx}'
 
+      // Ensure specPattern is set before cypress-split runs
       if (!config.specPattern) {
         config.specPattern = integrationPattern
-        console.log(`[Cypress Config] Set initial specPattern to: ${integrationPattern}`)
       } else if (typeof config.specPattern === 'string') {
-        if (config.specPattern.includes('/e2e/')) {
-          // If somehow E2E tests got in, replace with integration pattern
-          console.warn(
-            '[Cypress Config] Warning: E2E tests detected in specPattern, replacing with integration pattern'
-          )
-          config.specPattern = integrationPattern
-        } else if (!config.specPattern.includes('/integration/')) {
-          // Ensure it includes integration directory
-          console.warn(
-            '[Cypress Config] Warning: specPattern does not include /integration/, replacing'
-          )
-          config.specPattern = integrationPattern
-        }
-      } else if (Array.isArray(config.specPattern)) {
-        // Filter out any E2E tests if it's already an array
-        const beforeFilter = config.specPattern.length
-        config.specPattern = config.specPattern.filter(
-          (spec) => !String(spec).includes('/e2e/') && String(spec).includes('/integration/')
-        )
-        if (beforeFilter !== config.specPattern.length) {
-          console.warn(
-            `[Cypress Config] Filtered ${
-              beforeFilter - config.specPattern.length
-            } E2E tests from array`
-          )
-        }
-        if (config.specPattern.length === 0) {
-          console.error(
-            '[Cypress Config] ERROR: No valid specs after initial filter, using default pattern'
-          )
+        // Ensure it's the integration pattern, not e2e
+        if (config.specPattern.includes('/e2e/') || !config.specPattern.includes('/integration/')) {
           config.specPattern = integrationPattern
         }
       }
@@ -182,54 +154,76 @@ module.exports = defineConfig({
       // Set environment variable to disable code splitting in Next.js config
       process.env.CYPRESS_COMPONENT_TEST = 'true'
 
+      // Log cypress-split environment variables for debugging
+      const splitEnv = process.env.SPLIT
+      const splitTotal = process.env.SPLIT_TOTAL
+      if (splitEnv && splitTotal) {
+        console.log(
+          `[Cypress Config] cypress-split env: SPLIT=${splitEnv}, SPLIT_TOTAL=${splitTotal}`
+        )
+      } else {
+        console.log(
+          '[Cypress Config] cypress-split env vars not set, running all tests sequentially'
+        )
+      }
+
+      // Apply cypress-split for test parallelization
       try {
         const splitConfig = cypressSplit(on, config)
         if (splitConfig) {
           config = splitConfig
-        }
-
-        const originalSpecCount = Array.isArray(config.specPattern)
-          ? config.specPattern.length
-          : typeof config.specPattern === 'string' && config.specPattern.includes(',')
-          ? config.specPattern.split(',').length
-          : 'unknown'
-
-        if (Array.isArray(config.specPattern)) {
-          config.specPattern = config.specPattern.filter(
-            (spec) => !spec.includes('/e2e/') && spec.includes('/integration/')
+          console.log(
+            `[Cypress Config] cypress-split applied. specPattern type: ${
+              Array.isArray(config.specPattern) ? 'array' : typeof config.specPattern
+            }`
           )
-        } else if (typeof config.specPattern === 'string') {
-          if (config.specPattern.includes(',')) {
-            const specs = config.specPattern
-              .split(',')
-              .map((s) => s.trim())
-              .filter((spec) => !spec.includes('/e2e/') && spec.includes('/integration/'))
-            config.specPattern =
-              specs.length > 0 ? specs : 'cypress/integration/**/*.cy.{js,ts,jsx,tsx}'
-            console.log(
-              `[Cypress Config] Filtered specs: ${originalSpecCount} -> ${specs.length} (removed E2E tests)`
-            )
-            if (specs.length === 0) {
-              console.error(
-                '[Cypress Config] ERROR: No valid specs after filtering! This will cause tests to hang.'
-              )
-            } else {
-              console.log(
-                `[Cypress Config] Valid specs after filtering: ${specs.slice(0, 5).join(', ')}${
-                  specs.length > 5 ? '...' : ''
-                }`
-              )
-            }
-          } else {
-            if (!config.specPattern.includes('/integration/')) {
-              config.specPattern = 'cypress/integration/**/*.cy.{js,ts,jsx,tsx}'
-            }
-          }
         }
       } catch (error) {
         console.error('[Cypress Config] Error in cypress-split:', error.message)
         console.error('[Cypress Config] Error stack:', error.stack)
         // Continue without splitting if there's an error
+      }
+
+      // Ensure specPattern is valid after cypress-split
+      // cypress-split converts specPattern to an array of specific files when SPLIT env vars are set
+      if (Array.isArray(config.specPattern)) {
+        // Filter out any e2e tests that might have snuck in
+        const beforeCount = config.specPattern.length
+        config.specPattern = config.specPattern.filter(
+          (spec) => String(spec).includes('/integration/') && !String(spec).includes('/e2e/')
+        )
+        if (config.specPattern.length === 0) {
+          console.error(
+            '[Cypress Config] ERROR: No valid specs after cypress-split, using default pattern'
+          )
+          config.specPattern = integrationPattern
+        } else if (beforeCount !== config.specPattern.length) {
+          console.log(
+            `[Cypress Config] Filtered ${beforeCount - config.specPattern.length} invalid specs`
+          )
+        }
+        console.log(`[Cypress Config] Running ${config.specPattern.length} specs in this container`)
+        if (config.specPattern.length <= 5) {
+          console.log(`[Cypress Config] Specs: ${config.specPattern.join(', ')}`)
+        } else {
+          console.log(
+            `[Cypress Config] First 5 specs: ${config.specPattern.slice(0, 5).join(', ')}...`
+          )
+        }
+      } else if (typeof config.specPattern === 'string') {
+        // Ensure it's a valid integration pattern
+        if (!config.specPattern.includes('/integration/') || config.specPattern.includes('/e2e/')) {
+          console.warn(
+            `[Cypress Config] Invalid specPattern: ${config.specPattern}, resetting to default`
+          )
+          config.specPattern = integrationPattern
+        }
+        console.log(`[Cypress Config] Using specPattern: ${config.specPattern}`)
+      } else {
+        console.error(
+          `[Cypress Config] ERROR: specPattern is unexpected type: ${typeof config.specPattern}, resetting to default`
+        )
+        config.specPattern = integrationPattern
       }
 
       config.env = {
@@ -258,7 +252,7 @@ module.exports = defineConfig({
 
       return config
     },
-    // specPattern is set in setupNodeEvents so cypress-split can modify it
+    specPattern: 'cypress/integration/**/*.cy.{js,ts,jsx,tsx}',
     devServer: {
       framework: 'next',
       bundler: 'webpack',
