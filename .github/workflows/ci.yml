@@ -249,29 +249,24 @@ jobs:
       - name: Run Component Tests (Container ${{ matrix.containers }}/4)
         working-directory: ui
         run: |
-          # Start Next.js dev server for component tests
-          yarn next dev -p 3001 &
-          SERVER_PID=$!
+          # Calculate unique port for each container to avoid conflicts
+          # Container 1: 3001, Container 2: 3002, Container 3: 3003, Container 4: 3004
+          PORT=$((3001 + ${{ matrix.containers }} - 1))
 
-          # Wait for server to be ready
-          echo "Waiting for dev server to start..."
-          sleep 10
-
-          # Health check
-          curl -I http://localhost:3001 || echo "⚠️ Server health check failed, continuing anyway..."
-
-          # Run tests with cypress-split
+          # Set environment variables for cypress-split and dev server
           export SPLIT=${{ matrix.containers }}
           export SPLIT_TOTAL=4
-          npx cypress run --component --browser chrome || TEST_EXIT_CODE=$?
+          export PORT=$PORT
+          export CYPRESS_WEBPACK_DEV_SERVER_PORT=$PORT
+          export CYPRESS_BASE_URL="http://localhost:$PORT"
 
-          # Clean up
-          kill $SERVER_PID || true
+          echo "Running container ${{ matrix.containers }}/4 on port $PORT"
+
+          # Cypress will automatically start the dev server via devServer config
+          npx cypress run --component --browser chrome || TEST_EXIT_CODE=$?
 
           exit ${TEST_EXIT_CODE:-0}
         env:
-          PORT: 3001
-          CYPRESS_BASE_URL: "http://localhost:3001"
           SPLIT: ${{ matrix.containers }}
           SPLIT_TOTAL: 4
 
