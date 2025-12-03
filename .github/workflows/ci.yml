@@ -256,27 +256,10 @@ jobs:
           # cypress-split uses: SPLIT (total containers) and SPLIT_INDEX (0-based index)
           # matrix.containers is 1-based (1,2,3,4), so convert to 0-based (0,1,2,3)
           SPLIT_INDEX=$(({{ matrix.containers }} - 1))
-
-          echo "=== Container ${{ matrix.containers }}/4 Configuration ==="
-          echo "PORT: $PORT"
-          echo "SPLIT: $SPLIT (total containers)"
-          echo "SPLIT_INDEX: $SPLIT_INDEX (0-based index)"
-          echo "================================"
-
-          # Export all environment variables
-          export SPLIT=$SPLIT
-          export SPLIT_INDEX=$SPLIT_INDEX
-          export PORT=$PORT
-          export CYPRESS_WEBPACK_DEV_SERVER_PORT=$PORT
-          export CYPRESS_BASE_URL="http://localhost:$PORT"
-
-          # Verify environment variables are set
-          echo "Verifying env vars:"
-          echo "  SPLIT=${SPLIT}"
-          echo "  SPLIT_INDEX=${SPLIT_INDEX}"
-          echo "  PORT=${PORT}"
+          SPLIT_TOTAL=4
 
           # Cypress will automatically start the dev server via devServer config
+          # The exported env vars will be available when Cypress loads the config file
           npx cypress run --component --browser chrome || TEST_EXIT_CODE=$?
 
           exit ${TEST_EXIT_CODE:-0}
