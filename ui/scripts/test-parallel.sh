@@ -181,6 +181,8 @@ for ((i=1; i<=WORKERS; i++)); do
     yarn cy:run-ct 2>&1 | \
     grep --line-buffered -v "webpack.cache.PackFileCacheStrategy" | \
     grep --line-buffered -v "Restoring failed" | \
+    grep --line-buffered -v "failed to trash the existing run results" | \
+    grep --line-buffered -v "Error: Command failed.*trash" | \
     tee "$LOG_DIR/worker-$i.log" | \
     while IFS= read -r line; do
       parse_cypress_line "$i" "$line" "$COLOR" || true
@@ -190,11 +192,12 @@ for ((i=1; i<=WORKERS; i++)); do
     EXIT_CODE=${PIPESTATUS[0]}
     WORKER_STATUS[$i]="completed"
     
-    # Show final status
+    # Note: Arrays modified in subshell don't persist, so we'll parse from logs later
+    # Just show completion status here
     if [ $EXIT_CODE -eq 0 ]; then
-      echo -e "${COLOR}[Worker $i]${NC} ${SUCCESS_GREEN}✓ Completed${NC} - Passed: ${WORKER_PASSED[$i]:-0}, Failed: ${WORKER_FAILED[$i]:-0}"
+      echo -e "${COLOR}[Worker $i]${NC} ${SUCCESS_GREEN}✓ Completed${NC}"
     else
-      echo -e "${COLOR}[Worker $i]${NC} ${ERROR_RED}✗ Failed${NC} (exit code: $EXIT_CODE) - Passed: ${WORKER_PASSED[$i]:-0}, Failed: ${WORKER_FAILED[$i]:-0}"
+      echo -e "${COLOR}[Worker $i]${NC} ${ERROR_RED}✗ Failed${NC} (exit code: $EXIT_CODE)"
     fi
     
     exit $EXIT_CODE
@@ -227,25 +230,50 @@ parse_log_statistics() {
   for ((i=1; i<=WORKERS; i++)); do
     local log_file="$LOG_DIR/worker-$i.log"
     if [ -f "$log_file" ]; then
-      # Extract passing count
-      local passing=$(grep -oE "([0-9]+)\ passing" "$log_file" | tail -1 | grep -oE "[0-9]+" | head -1)
-      if [ -n "$passing" ]; then
-        WORKER_PASSED[$i]="$passing"
+      # Count individual test passes from "✓ PASSED" lines in our formatted output
+      local passing_count=$(grep -c "✓ PASSED" "$log_file" 2>/dev/null || echo "0")
+      
+      # Also try to extract from Cypress summary lines (e.g., "5 passing" or "Tests: 5 passing")
+      local passing_summary=$(grep -oE "([0-9]+)\ passing" "$log_file" | tail -1 | grep -oE "[0-9]+" | head -1)
+      
+      # Use summary if available and reasonable, otherwise use count
+      if [ -n "$passing_summary" ] && [ "$passing_summary" -ge 0 ]; then
+        WORKER_PASSED[$i]="$passing_summary"
+      elif [ "$passing_count" -gt 0 ]; then
+        WORKER_PASSED[$i]="$passing_count"
+      else
+        WORKER_PASSED[$i]="0"
       fi
       
-      # Extract failing count
-      local failing=$(grep -oE "([0-9]+)\ failing" "$log_file" | tail -1 | grep -oE "[0-9]+" | head -1)
-      if [ -z "$failing" ]; then
-        failing=$(grep -oE "([0-9]+)\ failed" "$log_file" | tail -1 | grep -oE "[0-9]+" | head -1)
-      fi
-      if [ -n "$failing" ]; then
-        WORKER_FAILED[$i]="$failing"
+      # Count individual test failures - look for our formatted "✗ FAILED" or Cypress error patterns
+      local failing_count=$(grep -E "✗ FAILED|AssertionError" "$log_file" 2>/dev/null | grep -c "\.cy\." || echo "0")
+      
+      # Also try to extract from Cypress summary lines (e.g., "2 failing" or "Tests: 5 passing, 2 failing")
+      local failing_summary=$(grep -oE "([0-9]+)\ (failing|failed)" "$log_file" | tail -1 | grep -oE "[0-9]+" | head -1)
+      
+      # Use summary if available and reasonable, otherwise use count
+      if [ -n "$failing_summary" ] && [ "$failing_summary" -ge 0 ]; then
+        WORKER_FAILED[$i]="$failing_summary"
+      elif [ "$failing_count" -gt 0 ]; then
+        WORKER_FAILED[$i]="$failing_count"
+      else
+        WORKER_FAILED[$i]="0"
       fi
       
-      # Extract total tests from "Running:" lines
+      # Extract total tests from "Running:" lines with pattern (X of Y)
       local total=$(grep -oE "\([0-9]+\ of\ ([0-9]+)\)" "$log_file" | tail -1 | grep -oE "[0-9]+" | tail -1)
+      if [ -z "$total" ]; then
+        # Fallback: try to get from summary line like "Tests: 30"
+        total=$(grep -oE "Tests?:\ +([0-9]+)" "$log_file" | tail -1 | grep -oE "[0-9]+" | head -1)
+      fi
       if [ -n "$total" ]; then
         WORKER_TOTAL[$i]="$total"
+      else
+        # Last resort: count unique test files run
+        local unique_tests=$(grep -oE "▶ [^[:space:]]+\.cy\.(tsx|ts|jsx|js)" "$log_file" | sort -u | wc -l | tr -d ' ')
+        if [ -n "$unique_tests" ] && [ "$unique_tests" -gt 0 ]; then
+          WORKER_TOTAL[$i]="$unique_tests"
+        fi
       fi
       
       # Extract failed test files from error messages and test results
