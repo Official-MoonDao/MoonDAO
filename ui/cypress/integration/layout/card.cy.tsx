@@ -79,6 +79,10 @@ describe('<Card />', () => {
   })
 
   describe('Variants', () => {
+    beforeEach(() => {
+      cy.mountNextRouter('/')
+    })
+
     it('Renders gradient variant (default)', () => {
       cy.mount(<Card variant="gradient" header="Gradient Card" />)
       cy.get('#card-container').should('exist')
@@ -113,6 +117,10 @@ describe('<Card />', () => {
   })
 
   describe('Layouts', () => {
+    beforeEach(() => {
+      cy.mountNextRouter('/')
+    })
+
     it('Renders stats layout with value and trend', () => {
       cy.mount(
         <Card
@@ -188,8 +196,11 @@ describe('<Card />', () => {
   })
 
   describe('Props Combinations', () => {
-    it('Renders with icon as string', () => {
+    beforeEach(() => {
       cy.mountNextRouter('/')
+    })
+
+    it('Renders with icon as string', () => {
       cy.mount(<Card header="Icon Test" icon="/test-icon.svg" paragraph="Description" />)
       cy.get('img[alt=""]').should('exist')
     })
@@ -238,6 +249,10 @@ describe('<Card />', () => {
   })
 
   describe('Responsive Behavior', () => {
+    beforeEach(() => {
+      cy.mountNextRouter('/')
+    })
+
     it('Renders correctly on mobile', () => {
       cy.viewport('iphone-x')
       cy.mount(

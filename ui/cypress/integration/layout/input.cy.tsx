@@ -136,7 +136,7 @@ describe('<Input />', () => {
 
   it('Renders with custom maxWidth', () => {
     cy.mount(<Input maxWidth="max-w-[500px]" />)
-    cy.get('div').first().should('have.class', 'max-w-[500px]')
+    cy.get('[data-cy="input-wrapper"]').should('have.class', 'max-w-[500px]')
   })
 })
 

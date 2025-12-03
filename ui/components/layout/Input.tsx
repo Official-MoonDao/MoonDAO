@@ -92,7 +92,7 @@ export default function Input({
   )
 
   return (
-    <div className={`w-full h-full py-1 flex flex-col justify-between gap-2 ${maxWidth}`}>
+    <div data-cy="input-wrapper" className={`w-full h-full py-1 flex flex-col justify-between gap-2 ${maxWidth}`}>
       {(label || tooltip) && (
         <div className="flex flex-row items-center gap-2">
           {label && (

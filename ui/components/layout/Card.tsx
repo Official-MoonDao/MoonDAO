@@ -336,8 +336,8 @@ export default function Card({
 
   if (layout === 'stats' && stats) {
     return (
-      <div id={id} className={`${cardStyles.slateBorder} ${paddingClass} ${className}`}>
-        <div className="flex items-start justify-between">
+      <div id={id || 'card-container'} className={`${cardStyles.slateBorder} ${paddingClass} ${className}`}>
+        <div id="content-container" className="flex items-start justify-between">
           <div className="flex-1">
             <p className="text-sm text-slate-400 mb-2">{header || title}</p>
             <div className="flex items-baseline gap-2">
@@ -373,12 +373,13 @@ export default function Card({
 
     return (
       <div
-        id={id}
+        id={id || 'card-container'}
         className={`${gradientClasses} ${
           layout === 'launchpad' ? 'backdrop-blur-sm rounded-3xl' : 'rounded-xl'
         } ${paddingClass} ${borderClass} transition-all duration-300 group h-full ${className}`}
       >
         <div
+          id="content-container"
           className={`flex flex-col items-center text-center ${
             layout === 'launchpad' ? 'space-y-4 md:space-y-6 h-full' : 'space-y-3 md:space-y-4'
           }`}
@@ -397,6 +398,7 @@ export default function Card({
             >
               {typeof icon === 'string' ? (
                 <Image
+                  id="featured-icon"
                   src={icon}
                   alt={title || header || ''}
                   width={48}
@@ -472,13 +474,13 @@ export default function Card({
   if (maxWidthClassNames || gradientBg) {
     const maxWidth = maxWidthClassNames || 'max-w-md md:max-w-xl'
     return (
-      <div className={maxWidth} data-cy="main-card">
+      <div id={id || 'card-container'} className={maxWidth} data-cy="main-card">
         <div
           className={`card min-w-80 md:w-full rounded-[15px] border-[0.5px] border-gray-300 bg-black bg-opacity-30 shadow-indigo-40 text-white font-RobotoMono shadow-md overflow-visible ${
             gradientBg && 'bg-gradient-to-r from-n3blue to-n3green'
           }`}
         >
-          <div className={`card-body items-stretch items-center ${className}`}>
+          <div id="content-container" className={`card-body items-stretch items-center ${className}`}>
             {title && (
               <h2
                 className={`card-title text-center text-3xl font-medium mb-2 ${
@@ -532,9 +534,10 @@ export default function Card({
   }
 
   const iconElement = iconSrc ? (
-    <Image src={iconSrc} alt="Section icon" width={30} height={30} />
+    <Image id="featured-icon" src={iconSrc} alt="Section icon" width={30} height={30} />
   ) : typeof icon === 'string' ? (
     <Image
+      id="featured-icon"
       src={icon}
       alt={iconAlt || ''}
       width={inline ? 50 : 100}
@@ -550,7 +553,6 @@ export default function Card({
   const cardContent =
     variant === 'gradient' ? (
       <span
-        id={id}
         className={`animate-fadeIn flex flex-col relative ${variantClass} ${sizeClass} w-full h-full ${className}`}
       >
         <div className="flex-grow">
@@ -691,7 +693,7 @@ export default function Card({
       </span>
     ) : (
       <div
-        id={id}
+        id={id || 'card-container'}
         className={`${variantClass} ${sizeClass} ${paddingClass} ${className} ${
           height ? `h-[${height}]` : ''
         } ${isClickable ? 'cursor-pointer' : ''} ${
@@ -700,6 +702,7 @@ export default function Card({
             : ''
         }`}
       >
+        <div id="content-container">
         {(header || title || iconElement || iconSrc || actions || action) && (
           <div
             className={`flex ${
@@ -778,16 +781,17 @@ export default function Card({
         )}
 
         {footer && <div className="mt-4">{footer}</div>}
+        </div>
       </div>
     )
 
   const wrapper =
     variant === 'gradient' ? (
       <span
-        id="link-frame"
+        id={id || 'card-container'}
         className={`
         card-container min-w-[300px] w-[65vw] md:w-full flex lg:flex-col rounded-[20px] relative overflow-hidden 
-        ${link ? 'cursor-pointer' : ''}
+        ${link ? 'cursor-pointer' : ''} ${className}
       `}
       >
         {onClick ? (
