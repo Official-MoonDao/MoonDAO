@@ -155,31 +155,52 @@ module.exports = defineConfig({
       process.env.CYPRESS_COMPONENT_TEST = 'true'
 
       // Log cypress-split environment variables for debugging
-      const splitEnv = process.env.SPLIT
-      const splitTotal = process.env.SPLIT_TOTAL
-      if (splitEnv && splitTotal) {
+      // cypress-split uses: SPLIT (total) and SPLIT_INDEX (0-based)
+      const splitTotal = process.env.SPLIT
+      const splitIndex = process.env.SPLIT_INDEX
+
+      console.log('[Cypress Config] Environment check:')
+      console.log(
+        `  process.env.SPLIT: ${splitTotal || 'undefined'} (should be total containers, e.g. 4)`
+      )
+      console.log(
+        `  process.env.SPLIT_INDEX: ${
+          splitIndex || 'undefined'
+        } (should be 0-based index, e.g. 0,1,2,3)`
+      )
+
+      if (splitTotal && splitIndex !== undefined) {
         console.log(
-          `[Cypress Config] cypress-split env: SPLIT=${splitEnv}, SPLIT_TOTAL=${splitTotal}`
+          `[Cypress Config] ✓ cypress-split env vars detected: SPLIT=${splitTotal}, SPLIT_INDEX=${splitIndex}`
         )
       } else {
-        console.log(
-          '[Cypress Config] cypress-split env vars not set, running all tests sequentially'
+        console.warn(
+          '[Cypress Config] ⚠️ cypress-split env vars NOT detected - all containers will run ALL tests!'
         )
+        console.warn('[Cypress Config] This means tests will be duplicated across all containers.')
       }
 
       // Apply cypress-split for test parallelization
+      // cypress-split expects: SPLIT (total containers) and SPLIT_INDEX (0-based index)
       try {
         const splitConfig = cypressSplit(on, config)
         if (splitConfig) {
           config = splitConfig
           console.log(
-            `[Cypress Config] cypress-split applied. specPattern type: ${
+            `[Cypress Config] ✓ cypress-split applied. specPattern type: ${
               Array.isArray(config.specPattern) ? 'array' : typeof config.specPattern
             }`
           )
+          if (Array.isArray(config.specPattern)) {
+            console.log(
+              `[Cypress Config] ✓ Split into ${config.specPattern.length} specs for this container`
+            )
+          }
+        } else {
+          console.warn('[Cypress Config] ⚠️ cypress-split returned no config modification')
         }
       } catch (error) {
-        console.error('[Cypress Config] Error in cypress-split:', error.message)
+        console.error('[Cypress Config] ✗ Error in cypress-split:', error.message)
         console.error('[Cypress Config] Error stack:', error.stack)
         // Continue without splitting if there's an error
       }

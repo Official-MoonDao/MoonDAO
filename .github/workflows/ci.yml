@@ -253,22 +253,35 @@ jobs:
           # Container 1: 3001, Container 2: 3002, Container 3: 3003, Container 4: 3004
           PORT=$((3001 + ${{ matrix.containers }} - 1))
 
-          # Set environment variables for cypress-split and dev server
-          export SPLIT=${{ matrix.containers }}
-          export SPLIT_TOTAL=4
+          # cypress-split uses: SPLIT (total containers) and SPLIT_INDEX (0-based index)
+          # matrix.containers is 1-based (1,2,3,4), so convert to 0-based (0,1,2,3)
+          SPLIT_INDEX=$(({{ matrix.containers }} - 1))
+
+          echo "=== Container ${{ matrix.containers }}/4 Configuration ==="
+          echo "PORT: $PORT"
+          echo "SPLIT: $SPLIT (total containers)"
+          echo "SPLIT_INDEX: $SPLIT_INDEX (0-based index)"
+          echo "================================"
+
+          # Export all environment variables
+          export SPLIT=$SPLIT
+          export SPLIT_INDEX=$SPLIT_INDEX
           export PORT=$PORT
           export CYPRESS_WEBPACK_DEV_SERVER_PORT=$PORT
           export CYPRESS_BASE_URL="http://localhost:$PORT"
 
-          echo "Running container ${{ matrix.containers }}/4 on port $PORT"
+          # Verify environment variables are set
+          echo "Verifying env vars:"
+          echo "  SPLIT=${SPLIT}"
+          echo "  SPLIT_INDEX=${SPLIT_INDEX}"
+          echo "  PORT=${PORT}"
 
           # Cypress will automatically start the dev server via devServer config
           npx cypress run --component --browser chrome || TEST_EXIT_CODE=$?
 
           exit ${TEST_EXIT_CODE:-0}
         env:
-          SPLIT: ${{ matrix.containers }}
-          SPLIT_TOTAL: 4
+          SPLIT: 4
 
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v4
