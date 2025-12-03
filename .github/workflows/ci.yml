@@ -253,18 +253,19 @@ jobs:
           # Container 1: 3001, Container 2: 3002, Container 3: 3003, Container 4: 3004
           PORT=$((3001 + ${{ matrix.containers }} - 1))
 
-          # cypress-split uses: SPLIT (total containers) and SPLIT_INDEX (0-based index)
-          # matrix.containers is 1-based (1,2,3,4), so convert to 0-based (0,1,2,3)
-          SPLIT_INDEX=$(({{ matrix.containers }} - 1))
-          SPLIT_TOTAL=4
+          # Export port for dev server
+          export PORT=$PORT
+          export CYPRESS_WEBPACK_DEV_SERVER_PORT=$PORT
+          export CYPRESS_BASE_URL="http://localhost:$PORT"
 
           # Cypress will automatically start the dev server via devServer config
-          # The exported env vars will be available when Cypress loads the config file
           npx cypress run --component --browser chrome || TEST_EXIT_CODE=$?
 
           exit ${TEST_EXIT_CODE:-0}
         env:
-          SPLIT: 4
+          # cypress-split reads these from GitHub Actions strategy context
+          SPLIT: ${{ strategy.job-total }}
+          SPLIT_INDEX: ${{ strategy.job-index }}
 
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v4
