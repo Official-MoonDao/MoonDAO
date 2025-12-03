@@ -55,10 +55,7 @@ const NanceEditor = dynamic(
 )
 
 const DEFAULT_REQUEST_BUDGET_VALUES: RequestBudget = {
-  budget: [
-    { token: '', amount: '', justification: 'dev cost' },
-    { token: '', amount: '', justification: 'flex' },
-  ],
+  budget: [{ token: 'ETH', amount: '', justification: 'dev cost' }],
 }
 
 export type ProposalCache = {
@@ -318,9 +315,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
                   />
                 </Switch>
                 <Label as="span" className="ml-3 text-sm">
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    Attach Budget
-                  </span>{' '}
+                  <span className="font-medium text-gray-900 dark:text-white">Attach Budget</span>{' '}
                 </Label>
               </Field>
             </div>
@@ -376,8 +371,8 @@ export default function ProposalEditor({ project }: { project: Project }) {
                     signingStatus === 'loading'
                       ? 'Submitting...'
                       : isUploadingImage
-                        ? 'Uploading image...'
-                        : 'You need to connect wallet first.'
+                      ? 'Uploading image...'
+                      : 'You need to connect wallet first.'
                   }
                 >
                   {signingStatus === 'loading' ? 'Submitting...' : 'Submit'}

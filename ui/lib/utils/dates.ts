@@ -115,11 +115,29 @@ export function isApprovalActive(date: Date) {
   const twentyOneDaysIntoNextQuarter = new Date(nextQuarterStart)
   twentyOneDaysIntoNextQuarter.setDate(twentyOneDaysIntoNextQuarter.getDate() + 21)
 
-  const firstThursdayAfterFourteenDays = new Date(twentyOneDaysIntoNextQuarter)
-  const daysUntilTuesday = daysUntilDay(twentyOneDaysIntoNextQuarter, 'Thursday')
-  firstThursdayAfterFourteenDays.setDate(
-    firstThursdayAfterFourteenDays.getDate() + daysUntilTuesday
+  const firstThursdayAfterTwentyOneDays = new Date(twentyOneDaysIntoNextQuarter)
+  const daysUntilThursday = daysUntilDay(twentyOneDaysIntoNextQuarter, 'Thursday')
+  firstThursdayAfterTwentyOneDays.setDate(
+    firstThursdayAfterTwentyOneDays.getDate() + daysUntilThursday
   )
 
-  return date >= endOfQuarter && date <= firstThursdayAfterFourteenDays
+  return date >= endOfQuarter && date <= firstThursdayAfterTwentyOneDays
+}
+
+export function getSubmissionQuarter() {
+  const lastQuarter = getRelativeQuarter(-1)
+  const thisQuarter = getRelativeQuarter(0)
+  const nextQuarter = getRelativeQuarter(1)
+  const thisQuarterStart = new Date(lastQuarter.year, lastQuarter.quarter * 3, 1)
+
+  const twentyOneDaysIntoThisQuarter = new Date(thisQuarterStart)
+  twentyOneDaysIntoThisQuarter.setDate(twentyOneDaysIntoThisQuarter.getDate() + 21)
+
+  const firstThursdayAfterTwentyOneDays = new Date(twentyOneDaysIntoThisQuarter)
+  const daysUntilThursday = daysUntilDay(twentyOneDaysIntoThisQuarter, 'Thursday')
+  firstThursdayAfterTwentyOneDays.setDate(
+    firstThursdayAfterTwentyOneDays.getDate() + daysUntilThursday
+  )
+
+  return new Date() <= firstThursdayAfterTwentyOneDays ? thisQuarter : nextQuarter
 }

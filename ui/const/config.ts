@@ -8,8 +8,8 @@ const STAGING_ORIGIN = process.env.NEXT_PUBLIC_STAGING_ORIGIN
 export const DEPLOYED_ORIGIN = STAGING_ORIGIN
   ? STAGING_ORIGIN
   : process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? 'https://moondao.com'
-    : 'https://moondao-git-mission-onramp-moondao.vercel.app'
+  ? 'https://moondao.com'
+  : 'https://moondao-git-mission-onramp-moondao.vercel.app'
 
 interface DeploymentConfig {
   MOONEYToken: string
@@ -549,3 +549,5 @@ export const TICK_SPACING = 200
 
 export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
 export const FREE_MINT_THRESHOLD = 1e16
+// 2025q4
+export const ETH_BUDGET = 14.15

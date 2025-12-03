@@ -2,14 +2,16 @@ import { PlusCircleIcon } from '@heroicons/react/20/solid'
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import { MOONEY_ADDRESSES } from 'const/config'
 import { useFieldArray, useFormContext } from 'react-hook-form'
+import { ETH_BUDGET } from 'const/config'
 import StandardButton from '../layout/StandardButton'
 import SafeTokenForm from './form/SafeTokenForm'
+import NumberForm from './form/NumberForm'
 import StringForm from './form/StringForm'
 
 export default function RequestBudgetActionForm({ disableRequiredFields = false }) {
   // form
 
-  const { control } = useFormContext()
+  const { control, getValues } = useFormContext()
 
   const {
     fields: budgetFields,
@@ -38,10 +40,12 @@ export default function RequestBudgetActionForm({ disableRequiredFields = false 
           {budgetFields.map((field, index) => (
             <div key={field.id} className="mt-5 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-8">
               <div className="sm:col-span-2">
-                <StringForm
+                <NumberForm
+                  index={index}
                   label="Amount"
                   fieldName={`budget.${index}.amount`}
                   required={!disableRequiredFields}
+                  max={getValues().budget[index].token == 'ETH' && ETH_BUDGET / 5}
                 />
               </div>
 
@@ -49,7 +53,8 @@ export default function RequestBudgetActionForm({ disableRequiredFields = false 
                 <SafeTokenForm
                   address="0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9"
                   fieldName={`budget.${index}.token`}
-                  acceptedTokens={['ETH', 'USDC', 'USDT', 'DAI', 'MOONEY', 'SAFE', 'WBTC', 'MATIC']}
+                  // FIXME what tokens do we accept?
+                  acceptedTokens={['ETH', 'MOONEY']}
                 />
               </div>
 

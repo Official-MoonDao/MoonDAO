@@ -11,6 +11,7 @@ import {
   DEFAULT_CHAIN_V5,
   PROJECT_CREATOR_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
+  ETH_BUDGET,
 } from 'const/config'
 import { ethers } from 'ethers'
 import { getRelativeQuarter } from 'lib/utils/dates'
@@ -68,8 +69,25 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   //error: 'Proposal has not passed temp check.',
   //})
   //}
+  //const { quarter, year } = getSubmissionQuarter()
   const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE QUARTER = ${quarter} AND YEAR = ${year}`
   const projects = await queryTable(chain, projectStatement)
+  const ethBudgets = Object.fromEntries(
+    await Promise.all(
+      projects.map(async (project) => {
+        console.log(project.proposalIPFS)
+        const proposalResponse = await fetch(project.proposalIPFS)
+        const proposal = await proposalResponse.json()
+        let budget = 0
+        if (proposal.budget) {
+          proposal.budget.forEach((item: any) => {
+            budget += item.token === 'ETH' ? Number(item.amount) : 0
+          })
+        }
+        return [project.id, budget]
+      })
+    )
+  )
   const projectIds = projects.map((project) => project.id)
   //projects.forEach((project) => {
   //if (project.active === PROJECT_ACTIVE) {
@@ -104,24 +122,30 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   }
   const sortedOutcome = Object.keys(outcome)
     .map((projectId) => {
-      return { projectId: projectId, percent: outcome[projectId] }
+      return { projectId: projectId, percent: outcome[projectId], budget: ethBudgets[projectId] }
     })
     .sort((a, b) => {
       return b.percent - a.percent
     })
   const account = await createHSMWallet()
   const numApprovedProjects = Math.min(Math.max(Math.ceil(projects.length / 2), 3), projects.length)
-  for (let i = 0; i < numApprovedProjects; i++) {
+  console.log('numApprovedProjects', numApprovedProjects)
+  let approvedBudget = 0
+  for (let i = 0; i < sortedOutcome.length; i++) {
     const projectId = sortedOutcome[i].projectId
+    approvedBudget += sortedOutcome[i].budget
+    const approved = i < numApprovedProjects && approvedBudget <= (ETH_BUDGET * 3) / 4
+    console.log('approved!', sortedOutcome)
     const transaction = prepareContractCall({
       contract: projectTableContract,
       method: 'updateTableCol',
-      params: [projectId, 'active', active],
+      params: [projectId, 'active', approved ? PROJECT_ACTIVE : PROJECT_VOTE_FAILED],
     })
-    const receipt = await sendAndConfirmTransaction({
-      transaction,
-      account,
-    })
+    // FIXME actually update the table
+    //const receipt = await sendAndConfirmTransaction({
+    //transaction,
+    //account,
+    //})
   }
   res.status(200).json({
     url: 'https://moondao.com/projects',

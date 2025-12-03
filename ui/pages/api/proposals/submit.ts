@@ -9,7 +9,7 @@ import {
 } from 'const/config'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
 import { ethers } from 'ethers'
-import { getRelativeQuarter } from 'lib/utils/dates'
+import { getSubmissionQuarter } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
@@ -220,7 +220,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         const { cid: hatMetadataIpfsHash } = await pinBlobOrFile(hatMetadataBlob)
         return 'ipfs://' + hatMetadataIpfsHash
       }
-      const { quarter, year } = getRelativeQuarter(0)
+      const { quarter, year } = getSubmissionQuarter()
       const upfrontPayment = ''
       //proposal.upfrontPayment
       //? JSON.stringify(proposal.upfrontPayment)

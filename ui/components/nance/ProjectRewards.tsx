@@ -11,6 +11,7 @@ import {
   ARBITRUM_ASSETS_URL,
   POLYGON_ASSETS_URL,
   BASE_ASSETS_URL,
+  ETH_BUDGET,
 } from 'const/config'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import _ from 'lodash'
@@ -31,7 +32,12 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
 import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
 import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
-import { getRelativeQuarter, isRewardsCycle, isApprovalActive } from '@/lib/utils/dates'
+import {
+  getRelativeQuarter,
+  isRewardsCycle,
+  isApprovalActive,
+  getSubmissionQuarter,
+} from '@/lib/utils/dates'
 import { getBudget, getPayouts, computeRewardPercentages } from '@/lib/utils/rewards'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -145,6 +151,9 @@ export function ProjectRewards({
   const [rewardVotingActive, setRewardVotingActive] = useState(false)
   const [approvalVotingActive, setApprovalVotingActive] = useState(false)
   const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
+  const { quarter: submissionQuarter, year: submissionYear } = getSubmissionQuarter()
+  console.log('submissionYear', submissionYear)
+  console.log('submissionQuarter', submissionQuarter)
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>({})
@@ -190,8 +199,8 @@ export function ProjectRewards({
         'Content-Type': 'application/json', // Important: Specify the content type
       },
       body: JSON.stringify({
-        quarter,
-        year,
+        quarter: submissionQuarter,
+        year: submissionYear,
       }),
     })
     const resJson = await res.json()
@@ -315,9 +324,8 @@ export function ProjectRewards({
     ethPrice,
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
   // 2025q4
-  const ethBudget = 14.15
 
-  const usdBudget = ethBudget * ethPrice
+  const usdBudget = ETH_BUDGET * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
   const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
@@ -332,7 +340,7 @@ export function ProjectRewards({
     projectIdToEstimatedPercentage,
     eligibleProjects,
     communityCircle,
-    ethBudget,
+    ETH_BUDGET,
     mooneyBudget
   )
 
@@ -455,7 +463,7 @@ export function ProjectRewards({
                 <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                   <RewardAsset
                     name="ETH"
-                    value={ethBudget.toFixed(4)}
+                    value={ETH_BUDGET.toFixed(4)}
                     usdValue={usdBudget.toFixed(2)}
                   />
                 </div>

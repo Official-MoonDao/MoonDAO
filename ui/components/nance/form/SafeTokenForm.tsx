@@ -14,25 +14,19 @@ type ListBoxItems = {
 export const ETH_MOCK_ADDRESS = 'ETH'
 
 const safeBalanceToItems = (b: SafeBalanceUsdResponse[]): ListBoxItems[] => {
+  console.log('b', b)
   return b
     .sort(
       (a, b) =>
-        parseInt(
-          formatNumberUSStyle(formatUnits(b.balance, b.token?.decimals || 18))
-        ) -
-        parseInt(
-          formatNumberUSStyle(formatUnits(a.balance, a.token?.decimals || 18))
-        )
+        parseInt(formatNumberUSStyle(formatUnits(b.balance, b.token?.decimals || 18))) -
+        parseInt(formatNumberUSStyle(formatUnits(a.balance, a.token?.decimals || 18)))
     )
     .map((b) => {
       return {
         id: (b.tokenAddress as string) || ETH_MOCK_ADDRESS,
         name:
           (b.token?.symbol || 'ETH') +
-          ` (${formatNumberUSStyle(
-            formatUnits(b.balance, b.token?.decimals || 18),
-            true
-          )})`,
+          ` (${formatNumberUSStyle(formatUnits(b.balance, b.token?.decimals || 18), true)})`,
       }
     })
 }
@@ -68,8 +62,7 @@ export default function SafeTokenForm({
   useEffect(() => {
     if (data && data.length > 0) {
       const currentValue = getValues(fieldName)
-      if (currentValue === '')
-        setValue(fieldName, data[0].tokenAddress || ETH_MOCK_ADDRESS)
+      if (currentValue === '') setValue(fieldName, data[0].tokenAddress || ETH_MOCK_ADDRESS)
     }
   }, [data, setValue, getValues, fieldName])
 
