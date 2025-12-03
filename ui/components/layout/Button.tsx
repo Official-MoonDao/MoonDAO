@@ -41,6 +41,7 @@ export default function Button({
   icon,
   iconPosition = 'left',
   hoverEffect = false,
+  ...props
 }: ButtonProps) {
   const getVariantStyles = () => {
     switch (variant) {
@@ -79,34 +80,7 @@ export default function Button({
       onClick={onClick || null}
       type={type}
       disabled={disabled}
-      style={
-        variant === 'right'
-          ? {
-              paddingRight: '0',
-            }
-          : paddingOnHover
-          ? {}
-          : undefined
-      }
-      onMouseEnter={
-        variant === 'right'
-          ? (e) => (e.currentTarget.style.paddingRight = '10px')
-          : paddingOnHover
-          ? (e) => {
-              const currentPadding = e.currentTarget.style.paddingLeft || '0'
-              e.currentTarget.style.paddingLeft = paddingOnHover
-            }
-          : undefined
-      }
-      onMouseLeave={
-        variant === 'right'
-          ? (e) => (e.currentTarget.style.paddingRight = '0')
-          : paddingOnHover
-          ? (e) => {
-              e.currentTarget.style.paddingLeft = '0'
-            }
-          : undefined
-      }
+      {...props}
     >
       {variant === 'right' ? (
         <div
@@ -137,4 +111,3 @@ export default function Button({
     buttonContent
   )
 }
-

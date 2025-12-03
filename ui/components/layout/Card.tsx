@@ -1,8 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { ReactNode, useState } from 'react'
-import { cardStyles, spacing, commonCombinations } from '@/lib/layout/styles'
+import React, { ReactNode } from 'react'
+import { cardStyles, spacing } from '@/lib/layout/styles'
 import { CardVariant, CardSize, CardLayout, cardSizes } from '@/lib/layout/variants'
 import AdaptiveImage from './AdaptiveImage'
 import CollapsibleContainer from './CollapsibleContainer'
@@ -398,7 +398,7 @@ export default function Card({
               {typeof icon === 'string' ? (
                 <Image
                   src={icon}
-                  alt={title || ''}
+                  alt={title || header || ''}
                   width={48}
                   height={48}
                   className={

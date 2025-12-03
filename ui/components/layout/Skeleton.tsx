@@ -1,6 +1,13 @@
 import { ReactNode } from 'react'
 
-export type SkeletonVariant = 'card' | 'section' | 'mission' | 'network' | 'asset' | 'proposal' | 'custom'
+export type SkeletonVariant =
+  | 'card'
+  | 'section'
+  | 'mission'
+  | 'network'
+  | 'asset'
+  | 'proposal'
+  | 'custom'
 export type SkeletonLayout = 'grid' | 'list' | 'single'
 
 export interface SkeletonProps {
@@ -29,14 +36,18 @@ export default function Skeleton({
     >
       <span
         id="card-container"
-        className={`animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full ${minHeight || 'min-h-[520px]'} ${baseClasses}`}
+        className={`animate-fadeIn flex flex-col relative bg-dark-cool w-full h-full ${
+          minHeight || 'min-h-[520px]'
+        } ${baseClasses}`}
       ></span>
     </span>
   )
 
   const renderSectionSkeleton = () => (
     <div
-      className={`${minHeight || 'min-h-[400px]'} ${baseClasses} bg-white/5 rounded-2xl p-8 flex items-center justify-center ${className}`}
+      className={`${
+        minHeight || 'min-h-[400px]'
+      } ${baseClasses} bg-white/5 rounded-2xl p-8 flex items-center justify-center ${className}`}
     >
       <div className="w-full max-w-4xl space-y-6">
         <div className="h-10 bg-white/10 rounded-lg max-w-md mx-auto"></div>
@@ -53,7 +64,11 @@ export default function Skeleton({
   )
 
   const renderMissionSkeleton = () => (
-    <section className={`relative ${minHeight || 'min-h-[600px] md:min-h-[700px] lg:min-h-[800px]'} overflow-hidden ${baseClasses} ${className}`}>
+    <section
+      className={`relative ${
+        minHeight || 'min-h-[600px] md:min-h-[700px] lg:min-h-[800px]'
+      } overflow-hidden ${baseClasses} ${className}`}
+    >
       <div className="absolute inset-0 bg-gradient-to-br from-[#010618]/80 via-[#1B1C4B]/60 to-[#010618]/80"></div>
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-16 md:py-24 lg:py-32">
         <div className="text-center mb-8 md:mb-12 lg:mb-16 xl:mb-20">
@@ -170,4 +185,3 @@ export default function Skeleton({
 
   return renderSkeleton()
 }
-

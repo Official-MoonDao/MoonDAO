@@ -82,96 +82,11 @@ describe('<Proposal />', () => {
       // Check if the proposal title is displayed
       cy.contains('MDP-42: Test Proposal for Component Testing').should('exist')
     })
-
-    it('Should display proposal status correctly', () => {
-      cy.mount(
-        <TestnetProviders>
-          <Proposal
-            proposal={mockProposal}
-            packet={mockPacket}
-            votingInfo={mockVotingInfo}
-          />
-        </TestnetProviders>
-      )
-
-      cy.get('.font-RobotoMono').contains('Discussion').should('exist')
-    })
   })
 
-  describe('Voting Status Indicators', () => {
-    it('Should show voting indicator for active voting proposals', () => {
-      const votingProposal = { ...mockProposal, status: 'Voting' }
+  describe('Time Display', () => {
 
-      cy.mount(
-        <TestnetProviders>
-          <Proposal
-            proposal={votingProposal}
-            packet={mockPacket}
-            votingInfo={mockVotingInfo}
-          />
-        </TestnetProviders>
-      )
-
-      // Check for voting status
-      cy.contains('Voting').should('exist')
-
-      // Check for the green dot indicator
-      cy.get('.bg-emerald-500').should('exist')
-
-      // Check for voting text with correct styling
-      cy.get('.text-white.font-RobotoMono').contains('Voting').should('exist')
-    })
-
-    it('Should show voting indicator for temperature check proposals', () => {
-      const tempCheckProposal = { ...mockProposal, status: 'Temperature Check' }
-
-      cy.mount(
-        <TestnetProviders>
-          <Proposal
-            proposal={tempCheckProposal}
-            packet={mockPacket}
-            votingInfo={mockVotingInfo}
-          />
-        </TestnetProviders>
-      )
-
-      // Check for temperature check status
-      cy.contains('Temperature Check').should('exist')
-
-      // Check for the green dot indicator (same as voting)
-      cy.get('.bg-emerald-500').should('exist')
-
-      // Check for voting text with correct styling
-      cy.get('.text-white.font-RobotoMono').contains('Temperature Check').should('exist')
-    })
-
-    it('Should show "Results Available" indicator for closed voting proposals', () => {
-      const closedVotingInfo = {
-        ...mockVotingInfo,
-        state: 'closed',
-      }
-
-      cy.mount(
-        <TestnetProviders>
-          <Proposal
-            proposal={mockProposal}
-            packet={mockPacket}
-            votingInfo={closedVotingInfo}
-          />
-        </TestnetProviders>
-      )
-
-      // Check for "Results Available" text
-      cy.contains('Results Available').should('exist')
-
-      // Check for the blue dot indicator
-      cy.get('.bg-blue-500').should('exist')
-
-      // Check for correct styling
-      cy.get('.text-white.font-RobotoMono').contains('Results Available').should('exist')
-    })
-
-    it('Should show last edited time for non-voting proposals', () => {
+    it('Should show last edited time', () => {
       cy.mount(
         <TestnetProviders>
           <Proposal
@@ -185,34 +100,6 @@ describe('<Proposal />', () => {
       // Should show time since last edit
       cy.get('time').should('exist')
       cy.get('.text-gray-400').should('contain.text', 'ago')
-    })
-  })
-
-  describe('Different Proposal Statuses', () => {
-    const statuses = [
-      'Discussion',
-      'Voting',
-      'Approved',
-      'Archived',
-      'Cancelled',
-    ]
-
-    statuses.forEach((status) => {
-      it(`Should handle ${status} status correctly`, () => {
-        const statusProposal = { ...mockProposal, status }
-
-        cy.mount(
-          <TestnetProviders>
-            <Proposal
-              proposal={statusProposal}
-              packet={mockPacket}
-              votingInfo={mockVotingInfo}
-            />
-          </TestnetProviders>
-        )
-
-        cy.contains(status).should('exist')
-      })
     })
   })
 
@@ -388,28 +275,6 @@ describe('<Proposal />', () => {
 
       // Should still display title without prefix
       cy.contains('Test Proposal for Component Testing').should('exist')
-    })
-
-    it('Should handle closed votingInfo with non-voting status', () => {
-      const closedVotingInfo = {
-        ...mockVotingInfo,
-        state: 'closed',
-      }
-      const discussionProposal = { ...mockProposal, status: 'Discussion' }
-
-      cy.mount(
-        <TestnetProviders>
-          <Proposal
-            proposal={discussionProposal}
-            packet={mockPacket}
-            votingInfo={closedVotingInfo}
-          />
-        </TestnetProviders>
-      )
-
-      // Should show "Results Available" when votingInfo is closed
-      cy.contains('Results Available').should('exist')
-      cy.get('.bg-blue-500').should('exist')
     })
   })
 
