@@ -192,10 +192,14 @@ jobs:
           CYPRESS_BASE_URL: "http://localhost:3000"
           BUILD_NUMBER: ${{ github.run_id }}
 
-  # Component tests - can run in parallel with E2E tests
+  # Component tests - split into 4 parallel jobs using cypress-split
   component-tests:
     runs-on: ubuntu-latest
     needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        containers: [1, 2, 3, 4]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -229,36 +233,52 @@ jobs:
           path: ui/.next
           key: next-${{ runner.os }}-${{ github.sha }}
 
+      - name: Restore cypress-split timings cache
+        uses: actions/cache@v4
+        with:
+          path: ui/.cypress-split-times
+          key: cypress-timings-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            cypress-timings-${{ github.ref }}-
+            cypress-timings-
+
       - name: Install dependencies
         working-directory: ui
         run: yarn install
 
-      - name: Run Component Tests
-        uses: cypress-io/github-action@v6
-        with:
-          working-directory: ui
-          install: false
-          start: yarn next start -p 3001
-          wait-on: "http://localhost:3001"
-          component: true
-          browser: chrome
-          record: false
+      - name: Run Component Tests (Container ${{ matrix.containers }}/4)
+        working-directory: ui
+        run: |
+          # Start Next.js dev server for component tests
+          yarn next dev -p 3001 &
+          SERVER_PID=$!
+
+          # Wait for server to be ready
+          echo "Waiting for dev server to start..."
+          sleep 10
+
+          # Health check
+          curl -I http://localhost:3001 || echo "⚠️ Server health check failed, continuing anyway..."
+
+          # Run tests with cypress-split
+          export SPLIT=${{ matrix.containers }}
+          export SPLIT_TOTAL=4
+          npx cypress run --component --browser chrome || TEST_EXIT_CODE=$?
+
+          # Clean up
+          kill $SERVER_PID || true
+
+          exit ${TEST_EXIT_CODE:-0}
         env:
           PORT: 3001
           CYPRESS_BASE_URL: "http://localhost:3001"
+          SPLIT: ${{ matrix.containers }}
+          SPLIT_TOTAL: 4
 
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: cypress-screenshots-component
+          name: cypress-screenshots-component-${{ matrix.containers }}
           path: ui/cypress/screenshots
-          retention-days: 7
-
-      - name: Upload Cypress Videos
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: cypress-videos-component
-          path: ui/cypress/videos
           retention-days: 7
