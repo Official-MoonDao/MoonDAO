@@ -4,6 +4,7 @@ const path = require('path')
 const FormData = require('form-data')
 const fs = require('fs')
 const axios = require('axios')
+const cypressSplit = require('cypress-split')
 
 dotenv.config({ path: path.resolve(__dirname, '.env.local') })
 
@@ -130,8 +131,106 @@ module.exports = defineConfig({
   },
   component: {
     setupNodeEvents(on, config) {
+      // Ensure config exists and has required properties
+      if (!config) {
+        config = {}
+      }
+      if (!config.env) {
+        config.env = {}
+      }
+
+      const integrationPattern = 'cypress/integration/**/*.cy.{js,ts,jsx,tsx}'
+
+      if (!config.specPattern) {
+        config.specPattern = integrationPattern
+        console.log(`[Cypress Config] Set initial specPattern to: ${integrationPattern}`)
+      } else if (typeof config.specPattern === 'string') {
+        if (config.specPattern.includes('/e2e/')) {
+          // If somehow E2E tests got in, replace with integration pattern
+          console.warn(
+            '[Cypress Config] Warning: E2E tests detected in specPattern, replacing with integration pattern'
+          )
+          config.specPattern = integrationPattern
+        } else if (!config.specPattern.includes('/integration/')) {
+          // Ensure it includes integration directory
+          console.warn(
+            '[Cypress Config] Warning: specPattern does not include /integration/, replacing'
+          )
+          config.specPattern = integrationPattern
+        }
+      } else if (Array.isArray(config.specPattern)) {
+        // Filter out any E2E tests if it's already an array
+        const beforeFilter = config.specPattern.length
+        config.specPattern = config.specPattern.filter(
+          (spec) => !String(spec).includes('/e2e/') && String(spec).includes('/integration/')
+        )
+        if (beforeFilter !== config.specPattern.length) {
+          console.warn(
+            `[Cypress Config] Filtered ${
+              beforeFilter - config.specPattern.length
+            } E2E tests from array`
+          )
+        }
+        if (config.specPattern.length === 0) {
+          console.error(
+            '[Cypress Config] ERROR: No valid specs after initial filter, using default pattern'
+          )
+          config.specPattern = integrationPattern
+        }
+      }
+
       // Set environment variable to disable code splitting in Next.js config
       process.env.CYPRESS_COMPONENT_TEST = 'true'
+
+      try {
+        const splitConfig = cypressSplit(on, config)
+        if (splitConfig) {
+          config = splitConfig
+        }
+
+        const originalSpecCount = Array.isArray(config.specPattern)
+          ? config.specPattern.length
+          : typeof config.specPattern === 'string' && config.specPattern.includes(',')
+          ? config.specPattern.split(',').length
+          : 'unknown'
+
+        if (Array.isArray(config.specPattern)) {
+          config.specPattern = config.specPattern.filter(
+            (spec) => !spec.includes('/e2e/') && spec.includes('/integration/')
+          )
+        } else if (typeof config.specPattern === 'string') {
+          if (config.specPattern.includes(',')) {
+            const specs = config.specPattern
+              .split(',')
+              .map((s) => s.trim())
+              .filter((spec) => !spec.includes('/e2e/') && spec.includes('/integration/'))
+            config.specPattern =
+              specs.length > 0 ? specs : 'cypress/integration/**/*.cy.{js,ts,jsx,tsx}'
+            console.log(
+              `[Cypress Config] Filtered specs: ${originalSpecCount} -> ${specs.length} (removed E2E tests)`
+            )
+            if (specs.length === 0) {
+              console.error(
+                '[Cypress Config] ERROR: No valid specs after filtering! This will cause tests to hang.'
+              )
+            } else {
+              console.log(
+                `[Cypress Config] Valid specs after filtering: ${specs.slice(0, 5).join(', ')}${
+                  specs.length > 5 ? '...' : ''
+                }`
+              )
+            }
+          } else {
+            if (!config.specPattern.includes('/integration/')) {
+              config.specPattern = 'cypress/integration/**/*.cy.{js,ts,jsx,tsx}'
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[Cypress Config] Error in cypress-split:', error.message)
+        console.error('[Cypress Config] Error stack:', error.stack)
+        // Continue without splitting if there's an error
+      }
 
       config.env = {
         ...config.env,
@@ -159,38 +258,60 @@ module.exports = defineConfig({
 
       return config
     },
-    specPattern: 'cypress/integration/**/*.cy.{js,ts,jsx,tsx}',
+    // specPattern is set in setupNodeEvents so cypress-split can modify it
     devServer: {
       framework: 'next',
       bundler: 'webpack',
       webpackConfig: (webpackConfig) => {
+        const port =
+          process.env.CYPRESS_WEBPACK_DEV_SERVER_PORT || process.env.PORT
+            ? parseInt(process.env.CYPRESS_WEBPACK_DEV_SERVER_PORT || process.env.PORT)
+            : 8080
+
         // Disable code splitting to prevent ChunkLoadError in Cypress component tests
         // This is a known issue where webpack chunks aren't served correctly by Cypress
         if (!webpackConfig) {
-          return {}
+          console.error('[Cypress Config] ERROR: webpackConfig is null/undefined!')
+          return {
+            mode: 'development',
+            optimization: {},
+            devServer: {
+              port: port,
+            },
+          }
         }
 
-        // Ensure optimization exists
+        // Set port in webpack devServer config
+        if (!webpackConfig.devServer) {
+          webpackConfig.devServer = {}
+        }
+        webpackConfig.devServer.port = port
+
         webpackConfig.optimization = webpackConfig.optimization || {}
 
-        // Completely disable code splitting by removing splitChunks
-        // This forces webpack to bundle everything into a single chunk
         delete webpackConfig.optimization.splitChunks
 
-        // Disable runtime chunk
         webpackConfig.optimization.runtimeChunk = false
 
-        // Ensure no chunkFilename is set in output
         if (webpackConfig.output) {
           delete webpackConfig.output.chunkFilename
         } else {
           webpackConfig.output = {}
         }
 
+        // Suppress webpack cache restoration warnings
+        if (!webpackConfig.infrastructureLogging) {
+          webpackConfig.infrastructureLogging = {}
+        }
+        webpackConfig.infrastructureLogging.level = 'error'
+
+        webpackConfig.cache = false
+
         return webpackConfig
       },
     },
     supportFile: 'cypress/support/component.ts',
     excludeSpecPattern: ['**/node_modules/**', '**/dist/**'],
+    video: false,
   },
 })

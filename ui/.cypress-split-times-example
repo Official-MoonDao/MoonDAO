@@ -1,0 +1,20 @@
+# Example cypress-split timings file
+# This file is auto-generated after the first test run
+# Format: spec file path : duration in milliseconds
+# 
+# cypress-split uses this data to distribute tests optimally
+# across parallel containers based on their actual execution time
+#
+# After your first parallel run, a real .cypress-split-times file
+# will be created with actual timing data
+#
+# You can commit this file to your repo for consistent CI performance
+# or keep it gitignored and let each environment build its own timings
+
+cypress/integration/dashboard/dashboard-card.cy.tsx : 2084
+cypress/integration/dashboard/stats-card.cy.tsx : 2048
+cypress/integration/layout/button.cy.tsx : 2161
+cypress/integration/layout/card.cy.tsx : 2144
+cypress/integration/mooney/feature-card.cy.tsx : 2046
+
+

@@ -38,6 +38,8 @@ yarn-error.log*
 # cypress
 cypress/screenshots
 cypress/videos
+# Optional: Remove this line to commit timings for consistent CI performance
+.cypress-split-times
 
 notes.txt
 
