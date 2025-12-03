@@ -123,20 +123,18 @@ jobs:
           cache: "yarn"
           cache-dependency-path: ui/yarn.lock
 
-      - name: Restore node modules cache
+      - name: Restore caches
+        id: restore-caches
         uses: actions/cache@v4
         with:
           path: |
             ui/node_modules
             ~/.cache/yarn
+            ~/.cache/Cypress
           key: ${{ needs.build.outputs.cache-key }}
-
-      - name: Restore Cypress binary cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/Cypress
-          key: cypress-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
           restore-keys: |
+            ${{ needs.build.outputs.cache-key }}-
+            ui-${{ runner.os }}-
             cypress-${{ runner.os }}-
 
       - name: Restore Next.js build cache
@@ -144,10 +142,21 @@ jobs:
         with:
           path: ui/.next
           key: next-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            next-${{ runner.os }}-
 
       - name: Install dependencies
         working-directory: ui
-        run: yarn install
+        run: yarn install --frozen-lockfile --prefer-offline
+
+      - name: Install Cypress binary
+        working-directory: ui
+        run: |
+          if [ ! -d "$HOME/.cache/Cypress" ] || [ -z "$(ls -A $HOME/.cache/Cypress 2>/dev/null)" ]; then
+            npx cypress install
+          else
+            echo "Cypress binary already cached, skipping install"
+          fi
 
       # BrowserStack Environment Setup - Must be in the same job where it's used
       - name: BrowserStack Env Setup
@@ -192,10 +201,14 @@ jobs:
           CYPRESS_BASE_URL: "http://localhost:3000"
           BUILD_NUMBER: ${{ github.run_id }}
 
-  # Component tests - can run in parallel with E2E tests
+  # Component tests - split into 4 parallel jobs using cypress-split
   component-tests:
     runs-on: ubuntu-latest
     needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        containers: [1, 2, 3, 4]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -207,20 +220,18 @@ jobs:
           cache: "yarn"
           cache-dependency-path: ui/yarn.lock
 
-      - name: Restore node modules cache
+      - name: Restore caches
+        id: restore-caches
         uses: actions/cache@v4
         with:
           path: |
             ui/node_modules
             ~/.cache/yarn
+            ~/.cache/Cypress
           key: ${{ needs.build.outputs.cache-key }}
-
-      - name: Restore Cypress binary cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/Cypress
-          key: cypress-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
           restore-keys: |
+            ${{ needs.build.outputs.cache-key }}-
+            ui-${{ runner.os }}-
             cypress-${{ runner.os }}-
 
       - name: Restore Next.js build cache
@@ -228,37 +239,56 @@ jobs:
         with:
           path: ui/.next
           key: next-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            next-${{ runner.os }}-
+
+      - name: Restore cypress-split timings cache
+        uses: actions/cache@v4
+        with:
+          path: ui/.cypress-split-times
+          key: cypress-timings-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            cypress-timings-${{ github.ref }}-
+            cypress-timings-
 
       - name: Install dependencies
         working-directory: ui
-        run: yarn install
+        run: yarn install --frozen-lockfile --prefer-offline
 
-      - name: Run Component Tests
-        uses: cypress-io/github-action@v6
-        with:
-          working-directory: ui
-          install: false
-          start: yarn next start -p 3001
-          wait-on: "http://localhost:3001"
-          component: true
-          browser: chrome
-          record: false
+      - name: Install Cypress binary
+        working-directory: ui
+        run: |
+          if [ ! -d "$HOME/.cache/Cypress" ] || [ -z "$(ls -A $HOME/.cache/Cypress 2>/dev/null)" ]; then
+            npx cypress install
+          else
+            echo "Cypress binary already cached, skipping install"
+          fi
+
+      - name: Run Component Tests (Container ${{ matrix.containers }}/4)
+        working-directory: ui
+        run: |
+          # Calculate unique port for each container to avoid conflicts
+          # Container 1: 3001, Container 2: 3002, Container 3: 3003, Container 4: 3004
+          PORT=$((3001 + ${{ matrix.containers }} - 1))
+
+          # Export port for dev server
+          export PORT=$PORT
+          export CYPRESS_WEBPACK_DEV_SERVER_PORT=$PORT
+          export CYPRESS_BASE_URL="http://localhost:$PORT"
+
+          # Cypress will automatically start the dev server via devServer config
+          npx cypress run --component --browser chrome || TEST_EXIT_CODE=$?
+
+          exit ${TEST_EXIT_CODE:-0}
         env:
-          PORT: 3001
-          CYPRESS_BASE_URL: "http://localhost:3001"
+          # cypress-split reads these from GitHub Actions strategy context
+          SPLIT: ${{ strategy.job-total }}
+          SPLIT_INDEX: ${{ strategy.job-index }}
 
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: cypress-screenshots-component
+          name: cypress-screenshots-component-${{ matrix.containers }}
           path: ui/cypress/screenshots
-          retention-days: 7
-
-      - name: Upload Cypress Videos
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: cypress-videos-component
-          path: ui/cypress/videos
           retention-days: 7
