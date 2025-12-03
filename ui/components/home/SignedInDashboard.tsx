@@ -752,7 +752,7 @@ export default function SingedInDashboard({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <StandardButton
                   className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/governance"
+                  link="/proposals"
                 >
                   <CheckBadgeIcon className="w-4 h-4" />
                   Propose
@@ -766,7 +766,7 @@ export default function SingedInDashboard({
                 </StandardButton>
                 <StandardButton
                   className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/network"
+                  link="/team"
                 >
                   <UserGroupIcon className="w-4 h-4" />
                   Join Team
@@ -784,7 +784,7 @@ export default function SingedInDashboard({
             {/* Activity Feed */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
-                <h3 className="text-xl font-bold text-white whitespace-nowrap">Recent Activity</h3>
+                <h3 className="text-xl font-bold text-white whitespace-nowrap">Recent Newsletters</h3>
                 <div className="flex gap-2 flex-shrink-0">
                   <StandardButton
                     className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
@@ -1081,28 +1081,6 @@ export default function SingedInDashboard({
           </div>
         </div>
 
-        {/* Citizen Teams */}
-        <div className="flex-grow order-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-            <div className="flex flex-col gap-4">
-              <div>
-                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <UserGroupIcon className="w-7 h-7" />
-                  Your Teams
-                </h3>
-              </div>
-
-              <div className="space-y-3">
-                <DashboardTeams
-                  selectedChain={selectedChain}
-                  hatsContract={hatsContract}
-                  teamContract={teamContract}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Quests Section */}
         <div className="flex-grow order-5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
           <div className="flex flex-col gap-4">
@@ -1253,9 +1231,9 @@ export default function SingedInDashboard({
           />
         </div>
 
-        {/* Events Section */}
-        <div className="mt-8 mb-8">
-          {/* Events Feature */}
+        {/* Events and Your Teams Section - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 mb-8">
+          {/* Events Section */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div className="min-w-0 flex-1">
@@ -1298,6 +1276,26 @@ export default function SingedInDashboard({
                     loadingDiv.style.display = 'none'
                   }
                 }}
+              />
+            </div>
+          </div>
+
+          {/* Your Teams Section */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
+            <div className="mb-6">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                  <UserGroupIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                  <span className="leading-tight">Your Teams</span>
+                </h3>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <DashboardTeams
+                selectedChain={selectedChain}
+                hatsContract={hatsContract}
+                teamContract={teamContract}
               />
             </div>
           </div>
