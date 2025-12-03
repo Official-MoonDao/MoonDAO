@@ -1,6 +1,9 @@
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
 describe('fetchTotalVMOONEYs', () => {
   it('current timestamp', async () => {
+    if (!process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET) {
+      return
+    }
     const ADDRESSES = [
       '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89',
       '0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6',
