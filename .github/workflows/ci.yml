@@ -104,6 +104,22 @@ jobs:
         working-directory: ui
         run: npx cypress install
 
+      - name: Upload node_modules artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: node_modules-${{ github.sha }}
+          path: ui/node_modules
+          retention-days: 1
+          compression-level: 6
+
+      - name: Upload Cypress binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-binary-${{ github.sha }}
+          path: ~/.cache/Cypress
+          retention-days: 1
+          compression-level: 6
+
       - name: Build application
         working-directory: ui
         run: yarn build
@@ -123,31 +139,53 @@ jobs:
           cache: "yarn"
           cache-dependency-path: ui/yarn.lock
 
-      - name: Restore node modules cache
-        uses: actions/cache@v4
+      - name: Download node_modules artifact
+        uses: actions/download-artifact@v4
+        id: download-node-modules
         with:
-          path: |
-            ui/node_modules
-            ~/.cache/yarn
-          key: ${{ needs.build.outputs.cache-key }}
+          name: node_modules-${{ github.sha }}
+          path: ui
+        continue-on-error: true
 
-      - name: Restore Cypress binary cache
-        uses: actions/cache@v4
+      - name: Download Cypress binary artifact
+        uses: actions/download-artifact@v4
+        id: download-cypress
         with:
-          path: ~/.cache/Cypress
-          key: cypress-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
-          restore-keys: |
-            cypress-${{ runner.os }}-
+          name: cypress-binary-${{ github.sha }}
+          path: ~/.cache
+        continue-on-error: true
 
       - name: Restore Next.js build cache
         uses: actions/cache@v4
         with:
           path: ui/.next
           key: next-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            next-${{ runner.os }}-
 
-      - name: Install dependencies
+      - name: Restore caches (fallback)
+        if: steps.download-node-modules.outcome != 'success' || steps.download-cypress.outcome != 'success'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ui/node_modules
+            ~/.cache/yarn
+            ~/.cache/Cypress
+          key: ${{ needs.build.outputs.cache-key }}-${{ github.sha }}
+          restore-keys: |
+            ${{ needs.build.outputs.cache-key }}-
+            ui-${{ runner.os }}-
+            cypress-${{ runner.os }}-
+
+      - name: Install dependencies (fallback)
+        if: steps.download-node-modules.outcome != 'success'
         working-directory: ui
-        run: yarn install
+        run: yarn install --frozen-lockfile --prefer-offline
+
+      - name: Install Cypress binary (fallback)
+        if: steps.download-cypress.outcome != 'success'
+        working-directory: ui
+        run: npx cypress install
 
       # BrowserStack Environment Setup - Must be in the same job where it's used
       - name: BrowserStack Env Setup
@@ -211,27 +249,43 @@ jobs:
           cache: "yarn"
           cache-dependency-path: ui/yarn.lock
 
-      - name: Restore node modules cache
-        uses: actions/cache@v4
+      - name: Download node_modules artifact
+        uses: actions/download-artifact@v4
+        id: download-node-modules
         with:
-          path: |
-            ui/node_modules
-            ~/.cache/yarn
-          key: ${{ needs.build.outputs.cache-key }}
+          name: node_modules-${{ github.sha }}
+          path: ui
+        continue-on-error: true
 
-      - name: Restore Cypress binary cache
-        uses: actions/cache@v4
+      - name: Download Cypress binary artifact
+        uses: actions/download-artifact@v4
+        id: download-cypress
         with:
-          path: ~/.cache/Cypress
-          key: cypress-${{ runner.os }}-${{ hashFiles('ui/yarn.lock') }}
-          restore-keys: |
-            cypress-${{ runner.os }}-
+          name: cypress-binary-${{ github.sha }}
+          path: ~/.cache
+        continue-on-error: true
 
       - name: Restore Next.js build cache
         uses: actions/cache@v4
         with:
           path: ui/.next
           key: next-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            next-${{ runner.os }}-
+
+      - name: Restore caches (fallback)
+        if: steps.download-node-modules.outcome != 'success' || steps.download-cypress.outcome != 'success'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ui/node_modules
+            ~/.cache/yarn
+            ~/.cache/Cypress
+          key: ${{ needs.build.outputs.cache-key }}-${{ github.sha }}
+          restore-keys: |
+            ${{ needs.build.outputs.cache-key }}-
+            ui-${{ runner.os }}-
+            cypress-${{ runner.os }}-
 
       - name: Restore cypress-split timings cache
         uses: actions/cache@v4
@@ -242,9 +296,15 @@ jobs:
             cypress-timings-${{ github.ref }}-
             cypress-timings-
 
-      - name: Install dependencies
+      - name: Install dependencies (fallback)
+        if: steps.download-node-modules.outcome != 'success'
         working-directory: ui
-        run: yarn install
+        run: yarn install --frozen-lockfile --prefer-offline
+
+      - name: Install Cypress binary (fallback)
+        if: steps.download-cypress.outcome != 'success'
+        working-directory: ui
+        run: npx cypress install
 
       - name: Run Component Tests (Container ${{ matrix.containers }}/4)
         working-directory: ui
