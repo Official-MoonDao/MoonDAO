@@ -208,8 +208,11 @@ jobs:
               kill $SERVER_PID 2>/dev/null || true
               wait $SERVER_PID 2>/dev/null || true
             fi
+            # Force kill any remaining BrowserStack or Next.js processes if they're still running
+            pkill -f "browserstack-cypress" 2>/dev/null || true
+            pkill -f "next start" 2>/dev/null || true
           }
-          trap cleanup EXIT
+          trap cleanup EXIT INT TERM
 
           # Start server in background - Next.js standalone mode
           echo "Starting Next.js server..."
@@ -274,10 +277,24 @@ jobs:
           fi
 
           # Run tests with BrowserStack local tunnel
+          # Use timeout to prevent hanging (60 minutes max)
           echo "Starting BrowserStack Cypress tests..."
-          BROWSERSTACK_LOCAL=true \
-          BROWSERSTACK_LOCAL_IDENTIFIER="${BS_LOCAL_IDENTIFIER}" \
-          browserstack-cypress run --force-upload --verbose || TEST_EXIT_CODE=$?
+          set +e  # Don't exit on error, we'll handle it
+          timeout 3600 bash -c "
+            export BROWSERSTACK_LOCAL=true
+            export BROWSERSTACK_LOCAL_IDENTIFIER=\"${BS_LOCAL_IDENTIFIER}\"
+            browserstack-cypress run --force-upload --verbose
+          "
+          TEST_EXIT_CODE=$?
+          set -e  # Re-enable exit on error
+
+          if [ $TEST_EXIT_CODE -eq 124 ]; then
+            echo "❌ BrowserStack tests timed out after 60 minutes"
+          elif [ $TEST_EXIT_CODE -ne 0 ]; then
+            echo "❌ BrowserStack tests failed with exit code: $TEST_EXIT_CODE"
+          else
+            echo "✓ BrowserStack tests completed successfully"
+          fi
 
           # Clean up (trap will handle this, but explicit cleanup for better error visibility)
           cleanup
