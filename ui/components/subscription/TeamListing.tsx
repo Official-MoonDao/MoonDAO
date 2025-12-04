@@ -201,7 +201,7 @@ export default function TeamListing({
   const listingActions = (
     <div className="flex items-center gap-4">
       <ShareButton
-        link={`${window.location.origin}/team/${
+        link={`${typeof window !== 'undefined' ? window.location.origin : ''}/team/${
           teamNFT?.metadata?.name
             ? generatePrettyLink(teamNFT.metadata.name)
             : listing.teamId
