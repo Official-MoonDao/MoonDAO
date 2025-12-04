@@ -1,4 +1,3 @@
-import { generateOnRampURL } from '@coinbase/cbpay-js'
 import {
   ArrowDownOnSquareIcon,
   ArrowUpRightIcon,
@@ -17,16 +16,14 @@ import { useContext, useEffect, useMemo, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import toast from 'react-hot-toast'
 import useSWR from 'swr'
-import {
-  getContract,
-  prepareContractCall,
-  sendAndConfirmTransaction,
-} from 'thirdweb'
+import { getContract, prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import { clearAllCitizenCache } from '../../lib/citizen/CitizenProvider'
+import useOnrampJWT from '../../lib/coinbase/useOnrampJWT'
+import { useOnrampRedirect } from '../../lib/coinbase/useOnrampRedirect'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
-import { clearAllCitizenCache } from '../../lib/citizen/CitizenProvider'
 import {
   ethereum,
   arbitrum,
@@ -39,6 +36,7 @@ import {
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
+import { CBOnrampModal } from '../coinbase/CBOnrampModal'
 import Modal from '../layout/Modal'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import { LinkAccounts } from './LinkAccounts'
@@ -77,9 +75,7 @@ function useWalletTokens(address: string | undefined, chain: string) {
     if (!data?.result) return []
 
     return data.result
-      .filter(
-        (token: any) => token.TokenBalance && parseFloat(token.TokenBalance) > 0
-      )
+      .filter((token: any) => token.TokenBalance && parseFloat(token.TokenBalance) > 0)
       .map((token: any) => ({
         symbol: token.TokenSymbol || 'Unknown',
         name: token.TokenName || 'Unknown Token',
@@ -88,16 +84,13 @@ function useWalletTokens(address: string | undefined, chain: string) {
         contractAddress: token.TokenAddress,
         // Format balance to human readable number
         formattedBalance:
-          parseFloat(token.TokenBalance) /
-          Math.pow(10, parseInt(token.TokenDivisor) || 18),
+          parseFloat(token.TokenBalance) / Math.pow(10, parseInt(token.TokenDivisor) || 18),
       }))
   }, [data])
 
   const error = useMemo(() => {
     if (swrError) {
-      return swrError instanceof Error
-        ? swrError.message
-        : 'Failed to fetch tokens'
+      return swrError instanceof Error ? swrError.message : 'Failed to fetch tokens'
     }
     if (data?.error) {
       return data.error
@@ -161,8 +154,7 @@ function SendModal({
   } = useWalletTokens(account?.address, sendModalChainSlug)
 
   // Get native balance for selected network
-  const modalNativeBalance =
-    sendModalChain.id === selectedChain.id ? nativeBalance : 0
+  const modalNativeBalance = sendModalChain.id === selectedChain.id ? nativeBalance : 0
 
   // Create a combined list of native + ERC-20 tokens
   const allTokens = useMemo(() => {
@@ -290,10 +282,7 @@ function SendModal({
       }
 
       const decimals = parseInt(selectedTokenData.TokenDivisor)
-      const formattedAmount = ethers.utils.parseUnits(
-        amount.toString(),
-        decimals
-      )
+      const formattedAmount = ethers.utils.parseUnits(amount.toString(), decimals)
 
       let receipt
       if (selectedToken === 'native') {
@@ -390,9 +379,7 @@ function SendModal({
                     alt={sendModalChain.name || 'Network'}
                     className="object-contain"
                   />
-                  <span className="font-medium">
-                    {sendModalChain.name || 'Unknown Network'}
-                  </span>
+                  <span className="font-medium">{sendModalChain.name || 'Unknown Network'}</span>
                 </div>
                 <ChevronDownIcon
                   className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
@@ -451,10 +438,7 @@ function SendModal({
                   <option key={token.TokenAddress} value={token.TokenAddress}>
                     {token.TokenSymbol}
                     {token.TokenAddress !== 'native' &&
-                      ` (${token.TokenAddress.slice(
-                        0,
-                        6
-                      )}...${token.TokenAddress.slice(-4)})`}
+                      ` (${token.TokenAddress.slice(0, 6)}...${token.TokenAddress.slice(-4)})`}
                   </option>
                 ))}
               </select>
@@ -467,8 +451,7 @@ function SendModal({
                 <div className="flex items-center justify-center space-x-2 text-gray-400">
                   <div className="w-4 h-4 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></div>
                   <span className="text-sm">
-                    Loading tokens for{' '}
-                    {sendModalChain.name || 'selected network'}...
+                    Loading tokens for {sendModalChain.name || 'selected network'}...
                   </span>
                 </div>
               </div>
@@ -490,9 +473,7 @@ function SendModal({
                       {getTokenIcon(selectedTokenData.TokenSymbol)}
                     </div>
                     <div>
-                      <p className="font-medium text-white">
-                        {selectedTokenData.TokenSymbol}
-                      </p>
+                      <p className="font-medium text-white">{selectedTokenData.TokenSymbol}</p>
                       <p className="text-gray-400 text-xs">
                         {selectedTokenData.TokenName}
                         {selectedTokenData.TokenAddress !== 'native' && (
@@ -585,10 +566,7 @@ function Portal({ children }: { children: React.ReactNode }) {
   return createPortal(children, document.body)
 }
 
-export function PrivyConnectWallet({
-  citizenContract,
-  type,
-}: PrivyConnectWalletProps) {
+export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWalletProps) {
   const router = useRouter()
 
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
@@ -602,8 +580,7 @@ export function PrivyConnectWallet({
   const { data: _ensData } = useENS(address)
   const ens = _ensData?.name
   const [walletChainId, setWalletChainId] = useState(1)
-  const { logout, user, authenticated, connectWallet, exportWallet }: any =
-    usePrivy()
+  const { logout, user, authenticated, connectWallet, exportWallet }: any = usePrivy()
 
   // Available chains for the network selector
   const availableChains = [
@@ -621,9 +598,57 @@ export function PrivyConnectWallet({
 
   const [enabled, setEnabled] = useState(false)
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
+  const [onrampModalOpen, setOnrampModalOpen] = useState(false)
   const [previousChain, setPreviousChain] = useState(selectedChain)
 
-  const { nativeBalance } = useNativeBalance()
+  const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
+  const { isReturningFromOnramp, clearRedirectParams } = useOnrampRedirect()
+  const { verifyJWT, getStoredJWT, clearJWT } = useOnrampJWT()
+
+  // Handle redirect return - verify JWT, refresh balance and show success
+  useEffect(() => {
+    if (isReturningFromOnramp && address) {
+      // Verify JWT before proceeding
+      const storedJWT = getStoredJWT()
+      if (!storedJWT) {
+        // No JWT - clear redirect params
+        clearRedirectParams()
+        return
+      }
+
+      const chainSlug = getChainSlug(selectedChain)
+      verifyJWT(storedJWT, address, undefined, 'wallet').then((payload) => {
+        if (
+          !payload ||
+          payload.address.toLowerCase() !== address.toLowerCase() ||
+          payload.chainSlug !== chainSlug ||
+          payload.context !== 'wallet'
+        ) {
+          // Invalid JWT - clear and exit
+          clearJWT()
+          clearRedirectParams()
+          return
+        }
+
+        // JWT valid - refresh balance and show success
+        clearRedirectParams()
+        clearJWT() // Clear JWT after verification
+        setTimeout(async () => {
+          await refetchNativeBalance()
+          toast.success('Purchase completed successfully!')
+        }, 1000)
+      })
+    }
+  }, [
+    isReturningFromOnramp,
+    address,
+    clearRedirectParams,
+    refetchNativeBalance,
+    getStoredJWT,
+    verifyJWT,
+    clearJWT,
+    selectedChain,
+  ])
 
   const {
     tokens: walletTokens,
@@ -672,154 +697,11 @@ export function PrivyConnectWallet({
     }
   }
 
-  // Generate session token for Coinbase onramp
-  const generateSessionToken = async () => {
-    try {
-      const networkName = getNetworkName(selectedChain)
-      const response = await fetch('/api/coinbase/session-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          address,
-          blockchains: [networkName],
-          assets: ['ETH', 'USDC'],
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ error: 'Unknown error' }))
-        throw new Error(
-          errorData.error ||
-            `HTTP ${response.status}: Failed to generate session token`
-        )
-      }
-
-      const data = await response.json()
-      if (!data.sessionToken) {
-        throw new Error('No session token received from API')
-      }
-      return data.sessionToken
-    } catch (error: any) {
-      console.error('Session token generation error:', error)
-      throw error
-    }
-  }
-
-  // Open Coinbase onramp directly
-  const openCoinbaseOnramp = async () => {
+  const openCoinbaseOnramp = () => {
     if (!address) {
       return toast.error('Please connect your wallet.')
     }
-
-    const projectId = process.env.NEXT_PUBLIC_CB_PROJECT_ID
-    if (!projectId) {
-      return toast.error('Configuration error: Missing project ID')
-    }
-
-    try {
-      // Generate session token
-      const token = await generateSessionToken()
-
-      // Generate URL with session token
-      const url = generateOnRampURL({
-        appId: projectId,
-        sessionToken: token,
-        addresses: {
-          [address]: [getNetworkName(selectedChain)],
-        },
-        presetFiatAmount: 20,
-        fiatCurrency: 'USD',
-        defaultNetwork: getNetworkName(selectedChain),
-        defaultAsset: 'ETH',
-      })
-
-      // Open in popup
-      const popup = window.open(
-        url,
-        'coinbase-onramp',
-        'width=500,height=700,scrollbars=yes,resizable=yes'
-      )
-
-      if (!popup) {
-        return toast.error('Popup blocked. Please allow popups for this site.')
-      }
-
-      let isHandled = false
-
-      // Listen for message events from Coinbase onramp
-      const handleMessage = (event: MessageEvent) => {
-        if (
-          !event.origin.includes('coinbase.com') &&
-          !event.origin.includes('cb-pay.com')
-        ) {
-          return
-        }
-
-        if (event.data && typeof event.data === 'object') {
-          const { eventName, success } = event.data
-
-          // Handle success events
-          if (
-            eventName === 'charge_confirmed' ||
-            eventName === 'payment_success' ||
-            success === true ||
-            event.data.type === 'onramp_success'
-          ) {
-            if (!isHandled) {
-              isHandled = true
-              popup.close()
-              cleanup()
-              toast.success('Purchase completed successfully!')
-            }
-          }
-          // Handle exit/cancel events
-          else if (
-            eventName === 'popup_closed' ||
-            eventName === 'user_closed' ||
-            event.data.type === 'onramp_exit'
-          ) {
-            if (!isHandled) {
-              isHandled = true
-              popup.close()
-              cleanup()
-            }
-          }
-        }
-      }
-
-      // Listen for popup being manually closed
-      const checkClosed = setInterval(() => {
-        if (popup.closed && !isHandled) {
-          isHandled = true
-          cleanup()
-        }
-      }, 1000)
-
-      // Cleanup function
-      const cleanup = () => {
-        clearInterval(checkClosed)
-        window.removeEventListener('message', handleMessage)
-      }
-
-      // Add event listener
-      window.addEventListener('message', handleMessage, false)
-
-      // Cleanup after 10 minutes
-      setTimeout(() => {
-        if (!isHandled) {
-          isHandled = true
-          popup.close()
-          cleanup()
-        }
-      }, 600000)
-    } catch (error: any) {
-      console.error('Onramp initialization error:', error)
-      toast.error('Failed to initialize payment system: ' + error.message)
-    }
+    setOnrampModalOpen(true)
   }
 
   // Helper function to get token icon
@@ -874,9 +756,7 @@ export function PrivyConnectWallet({
     return (
       <div className="w-6 h-6 flex items-center justify-center">
         <Image
-          src={`/icons/networks/${
-            chainSlug === 'polygon' ? 'polygon' : 'ethereum'
-          }.svg`}
+          src={`/icons/networks/${chainSlug === 'polygon' ? 'polygon' : 'ethereum'}.svg`}
           width={20}
           height={20}
           alt="Native Token Icon"
@@ -895,15 +775,13 @@ export function PrivyConnectWallet({
   useEffect(() => {
     const wallet = wallets[selectedWallet]
     const isAutoSwitchWallet =
-      wallet?.walletClientType === 'coinbase_wallet' ||
-      wallet?.walletClientType === 'privy'
+      wallet?.walletClientType === 'coinbase_wallet' || wallet?.walletClientType === 'privy'
 
     if (walletChainId !== selectedChain.id) {
       if (isAutoSwitchWallet) {
         // Add delay for auto-switching wallets to prevent flashing
         const timeout = setTimeout(() => {
-          const currentWalletChainId =
-            +wallets?.[selectedWallet]?.chainId?.split(':')[1]
+          const currentWalletChainId = +wallets?.[selectedWallet]?.chainId?.split(':')[1]
           if (currentWalletChainId !== selectedChain.id) {
             setNetworkMismatch(true)
           }
@@ -953,11 +831,7 @@ export function PrivyConnectWallet({
             {/*Address and Toggle open/close button*/}
             <div className="flex items-center w-full h-full justify-between">
               <p className="text-xs">
-                {ens
-                  ? ens
-                  : address
-                  ? `${address?.slice(0, 6)}...${address?.slice(-4)}`
-                  : ''}
+                {ens ? ens : address ? `${address?.slice(0, 6)}...${address?.slice(-4)}` : ''}
               </p>
               <ChevronDownIcon
                 className={`w-4 h-4 text-black dark:text-white cursor-pointer transition-all duration-150 ${
@@ -1104,9 +978,7 @@ export function PrivyConnectWallet({
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
                         <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                        <p className="text-red-400 font-medium">
-                          Network Mismatch
-                        </p>
+                        <p className="text-red-400 font-medium">Network Mismatch</p>
                       </div>
                       <button
                         className="p-1 hover:bg-red-500/20 rounded-full transition-colors duration-200 group"
@@ -1120,9 +992,8 @@ export function PrivyConnectWallet({
                       </button>
                     </div>
                     <p className="text-gray-300 text-sm mb-4">
-                      Your wallet is not connected to {selectedChain.name}.
-                      Switch networks in your wallet or revert to{' '}
-                      {previousChain.name}.
+                      Your wallet is not connected to {selectedChain.name}. Switch networks in your
+                      wallet or revert to {previousChain.name}.
                     </p>
                     <div className="flex gap-3">
                       <button
@@ -1170,9 +1041,7 @@ export function PrivyConnectWallet({
                               <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
                                 {selectedNativeToken[chainSlug]}
                               </p>
-                              <p className="text-gray-400 text-xs">
-                                Native Token
-                              </p>
+                              <p className="text-gray-400 text-xs">Native Token</p>
                             </div>
                           </div>
                           <div className="text-right">
@@ -1212,35 +1081,25 @@ export function PrivyConnectWallet({
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
                               <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200 flex items-center justify-center">
-                                {getTokenIcon(
-                                  token.symbol,
-                                  token.contractAddress
-                                )}
+                                {getTokenIcon(token.symbol, token.contractAddress)}
                               </div>
                               <div>
                                 <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
                                   {token.symbol}
                                 </p>
-                                <p className="text-gray-400 text-xs">
-                                  {token.name}
-                                </p>
+                                <p className="text-gray-400 text-xs">{token.name}</p>
                               </div>
                             </div>
                             <div className="text-right">
                               <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
                                 {token.formattedBalance < 0.01
                                   ? token.formattedBalance.toExponential(2)
-                                  : token.formattedBalance.toLocaleString(
-                                      undefined,
-                                      {
-                                        minimumFractionDigits: 0,
-                                        maximumFractionDigits: 6,
-                                      }
-                                    )}
+                                  : token.formattedBalance.toLocaleString(undefined, {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 6,
+                                    })}
                               </p>
-                              <p className="text-gray-400 text-xs">
-                                {token.symbol}
-                              </p>
+                              <p className="text-gray-400 text-xs">{token.symbol}</p>
                             </div>
                           </div>
                         </div>
@@ -1284,9 +1143,7 @@ export function PrivyConnectWallet({
                         icon={<ArrowDownOnSquareIcon width={20} height={20} />}
                         onClick={() => {
                           exportWallet().catch(() => {
-                            toast.error(
-                              'Please select a privy wallet to export.'
-                            )
+                            toast.error('Please select a privy wallet to export.')
                           })
                         }}
                       />
@@ -1314,9 +1171,7 @@ export function PrivyConnectWallet({
                           <div className="flex items-center space-x-3">
                             <div
                               className={`w-3 h-3 rounded-full ${
-                                selectedWallet === i
-                                  ? 'bg-blue-500'
-                                  : 'bg-gray-500'
+                                selectedWallet === i ? 'bg-blue-500' : 'bg-gray-500'
                               }`}
                             ></div>
                             <div>
@@ -1389,6 +1244,20 @@ export function PrivyConnectWallet({
             </div>
           </button>
         </div>
+      )}
+      {address && (
+        <CBOnrampModal
+          enabled={onrampModalOpen}
+          setEnabled={setOnrampModalOpen}
+          address={address}
+          selectedChain={selectedChain}
+          ethAmount={0}
+          allowAmountInput={true}
+          context="wallet"
+          onSuccess={() => {
+            toast.success('Purchase completed successfully!')
+          }}
+        />
       )}
     </>
   )

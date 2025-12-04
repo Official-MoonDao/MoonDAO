@@ -1,5 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { getAccessToken, useFundWallet } from '@privy-io/react-auth'
+import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import {
   DEPLOYED_ORIGIN,
@@ -13,13 +13,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import {
-  prepareContractCall,
-  readContract,
-  sendAndConfirmTransaction,
-} from 'thirdweb'
+import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
+import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
+import { useOnrampRedirect } from '@/lib/coinbase/useOnrampRedirect'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
@@ -31,9 +29,10 @@ import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
-import viemChains from '@/lib/viem/viemChains'
+import { useFormCache } from '@/lib/utils/hooks/useFormCache'
 import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
 import TeamABI from '../../const/abis/Team.json'
+import { CBOnrampModal } from '../coinbase/CBOnrampModal'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import { ExpandedFooter } from '../layout/ExpandedFooter'
@@ -58,24 +57,8 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
-
-  const { isMobile } = useWindowSize()
-
-  const [teamData, setTeamData] = useState<TeamData>({
-    name: '',
-    description: '',
-    twitter: '',
-    communications: '',
-    website: '',
-    view: 'private',
-    formResponseId: '',
-  })
-
-  useEffect(() => {
-    if (stage > lastStage) {
-      setLastStage(stage)
-    }
-  }, [stage, lastStage])
+  const [onrampModalOpen, setOnrampModalOpen] = useState(false)
+  const [requiredEthAmount, setRequiredEthAmount] = useState(0)
 
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
@@ -89,9 +72,31 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     chain: selectedChain,
   })
 
-  const { nativeBalance } = useNativeBalance()
+  // Form state caching
+  const { cache, setCache, clearCache, restoreCache } = useFormCache<{
+    stage: number
+    teamData: TeamData
+    teamImage: any
+    agreedToCondition: boolean
+  }>('CreateTeamCacheV1', address)
 
-  const { fundWallet } = useFundWallet()
+  // Redirect handling
+  const { isReturningFromOnramp, clearRedirectParams } = useOnrampRedirect()
+  const { verifyJWT, getStoredJWT, clearJWT } = useOnrampJWT()
+
+  const { isMobile } = useWindowSize()
+
+  const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
+
+  const [teamData, setTeamData] = useState<TeamData>({
+    name: '',
+    description: '',
+    twitter: '',
+    communications: '',
+    website: '',
+    view: 'private',
+    formResponseId: '',
+  })
 
   const submitTypeform = useCallback(async (formResponse: any) => {
     try {
@@ -132,11 +137,295 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     } catch (error) {
       console.error('Error submitting typeform:', error)
       // You might want to show an error message to the user here
-      alert(
-        'There was an error processing your form submission. Please try again.'
-      )
+      alert('There was an error processing your form submission. Please try again.')
     }
   }, [])
+
+  const callMint = useCallback(async () => {
+    if (!account || !address) {
+      return toast.error('Please connect your wallet to continue.')
+    }
+    try {
+      const cost: any = await readContract({
+        contract: teamContract,
+        method: 'getRenewalPrice' as string,
+        params: [address, 365 * 24 * 60 * 60],
+      })
+
+      const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
+
+      const estimatedMaxGas = 0.0003
+
+      const totalCost = Number(formattedCost) + estimatedMaxGas
+
+      if (+nativeBalance < totalCost) {
+        // Calculate the amount needed
+        const shortfall = totalCost - +nativeBalance
+
+        // Add gas buffer
+        const requiredAmount = shortfall + estimatedMaxGas
+
+        setIsLoadingMint(false)
+        setRequiredEthAmount(requiredAmount)
+        setOnrampModalOpen(true)
+        return
+      }
+
+      const adminHatMetadataBlob = new Blob(
+        [
+          JSON.stringify({
+            type: '1.0',
+            data: {
+              name: teamData.name + ' Admin',
+              description: teamData.description,
+            },
+          }),
+        ],
+        {
+          type: 'application/json',
+        }
+      )
+
+      const { cid: adminHatMetadataIpfsHash } = await pinBlobOrFile(adminHatMetadataBlob)
+
+      const managerHatMetadataBlob = new Blob(
+        [
+          JSON.stringify({
+            type: '1.0',
+            data: {
+              name: teamData.name + ' Manager',
+              description: teamData.description,
+            },
+          }),
+        ],
+        {
+          type: 'application/json',
+        }
+      )
+
+      const { cid: managerHatMetadataIpfsHash } = await pinBlobOrFile(managerHatMetadataBlob)
+
+      const memberHatMetadataBlob = new Blob(
+        [
+          JSON.stringify({
+            type: '1.0',
+            data: {
+              name: teamData.name + ' Member',
+              description: teamData.description,
+            },
+          }),
+        ],
+        {
+          type: 'application/json',
+        }
+      )
+
+      const { cid: memberHatMetadataIpfsHash } = await pinBlobOrFile(memberHatMetadataBlob)
+
+      const renamedTeamImage = renameFile(teamImage, `${teamData.name} Team Image`)
+
+      const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedTeamImage)
+
+      if (!newImageIpfsHash) {
+        return toast.error('Error pinning image to IPFS.')
+      }
+
+      setIsLoadingMint(true)
+
+      const transaction = prepareContractCall({
+        contract: teamCreatorContract,
+        method: 'createMoonDAOTeam' as string,
+        params: [
+          {
+            adminHatURI: 'ipfs://' + adminHatMetadataIpfsHash,
+            managerHatURI: 'ipfs://' + managerHatMetadataIpfsHash,
+            memberHatURI: 'ipfs://' + memberHatMetadataIpfsHash,
+          },
+          {
+            name: teamData.name,
+            bio: teamData.description,
+            image: 'ipfs://' + newImageIpfsHash,
+            twitter: teamData.twitter,
+            communications: teamData.communications,
+            website: teamData.website,
+            _view: teamData.view,
+            formId: teamData.formResponseId,
+          },
+          [],
+        ],
+        value: cost,
+      })
+
+      const receipt: any = await sendAndConfirmTransaction({
+        transaction,
+        account,
+      })
+
+      const transferEventSignature = ethers.utils.id('Transfer(address,address,uint256)')
+      const transferLog = receipt.logs.find((log: any) => log.topics[0] === transferEventSignature)
+
+      const mintedTokenId = ethers.BigNumber.from(transferLog.topics[3]).toString()
+
+      if (mintedTokenId) {
+        const teamNFT = await waitForERC721(teamContract, mintedTokenId)
+        const teamName = teamData.name
+        const teamPrettyLink = generatePrettyLink(teamName)
+        setTimeout(async () => {
+          await sendDiscordMessage(
+            'networkNotifications',
+            `## [**${teamName}**](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789) has created a team in the Space Acceleration Network! <@&${DISCORD_CITIZEN_ROLE_ID}>`
+          )
+
+          clearCache()
+          router.push(`/team/${teamPrettyLink}`)
+          setIsLoadingMint(false)
+        }, 10000)
+      }
+    } catch (err) {
+      console.error(err)
+      setIsLoadingMint(false)
+    }
+  }, [
+    account,
+    address,
+    teamContract,
+    nativeBalance,
+    teamData,
+    teamImage,
+    teamCreatorContract,
+    clearCache,
+    router,
+  ])
+
+  // Restore form state on redirect return and auto-retry team creation
+  useEffect(() => {
+    if (isReturningFromOnramp && address && callMint) {
+      const restored = restoreCache()
+      if (!restored) {
+        clearRedirectParams()
+        return
+      }
+
+      // Verify JWT before proceeding
+      const storedJWT = getStoredJWT()
+      if (!storedJWT) {
+        // No JWT - don't auto-trigger, clear redirect params
+        clearRedirectParams()
+        return
+      }
+
+      verifyJWT(storedJWT, address, undefined, 'team').then((payload) => {
+        if (
+          !payload ||
+          payload.address.toLowerCase() !== address.toLowerCase() ||
+          payload.chainSlug !== chainSlug ||
+          payload.context !== 'team'
+        ) {
+          // Invalid JWT - don't auto-trigger
+          clearJWT()
+          clearRedirectParams()
+          return
+        }
+
+        // JWT valid - restore form state
+        setStage(restored.stage || 2)
+        setTeamData(restored.formData.teamData)
+        if (restored.formData.teamImage) {
+          setTeamImage(restored.formData.teamImage)
+        }
+        setAgreedToCondition(restored.formData.agreedToCondition)
+        clearRedirectParams()
+
+        // Only auto-retry if user agreed to conditions
+        if (restored.formData.agreedToCondition) {
+          // Refresh balance and poll until sufficient before retrying team creation
+          const retryMint = async () => {
+            let attempts = 0
+            const maxAttempts = 10 // Try for up to 10 seconds
+
+            const checkBalanceAndMint = async () => {
+              await refetchNativeBalance()
+              await new Promise((resolve) => setTimeout(resolve, 1000))
+
+              // Check if balance is sufficient
+              try {
+                const cost: any = await readContract({
+                  contract: teamContract,
+                  method: 'getRenewalPrice' as string,
+                  params: [address, 365 * 24 * 60 * 60],
+                })
+                const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
+                const estimatedMaxGas = 0.0003
+                const totalCost = Number(formattedCost) + estimatedMaxGas
+
+                // Check current balance state
+                if (+nativeBalance >= totalCost) {
+                  // Balance is sufficient, proceed with team creation
+                  callMint()
+                  clearJWT()
+                  return true
+                }
+              } catch (error) {
+                console.error('Error checking balance:', error)
+              }
+
+              attempts++
+              if (attempts < maxAttempts) {
+                // Try again after a delay
+                setTimeout(checkBalanceAndMint, 1000)
+              } else {
+                // Max attempts reached, try calling mint anyway
+                // It will handle insufficient balance by opening modal
+                callMint()
+                clearJWT()
+              }
+              return false
+            }
+
+            checkBalanceAndMint()
+          }
+
+          setTimeout(retryMint, 1000)
+        } else {
+          clearJWT() // Clear JWT if conditions not agreed
+        }
+      })
+    }
+  }, [
+    isReturningFromOnramp,
+    address,
+    restoreCache,
+    clearRedirectParams,
+    refetchNativeBalance,
+    callMint,
+    getStoredJWT,
+    verifyJWT,
+    clearJWT,
+    chainSlug,
+    nativeBalance,
+    teamContract,
+  ])
+
+  // Cache form state before navigating to onramp
+  useEffect(() => {
+    if (stage >= 0 && address && (teamData.name || teamImage)) {
+      setCache(
+        {
+          stage,
+          teamData,
+          teamImage,
+          agreedToCondition,
+        },
+        stage
+      )
+    }
+  }, [stage, teamData, teamImage, agreedToCondition, address, setCache])
+
+  useEffect(() => {
+    if (stage > lastStage) {
+      setLastStage(stage)
+    }
+  }, [stage, lastStage])
 
   return (
     <Container>
@@ -204,9 +493,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   <div className="w-full bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden relative">
                     <Widget
                       className="w-full"
-                      id={
-                        process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string
-                      }
+                      id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string}
                       onSubmit={submitTypeform}
                       height={700}
                     />
@@ -221,9 +508,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                 >
                   {teamImage && (
                     <div className="w-full bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6 mb-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">
-                        Team Image Preview
-                      </h3>
+                      <h3 className="text-lg font-semibold text-white mb-4">Team Image Preview</h3>
                       <div className="flex justify-start">
                         <Image
                           src={URL.createObjectURL(teamImage)}
@@ -238,9 +523,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
 
                   <div className="flex flex-col w-full md:p-5 mt-8 max-w-[600px]">
                     <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-                      <h3 className="font-GoodTimes text-xl mb-4 text-white">
-                        Team Overview
-                      </h3>
+                      <h3 className="font-GoodTimes text-xl mb-4 text-white">Team Overview</h3>
                       <div className="grid gap-4">
                         {isMobile ? (
                           Object.keys(teamData)
@@ -292,36 +575,29 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                         Important Information
                       </h2>
                       <div className="flex flex-col rounded-[20px] bg-slate-800/50 border border-slate-600/30 p-5 pb-10 md:p-5">
-                        <h3 className="font-GoodTimes text-lg mb-3 text-white">
-                          Treasury
-                        </h3>
+                        <h3 className="font-GoodTimes text-lg mb-3 text-white">Treasury</h3>
                         <p className="text-slate-300 leading-relaxed">
-                          A self-custodied multisignature treasury will secure
-                          your organization’s assets, allowing interaction with
-                          any smart contracts within the Ethereum ecosystem.
+                          A self-custodied multisignature treasury will secure your organization’s
+                          assets, allowing interaction with any smart contracts within the Ethereum
+                          ecosystem.
                           <br />
                           <br />
-                          You can add more signers later via your Team
-                          management portal.
+                          You can add more signers later via your Team management portal.
                         </p>
                       </div>
                       <div className="flex flex-col bg-slate-800/50 border border-slate-600/30 rounded-[20px] pb-10 p-5 mt-5">
-                        <h3 className="font-GoodTimes text-lg mb-3 text-white">
-                          Manager
-                        </h3>
+                        <h3 className="font-GoodTimes text-lg mb-3 text-white">Manager</h3>
                         <p className="text-slate-300 leading-relaxed">
-                          The manager can modify your organization’s
-                          information. To begin, the currently connected wallet
-                          will act as the Manager.
+                          The manager can modify your organization’s information. To begin, the
+                          currently connected wallet will act as the Manager.
                           <br />
                           <br />
-                          You can add a manager or members to your organization
-                          using your Team Management Portal.
+                          You can add a manager or members to your organization using your Team
+                          Management Portal.
                         </p>
                       </div>
                       <p className="mt-6 text-center text-slate-300 font-medium">
-                        Welcome to the future of on-chain, off-world
-                        coordination with MoonDAO!
+                        Welcome to the future of on-chain, off-world coordination with MoonDAO!
                       </p>
                     </div>
                   </div>
@@ -385,179 +661,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                     label="Create Team"
                     className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base"
                     isDisabled={!agreedToCondition || isLoadingMint}
-                    action={async () => {
-                      if (!account || !address) {
-                        return toast.error(
-                          'Please connect your wallet to continue.'
-                        )
-                      }
-                      try {
-                        const cost: any = await readContract({
-                          contract: teamContract,
-                          method: 'getRenewalPrice' as string,
-                          params: [address, 365 * 24 * 60 * 60],
-                        })
-
-                        const formattedCost = ethers.utils
-                          .formatEther(cost.toString())
-                          .toString()
-
-                        const estimatedMaxGas = 0.0003
-
-                        const totalCost =
-                          Number(formattedCost) + estimatedMaxGas
-
-                        if (+nativeBalance < totalCost) {
-                          const roundedCost =
-                            Math.ceil(+totalCost * 1000000) / 1000000
-
-                          return await fundWallet(address, {
-                            amount: String(roundedCost),
-                            chain: viemChains[chainSlug],
-                          })
-                        }
-
-                        const adminHatMetadataBlob = new Blob(
-                          [
-                            JSON.stringify({
-                              type: '1.0',
-                              data: {
-                                name: teamData.name + ' Admin',
-                                description: teamData.description,
-                              },
-                            }),
-                          ],
-                          {
-                            type: 'application/json',
-                          }
-                        )
-
-                        const { cid: adminHatMetadataIpfsHash } =
-                          await pinBlobOrFile(adminHatMetadataBlob)
-
-                        const managerHatMetadataBlob = new Blob(
-                          [
-                            JSON.stringify({
-                              type: '1.0',
-                              data: {
-                                name: teamData.name + ' Manager',
-                                description: teamData.description,
-                              },
-                            }),
-                          ],
-                          {
-                            type: 'application/json',
-                          }
-                        )
-
-                        const { cid: managerHatMetadataIpfsHash } =
-                          await pinBlobOrFile(managerHatMetadataBlob)
-
-                        const memberHatMetadataBlob = new Blob(
-                          [
-                            JSON.stringify({
-                              type: '1.0',
-                              data: {
-                                name: teamData.name + ' Member',
-                                description: teamData.description,
-                              },
-                            }),
-                          ],
-                          {
-                            type: 'application/json',
-                          }
-                        )
-
-                        const { cid: memberHatMetadataIpfsHash } =
-                          await pinBlobOrFile(memberHatMetadataBlob)
-
-                        //pin image to IPFS
-
-                        const renamedTeamImage = renameFile(
-                          teamImage,
-                          `${teamData.name} Team Image`
-                        )
-
-                        const { cid: newImageIpfsHash } = await pinBlobOrFile(
-                          renamedTeamImage
-                        )
-
-                        if (!newImageIpfsHash) {
-                          return toast.error('Error pinning image to IPFS.')
-                        }
-
-                        setIsLoadingMint(true)
-                        //mint NFT to safe
-
-                        const transaction = prepareContractCall({
-                          contract: teamCreatorContract,
-                          method: 'createMoonDAOTeam' as string,
-                          params: [
-                            // HatURIs struct
-                            {
-                              adminHatURI: 'ipfs://' + adminHatMetadataIpfsHash,
-                              managerHatURI:
-                                'ipfs://' + managerHatMetadataIpfsHash,
-                              memberHatURI:
-                                'ipfs://' + memberHatMetadataIpfsHash,
-                            },
-                            // TeamMetadata struct
-                            {
-                              name: teamData.name,
-                              bio: teamData.description,
-                              image: 'ipfs://' + newImageIpfsHash,
-                              twitter: teamData.twitter,
-                              communications: teamData.communications,
-                              website: teamData.website,
-                              _view: teamData.view,
-                              formId: teamData.formResponseId,
-                            },
-                            // members array
-                            [],
-                          ],
-                          value: cost,
-                        })
-
-                        const receipt: any = await sendAndConfirmTransaction({
-                          transaction,
-                          account,
-                        })
-
-                        // Define the event signature for the Transfer event
-                        const transferEventSignature = ethers.utils.id(
-                          'Transfer(address,address,uint256)'
-                        )
-                        // Find the log that matches the Transfer event signature
-                        const transferLog = receipt.logs.find(
-                          (log: any) => log.topics[0] === transferEventSignature
-                        )
-
-                        const mintedTokenId = ethers.BigNumber.from(
-                          transferLog.topics[3]
-                        ).toString()
-
-                        if (mintedTokenId) {
-                          const teamNFT = await waitForERC721(
-                            teamContract,
-                            mintedTokenId
-                          )
-                          const teamName = teamData.name
-                          const teamPrettyLink = generatePrettyLink(teamName)
-                          setTimeout(async () => {
-                            await sendDiscordMessage(
-                              'networkNotifications',
-                              `## [**${teamName}**](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789) has created a team in the Space Acceleration Network! <@&${DISCORD_CITIZEN_ROLE_ID}>`
-                            )
-
-                            router.push(`/team/${teamPrettyLink}`)
-                            setIsLoadingMint(false)
-                          }, 10000)
-                        }
-                      } catch (err) {
-                        console.error(err)
-                        setIsLoadingMint(false)
-                      }
-                    }}
+                    action={callMint}
                   />
                   {isLoadingMint && (
                     <div className="mt-4 p-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl">
@@ -565,8 +669,8 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                         Creating your team on the blockchain...
                       </p>
                       <p className="text-slate-400 text-sm text-center mt-2">
-                        This process can take up to a minute. Please wait while
-                        the transaction is processed.
+                        This process can take up to a minute. Please wait while the transaction is
+                        processed.
                       </p>
                     </div>
                   )}
@@ -587,6 +691,26 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
           )}
         </ContentLayout>
       </div>
+      {address && (
+        <CBOnrampModal
+          enabled={onrampModalOpen}
+          setEnabled={setOnrampModalOpen}
+          address={address}
+          selectedChain={selectedChain}
+          ethAmount={requiredEthAmount}
+          context="team"
+          agreed={agreedToCondition}
+          onSuccess={() => {
+            // Refresh balance and retry team creation
+            setTimeout(() => {
+              callMint()
+            }, 2000)
+          }}
+          onExit={() => {
+            setIsLoadingMint(false)
+          }}
+        />
+      )}
     </Container>
   )
 }
