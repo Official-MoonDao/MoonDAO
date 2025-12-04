@@ -54,21 +54,26 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const { t } = useTranslation('common')
   //Background is defined in this root div.
 
-  const isFullscreen =
-    router.pathname === '/launch' ||
-    router.pathname === '/home' ||
-    router.pathname === '/about' ||
-    router.pathname === '/faq' ||
-    router.pathname === '/constitution' ||
-    router.pathname === '/news' ||
-    router.pathname === '/mission/[tokenId]' ||
-    router.pathname === '/network' ||
-    router.pathname === '/join' ||
-    router.pathname === '/mooney' ||
-    router.pathname === '/governance' ||
-    router.pathname === '/projects-overview' ||
-    router.pathname === '/get-mooney' ||
-    router.pathname === '/lock'
+  const fullscreenPaths = [
+    '/launch',
+    '/home',
+    '/about',
+    '/faq',
+    '/constitution',
+    '/news',
+    '/mission/[tokenId]',
+    '/network',
+    '/join',
+    '/mooney',
+    '/governance',
+    '/projects-overview',
+    '/get-mooney',
+    '/lock',
+    '/dashboard',
+    '/bridge',
+  ]
+
+  const isFullscreen = fullscreenPaths.includes(router.pathname)
 
   const isHomepage = router.pathname === '/'
 
@@ -82,9 +87,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const layout = (
     <div
       id="app-layout"
-      className={`${
-        !lightMode ? 'dark background-dark' : 'background-light'
-      } min-h-screen`}
+      className={`${!lightMode ? 'dark background-dark' : 'background-light'} min-h-screen`}
     >
       <>
         {/* Mobile menu top bar - for screens smaller than xl */}

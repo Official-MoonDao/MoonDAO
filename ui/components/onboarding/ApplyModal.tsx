@@ -18,22 +18,25 @@ export default function ApplyModal({ type, setEnabled }: ApplyModalProps) {
 
   return (
     <Modal id="apply-modal-backdrop" setEnabled={setEnabled}>
-      <div className="w-full flex flex-col gap-6 items-start justify-start w-auto md:w-[700px] p-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl min-h-[80vh] max-h-[90vh] md:min-h-auto md:max-h-[80vh] overflow-hidden">
-        <div className="w-full flex items-center justify-between flex-shrink-0">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-2xl font-GoodTimes text-white">Apply to MoonDAO</h2>
-            <p className="text-slate-300 text-sm">Complete the application form below to join our community</p>
+      <div className="w-[95vw] md:w-[700px] flex flex-col gap-4 md:gap-6 p-4 md:p-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl md:rounded-[2vmax] shadow-2xl max-h-[90vh] md:max-h-[85vh]">
+        <div className="w-full flex items-start md:items-center justify-between flex-shrink-0 gap-4">
+          <div className="flex flex-col gap-1 md:gap-2 flex-1 min-w-0">
+            <h2 className="text-xl md:text-2xl font-GoodTimes text-white">Apply to MoonDAO</h2>
+            <p className="text-slate-300 text-xs md:text-sm">
+              Complete the application form below to join our community
+            </p>
           </div>
           <button
             type="button"
-            className="flex h-10 w-10 border-2 border-slate-600 items-center justify-center rounded-full hover:border-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+            className="flex h-10 w-10 border-2 border-slate-600 items-center justify-center rounded-full hover:border-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white flex-shrink-0"
             onClick={() => setEnabled(false)}
+            aria-label="Close modal"
           >
             <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
           </button>
         </div>
-        <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 overflow-hidden relative flex-1 min-h-0">
-          <div className="h-full typeform-widget-container">
+        <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl md:rounded-2xl border border-slate-600/30 overflow-hidden relative">
+          <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
             <Widget
               className="w-full"
               id={
@@ -42,11 +45,10 @@ export default function ApplyModal({ type, setEnabled }: ApplyModalProps) {
                   : (process.env.NEXT_PUBLIC_TYPEFORM_TEAM_APP_FORM_ID as string)
               }
               onSubmit={submitTypeform}
-              height={600}
+              height={500}
             />
           </div>
-          {/* Visible indicator for scroll/navigation */}
-          <div className="absolute bottom-4 right-4 bg-blue-600/80 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm border border-blue-400/30 shadow-lg pointer-events-none opacity-75 scroll-indicator">
+          <div className="absolute bottom-4 right-4 bg-blue-600/80 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm border border-blue-400/30 shadow-lg pointer-events-none opacity-75">
             ↕️ Scroll for more
           </div>
         </div>

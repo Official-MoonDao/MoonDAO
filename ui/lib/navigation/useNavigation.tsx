@@ -12,15 +12,10 @@ import IconOrg from '@/components/assets/IconOrg'
 export default function useNavigation(citizen: any) {
   return useMemo(() => {
     return [
-      !citizen && {
-        name: 'Join',
-        href: '/join',
-        icon: PlusIcon,
-      },
       {
-        name: 'Dashboard',
-        href: '/',
-        icon: HomeIcon,
+        name: citizen ? 'Dashboard' : 'Join',
+        href: citizen ? '/' : '/join',
+        icon: citizen ? HomeIcon : PlusIcon,
       },
       {
         name: 'Citizenship',
@@ -51,6 +46,8 @@ export default function useNavigation(citizen: any) {
           },
           { name: 'Lock $MOONEY', href: '/lock' },
           { name: 'Bridge $MOONEY', href: '/bridge' },
+          { name: 'Token Overview', href: '/mooney' },
+          { name: 'Governance Overview', href: '/governance' },
         ],
       },
       {
@@ -74,6 +71,7 @@ export default function useNavigation(citizen: any) {
             name: 'Submit Contribution',
             href: '/contributions',
           },
+          { name: 'Projects Overview', href: '/projects-overview' },
         ],
       },
       {
@@ -88,10 +86,6 @@ export default function useNavigation(citizen: any) {
           { name: 'Analytics', href: '/analytics' },
           { name: 'Resources', href: '/resources' },
           { name: 'Constitution', href: '/constitution' },
-          { name: 'Network Overview', href: '/join' },
-          { name: 'Token Overview', href: '/mooney' },
-          { name: 'Governance Overview', href: '/governance' },
-          { name: 'Projects Overview', href: '/projects-overview' },
         ],
       },
       {

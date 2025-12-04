@@ -85,7 +85,7 @@ const ProjectsOverview: React.FC<{
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
 
   // Use hardcoded value like in RetroactiveRewards for current quarter
-  const ethBudget = 17.09
+  const ethBudget = 14.15
   const usdBudget = ethBudget * ethPrice
 
   // Calculate MOONEY USD value
