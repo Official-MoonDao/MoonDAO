@@ -500,7 +500,6 @@ export default function WeeklyRewardPool() {
                   ? 'bg-gradient-to-r from-green-500 to-emerald-600 cursor-not-allowed shadow-green-500/25'
                   : 'bg-gradient-to-r from-blue-500 via-purple-600 to-pink-600 hover:from-blue-600 hover:via-purple-700 hover:to-pink-700 shadow-purple-500/25'
               }`}
-              requiredChain={ethereum}
             />
           ) : (
             <Link
