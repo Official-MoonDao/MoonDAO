@@ -170,9 +170,45 @@ jobs:
       - name: Install browserstack-cypress-cli
         run: npm install -g browserstack-cypress-cli
 
+      - name: Download BrowserStack Local binary
+        run: |
+          if [ ! -f BrowserStackLocal ]; then
+            echo "Downloading BrowserStack Local binary..."
+            wget -q https://www.browserstack.com/browserstack-local/BrowserStackLocal-linux-x64.zip
+            unzip -q BrowserStackLocal-linux-x64.zip
+            chmod +x BrowserStackLocal
+            rm BrowserStackLocal-linux-x64.zip
+            echo "BrowserStack Local binary downloaded successfully"
+          else
+            echo "BrowserStack Local binary already exists"
+          fi
+
       - name: Start server and run E2E tests
         working-directory: ui
         run: |
+          TEST_EXIT_CODE=0
+          SERVER_PID=""
+          BS_LOCAL_PID=""
+
+          # Function to cleanup on exit
+          cleanup() {
+            echo "Cleaning up..."
+            if [ ! -z "$BS_LOCAL_PID" ] && ps -p $BS_LOCAL_PID > /dev/null 2>&1; then
+              echo "Stopping BrowserStack Local (PID: $BS_LOCAL_PID)..."
+              cd ..
+              ./BrowserStackLocal --daemon stop 2>/dev/null || true
+              kill $BS_LOCAL_PID 2>/dev/null || true
+              wait $BS_LOCAL_PID 2>/dev/null || true
+              cd ui
+            fi
+            if [ ! -z "$SERVER_PID" ] && ps -p $SERVER_PID > /dev/null 2>&1; then
+              echo "Stopping Next.js server (PID: $SERVER_PID)..."
+              kill $SERVER_PID 2>/dev/null || true
+              wait $SERVER_PID 2>/dev/null || true
+            fi
+          }
+          trap cleanup EXIT
+
           # Start server in background - Next.js standalone mode
           echo "Starting Next.js server..."
           yarn next start -p 3000 &
@@ -180,19 +216,55 @@ jobs:
 
           # Wait for server to be ready
           echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if curl -f -s http://localhost:3000 > /dev/null 2>&1; then
+              echo "Server is ready!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start after 30 attempts"
+              exit 1
+            fi
+            sleep 1
+          done
+
+          # Start BrowserStack Local binary
+          echo "Starting BrowserStack Local binary..."
+          BS_LOCAL_IDENTIFIER="moon-dao-tests-${BUILD_NUMBER}"
+          cd ..
+          ./BrowserStackLocal \
+            --key "${BROWSERSTACK_ACCESS_KEY}" \
+            --local-identifier "${BS_LOCAL_IDENTIFIER}" \
+            --daemon start \
+            --log-file bs-local.log \
+            --verbose 3 &
+          BS_LOCAL_PID=$!
+          cd ui
+
+          # Wait for Local binary to establish connection
+          echo "Waiting for BrowserStack Local connection..."
           sleep 15
 
-          # Simple health check
-          echo "Server health check:"
-          curl -I http://localhost:3000 || echo "❌ Server health check failed"
+          # Verify Local binary is running
+          if ! ps -p $BS_LOCAL_PID > /dev/null 2>&1; then
+            echo "❌ BrowserStack Local failed to start"
+            cat ../bs-local.log || true
+            exit 1
+          fi
+
+          echo "BrowserStack Local is running (PID: $BS_LOCAL_PID)"
 
           # Run tests with BrowserStack local tunnel
           echo "Starting BrowserStack Cypress tests..."
-          BROWSERSTACK_LOCAL=true browserstack-cypress run --force-upload --verbose || { echo "❌ Tests failed to run"; exit 1; }
+          BROWSERSTACK_LOCAL=true \
+          BROWSERSTACK_LOCAL_IDENTIFIER="${BS_LOCAL_IDENTIFIER}" \
+          browserstack-cypress run --force-upload --verbose || TEST_EXIT_CODE=$?
 
-          # Clean up
-          echo "Cleaning up..."
-          kill $SERVER_PID || true
+          # Clean up (trap will handle this, but explicit cleanup for better error visibility)
+          cleanup
+
+          # Exit with test result
+          exit $TEST_EXIT_CODE
         env:
           BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
