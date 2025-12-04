@@ -1,12 +1,16 @@
-import { InformationCircleIcon } from '@heroicons/react/24/outline'
+import { ChatBubbleLeftRightIcon, VideoCameraIcon } from '@heroicons/react/24/outline'
 import type { GetStaticProps } from 'next'
+import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { getSummaries, type TownHallSummary } from '../lib/townhall/summaries'
 import WebsiteHead from '../components/layout/Head'
 import { LoadingSpinner } from '../components/layout/LoadingSpinner'
 import Search from '../components/layout/Search'
 import Tooltip from '../components/layout/Tooltip'
+import NextTownHall from '../components/townhall/NextTownHall'
 import TownHallSummaryCard from '../components/townhall/TownHallSummaryCard'
+import TownhallSocials from '../components/townhall/TownhallSocials'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 interface TownHallProps {
   initialSummaries: TownHallSummary[]
@@ -14,6 +18,9 @@ interface TownHallProps {
 }
 
 const PAGE_SIZE = 5
+
+const LUMA_CALENDAR = 'https://lu.ma/moondao'
+const DISCORD_VOICE_CHANNEL = 'https://discord.com/channels/914720248140279868/917498630510878821'
 
 export default function TownHall({ initialSummaries, total }: TownHallProps) {
   const [summaries, setSummaries] = useState<TownHallSummary[]>(initialSummaries)
@@ -98,15 +105,51 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
         {/* Main content */}
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
           {/* Header section */}
-          <div className="mb-12 lg:mb-16">
+          <div className="mb-8">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-GoodTimes text-white mb-4 leading-tight">
               Town Hall Summaries
             </h1>
-            <p className="text-lg md:text-xl text-slate-300 max-w-3xl leading-relaxed mb-8">
+            <p className="text-lg md:text-xl text-slate-300 max-w-3xl leading-relaxed mb-6">
               Weekly summaries of our Town Hall meetings, automatically generated from transcripts.
               Each summary includes key topics discussed, decisions made, action items, and
               important updates for community members.
             </p>
+
+            {/* Enhanced info section */}
+            <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/70 border border-slate-600/50 rounded-xl p-6 mb-6 backdrop-blur-sm">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center">
+                    <VideoCameraIcon className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold mb-2">What We Do</h3>
+                    <p className="text-slate-300 text-sm leading-relaxed">
+                      Town halls are weekly community meetings where we discuss proposals, make
+                      decisions, share updates, and coordinate on projects. All community members
+                      are welcome to participate and contribute.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 bg-purple-600/20 rounded-lg flex items-center justify-center">
+                    <ChatBubbleLeftRightIcon className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold mb-2">Join Live</h3>
+                    <p className="text-slate-300 text-sm leading-relaxed mb-4">
+                      Town halls are streamed live to LinkedIn, YouTube, and X. Join us on Discord
+                      to watch the YouTube stream together with the community. You can ask questions
+                      in the chat on any platform, and the team will respond during the stream.
+                    </p>
+                    <TownhallSocials />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Next Town Hall section */}
+            <NextTownHall />
 
             {/* Search bar */}
             <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/70 border border-slate-600/50 rounded-xl p-4 backdrop-blur-sm shadow-lg hover:border-slate-500/70 transition-all duration-300">
@@ -164,8 +207,12 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
                     <p>{error}</p>
                   </div>
                 )}
-                {displayedSummaries.map((summary) => (
-                  <TownHallSummaryCard key={summary.id} summary={summary} />
+                {displayedSummaries.map((summary, index) => (
+                  <TownHallSummaryCard
+                    key={summary.id}
+                    summary={summary}
+                    isFeatured={!isSearchMode && index === 0}
+                  />
                 ))}
                 {hasMore && !isSearchMode && (
                   <div className="flex justify-center pt-8">
@@ -193,10 +240,11 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
           <div className="bg-blue-900/20 border border-blue-700/40 rounded-xl p-4 mt-12 backdrop-blur-sm">
             <p className="text-sm text-blue-200 text-left">
               We're working on improving our AI summaries. Some summaries may contain spelling or
-              formatting errors and may be retroactively regenerated for better quality.
+              formatting errors and may be retroactively regenerated or edited for better quality.
             </p>
           </div>
         </div>
+        <NoticeFooter />
       </div>
     </>
   )

@@ -32,7 +32,7 @@ describe('<TownHallSummaryCard />', () => {
   it('expands when clicked', () => {
     cy.mount(<TownHallSummaryCard summary={mockSummary} />)
 
-    cy.contains(mockSummary.title).parent().parent().parent().click()
+    cy.contains(mockSummary.title).closest('.cursor-pointer').click()
 
     cy.get('.prose').should('exist')
     cy.get('.line-clamp-3').should('not.exist')
@@ -41,31 +41,29 @@ describe('<TownHallSummaryCard />', () => {
   it('collapses when clicked again', () => {
     cy.mount(<TownHallSummaryCard summary={mockSummary} />)
 
-    // eslint-disable-next-line cypress/no-assigning-return-values
-    const card = cy.contains(mockSummary.title).parent().parent().parent()
-
-    card.click()
+    cy.contains(mockSummary.title).closest('.cursor-pointer').click()
     cy.get('.prose').should('exist')
 
-    card.click()
+    cy.contains(mockSummary.title).closest('.cursor-pointer').click()
     cy.get('.line-clamp-3').should('exist')
   })
 
-  it('shows video link when videoId is provided and expanded', () => {
+  it('shows YouTube embed when videoId is provided and expanded', () => {
     cy.mount(<TownHallSummaryCard summary={mockSummaryWithVideo} />)
 
-    cy.contains('Watch Video on YouTube').should('not.exist')
+    cy.get('iframe[title="YouTube video player"]').should('not.exist')
 
-    cy.contains(mockSummaryWithVideo.title).parent().parent().parent().click()
+    cy.contains(mockSummaryWithVideo.title).closest('.cursor-pointer').click()
 
-    cy.contains('Watch on YouTube').should('exist')
+    cy.get('iframe[title="YouTube video player"]').should('exist')
+    cy.get('iframe[src*="youtube.com/embed"]').should('exist')
   })
 
-  it('does not show video link when videoId is not provided', () => {
+  it('does not show YouTube embed when videoId is not provided', () => {
     cy.mount(<TownHallSummaryCard summary={mockSummary} />)
 
-    cy.contains(mockSummary.title).parent().parent().parent().click()
+    cy.contains(mockSummary.title).closest('.cursor-pointer').click()
 
-    cy.contains('Watch on YouTube').should('not.exist')
+    cy.get('iframe[title="YouTube video player"]').should('not.exist')
   })
 })

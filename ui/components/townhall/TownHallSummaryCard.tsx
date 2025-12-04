@@ -1,7 +1,8 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { cleanSummaryContent, getPreviewText } from '../../lib/townhall/utils'
+import YouTubeEmbed from './YouTubeEmbed'
 
 interface TownHallSummary {
   id: string
@@ -15,10 +16,20 @@ interface TownHallSummary {
 
 interface TownHallSummaryCardProps {
   summary: TownHallSummary
+  isFeatured?: boolean
 }
 
-export default function TownHallSummaryCard({ summary }: TownHallSummaryCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+export default function TownHallSummaryCard({
+  summary,
+  isFeatured = false,
+}: TownHallSummaryCardProps) {
+  const [isExpanded, setIsExpanded] = useState(isFeatured)
+
+  useEffect(() => {
+    if (isFeatured) {
+      setIsExpanded(true)
+    }
+  }, [isFeatured])
 
   const publishedDate = new Date(summary.publishedAt).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -41,7 +52,7 @@ export default function TownHallSummaryCard({ summary }: TownHallSummaryCardProp
   return (
     <div
       onClick={handleCardClick}
-      className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 rounded-2xl p-6 lg:p-8 hover:border-slate-600/70 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer group"
+      className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 rounded-2xl p-6 lg:p-8 hover:border-slate-600/70 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer group overflow-hidden"
     >
       <div className="flex flex-col gap-6">
         {/* Header section */}
@@ -50,7 +61,7 @@ export default function TownHallSummaryCard({ summary }: TownHallSummaryCardProp
             <h3 className="text-xl lg:text-2xl font-bold text-white mb-3 group-hover:text-blue-300 transition-colors">
               {summary.title}
             </h3>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-400 mb-3">
               <span className="text-slate-500">Published:</span> {publishedDate}
             </p>
           </div>
@@ -70,56 +81,33 @@ export default function TownHallSummaryCard({ summary }: TownHallSummaryCardProp
               <p className="line-clamp-3">{previewContent}</p>
             </div>
           ) : (
-            <div
-              className="prose prose-invert prose-lg max-w-none text-slate-300 leading-relaxed
-                prose-headings:text-white prose-headings:font-bold prose-headings:mt-8 prose-headings:mb-4
-                prose-h2:text-xl prose-h2:font-GoodTimes prose-h2:text-blue-300
-                prose-h3:text-lg prose-h3:font-semibold prose-h3:text-slate-200
-                prose-p:text-slate-300 prose-p:leading-relaxed prose-p:mb-4
-                prose-ul:text-slate-300 prose-ul:list-disc prose-ul:pl-6 prose-ul:mb-4
-                prose-li:mb-2 prose-li:leading-relaxed
-                prose-strong:text-white prose-strong:font-semibold
-                prose-a:text-blue-400 prose-a:hover:text-blue-300 prose-a:no-underline hover:prose-a:underline
-                prose-hr:border-slate-700 prose-hr:my-8"
-              dangerouslySetInnerHTML={{ __html: cleanedContent }}
-            />
+            <div className="space-y-6">
+              {/* YouTube embed when expanded */}
+              {summary.videoId && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="-mx-6 lg:mx-0 mb-4 lg:mb-0 px-2 lg:px-0"
+                >
+                  <YouTubeEmbed videoId={summary.videoId} className="w-full" />
+                </div>
+              )}
+              {/* Summary content */}
+              <div
+                className="prose prose-invert prose-lg max-w-none text-slate-300 leading-relaxed
+                  prose-headings:text-white prose-headings:font-bold prose-headings:mt-8 prose-headings:mb-4
+                  prose-h2:text-xl prose-h2:font-GoodTimes prose-h2:text-blue-300
+                  prose-h3:text-lg prose-h3:font-semibold prose-h3:text-slate-200
+                  prose-p:text-slate-300 prose-p:leading-relaxed prose-p:mb-4
+                  prose-ul:text-slate-300 prose-ul:list-disc prose-ul:pl-6 prose-ul:mb-4
+                  prose-li:mb-2 prose-li:leading-relaxed
+                  prose-strong:text-white prose-strong:font-semibold
+                  prose-a:text-blue-400 prose-a:hover:text-blue-300 prose-a:no-underline hover:prose-a:underline
+                  prose-hr:border-slate-700 prose-hr:my-8"
+                dangerouslySetInnerHTML={{ __html: cleanedContent }}
+              />
+            </div>
           )}
         </div>
-
-        {/* Footer with YouTube link */}
-        {isExpanded && summary.videoId && (
-          <div className="pt-4 border-t border-slate-700/50">
-            <Link
-              href={`https://youtube.com/watch?v=${summary.videoId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-2 text-red-400 hover:text-red-300 font-medium transition-colors group/link"
-            >
-              <svg
-                className="w-5 h-5 group-hover/link:scale-110 transition-transform"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-              </svg>
-              <span>Watch on YouTube</span>
-              <svg
-                className="w-4 h-4 group-hover/link:translate-x-1 transition-transform"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </Link>
-          </div>
-        )}
       </div>
     </div>
   )
