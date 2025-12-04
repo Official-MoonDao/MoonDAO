@@ -27,8 +27,7 @@ import {
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
-import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
-import { useOnrampRedirect } from '@/lib/coinbase/useOnrampRedirect'
+import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import useTag from '@/lib/convert-kit/useTag'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
@@ -115,9 +114,31 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     agreedToCondition: boolean
   }>('CreateCitizenCacheV1', address)
 
-  // Redirect handling
-  const { isReturningFromOnramp, clearRedirectParams } = useOnrampRedirect()
-  const { verifyJWT, getStoredJWT, clearJWT } = useOnrampJWT()
+  // Redirect handling and auto-transaction
+  const calculateCost = useCallback(
+    async (formattedCost: string) => {
+      const estimatedMaxGas = 0.0002
+      const LAYER_ZERO_TRANSFER_COST = BigInt('3000000000000000')
+      let totalCost = Number(formattedCost) + estimatedMaxGas
+      if (selectedChainSlug !== defaultChainSlug) {
+        totalCost += Number(LAYER_ZERO_TRANSFER_COST) / 1e18
+      }
+      return totalCost
+    },
+    [selectedChainSlug, defaultChainSlug]
+  )
+
+  const handleFormRestore = useCallback((restored: any) => {
+    setStage(restored.stage || 2)
+    setCitizenData(restored.formData.citizenData)
+    if (restored.formData.citizenImage) {
+      setCitizenImage(restored.formData.citizenImage)
+    }
+    if (restored.formData.inputImage) {
+      setInputImage(restored.formData.inputImage)
+    }
+    setAgreedToCondition(restored.formData.agreedToCondition)
+  }, [])
 
   const { isMobile } = useWindowSize()
 
@@ -356,6 +377,34 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     router,
   ])
 
+  const checkBalanceSufficient = useCallback(async () => {
+    try {
+      const cost: any = await readContract({
+        contract: citizenContract,
+        method: 'getRenewalPrice' as string,
+        params: [address, 365 * 24 * 60 * 60],
+      })
+      const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
+      const totalCost = await calculateCost(formattedCost)
+      return +nativeBalance >= totalCost
+    } catch (error) {
+      console.error('Error checking balance:', error)
+      return false
+    }
+  }, [address, citizenContract, nativeBalance, calculateCost])
+
+  useOnrampAutoTransaction({
+    address,
+    context: 'citizen',
+    expectedChainSlug: selectedChainSlug,
+    refetchNativeBalance,
+    onTransaction: callMint,
+    onFormRestore: handleFormRestore,
+    checkBalanceSufficient,
+    shouldProceed: (restored) => restored.formData.agreedToCondition,
+    restoreCache,
+  })
+
   const submitTypeform = useCallback(
     async (formResponse: any) => {
       const { formId, responseId } = formResponse
@@ -440,123 +489,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     }
     getTotalPaid()
   }, [address])
-
-  // Restore form state on redirect return and auto-retry mint
-  useEffect(() => {
-    if (isReturningFromOnramp && address && callMint) {
-      const restored = restoreCache()
-      if (!restored) {
-        clearRedirectParams()
-        return
-      }
-
-      // Verify JWT before proceeding
-      const storedJWT = getStoredJWT()
-      if (!storedJWT) {
-        // No JWT - don't auto-trigger, clear redirect params
-        clearRedirectParams()
-        return
-      }
-
-      verifyJWT(storedJWT, address, undefined, 'citizen').then((payload) => {
-        if (
-          !payload ||
-          payload.address.toLowerCase() !== address.toLowerCase() ||
-          payload.chainSlug !== selectedChainSlug ||
-          payload.context !== 'citizen'
-        ) {
-          // Invalid JWT - don't auto-trigger
-          clearJWT()
-          clearRedirectParams()
-          return
-        }
-
-        // JWT valid - restore form state
-        setStage(restored.stage || 2)
-        setCitizenData(restored.formData.citizenData)
-        if (restored.formData.citizenImage) {
-          setCitizenImage(restored.formData.citizenImage)
-        }
-        if (restored.formData.inputImage) {
-          setInputImage(restored.formData.inputImage)
-        }
-        setAgreedToCondition(restored.formData.agreedToCondition)
-        clearRedirectParams()
-
-        // Only auto-retry if user agreed to conditions
-        if (restored.formData.agreedToCondition) {
-          // Refresh balance and poll until sufficient before retrying mint
-          const retryMint = async () => {
-            let attempts = 0
-            const maxAttempts = 10 // Try for up to 10 seconds
-
-            const checkBalanceAndMint = async () => {
-              await refetchNativeBalance()
-              await new Promise((resolve) => setTimeout(resolve, 1000))
-
-              // Check if balance is sufficient
-              try {
-                const cost: any = await readContract({
-                  contract: citizenContract,
-                  method: 'getRenewalPrice' as string,
-                  params: [address, 365 * 24 * 60 * 60],
-                })
-                const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
-                const estimatedMaxGas = 0.0002
-                const LAYER_ZERO_TRANSFER_COST = BigInt('3000000000000000')
-                let totalCost = Number(formattedCost) + estimatedMaxGas
-                if (selectedChainSlug !== defaultChainSlug) {
-                  totalCost += Number(LAYER_ZERO_TRANSFER_COST) / 1e18
-                }
-
-                // Check current balance state
-                if (+nativeBalance >= totalCost) {
-                  // Balance is sufficient, proceed with mint
-                  callMint()
-                  clearJWT()
-                  return true
-                }
-              } catch (error) {
-                console.error('Error checking balance:', error)
-              }
-
-              attempts++
-              if (attempts < maxAttempts) {
-                // Try again after a delay
-                setTimeout(checkBalanceAndMint, 1000)
-              } else {
-                // Max attempts reached, try calling mint anyway
-                // It will handle insufficient balance by opening modal
-                callMint()
-                clearJWT()
-              }
-              return false
-            }
-
-            checkBalanceAndMint()
-          }
-
-          setTimeout(retryMint, 1000)
-        } else {
-          clearJWT() // Clear JWT if conditions not agreed
-        }
-      })
-    }
-  }, [
-    isReturningFromOnramp,
-    address,
-    restoreCache,
-    clearRedirectParams,
-    refetchNativeBalance,
-    callMint,
-    getStoredJWT,
-    verifyJWT,
-    clearJWT,
-    selectedChainSlug,
-    citizenContract,
-    defaultChainSlug,
-    nativeBalance,
-  ])
 
   return (
     <Container>

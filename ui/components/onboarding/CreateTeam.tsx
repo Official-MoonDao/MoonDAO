@@ -16,8 +16,7 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
-import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
-import { useOnrampRedirect } from '@/lib/coinbase/useOnrampRedirect'
+import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
@@ -80,9 +79,20 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     agreedToCondition: boolean
   }>('CreateTeamCacheV1', address)
 
-  // Redirect handling
-  const { isReturningFromOnramp, clearRedirectParams } = useOnrampRedirect()
-  const { verifyJWT, getStoredJWT, clearJWT } = useOnrampJWT()
+  // Redirect handling and auto-transaction
+  const calculateCost = useCallback(async (formattedCost: string) => {
+    const estimatedMaxGas = 0.0003
+    return Number(formattedCost) + estimatedMaxGas
+  }, [])
+
+  const handleFormRestore = useCallback((restored: any) => {
+    setStage(restored.stage || 2)
+    setTeamData(restored.formData.teamData)
+    if (restored.formData.teamImage) {
+      setTeamImage(restored.formData.teamImage)
+    }
+    setAgreedToCondition(restored.formData.agreedToCondition)
+  }, [])
 
   const { isMobile } = useWindowSize()
 
@@ -297,114 +307,33 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     router,
   ])
 
-  // Restore form state on redirect return and auto-retry team creation
-  useEffect(() => {
-    if (isReturningFromOnramp && address && callMint) {
-      const restored = restoreCache()
-      if (!restored) {
-        clearRedirectParams()
-        return
-      }
-
-      // Verify JWT before proceeding
-      const storedJWT = getStoredJWT()
-      if (!storedJWT) {
-        // No JWT - don't auto-trigger, clear redirect params
-        clearRedirectParams()
-        return
-      }
-
-      verifyJWT(storedJWT, address, undefined, 'team').then((payload) => {
-        if (
-          !payload ||
-          payload.address.toLowerCase() !== address.toLowerCase() ||
-          payload.chainSlug !== chainSlug ||
-          payload.context !== 'team'
-        ) {
-          // Invalid JWT - don't auto-trigger
-          clearJWT()
-          clearRedirectParams()
-          return
-        }
-
-        // JWT valid - restore form state
-        setStage(restored.stage || 2)
-        setTeamData(restored.formData.teamData)
-        if (restored.formData.teamImage) {
-          setTeamImage(restored.formData.teamImage)
-        }
-        setAgreedToCondition(restored.formData.agreedToCondition)
-        clearRedirectParams()
-
-        // Only auto-retry if user agreed to conditions
-        if (restored.formData.agreedToCondition) {
-          // Refresh balance and poll until sufficient before retrying team creation
-          const retryMint = async () => {
-            let attempts = 0
-            const maxAttempts = 10 // Try for up to 10 seconds
-
-            const checkBalanceAndMint = async () => {
-              await refetchNativeBalance()
-              await new Promise((resolve) => setTimeout(resolve, 1000))
-
-              // Check if balance is sufficient
-              try {
-                const cost: any = await readContract({
-                  contract: teamContract,
-                  method: 'getRenewalPrice' as string,
-                  params: [address, 365 * 24 * 60 * 60],
-                })
-                const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
-                const estimatedMaxGas = 0.0003
-                const totalCost = Number(formattedCost) + estimatedMaxGas
-
-                // Check current balance state
-                if (+nativeBalance >= totalCost) {
-                  // Balance is sufficient, proceed with team creation
-                  callMint()
-                  clearJWT()
-                  return true
-                }
-              } catch (error) {
-                console.error('Error checking balance:', error)
-              }
-
-              attempts++
-              if (attempts < maxAttempts) {
-                // Try again after a delay
-                setTimeout(checkBalanceAndMint, 1000)
-              } else {
-                // Max attempts reached, try calling mint anyway
-                // It will handle insufficient balance by opening modal
-                callMint()
-                clearJWT()
-              }
-              return false
-            }
-
-            checkBalanceAndMint()
-          }
-
-          setTimeout(retryMint, 1000)
-        } else {
-          clearJWT() // Clear JWT if conditions not agreed
-        }
+  const checkBalanceSufficient = useCallback(async () => {
+    try {
+      const cost: any = await readContract({
+        contract: teamContract,
+        method: 'getRenewalPrice' as string,
+        params: [address, 365 * 24 * 60 * 60],
       })
+      const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
+      const totalCost = await calculateCost(formattedCost)
+      return +nativeBalance >= totalCost
+    } catch (error) {
+      console.error('Error checking balance:', error)
+      return false
     }
-  }, [
-    isReturningFromOnramp,
+  }, [address, teamContract, nativeBalance, calculateCost])
+
+  useOnrampAutoTransaction({
     address,
-    restoreCache,
-    clearRedirectParams,
+    context: 'team',
+    expectedChainSlug: chainSlug,
     refetchNativeBalance,
-    callMint,
-    getStoredJWT,
-    verifyJWT,
-    clearJWT,
-    chainSlug,
-    nativeBalance,
-    teamContract,
-  ])
+    onTransaction: callMint,
+    onFormRestore: handleFormRestore,
+    checkBalanceSufficient,
+    shouldProceed: (restored) => restored.formData.agreedToCondition,
+    restoreCache,
+  })
 
   // Cache form state before navigating to onramp
   useEffect(() => {
