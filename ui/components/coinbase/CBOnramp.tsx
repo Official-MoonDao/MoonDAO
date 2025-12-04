@@ -12,7 +12,6 @@ interface CBOnrampProps {
   selectedChain: any
   ethAmount: number
   redirectUrl?: string
-  onSuccess?: () => void
   onExit?: () => void
   onBeforeNavigate?: () => Promise<void>
   isWaitingForGasEstimate?: boolean
@@ -32,7 +31,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   selectedChain,
   ethAmount,
   redirectUrl,
-  onSuccess,
   onExit,
   onBeforeNavigate,
   isWaitingForGasEstimate = false,

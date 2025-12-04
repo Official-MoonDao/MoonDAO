@@ -629,12 +629,6 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
           ethAmount={requiredEthAmount}
           context="team"
           agreed={agreedToCondition}
-          onSuccess={() => {
-            // Refresh balance and retry team creation
-            setTimeout(() => {
-              callMint()
-            }, 2000)
-          }}
           onExit={() => {
             setIsLoadingMint(false)
           }}

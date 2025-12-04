@@ -838,12 +838,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           ethAmount={requiredEthAmount}
           context="citizen"
           agreed={agreedToCondition}
-          onSuccess={() => {
-            // Refresh balance and retry mint
-            setTimeout(() => {
-              callMint()
-            }, 2000)
-          }}
           onExit={() => {
             setIsLoadingMint(false)
           }}

@@ -1254,9 +1254,6 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
           ethAmount={0}
           allowAmountInput={true}
           context="wallet"
-          onSuccess={() => {
-            toast.success('Purchase completed successfully!')
-          }}
         />
       )}
     </>

@@ -1,8 +1,8 @@
+import { DEPLOYED_ORIGIN } from 'const/config'
 import { useRouter } from 'next/router'
 import React, { useCallback, useMemo, useEffect } from 'react'
-import { DEPLOYED_ORIGIN } from 'const/config'
-import { getChainSlug } from '@/lib/thirdweb/chain'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import Modal from '../layout/Modal'
 import { CBOnramp } from './CBOnramp'
 
@@ -13,7 +13,6 @@ interface CBOnrampModalProps {
   selectedChain: any
   ethAmount: number
   redirectUrl?: string
-  onSuccess?: () => void
   onExit?: () => void
   onBeforeNavigate?: () => Promise<void>
   isWaitingForGasEstimate?: boolean
@@ -35,7 +34,6 @@ export const CBOnrampModal: React.FC<CBOnrampModalProps> = ({
   selectedChain,
   ethAmount,
   redirectUrl,
-  onSuccess,
   onExit,
   onBeforeNavigate,
   isWaitingForGasEstimate = false,
@@ -69,11 +67,6 @@ export const CBOnrampModal: React.FC<CBOnrampModalProps> = ({
     return `${DEPLOYED_ORIGIN}${currentPath}${queryString ? `?${queryString}` : ''}`
   }, [router, redirectUrl])
 
-  const handleSuccess = useCallback(() => {
-    onSuccess?.()
-    setEnabled(false)
-  }, [onSuccess, setEnabled])
-
   const handleExit = useCallback(() => {
     onExit?.()
     setEnabled(false)
@@ -101,14 +94,16 @@ export const CBOnrampModal: React.FC<CBOnrampModalProps> = ({
 
   return (
     <Modal id="cbonramp-modal" setEnabled={setEnabled}>
-      <div className="flex justify-center items-center min-h-screen p-4" data-testid="cbonramp-modal-content">
+      <div
+        className="flex justify-center items-center min-h-screen p-4"
+        data-testid="cbonramp-modal-content"
+      >
         <div className="w-full max-w-md">
           <CBOnramp
             address={address}
             selectedChain={selectedChain}
             ethAmount={ethAmount}
             redirectUrl={finalRedirectUrl}
-            onSuccess={handleSuccess}
             onExit={handleExit}
             onBeforeNavigate={handleBeforeNavigate}
             isWaitingForGasEstimate={isWaitingForGasEstimate}
@@ -120,4 +115,3 @@ export const CBOnrampModal: React.FC<CBOnrampModalProps> = ({
     </Modal>
   )
 }
-
