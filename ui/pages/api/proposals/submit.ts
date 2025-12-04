@@ -1,13 +1,13 @@
+import ProjectTableABI from 'const/abis/ProjectTable.json'
 import ProjectTeamCreatorABI from 'const/abis/ProjectTeamCreator.json'
-import queryTable from '@/lib/tableland/queryTable'
-import { DISCORD_TO_ETH_ADDRESS } from 'const/usernames'
 import {
   PROJECT_TABLE_ADDRESSES,
   PROJECT_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   PROJECT_CREATOR_ADDRESSES,
+  DISCORD_GUILD_ID,
 } from 'const/config'
-import ProjectTableABI from 'const/abis/ProjectTable.json'
+import { DISCORD_TO_ETH_ADDRESS } from 'const/usernames'
 import { ethers } from 'ethers'
 import { getSubmissionQuarter } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
@@ -22,6 +22,7 @@ import {
 } from 'thirdweb'
 import { createHSMWallet } from '@/lib/google/hsm-signer'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 
@@ -274,6 +275,22 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         transaction,
         account,
       })
+
+      if (false) {
+        const discordResponse = await fetch(
+          `https://discord.com/api/v10/channels/${DISCORD_GUILD_ID}/threads`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+            },
+            body: JSON.stringify({
+              name: `MDP-${proposalId}: ${proposalTitle}`,
+            }),
+          }
+        )
+      }
       res.status(200).json({
         proposalId: proposalId,
       })
