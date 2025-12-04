@@ -16,6 +16,8 @@ WORKER_FAILED=()
 WORKER_TOTAL=()
 # Failed tests stored in a temporary file
 FAILED_TESTS_FILE=$(mktemp)
+# Failed test errors stored in a temporary file (format: test_file|error_message)
+FAILED_TESTS_ERRORS_FILE=$(mktemp)
 
 # MoonDAO Brand Colors
 MOON_PURPLE='\033[38;5;141m'    # Light purple
@@ -124,6 +126,9 @@ parse_cypress_line() {
       if [[ "$already_failed" == "false" ]]; then
         # Store normalized version
         echo "$normalized_file" >> "$FAILED_TESTS_FILE"
+        # Store error message for this test (extract meaningful part of error)
+        local error_msg=$(echo "$line" | sed 's/^[[:space:]]*//' | head -c 200)
+        echo "$normalized_file|$error_msg" >> "$FAILED_TESTS_ERRORS_FILE"
         # Note: Arrays modified in subshell don't persist, so we'll parse from logs later
         # But we still output the failure message for visibility
         echo -e "${color}[Worker $worker_id]${NC} ${ERROR_RED}✗ FAILED${NC} $normalized_file"
@@ -538,10 +543,172 @@ parse_log_statistics() {
   done
 }
 
+# Function to extract error messages for failed tests from log files
+extract_error_messages() {
+  # Create a temporary file to store test->error mappings
+  local error_map_file=$(mktemp)
+  
+  # Process each worker's log file
+  for ((i=1; i<=WORKERS; i++)); do
+    local log_file="$LOG_DIR/worker-$i.log"
+    if [ ! -f "$log_file" ]; then
+      continue
+    fi
+    
+    # Build a map of test execution lines (line number -> test file)
+    # Extract test files and normalize paths
+    local test_executions=$(mktemp)
+    grep -n -E "(Running:\ +|▶ )" "$log_file" 2>/dev/null | \
+      grep -E "\.cy\.(tsx|ts|jsx|js)" | \
+      while IFS=: read -r line_num rest; do
+        # Extract test file name (handle both "Running: path/to/test.cy.tsx" and "▶ path/to/test.cy.tsx")
+        local test_path=$(echo "$rest" | grep -oE "[^[:space:]]+\.cy\.(tsx|ts|jsx|js)" | head -1)
+        if [ -n "$test_path" ]; then
+          # Normalize the path
+          local normalized=$(echo "$test_path" | sed 's|.*cypress/integration/||' | sed 's|webpack://.*/||' | sed 's|^\./||' | sed 's|^_N_E/\./||')
+          echo "$line_num|$normalized" >> "$test_executions"
+        fi
+      done
+    
+    # Get all failed test files
+    local failed_tests=$(grep -oE "[^[:space:]]+\.cy\.(tsx|ts|jsx|js)" "$FAILED_TESTS_FILE" 2>/dev/null | sort -u)
+    
+    while IFS= read -r test_file; do
+      if [ -z "$test_file" ]; then
+        continue
+      fi
+      
+      # Normalize test file name for matching
+      local normalized_test=$(echo "$test_file" | sed 's|.*cypress/integration/||' | sed 's|webpack://.*/||' | sed 's|^\./||' | sed 's|^_N_E/\./||')
+      local test_basename=$(basename "$normalized_test")
+      
+      # Find test execution line numbers for this test
+      # Try multiple matching strategies
+      local test_line_nums=""
+      
+      # Strategy 1: Exact match on normalized path
+      test_line_nums=$(grep "^[0-9]*|$normalized_test$" "$test_executions" 2>/dev/null | cut -d'|' -f1 | sort -n)
+      
+      # Strategy 2: Match by basename
+      if [ -z "$test_line_nums" ]; then
+        test_line_nums=$(grep "|.*$test_basename$" "$test_executions" 2>/dev/null | cut -d'|' -f1 | sort -n)
+      fi
+      
+      # Strategy 3: Partial path match (handle cases like "onboarding/create-team.cy.tsx" vs "create-team.cy.tsx")
+      if [ -z "$test_line_nums" ]; then
+        test_line_nums=$(grep "|.*/$test_basename$" "$test_executions" 2>/dev/null | cut -d'|' -f1 | sort -n)
+      fi
+      
+      # Strategy 4: Match any occurrence of the basename
+      if [ -z "$test_line_nums" ]; then
+        test_line_nums=$(grep "|.*$test_basename" "$test_executions" 2>/dev/null | cut -d'|' -f1 | sort -n)
+      fi
+      
+      # Process each occurrence of this test
+      for test_line_num in $test_line_nums; do
+        if [ -z "$test_line_num" ]; then
+          continue
+        fi
+        
+        # Find the next test execution or end of file
+        local next_test_line=$(awk -F'|' -v start="$test_line_num" '$1 > start {print $1; exit}' "$test_executions" 2>/dev/null)
+        
+        if [ -z "$next_test_line" ]; then
+          # No next test, read to end of file (limit to 200 lines after test start)
+          local end_line=$((test_line_num + 200))
+          local file_lines=$(wc -l < "$log_file" | tr -d ' ')
+          if [ "$end_line" -gt "$file_lines" ]; then
+            end_line=$file_lines
+          fi
+        else
+          local end_line=$next_test_line
+        fi
+        
+        # Extract error messages between test start and next test
+        # Look for AssertionError, Error:, Timed out, expected, etc.
+        # Also look for Cypress failure formats and other error indicators
+        local error_lines=$(sed -n "${test_line_num},${end_line}p" "$log_file" 2>/dev/null | \
+          grep -E "(AssertionError|Error:|Timed out|expected.*to be|expected.*to contain|expected.*to equal|CypressError|Assertion failed|failed|FAILED|✗|Error|error)" | \
+          grep -v "✓ PASSED" | grep -v "passing" | \
+          head -10 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -v '^$' | grep -v "^\[Worker")
+        
+        if [ -n "$error_lines" ]; then
+          # Join multiple error lines with semicolons and truncate if too long
+          local error_msg=$(echo "$error_lines" | head -5 | tr '\n' ';' | sed 's/;$/ /' | head -c 800)
+          if [ -n "$error_msg" ] && [ "$error_msg" != " " ]; then
+            # Store normalized test file -> error message mapping (avoid duplicates)
+            if ! grep -q "^$normalized_test|" "$error_map_file" 2>/dev/null; then
+              echo "$normalized_test|$error_msg" >> "$error_map_file"
+            fi
+          fi
+        fi
+      done
+      
+      # If still no error found, try a broader search around error messages
+      if ! grep -q "^$normalized_test|" "$error_map_file" 2>/dev/null; then
+        # Search for errors near the test file name (broader context)
+        local error_context=$(grep -B10 -A10 -E "(AssertionError|Error:|Timed out|failed|FAILED|✗)" "$log_file" 2>/dev/null | \
+          grep -B10 -A10 "$test_basename" | \
+          grep -E "(AssertionError|Error:|Timed out|expected.*to be|expected.*to contain|expected.*to equal|failed|FAILED)" | \
+          grep -v "✓ PASSED" | grep -v "passing" | \
+          head -3 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -v '^$' | grep -v "^\[Worker" | head -c 500)
+        
+        if [ -n "$error_context" ] && [ "$error_context" != " " ]; then
+          echo "$normalized_test|$error_context" >> "$error_map_file"
+        fi
+      fi
+      
+      # Also check for Cypress summary format errors (test file name followed by error)
+      if ! grep -q "^$normalized_test|" "$error_map_file" 2>/dev/null; then
+        # Look for patterns like "test.cy.tsx (failed)" or "test.cy.tsx/ComponentName (failed)"
+        local summary_error=$(grep -E "$test_basename.*\(failed|$test_basename.*FAILED|$test_basename.*✗" "$log_file" 2>/dev/null | \
+          grep -E "(failed|FAILED|✗|Error|error)" | \
+          head -2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -v '^$' | head -c 400)
+        
+        if [ -n "$summary_error" ] && [ "$summary_error" != " " ]; then
+          echo "$normalized_test|$summary_error" >> "$error_map_file"
+        fi
+      fi
+      
+      # Last resort: find any error lines that appear after this test starts
+      if ! grep -q "^$normalized_test|" "$error_map_file" 2>/dev/null; then
+        # Find first occurrence of test, then look for any error patterns in next 100 lines
+        local first_test_line=$(grep -n -E "(Running:\ +|▶ )" "$log_file" 2>/dev/null | \
+          grep -E "$test_basename" | head -1 | cut -d: -f1)
+        
+        if [ -n "$first_test_line" ]; then
+          local search_end=$((first_test_line + 100))
+          local file_lines=$(wc -l < "$log_file" | tr -d ' ')
+          if [ "$search_end" -gt "$file_lines" ]; then
+            search_end=$file_lines
+          fi
+          
+          local any_error=$(sed -n "${first_test_line},${search_end}p" "$log_file" 2>/dev/null | \
+            grep -E "(AssertionError|Error:|Timed out|expected|failed|FAILED|✗)" | \
+            grep -v "✓ PASSED" | grep -v "passing" | \
+            head -2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -v '^$' | grep -v "^\[Worker" | head -c 400)
+          
+          if [ -n "$any_error" ] && [ "$any_error" != " " ]; then
+            echo "$normalized_test|$any_error" >> "$error_map_file"
+          fi
+        fi
+      fi
+    done <<< "$failed_tests"
+    
+    rm -f "$test_executions"
+  done
+  
+  # Return the error map file path
+  echo "$error_map_file"
+}
+
 # Function to generate summary report
 generate_summary() {
   # Parse statistics from log files for accuracy
   parse_log_statistics
+  
+  # Extract error messages for failed tests
+  local error_map_file=$(extract_error_messages)
   echo ""
   echo -e "${MOON_PURPLE}════════════════════════════════════════════════════════════════${NC}"
   echo -e "${MOON_PURPLE}                    Test Execution Summary${NC}"
@@ -644,12 +811,93 @@ generate_summary() {
         fi
       done < "$FAILED_TESTS_FILE"
       
-      # Sort and deduplicate, then display
+      # Sort and deduplicate, then display with error messages
       if [ -f "$normalized_failed" ]; then
-        sort -u "$normalized_failed" | while read -r test_file; do
+        # Create sorted list in temp file to avoid subshell issues
+        local sorted_failed=$(mktemp)
+        sort -u "$normalized_failed" > "$sorted_failed"
+        
+        # Process each failed test and display with errors
+        while IFS= read -r test_file; do
           echo -e "  ${ERROR_RED}✗${NC} $test_file"
-        done
-        rm -f "$normalized_failed"
+          
+          # Look up error message for this test
+          local error_msg=""
+          local test_basename=$(basename "$test_file")
+          
+          # Try exact match first from error map file
+          if [ -n "$error_map_file" ] && [ -f "$error_map_file" ]; then
+            error_msg=$(grep "^$test_file|" "$error_map_file" 2>/dev/null | cut -d'|' -f2- | head -1)
+          fi
+          
+          # If no exact match, try matching by basename from error map file
+          if [ -z "$error_msg" ] && [ -n "$error_map_file" ] && [ -f "$error_map_file" ]; then
+            error_msg=$(grep "|.*$test_basename" "$error_map_file" 2>/dev/null | \
+              grep "^[^|]*$test_basename|" | cut -d'|' -f2- | head -1)
+          fi
+          
+          # Also check the real-time error capture file
+          if [ -z "$error_msg" ] && [ -f "$FAILED_TESTS_ERRORS_FILE" ]; then
+            error_msg=$(grep "^$test_file|" "$FAILED_TESTS_ERRORS_FILE" 2>/dev/null | cut -d'|' -f2- | head -1)
+            if [ -z "$error_msg" ]; then
+              error_msg=$(grep "|.*$test_basename" "$FAILED_TESTS_ERRORS_FILE" 2>/dev/null | \
+                grep "^[^|]*$test_basename|" | cut -d'|' -f2- | head -1)
+            fi
+          fi
+          
+          # Last resort: search log files directly for errors related to this test
+          if [ -z "$error_msg" ] || [ "$error_msg" == " " ]; then
+            for ((j=1; j<=WORKERS; j++)); do
+              local worker_log="$LOG_DIR/worker-$j.log"
+              if [ ! -f "$worker_log" ]; then
+                continue
+              fi
+              
+              # Find test execution and extract errors that follow
+              local test_line=$(grep -n -E "(Running:\ +|▶ )" "$worker_log" 2>/dev/null | \
+                grep -E "$test_basename" | head -1 | cut -d: -f1)
+              
+              if [ -n "$test_line" ]; then
+                # Look for errors in next 150 lines
+                local search_end=$((test_line + 150))
+                local file_lines=$(wc -l < "$worker_log" | tr -d ' ')
+                if [ "$search_end" -gt "$file_lines" ]; then
+                  search_end=$file_lines
+                fi
+                
+                local direct_error=$(sed -n "${test_line},${search_end}p" "$worker_log" 2>/dev/null | \
+                  grep -E "(AssertionError|Error:|Timed out|expected.*to be|expected.*to contain|expected.*to equal|failed|FAILED)" | \
+                  grep -v "✓ PASSED" | grep -v "passing" | \
+                  head -2 | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | grep -v '^$' | grep -v "^\[Worker" | head -c 500)
+                
+                if [ -n "$direct_error" ] && [ "$direct_error" != " " ]; then
+                  error_msg="$direct_error"
+                  break
+                fi
+              fi
+            done
+          fi
+          
+          # Display error message if found
+          if [ -n "$error_msg" ] && [ "$error_msg" != " " ]; then
+            # Clean up the error message (remove ANSI codes)
+            local clean_error=$(echo "$error_msg" | sed 's/\x1b\[[0-9;]*m//g')
+            # Split by semicolon and show first few error lines
+            echo "$clean_error" | tr ';' '\n' | head -3 | while IFS= read -r err_line; do
+              err_line=$(echo "$err_line" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+              if [ -n "$err_line" ] && [ "$err_line" != " " ]; then
+                echo -e "    ${MOON_VIOLET}→${NC} $err_line"
+              fi
+            done
+          fi
+        done < "$sorted_failed"
+        
+        rm -f "$normalized_failed" "$sorted_failed"
+      fi
+      
+      # Cleanup error map file
+      if [ -f "$error_map_file" ]; then
+        rm -f "$error_map_file"
       fi
       echo ""
     fi
@@ -664,9 +912,12 @@ generate_summary() {
 # Generate summary report
 generate_summary
 
-# Cleanup temporary file
+# Cleanup temporary files
 if [ -f "$FAILED_TESTS_FILE" ]; then
   rm -f "$FAILED_TESTS_FILE"
+fi
+if [ -f "$FAILED_TESTS_ERRORS_FILE" ]; then
+  rm -f "$FAILED_TESTS_ERRORS_FILE"
 fi
 
 # Exit with appropriate code
