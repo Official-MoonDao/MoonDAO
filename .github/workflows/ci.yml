@@ -188,17 +188,19 @@ jobs:
         run: |
           TEST_EXIT_CODE=0
           SERVER_PID=""
-          BS_LOCAL_PID=""
+          BS_LOCAL_IDENTIFIER=""
 
           # Function to cleanup on exit
           cleanup() {
             echo "Cleaning up..."
-            if [ ! -z "$BS_LOCAL_PID" ] && ps -p $BS_LOCAL_PID > /dev/null 2>&1; then
-              echo "Stopping BrowserStack Local (PID: $BS_LOCAL_PID)..."
+            if [ ! -z "$BS_LOCAL_IDENTIFIER" ]; then
+              echo "Stopping BrowserStack Local..."
               cd ..
-              ./BrowserStackLocal --daemon stop 2>/dev/null || true
-              kill $BS_LOCAL_PID 2>/dev/null || true
-              wait $BS_LOCAL_PID 2>/dev/null || true
+              # Stop daemon by identifier
+              ./BrowserStackLocal --key "${BROWSERSTACK_ACCESS_KEY}" --local-identifier "${BS_LOCAL_IDENTIFIER}" --daemon stop 2>/dev/null || true
+              # Also kill any remaining BrowserStackLocal processes with this identifier
+              pkill -f "BrowserStackLocal.*${BS_LOCAL_IDENTIFIER}" 2>/dev/null || true
+              sleep 2
               cd ui
             fi
             if [ ! -z "$SERVER_PID" ] && ps -p $SERVER_PID > /dev/null 2>&1; then
@@ -238,21 +240,38 @@ jobs:
             --daemon start \
             --log-file bs-local.log \
             --verbose 3 &
-          BS_LOCAL_PID=$!
+          INITIAL_PID=$!
           cd ui
 
           # Wait for Local binary to establish connection
           echo "Waiting for BrowserStack Local connection..."
-          sleep 15
+          sleep 20
 
-          # Verify Local binary is running
-          if ! ps -p $BS_LOCAL_PID > /dev/null 2>&1; then
-            echo "❌ BrowserStack Local failed to start"
-            cat ../bs-local.log || true
-            exit 1
+          # Verify Local binary is running by checking for BrowserStackLocal process
+          # (--daemon start forks, so the initial PID may exit, but daemon process should be running)
+          if ! pgrep -f "BrowserStackLocal.*${BS_LOCAL_IDENTIFIER}" > /dev/null 2>&1; then
+            echo "Checking log file for connection status..."
+            if [ -f ../bs-local.log ]; then
+              cat ../bs-local.log
+            fi
+            # Also check if any BrowserStackLocal process is running
+            if pgrep -f BrowserStackLocal > /dev/null 2>&1; then
+              echo "BrowserStack Local process found, but identifier check failed"
+            else
+              echo "❌ BrowserStack Local failed to start - no process found"
+              exit 1
+            fi
           fi
 
-          echo "BrowserStack Local is running (PID: $BS_LOCAL_PID)"
+          # Verify connection by checking log for success message
+          if [ -f ../bs-local.log ] && grep -q "You can now access your local server" ../bs-local.log 2>/dev/null; then
+            echo "✓ BrowserStack Local connected successfully"
+          else
+            echo "⚠ BrowserStack Local may not be fully connected, but continuing..."
+            if [ -f ../bs-local.log ]; then
+              tail -20 ../bs-local.log || true
+            fi
+          fi
 
           # Run tests with BrowserStack local tunnel
           echo "Starting BrowserStack Cypress tests..."
