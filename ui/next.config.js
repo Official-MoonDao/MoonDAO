@@ -125,8 +125,7 @@ module.exports = withTM(
         },
         {
           source: '/docs/dispute-notice',
-          destination:
-            'https://docs.moondao.com/Legal/Ticket-to-Space-NFT/Dispute-Notice',
+          destination: 'https://docs.moondao.com/Legal/Ticket-to-Space-NFT/Dispute-Notice',
           permanent: true,
         },
         {
@@ -137,8 +136,7 @@ module.exports = withTM(
         },
         {
           source: '/docs/website-terms-and-conditions',
-          destination:
-            'https://docs.moondao.com/Legal/Website-Terms-and-Conditions',
+          destination: 'https://docs.moondao.com/Legal/Website-Terms-and-Conditions',
           permanent: true,
         },
         {
@@ -305,8 +303,7 @@ module.exports = withTM(
         },
         {
           source: '/meet',
-          destination:
-            'https://discord.com/channels/914720248140279868/917498630510878821',
+          destination: 'https://discord.com/channels/914720248140279868/917498630510878821',
           permanent: true,
         },
         {
@@ -324,6 +321,7 @@ module.exports = withTM(
           destination: '/vote',
           permanent: true,
         },
+        // Mission specific redirects
         {
           source: '/mission',
           destination: `/mission/3`,
@@ -332,6 +330,12 @@ module.exports = withTM(
         {
           source: '/spacecamp',
           destination: '/mission/3',
+          permanent: false,
+        },
+        // Citizen specific referral redirects
+        {
+          source: '/anthrofuturism',
+          destination: '/citizen?referredBy=0x927e94c7d60a64daee73a0be2e2378e054bbcf1f',
           permanent: false,
         },
       ]

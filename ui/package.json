@@ -15,6 +15,7 @@
     "cy:run": "cypress run",
     "cy:run-ct": "cypress run --component",
     "cy:run-ct:fast": "bash scripts/test-parallel.sh 4",
+    "cy:run-ct:warp": "bash scripts/test-parallel.sh 8",
     "cleanup:offchain-prune": "ts-node -r tsconfig-paths/register scripts/cleanup/offchain-prune.ts"
   },
   "dependencies": {
