@@ -102,6 +102,29 @@ matrix:
 matrix:
   containers: [1, 2] # Expected performance: ~3-5 minutes
 
+### Diminishing Returns: When More Workers Don't Help
+
+There's a practical limit to parallelization effectiveness. Each worker incurs overhead:
+
+- **Process overhead**: Starting/stopping Next.js dev servers, test runners, and log management
+- **Resource consumption**: Memory, CPU, and network ports per worker
+- **Distribution overhead**: Test splitting and coordination between workers
+- **GitHub Actions build minutes**: Each parallel job consumes build minutes independently
+
+**GitHub Actions Cost Consideration**: More parallel jobs multiply build minute consumption. Even if individual runs finish faster, total minutes consumed can be significantly higher:
+
+- **4 workers**: 4 jobs × 3-5 min = **12-20 build minutes**
+- **8 workers**: 8 jobs × 2-3 min = **16-24 build minutes** (slightly faster but ~20% more minutes)
+- **16 workers**: 16 jobs × 1.5-2 min = **24-32 build minutes** (minimal speed gain, 60% more minutes)
+
+**Minimum viable tests per worker**: Aim for at least **5-10 tests per worker** to amortize startup costs.
+
+**With 128 tests:**
+- **4 workers** = 32 tests/worker ✅ Optimal (best balance of speed and cost)
+- **8 workers** = 16 tests/worker ✅ Good (faster but more expensive)
+- **16 workers** = 8 tests/worker ⚠️ Marginal (diminishing returns, significantly more expensive)
+- **32+ workers** = <4 tests/worker ❌ Overhead exceeds benefits, wasteful build minutes
+
 ## Resources
 
 - [cypress-split GitHub](https://github.com/bahmutov/cypress-split)
