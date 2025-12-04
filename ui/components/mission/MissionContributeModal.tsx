@@ -1839,14 +1839,6 @@ export default function MissionContributeModal({
                       ethAmount={adjustedEthDeficit}
                       isWaitingForGasEstimate={isLoadingGasEstimate}
                       onQuoteCalculated={handleCoinbaseQuote}
-                      onSuccess={() => {
-                        toast.success(
-                          'ETH purchase completed! You can now contribute to the mission.',
-                          {
-                            style: toastStyle,
-                          }
-                        )
-                      }}
                       onBeforeNavigate={async () => {
                         await generateOnrampJWT({
                           address: address || '',
