@@ -49,7 +49,7 @@ export default function StandardDetailCard({
               {title}
             </h1>
             <div className="break-words text-left mb-3">{subheader}</div>
-            <p className="text-sm text-slate-300 leading-relaxed break-words text-left">
+            <p className="hidden md:block text-sm text-slate-300 leading-relaxed break-words text-left">
               {paragraph && paragraph?.length > 200
                 ? paragraph.slice(0, 200) + '...'
                 : paragraph}
