@@ -42,6 +42,7 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
+import DashboardActiveProjects from '@/components/project/DashboardActiveProjects'
 import PastProjects from '@/components/project/PastProjects'
 import ProjectCard from '@/components/project/ProjectCard'
 
@@ -417,6 +418,14 @@ export function ProjectRewards({
           isProfile
         >
           <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px]">
+            {/* Dashboard Active Projects Section */}
+            <DashboardActiveProjects
+              currentProjects={currentProjects}
+              ethBudget={ethBudget}
+              showBudget={true}
+              maxProjects={6}
+            />
+
             {/* Condensed Top Section - Rewards + Create Button */}
             <div className="bg-black/20 rounded-xl p-4 border border-white/10">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
@@ -459,7 +468,7 @@ export function ProjectRewards({
               className="bg-black/20 rounded-xl p-6 border border-white/10"
             >
               <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
-                Active Projects
+                Vote on Project Allocations
               </h1>
 
               <div className="flex flex-col gap-6">
