@@ -21,7 +21,7 @@ export default function SubmissionPage() {
     },
     {
       title: 'Submit Your Contribution',
-      description: 'Document your mission-aligned work and accomplishments to earn ETH rewards and vMOONEY voting power.',
+      description: 'Document your mission-aligned work to participate in quarterly retroactive rewards. The community votes on contribution value, and rewards are distributed from a shared ETH and vMOONEY pool based on community evaluation of impact.',
       href: '/contributions',
       icon: '🚀',
       buttonText: 'Submit Contribution'

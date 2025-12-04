@@ -331,7 +331,7 @@ export default function CitizenActions({
                   <h3 className="font-bold text-white text-sm">Submit Contribution</h3>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Get rewarded for mission-aligned work towards a lunar settlement.
+                  Participate in quarterly retroactive rewards. The community votes on your contributions and you earn from a shared ETH and vMOONEY pool.
                 </p>
               </div>
               

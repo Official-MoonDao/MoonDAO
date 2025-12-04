@@ -24,7 +24,7 @@ export default function ContributionsPage() {
             headerSize="40px"
             description={
               <div className="text-gray-300 text-lg leading-relaxed">
-                Document your mission-aligned work and accomplishments to earn ETH financial rewards and vMOONEY voting power. If it helps advance our mission and build a multiplanetary future, it counts!
+                Submit your contributions to participate in MoonDAO's quarterly retroactive rewards cycle. The community evaluates all submissions and votes on their impact. Rewards in ETH and vMOONEY are distributed from a community pool based on these votes.
               </div>
             }
             mainPadding
@@ -33,20 +33,23 @@ export default function ContributionsPage() {
           >
             <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
               <div className="mb-8 flex flex-col items-center bg-black/20 rounded-xl p-6 border border-white/10">
-                <p className="text-gray-300 leading-relaxed text-center">
-                  What have you done to accelerate MoonDAO's mission? Submit your work and accomplishments—whether directly tied to MoonDAO or not—to earn ETH rewards and vMOONEY voting power.
+                <h3 className="text-white font-GoodTimes text-lg mb-4 text-center">How Community Rewards Work</h3>
+                <p className="text-gray-300 leading-relaxed text-center mb-3">
+                  MoonDAO runs quarterly retroactive reward cycles. Submit any work that advances our mission to establish a lunar settlement—directly tied to MoonDAO or not, if it accelerates our multiplanetary future, it counts!
                 </p>
-                <p className="text-gray-300 leading-relaxed text-center mt-4">
-                  If it helps advance our multiplanetary future, it counts! Please refer to{' '}
+                <p className="text-gray-300 leading-relaxed text-center mb-3">
+                  Each quarter, the community votes to evaluate the impact of all submitted contributions. A shared reward pool (funded with ETH and vMOONEY) is then distributed based on these community votes. Higher-impact contributions receive a larger share of the pool.
+                </p>
+                <p className="text-gray-300 leading-relaxed text-center">
+                  Learn more in{' '}
                   <a
                     href="https://docs.moondao.com/Reference/Nested-Docs/Community-Rewards"
                     className="text-blue-400 hover:text-blue-300 underline"
                     target="_blank"
                     rel="noreferrer"
                   >
-                    our documentation
-                  </a>{' '}
-                  for more details.
+                    our Community Rewards documentation
+                  </a>.
                 </p>
               </div>
               <ContributionEditor />
