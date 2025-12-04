@@ -6,20 +6,20 @@ describe('<CBOnramp />', () => {
   const mockAddress = '0x1234567890123456789012345678901234567890'
   const mockChain = CYPRESS_CHAIN_V5
   let mockOnExit: any
-  let mockOnSuccess: any
-  let mockOnBeforeNavigate: any
-  let mockOnQuoteCalculated: any
 
   beforeEach(() => {
     cy.mountNextRouter('/')
     mockOnExit = cy.stub()
-    mockOnSuccess = cy.stub()
-    mockOnBeforeNavigate = cy.stub().resolves()
-    mockOnQuoteCalculated = cy.stub()
     // Mock API endpoints
-    cy.intercept('GET', '/api/coinbase/eth-price', { fixture: 'coinbase/eth-price.json' }).as('ethPrice')
-    cy.intercept('POST', '/api/coinbase/session-token', { fixture: 'coinbase/session-token.json' }).as('sessionToken')
-    cy.intercept('POST', '/api/coinbase/buy-quote', { fixture: 'coinbase/buy-quote.json' }).as('buyQuote')
+    cy.intercept('GET', '/api/coinbase/eth-price', { fixture: 'coinbase/eth-price.json' }).as(
+      'ethPrice'
+    )
+    cy.intercept('POST', '/api/coinbase/session-token', {
+      fixture: 'coinbase/session-token.json',
+    }).as('sessionToken')
+    cy.intercept('POST', '/api/coinbase/buy-quote', { fixture: 'coinbase/buy-quote.json' }).as(
+      'buyQuote'
+    )
   })
 
   describe('Close Button', () => {
@@ -133,6 +133,7 @@ describe('<CBOnramp />', () => {
         </TestnetProviders>
       )
 
+      // eslint-disable-next-line cypress/no-assigning-return-values
       const input = cy.get('[data-testid="cbonramp-amount-input"]')
       input.type('1.5')
       input.should('have.value', '1.5')
@@ -150,6 +151,7 @@ describe('<CBOnramp />', () => {
         </TestnetProviders>
       )
 
+      // eslint-disable-next-line cypress/no-assigning-return-values
       const input = cy.get('[data-testid="cbonramp-amount-input"]')
       input.type('abc')
       input.should('have.value', '')
@@ -167,6 +169,7 @@ describe('<CBOnramp />', () => {
         </TestnetProviders>
       )
 
+      // eslint-disable-next-line cypress/no-assigning-return-values
       const input = cy.get('[data-testid="cbonramp-amount-input"]')
       input.type('abc')
       input.blur()
@@ -185,82 +188,11 @@ describe('<CBOnramp />', () => {
         </TestnetProviders>
       )
 
+      // eslint-disable-next-line cypress/no-assigning-return-values
       const input = cy.get('[data-testid="cbonramp-amount-input"]')
       input.type('.')
       input.blur()
       input.should('have.value', '')
     })
   })
-
-  describe('Error State', () => {
-    it('displays error state with close button', () => {
-      cy.mount(
-        <TestnetProviders>
-          <CBOnramp
-            address={mockAddress}
-            selectedChain={mockChain}
-            ethAmount={0.1}
-            onExit={mockOnExit}
-          />
-        </TestnetProviders>
-      )
-
-      // Trigger error by setting invalid state
-      cy.window().then((win) => {
-        // We'll need to trigger an error state - this is a simplified test
-        // In real scenario, error would come from API failure
-      })
-    })
-
-    it('error close button clears error and calls onExit', () => {
-      cy.mount(
-        <TestnetProviders>
-          <CBOnramp
-            address={mockAddress}
-            selectedChain={mockChain}
-            ethAmount={0.1}
-            onExit={mockOnExit}
-          />
-        </TestnetProviders>
-      )
-
-      // This test would require mocking an error state
-      // For now, we verify the button exists when error is shown
-    })
-
-    it('shows Try Again button in error state when allowAmountInput is true', () => {
-      cy.mount(
-        <TestnetProviders>
-          <CBOnramp
-            address={mockAddress}
-            selectedChain={mockChain}
-            ethAmount={0}
-            allowAmountInput={true}
-            onExit={mockOnExit}
-          />
-        </TestnetProviders>
-      )
-
-      // This test would require mocking an error state
-      // Verify Try Again button appears when error exists and allowAmountInput is true
-    })
-
-    it('Try Again button clears error and resets input amount', () => {
-      cy.mount(
-        <TestnetProviders>
-          <CBOnramp
-            address={mockAddress}
-            selectedChain={mockChain}
-            ethAmount={0}
-            allowAmountInput={true}
-            onExit={mockOnExit}
-          />
-        </TestnetProviders>
-      )
-
-      // This test would require mocking an error state
-      // Verify Try Again clears error and resets input
-    })
-  })
 })
-
