@@ -630,11 +630,12 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
           return
         }
 
-        // JWT valid - refresh balance and show success
+        // JWT valid - refresh balance, open dropdown and show success
         clearRedirectParams()
         clearJWT() // Clear JWT after verification
         setTimeout(async () => {
           await refetchNativeBalance()
+          setEnabled(true) // Open wallet dropdown to show new balance
           toast.success('Purchase completed successfully!')
         }, 1000)
       })
