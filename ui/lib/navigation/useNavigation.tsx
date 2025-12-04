@@ -14,7 +14,7 @@ export default function useNavigation(citizen: any) {
     return [
       {
         name: citizen ? 'Dashboard' : 'Join',
-        href: citizen ? '/' : '/join',
+        href: citizen ? '/' : '/citizen?create=true',
         icon: citizen ? HomeIcon : PlusIcon,
       },
       {
