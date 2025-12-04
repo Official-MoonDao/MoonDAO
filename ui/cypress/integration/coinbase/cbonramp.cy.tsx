@@ -5,10 +5,10 @@ import { CBOnramp } from '@/components/coinbase/CBOnramp'
 describe('<CBOnramp />', () => {
   const mockAddress = '0x1234567890123456789012345678901234567890'
   const mockChain = CYPRESS_CHAIN_V5
-  let mockOnExit: Cypress.Agent<sinon.SinonStub>
-  let mockOnSuccess: Cypress.Agent<sinon.SinonStub>
-  let mockOnBeforeNavigate: Cypress.Agent<sinon.SinonStub>
-  let mockOnQuoteCalculated: Cypress.Agent<sinon.SinonStub>
+  let mockOnExit: any
+  let mockOnSuccess: any
+  let mockOnBeforeNavigate: any
+  let mockOnQuoteCalculated: any
 
   beforeEach(() => {
     cy.mountNextRouter('/')
