@@ -1124,21 +1124,21 @@ export default function SingedInDashboard({
             </div>
 
             {/* Buttons on the right */}
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-3 lg:gap-4">
               <StandardButton
-                className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 px-8 py-4 rounded-xl font-medium transition-all text-base whitespace-nowrap"
+                className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 px-4 sm:px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-medium transition-all text-sm sm:text-base whitespace-nowrap"
                 link="/contributions"
               >
                 Submit Contribution
               </StandardButton>
               <StandardButton
-                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-8 py-4 rounded-xl font-medium transition-all text-base whitespace-nowrap"
+                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-4 sm:px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-medium transition-all text-sm sm:text-base whitespace-nowrap"
                 link="/proposals"
               >
                 Propose Project
               </StandardButton>
               <StandardButton
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg transition-all text-base whitespace-nowrap"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-semibold shadow-lg transition-all text-sm sm:text-base whitespace-nowrap"
                 link="/projects"
               >
                 View All Projects
