@@ -42,3 +42,7 @@ coverage/
 *.temp
 .cache/
 
+# Video ID lists (contains sensitive data)
+townhall-video-ids.txt
+*video-ids.txt
+

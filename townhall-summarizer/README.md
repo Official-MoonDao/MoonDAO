@@ -320,41 +320,20 @@ Run the retro script inside Docker for consistent environment and no local setup
 
 **Note**: The retro script will automatically sort videos by their published date (oldest first) before processing, ensuring correct chronological order on the website.
 
-#### Tagging an Existing Broadcast
+#### Regenerating Summaries
 
-If you created a broadcast without tagging it (e.g., `TOWNHALL_CONVERTKIT_TAG_ID` wasn't set), you can tag it manually:
+To delete and regenerate existing summaries:
 
 ```bash
-# Set the tag ID
-export TOWNHALL_CONVERTKIT_TAG_ID=your-tag-id
-export CONVERT_KIT_API_KEY=your-api-key
+# Uses townhall-video-ids.txt if it exists
+yarn docker:regen
 
-# Tag the broadcast
-yarn tag-broadcast 22037489
+# Or provide video IDs or a file path
+yarn docker:regen <videoId1> [videoId2] ...
+yarn docker:regen my-video-ids.txt
 ```
 
-Or using Docker:
-```bash
-docker-compose --profile retro run --rm retro yarn tag-broadcast 22037489
-```
-
-### Rate Limits
-
-The service uses GROQ's free tier with built-in rate limiting. Rate limits are automatically enforced:
-
-**Whisper (Transcription):**
-- 20 requests/minute
-- 2,000 requests/day
-- 7,200 audio seconds/hour (2 hours)
-- 28,800 audio seconds/day (8 hours)
-
-**LLM (Summarization - llama-3.3-70b-versatile):**
-- 30 requests/minute
-- 1,000 requests/day
-- 12,000 tokens/minute
-- 100,000 tokens/day
-
-For typical weekly town hall videos (1-1.5 hours), these limits are sufficient. The service will automatically wait and retry if rate limits are approached.
+This will delete existing ConvertKit broadcasts and regenerate summaries in bottom-to-top order (oldest first).
 
 ### Error Handling
 - Missing `videoId` parameter: Returns 400
