@@ -44,7 +44,7 @@ export default function DropDownMenu({
           id: loadingToastId,
           style: toastStyle,
         })
-        router.push('/vote')
+        router.push('/projects')
       } else {
         // Show error toast
         toast.error(`Error deleting`, {

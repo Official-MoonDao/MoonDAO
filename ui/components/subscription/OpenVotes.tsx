@@ -16,7 +16,7 @@ export default function OpenVotes({ proposals }: any) {
 
         <StandardButton
           className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
-          onClick={() => router.push('/vote')}
+          onClick={() => router.push('/projects')}
         >
           See More
         </StandardButton>

@@ -77,7 +77,7 @@ const Governance: React.FC = () => {
       icon: '/assets/icon-vote.svg',
       iconAlt: 'Vote on Proposals',
       header: 'Vote on Proposals',
-      link: '/vote',
+      link: '/projects',
       hovertext: 'Vote on Proposals',
       paragraph: 'Vote on proposals and help shape the future of MoonDAO.',
     },
@@ -177,7 +177,7 @@ const Governance: React.FC = () => {
                 textColor="text-white"
                 borderRadius="rounded-xl"
                 hoverEffect={false}
-                link="/vote"
+                link="/projects"
               >
                 Vote on Proposals
               </StandardButton>
@@ -237,7 +237,7 @@ const Governance: React.FC = () => {
                     textColor="text-white"
                     borderRadius="rounded-full"
                     hoverEffect={false}
-                    link="/vote"
+                    link="/projects"
                   >
                     View All Proposals
                   </StandardButton>
