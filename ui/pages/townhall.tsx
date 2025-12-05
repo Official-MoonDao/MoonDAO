@@ -88,8 +88,9 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
   return (
     <>
       <WebsiteHead
-        title="Town Hall Summaries"
-        description="Weekly Town Hall summaries with key topics, decisions, and action items for the MoonDAO community."
+        title="Town Hall"
+        description="Weekly Town Hall meetings with key topics, decisions, and action items for the MoonDAO community."
+        image="/assets/townhall-metadata.png"
       />
       <div className="min-h-screen bg-gradient-to-b from-dark-cool via-dark-cool to-darkest-cool">
         {/* Background decorative elements */}
