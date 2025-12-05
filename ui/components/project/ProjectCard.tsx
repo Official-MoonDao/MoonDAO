@@ -1,9 +1,12 @@
 //This component dipslays a project card using project data directly from tableland
 import Link from 'next/link'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import React, { useContext, memo, useState, useMemo, useEffect } from 'react'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import ReactMarkdown from 'react-markdown'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import { usePrivy } from '@privy-io/react-auth'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
@@ -22,6 +25,7 @@ type ProjectCardProps = {
   handleDistributionChange?: (projectId: string, value: number) => void
   userHasVotingPower?: any
   isVotingPeriod?: boolean
+  active?: boolean
 }
 
 const ProjectCardContent = memo(
@@ -29,21 +33,21 @@ const ProjectCardContent = memo(
     project,
     distribution,
     handleDistributionChange,
-    proposalJSON,
     distribute,
     userContributed,
     userHasVotingPower,
     isMembershipDataLoading,
     isVotingPeriod,
+    active,
   }: any) => {
+    const account = useActiveAccount()
     const [isExpanded, setIsExpanded] = useState(false)
-    const description = project && project.MDP < 13
-      ? project.description
-      : proposalJSON?.abstract || project?.description || ''
-    
+    const description =
+      project && project.MDP < 13 ? project.description : project?.description || ''
+
     // Set character limits that better match the new card height
     const [characterLimit, setCharacterLimit] = useState(380)
-    
+
     useEffect(() => {
       const handleResize = () => {
         if (typeof window !== 'undefined') {
@@ -51,17 +55,17 @@ const ProjectCardContent = memo(
           setCharacterLimit(window.innerWidth >= 1024 ? 420 : 380)
         }
       }
-      
+
       if (typeof window !== 'undefined') {
         handleResize()
         window.addEventListener('resize', handleResize)
         return () => window.removeEventListener('resize', handleResize)
       }
     }, [])
-    
+
     const isLongText = description.length > characterLimit
     const shouldTruncate = isLongText && !isExpanded
-    const truncatedDescription = shouldTruncate 
+    const truncatedDescription = shouldTruncate
       ? description.slice(0, characterLimit) + '...'
       : description
 
@@ -73,7 +77,9 @@ const ProjectCardContent = memo(
         <div className="flex justify-between items-start">
           <div className="w-full flex flex-col gap-3">
             <Link href={`/project/${project?.id}`} passHref>
-              <h1 className="font-GoodTimes text-white text-xl hover:text-moon-gold transition-colors cursor-pointer">{project?.name || ''}</h1>
+              <h1 className="font-GoodTimes text-white text-xl hover:text-moon-gold transition-colors cursor-pointer">
+                {project?.name || ''}
+              </h1>
             </Link>
             {project?.finalReportLink || project?.finalReportIPFS ? (
               <StandardButton
@@ -81,9 +87,7 @@ const ProjectCardContent = memo(
                   distribute && 'mr-4'
                 }`}
                 link={
-                  project?.finalReportIPFS
-                    ? `/project/${project.id}`
-                    : project?.finalReportLink
+                  project?.finalReportIPFS ? `/project/${project.id}` : project?.finalReportLink
                 }
                 onClick={(e: any) => {
                   e.stopPropagation()
@@ -93,9 +97,13 @@ const ProjectCardContent = memo(
               >
                 <p className="text-sm font-medium">📋 Final Report</p>
               </StandardButton>
-            ) : (
+            ) : active ? (
               <div className="px-3 py-2 bg-green-600/20 border border-green-500/30 rounded-lg">
                 <p className="text-sm text-green-400 font-medium">🚀 Active Project</p>
+              </div>
+            ) : (
+              <div className="px-3 py-2 bg-blue-600/20 border border-blue-500/30 rounded-lg">
+                <p className="text-sm text-blue-400 font-medium">🤔 Proposal</p>
               </div>
             )}
           </div>
@@ -185,15 +193,12 @@ export default function ProjectCard({
   handleDistributionChange,
   userHasVotingPower,
   isVotingPeriod,
+  active,
 }: ProjectCardProps) {
   const account = useActiveAccount()
   const address = account?.address
 
-  const { adminHatId, proposalJSON } = useProjectData(
-    projectContract,
-    hatsContract,
-    project
-  )
+  const { adminHatId } = useProjectData(projectContract, hatsContract, project)
   const { authenticated } = usePrivy()
 
   const { selectedChain } = useContext(ChainContextV5)
@@ -252,24 +257,22 @@ export default function ProjectCard({
       {distribute ? (
         <ProjectCardContent
           project={project}
-          distribute={
-            distribute && (project!.finalReportLink || project!.finalReportIPFS)
-          }
+          distribute={distribute}
           userContributed={userContributed}
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}
-          proposalJSON={proposalJSON}
           userHasVotingPower={userHasVotingPower}
           isMembershipDataLoading={isMembershipDataLoading}
           isVotingPeriod={isVotingPeriod}
+          active={active}
         />
       ) : (
         <Link href={`/project/${project?.id}`} passHref>
           <ProjectCardContent
             project={project}
-            proposalJSON={proposalJSON}
             userHasVotingPower={userHasVotingPower}
             isVotingPeriod={isVotingPeriod}
+            active={active}
           />
         </Link>
       )}

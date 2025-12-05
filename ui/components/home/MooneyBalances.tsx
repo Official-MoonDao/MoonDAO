@@ -128,7 +128,7 @@ export default function MooneyBalances({
         {/* Voting Power */}
         <div className="flex items-center gap-1 flex-shrink-0">
           <Link
-            href="/vote"
+            href="/projects"
             className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
           >
             <div className="group flex items-center justify-center gap-1">

@@ -49,7 +49,6 @@ export default function SubmissionPage() {
             isProfile={true}
           >
             <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                 {submissionTypes.map((type, index) => (
                   <div key={index} className="bg-black/20 rounded-xl p-6 border border-white/10 hover:border-white/20 transition-all duration-200 hover:transform hover:scale-[1.02] flex flex-col h-full">
