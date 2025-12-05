@@ -2,6 +2,8 @@ import { useEffect, useCallback } from 'react'
 import useOnrampJWT from './useOnrampJWT'
 import { useOnrampRedirect } from './useOnrampRedirect'
 
+const MOCK_ONRAMP = process.env.NEXT_PUBLIC_MOCK_ONRAMP === 'true'
+
 interface UseOnrampAutoTransactionOptions {
   address: string | undefined
   context: string
@@ -33,6 +35,13 @@ export function useOnrampAutoTransaction({
   const { verifyJWT, getStoredJWT, clearJWT } = useOnrampJWT()
 
   const pollBalanceAndExecute = useCallback(async () => {
+    // In mock mode, skip balance polling and execute immediately
+    if (MOCK_ONRAMP) {
+      await onTransaction()
+      clearJWT()
+      return
+    }
+
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       await refetchNativeBalance()
       await new Promise((resolve) => setTimeout(resolve, delayMs))
