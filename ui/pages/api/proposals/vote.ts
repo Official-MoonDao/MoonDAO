@@ -1,12 +1,10 @@
 import ProjectTableABI from 'const/abis/ProjectTable.json'
-import ProjectTeamCreatorABI from 'const/abis/ProjectTeamCreator.json'
 import ProposalsABI from 'const/abis/Proposals.json'
 import {
   PROJECT_TABLE_NAMES,
   PROPOSALS_TABLE_NAMES,
   PROPOSALS_ADDRESSES,
   DEFAULT_CHAIN_V5,
-  PROJECT_CREATOR_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
   ETH_BUDGET,
 } from 'const/config'

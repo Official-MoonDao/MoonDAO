@@ -29,6 +29,10 @@ import { serverClient } from '@/lib/thirdweb/client'
 // Configuration constants
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
+const PROD_PROPOSALS_FORUM_ID = '1034923662442254356'
+const TEST_PROPOSALS_FORUM_ID = '1446583124388741252'
+const proposalsForumId =
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? PROD_PROPOSALS_FORUM_ID : TEST_PROPOSALS_FORUM_ID // proposals || test-forum
 
 async function getAbstract(proposalBody: string): Promise<string | null> {
   const thePrompt =
@@ -276,20 +280,23 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         account,
       })
 
-      if (false) {
-        const discordResponse = await fetch(
-          `https://discord.com/api/v10/channels/${DISCORD_GUILD_ID}/threads`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-            },
-            body: JSON.stringify({
-              name: `MDP-${proposalId}: ${proposalTitle}`,
-            }),
-          }
-        )
+      const discordResponse = await fetch(
+        `https://discord.com/api/v10/channels/${proposalsForumId}/threads`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+          },
+          body: JSON.stringify({
+            name: `MDP-${proposalId}: ${proposalTitle}`,
+            message: { content: `https://moondao.com/proposal/${proposalId}` },
+          }),
+        }
+      )
+      if (!discordResponse.ok) {
+        const responseJson = await discordResponse.json()
+        console.error('Failed to create thread on discord: ', responseJson?.message)
       }
       res.status(200).json({
         proposalId: proposalId,
