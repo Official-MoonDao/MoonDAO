@@ -91,6 +91,31 @@ describe('Main E2E Testing', () => {
     })
   })
 
+  describe('MoonDAO App | Town Hall', () => {
+    it('should load the townhall page', () => {
+      cy.visit('/townhall', { timeout: 60000 })
+    })
+
+    it('should have search functionality', () => {
+      cy.visit('/townhall', { timeout: 60000 })
+      
+      cy.get('input[name="search"]').should('exist')
+      cy.get('input[name="search"]').should('be.visible')
+    })
+
+    it('should display summaries list', () => {
+      cy.visit('/townhall', { timeout: 60000 })
+      
+      cy.get('div').should('exist')
+    })
+
+    it('should have info banner at bottom', () => {
+      cy.visit('/townhall', { timeout: 60000 })
+      
+      cy.contains('improving our AI summaries').should('exist')
+    })
+  })
+
   describe('MoonDAO App | Map', () => {
     it('should load the map page', () => {
       cy.visit('/map', { timeout: 60000 })
