@@ -19,6 +19,7 @@ function getNextTownHallDate(): Date {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
+    weekday: 'long',
     hour12: false,
   })
 
@@ -29,22 +30,41 @@ function getNextTownHallDate(): Date {
     day: parseInt(parts.find((p) => p.type === 'day')?.value || '0'),
     hour: parseInt(parts.find((p) => p.type === 'hour')?.value || '0'),
     minute: parseInt(parts.find((p) => p.type === 'minute')?.value || '0'),
+    weekday: parts.find((p) => p.type === 'weekday')?.value || '',
   }
 
-  let targetDay = cstNow.day
-  let targetMonth = cstNow.month
-  let targetYear = cstNow.year
-
-  if (
-    cstNow.hour > TOWN_HALL_TIME.hour ||
-    (cstNow.hour === TOWN_HALL_TIME.hour && cstNow.minute >= TOWN_HALL_TIME.minute)
-  ) {
-    const nextWeek = new Date(cstNow.year, cstNow.month - 1, cstNow.day)
-    nextWeek.setDate(nextWeek.getDate() + 7)
-    targetDay = nextWeek.getDate()
-    targetMonth = nextWeek.getMonth() + 1
-    targetYear = nextWeek.getFullYear()
+  const weekdayMap: Record<string, number> = {
+    Sunday: 0,
+    Monday: 1,
+    Tuesday: 2,
+    Wednesday: 3,
+    Thursday: 4,
+    Friday: 5,
+    Saturday: 6,
   }
+
+  const THURSDAY = 4
+  const currentDayOfWeek = weekdayMap[cstNow.weekday] ?? 0
+
+  let daysUntilThursday = 0
+  if (currentDayOfWeek === THURSDAY) {
+    const isPastTownHallTime =
+      cstNow.hour > TOWN_HALL_TIME.hour ||
+      (cstNow.hour === TOWN_HALL_TIME.hour && cstNow.minute >= TOWN_HALL_TIME.minute)
+    daysUntilThursday = isPastTownHallTime ? 7 : 0
+  } else if (currentDayOfWeek < THURSDAY) {
+    daysUntilThursday = THURSDAY - currentDayOfWeek
+  } else {
+    daysUntilThursday = 7 - (currentDayOfWeek - THURSDAY)
+  }
+
+  const currentDate = new Date(cstNow.year, cstNow.month - 1, cstNow.day)
+  const targetDate = new Date(currentDate)
+  targetDate.setDate(targetDate.getDate() + daysUntilThursday)
+
+  const targetYear = targetDate.getFullYear()
+  const targetMonth = targetDate.getMonth() + 1
+  const targetDay = targetDate.getDate()
 
   const cstDateStr = `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(
     targetDay
