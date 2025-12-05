@@ -174,9 +174,11 @@ export default function MissionWideCard({
                     ? truncateTokenValue(fundingGoal / 1e18, 'ETH')
                     : 0
                 } ETH`}
-                tooltip={`~ $${Math.round(
-                  (fundingGoal / 1e18) * ethPrice
-                ).toLocaleString()} USD`}
+                tooltip={
+                  ethPrice
+                    ? `~ $${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()} USD`
+                    : undefined
+                }
               />
             </div>
             <div className="col-span-2">
