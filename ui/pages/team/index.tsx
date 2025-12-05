@@ -1,4 +1,5 @@
-import { useContext, useState } from 'react'
+import { useContext, useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '@/components/layout/Container'
@@ -11,12 +12,20 @@ import TeamTier from '@/components/onboarding/TeamTier'
 
 export default function TeamJoin() {
   const { selectedChain } = useContext(ChainContextV5)
+  const router = useRouter()
 
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   // Ensure default chain settings
   useChainDefault()
+
+  // Auto-select team tier when returning from onramp redirect
+  useEffect(() => {
+    if (router.isReady && router.query.onrampSuccess === 'true') {
+      setSelectedTier('team')
+    }
+  }, [router.isReady, router.query.onrampSuccess])
 
   // If "team" is selected, render CreateTeam component
   if (selectedTier === 'team') {

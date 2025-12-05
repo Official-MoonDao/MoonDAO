@@ -8,6 +8,7 @@ export interface OnrampJwtPayload {
   message?: string
   selectedWallet?: number
   missionId?: string
+  context?: string
   timestamp: number
 }
 
@@ -18,10 +19,12 @@ export interface UseOnrampJWTReturn {
   verifyJWT: (
     token: string,
     expectedAddress: string,
-    expectedMissionId?: string
+    expectedMissionId?: string,
+    expectedContext?: string
   ) => Promise<OnrampJwtPayload | null>
   clearJWT: () => void
   getStoredJWT: () => string | null
+  storedJWT: string | null
   isGenerating: boolean
   isVerifying: boolean
   error: string | null
@@ -31,9 +34,16 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [storedJWT, setStoredJWT] = useState<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const STORAGE_KEY = 'onrampJWT'
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setStoredJWT(localStorage.getItem(STORAGE_KEY))
+    }
+  }, [])
 
   const generateJWT = useCallback(
     async (payload: Omit<OnrampJwtPayload, 'timestamp'>) => {
@@ -65,6 +75,7 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
 
         if (jwt) {
           localStorage.setItem(STORAGE_KEY, jwt)
+          setStoredJWT(jwt)
         }
 
         return jwt
@@ -87,7 +98,8 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
     async (
       token: string,
       expectedAddress: string,
-      expectedMissionId?: string
+      expectedMissionId?: string,
+      expectedContext?: string
     ): Promise<OnrampJwtPayload | null> => {
       setIsVerifying(true)
       setError(null)
@@ -99,13 +111,9 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
           body: JSON.stringify({ token }),
         })
 
-        if (!response.ok) {
-          throw new Error('Failed to verify JWT')
-        }
-
         const data = await response.json()
 
-        if (!data.valid) {
+        if (!response.ok || !data.valid) {
           setError(data.error || 'Invalid or expired JWT')
           return null
         }
@@ -124,6 +132,12 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
           return null
         }
 
+        // Verify context matches if expected
+        if (expectedContext && payload.context !== expectedContext) {
+          setError('Context mismatch')
+          return null
+        }
+
         return payload
       } catch (err: any) {
         const errorMessage = err.message || 'JWT verification failed'
@@ -139,13 +153,14 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
 
   const clearJWT = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY)
+    setStoredJWT(null)
     setError(null)
   }, [])
 
   const getStoredJWT = useCallback(() => {
     if (typeof window === 'undefined') return null
-    return localStorage.getItem(STORAGE_KEY)
-  }, [])
+    return storedJWT
+  }, [storedJWT])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -161,6 +176,7 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
     verifyJWT,
     clearJWT,
     getStoredJWT,
+    storedJWT,
     isGenerating,
     isVerifying,
     error,

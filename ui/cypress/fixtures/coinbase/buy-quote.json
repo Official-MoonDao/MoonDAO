@@ -1,0 +1,18 @@
+{
+  "quote": {
+    "quote_id": "mock-quote-id-12345",
+    "purchase_amount": {
+      "value": "0.1",
+      "currency": "ETH"
+    },
+    "payment_subtotal": {
+      "value": "250.00",
+      "currency": "USD"
+    },
+    "payment_total": {
+      "value": "260.00",
+      "currency": "USD"
+    }
+  }
+}
+

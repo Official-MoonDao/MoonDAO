@@ -1,7 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Options } from '@layerzerolabs/lz-v2-utilities'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
-import { getAccessToken, useFundWallet } from '@privy-io/react-auth'
+import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import {
   CITIZEN_ADDRESSES,
@@ -12,7 +12,6 @@ import {
   DEPLOYED_ORIGIN,
   DEFAULT_CHAIN_V5,
   DISCORD_CITIZEN_ROLE_ID,
-  CITIZEN_TABLE_NAMES,
 } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
@@ -28,14 +27,13 @@ import {
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
+import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import useTag from '@/lib/convert-kit/useTag'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
-import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
-import { arbitrum, base, ethereum, sepolia, arbitrumSepolia, Chain } from '@/lib/rpc/chains'
+import { arbitrum, base, ethereum, sepolia, arbitrumSepolia } from '@/lib/rpc/chains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
-import { mutateTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
@@ -45,14 +43,14 @@ import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import { CitizenData, formatCitizenShortFormData } from '@/lib/typeform/citizenFormData'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
-import viemChains from '@/lib/viem/viemChains'
+import { useFormCache } from '@/lib/utils/hooks/useFormCache'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import CitizenABI from '../../const/abis/Citizen.json'
 import CrossChainMinterABI from '../../const/abis/CrossChainMinter.json'
+import { CBOnrampModal } from '../coinbase/CBOnrampModal'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import { ExpandedFooter } from '../layout/ExpandedFooter'
-import FileInput from '../layout/FileInput'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { ImageGenerator } from './CitizenImageGenerator'
@@ -67,7 +65,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const chains = isTestnet ? [sepolia, arbitrumSepolia] : [arbitrum, base, ethereum]
   const destinationChain = isTestnet ? sepolia : arbitrum
   const account = useActiveAccount()
-  const address = account?.address
+  // In test mode (Cypress), use mock address from window if available
+  const mockAddress =
+    typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
+  const address = account?.address || mockAddress
 
   const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
@@ -93,23 +94,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
   const [isImageGenerating, setIsImageGenerating] = useState(false)
   const [freeMint, setFreeMint] = useState(false)
-
-  // When the generated image arrives, stop showing the loading animation in stage 2
-  useEffect(() => {
-    if (isImageGenerating && citizenImage) {
-      setIsImageGenerating(false)
-    }
-  }, [citizenImage, isImageGenerating])
-
-  const { fundWallet } = useFundWallet()
-
-  const { isMobile } = useWindowSize()
-
-  useEffect(() => {
-    if (stage > lastStage) {
-      setLastStage(stage)
-    }
-  }, [stage, lastStage])
+  const [onrampModalOpen, setOnrampModalOpen] = useState(false)
+  const [requiredEthAmount, setRequiredEthAmount] = useState(0)
 
   const citizenContract = useContract({
     address: CITIZEN_ADDRESSES[defaultChainSlug],
@@ -122,69 +108,54 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     chain: selectedChain,
   })
 
+  // Form state caching
+  const { cache, setCache, clearCache, restoreCache } = useFormCache<{
+    stage: number
+    citizenData: CitizenData
+    citizenImage: any
+    inputImage: File | undefined
+    agreedToCondition: boolean
+  }>('CreateCitizenCacheV1', address)
+
+  // Redirect handling and auto-transaction
+  const calculateCost = useCallback(
+    async (formattedCost: string) => {
+      const estimatedMaxGas = 0.0002
+      const LAYER_ZERO_TRANSFER_COST = BigInt('3000000000000000')
+      let totalCost = Number(formattedCost) + estimatedMaxGas
+      if (selectedChainSlug !== defaultChainSlug) {
+        totalCost += Number(LAYER_ZERO_TRANSFER_COST) / 1e18
+      }
+      return totalCost
+    },
+    [selectedChainSlug, defaultChainSlug]
+  )
+
+  const handleFormRestore = useCallback((restored: any) => {
+    setStage(restored.stage || 2)
+    setCitizenData(restored.formData.citizenData)
+    if (restored.formData.citizenImage) {
+      setCitizenImage(restored.formData.citizenImage)
+    }
+    if (restored.formData.inputImage) {
+      setInputImage(restored.formData.inputImage)
+    }
+    setAgreedToCondition(restored.formData.agreedToCondition)
+  }, [])
+
+  const { isMobile } = useWindowSize()
+
   const subscribeToNetworkSignup = useSubscribe(CK_NETWORK_SIGNUP_FORM_ID)
   const tagToNetworkSignup = useTag(CK_NETWORK_SIGNUP_TAG_ID)
 
-  const { nativeBalance } = useNativeBalance()
+  const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
 
-  useEffect(() => {
-    const getTotalPaid = async () => {
-      const res = await fetch(`/api/mission/freeMint?address=${address}`, {
-        method: 'GET',
-      })
-      if (!res.ok) {
-        const errorText = await res.text() // Or response.json()
-        console.error(errorText)
-      } else {
-        const { data } = await res.json()
-        if (data.eligible) {
-          setFreeMint(true)
-        }
-      }
-    }
-    getTotalPaid()
-  }, [address])
-
-  const submitTypeform = useCallback(async (formResponse: any) => {
-    const { formId, responseId } = formResponse
-
-    await waitForResponse(formId, responseId)
-
-    const accessToken = await getAccessToken()
-
-    const responseRes = await fetch(`/api/typeform/response`, {
-      method: 'POST',
-      body: JSON.stringify({
-        accessToken: accessToken,
-        responseId: responseId,
-        formId: formId,
-      }),
-    })
-
-    const data = await responseRes.json()
-
-    //fomat answers into an object
-    const citizenShortFormData = formatCitizenShortFormData(data.answers, responseId)
-
-    //subscribe to newsletter
-    const subRes = await subscribeToNetworkSignup(citizenShortFormData.email)
-    if (subRes.ok) {
-      console.log('Subscribed to network signup')
-    }
-
-    //escape single quotes and remove emojis
-    const cleanedCitizenShortFormData = cleanData(citizenShortFormData)
-
-    setCitizenData(cleanedCitizenShortFormData as any)
-
-    setStage(2)
-  }, [])
-
-  const callMint = async () => {
+  const callMint = useCallback(async () => {
     const imageToUse = citizenImage || inputImage
     if (!imageToUse) return toast.error('Please upload an image and complete the previous steps.')
 
-    if (!account || !address) {
+    // In test mode, address may come from mock, so only check address
+    if (!address) {
       return toast.error('Please connect your wallet to continue.')
     }
 
@@ -201,7 +172,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
 
-      const estimatedMaxGas = 0.0001
+      const estimatedMaxGas = 0.0002
 
       let totalCost = Number(formattedCost) + estimatedMaxGas
       if (selectedChainSlug !== defaultChainSlug) {
@@ -209,13 +180,19 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       }
 
       if (!freeMint && +nativeBalance < totalCost) {
-        const roundedCost = Math.ceil(+totalCost * 1000000) / 1000000
+        // Calculate the amount needed
+        const shortfall = totalCost - +nativeBalance
+
+        // Add gas buffer and LayerZero fee if cross-chain
+        let requiredAmount = shortfall + estimatedMaxGas
+        if (selectedChainSlug !== defaultChainSlug) {
+          requiredAmount += Number(LAYER_ZERO_TRANSFER_COST) / 1e18
+        }
 
         setIsLoadingMint(false)
-        return await fundWallet(address, {
-          amount: String(roundedCost),
-          chain: viemChains[selectedChainSlug],
-        })
+        setRequiredEthAmount(requiredAmount)
+        setOnrampModalOpen(true)
+        return
       }
 
       const renamedCitizenImage = renameFile(imageToUse, `${citizenData.name} Citizen Image`)
@@ -251,6 +228,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           receipt = await res.json()
         }
       } else if (selectedChainSlug !== defaultChainSlug) {
+        if (!account) {
+          setIsLoadingMint(false)
+          return toast.error('Please connect your wallet to continue.')
+        }
+
         const GAS_LIMIT = 300000 // Gas limit for the executor
         const MSG_VALUE = cost // msg.value for the lzReceive() function on destination in wei
 
@@ -290,6 +272,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           transactionHash: message.dstTxHash as `0x${string}`,
         })
       } else {
+        if (!account) {
+          setIsLoadingMint(false)
+          return toast.error('Please connect your wallet to continue.')
+        }
+
         const transaction = await prepareContractCall({
           contract: citizenContract,
           method: 'mintTo' as string,
@@ -373,12 +360,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           if (typeof window !== 'undefined') {
             localStorage.removeItem(cacheKey)
           }
-
-          // Invalidate SWR cache for citizen query to force refresh on dashboard
-          const statement = `SELECT * FROM ${
-            CITIZEN_TABLE_NAMES[defaultChainSlug]
-          } WHERE owner = '${address?.toLowerCase()}'`
-          await mutateTablelandQuery(statement)
+          // Clear form cache
+          clearCache()
 
           // Redirect to home page
           router.push('/')
@@ -389,7 +372,137 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       console.error(err)
       setIsLoadingMint(false)
     }
-  }
+  }, [
+    citizenImage,
+    inputImage,
+    account,
+    address,
+    citizenContract,
+    selectedChainSlug,
+    defaultChainSlug,
+    freeMint,
+    nativeBalance,
+    citizenData,
+    crossChainMintContract,
+    isTestnet,
+    destinationChain,
+    tagToNetworkSignup,
+    clearCache,
+    router,
+  ])
+
+  const checkBalanceSufficient = useCallback(async () => {
+    try {
+      const cost: any = await readContract({
+        contract: citizenContract,
+        method: 'getRenewalPrice' as string,
+        params: [address, 365 * 24 * 60 * 60],
+      })
+      const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
+      const totalCost = await calculateCost(formattedCost)
+      return +nativeBalance >= totalCost
+    } catch (error) {
+      console.error('Error checking balance:', error)
+      return false
+    }
+  }, [address, citizenContract, nativeBalance, calculateCost])
+
+  useOnrampAutoTransaction({
+    address,
+    context: 'citizen',
+    expectedChainSlug: selectedChainSlug,
+    refetchNativeBalance,
+    onTransaction: callMint,
+    onFormRestore: handleFormRestore,
+    checkBalanceSufficient,
+    shouldProceed: (restored) => restored.formData.agreedToCondition,
+    restoreCache,
+  })
+
+  const submitTypeform = useCallback(
+    async (formResponse: any) => {
+      const { formId, responseId } = formResponse
+
+      await waitForResponse(formId, responseId)
+
+      const accessToken = await getAccessToken()
+
+      const responseRes = await fetch(`/api/typeform/response`, {
+        method: 'POST',
+        body: JSON.stringify({
+          accessToken: accessToken,
+          responseId: responseId,
+          formId: formId,
+        }),
+      })
+
+      const data = await responseRes.json()
+
+      //fomat answers into an object
+      const citizenShortFormData = formatCitizenShortFormData(data.answers, responseId)
+
+      //subscribe to newsletter
+      const subRes = await subscribeToNetworkSignup(citizenShortFormData.email)
+      if (subRes.ok) {
+        console.log('Subscribed to network signup')
+      }
+
+      //escape single quotes and remove emojis
+      const cleanedCitizenShortFormData = cleanData(citizenShortFormData)
+
+      setCitizenData(cleanedCitizenShortFormData as any)
+
+      setStage(2)
+    },
+    [subscribeToNetworkSignup]
+  )
+
+  // When the generated image arrives, stop showing the loading animation in stage 2
+  useEffect(() => {
+    if (isImageGenerating && citizenImage) {
+      setIsImageGenerating(false)
+    }
+  }, [citizenImage, isImageGenerating])
+
+  // Cache form state before navigating to onramp
+  useEffect(() => {
+    if (stage >= 0 && address && (citizenData.name || citizenImage || inputImage)) {
+      setCache(
+        {
+          stage,
+          citizenData,
+          citizenImage,
+          inputImage,
+          agreedToCondition,
+        },
+        stage
+      )
+    }
+  }, [stage, citizenData, citizenImage, inputImage, agreedToCondition, address, setCache])
+
+  useEffect(() => {
+    if (stage > lastStage) {
+      setLastStage(stage)
+    }
+  }, [stage, lastStage])
+
+  useEffect(() => {
+    const getTotalPaid = async () => {
+      const res = await fetch(`/api/mission/freeMint?address=${address}`, {
+        method: 'GET',
+      })
+      if (!res.ok) {
+        const errorText = await res.text() // Or response.json()
+        console.error(errorText)
+      } else {
+        const { data } = await res.json()
+        if (data.eligible) {
+          setFreeMint(true)
+        }
+      }
+    }
+    getTotalPaid()
+  }, [address])
 
   return (
     <Container>
@@ -730,6 +843,20 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           </div>
         )}
       </ContentLayout>
+      {address && (
+        <CBOnrampModal
+          enabled={onrampModalOpen}
+          setEnabled={setOnrampModalOpen}
+          address={address}
+          selectedChain={selectedChain}
+          ethAmount={requiredEthAmount}
+          context="citizen"
+          agreed={agreedToCondition}
+          onExit={() => {
+            setIsLoadingMint(false)
+          }}
+        />
+      )}
     </Container>
   )
 }

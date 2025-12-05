@@ -18,9 +18,7 @@ export function ImageGenerator({
   generateInBG,
   onGenerationStateChange, // Add this prop
 }: any) {
-  const [originalInputImage, setOriginalInputImage] = useState<File | null>(
-    null
-  )
+  const [originalInputImage, setOriginalInputImage] = useState<File | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [croppedImage, setCroppedImage] = useState<File | null>(null)
   const [isReCropping, setIsReCropping] = useState(false)
@@ -65,14 +63,7 @@ export function ImageGenerator({
     } catch (error) {
       console.error('Error auto-cropping image:', error)
     }
-  }, [
-    inputImage,
-    cropArea.x,
-    cropArea.y,
-    cropArea.size,
-    setImage,
-    isReCropping,
-  ])
+  }, [inputImage, cropArea.x, cropArea.y, cropArea.size, setImage, isReCropping])
 
   // Auto-crop when input image changes (but not when re-cropping)
   useEffect(() => {
@@ -269,17 +260,11 @@ export function ImageGenerator({
             newY = prev.y + prev.size - newSize
             break
           case 'ne':
-            newSize = Math.max(
-              50,
-              Math.min(imageX - prev.x, prev.y + prev.size - imageY)
-            )
+            newSize = Math.max(50, Math.min(imageX - prev.x, prev.y + prev.size - imageY))
             newY = prev.y + prev.size - newSize
             break
           case 'sw':
-            newSize = Math.max(
-              50,
-              Math.min(prev.x + prev.size - imageX, imageY - prev.y)
-            )
+            newSize = Math.max(50, Math.min(prev.x + prev.size - imageX, imageY - prev.y))
             newX = prev.x + prev.size - newSize
             break
           case 'se':
@@ -304,11 +289,7 @@ export function ImageGenerator({
         // Final bounds checking - this will handle the max size limits
         newX = Math.max(0, Math.min(imageSize.width - newSize, newX))
         newY = Math.max(0, Math.min(imageSize.height - newSize, newY))
-        newSize = Math.min(
-          newSize,
-          imageSize.width - newX,
-          imageSize.height - newY
-        )
+        newSize = Math.min(newSize, imageSize.width - newX, imageSize.height - newY)
 
         return { x: newX, y: newY, size: newSize }
       })
@@ -327,8 +308,7 @@ export function ImageGenerator({
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault()
-      if (!containerRef.current || !inputImage || !displayedImageSize.width)
-        return
+      if (!containerRef.current || !inputImage || !displayedImageSize.width) return
 
       // Cancel previous animation frame
       if (animationFrameRef.current) {
@@ -349,14 +329,8 @@ export function ImageGenerator({
 
           setCropArea((prev) => ({
             ...prev,
-            x: Math.max(
-              0,
-              Math.min(imageSize.width - prev.size, prev.x + deltaX)
-            ),
-            y: Math.max(
-              0,
-              Math.min(imageSize.height - prev.size, prev.y + deltaY)
-            ),
+            x: Math.max(0, Math.min(imageSize.width - prev.size, prev.x + deltaX)),
+            y: Math.max(0, Math.min(imageSize.height - prev.size, prev.y + deltaY)),
           }))
           setDragStart({ x: e.clientX, y: e.clientY })
         }
@@ -393,28 +367,25 @@ export function ImageGenerator({
       return
     }
 
-    if (!document.getElementById('citizenPic'))
-      return console.error('citizenPic is not defined')
+    if (!document.getElementById('citizenPic')) return console.error('citizenPic is not defined')
     if (inputImage) {
       // @ts-expect-error
-      await html2canvas(document.getElementById('citizenPic')).then(
-        (canvas) => {
-          const img = canvas.toDataURL('image/png')
+      await html2canvas(document.getElementById('citizenPic')).then((canvas) => {
+        const img = canvas.toDataURL('image/png')
 
-          //Convert from base64 to file
-          const byteString = atob(img.split(',')[1])
-          const mimeString = img.split(',')[0].split(':')[1].split(';')[0]
-          const ab = new ArrayBuffer(byteString.length)
-          const ia = new Uint8Array(ab)
-          for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i)
-          }
-          const blob = new Blob([ab], { type: mimeString })
-          const file = new File([blob], 'citizenPic.png', { type: mimeString })
-
-          setImage(file)
+        //Convert from base64 to file
+        const byteString = atob(img.split(',')[1])
+        const mimeString = img.split(',')[0].split(':')[1].split(';')[0]
+        const ab = new ArrayBuffer(byteString.length)
+        const ia = new Uint8Array(ab)
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i)
         }
-      )
+        const blob = new Blob([ab], { type: mimeString })
+        const file = new File([blob], 'citizenPic.png', { type: mimeString })
+
+        setImage(file)
+      })
     }
     nextStage()
   }
@@ -480,13 +451,7 @@ export function ImageGenerator({
         onMouseLeave={handleMouseUp}
       >
         {currImage && !inputImage && (
-          <IPFSRenderer
-            src={currImage}
-            className=""
-            width={600}
-            height={600}
-            alt="Citizen Image"
-          />
+          <IPFSRenderer src={currImage} className="" width={600} height={600} alt="Citizen Image" />
         )}
         {inputImage && (
           <>
@@ -613,13 +578,10 @@ export function ImageGenerator({
                       <div
                         className="absolute bg-black/50"
                         style={{
-                          left:
-                            (cropArea.x + cropArea.size) * cropScale +
-                            cropOffsetX,
+                          left: (cropArea.x + cropArea.size) * cropScale + cropOffsetX,
                           top: 0,
                           width:
-                            displayedImageSize.width -
-                            (cropArea.x + cropArea.size) * cropScale,
+                            displayedImageSize.width - (cropArea.x + cropArea.size) * cropScale,
                           height: displayedImageSize.height + cropOffsetY,
                         }}
                       />
@@ -636,13 +598,10 @@ export function ImageGenerator({
                         className="absolute bg-black/50"
                         style={{
                           left: cropArea.x * cropScale + cropOffsetX,
-                          top:
-                            (cropArea.y + cropArea.size) * cropScale +
-                            cropOffsetY,
+                          top: (cropArea.y + cropArea.size) * cropScale + cropOffsetY,
                           width: cropArea.size * cropScale,
                           height:
-                            displayedImageSize.height -
-                            (cropArea.y + cropArea.size) * cropScale,
+                            displayedImageSize.height - (cropArea.y + cropArea.size) * cropScale,
                         }}
                       />
                     </div>
@@ -654,9 +613,7 @@ export function ImageGenerator({
         )}
       </div>
 
-      {showError && generateError && (
-        <p className="mt-2 ml-2 opacity-[50%]">{generateError}</p>
-      )}
+      {showError && generateError && <p className="mt-2 ml-2 opacity-[50%]">{generateError}</p>}
 
       {inputImage && !image && !generating ? (
         <div className="flex gap-2 mt-6">
@@ -694,10 +651,7 @@ export function ImageGenerator({
 
                   // Reset the crop area to center when re-cropping
                   // Initialize as largest possible square (full width or height)
-                  const minDimension = Math.min(
-                    imageSize.width,
-                    imageSize.height
-                  )
+                  const minDimension = Math.min(imageSize.width, imageSize.height)
                   setCropArea({
                     x: (imageSize.width - minDimension) / 2,
                     y: (imageSize.height - minDimension) / 2,
@@ -719,11 +673,7 @@ export function ImageGenerator({
               generateImage()
             }}
           >
-            {generating
-              ? 'Generating...'
-              : hasGeneratedImage
-              ? 'Regenerate Image'
-              : 'Generate Image'}
+            {generating ? 'Generating...' : hasGeneratedImage ? 'Generate Image' : 'Generate Image'}
           </button>
         </div>
       )}

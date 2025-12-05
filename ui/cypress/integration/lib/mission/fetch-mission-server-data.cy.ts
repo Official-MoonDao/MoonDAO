@@ -4,23 +4,59 @@ import { fetchTimeData, fetchMissionContracts } from '@/lib/mission/fetchMission
 
 describe('fetchMissionServerData', () => {
   beforeEach(() => {
-    cy.intercept('POST', '**', (req) => {
-      if (req.body && req.body.method === 'getTableName') {
-        req.reply({ result: 'mission_table' })
-      } else if (req.body && req.body.method === 'deadline') {
-        req.reply({ result: '0x' + Math.floor(Date.now() / 1000).toString(16) })
-      } else if (req.body && req.body.method === 'refundPeriod') {
-        req.reply({ result: '0x15180' }) // 86400 in hex (1 day)
-      } else if (req.body && req.body.method === 'stage') {
-        req.reply({ result: '0x1' })
-      } else if (req.body && req.body.method === 'missionIdToPayHook') {
-        req.reply({ result: '0x1234567890123456789012345678901234567890' })
-      } else if (req.body && req.body.method === 'missionIdToToken') {
-        req.reply({ result: '0x1234567890123456789012345678901234567890' })
-      }
-    }).as('contractCalls')
+    cy.intercept('POST', '**/rpc/**', (req) => {
+      if (req.body && req.body.method === 'eth_call') {
+        const data = req.body.params?.[0]?.data || ''
 
-    // Mock tableland query - intercept the actual HTTP call
+        if (data.includes('deadline') || data.startsWith('0x26d4ce')) {
+          // deadline() method
+          req.reply({
+            result:
+              '0x' +
+              Math.floor(Date.now() / 1000)
+                .toString(16)
+                .padStart(64, '0'),
+          })
+        } else if (data.includes('refundPeriod') || data.startsWith('0x')) {
+          // refundPeriod() method or other calls
+          req.reply({ result: '0x' + '15180'.padStart(64, '0') }) // 86400 in hex (1 day)
+        } else {
+          // Default response
+          req.reply({ result: '0x' + '1'.padStart(64, '0') })
+        }
+      } else if (req.body && req.body.method === 'eth_getBalance') {
+        req.reply({ result: '0x0' })
+      }
+    }).as('rpcCalls')
+
+    cy.intercept('POST', '**/thirdweb.com/**', (req) => {
+      if (req.body && req.body.method === 'eth_call') {
+        const data = req.body.params?.[0]?.data || ''
+        if (data.includes('deadline') || data.startsWith('0x26d4ce')) {
+          req.reply({
+            result:
+              '0x' +
+              Math.floor(Date.now() / 1000)
+                .toString(16)
+                .padStart(64, '0'),
+          })
+        } else if (data.includes('refundPeriod')) {
+          req.reply({ result: '0x' + '15180'.padStart(64, '0') })
+        } else if (
+          data.includes('uriOf') ||
+          data.includes('tokenOf') ||
+          data.includes('primaryTerminalOf')
+        ) {
+          // Return empty string for URI calls or address for address calls
+          req.reply({ result: '0x' + '0'.padStart(64, '0') })
+        } else {
+          req.reply({ result: '0x' + '1'.padStart(64, '0') })
+        }
+      } else if (req.body && req.body.method === 'eth_getBalance') {
+        req.reply({ result: '0x0' })
+      }
+    }).as('thirdwebRpc')
+
     cy.intercept('POST', '**/tableland**', {
       body: [
         {
