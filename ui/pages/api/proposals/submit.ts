@@ -261,8 +261,8 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
           'ipfs://QmUMm4rHbbkcfBCszfFHmBNvHSyPGNVXJZHpcCG4BMEaNY',
           'ipfs://QmT7LKxDAzaJsBafMbe2B1thaoqkvKgj7Y72QQiuQusnzE',
           'ipfs://QmVjgE2pPQjueixuUcpo6h3z4NBMB5S6BeH617vHSwW74m',
-          proposalTitle,
-          abstractText, // description
+          proposalTitle.replace(/'/g, "\\'"),
+          abstractText.replace(/'/g, "\\'"), // description
           '', // image
           quarter,
           year,
