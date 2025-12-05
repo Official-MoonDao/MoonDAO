@@ -17,8 +17,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const youtubeApiKey = process.env.YOUTUBE_API_KEY
     const channelId = process.env.YOUTUBE_CHANNEL_ID
-    const openaiModel = process.env.OPENAI_MODEL || 'gpt-4'
-    const whisperModel = process.env.WHISPER_MODEL || 'whisper-1'
+    const groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+    const whisperModel = process.env.WHISPER_MODEL || 'whisper-large-v3'
     const processingServiceUrl = process.env.TOWNHALL_PROCESSING_SERVICE_URL
 
     if (!youtubeApiKey || !channelId) {
@@ -72,7 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         videoId: latestVideo.id,
         videoTitle: videoMetadata.title,
         videoDate: videoMetadata.publishedAt,
-        openaiModel: openaiModel,
+        groqModel: groqModel,
         whisperModel: whisperModel,
         convertKitApiKey: process.env.CONVERT_KIT_API_KEY || process.env.CONVERT_KIT_V4_API_KEY,
       }),
