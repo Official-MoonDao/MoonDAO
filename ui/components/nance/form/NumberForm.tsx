@@ -11,6 +11,7 @@ export default function NumberForm({
   label: string
   fieldName: any
   defaultValue?: string
+  max?: number
   required?: boolean
 }) {
   const context = useFormContext()
