@@ -6,31 +6,48 @@ import { join } from "path";
 import { File } from "buffer";
 import Groq from "groq-sdk";
 import { rateLimiter } from "./rate-limiter";
+import {
+  SPELLING_CORRECTIONS,
+  DEFAULT_MODELS,
+  AUDIO_CONFIG,
+  LLM_CONFIG,
+  TOKEN_CONFIG,
+  CONTEXT_WINDOWS,
+  CONTEXT_WINDOW_MODELS,
+  SYSTEM_MESSAGES,
+  PROMPT_TEMPLATES,
+} from "./config";
 
 const execAsync = promisify(exec);
 
-// Rough token estimation: ~4 characters per token for English text
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
+export function correctSpellings(text: string): string {
+  let corrected = text;
+
+  for (const { pattern, replacement } of SPELLING_CORRECTIONS) {
+    corrected = corrected.replace(pattern, replacement);
+  }
+
+  return corrected;
 }
 
-// Get context window size based on model
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / TOKEN_CONFIG.charsPerToken);
+}
+
 function getContextWindow(model: string): number {
-  // GROQ models with 128k context window
-  if (
-    model.includes("llama-3.3-70b") ||
-    model.includes("llama-3.1-8b") ||
-    model.includes("qwen") ||
-    model.includes("kimi")
-  ) {
-    return 128000;
+  for (const modelPattern of CONTEXT_WINDOW_MODELS["256k"]) {
+    if (model.includes(modelPattern)) {
+      return CONTEXT_WINDOWS["256k"];
+    }
   }
-  // GROQ models with 256k context window
-  if (model.includes("kimi-k2")) {
-    return 256000;
+
+  for (const modelPattern of CONTEXT_WINDOW_MODELS["128k"]) {
+    if (model.includes(modelPattern)) {
+      return CONTEXT_WINDOWS["128k"];
+    }
   }
-  // Default to 128k for GROQ models
-  return 128000;
+
+  return CONTEXT_WINDOWS["128k"];
 }
 
 // Check if transcript might exceed context window and warn
@@ -52,7 +69,7 @@ function checkTranscriptLength(
     console.warn(
       `   Consider using a model with a larger context window (e.g., llama-3.3-70b-versatile)`
     );
-  } else if (usagePercent > 80) {
+  } else if (usagePercent > TOKEN_CONFIG.contextWindowWarningThreshold) {
     console.warn(
       `⚠️  WARNING: Transcript is using ${usagePercent.toFixed(
         1
@@ -68,7 +85,7 @@ function splitTranscriptIntoChunks(
   reservedTokens: number
 ): string[] {
   const availableTokens = maxTokensPerRequest - reservedTokens;
-  const maxCharsPerChunk = availableTokens * 4; // Rough conversion
+  const maxCharsPerChunk = availableTokens * TOKEN_CONFIG.charsPerToken;
 
   if (transcript.length <= maxCharsPerChunk) {
     return [transcript];
@@ -130,7 +147,7 @@ export async function extractAudioUrl(videoId: string): Promise<string> {
 export async function transcribeAudio(
   videoId: string,
   groq: Groq,
-  model: string = "whisper-large-v3"
+  model: string = DEFAULT_MODELS.whisper
 ): Promise<string> {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
   const timestamp = Date.now();
@@ -151,63 +168,62 @@ export async function transcribeAudio(
     // Check file size and compress if needed
     const audioBuffer = await readFile(tempFile);
     const sizeMB = audioBuffer.length / (1024 * 1024);
-    const maxSizeMB = 24; // Keep under 25 MB limit with some buffer
 
     // Get actual duration of the audio file
     console.log("Getting audio duration...");
     const { stdout: durationOutput } = await execAsync(
       `ffprobe -i "${tempFile}" -show_entries format=duration -v quiet -of csv="p=0"`
     );
-    const durationSeconds = parseFloat(durationOutput.trim()) || 3600; // Fallback to 1 hour if can't get duration
+    const durationSeconds =
+      parseFloat(durationOutput.trim()) || AUDIO_CONFIG.fallbackDurationSeconds;
     console.log(`Audio duration: ${Math.floor(durationSeconds / 60)} minutes`);
 
     // Check rate limits before transcription
     await rateLimiter.checkAndWaitWhisper(Math.ceil(durationSeconds));
 
-    if (sizeMB > maxSizeMB) {
+    if (sizeMB > AUDIO_CONFIG.maxSizeMB) {
       console.log(
-        `Audio file is ${sizeMB.toFixed(
-          2
-        )} MB, compressing to under ${maxSizeMB} MB...`
+        `Audio file is ${sizeMB.toFixed(2)} MB, compressing to under ${
+          AUDIO_CONFIG.maxSizeMB
+        } MB...`
       );
 
-      // Calculate required bitrate to get under 24 MB
-      // Formula: bitrate (kbps) = (target_size_MB * 8 * 1024) / duration_seconds
-      const targetSizeMB = 20; // Target 20 MB for safety buffer
       const requiredBitrate = Math.floor(
-        (targetSizeMB * 8 * 1024) / durationSeconds
+        (AUDIO_CONFIG.targetSizeMB * 8 * 1024) / durationSeconds
       );
-      // Use a bitrate between 32-96 kbps (32 is minimum for decent quality, 96 is reasonable for speech)
-      const bitrate = Math.max(32, Math.min(96, requiredBitrate));
+      const bitrate = Math.max(
+        AUDIO_CONFIG.minBitrate,
+        Math.min(AUDIO_CONFIG.maxBitrate, requiredBitrate)
+      );
 
       console.log(
-        `Using bitrate: ${bitrate} kbps to target ~${targetSizeMB} MB`
+        `Using bitrate: ${bitrate} kbps to target ~${AUDIO_CONFIG.targetSizeMB} MB`
       );
 
       await execAsync(
-        `ffmpeg -i "${tempFile}" -codec:a libmp3lame -b:a ${bitrate}k -ar 16000 -ac 1 "${compressedFile}" -y`
+        `ffmpeg -i "${tempFile}" -codec:a libmp3lame -b:a ${bitrate}k -ar ${AUDIO_CONFIG.sampleRate} -ac ${AUDIO_CONFIG.channels} "${compressedFile}" -y`
       );
 
       // Check if compression was successful and re-compress with lower bitrate if needed
       const compressedBuffer = await readFile(compressedFile);
       const compressedSizeMB = compressedBuffer.length / (1024 * 1024);
 
-      if (compressedSizeMB > maxSizeMB) {
+      if (compressedSizeMB > AUDIO_CONFIG.maxSizeMB) {
         console.log(
           `Compressed file is still ${compressedSizeMB.toFixed(
             2
           )} MB, re-compressing with lower bitrate...`
         );
-        // Use even lower bitrate - target 18 MB
-        const lowerTargetSizeMB = 18;
         const lowerBitrate = Math.max(
-          32,
-          Math.floor((lowerTargetSizeMB * 8 * 1024) / durationSeconds)
+          AUDIO_CONFIG.minBitrate,
+          Math.floor(
+            (AUDIO_CONFIG.lowerTargetSizeMB * 8 * 1024) / durationSeconds
+          )
         );
         console.log(`Using lower bitrate: ${lowerBitrate} kbps`);
 
         await execAsync(
-          `ffmpeg -i "${tempFile}" -codec:a libmp3lame -b:a ${lowerBitrate}k -ar 16000 -ac 1 "${compressedFile}" -y`
+          `ffmpeg -i "${tempFile}" -codec:a libmp3lame -b:a ${lowerBitrate}k -ar ${AUDIO_CONFIG.sampleRate} -ac ${AUDIO_CONFIG.channels} "${compressedFile}" -y`
         );
       }
 
@@ -223,7 +239,7 @@ export async function transcribeAudio(
         `Audio file is ${sizeMB.toFixed(2)} MB, converting to MP3...`
       );
       await execAsync(
-        `ffmpeg -i "${tempFile}" -codec:a libmp3lame -b:a 64k -ar 16000 -ac 1 "${compressedFile}" -y`
+        `ffmpeg -i "${tempFile}" -codec:a libmp3lame -b:a 64k -ar ${AUDIO_CONFIG.sampleRate} -ac ${AUDIO_CONFIG.channels} "${compressedFile}" -y`
       );
 
       // Clean up original file
@@ -239,9 +255,9 @@ export async function transcribeAudio(
     const finalSizeMB = finalBuffer.length / (1024 * 1024);
     const finalSizeMBFormatted = finalSizeMB.toFixed(2);
 
-    if (finalSizeMB > 25) {
+    if (finalSizeMB > AUDIO_CONFIG.maxAllowedSizeMB) {
       throw new Error(
-        `Compressed audio file is still too large (${finalSizeMBFormatted} MB). Maximum allowed is 25 MB.`
+        `Compressed audio file is still too large (${finalSizeMBFormatted} MB). Maximum allowed is ${AUDIO_CONFIG.maxAllowedSizeMB} MB.`
       );
     }
 
@@ -259,10 +275,8 @@ export async function transcribeAudio(
 
     // Retry logic for transcription
     let transcription: string | undefined;
-    const maxRetries = 3;
-    let lastError;
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    for (let attempt = 1; attempt <= LLM_CONFIG.retry.maxRetries; attempt++) {
       try {
         const response = await groq.audio.transcriptions.create({
           file: audioFile,
@@ -275,8 +289,6 @@ export async function transcribeAudio(
         rateLimiter.recordWhisperRequest(Math.ceil(durationSeconds));
         break; // Success, exit retry loop
       } catch (error: any) {
-        lastError = error;
-
         console.error(`Full error object:`, {
           message: error.message,
           code: error.code,
@@ -290,7 +302,7 @@ export async function transcribeAudio(
           /Please try again in ([\d.]+)s/
         );
 
-        if (rateLimitMatch && attempt < maxRetries) {
+        if (rateLimitMatch && attempt < LLM_CONFIG.retry.maxRetries) {
           const waitSeconds = Math.ceil(parseFloat(rateLimitMatch[1]));
           console.log(
             `⚠️  Rate limit exceeded. GROQ says to wait ${waitSeconds} seconds. Waiting...`
@@ -301,16 +313,18 @@ export async function transcribeAudio(
           continue; // Retry after waiting
         }
 
-        if (attempt < maxRetries) {
-          const waitTime = attempt * 5; // Exponential backoff: 5s, 10s, 15s
+        if (attempt < LLM_CONFIG.retry.maxRetries) {
+          const waitTime =
+            attempt * LLM_CONFIG.retry.transcriptionWaitTimeSeconds;
           console.log(
             `⚠️  Transcription attempt ${attempt} failed (${error.message}). Retrying in ${waitTime} seconds...`
           );
           await new Promise((resolve) => setTimeout(resolve, waitTime * 1000));
         } else {
-          console.error(`❌ Transcription failed after ${maxRetries} attempts`);
+          console.error(
+            `❌ Transcription failed after ${LLM_CONFIG.retry.maxRetries} attempts`
+          );
 
-          // Provide helpful error message for rate limits
           if (
             errorMessage.includes("rate_limit") ||
             errorMessage.includes("Rate limit")
@@ -337,6 +351,8 @@ export async function transcribeAudio(
     }
 
     console.log(`Transcription complete (${transcription.length} characters)`);
+
+    transcription = correctSpellings(transcription);
 
     // Clean up compressed file
     try {
@@ -366,51 +382,13 @@ export async function transcribeAudio(
 }
 
 export function getTownHallSummaryPrompt(transcript: string): string {
-  return `You are summarizing a MoonDAO Town Hall meeting transcript. MoonDAO Townhalls follow a structured format. Please organize your summary accordingly:
-
-## Guest Speaker
-- Name and background of the guest
-- Key topics discussed by the guest
-- Important points from their presentation or conversation with the MoonDAO team
-- Note: Sometimes there is no guest speaker
-
-## Project Updates
-- List each active project and its current status
-- Updates from project leaders
-- Progress, milestones, or challenges mentioned
-- Note: Sometimes there are no project updates or no active projects
-
-## New Proposals
-- Any proposals being presented for upcoming votes
-- Key details, rationale, and implications of each proposal
-- Voting timelines if mentioned
-- Budget if mentioned in ETH or ERC20(DIA, USDC, USDT, etc.), do not mention USD values
-- Note: Sometimes there are no new proposals
-
-## Additional Information
-- Any other important announcements, updates, or community news
-- Action items or next steps for the community
-- Important dates or deadlines
-- Note: This section may not always be present
-
-IMPORTANT FORMATTING RULES:
-- Use ## for section headers (not **bold**)
-- Use - for bullet points
-- Add TWO blank lines between sections
-- If a section is not present in the transcript, omit it entirely (don't write "No guest speaker" or "No updates")
-- Make it easy to scan and understand
-
-Transcript:
-${transcript}
-
-Please provide the summary now:`;
+  return PROMPT_TEMPLATES.summary.replace("{transcript}", transcript);
 }
 
-// Helper function to retry GROQ API calls
 async function retryGroqCall<T>(
   apiCall: () => Promise<T>,
   operation: string,
-  maxRetries: number = 3
+  maxRetries: number = LLM_CONFIG.retry.maxRetries
 ): Promise<T> {
   let lastError;
 
@@ -420,7 +398,7 @@ async function retryGroqCall<T>(
     } catch (error: any) {
       lastError = error;
       if (attempt < maxRetries) {
-        const waitTime = attempt * 2; // Exponential backoff: 2s, 4s, 6s
+        const waitTime = attempt * LLM_CONFIG.retry.baseWaitTimeSeconds;
         console.log(
           `⚠️  ${operation} attempt ${attempt} failed (${error.message}). Retrying in ${waitTime} seconds...`
         );
@@ -438,20 +416,18 @@ async function retryGroqCall<T>(
 export async function summarizeTranscript(
   transcript: string,
   groq: Groq,
-  model: string = "llama-3.3-70b-versatile"
+  model: string = DEFAULT_MODELS.llm
 ): Promise<string> {
   console.log("Generating summary with GROQ...");
 
-  // Get context window for the model
   const contextWindow = getContextWindow(model);
-  const systemMessage =
-    "You are a helpful assistant that summarizes Town Hall meetings for the MoonDAO community. Provide clear, structured summaries with actionable information.";
+  const systemMessage = SYSTEM_MESSAGES.summarizer;
 
-  // Estimate tokens for system message and prompt template (without transcript)
   const promptTemplate = getTownHallSummaryPrompt("");
   const systemTokens = estimateTokens(systemMessage);
   const promptTemplateTokens = estimateTokens(promptTemplate);
-  const reservedTokens = systemTokens + promptTemplateTokens + 2000; // 2000 for output max_tokens
+  const reservedTokens =
+    systemTokens + promptTemplateTokens + TOKEN_CONFIG.reservedTokensBuffer;
 
   // Check transcript length and warn if approaching limits (but don't truncate)
   checkTranscriptLength(transcript, contextWindow, reservedTokens);
@@ -491,10 +467,15 @@ export async function summarizeTranscript(
 
       // Add delay between requests to avoid rate limits
       if (i > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 second delay
+        await new Promise((resolve) =>
+          setTimeout(resolve, LLM_CONFIG.chunkDelayMs)
+        );
       }
 
-      const chunkTokens = estimateTokens(chunkPrompt) + systemTokens + 2000;
+      const chunkTokens =
+        estimateTokens(chunkPrompt) +
+        systemTokens +
+        TOKEN_CONFIG.reservedTokensBuffer;
       await rateLimiter.checkAndWaitLLM(chunkTokens);
 
       const response = await retryGroqCall(
@@ -511,8 +492,8 @@ export async function summarizeTranscript(
                 content: chunkPrompt,
               },
             ],
-            temperature: 0.7,
-            max_tokens: 2000,
+            temperature: LLM_CONFIG.temperature,
+            max_tokens: LLM_CONFIG.maxTokens,
           }),
         `Chunk ${i + 1}/${chunks.length} summarization`
       );
@@ -526,7 +507,9 @@ export async function summarizeTranscript(
       const responseTokens = estimateTokens(chunkSummary);
       rateLimiter.recordLLMRequest(chunkTokens + responseTokens);
 
-      chunkSummaries.push(chunkSummary);
+      // Correct common misspellings in chunk summary
+      const correctedChunkSummary = correctSpellings(chunkSummary);
+      chunkSummaries.push(correctedChunkSummary);
       console.log(`✅ Chunk ${i + 1}/${chunks.length} summarized`);
     }
 
@@ -536,41 +519,15 @@ export async function summarizeTranscript(
 
     // Create a final consolidated summary from all chunk summaries
     console.log("Creating final consolidated summary...");
-    const finalPrompt = `You are consolidating multiple summaries from a MoonDAO Town Hall meeting. These summaries were created by splitting a long transcript into chunks. Please merge them into a single, well-organized summary following the same format. Remove any duplicate information and ensure the summary flows naturally:
+    const finalPrompt = PROMPT_TEMPLATES.consolidation.replace(
+      "{summaries}",
+      combinedSummary
+    );
 
-## Guest Speaker
-- Name and background of the guest
-- Key topics discussed by the guest
-- Important points from their presentation or conversation with the MoonDAO team
-
-## Project Updates
-- List each active project and its current status
-- Updates from project leaders
-- Progress, milestones, or challenges mentioned
-
-## New Proposals
-- Any proposals being presented for upcoming votes
-- Key details, rationale, and implications of each proposal
-- Voting timelines if mentioned
-- Budget if mentioned in ETH or ERC20(DIA, USDC, USDT, etc.), do not mention USD values
-
-## Additional Information
-- Any other important announcements, updates, or community news
-- Action items or next steps for the community
-- Important dates or deadlines
-
-IMPORTANT FORMATTING RULES:
-- Use ## for section headers (not **bold**)
-- Use - for bullet points
-- Add TWO blank lines between sections
-- If a section is not present, omit it entirely
-
-Summaries to consolidate:
-${combinedSummary}
-
-Please provide the consolidated summary now:`;
-
-    const finalPromptTokens = estimateTokens(finalPrompt) + systemTokens + 2000;
+    const finalPromptTokens =
+      estimateTokens(finalPrompt) +
+      systemTokens +
+      TOKEN_CONFIG.reservedTokensBuffer;
     await rateLimiter.checkAndWaitLLM(finalPromptTokens);
 
     const finalResponse = await retryGroqCall(
@@ -602,8 +559,10 @@ Please provide the consolidated summary now:`;
     const finalResponseTokens = estimateTokens(finalSummary);
     rateLimiter.recordLLMRequest(finalPromptTokens + finalResponseTokens);
 
+    const correctedSummary = correctSpellings(finalSummary);
+
     console.log("Summary generated successfully");
-    return finalSummary;
+    return correctedSummary;
   } else {
     // Single request - no chunking needed
     const prompt = getTownHallSummaryPrompt(transcript);
@@ -637,8 +596,10 @@ Please provide the consolidated summary now:`;
     const responseTokens = estimateTokens(summary);
     rateLimiter.recordLLMRequest(totalTokens + responseTokens);
 
+    const correctedSummary = correctSpellings(summary);
+
     console.log("Summary generated successfully");
-    return summary;
+    return correctedSummary;
   }
 }
 
