@@ -25,6 +25,7 @@ interface CBOnrampProps {
 }
 
 const GUEST_CHECKOUT_LIMIT = 500
+const MOCK_ONRAMP = process.env.NEXT_PUBLIC_MOCK_ONRAMP === 'true'
 
 export const CBOnramp: React.FC<CBOnrampProps> = ({
   address,
@@ -407,6 +408,20 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
       setIsLoading(true)
       setError(null)
 
+      // Mock mode: simulate onramp return instead of redirecting
+      if (MOCK_ONRAMP) {
+        await onBeforeNavigate?.()
+
+        const currentUrl = new URL(window.location.href)
+        currentUrl.searchParams.set('onrampSuccess', 'true')
+
+        window.history.replaceState({}, '', currentUrl.toString())
+
+        window.location.reload()
+        return
+      }
+
+      // Production mode: actual Coinbase redirect
       const { token } = await generateSessionToken()
 
       const widgetParams: any = {
