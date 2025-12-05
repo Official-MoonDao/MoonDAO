@@ -46,7 +46,10 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   const chainSlug = getChainSlug(selectedChain)
 
   const account = useActiveAccount()
-  const address = account?.address
+  // In test mode (Cypress), use mock address from window if available
+  const mockAddress =
+    typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
+  const address = account?.address || mockAddress
 
   const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
@@ -152,7 +155,8 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   }, [])
 
   const callMint = useCallback(async () => {
-    if (!account || !address) {
+    // In test mode, address may come from mock, so only check address
+    if (!address) {
       return toast.error('Please connect your wallet to continue.')
     }
     try {
@@ -241,6 +245,11 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       }
 
       setIsLoadingMint(true)
+
+      if (!account) {
+        setIsLoadingMint(false)
+        return toast.error('Please connect your wallet to continue.')
+      }
 
       const transaction = prepareContractCall({
         contract: teamCreatorContract,

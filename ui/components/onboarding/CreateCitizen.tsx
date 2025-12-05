@@ -65,7 +65,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const chains = isTestnet ? [sepolia, arbitrumSepolia] : [arbitrum, base, ethereum]
   const destinationChain = isTestnet ? sepolia : arbitrum
   const account = useActiveAccount()
-  const address = account?.address
+  // In test mode (Cypress), use mock address from window if available
+  const mockAddress =
+    typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
+  const address = account?.address || mockAddress
 
   const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
@@ -151,7 +154,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     const imageToUse = citizenImage || inputImage
     if (!imageToUse) return toast.error('Please upload an image and complete the previous steps.')
 
-    if (!account || !address) {
+    // In test mode, address may come from mock, so only check address
+    if (!address) {
       return toast.error('Please connect your wallet to continue.')
     }
 
@@ -224,6 +228,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           receipt = await res.json()
         }
       } else if (selectedChainSlug !== defaultChainSlug) {
+        if (!account) {
+          setIsLoadingMint(false)
+          return toast.error('Please connect your wallet to continue.')
+        }
+
         const GAS_LIMIT = 300000 // Gas limit for the executor
         const MSG_VALUE = cost // msg.value for the lzReceive() function on destination in wei
 
@@ -263,6 +272,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           transactionHash: message.dstTxHash as `0x${string}`,
         })
       } else {
+        if (!account) {
+          setIsLoadingMint(false)
+          return toast.error('Please connect your wallet to continue.')
+        }
+
         const transaction = await prepareContractCall({
           contract: citizenContract,
           method: 'mintTo' as string,
