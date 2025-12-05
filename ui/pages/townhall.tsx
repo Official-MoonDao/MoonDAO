@@ -1,6 +1,5 @@
 import { ChatBubbleLeftRightIcon, VideoCameraIcon } from '@heroicons/react/24/outline'
 import type { GetStaticProps } from 'next'
-import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { getSummaries, type TownHallSummary } from '../lib/townhall/summaries'
 import WebsiteHead from '../components/layout/Head'
@@ -18,9 +17,6 @@ interface TownHallProps {
 }
 
 const PAGE_SIZE = 5
-
-const LUMA_CALENDAR = 'https://lu.ma/moondao'
-const DISCORD_VOICE_CHANNEL = 'https://discord.com/channels/914720248140279868/917498630510878821'
 
 export default function TownHall({ initialSummaries, total }: TownHallProps) {
   const [summaries, setSummaries] = useState<TownHallSummary[]>(initialSummaries)
@@ -107,11 +103,10 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
           {/* Header section */}
           <div className="mb-8">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-GoodTimes text-white mb-4 leading-tight">
-              Town Hall Summaries
+              Town Hall
             </h1>
             <p className="text-lg md:text-xl text-slate-300 max-w-3xl leading-relaxed mb-6">
-              Weekly summaries of our Town Hall meetings, automatically generated from transcripts.
-              Each summary includes key topics discussed, decisions made, action items, and
+              Weekly Town Hall meetings with key topics discussed, decisions made, action items, and
               important updates for community members.
             </p>
 
