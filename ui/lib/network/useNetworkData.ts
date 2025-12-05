@@ -11,7 +11,7 @@ import {
   CITIZEN_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useContext } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
@@ -236,22 +236,38 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
   const [validTeams, setValidTeams] = useState<NetworkNFT[]>(teamsResult.data || [])
   const [isValidating, setIsValidating] = useState(false)
   const [validationError, setValidationError] = useState<Error | null>(null)
+  const lastValidatedDataKeyRef = useRef<string>('')
 
-  // Update optimistic data when teamsResult changes
-  useEffect(() => {
-    if (teamsResult.data) {
-      setValidTeams(teamsResult.data)
-    }
+  // Create a stable reference key
+  const dataKey = useMemo(() => {
+    if (!teamsResult.data || teamsResult.data.length === 0) return ''
+    return teamsResult.data.map((t) => t.metadata.id).join(',')
   }, [teamsResult.data])
+
+  useEffect(() => {
+    if (dataKey !== lastValidatedDataKeyRef.current) {
+      if (teamsResult.data) {
+        setValidTeams(teamsResult.data)
+      }
+    }
+  }, [dataKey, teamsResult.data])
 
   useEffect(() => {
     async function validateTeams() {
       if (!teamsResult.data || teamsResult.data.length === 0) {
         setValidTeams([])
         setIsValidating(false)
+        lastValidatedDataKeyRef.current = ''
         return
       }
 
+      // Skip validation if data hasn't changed
+      const currentDataKey = teamsResult.data.map((t) => t.metadata.id).join(',')
+      if (currentDataKey === lastValidatedDataKeyRef.current) {
+        return
+      }
+
+      lastValidatedDataKeyRef.current = currentDataKey
       setIsValidating(true)
       setValidationError(null)
 
@@ -304,7 +320,7 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
     }
 
     validateTeams()
-  }, [teamsResult.data, chain, chainSlug])
+  }, [dataKey, chain, chainSlug, teamsResult.data])
 
   return {
     data: validTeams,
@@ -326,22 +342,38 @@ export function useValidCitizens(
   const [validCitizens, setValidCitizens] = useState<NetworkNFT[]>(citizensResult.data || [])
   const [isValidating, setIsValidating] = useState(false)
   const [validationError, setValidationError] = useState<Error | null>(null)
+  const lastValidatedDataKeyRef = useRef<string>('')
+
+  const dataKey = useMemo(() => {
+    if (!citizensResult.data || citizensResult.data.length === 0) return ''
+    return citizensResult.data.map((c) => c.metadata.id).join(',')
+  }, [citizensResult.data])
 
   // Update optimistic data when citizensResult changes
   useEffect(() => {
-    if (citizensResult.data) {
-      setValidCitizens(citizensResult.data)
+    if (dataKey !== lastValidatedDataKeyRef.current) {
+      if (citizensResult.data) {
+        setValidCitizens(citizensResult.data)
+      }
     }
-  }, [citizensResult.data])
+  }, [dataKey, citizensResult.data])
 
   useEffect(() => {
     async function validateCitizens() {
       if (!citizensResult.data || citizensResult.data.length === 0) {
         setValidCitizens([])
         setIsValidating(false)
+        lastValidatedDataKeyRef.current = ''
         return
       }
 
+      // Skip validation if data hasn't changed
+      const currentDataKey = citizensResult.data.map((c) => c.metadata.id).join(',')
+      if (currentDataKey === lastValidatedDataKeyRef.current) {
+        return
+      }
+
+      lastValidatedDataKeyRef.current = currentDataKey
       setIsValidating(true)
       setValidationError(null)
 
@@ -394,7 +426,7 @@ export function useValidCitizens(
     }
 
     validateCitizens()
-  }, [citizensResult.data, chain, chainSlug])
+  }, [dataKey, chain, chainSlug, citizensResult.data])
 
   return {
     data: validCitizens,

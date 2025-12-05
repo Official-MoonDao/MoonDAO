@@ -14,6 +14,8 @@
     "cy:open": "cypress open",
     "cy:run": "cypress run",
     "cy:run-ct": "cypress run --component",
+    "cy:run-ct:fast": "bash scripts/test-parallel.sh 4",
+    "cy:run-ct:warp": "bash scripts/test-parallel.sh 8",
     "cleanup:offchain-prune": "ts-node -r tsconfig-paths/register scripts/cleanup/offchain-prune.ts"
   },
   "dependencies": {
@@ -142,6 +144,7 @@
     "eslint-config-next": "13.4.10",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-cypress": "^2.13.3",
+    "cypress-split": "^1.24.2",
     "postcss": "^8.4.5",
     "prettier": "^2.5.1",
     "react-error-boundary": "^5.0.0",

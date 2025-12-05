@@ -42,14 +42,24 @@ Start the development server:
 yarn dev
 ```
 
-Run the end-to-end tests headlessly:
+Run the end-to-end tests:
 ```
 yarn cy:run
 ```
 
-Run the integration (component) tests headlessly:
+Run the integration (component) tests:
 ```
 yarn cy:run-ct
+```
+
+Run the integration tests in parrallel (4 workers):
+```
+yarn cy:run-ct:fast
+```
+
+Run the integration tests in parrallel with custom worker count:
+```
+bash scripts/test-parallel.sh 8
 ```
 
 *This project is tested with [Browser Stack](https://www.browserstack.com/).*
