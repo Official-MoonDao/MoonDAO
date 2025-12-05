@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import React, { ReactNode } from 'react'
 import { cardStyles, spacing } from '@/lib/layout/styles'
 import { CardVariant, CardSize, CardLayout, cardSizes } from '@/lib/layout/variants'
+import { formatNumberWithCommas } from '@/lib/utils/numbers'
 import AdaptiveImage from './AdaptiveImage'
 import CollapsibleContainer from './CollapsibleContainer'
 import Frame from './Frame'
@@ -146,6 +147,7 @@ function renderWideCardContent({
   footer,
   showMoreButton,
   setIsExpanded,
+  children,
 }: {
   image?: string
   orgimage?: string
@@ -161,6 +163,7 @@ function renderWideCardContent({
   footer?: ReactNode
   showMoreButton: boolean
   setIsExpanded: (value: boolean) => void
+  children?: ReactNode
 }) {
   return (
     <>
@@ -207,6 +210,7 @@ function renderWideCardContent({
         </div>
 
         {footer && <div className="mt-4">{footer}</div>}
+        {children && <div className="mt-4">{children}</div>}
       </span>
       {renderShowMoreButton({
         isExpanded,
@@ -335,13 +339,17 @@ export default function Card({
   }
 
   if (layout === 'stats' && stats) {
+    const formattedValue =
+      typeof stats.value === 'number'
+        ? formatNumberWithCommas(stats.value.toString())
+        : stats.value
     return (
       <div id={id || 'card-container'} className={`${cardStyles.slateBorder} ${paddingClass} ${className}`}>
         <div id="content-container" className="flex items-start justify-between">
           <div className="flex-1">
             <p className="text-sm text-slate-400 mb-2">{header || title}</p>
             <div className="flex items-baseline gap-2">
-              <h3 className="text-3xl font-bold text-white">{stats.value}</h3>
+              <h3 className="text-3xl font-bold text-white">{formattedValue}</h3>
               {stats.trend && (
                 <span
                   className={`text-sm font-semibold ${
@@ -513,6 +521,7 @@ export default function Card({
       footer,
       showMoreButton,
       setIsExpanded,
+      children,
     })
 
     return (
