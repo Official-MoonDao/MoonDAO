@@ -1,9 +1,6 @@
 import ProjectTableABI from 'const/abis/ProjectTable.json'
-import { runQuadraticVoting } from '@/lib/utils/rewards'
-import { DistributionVote } from '@/lib/tableland/types'
-import ProposalsABI from 'const/abis/Proposals.json'
 import ProjectTeamCreatorABI from 'const/abis/ProjectTeamCreator.json'
-import queryTable from '@/lib/tableland/queryTable'
+import ProposalsABI from 'const/abis/Proposals.json'
 import {
   PROJECT_TABLE_NAMES,
   PROPOSALS_TABLE_NAMES,
@@ -15,7 +12,6 @@ import {
 } from 'const/config'
 import { ethers } from 'ethers'
 import { getRelativeQuarter } from 'lib/utils/dates'
-import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
@@ -28,9 +24,13 @@ import {
 } from 'thirdweb'
 import { createHSMWallet } from '@/lib/google/hsm-signer'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { PROJECT_ACTIVE, PROJECT_VOTE_FAILED } from '@/lib/nance/types'
+import queryTable from '@/lib/tableland/queryTable'
+import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
-import { PROJECT_ACTIVE, PROJECT_VOTE_FAILED } from '@/lib/nance/types'
+import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
+import { runQuadraticVoting } from '@/lib/utils/rewards'
 
 // Configuration constants
 const chain = DEFAULT_CHAIN_V5
@@ -74,7 +74,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   const projects = await queryTable(chain, projectStatement)
   const ethBudgets = Object.fromEntries(
     await Promise.all(
-      projects.map(async (project) => {
+      projects.map(async (project: any) => {
         console.log(project.proposalIPFS)
         const proposalResponse = await fetch(project.proposalIPFS)
         const proposal = await proposalResponse.json()
@@ -88,7 +88,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       })
     )
   )
-  const projectIds = projects.map((project) => project.id)
+  const projectIds = projects.map((project: any) => project.id)
   //projects.forEach((project) => {
   //if (project.active === PROJECT_ACTIVE) {
   //return res.status(400).json({
