@@ -277,6 +277,13 @@ export async function transcribeAudio(
       } catch (error: any) {
         lastError = error;
 
+        console.error(`Full error object:`, {
+          message: error.message,
+          code: error.code,
+          cause: error.cause,
+          stack: error.stack,
+        });
+
         // Check if it's a rate limit error from GROQ
         const errorMessage = error.message || error.toString();
         const rateLimitMatch = errorMessage.match(
