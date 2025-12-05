@@ -200,16 +200,6 @@ describe('<Network />', () => {
   })
 
   describe('Pagination', () => {
-    it('should display pagination controls', () => {
-      cy.mount(
-        <TestnetProviders>
-          <Network />
-        </TestnetProviders>
-      )
-
-      cy.contains('Page', { timeout: 15000 }).should('exist')
-    })
-
     it('should navigate to next page', () => {
       cy.mount(
         <TestnetProviders>
@@ -217,7 +207,11 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
-      cy.get('img[alt="Right Arrow"]', { timeout: 15000 }).should('exist')
+      cy.wait('@getTablelandQuery', { timeout: 10000 })
+      cy.wait('@getTablelandQuery', { timeout: 10000 })
+      cy.get('#page-number', { timeout: 15000 }).should('contain', 'Page 1 of 2')
+      cy.get('button.pagination-button').last().should('exist').and('not.be.disabled')
+      cy.get('button.pagination-button').last().find('img[alt="Right Arrow"]').should('exist')
     })
 
     it('should navigate to previous page', () => {
@@ -243,6 +237,7 @@ describe('<Network />', () => {
 
       cy.wait('@getTablelandQuery', { timeout: 15000 })
       cy.wait('@getTablelandQuery', { timeout: 15000 })
+      cy.get('#network-content', { timeout: 20000 }).should('exist')
       cy.contains('No citizens found', { timeout: 20000 }).should('exist')
     })
   })
