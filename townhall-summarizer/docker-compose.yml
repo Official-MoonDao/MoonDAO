@@ -47,6 +47,7 @@ services:
       - ALLOWED_YOUTUBE_CHANNEL_ID=${ALLOWED_YOUTUBE_CHANNEL_ID}
       - GROQ_MODEL=${GROQ_MODEL}
       - WHISPER_MODEL=${WHISPER_MODEL}
+    network_mode: host
     command: ["yarn", "retro"]
     profiles:
       - retro
