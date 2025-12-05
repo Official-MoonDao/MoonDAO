@@ -379,7 +379,7 @@ export function ProjectRewards({
     }
   }, [mooneyBudget, DAI, MOONEY])
 
-  const handleSubmit = async (contract) => {
+  const handleSubmit = async (contract:any) => {
     const totalPercentage = Object.values(distribution).reduce((sum, value) => sum + value, 0)
     if (totalPercentage !== 100) {
       toast.error('Total distribution must equal 100%.', {
