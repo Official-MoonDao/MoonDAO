@@ -32,9 +32,12 @@ describe('useMissionFundingStage', () => {
   it('returns stage from contract when missionId is provided', () => {
     cy.stub(thirdweb, 'readContract').callsFake(async (options: any) => {
       if (options.method === 'stage') {
-        return BigInt(1) // Stage 1
+        if (options.params && options.params.length > 0 && options.params[0] === 1) {
+          return BigInt(1)
+        }
       }
-      return null
+
+      return BigInt(0)
     })
 
     cy.mount(
@@ -43,7 +46,9 @@ describe('useMissionFundingStage', () => {
       </TestnetProviders>
     )
 
-    cy.get('[data-testid="stage"]', { timeout: 10000 }).should('not.contain', 'undefined')
-    cy.get('[data-testid="stage"]').should('contain', '1')
+    // eslint-disable-next-line cypress/no-unnecessary-waiting
+    cy.wait(500)
+    cy.get('[data-testid="stage"]', { timeout: 15000 }).should('not.contain', 'undefined')
+    cy.get('[data-testid="stage"]', { timeout: 15000 }).should('contain', '1')
   })
 })

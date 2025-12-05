@@ -1,24 +1,14 @@
 import { CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import { ZERO_ADDRESS } from 'thirdweb'
+import * as thirdweb from 'thirdweb'
 import { fetchTimeData, fetchMissionContracts } from '@/lib/mission/fetchMissionServerData'
 
 describe('fetchMissionServerData', () => {
   beforeEach(() => {
-    cy.intercept('POST', '**', (req) => {
-      if (req.body && req.body.method === 'getTableName') {
-        req.reply({ result: 'mission_table' })
-      } else if (req.body && req.body.method === 'deadline') {
-        req.reply({ result: '0x' + Math.floor(Date.now() / 1000).toString(16) })
-      } else if (req.body && req.body.method === 'refundPeriod') {
-        req.reply({ result: '0x15180' }) // 86400 in hex (1 day)
-      } else if (req.body && req.body.method === 'stage') {
-        req.reply({ result: '0x1' })
-      } else if (req.body && req.body.method === 'missionIdToPayHook') {
-        req.reply({ result: '0x1234567890123456789012345678901234567890' })
-      } else if (req.body && req.body.method === 'missionIdToToken') {
-        req.reply({ result: '0x1234567890123456789012345678901234567890' })
-      }
-    }).as('contractCalls')
+    // Restore any previous stubs
+    if ((thirdweb as any).readContract?.restore) {
+      ;(thirdweb as any).readContract.restore()
+    }
 
     // Mock tableland query - intercept the actual HTTP call
     cy.intercept('POST', '**/tableland**', {
@@ -33,25 +23,51 @@ describe('fetchMissionServerData', () => {
     }).as('tablelandQuery')
   })
 
-  it('fetchTimeData returns deadline and refundPeriod', async () => {
+  it('fetchTimeData returns deadline and refundPeriod', () => {
     const payHookAddress = '0x1234567890123456789012345678901234567890'
-    const timeData = await fetchTimeData(payHookAddress, CYPRESS_CHAIN_V5)
-    expect(timeData).to.have.property('deadline')
-    expect(timeData).to.have.property('refundPeriod')
+    
+    cy.wrap(null).then(async () => {
+      const timeData = await fetchTimeData(payHookAddress, CYPRESS_CHAIN_V5)
+      expect(timeData).to.have.property('deadline')
+      expect(timeData).to.have.property('refundPeriod')
+      if (timeData.deadline !== undefined) {
+        expect(timeData.deadline).to.be.a('number')
+      }
+      if (timeData.refundPeriod !== undefined) {
+        expect(timeData.refundPeriod).to.be.a('number')
+      }
+    })
   })
 
-  it('fetchTimeData handles missing/invalid addresses gracefully', async () => {
-    const timeData = await fetchTimeData(ZERO_ADDRESS, CYPRESS_CHAIN_V5)
-    expect(timeData.deadline).to.be.undefined
-    expect(timeData.refundPeriod).to.be.undefined
+  it('fetchTimeData handles missing/invalid addresses gracefully', () => {
+    cy.wrap(null).then(async () => {
+      const timeData = await fetchTimeData(ZERO_ADDRESS, CYPRESS_CHAIN_V5)
+      expect(timeData.deadline).to.be.undefined
+      expect(timeData.refundPeriod).to.be.undefined
+    })
   })
 
-  it('fetchMissionContracts returns contract data', async () => {
+  it('fetchMissionContracts returns contract data', () => {
     const projectId = 1
     const missionId = 1
-    const contractData = await fetchMissionContracts(projectId, missionId, CYPRESS_CHAIN_V5)
-    expect(contractData).to.have.property('stage')
-    expect(contractData).to.have.property('tokenAddress')
-    expect(contractData).to.have.property('primaryTerminalAddress')
+    
+    cy.wrap(null).then(async () => {
+      const contractData = await fetchMissionContracts(projectId, missionId, CYPRESS_CHAIN_V5)
+      expect(contractData).to.have.property('stage')
+      expect(contractData).to.have.property('tokenAddress')
+      expect(contractData).to.have.property('primaryTerminalAddress')
+      expect(contractData).to.have.property('metadataURI')
+      expect(contractData).to.have.property('payHookAddress')
+      expect(contractData).to.have.property('ruleset')
+      expect(contractData.stage).to.be.a('bigint')
+      expect(contractData.tokenAddress).to.be.a('string')
+      expect(contractData.tokenAddress).to.match(/^0x[a-fA-F0-9]{40}$/)
+      expect(contractData.primaryTerminalAddress).to.be.a('string')
+      expect(contractData.primaryTerminalAddress).to.match(/^0x[a-fA-F0-9]{40}$/)
+      expect(contractData.metadataURI).to.be.a('string')
+      expect(contractData.payHookAddress).to.be.a('string')
+      expect(contractData.payHookAddress).to.match(/^0x[a-fA-F0-9]{40}$/)
+      expect(contractData.ruleset).to.be.an('array')
+    })
   })
 })

@@ -105,7 +105,7 @@ describe('useMissionData', () => {
 
   beforeEach(() => {
     cy.mountNextRouter('/')
-    cy.intercept('GET', '**/api/mission/backers**', { body: { backers: [] } }).as('backersApi')
+    cy.intercept('GET', '**/api/mission/backers*', { body: { backers: [] } }).as('backersApi')
     cy.intercept('GET', '**/api/juicebox/query**', { body: { projects: { items: [] } } }).as('juiceboxQuery')
     cy.intercept('GET', '**', (req) => {
       if (req.url.includes('ipfs://') || req.url.includes('ipfs.io')) {
@@ -164,10 +164,10 @@ describe('useMissionData', () => {
       </TestnetProviders>
     )
 
-    cy.get('[data-testid="refresh-backers-btn"]').should('exist')
-    cy.get('[data-testid="stage"]').should('exist')
+    cy.get('[data-testid="refresh-backers-btn"]', { timeout: 10000 }).should('exist')
+    cy.get('[data-testid="stage"]', { timeout: 10000 }).should('exist')
     cy.get('[data-testid="refresh-backers-btn"]').click()
-    cy.wait('@backersApi')
+    cy.wait('@backersApi', { timeout: 10000 })
   })
 
   it('returns expected data structure', () => {

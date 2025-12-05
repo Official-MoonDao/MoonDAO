@@ -242,9 +242,13 @@ describe('<Card />', () => {
   })
 
   describe('Loading State', () => {
+    beforeEach(() => {
+      cy.mountNextRouter('/')
+    })
+
     it('Shows loading spinner when loading prop is true', () => {
       cy.mount(<Card loading={true} />)
-      cy.get('.btn-disabled').should('exist')
+      cy.get('button.btn-disabled', { timeout: 5000 }).should('exist')
     })
   })
 

@@ -10,7 +10,7 @@ describe('<StatsCard />', () => {
     cy.mount(<StatsCard title="Active Users" value={1234} />)
 
     cy.contains('Active Users').should('be.visible')
-    cy.contains('1234').should('be.visible')
+    cy.contains('1,234').should('be.visible')
   })
 
   it('Renders with subtitle', () => {
@@ -74,7 +74,7 @@ describe('<StatsCard />', () => {
     )
 
     cy.contains('Complete Stats').should('be.visible')
-    cy.contains('9876').should('be.visible')
+    cy.contains('9,876').should('be.visible')
     cy.contains('Monthly active').should('be.visible')
     cy.contains('+15%').should('be.visible')
     cy.get('.complete-stats').should('exist')

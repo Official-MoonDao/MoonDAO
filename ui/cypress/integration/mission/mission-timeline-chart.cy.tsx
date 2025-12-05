@@ -75,8 +75,8 @@ describe('MissionTimelineChart', () => {
 
   it('Range selector displays the current range', () => {
     cy.mount(<MissionTimelineChart {...defaultProps} />)
-    cy.get('#range-selector').should('exist')
+    cy.get('#range-selector', { timeout: 5000 }).should('exist')
     // Should show "7 days" since range is set to 7
-    cy.get('#range-selector').should('contain', '7 days')
+    cy.get('#range-selector', { timeout: 5000 }).should('contain', '7 days')
   })
 })

@@ -222,24 +222,17 @@ describe('<Network />', () => {
 
   describe('Empty States', () => {
     it('should display empty state when no results found', () => {
-      cy.intercept('GET', '/api/tableland/query*', (req) => {
+      // Set up intercept with more flexible pattern
+      cy.intercept('GET', '**/api/tableland/query*', (req) => {
         const url = decodeURIComponent(req.url)
         if (url.includes('COUNT') || url.includes('count')) {
-          if (url.includes('CITIZENTABLE') || url.includes('CITIZEN')) {
-            req.reply({ body: [{ count: 0 }] })
-          } else {
-            req.reply({ body: [{ count: 0 }] })
-          }
+          req.reply({ statusCode: 200, body: [{ count: 0 }] })
         } else if (url.includes('SELECT') && url.includes('FROM')) {
-          if (url.includes('CITIZENTABLE') || url.includes('CITIZEN')) {
-            req.reply({ statusCode: 200, body: [] })
-          } else {
-            req.reply({ statusCode: 200, body: [] })
-          }
+          req.reply({ statusCode: 200, body: [] })
         } else {
           req.reply({ statusCode: 200, body: [] })
         }
-      })
+      }).as('emptyStateQuery')
 
       cy.mount(
         <TestnetProviders>
@@ -247,6 +240,7 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
+      cy.wait(['@emptyStateQuery', '@emptyStateQuery'], { timeout: 15000 })
       cy.contains('No citizens found', { timeout: 20000 }).should('exist')
     })
   })
