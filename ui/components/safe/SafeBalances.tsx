@@ -72,7 +72,9 @@ export default function SafeBalances({
     )
   }
 
-  if (!safeBalances || safeBalances.length === 0) {
+  const balancesArray = Array.isArray(safeBalances) ? safeBalances : []
+
+  if (balancesArray.length === 0) {
     return (
       <div className="text-center py-8 text-slate-400">
         <p>No balances found</p>
@@ -82,7 +84,7 @@ export default function SafeBalances({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {safeBalances.map((balance: any) => (
+      {balancesArray.map((balance: any) => (
         <SafeAsset
           key={balance.tokenAddress || 'native'}
           label={balance.token?.symbol || 'ETH'}

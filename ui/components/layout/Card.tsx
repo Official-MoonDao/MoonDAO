@@ -340,11 +340,12 @@ export default function Card({
 
   if (layout === 'stats' && stats) {
     const formattedValue =
-      typeof stats.value === 'number'
-        ? formatNumberWithCommas(stats.value.toString())
-        : stats.value
+      typeof stats.value === 'number' ? formatNumberWithCommas(stats.value.toString()) : stats.value
     return (
-      <div id={id || 'card-container'} className={`${cardStyles.slateBorder} ${paddingClass} ${className}`}>
+      <div
+        id={id || 'card-container'}
+        className={`${cardStyles.slateBorder} ${paddingClass} ${className}`}
+      >
         <div id="content-container" className="flex items-start justify-between">
           <div className="flex-1">
             <p className="text-sm text-slate-400 mb-2">{header || title}</p>
@@ -488,7 +489,10 @@ export default function Card({
             gradientBg && 'bg-gradient-to-r from-n3blue to-n3green'
           }`}
         >
-          <div id="content-container" className={`card-body items-stretch items-center ${className}`}>
+          <div
+            id="content-container"
+            className={`card-body items-stretch items-center ${className}`}
+          >
             {title && (
               <h2
                 className={`card-title text-center text-3xl font-medium mb-2 ${
@@ -543,7 +547,14 @@ export default function Card({
   }
 
   const iconElement = iconSrc ? (
-    <Image id="featured-icon" src={iconSrc} alt="Section icon" width={30} height={30} />
+    <Image
+      id="featured-icon"
+      src={iconSrc}
+      alt="Section icon"
+      width={30}
+      height={30}
+      className="flex-shrink-0"
+    />
   ) : typeof icon === 'string' ? (
     <Image
       id="featured-icon"
@@ -551,10 +562,10 @@ export default function Card({
       alt={iconAlt || ''}
       width={inline ? 50 : 100}
       height={inline ? 50 : 100}
-      className={`z-20 ${inline ? 'pt-[20px] w-[50px] h-[50px]' : 'w-[100px] h-[100px] pb-5'}`}
+      className={`z-20 flex-shrink-0 ${inline ? 'w-[50px] h-[50px]' : 'w-[100px] h-[100px]'}`}
     />
   ) : icon ? (
-    <div className={inline ? 'pt-[20px] w-[50px] h-[50px]' : 'w-[100px] h-[100px] pb-5'}>
+    <div className={`flex-shrink-0 ${inline ? 'w-[50px] h-[50px]' : 'w-[100px] h-[100px]'}`}>
       {icon}
     </div>
   ) : null
@@ -574,7 +585,7 @@ export default function Card({
           >
             <span id="content" className={`animate-fadeIn relative z-50 flex flex-col`}>
               {orgimage && (
-                <div id="featured-image-container" className="z-50 animate-fadeIn">
+                <div id="featured-image-container" className="z-50 animate-fadeIn mb-4">
                   <Frame noPadding marginBottom="0px">
                     <Image
                       id="featured-image"
@@ -589,7 +600,7 @@ export default function Card({
               )}
 
               {image && (
-                <div id="team-citizen-image-container" className="z-40">
+                <div id="team-citizen-image-container" className="z-40 mb-4">
                   <Frame noPadding marginBottom="0px" className="aspect-square">
                     <AdaptiveImage
                       src={image}
@@ -602,8 +613,8 @@ export default function Card({
                 </div>
               )}
 
-              <div className="mt-4 flex flex-row justify-between items-start">
-                {headerLink && headerLinkLabel && (
+              {headerLink && headerLinkLabel && (
+                <div className="mb-4 flex flex-row justify-between items-start">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -613,28 +624,14 @@ export default function Card({
                   >
                     {headerLinkLabel}
                   </button>
-                )}
-                <div className="flex flex-row justify-between">
-                  <span
-                    id="title-section"
-                    className={`
-                    flex 
-                    ${
-                      inline
-                        ? 'pb-5 flex-row items-center pr-5 justify-start'
-                        : 'flex-col justify-center items-center'
-                    }
-                  `}
-                  >
-                    {iconElement && iconElement}
-                  </span>
                 </div>
-              </div>
-              <div className="mt-4 w-full flex">
+              )}
+              <div className="w-full flex flex-row items-center gap-3">
+                {iconElement && <div className="flex-shrink-0">{iconElement}</div>}
                 <h2
                   id="main-header"
                   className={`
-                    w-full z-20 static-sub-header font-GoodTimes flex min-h-[50px]
+                    z-20 static-sub-header font-GoodTimes flex min-h-[50px] items-center
                     ${inline ? 'text-left' : 'text-center justify-center md:justify-start'}
                 `}
                 >
@@ -713,84 +710,86 @@ export default function Card({
         }`}
       >
         <div id="content-container">
-        {(header || title || iconElement || iconSrc || actions || action) && (
-          <div
-            className={`flex ${
-              variant === 'slate' || variant === 'slateBorder'
-                ? 'justify-between'
-                : 'flex-col lg:flex-row'
-            } items-start lg:items-center ${
-              variant === 'slate' || variant === 'slateBorder' ? 'mb-6' : 'mb-4'
-            } gap-4`}
-          >
+          {(header || title || iconElement || iconSrc || actions || action) && (
             <div
-              className={`flex ${inline ? 'flex-row items-center' : 'flex-col'} ${
-                variant === 'slate' || variant === 'slateBorder' ? 'gap-5' : 'gap-4'
-              } items-center`}
+              className={`flex ${
+                variant === 'slate' || variant === 'slateBorder'
+                  ? 'justify-between'
+                  : 'flex-col lg:flex-row'
+              } items-start lg:items-center ${
+                variant === 'slate' || variant === 'slateBorder' ? 'mb-6' : 'mb-4'
+              } gap-4`}
             >
-              {iconElement && (
+              <div
+                className={`flex ${inline ? 'flex-row items-center' : 'flex-col'} ${
+                  variant === 'slate' || variant === 'slateBorder' ? 'gap-5' : 'gap-4'
+                } items-center`}
+              >
+                {iconElement && (
+                  <div
+                    className={variant === 'slate' || variant === 'slateBorder' ? 'opacity-70' : ''}
+                  >
+                    {iconElement}
+                  </div>
+                )}
+                {iconSrc && <div className="opacity-70">{iconElement}</div>}
+                {(header || title) && (
+                  <h2
+                    className={`font-GoodTimes text-white ${
+                      variant === 'slate' || variant === 'slateBorder'
+                        ? 'text-2xl lg:text-3xl'
+                        : 'text-lg'
+                    } ${inline ? 'text-left' : 'text-center md:text-left'}`}
+                  >
+                    {header || title || (profile && 'Anon')}
+                  </h2>
+                )}
+              </div>
+              {(actions || action) && <div className="flex gap-3">{actions || action}</div>}
+            </div>
+          )}
+
+          {image && (
+            <div className="z-40 mb-4">
+              <Frame noPadding marginBottom="0px" className="aspect-square">
+                <AdaptiveImage
+                  src={image}
+                  alt={title || ''}
+                  width={500}
+                  height={500}
+                  className="w-full h-full object-cover"
+                />
+              </Frame>
+            </div>
+          )}
+
+          {subheader && <div className="mb-4">{subheader}</div>}
+
+          {paragraph && (
+            <div className={`text-left ${hovertext ? 'description' : ''}`}>
+              {fullParagraph ? (
+                <CollapsibleContainer minHeight="100px">{paragraph}</CollapsibleContainer>
+              ) : (
                 <div
-                  className={variant === 'slate' || variant === 'slateBorder' ? 'opacity-70' : ''}
+                  className={`flex opacity-[70%] ${paragraph ? 'min-h-[100px]' : 'min-h-[20px]'}`}
                 >
-                  {iconElement}
+                  <div className="flex opacity-[70%] min-h-[100px] break-words">
+                    {typeof paragraph === 'string' && paragraph.length > 100
+                      ? `${paragraph.slice(0, 100)}...`
+                      : paragraph}
+                  </div>
                 </div>
-              )}
-              {iconSrc && <div className="opacity-70">{iconElement}</div>}
-              {(header || title) && (
-                <h2
-                  className={`font-GoodTimes text-white ${
-                    variant === 'slate' || variant === 'slateBorder'
-                      ? 'text-2xl lg:text-3xl'
-                      : 'text-lg'
-                  } ${inline ? 'text-left' : 'text-center md:text-left'}`}
-                >
-                  {header || title || (profile && 'Anon')}
-                </h2>
               )}
             </div>
-            {(actions || action) && <div className="flex gap-3">{actions || action}</div>}
-          </div>
-        )}
+          )}
 
-        {image && (
-          <div className="z-40 mb-4">
-            <Frame noPadding marginBottom="0px" className="aspect-square">
-              <AdaptiveImage
-                src={image}
-                alt={title || ''}
-                width={500}
-                height={500}
-                className="w-full h-full object-cover"
-              />
-            </Frame>
-          </div>
-        )}
+          {children && (
+            <div className={variant === 'slate' || variant === 'slateBorder' ? 'mt-6' : ''}>
+              {children}
+            </div>
+          )}
 
-        {subheader && <div className="mb-4">{subheader}</div>}
-
-        {paragraph && (
-          <div className={`text-left ${hovertext ? 'description' : ''}`}>
-            {fullParagraph ? (
-              <CollapsibleContainer minHeight="100px">{paragraph}</CollapsibleContainer>
-            ) : (
-              <div className={`flex opacity-[70%] ${paragraph ? 'min-h-[100px]' : 'min-h-[20px]'}`}>
-                <div className="flex opacity-[70%] min-h-[100px] break-words">
-                  {typeof paragraph === 'string' && paragraph.length > 100
-                    ? `${paragraph.slice(0, 100)}...`
-                    : paragraph}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {children && (
-          <div className={variant === 'slate' || variant === 'slateBorder' ? 'mt-6' : ''}>
-            {children}
-          </div>
-        )}
-
-        {footer && <div className="mt-4">{footer}</div>}
+          {footer && <div className="mt-4">{footer}</div>}
         </div>
       </div>
     )
@@ -803,7 +802,17 @@ export default function Card({
         card-container w-full flex flex-col rounded-[20px] relative overflow-hidden
         ${link ? 'cursor-pointer' : ''} ${className}
       `}
-        style={className?.includes('!w-full') ? { width: '100% !important', minWidth: 0, maxWidth: '100% !important', flexShrink: 0, flexGrow: 1 } : { width: '100%', minWidth: 0, maxWidth: '100%', flexShrink: 0, flexGrow: 1 }}
+        style={
+          className?.includes('!w-full')
+            ? {
+                width: '100% !important',
+                minWidth: 0,
+                maxWidth: '100% !important',
+                flexShrink: 0,
+                flexGrow: 1,
+              }
+            : { width: '100%', minWidth: 0, maxWidth: '100%', flexShrink: 0, flexGrow: 1 }
+        }
       >
         {onClick ? (
           <button onClick={onClick} className="w-full h-full block">

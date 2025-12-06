@@ -69,6 +69,8 @@ export default function SpaceBackground() {
   const nebulaRef = useRef<HTMLDivElement>(null)
   const [shootingStars, setShootingStars] = useState<ShootingStar[]>([])
   const shootingStarIdRef = useRef(0)
+  const typedSequenceRef = useRef('')
+  const sequenceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const renderStarLayer = (stars: Star[], layerName: string) => {
     const layerRef =
@@ -157,45 +159,45 @@ export default function SpaceBackground() {
     }
   }, [])
 
-  useEffect(() => {
-    const createShootingStar = () => {
-      const edge = Math.floor(Math.random() * 4)
-      let startX = 0
-      let startY = 0
-      let angle = 0
+  const createShootingStar = () => {
+    const side = Math.floor(Math.random() * 4)
+    let startX = 0
+    let startY = 0
+    let angle = 0
 
-      if (edge === 0) {
-        startX = Math.random() * 100
-        startY = 0
-        angle = 135 + Math.random() * 90
-      } else if (edge === 1) {
-        startX = 100
-        startY = Math.random() * 100
-        angle = 225 + Math.random() * 90
-      } else if (edge === 2) {
-        startX = Math.random() * 100
-        startY = 100
-        angle = 315 + Math.random() * 90
-      } else {
-        startX = 0
-        startY = Math.random() * 100
-        angle = 45 + Math.random() * 90
-      }
-
-      const newShootingStar: ShootingStar = {
-        id: shootingStarIdRef.current++,
-        startX,
-        startY,
-        angle,
-      }
-
-      setShootingStars((prev) => [...prev, newShootingStar])
-
-      setTimeout(() => {
-        setShootingStars((prev) => prev.filter((star) => star.id !== newShootingStar.id))
-      }, 1800)
+    if (side === 0) {
+      startX = Math.random() * 100
+      startY = -5
+      angle = 135 + Math.random() * 30
+    } else if (side === 1) {
+      startX = 105
+      startY = Math.random() * 100
+      angle = 225 + Math.random() * 30
+    } else if (side === 2) {
+      startX = Math.random() * 100
+      startY = 105
+      angle = 315 + Math.random() * 30
+    } else {
+      startX = -5
+      startY = Math.random() * 100
+      angle = 45 + Math.random() * 30
     }
 
+    const newShootingStar: ShootingStar = {
+      id: shootingStarIdRef.current++,
+      startX,
+      startY,
+      angle,
+    }
+
+    setShootingStars((prev) => [...prev, newShootingStar])
+
+    setTimeout(() => {
+      setShootingStars((prev) => prev.filter((star) => star.id !== newShootingStar.id))
+    }, 1800)
+  }
+
+  useEffect(() => {
     const scheduleNext = () => {
       const delay = 20000 + Math.random() * 20000
       setTimeout(() => {
@@ -205,6 +207,40 @@ export default function SpaceBackground() {
     }
 
     scheduleNext()
+  }, [])
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase()
+
+      if (key.length === 1 && /[a-z]/.test(key)) {
+        typedSequenceRef.current += key
+
+        if (sequenceTimeoutRef.current) {
+          clearTimeout(sequenceTimeoutRef.current)
+        }
+
+        if (typedSequenceRef.current === 'moondao') {
+          createShootingStar()
+          typedSequenceRef.current = ''
+        } else if (typedSequenceRef.current.length >= 7) {
+          typedSequenceRef.current = typedSequenceRef.current.slice(-6)
+        }
+
+        sequenceTimeoutRef.current = setTimeout(() => {
+          typedSequenceRef.current = ''
+        }, 2000)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress)
+      if (sequenceTimeoutRef.current) {
+        clearTimeout(sequenceTimeoutRef.current)
+      }
+    }
   }, [])
 
   return (
