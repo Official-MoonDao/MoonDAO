@@ -19,12 +19,12 @@ import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import CookieBanner from './CookieBanner'
 import GlobalSearch from './GlobalSearch'
 import MissionBanner from './MissionBanner'
-import SpaceBackground from './SpaceBackground'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import LanguageChange from './Sidebar/LanguageChange'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
 import MobileSidebar from './Sidebar/MobileSidebar'
 import NavigationLink from './Sidebar/NavigationLink'
+import SpaceBackground from './SpaceBackground'
 import TopNavBar from './TopNavBar'
 
 interface Layout {
@@ -88,7 +88,9 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const layout = (
     <div
       id="app-layout"
-      className={`${!lightMode ? 'dark background-dark' : 'background-light'} min-h-screen relative`}
+      className={`${
+        !lightMode ? 'dark background-dark' : 'background-light'
+      } min-h-screen relative`}
     >
       {!lightMode && <SpaceBackground />}
       <>

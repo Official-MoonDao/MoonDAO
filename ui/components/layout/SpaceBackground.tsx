@@ -205,10 +205,10 @@ export default function SpaceBackground() {
 
   useEffect(() => {
     const scheduleNext = () => {
-      const delay = 20000 + Math.random() * 20000
+      const delay = 60000 + Math.random() * 60000
       setTimeout(() => {
-        const isShower = Math.random() < 0.18
-        const count = isShower ? 2 + Math.floor(Math.random() * 2) : 1
+        const isShower = Math.random() < 0.04
+        const count = isShower ? 2 : 1
 
         if (isShower) {
           const side = Math.floor(Math.random() * 4)
@@ -262,8 +262,8 @@ export default function SpaceBackground() {
         }
 
         if (typedSequenceRef.current === 'moondao') {
-          const isShower = Math.random() < 0.25
-          const count = isShower ? 2 + Math.floor(Math.random() * 2) : 1
+          const isShower = Math.random() < 0.08
+          const count = isShower ? 2 : 1
 
           if (isShower) {
             const side = Math.floor(Math.random() * 4)

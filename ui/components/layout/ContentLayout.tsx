@@ -150,8 +150,10 @@ const ContentLayout: React.FC<ContentProps> = ({
           <div
             id="main-section"
             className={`
-                        relative w-full max-w-[1200px] mx-auto mt-0 
-                        ${mainPadding ? 'p-0' : 'pb-5'} 
+                        relative w-full ${
+                          contentwide || (isCompact && isProfile) ? 'max-w-full' : 'max-w-[1200px]'
+                        } ${contentwide || (isCompact && isProfile) ? '' : 'mx-auto'} mt-0 
+                        ${mainPadding || contentwide || (isCompact && isProfile) ? 'p-0' : 'pb-5'} 
                         ${
                           isCompact && !isProfile
                             ? 'mt-0 md:mt-[-120px] lg:mt-[-200px]'
@@ -160,17 +162,35 @@ const ContentLayout: React.FC<ContentProps> = ({
                             : 'mt-0 md:mt-[-200px] lg:mt-[-280px] md:pb-0 '
                         }
                     `}
-            style={isCompact && isProfile ? { width: '100%', maxWidth: '1200px' } : undefined}
+            style={
+              isCompact && isProfile
+                ? { width: '100%', maxWidth: '100%' }
+                : contentwide
+                ? { width: '100%', maxWidth: '100%' }
+                : undefined
+            }
           >
             <div
               id="main-section-content-container"
               className={`relative z-10 w-full
                             ${
-                              isCompact && !popOverEffect ? (isProfile ? '' : 'md:ml-0') : 'md:m-10'
+                              contentwide || (isCompact && isProfile)
+                                ? 'm-0 p-0'
+                                : isCompact && !popOverEffect
+                                ? isProfile
+                                  ? ''
+                                  : 'md:ml-0'
+                                : 'md:m-10'
                             } 
-                            ${isCompact && popOverEffect ? 'md:ml-0' : 'md:m-0'} 
-                            ${popOverEffect ? ' pb-0 mb-0 md:mb-[-160px]' : ''} 
-                            ${contentwide ? 'p-0' : ''}
+                            ${
+                              isCompact &&
+                              popOverEffect &&
+                              !contentwide &&
+                              !(isCompact && isProfile)
+                                ? 'md:ml-0'
+                                : ''
+                            } 
+                            ${popOverEffect ? ' pb-0 mb-0 md:mb-[-160px]' : ''}
                         `}
               style={
                 isCompact && isProfile
@@ -179,8 +199,25 @@ const ContentLayout: React.FC<ContentProps> = ({
                       maxWidth: '100%',
                       marginLeft: 0,
                       marginRight: 0,
+                      marginTop: 0,
+                      marginBottom: 0,
                       paddingLeft: 0,
                       paddingRight: 0,
+                      paddingTop: 0,
+                      paddingBottom: 0,
+                    }
+                  : contentwide
+                  ? {
+                      width: '100%',
+                      maxWidth: '100%',
+                      marginLeft: 0,
+                      marginRight: 0,
+                      marginTop: 0,
+                      marginBottom: 0,
+                      paddingLeft: 0,
+                      paddingRight: 0,
+                      paddingTop: 0,
+                      paddingBottom: 0,
                     }
                   : undefined
               }
@@ -194,20 +231,32 @@ const ContentLayout: React.FC<ContentProps> = ({
                   id="content"
                   className={`relative z-50 w-full
                                     ${
-                                      isCompact && !isProfile
+                                      contentwide || (isCompact && isProfile)
+                                        ? 'm-0 p-0'
+                                        : isCompact && !isProfile
                                         ? 'md:m-10 md:p-8'
-                                        : isCompact && isProfile
-                                        ? 'md:m-0 md:mt-5'
                                         : isCompact
                                         ? 'md:m-0 md:mt-5 md:px-5'
                                         : 'm-5'
                                     }
                                 `}
-                  style={isCompact && isProfile ? { width: '100%', maxWidth: '100%' } : undefined}
+                  style={
+                    isCompact && isProfile
+                      ? { width: '100%', maxWidth: '100%', margin: 0, padding: 0 }
+                      : contentwide
+                      ? { width: '100%', maxWidth: '100%', margin: 0, padding: 0 }
+                      : undefined
+                  }
                 >
                   <div
                     className={`relative z-50 w-full`}
-                    style={isCompact && isProfile ? { width: '100%', maxWidth: '100%' } : undefined}
+                    style={
+                      isCompact && isProfile
+                        ? { width: '100%', maxWidth: '100%' }
+                        : contentwide
+                        ? { width: '100%', maxWidth: '100%' }
+                        : undefined
+                    }
                   >
                     {children}
                   </div>

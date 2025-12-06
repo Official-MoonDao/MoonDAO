@@ -208,9 +208,9 @@ export default function Lock() {
       <Head title="Lock $MOONEY" />
 
       <Container is_fullwidth={true}>
-        <div className="min-h-screen bg-dark-cool text-white w-full">
+        <div className="min-h-screen text-white w-full relative z-10">
           {/* Lock MOONEY Section */}
-          <section className="py-12 px-6 bg-gradient-to-br from-gray-900/50 to-blue-900/20 w-full min-h-screen">
+          <section className="py-12 px-6 w-full min-h-screen">
             <div className="max-w-4xl mx-auto w-full">
               <div className="text-center mb-8">
                 <h1 className="text-3xl md:text-4xl font-bold font-GoodTimes text-white mb-4">

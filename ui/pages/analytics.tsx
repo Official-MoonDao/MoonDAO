@@ -37,7 +37,7 @@ export default function Analytics({ vMooneyData, dateUpdated }: any) {
           headerSize="max(20px, 3vw)"
           description={descriptionSection}
           preFooter={
-            <NoticeFooter 
+            <NoticeFooter
               defaultImage="../assets/MoonDAO-Logo-White.svg"
               defaultTitle="Need Help?"
               defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
@@ -47,13 +47,14 @@ export default function Analytics({ vMooneyData, dateUpdated }: any) {
               imageHeight={200}
             />
           }
-          mainPadding
+          mainPadding={false}
           mode="compact"
           popOverEffect={false}
           isProfile
+          contentwide
         >
-          <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
-            <div className="grid gap-6 xl:grid-cols-1 lg:w-full lg:max-w-[1380px] items-center justify-center">
+          <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8 lg:p-10 shadow-2xl w-full">
+            <div className="flex flex-col gap-6 md:gap-8 w-full">
               <AnalyticsPage vMooneyData={vMooneyData} />
               <TreasuryPage />
             </div>
