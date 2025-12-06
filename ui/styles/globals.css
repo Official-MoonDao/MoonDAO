@@ -990,3 +990,95 @@ body {
 #video-wrapper {
   transition: opacity 0.3s ease-in-out;
 }
+
+/* Star twinkling animations */
+@keyframes twinkle-subtle {
+  0%,
+  100% {
+    opacity: var(--min-opacity, 0.4);
+  }
+  50% {
+    opacity: var(--max-opacity, 0.6);
+  }
+}
+
+@keyframes twinkle-pronounced {
+  0%,
+  100% {
+    opacity: var(--min-opacity, 0.3);
+  }
+  50% {
+    opacity: var(--max-opacity, 0.8);
+  }
+}
+
+/* Shooting star animations */
+.shooting-star {
+  pointer-events: none;
+  overflow: visible;
+  z-index: 10;
+}
+
+.shooting-star-head {
+  position: absolute;
+  left: var(--start-x, 50%);
+  top: var(--start-y, 50%);
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 1);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 1), 0 0 16px rgba(255, 255, 255, 0.8);
+  animation: shooting-star-move-head 1.8s linear forwards;
+  transform-origin: center;
+}
+
+.shooting-star-trail {
+  position: absolute;
+  left: var(--start-x, 50%);
+  top: var(--start-y, 50%);
+  width: 150px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.5) 30%,
+    rgba(255, 255, 255, 0.2) 60%,
+    transparent 100%
+  );
+  transform-origin: left center;
+  animation: shooting-star-move-trail 1.8s linear forwards;
+}
+
+@keyframes shooting-star-move-head {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(0);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(200vw);
+    opacity: 0;
+  }
+}
+
+@keyframes shooting-star-move-trail {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(0);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(200vw);
+    opacity: 0;
+  }
+}

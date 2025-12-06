@@ -1,8 +1,24 @@
-import React, { useEffect, useRef, useMemo } from 'react'
+import React, { useEffect, useRef, useMemo, useState } from 'react'
 
-const generateStars = (count: number, sizeRange: [number, number], seed: number = 0) => {
-  const stars = []
-  // Use seed for consistent star positions
+interface Star {
+  x: number
+  y: number
+  size: number
+  baseOpacity: number
+  twinkleIntensity: number
+  twinkleDuration: number
+  twinkleDelay: number
+}
+
+interface ShootingStar {
+  id: number
+  startX: number
+  startY: number
+  angle: number
+}
+
+const generateStars = (count: number, sizeRange: [number, number], seed: number = 0): Star[] => {
+  const stars: Star[] = []
   const rng = (n: number) => {
     const x = Math.sin(n + seed) * 10000
     return x - Math.floor(x)
@@ -14,18 +30,32 @@ const generateStars = (count: number, sizeRange: [number, number], seed: number 
     const rand = rng(i * 0.1 + 2000)
     const size =
       rand < 0.9
-        ? sizeRange[0] + rand * 0.3 * (sizeRange[1] - sizeRange[0]) // 90% small stars
-        : sizeRange[0] + (0.3 + rand * 0.7) * (sizeRange[1] - sizeRange[0]) // 10% larger stars
-    // Vary opacity more naturally - most stars are dim, few are bright
+        ? sizeRange[0] + rand * 0.3 * (sizeRange[1] - sizeRange[0])
+        : sizeRange[0] + (0.3 + rand * 0.7) * (sizeRange[1] - sizeRange[0])
+
     const opacityRand = rng(i * 0.1 + 3000)
-    const opacity = opacityRand < 0.7 ? 0.3 + opacityRand * 0.4 : 0.7 + opacityRand * 0.3
-    stars.push(
-      `radial-gradient(${size.toFixed(2)}px ${size.toFixed(2)}px at ${x.toFixed(2)}% ${y.toFixed(
-        2
-      )}%, rgba(255,255,255,${opacity.toFixed(2)}), transparent)`
-    )
+    const baseOpacity = opacityRand < 0.7 ? 0.3 + opacityRand * 0.4 : 0.7 + opacityRand * 0.3
+
+    const twinkleRand = rng(i * 0.1 + 4000)
+    const twinkleIntensity = twinkleRand < 0.85 ? 0.05 + twinkleRand * 0.1 : 0.2 + twinkleRand * 0.2
+
+    const durationRand = rng(i * 0.1 + 5000)
+    const twinkleDuration = 3 + durationRand * 5
+
+    const delayRand = rng(i * 0.1 + 6000)
+    const twinkleDelay = delayRand * 10
+
+    stars.push({
+      x,
+      y,
+      size,
+      baseOpacity,
+      twinkleIntensity,
+      twinkleDuration,
+      twinkleDelay,
+    })
   }
-  return stars.join(',\n            ')
+  return stars
 }
 
 export default function SpaceBackground() {
@@ -37,6 +67,53 @@ export default function SpaceBackground() {
   const midStarsRef = useRef<HTMLDivElement>(null)
   const nearStarsRef = useRef<HTMLDivElement>(null)
   const nebulaRef = useRef<HTMLDivElement>(null)
+  const [shootingStars, setShootingStars] = useState<ShootingStar[]>([])
+  const shootingStarIdRef = useRef(0)
+
+  const renderStarLayer = (stars: Star[], layerName: string) => {
+    const layerRef =
+      layerName === 'far' ? farStarsRef : layerName === 'mid' ? midStarsRef : nearStarsRef
+    return (
+      <div
+        ref={layerRef}
+        className="absolute inset-0 w-full h-full"
+        style={{
+          willChange: 'transform',
+          transition: 'transform 0.1s ease-out',
+        }}
+      >
+        {stars.map((star, index) => {
+          const minOpacity = Math.max(0, star.baseOpacity - star.twinkleIntensity)
+          const maxOpacity = Math.min(1, star.baseOpacity + star.twinkleIntensity)
+          const isSubtle = star.twinkleIntensity < 0.15
+          const animationName = isSubtle ? 'twinkle-subtle' : 'twinkle-pronounced'
+
+          return (
+            <div
+              key={`${layerName}-${index}`}
+              className="absolute rounded-full star-twinkle"
+              style={
+                {
+                  left: `${star.x}%`,
+                  top: `${star.y}%`,
+                  width: `${star.size}px`,
+                  height: `${star.size}px`,
+                  background: `radial-gradient(circle, rgba(255,255,255,1) 0%, transparent 70%)`,
+                  boxShadow: `0 0 ${star.size * 0.5}px rgba(255,255,255,0.5)`,
+                  animation: `${animationName} ${star.twinkleDuration}s ease-in-out infinite`,
+                  animationDelay: `${star.twinkleDelay}s`,
+                  transform: 'translate(-50%, -50%)',
+                  willChange: 'opacity',
+                  '--min-opacity': minOpacity,
+                  '--max-opacity': maxOpacity,
+                } as React.CSSProperties & { '--min-opacity': number; '--max-opacity': number }
+              }
+            />
+          )
+        })}
+      </div>
+    )
+  }
 
   useEffect(() => {
     let animationFrame: number
@@ -80,6 +157,56 @@ export default function SpaceBackground() {
     }
   }, [])
 
+  useEffect(() => {
+    const createShootingStar = () => {
+      const edge = Math.floor(Math.random() * 4)
+      let startX = 0
+      let startY = 0
+      let angle = 0
+
+      if (edge === 0) {
+        startX = Math.random() * 100
+        startY = 0
+        angle = 135 + Math.random() * 90
+      } else if (edge === 1) {
+        startX = 100
+        startY = Math.random() * 100
+        angle = 225 + Math.random() * 90
+      } else if (edge === 2) {
+        startX = Math.random() * 100
+        startY = 100
+        angle = 315 + Math.random() * 90
+      } else {
+        startX = 0
+        startY = Math.random() * 100
+        angle = 45 + Math.random() * 90
+      }
+
+      const newShootingStar: ShootingStar = {
+        id: shootingStarIdRef.current++,
+        startX,
+        startY,
+        angle,
+      }
+
+      setShootingStars((prev) => [...prev, newShootingStar])
+
+      setTimeout(() => {
+        setShootingStars((prev) => prev.filter((star) => star.id !== newShootingStar.id))
+      }, 1800)
+    }
+
+    const scheduleNext = () => {
+      const delay = 20000 + Math.random() * 20000
+      setTimeout(() => {
+        createShootingStar()
+        scheduleNext()
+      }, delay)
+    }
+
+    scheduleNext()
+  }, [])
+
   return (
     <div
       ref={containerRef}
@@ -105,40 +232,35 @@ export default function SpaceBackground() {
       />
 
       {/* Far stars layer - almost stationary, tiny stars, most numerous */}
-      <div
-        ref={farStarsRef}
-        className="absolute inset-0 w-full h-full star-layer-far"
-        style={{
-          backgroundImage: farStars,
-          backgroundSize: '200% 200%',
-          willChange: 'transform, opacity',
-          transition: 'transform 0.1s ease-out',
-        }}
-      />
+      {renderStarLayer(farStars, 'far')}
 
       {/* Mid stars layer - very slow movement, small stars */}
-      <div
-        ref={midStarsRef}
-        className="absolute inset-0 w-full h-full star-layer-mid"
-        style={{
-          backgroundImage: midStars,
-          backgroundSize: '150% 150%',
-          willChange: 'transform, opacity',
-          transition: 'transform 0.1s ease-out',
-        }}
-      />
+      {renderStarLayer(midStars, 'mid')}
 
       {/* Near stars layer - subtle movement, slightly larger stars */}
-      <div
-        ref={nearStarsRef}
-        className="absolute inset-0 w-full h-full star-layer-near"
-        style={{
-          backgroundImage: nearStars,
-          backgroundSize: '120% 120%',
-          willChange: 'transform, opacity',
-          transition: 'transform 0.1s ease-out',
-        }}
-      />
+      {renderStarLayer(nearStars, 'near')}
+
+      {/* Shooting stars */}
+      {shootingStars.map((shootingStar) => (
+        <div
+          key={shootingStar.id}
+          className="absolute inset-0 w-full h-full shooting-star"
+          style={
+            {
+              '--start-x': `${shootingStar.startX}%`,
+              '--start-y': `${shootingStar.startY}%`,
+              '--angle': `${shootingStar.angle}deg`,
+            } as React.CSSProperties & {
+              '--start-x': string
+              '--start-y': string
+              '--angle': string
+            }
+          }
+        >
+          <div className="shooting-star-trail" />
+          <div className="shooting-star-head" />
+        </div>
+      ))}
 
       {/* Nebula-like depth clouds */}
       <div
