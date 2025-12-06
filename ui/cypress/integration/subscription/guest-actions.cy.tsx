@@ -55,8 +55,6 @@ describe('<GuestActions />', () => {
       // Verify the component rendered
       cy.get('#guest-actions-container').should('exist')
 
-      // eslint-disable-next-line cypress/no-unnecessary-waiting
-      cy.wait(1500)
       cy.contains('Become a Citizen', { timeout: 15000 }).should('exist')
     })
   })

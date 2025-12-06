@@ -1,4 +1,4 @@
-import { PencilIcon, ShareIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { useEffect, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
@@ -9,9 +9,9 @@ import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { daysUntilTimestamp } from '@/lib/utils/timestamp'
+import Card from '../layout/Card'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import ShareButton from '../layout/ShareButton'
-import Card from '../layout/Card'
 import BuyTeamListingModal from './BuyTeamListingModal'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
@@ -34,7 +34,7 @@ export type TeamListing = {
 
 type TeamListingProps = {
   selectedChain: any
-  listing: TeamListing
+  listing: TeamListing | null
   teamContract: any
   marketplaceTableContract?: any
   refreshListings?: any
@@ -58,10 +58,9 @@ export default function TeamListing({
   const account = useActiveAccount()
   const router = useRouter()
 
-  const [enabledMarketplaceListingModal, setEnabledMarketplaceListingModal] =
-    useState(false)
+  const [enabledMarketplaceListingModal, setEnabledMarketplaceListingModal] = useState(false)
   const [enabledBuyListingModal, setEnabledBuyListingModal] = useState(
-    queriedListingId === listing?.id
+    queriedListingId !== undefined && queriedListingId === listing?.id
   )
 
   const currTime = useCurrUnixTime()
@@ -71,7 +70,7 @@ export default function TeamListing({
   const [isUpcoming, setIsUpcoming] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const daysUntilExpiry = daysUntilTimestamp(listing?.endTime)
+  const daysUntilExpiry = daysUntilTimestamp(listing?.endTime || 0)
 
   const [teamNFT, setTeamNFT] = useState<any>()
 
@@ -79,13 +78,14 @@ export default function TeamListing({
 
   useEffect(() => {
     async function getTeamNFT() {
+      if (!listing) return
       try {
         const nft = await getNFT({
           contract: teamContract,
           tokenId: BigInt(listing.teamId),
           includeOwner: true,
         })
-        if (listing.title.startsWith('Cultura')) console.log(nft)
+        if (listing.title?.startsWith('Cultura')) console.log(nft)
         // Set teamNFT even if metadata.name doesn't exist, we'll handle the fallback in the display
         if (nft) setTeamNFT(nft)
       } catch (err) {
@@ -101,12 +101,14 @@ export default function TeamListing({
       retriesRef.current = 0
       getTeamNFT()
     }
-  }, [listing?.teamId, teamContract])
+  }, [listing?.teamId, teamContract, listing])
 
   useEffect(() => {
-    if (currTime >= listing?.startTime && currTime <= listing?.endTime) {
+    if (!listing) return
+
+    if (currTime >= (listing.startTime || 0) && currTime <= (listing.endTime || 0)) {
       setIsActive(true)
-    } else if (listing?.startTime === 0 && listing?.endTime === 0) {
+    } else if ((listing.startTime || 0) === 0 && (listing.endTime || 0) === 0) {
       setIsActive(true)
     } else if (editable) {
       setIsActive(true)
@@ -114,85 +116,83 @@ export default function TeamListing({
       setIsActive(false)
     }
 
-    if (currTime < listing?.startTime) {
+    if (currTime < (listing.startTime || 0)) {
       setIsUpcoming(true)
     } else {
       setIsUpcoming(false)
     }
 
     if (
-      currTime > listing?.endTime &&
-      listing?.endTime !== 0 &&
-      listing?.endTime !== undefined
+      currTime > (listing.endTime || 0) &&
+      listing.endTime !== 0 &&
+      listing.endTime !== undefined
     ) {
       setIsExpired(true)
     } else {
       setIsExpired(false)
     }
-  }, [currTime, listing?.startTime, listing?.endTime, editable])
+  }, [currTime, listing?.startTime, listing?.endTime, editable, listing])
 
+  if (!listing) return null
   if (!isActive) return null
 
   const listingFooter = (
     <div className="text-sm">
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <p id="listing-price" className="font-bold">
-            {`${
-              isCitizen
-                ? truncateTokenValue(listing?.price, listing?.currency)
-                : truncateTokenValue(+listing?.price * 1.1, listing?.currency)
-            } ${listing.currency}`}
-          </p>
-          {isCitizen && (
-            <p
-              id="listing-original-price"
-              className="line-through text-xs opacity-70"
-            >
-              {`${truncateTokenValue(
-                +listing?.price * 1.1,
-                listing?.currency
-              )} ${listing?.currency}`}
+      {listing?.price && listing?.currency ? (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <p id="listing-price" className="font-bold">
+              {`${
+                isCitizen
+                  ? truncateTokenValue(listing.price, listing.currency)
+                  : truncateTokenValue(+listing.price * 1.1, listing.currency)
+              } ${listing.currency}`}
             </p>
+            {isCitizen && (
+              <p id="listing-original-price" className="line-through text-xs opacity-70">
+                {`${truncateTokenValue(+listing.price * 1.1, listing.currency)} ${
+                  listing.currency
+                }`}
+              </p>
+            )}
+          </div>
+          {!isCitizen && (
+            <button
+              id="listing-savings"
+              onClick={(e) => {
+                e.stopPropagation()
+                router.push('/citizen')
+              }}
+              className="flex items-center hover:underline text-sm"
+            >
+              <span className="bg-light-warm px-2 py-1 rounded mr-1">
+                {`Save ${truncateTokenValue(+listing.price * 0.1, listing.currency)} ${
+                  listing.currency
+                }`}
+              </span>
+              {' with citizenship'}
+            </button>
           )}
         </div>
-        {!isCitizen && (
-          <button
-            id="listing-savings"
-            onClick={(e) => {
-              e.stopPropagation()
-              router.push('/citizen')
-            }}
-            className="flex items-center hover:underline text-sm"
-          >
-            <span className="bg-light-warm px-2 py-1 rounded mr-1">
-              {`Save ${truncateTokenValue(
-                +listing?.price * 0.1,
-                listing?.currency
-              )} ${listing.currency}`}
-            </span>
-            {' with citizenship'}
-          </button>
-        )}
-      </div>
+      ) : (
+        <p className="text-gray-400 text-xs">Price not available</p>
+      )}
       {editable && (
         <p id="listing-status" className="opacity-60">
           {isExpired
             ? `*This listing has expired and is no longer available for purchase.`
             : isUpcoming
             ? `*This listing is not available for purchase until ${
-                new Date(listing?.startTime * 1000).toLocaleDateString() +
+                new Date((listing?.startTime || 0) * 1000).toLocaleDateString() +
                 ' ' +
-                new Date(listing.startTime * 1000).toLocaleTimeString()
+                new Date((listing?.startTime || 0) * 1000).toLocaleTimeString()
               }`
             : ''}
         </p>
       )}
       {!isExpired && !isUpcoming && listing?.endTime != 0 && (
         <p id="listing-end-time" className="mt-2 opacity-60">
-          {`Offer ends in ${daysUntilExpiry} ${
-            +daysUntilExpiry === 1 ? 'day' : 'days'
-          }`}
+          {`Offer ends in ${daysUntilExpiry} ${+daysUntilExpiry === 1 ? 'day' : 'days'}`}
         </p>
       )}
     </div>
@@ -202,10 +202,8 @@ export default function TeamListing({
     <div className="flex items-center gap-4">
       <ShareButton
         link={`${window.location.origin}/team/${
-          teamNFT?.metadata?.name
-            ? generatePrettyLink(teamNFT.metadata.name)
-            : listing.teamId
-        }?listing=${listing.id}`}
+          teamNFT?.metadata?.name ? generatePrettyLink(teamNFT.metadata.name) : listing?.teamId
+        }?listing=${listing?.id}`}
       />
       {editable && (
         <>
@@ -233,7 +231,7 @@ export default function TeamListing({
                   const transaction = prepareContractCall({
                     contract: marketplaceTableContract,
                     method: 'deleteFromTable' as string,
-                    params: [listing.id, listing.teamId],
+                    params: [listing?.id, listing?.teamId],
                   })
                   const receipt = await sendAndConfirmTransaction({
                     transaction,
@@ -261,10 +259,10 @@ export default function TeamListing({
   return (
     <>
       <Card
-        title={listing.title}
-        headerLink={`/team/${listing.teamId}`}
-        headerLinkLabel={teamNFT?.metadata?.name || `Team ${listing.teamId}`}
-        paragraph={listing.description}
+        title={listing?.title || ''}
+        headerLink={`/team/${listing?.teamId || ''}`}
+        headerLinkLabel={teamNFT?.metadata?.name || `Team ${listing?.teamId || ''}`}
+        paragraph={listing?.description || ''}
         footer={listingFooter}
         actions={listingActions}
         onClick={() => {
@@ -272,12 +270,12 @@ export default function TeamListing({
             setEnabledBuyListingModal(true)
           }
         }}
-        image={listing.image}
+        image={listing?.image || ''}
         profile={true}
         inline
       />
 
-      {enabledMarketplaceListingModal && (
+      {enabledMarketplaceListingModal && listing && (
         <TeamMarketplaceListingModal
           teamId={listing.teamId}
           setEnabled={setEnabledMarketplaceListingModal}
@@ -287,7 +285,7 @@ export default function TeamListing({
           refreshListings={refreshListings}
         />
       )}
-      {enabledBuyListingModal && (
+      {enabledBuyListingModal && listing && (
         <BuyTeamListingModal
           selectedChain={selectedChain}
           listing={listing}

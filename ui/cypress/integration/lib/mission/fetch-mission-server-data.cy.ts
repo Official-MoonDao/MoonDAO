@@ -25,7 +25,17 @@ describe('fetchMissionServerData', () => {
 
   it('fetchTimeData returns deadline and refundPeriod', () => {
     const payHookAddress = '0x1234567890123456789012345678901234567890'
-    
+
+    cy.stub(thirdweb, 'readContract').callsFake(async (options: any) => {
+      if (options.method === 'deadline') {
+        return BigInt(Math.floor(Date.now() / 1000) + 86400)
+      }
+      if (options.method === 'refundPeriod') {
+        return BigInt(3600)
+      }
+      return BigInt(0)
+    })
+
     cy.wrap(null).then(async () => {
       const timeData = await fetchTimeData(payHookAddress, CYPRESS_CHAIN_V5)
       expect(timeData).to.have.property('deadline')
@@ -50,7 +60,29 @@ describe('fetchMissionServerData', () => {
   it('fetchMissionContracts returns contract data', () => {
     const projectId = 1
     const missionId = 1
-    
+
+    cy.stub(thirdweb, 'readContract').callsFake(async (options: any) => {
+      if (options.method === 'uriOf') {
+        return 'ipfs://test-metadata'
+      }
+      if (options.method === 'stage') {
+        return BigInt(1)
+      }
+      if (options.method === 'missionIdToPayHook') {
+        return '0x1234567890123456789012345678901234567890'
+      }
+      if (options.method === 'tokenOf') {
+        return '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+      }
+      if (options.method === 'primaryTerminalOf') {
+        return '0xfedcbafedcbafedcbafedcbafedcbafedcbafedc'
+      }
+      if (options.method === 'currentRulesetOf') {
+        return []
+      }
+      return BigInt(0)
+    })
+
     cy.wrap(null).then(async () => {
       const contractData = await fetchMissionContracts(projectId, missionId, CYPRESS_CHAIN_V5)
       expect(contractData).to.have.property('stage')

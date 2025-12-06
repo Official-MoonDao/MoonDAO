@@ -22,16 +22,29 @@ describe('<NewMarketplaceListings />', () => {
   })
 
   beforeEach(() => {
+    // Restore any previous stubs
+    if ((thirdweb as any).readContract?.restore) {
+      ;(thirdweb as any).readContract.restore()
+    }
+
     // Mock readContract for getTableName and expiresAt
     cy.stub(thirdweb, 'readContract').callsFake(async (options: any) => {
       if (options.method === 'getTableName') {
-        return mockTableName
+        return Promise.resolve(mockTableName)
       }
       if (options.method === 'expiresAt') {
-        return BigInt(futureTimestamp)
+        return Promise.resolve(BigInt(futureTimestamp))
       }
-      return null
+      return Promise.resolve(null)
     })
+
+    // Set up intercept to match the exact URL pattern used by SWR fetcher
+    cy.intercept('GET', '**/api/tableland/query*', (req) => {
+      req.reply({
+        statusCode: 200,
+        body: [listing, listing],
+      })
+    }).as('getNewMarketplaceListings')
 
     props = {
       selectedChain: CYPRESS_CHAIN_V5,
@@ -49,11 +62,6 @@ describe('<NewMarketplaceListings />', () => {
       }),
     }
 
-    cy.intercept('GET', '/api/tableland/query*', {
-      statusCode: 200,
-      body: [listing, listing],
-    }).as('getNewMarketplaceListings')
-
     cy.mountNextRouter('/')
   })
 
@@ -64,14 +72,12 @@ describe('<NewMarketplaceListings />', () => {
       </TestnetProviders>
     )
 
-    // eslint-disable-next-line cypress/no-unnecessary-waiting
-    cy.wait(1000)
     cy.wait('@getNewMarketplaceListings', { timeout: 15000 })
     cy.contains('h3', 'Newest Listings', { timeout: 10000 }).should('be.visible')
 
-    // Wait for listings to be processed and rendered
+    // Wait for listings to be processed and rendered - need to wait for async processing
     cy.get('#new-marketplace-listings-container', { timeout: 10000 }).should('exist')
-    cy.get('#new-marketplace-listings-container', { timeout: 10000 })
+    cy.get('#new-marketplace-listings-container', { timeout: 15000 })
       .children()
       .should('have.length', 2)
   })

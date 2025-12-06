@@ -214,14 +214,36 @@ export async function getStaticProps() {
 
     const allListings = await queryTable(chain, statement)
 
-    const validListings = allListings.filter(async (listing: any) => {
-      const teamExpiration = await readContract({
-        contract: teamContract,
-        method: 'expiresAt',
-        params: [listing.teamId],
-      })
-      return +teamExpiration.toString() > now
-    })
+    // Process listings in batches to check expiration and avoid rate limiting
+    const BATCH_SIZE = 10
+    const DELAY_BETWEEN_BATCHES = 100 // ms
+    const validListings: any[] = []
+
+    for (let i = 0; i < allListings.length; i += BATCH_SIZE) {
+      const batch = allListings.slice(i, i + BATCH_SIZE)
+      
+      const batchResults = await Promise.all(
+        batch.map(async (listing: any) => {
+          try {
+            const teamExpiration = await readContract({
+              contract: teamContract,
+              method: 'expiresAt',
+              params: [listing.teamId],
+            })
+            return +teamExpiration.toString() > now ? listing : null
+          } catch {
+            return null
+          }
+        })
+      )
+
+      validListings.push(...batchResults.filter((listing: any) => listing !== null))
+
+      // Add delay between batches to avoid rate limiting
+      if (i + BATCH_SIZE < allListings.length) {
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES))
+      }
+    }
 
     const allTeamNames = await queryTable(
       chain,

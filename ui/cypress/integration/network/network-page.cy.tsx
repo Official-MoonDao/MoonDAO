@@ -33,7 +33,7 @@ describe('<Network />', () => {
     cy.mountNextRouter('/network')
     shouldReturnEmptyData = false
 
-    cy.intercept('GET', '/api/tableland/query*', (req) => {
+    cy.intercept('GET', '**/api/tableland/query*', (req) => {
       const url = decodeURIComponent(req.url)
       if (shouldReturnEmptyData) {
         if (url.includes('COUNT') || url.includes('count')) {
@@ -45,11 +45,11 @@ describe('<Network />', () => {
       }
       if (url.includes('COUNT') || url.includes('count')) {
         if (url.includes('TEAMTABLE') || url.includes('TEAM')) {
-          req.reply({ body: [{ count: 10 }] })
+          req.reply({ statusCode: 200, body: [{ count: 10 }] })
         } else if (url.includes('CITIZENTABLE') || url.includes('CITIZEN')) {
-          req.reply({ body: [{ count: 20 }] })
+          req.reply({ statusCode: 200, body: [{ count: 20 }] })
         } else {
-          req.reply({ body: [{ count: 0 }] })
+          req.reply({ statusCode: 200, body: [{ count: 0 }] })
         }
       } else if (url.includes('SELECT') && url.includes('FROM')) {
         if (url.includes('TEAMTABLE') || url.includes('TEAM')) {
@@ -131,10 +131,8 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
-      cy.wait('@getTablelandQuery')
-      cy.wait('@getTablelandQuery')
-
-      cy.contains('Test Citizen', { timeout: 10000 }).should('exist')
+      cy.wait('@getTablelandQuery', { timeout: 10000 })
+      cy.contains('Test Citizen', { timeout: 15000 }).should('exist')
     })
 
     it('should show loading state initially', () => {
@@ -168,10 +166,8 @@ describe('<Network />', () => {
       )
 
       cy.contains('Teams').click()
-      cy.wait('@getTablelandQuery')
-      cy.wait('@getTablelandQuery')
-
-      cy.contains('Test Team', { timeout: 10000 }).should('exist')
+      cy.wait('@getTablelandQuery', { timeout: 10000 })
+      cy.contains('Test Team', { timeout: 15000 }).should('exist')
     })
 
     it('should update search placeholder for teams', () => {
@@ -208,7 +204,6 @@ describe('<Network />', () => {
       )
 
       cy.wait('@getTablelandQuery', { timeout: 10000 })
-      cy.wait('@getTablelandQuery', { timeout: 10000 })
       cy.get('#page-number', { timeout: 15000 }).should('contain', 'Page 1 of 2')
       cy.get('button.pagination-button').last().should('exist').and('not.be.disabled')
       cy.get('button.pagination-button').last().find('img[alt="Right Arrow"]').should('exist')
@@ -235,7 +230,6 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
-      cy.wait('@getTablelandQuery', { timeout: 15000 })
       cy.wait('@getTablelandQuery', { timeout: 15000 })
       cy.get('#network-content', { timeout: 20000 }).should('exist')
       cy.contains('No citizens found', { timeout: 20000 }).should('exist')

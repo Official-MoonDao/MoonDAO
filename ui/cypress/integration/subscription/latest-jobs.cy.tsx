@@ -20,6 +20,30 @@ describe('<LatestJobs />', () => {
   })
 
   beforeEach(() => {
+    // Restore any previous stubs
+    if ((thirdweb as any).readContract?.restore) {
+      ;(thirdweb as any).readContract.restore()
+    }
+
+    // Mock readContract for getTableName and expiresAt
+    cy.stub(thirdweb, 'readContract').callsFake(async (options: any) => {
+      if (options.method === 'getTableName') {
+        return Promise.resolve('jobs_table_12345')
+      }
+      if (options.method === 'expiresAt') {
+        return Promise.resolve(BigInt(Math.floor(Date.now() / 1000) + 86400))
+      }
+      return Promise.resolve(BigInt(0))
+    })
+
+    // Set up intercept to match the exact URL pattern used by SWR fetcher
+    cy.intercept('GET', '**/api/tableland/query*', (req) => {
+      req.reply({
+        statusCode: 200,
+        body: [job, job],
+      })
+    }).as('getLatestJobs')
+
     props = {
       teamContract: getContract({
         client: serverClient,
@@ -39,23 +63,6 @@ describe('<LatestJobs />', () => {
   })
 
   it('Renders the component and jobs', () => {
-    // Mock readContract for getTableName and expiresAt
-    cy.stub(thirdweb, 'readContract').callsFake(async (options: any) => {
-      if (options.method === 'getTableName') {
-        return 'jobs_table_12345'
-      }
-      if (options.method === 'expiresAt') {
-        return BigInt(Math.floor(Date.now() / 1000) + 86400)
-      }
-      return BigInt(0)
-    })
-
-    // Set up intercept before mounting
-    cy.intercept('GET', '**/api/tableland/query*', {
-      statusCode: 200,
-      body: [job, job],
-    }).as('getLatestJobs')
-
     cy.mount(
       <TestnetProviders>
         <LatestJobs {...props} />

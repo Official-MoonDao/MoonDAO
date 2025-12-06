@@ -46,8 +46,6 @@ describe('useMissionFundingStage', () => {
       </TestnetProviders>
     )
 
-    // eslint-disable-next-line cypress/no-unnecessary-waiting
-    cy.wait(500)
     cy.get('[data-testid="stage"]', { timeout: 15000 }).should('not.contain', 'undefined')
     cy.get('[data-testid="stage"]', { timeout: 15000 }).should('contain', '1')
   })

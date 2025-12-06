@@ -80,6 +80,7 @@ export default function useNavigation(citizen: any) {
         href: '/info',
         children: [
           { name: 'News', href: '/news' },
+          { name: 'Town Hall', href: '/townhall' },
           { name: 'About', href: '/about' },
           { name: 'Events', href: '/events' },
           { name: 'Analytics', href: '/analytics' },
