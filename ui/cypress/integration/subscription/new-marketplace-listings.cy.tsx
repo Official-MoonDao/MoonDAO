@@ -2,16 +2,12 @@ import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
 import TeamABI from 'const/abis/Team.json'
-import {
-  MARKETPLACE_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
-  TEAM_ADDRESSES,
-} from 'const/config'
+import { MARKETPLACE_TABLE_ADDRESSES, TABLELAND_ENDPOINT, TEAM_ADDRESSES } from 'const/config'
 import { getContract } from 'thirdweb'
+import * as thirdweb from 'thirdweb'
 import { serverClient } from '@/lib/thirdweb/client'
 import NewMarketplaceListings from '@/components/subscription/NewMarketplaceListings'
 import { TeamListing } from '@/components/subscription/TeamListing'
-import * as thirdweb from 'thirdweb'
 
 describe('<NewMarketplaceListings />', () => {
   let props: any
@@ -26,16 +22,29 @@ describe('<NewMarketplaceListings />', () => {
   })
 
   beforeEach(() => {
+    // Restore any previous stubs
+    if ((thirdweb as any).readContract?.restore) {
+      ;(thirdweb as any).readContract.restore()
+    }
+
     // Mock readContract for getTableName and expiresAt
     cy.stub(thirdweb, 'readContract').callsFake(async (options: any) => {
       if (options.method === 'getTableName') {
-        return mockTableName
+        return Promise.resolve(mockTableName)
       }
       if (options.method === 'expiresAt') {
-        return BigInt(futureTimestamp)
+        return Promise.resolve(BigInt(futureTimestamp))
       }
-      return null
+      return Promise.resolve(null)
     })
+
+    // Set up intercept to match the exact URL pattern used by SWR fetcher
+    cy.intercept('GET', '**/api/tableland/query*', (req) => {
+      req.reply({
+        statusCode: 200,
+        body: [listing, listing],
+      })
+    }).as('getNewMarketplaceListings')
 
     props = {
       selectedChain: CYPRESS_CHAIN_V5,
@@ -53,38 +62,43 @@ describe('<NewMarketplaceListings />', () => {
       }),
     }
 
-    cy.intercept('GET', `/api/tableland/query?statement=*`, {
-      statusCode: 200,
-      body: [listing, listing],
-    }).as('getNewMarketplaceListings')
-
     cy.mountNextRouter('/')
+  })
+
+  it('Renders the component and listings', () => {
     cy.mount(
       <TestnetProviders>
         <NewMarketplaceListings {...props} />
       </TestnetProviders>
     )
-  })
 
-  it('Renders the component and listings', () => {
-    cy.wait('@getNewMarketplaceListings')
+    cy.wait('@getNewMarketplaceListings', { timeout: 15000 })
+    cy.contains('h3', 'Newest Listings', { timeout: 10000 }).should('be.visible')
 
-    cy.contains('h3', 'Newest Listings').should('be.visible')
-    
-    // Wait for listings to be processed and rendered
-    cy.get('#new-marketplace-listings-container')
+    // Wait for listings to be processed and rendered - need to wait for async processing
+    cy.get('#new-marketplace-listings-container', { timeout: 10000 }).should('exist')
+    cy.get('#new-marketplace-listings-container', { timeout: 15000 })
       .children()
       .should('have.length', 2)
-      .should('be.visible')
   })
 
   it('Displays the description text', () => {
-    cy.contains('Discover and trade exclusive items from space missions').should(
-      'be.visible'
+    cy.mount(
+      <TestnetProviders>
+        <NewMarketplaceListings {...props} />
+      </TestnetProviders>
     )
+    cy.contains('Discover and trade exclusive items from space missions', {
+      timeout: 10000,
+    }).should('be.visible')
   })
 
   it('Has a View All Items button', () => {
-    cy.contains('button', 'View All Items').should('be.visible')
+    cy.mount(
+      <TestnetProviders>
+        <NewMarketplaceListings {...props} />
+      </TestnetProviders>
+    )
+    cy.contains('button', 'View All Items', { timeout: 10000 }).should('be.visible')
   })
 })

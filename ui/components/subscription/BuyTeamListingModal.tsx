@@ -38,7 +38,7 @@ type BuyListingModalProps = {
   selectedChain: any
   listing: TeamListing
   recipient: string | undefined | null
-  setEnabled: Function
+  setEnabled: (enabled: boolean) => void
 }
 
 export default function BuyTeamListingModal({

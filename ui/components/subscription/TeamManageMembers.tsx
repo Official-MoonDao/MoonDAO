@@ -26,7 +26,7 @@ type TeamManageMembersModalProps = {
   teamContract: any
   teamId: string
   selectedChain: any
-  setEnabled: Function
+  setEnabled: (enabled: boolean) => void
   multisigAddress: string
   adminHatId: string
   managerHatId: any

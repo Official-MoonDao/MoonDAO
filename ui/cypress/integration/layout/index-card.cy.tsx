@@ -29,7 +29,10 @@ describe('<IndexCard />', () => {
       'src',
       '/assets/icon-passport.svg'
     )
-    cy.get('#index-main-header').should('contain.text', '')
+    // Header can contain both header and metadata.name
+    cy.get('#index-main-header').should('exist')
+    // Check that header text is present (may be combined with metadata.name)
+    cy.get('#index-main-header').should('contain.text', props.header || props.metadata.name)
   })
 
   it('Renders with provided props', () => {

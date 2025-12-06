@@ -13,7 +13,7 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type DeleteProfileDataProps = {
   nft: any
-  setEnabled: Function
+  setEnabled: (enabled: boolean) => void
   tableContract: any
   tokenId: any
   type: string
@@ -21,8 +21,8 @@ type DeleteProfileDataProps = {
 
 type DeleteProfileDataModalProps = {
   nft: any
-  setParentModalEnabled: Function
-  setDeleteModalEnabled: Function
+  setParentModalEnabled: (enabled: boolean) => void
+  setDeleteModalEnabled: (enabled: boolean) => void
   tableContract: any
   tokenId: any
   type: string

@@ -19,7 +19,7 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import SectionCard from '@/components/layout/SectionCard'
+import Card from '@/components/layout/Card'
 import { Distribution } from '@/components/nance/ProjectRewards'
 
 export default function RewardsThankYou({
@@ -68,7 +68,7 @@ export default function RewardsThankYou({
           popOverEffect={false}
           isProfile
         >
-          <SectionCard>
+          <Card>
             <p>
               {`Thank you for performing your duty as a member of the MoonDAO community! Your allocation has been received. You can update your allocation at any time before the end of the quarter by resubmitting on the `}
               <Link href="/projects" className="text-light-warm">
@@ -91,7 +91,7 @@ export default function RewardsThankYou({
                   </div>
                 ))}
             </div>
-          </SectionCard>
+          </Card>
         </ContentLayout>
       </Container>
     </section>

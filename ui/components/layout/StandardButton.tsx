@@ -24,9 +24,9 @@ export default function StandardButton({
   children = 'ReactNode',
   onClick = () => {},
   disabled = false,
-  backgroundColor = 'bg-gradient-to-r from-blue-600 to-purple-600',
-  hoverColor = 'hover:from-blue-700 hover:to-purple-700',
-  hoverEffect = false, // Disabled by default to remove extension effect
+  backgroundColor,
+  hoverColor,
+  hoverEffect = false,
   borderRadius = 'rounded-lg',
   link = '#',
   target = '',
@@ -35,17 +35,30 @@ export default function StandardButton({
   styleOnly = false,
   type = 'button',
 }: StandardButtonProps) {
+  const defaultBackground = 'bg-gradient-to-r from-blue-600 to-purple-600'
+  const defaultHover = 'hover:from-blue-700 hover:to-purple-700'
+  const finalBackground =
+    backgroundColor !== undefined && backgroundColor !== '' ? backgroundColor : defaultBackground
+
+  // Handle hoverColor - add hover: prefix if not already present
+  let finalHover = ''
+  if (hoverColor) {
+    finalHover = hoverColor.startsWith('hover:') ? hoverColor : `hover:${hoverColor}`
+  } else if (!backgroundColor) {
+    finalHover = defaultHover
+  }
+
   const buttonContent = (
     <button
       id={id}
       className={`
         px-4 py-2 font-medium transition-all duration-200 shadow-lg hover:shadow-xl
-        ${backgroundColor} 
-        ${hoverColor}
-        ${borderRadius} 
+        ${finalBackground}
+        ${finalHover}
+        ${borderRadius}
         ${textColor}
-        ${className}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+        ${className}
       `}
       onClick={onClick || null}
       type={type as any}
@@ -57,9 +70,11 @@ export default function StandardButton({
 
   return styleOnly ? (
     buttonContent
-  ) : (
-    <Link href={link} target={target} rel="noopener noreferrer">
+  ) : link && link !== '#' ? (
+    <Link href={link} target={target} rel="noopener noreferrer" className="inline-block">
       {buttonContent}
     </Link>
+  ) : (
+    buttonContent
   )
 }

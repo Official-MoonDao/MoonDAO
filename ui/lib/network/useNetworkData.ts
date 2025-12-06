@@ -130,7 +130,6 @@ export function useTeams(options: UseNetworkDataOptions = {}): NetworkDataResult
     ? `SELECT * FROM ${teamTableName} ${searchClause} ORDER BY id DESC ${paginationClause}`
     : null
 
-  // Use initial data for pages 1-3 if available and no search
   const fallbackData =
     !search && initialData && initialData.length > 0 && page >= 1 && page <= 3
       ? initialData.slice((page - 1) * pageSize, page * pageSize)
@@ -185,7 +184,6 @@ export function useCitizens(options: UseNetworkDataOptions = {}): NetworkDataRes
     ? `SELECT * FROM ${citizenTableName} ${searchClause} ORDER BY id DESC ${paginationClause}`
     : null
 
-  // Use initial data for pages 1-3 if available and no search
   const fallbackData =
     !search && initialData && initialData.length > 0 && page >= 1 && page <= 3
       ? initialData.slice((page - 1) * pageSize, page * pageSize)
@@ -232,7 +230,6 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
   const chain = selectedChain || DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
   const teamsResult = useTeams(options)
-  // Show data optimistically while validation happens
   const [validTeams, setValidTeams] = useState<NetworkNFT[]>(teamsResult.data || [])
   const [isValidating, setIsValidating] = useState(false)
   const [validationError, setValidationError] = useState<Error | null>(null)
@@ -281,7 +278,6 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
 
         const now = Math.floor(Date.now() / 1000)
 
-        // Use Promise.allSettled to handle individual failures gracefully
         const validationResults = await Promise.allSettled(
           teamsResult.data.map(async (team) => {
             try {
@@ -292,12 +288,11 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
               })
               return +expiresAt.toString() > now ? team : null
             } catch (error) {
-              // If validation fails, assume valid (optimistic) rather than filtering out
               console.warn(
                 `Error checking expiration for team ${team.metadata.id}, showing optimistically:`,
                 error
               )
-              return team // Return team optimistically on error
+              return team
             }
           })
         )
@@ -306,14 +301,12 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
           .map((result) => (result.status === 'fulfilled' ? result.value : null))
           .filter((team): team is NetworkNFT => team !== null)
 
-        // Only update if we got valid results, otherwise keep optimistic data
         if (valid.length > 0 || validationResults.every((r) => r.status === 'rejected')) {
           setValidTeams(valid)
         }
       } catch (error) {
         console.error('Error validating teams:', error)
         setValidationError(error as Error)
-        // Don't clear data on error - keep showing optimistic data
       } finally {
         setIsValidating(false)
       }
@@ -338,7 +331,6 @@ export function useValidCitizens(
   const chain = selectedChain || DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
   const citizensResult = useCitizens(options)
-  // Show data optimistically while validation happens
   const [validCitizens, setValidCitizens] = useState<NetworkNFT[]>(citizensResult.data || [])
   const [isValidating, setIsValidating] = useState(false)
   const [validationError, setValidationError] = useState<Error | null>(null)
@@ -349,7 +341,6 @@ export function useValidCitizens(
     return citizensResult.data.map((c) => c.metadata.id).join(',')
   }, [citizensResult.data])
 
-  // Update optimistic data when citizensResult changes
   useEffect(() => {
     if (dataKey !== lastValidatedDataKeyRef.current) {
       if (citizensResult.data) {
@@ -387,7 +378,6 @@ export function useValidCitizens(
 
         const now = Math.floor(Date.now() / 1000)
 
-        // Use Promise.allSettled to handle individual failures gracefully
         const validationResults = await Promise.allSettled(
           citizensResult.data.map(async (citizen) => {
             try {
@@ -398,12 +388,11 @@ export function useValidCitizens(
               })
               return +expiresAt.toString() > now ? citizen : null
             } catch (error) {
-              // If validation fails, assume valid (optimistic) rather than filtering out
               console.warn(
                 `Error checking expiration for citizen ${citizen.metadata.id}, showing optimistically:`,
                 error
               )
-              return citizen // Return citizen optimistically on error
+              return citizen
             }
           })
         )
@@ -412,14 +401,12 @@ export function useValidCitizens(
           .map((result) => (result.status === 'fulfilled' ? result.value : null))
           .filter((citizen): citizen is NetworkNFT => citizen !== null)
 
-        // Only update if we got valid results, otherwise keep optimistic data
         if (valid.length > 0 || validationResults.every((r) => r.status === 'rejected')) {
           setValidCitizens(valid)
         }
       } catch (error) {
         console.error('Error validating citizens:', error)
         setValidationError(error as Error)
-        // Don't clear data on error - keep showing optimistic data
       } finally {
         setIsValidating(false)
       }

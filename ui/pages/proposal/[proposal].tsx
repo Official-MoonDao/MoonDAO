@@ -76,13 +76,13 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
         popOverEffect={false}
         isProfile
       >
-        <div className="mt-10 mb-10">
-          <div className={`grid ${gridCols} gap-8`}>
-            <div className="lg:col-span-2 relative">
+        <div className="mt-10 mb-10 w-full">
+          <div className={`grid ${gridCols} gap-8 w-full max-w-full`}>
+            <div className="lg:col-span-2 relative w-full">
               <div className="absolute top-2 right-[20px]">
                 <DropDownMenu proposalPacket={proposalPacket} />
               </div>
-              <div>
+              <div className="w-full">
                 <MarkdownWithTOC body={proposalPacket.body || '--- No content ---'} />
               </div>
             </div>

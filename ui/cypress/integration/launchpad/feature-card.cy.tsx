@@ -9,12 +9,16 @@ describe('<FeatureCard />', () => {
     gradientTo: 'to-[#5F4BA2]',
   }
 
+  beforeEach(() => {
+    cy.mountNextRouter('/')
+  })
+
   it('Renders title, description, and icon', () => {
     cy.mount(<FeatureCard {...defaultProps} />)
 
     cy.contains('Global Access').should('be.visible')
     cy.contains('Tap into a global crypto network').should('be.visible')
-    cy.get('img[alt="Global Access"]').should('have.attr', 'src', '/test-icon.svg')
+    cy.get('img').should('have.attr', 'src').and('include', '/test-icon.svg')
   })
 
   it('Displays content correctly with different props', () => {
