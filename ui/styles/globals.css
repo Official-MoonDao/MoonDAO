@@ -1023,17 +1023,17 @@ body {
   position: absolute;
   left: var(--start-x, 50%);
   top: var(--start-y, 50%);
-  width: 4px;
-  height: 4px;
+  width: 2.5px;
+  height: 2.5px;
   background: radial-gradient(
     circle,
-    rgba(255, 255, 255, 1) 0%,
-    rgba(200, 220, 255, 0.8) 40%,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(200, 220, 255, 0.6) 40%,
     transparent 70%
   );
   border-radius: 50%;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 1), 0 0 12px rgba(200, 220, 255, 0.8),
-    0 0 20px rgba(150, 200, 255, 0.5), 0 0 30px rgba(100, 180, 255, 0.2);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.7), 0 0 8px rgba(200, 220, 255, 0.5),
+    0 0 14px rgba(150, 200, 255, 0.3), 0 0 20px rgba(100, 180, 255, 0.15);
   animation: shooting-star-move-head 1.8s linear forwards;
   transform-origin: center;
   filter: blur(0.3px);
@@ -1043,68 +1043,68 @@ body {
   position: absolute;
   left: var(--start-x, 50%);
   top: var(--start-y, 50%);
-  width: 200px;
-  height: 2px;
+  width: 150px;
+  height: 1.5px;
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 1) 0%,
-    rgba(220, 230, 255, 0.95) 5%,
-    rgba(180, 210, 255, 0.8) 15%,
-    rgba(150, 190, 255, 0.6) 30%,
-    rgba(120, 170, 255, 0.4) 50%,
-    rgba(100, 150, 255, 0.2) 70%,
-    rgba(80, 130, 255, 0.1) 85%,
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(220, 230, 255, 0.7) 5%,
+    rgba(180, 210, 255, 0.55) 15%,
+    rgba(150, 190, 255, 0.4) 30%,
+    rgba(120, 170, 255, 0.25) 50%,
+    rgba(100, 150, 255, 0.15) 70%,
+    rgba(80, 130, 255, 0.08) 85%,
     transparent 100%
   );
   transform-origin: left center;
   animation: shooting-star-move-trail 1.8s linear forwards;
   filter: blur(0.8px);
-  box-shadow: 0 0 12px rgba(200, 220, 255, 0.4);
+  box-shadow: 0 0 8px rgba(200, 220, 255, 0.25);
 }
 
 @keyframes shooting-star-move-head {
   0% {
     transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(0) scale(0.8);
+    opacity: 0.6;
+    filter: brightness(0.9);
+  }
+  1% {
     opacity: 0.8;
     filter: brightness(1);
   }
-  1% {
-    opacity: 1;
-    filter: brightness(1.2);
-  }
   50% {
     transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(100vw) scale(1);
-    opacity: 1;
-    filter: brightness(1);
+    opacity: 0.75;
+    filter: brightness(0.95);
   }
   95% {
     transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(150vw) scale(1);
-    opacity: 1;
-    filter: brightness(1);
+    opacity: 0.7;
+    filter: brightness(0.9);
   }
   100% {
     transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(150vw) scale(0.8);
     opacity: 0;
-    filter: brightness(0.5);
+    filter: brightness(0.4);
   }
 }
 
 @keyframes shooting-star-move-trail {
   0% {
     transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(0) scaleX(0.5);
-    opacity: 0.8;
+    opacity: 0.6;
   }
   1% {
-    opacity: 1;
+    opacity: 0.75;
     transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(0) scaleX(1);
   }
   50% {
     transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(100vw) scaleX(1);
-    opacity: 1;
+    opacity: 0.7;
   }
   95% {
     transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(150vw) scaleX(1);
-    opacity: 1;
+    opacity: 0.65;
   }
   100% {
     transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(150vw) scaleX(0.5);
