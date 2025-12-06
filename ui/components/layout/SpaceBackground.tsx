@@ -159,28 +159,34 @@ export default function SpaceBackground() {
     }
   }, [])
 
-  const createShootingStar = () => {
+  const createShootingStar = (baseX?: number, baseY?: number, baseAngle?: number) => {
     const side = Math.floor(Math.random() * 4)
     let startX = 0
     let startY = 0
     let angle = 0
 
-    if (side === 0) {
-      startX = Math.random() * 100
-      startY = -5
-      angle = 135 + Math.random() * 30
-    } else if (side === 1) {
-      startX = 105
-      startY = Math.random() * 100
-      angle = 225 + Math.random() * 30
-    } else if (side === 2) {
-      startX = Math.random() * 100
-      startY = 105
-      angle = 315 + Math.random() * 30
+    if (baseX !== undefined && baseY !== undefined && baseAngle !== undefined) {
+      startX = baseX + (Math.random() - 0.5) * 15
+      startY = baseY + (Math.random() - 0.5) * 15
+      angle = baseAngle + (Math.random() - 0.5) * 20
     } else {
-      startX = -5
-      startY = Math.random() * 100
-      angle = 45 + Math.random() * 30
+      if (side === 0) {
+        startX = Math.random() * 100
+        startY = -5
+        angle = 135 + Math.random() * 30
+      } else if (side === 1) {
+        startX = 105
+        startY = Math.random() * 100
+        angle = 225 + Math.random() * 30
+      } else if (side === 2) {
+        startX = Math.random() * 100
+        startY = 105
+        angle = 315 + Math.random() * 30
+      } else {
+        startX = -5
+        startY = Math.random() * 100
+        angle = 45 + Math.random() * 30
+      }
     }
 
     const newShootingStar: ShootingStar = {
@@ -201,7 +207,42 @@ export default function SpaceBackground() {
     const scheduleNext = () => {
       const delay = 20000 + Math.random() * 20000
       setTimeout(() => {
-        createShootingStar()
+        const isShower = Math.random() < 0.18
+        const count = isShower ? 2 + Math.floor(Math.random() * 2) : 1
+
+        if (isShower) {
+          const side = Math.floor(Math.random() * 4)
+          let baseX = 0
+          let baseY = 0
+          let baseAngle = 0
+
+          if (side === 0) {
+            baseX = Math.random() * 100
+            baseY = -5
+            baseAngle = 135 + Math.random() * 30
+          } else if (side === 1) {
+            baseX = 105
+            baseY = Math.random() * 100
+            baseAngle = 225 + Math.random() * 30
+          } else if (side === 2) {
+            baseX = Math.random() * 100
+            baseY = 105
+            baseAngle = 315 + Math.random() * 30
+          } else {
+            baseX = -5
+            baseY = Math.random() * 100
+            baseAngle = 45 + Math.random() * 30
+          }
+
+          for (let i = 0; i < count; i++) {
+            setTimeout(() => {
+              createShootingStar(baseX, baseY, baseAngle)
+            }, i * (150 + Math.random() * 200))
+          }
+        } else {
+          createShootingStar()
+        }
+
         scheduleNext()
       }, delay)
     }
@@ -221,7 +262,41 @@ export default function SpaceBackground() {
         }
 
         if (typedSequenceRef.current === 'moondao') {
-          createShootingStar()
+          const isShower = Math.random() < 0.25
+          const count = isShower ? 2 + Math.floor(Math.random() * 2) : 1
+
+          if (isShower) {
+            const side = Math.floor(Math.random() * 4)
+            let baseX = 0
+            let baseY = 0
+            let baseAngle = 0
+
+            if (side === 0) {
+              baseX = Math.random() * 100
+              baseY = -5
+              baseAngle = 135 + Math.random() * 30
+            } else if (side === 1) {
+              baseX = 105
+              baseY = Math.random() * 100
+              baseAngle = 225 + Math.random() * 30
+            } else if (side === 2) {
+              baseX = Math.random() * 100
+              baseY = 105
+              baseAngle = 315 + Math.random() * 30
+            } else {
+              baseX = -5
+              baseY = Math.random() * 100
+              baseAngle = 45 + Math.random() * 30
+            }
+
+            for (let i = 0; i < count; i++) {
+              setTimeout(() => {
+                createShootingStar(baseX, baseY, baseAngle)
+              }, i * (150 + Math.random() * 200))
+            }
+          } else {
+            createShootingStar()
+          }
           typedSequenceRef.current = ''
         } else if (typedSequenceRef.current.length >= 7) {
           typedSequenceRef.current = typedSequenceRef.current.slice(-6)
