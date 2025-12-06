@@ -92,13 +92,7 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
         description="Weekly Town Hall meetings with key topics, decisions, and action items for the MoonDAO community."
         image="/assets/townhall-metadata.png"
       />
-      <div className="min-h-screen bg-gradient-to-b from-dark-cool via-dark-cool to-darkest-cool">
-        {/* Background decorative elements */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/3 right-1/4 w-48 h-48 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
-
+      <div className="min-h-screen relative">
         {/* Main content */}
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
           {/* Header section */}
@@ -106,21 +100,21 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-GoodTimes text-white mb-4 leading-tight">
               Town Hall
             </h1>
-            <p className="text-lg md:text-xl text-slate-300 max-w-3xl leading-relaxed mb-6">
+            <p className="text-lg md:text-xl text-slate-200 max-w-3xl leading-relaxed mb-6">
               Weekly Town Hall meetings with key topics discussed, decisions made, action items, and
               important updates for community members.
             </p>
 
             {/* Enhanced info section */}
-            <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/70 border border-slate-600/50 rounded-xl p-6 mb-6 backdrop-blur-sm">
+            <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 mb-6 shadow-xl">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center">
-                    <VideoCameraIcon className="w-6 h-6 text-blue-400" />
+                  <div className="flex-shrink-0 w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center backdrop-blur-sm border border-blue-400/30">
+                    <VideoCameraIcon className="w-6 h-6 text-blue-300" />
                   </div>
                   <div>
                     <h3 className="text-white font-semibold mb-2">What We Do</h3>
-                    <p className="text-slate-300 text-sm leading-relaxed">
+                    <p className="text-slate-200 text-sm leading-relaxed">
                       Town halls are weekly community meetings where we discuss proposals, make
                       decisions, share updates, and coordinate on projects. All community members
                       are welcome to participate and contribute.
@@ -128,12 +122,12 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 bg-purple-600/20 rounded-lg flex items-center justify-center">
-                    <ChatBubbleLeftRightIcon className="w-6 h-6 text-purple-400" />
+                  <div className="flex-shrink-0 w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center backdrop-blur-sm border border-purple-400/30">
+                    <ChatBubbleLeftRightIcon className="w-6 h-6 text-purple-300" />
                   </div>
                   <div>
                     <h3 className="text-white font-semibold mb-2">Join Live</h3>
-                    <p className="text-slate-300 text-sm leading-relaxed mb-4">
+                    <p className="text-slate-200 text-sm leading-relaxed mb-4">
                       Town halls are streamed live to LinkedIn, YouTube, and X. Join us on Discord
                       to watch the YouTube stream together with the community. You can ask questions
                       in the chat on any platform, and the team will respond during the stream.
@@ -148,7 +142,7 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
             <NextTownHall />
 
             {/* Search bar */}
-            <div className="bg-gradient-to-br from-slate-800/70 to-slate-900/70 border border-slate-600/50 rounded-xl p-4 backdrop-blur-sm shadow-lg hover:border-slate-500/70 transition-all duration-300">
+            <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-4 shadow-xl hover:border-slate-600/70 hover:bg-slate-900/50 transition-all duration-300">
               <div className="flex items-center gap-3">
                 <div className="flex-1">
                   <Search
@@ -173,32 +167,32 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
             {searchLoading ? (
               <div className="flex justify-center items-center py-12">
                 <LoadingSpinner width="w-8" height="h-8" />
-                <span className="ml-3 text-slate-300">Searching...</span>
+                <span className="ml-3 text-slate-200">Searching...</span>
               </div>
             ) : error && summaries.length === 0 ? (
-              <div className="bg-red-900/20 border border-red-700/50 rounded-2xl p-6 text-red-300">
+              <div className="bg-red-900/30 backdrop-blur-md border border-red-700/50 rounded-2xl p-6 text-red-200 shadow-xl">
                 <p className="font-semibold mb-2">Error loading summaries</p>
                 <p>{error}</p>
               </div>
             ) : summaries.length === 0 ? (
-              <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 text-slate-300">
+              <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-2xl p-6 text-slate-200 shadow-xl">
                 <p>No town hall summaries available yet. Check back soon!</p>
               </div>
             ) : displayedSummaries.length === 0 && isSearchMode ? (
-              <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 text-slate-300">
+              <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-2xl p-6 text-slate-200 shadow-xl">
                 <p className="font-semibold mb-2">No results found</p>
                 <p>Try adjusting your search to find what you're looking for.</p>
               </div>
             ) : (
               <>
                 {isSearchMode && (
-                  <div className="text-slate-400 text-sm mb-4">
+                  <div className="text-slate-300 text-sm mb-4">
                     Found {displayedSummaries.length}{' '}
                     {displayedSummaries.length === 1 ? 'result' : 'results'}
                   </div>
                 )}
                 {error && !searchLoading && (
-                  <div className="bg-red-900/20 border border-red-700/50 rounded-2xl p-6 text-red-300">
+                  <div className="bg-red-900/30 backdrop-blur-md border border-red-700/50 rounded-2xl p-6 text-red-200 shadow-xl">
                     <p className="font-semibold mb-2">Error loading summaries</p>
                     <p>{error}</p>
                   </div>
@@ -233,7 +227,7 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
           </div>
 
           {/* Info banner */}
-          <div className="bg-blue-900/20 border border-blue-700/40 rounded-xl p-4 mt-12 backdrop-blur-sm">
+          <div className="bg-blue-900/30 backdrop-blur-md border border-blue-700/50 rounded-xl p-4 mt-12 shadow-xl">
             <p className="text-sm text-blue-200 text-left">
               We're working on improving our AI summaries. Some summaries may contain spelling or
               formatting errors and may be retroactively regenerated or edited for better quality.

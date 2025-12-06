@@ -241,7 +241,7 @@ a {
   }
 
   .sidebar-bg-dark {
-    background: linear-gradient(180deg, #090d21 70%, #46161b 100%);
+    background: linear-gradient(180deg, #090d21 70%, #040617 100%);
   }
 
   .sidebar-bg-light {
@@ -250,12 +250,40 @@ a {
 }
 
 .background-dark {
-  background: linear-gradient(
-    56.41deg,
-    #252c4d 29.98%,
-    #080c20 79.58%,
-    #2d121a 97.4%
-  );
+  position: relative;
+  background: #000000;
+}
+
+@keyframes starTwinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes starTwinkleSlow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.star-layer-far {
+  animation: starTwinkleSlow 8s ease-in-out infinite;
+}
+
+.star-layer-mid {
+  animation: starTwinkle 6s ease-in-out infinite;
+}
+
+.star-layer-near {
+  animation: starTwinkle 4s ease-in-out infinite;
 }
 
 .background-light {
@@ -330,7 +358,8 @@ a {
 }
 
 .gradient-9 {
-  background: linear-gradient(180deg, #090d21 70%, #46161b 100%);
+  position: relative;
+  background: #000000;
 }
 
 .gradient-10 {
@@ -706,12 +735,7 @@ html {
 }
 
 .bg-search {
-  background: linear-gradient(
-    -220deg,
-    #6d3f79 5%,
-    #425eeb 50%,
-    transparent 50%
-  );
+  background: linear-gradient(-220deg, #6d3f79 5%, #425eeb 50%, transparent 50%);
 }
 
 /*Profile page cards background*/
@@ -752,11 +776,7 @@ html {
   height: 50vw;
   border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(
-    circle at center,
-    var(--dark-cool-color) 0%,
-    transparent 100%
-  );
+  background: radial-gradient(circle at center, var(--dark-cool-color) 0%, transparent 100%);
   mix-blend-mode: screen;
   left: 0;
   top: 0;

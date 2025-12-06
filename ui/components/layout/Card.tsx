@@ -561,13 +561,14 @@ export default function Card({
 
   const cardContent =
     variant === 'gradient' ? (
-      <span
+      <div
         className={`animate-fadeIn flex flex-col relative ${variantClass} ${sizeClass} w-full h-full ${className}`}
+        style={{ width: '100%', minWidth: 0 }}
       >
-        <div className="flex-grow">
+        <div className="flex-grow w-full">
           <span
             id="content-container"
-            className={`h-full ${
+            className={`h-full w-full ${
               padding === 'sm' ? 'p-[16px]' : padding === 'lg' ? 'p-[32px]' : 'p-[20px]'
             } md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between`}
           >
@@ -699,7 +700,7 @@ export default function Card({
             </span>
           </span>
         </div>
-      </span>
+      </div>
     ) : (
       <div
         id={id || 'card-container'}
@@ -796,12 +797,13 @@ export default function Card({
 
   const wrapper =
     variant === 'gradient' ? (
-      <span
+      <div
         id={id || 'card-container'}
         className={`
-        card-container min-w-[300px] w-[65vw] md:w-full flex lg:flex-col rounded-[20px] relative overflow-hidden 
+        card-container w-full flex flex-col rounded-[20px] relative overflow-hidden
         ${link ? 'cursor-pointer' : ''} ${className}
       `}
+        style={className?.includes('!w-full') ? { width: '100% !important', minWidth: 0, maxWidth: '100% !important', flexShrink: 0, flexGrow: 1 } : { width: '100%', minWidth: 0, maxWidth: '100%', flexShrink: 0, flexGrow: 1 }}
       >
         {onClick ? (
           <button onClick={onClick} className="w-full h-full block">
@@ -814,7 +816,7 @@ export default function Card({
         ) : (
           cardContent
         )}
-      </span>
+      </div>
     ) : (
       <>
         {onClick ? (
