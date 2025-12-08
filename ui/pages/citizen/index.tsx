@@ -19,7 +19,7 @@ export default function Join() {
     freeMint: withDefault(StringParam, undefined),
     create: withDefault(StringParam, undefined),
   })
-  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>(
+  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen' | undefined>(
     create === 'true' ? 'citizen' : undefined
   )
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
