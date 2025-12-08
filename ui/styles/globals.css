@@ -1037,6 +1037,7 @@ body {
   animation: shooting-star-move-head 1.8s linear forwards;
   transform-origin: center;
   filter: blur(0.3px);
+  will-change: transform;
 }
 
 .shooting-star-trail {
@@ -1060,6 +1061,7 @@ body {
   animation: shooting-star-move-trail 1.8s linear forwards;
   filter: blur(0.8px);
   box-shadow: 0 0 8px rgba(200, 220, 255, 0.25);
+  will-change: transform;
 }
 
 @keyframes shooting-star-move-head {
@@ -1073,17 +1075,17 @@ body {
     filter: brightness(1);
   }
   50% {
-    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(100vw) scale(1);
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(300vw) scale(1);
     opacity: 0.75;
     filter: brightness(0.95);
   }
   95% {
-    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(150vw) scale(1);
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(400vw) scale(1);
     opacity: 0.7;
     filter: brightness(0.9);
   }
   100% {
-    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(150vw) scale(0.8);
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(400vw) scale(0.8);
     opacity: 0;
     filter: brightness(0.4);
   }
@@ -1099,15 +1101,25 @@ body {
     transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(0) scaleX(1);
   }
   50% {
-    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(100vw) scaleX(1);
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(300vw) scaleX(1);
     opacity: 0.7;
   }
   95% {
-    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(150vw) scaleX(1);
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(400vw) scaleX(1);
     opacity: 0.65;
   }
   100% {
-    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(150vw) scaleX(0.5);
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(400vw) scaleX(0.5);
     opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .shooting-star-head {
+    animation: shooting-star-move-head 1.2s linear forwards;
+  }
+
+  .shooting-star-trail {
+    animation: shooting-star-move-trail 1.2s linear forwards;
   }
 }
