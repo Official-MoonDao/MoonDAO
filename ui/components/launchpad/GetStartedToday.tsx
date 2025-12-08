@@ -1,15 +1,12 @@
 import Image from 'next/image'
-import StandardButton from '@/components/layout/StandardButton'
+import Button from '@/components/layout/Button'
 
 type GetStartedTodayProps = {
   citizenHasAccess: boolean
   onLaunchClick: () => void
 }
 
-export default function GetStartedToday({
-  citizenHasAccess,
-  onLaunchClick,
-}: GetStartedTodayProps) {
+export default function GetStartedToday({ citizenHasAccess, onLaunchClick }: GetStartedTodayProps) {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0">
@@ -47,11 +44,11 @@ export default function GetStartedToday({
             <div className="pt-6 md:pt-8">
               <div className="relative group">
                 {citizenHasAccess && (
-                  <StandardButton
+                  <Button
                     id="launch-mission-button-3"
-                    className="relative bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] text-white font-semibold text-sm sm:text-base px-6 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border-0 backdrop-blur-sm text-center"
+                    variant="primary"
+                    className="relative bg-gradient-to-r from-[#6C407D] via-[#5F4BA2] to-[#4660E7] text-white font-semibold text-sm sm:text-base hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border-0 backdrop-blur-sm text-center px-6 py-3.5 sm:px-8 sm:py-4"
                     onClick={onLaunchClick}
-                    hoverEffect={false}
                   >
                     <div className="flex items-center justify-center w-full text-center">
                       <span className="relative text-center pl-2 sm:pl-4">
@@ -73,7 +70,7 @@ export default function GetStartedToday({
                         />
                       </svg>
                     </div>
-                  </StandardButton>
+                  </Button>
                 )}
               </div>
             </div>
@@ -86,4 +83,3 @@ export default function GetStartedToday({
     </section>
   )
 }
-

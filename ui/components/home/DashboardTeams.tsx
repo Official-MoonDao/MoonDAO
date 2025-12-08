@@ -2,7 +2,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { Hat } from '../hats/Hat'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
-import StandardButton from '../layout/StandardButton'
+import Button from '../layout/Button'
 
 export default function DashboardTeams({
   selectedChain,
@@ -27,9 +27,9 @@ export default function DashboardTeams({
         <p className="text-gray-400 text-sm text-center py-2">
           You are not a member of any teams.
         </p>
-        <StandardButton link="/team" className="w-full">
+        <Button link="/team" className="w-full">
           Create a Team
-        </StandardButton>
+        </Button>
       </div>
     )
   return (
@@ -58,9 +58,9 @@ export default function DashboardTeams({
             <p className="text-gray-400 text-sm mb-4">
               You are not a member of any teams.
             </p>
-            <StandardButton link="/team" className="inline-block">
+            <Button link="/team" className="inline-block">
               Create a Team
-            </StandardButton>
+            </Button>
           </div>
         )
       ) : (

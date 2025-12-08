@@ -15,8 +15,8 @@ import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import useSafe from '@/lib/safe/useSafe'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import HatsABI from '../../const/abis/Hats.json'
+import Button from '../layout/Button'
 import Modal from '../layout/Modal'
-import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type TeamManageMembersModalProps = {
@@ -49,9 +49,7 @@ function HatOption({ hat }: any) {
 
   useEffect(() => {
     async function getHatMetadata() {
-      const res = await fetch(
-        `https://ipfs.io/ipfs/${hat.details.split('ipfs://')[1]}`
-      )
+      const res = await fetch(`https://ipfs.io/ipfs/${hat.details.split('ipfs://')[1]}`)
       const data = await res.json()
       setHatMetadata(data.data)
     }
@@ -91,10 +89,7 @@ function TeamMembers({
         key={`modal-team-member-wearer-${wearer.address}`}
         className="bg-dark-cool rounded-[1vmax] mb-2 p-5"
       >
-        <TeamMemberName
-          selectedChain={selectedChain}
-          address={wearer.address}
-        />
+        <TeamMemberName selectedChain={selectedChain} address={wearer.address} />
         <p>{`${wearer.address.slice(0, 5)}...${wearer.address.slice(-5)}`}</p>
         <div className="mt-2 flex flex-col gap-2">
           {hatNames?.map((hatName: any) => (
@@ -106,9 +101,7 @@ function TeamMembers({
                 onClick={async () => {
                   try {
                     const v2TeamCreatorPatchedPassthroughModuleAddress =
-                      TEAM_CREATOR_V2_PASSTHROUGH_MODULE_PATCHED_ADDRESSES?.[
-                        chainSlug
-                      ]?.[teamId]
+                      TEAM_CREATOR_V2_PASSTHROUGH_MODULE_PATCHED_ADDRESSES?.[chainSlug]?.[teamId]
 
                     let memberHatPassthroughModuleAddress: any = ''
 
@@ -128,15 +121,14 @@ function TeamMembers({
                       params: [teamId],
                     })
                     const iface = new ethers.utils.Interface(HatsABI)
-                    const txData = iface.encodeFunctionData(
-                      'setHatWearerStatus',
-                      [hatName.hatId, wearer.address, false, true]
-                    )
+                    const txData = iface.encodeFunctionData('setHatWearerStatus', [
+                      hatName.hatId,
+                      wearer.address,
+                      false,
+                      true,
+                    ])
 
-                    if (
-                      hatName.hatId ===
-                      hatIdDecimalToHex(managerHatId.toString())
-                    ) {
+                    if (hatName.hatId === hatIdDecimalToHex(managerHatId.toString())) {
                       await queueSafeTx({
                         to: HATS_ADDRESS,
                         data: txData,
@@ -189,8 +181,7 @@ function TeamManageMembersModal({
   const [hasAddedMember, setHasAddedMember] = useState<boolean>(false)
   const [newMemberAddress, setNewMemberAddress] = useState<string>('')
   const [selectedHatId, setSelectedHatId] = useState<any>(reversedHats?.[0]?.id)
-  const [newMemberIsIneligible, setNewMemberIsIneligible] =
-    useState<boolean>(false)
+  const [newMemberIsIneligible, setNewMemberIsIneligible] = useState<boolean>(false)
   const [isLoadingNewMember, setIsLoadingNewMember] = useState<boolean>(false)
 
   //Add hat form
@@ -251,11 +242,8 @@ function TeamManageMembersModal({
             <button
               className="font-bold text-light-warm"
               onClick={() => {
-                const safeNetwork =
-                  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
-                window.open(
-                  `https://app.safe.global/home?safe=${safeNetwork}:${multisigAddress}`
-                )
+                const safeNetwork = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
+                window.open(`https://app.safe.global/home?safe=${safeNetwork}:${multisigAddress}`)
               }}
             >
               Safe
@@ -267,19 +255,13 @@ function TeamManageMembersModal({
           className="w-full flex flex-col gap-2 items-start justify-start rounded-[2vmax]"
           onSubmit={async (e) => {
             e.preventDefault()
-            if (!validateEthereumAddress(newMemberAddress))
-              return toast.error('Invalid address.')
+            if (!validateEthereumAddress(newMemberAddress)) return toast.error('Invalid address.')
 
             const iface = new ethers.utils.Interface(HatsABI)
-            const txData = iface.encodeFunctionData('mintHat', [
-              selectedHatId,
-              newMemberAddress,
-            ])
+            const txData = iface.encodeFunctionData('mintHat', [selectedHatId, newMemberAddress])
 
             try {
-              if (
-                selectedHatId === hatIdDecimalToHex(managerHatId.toString())
-              ) {
+              if (selectedHatId === hatIdDecimalToHex(managerHatId.toString())) {
                 await queueSafeTx({
                   to: HATS_ADDRESS,
                   data: txData,
@@ -300,13 +282,8 @@ function TeamManageMembersModal({
               setIsValidAddress(false)
             } catch (err: any) {
               console.log(err.message)
-              if (
-                selectedHatId === hatIdDecimalToHex(managerHatId.toString()) &&
-                err.message
-              ) {
-                toast.error(
-                  'The connected wallet is not a signer of the gnosis safe.'
-                )
+              if (selectedHatId === hatIdDecimalToHex(managerHatId.toString()) && err.message) {
+                toast.error('The connected wallet is not a signer of the gnosis safe.')
               }
             }
           }}
@@ -368,11 +345,8 @@ function TeamManageMembersModal({
               <button
                 className="font-bold text-light-warm"
                 onClick={() => {
-                  const safeNetwork =
-                    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
-                  window.open(
-                    `https://app.safe.global/home?safe=${safeNetwork}:${multisigAddress}`
-                  )
+                  const safeNetwork = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
+                  window.open(`https://app.safe.global/home?safe=${safeNetwork}:${multisigAddress}`)
                 }}
               >
                 Safe
@@ -472,12 +446,14 @@ function TeamManageMembersModal({
             />
           </div>
 
-          <StandardButton
+          <Button
             type="submit"
-            className="mt-4 min-w-[200px] gradient-2 rounded-[5vmax]"
+            variant="gradient"
+            borderRadius="rounded-[5vmax]"
+            className="mt-4 min-w-[200px] gradient-2"
           >
             {'Add Hat'}
-          </StandardButton>
+          </Button>
           {hasAddedHat && (
             <p>
               {`Please sign and execute the transaction in the team's `}
@@ -530,12 +506,15 @@ export default function TeamManageMembers({
           managerHatId={managerHatId}
         />
       )}
-      <StandardButton
-        className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
+      <Button
+        variant="gradient"
+        size="md"
+        borderRadius="rounded-[2vmax] rounded-bl-[10px]"
+        className="min-w-[200px] gradient-2 transition-all duration-200 hover:scale-105"
         onClick={() => setManagerModalEnabled(true)}
       >
         {'Manage Members'}
-      </StandardButton>
+      </Button>
     </div>
   )
 }

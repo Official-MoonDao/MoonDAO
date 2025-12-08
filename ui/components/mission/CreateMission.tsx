@@ -7,11 +7,7 @@ import {
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import { usePrivy } from '@privy-io/react-auth'
 import MissionTableABI from 'const/abis/MissionTable.json'
-import {
-  DEFAULT_CHAIN_V5,
-  IPFS_GATEWAY,
-  MISSION_TABLE_ADDRESSES,
-} from 'const/config'
+import { DEFAULT_CHAIN_V5, IPFS_GATEWAY, MISSION_TABLE_ADDRESSES } from 'const/config'
 import { LAUNCHPAD_WHITELISTED_CITIZENS } from 'const/missions'
 import { getUnixTime } from 'date-fns'
 import { ethers } from 'ethers'
@@ -23,12 +19,7 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useLocalStorage } from 'react-use'
-import {
-  getContract,
-  prepareContractCall,
-  readContract,
-  sendAndConfirmTransaction,
-} from 'thirdweb'
+import { getContract, prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -48,11 +39,11 @@ import FormDate from '../forms/FormDate'
 import FormInput from '../forms/FormInput'
 import FormYesNo from '../forms/FormYesNo'
 import { Hat } from '../hats/Hat'
+import Button from '../layout/Button'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Container from '../layout/Container'
 import FileInput from '../layout/FileInput'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
-import StandardButton from '../layout/StandardButton'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionTokenomicsExplainer from './MissionTokenomicsExplainer'
@@ -155,27 +146,30 @@ export function CreateMissionStage({
         {children}
         <div className="mt-4 w-full flex flex-wrap gap-4 justify-between items-center">
           {stage > 0 ? (
-            <StandardButton
+            <Button
               id="back-button"
-              className="gradient-2 rounded-full"
-              hoverEffect={false}
+              variant="gradient"
+              borderRadius="rounded-full"
+              className="gradient-2"
+              icon={<ArrowLeftCircleIcon width={20} height={20} />}
+              iconPosition="left"
               onClick={() => setStage((prev: number) => prev - 1)}
             >
-              <div className="flex items-center gap-2">
-                <ArrowLeftCircleIcon width={20} height={20} />
-                Go Back
-              </div>
-            </StandardButton>
+              Go Back
+            </Button>
           ) : (
             <div />
           )}
           {customButton ? (
             customButton
           ) : (
-            <StandardButton
+            <Button
               id="continue-button"
-              className="gradient-2 rounded-full"
-              hoverEffect={false}
+              variant="gradient"
+              borderRadius="rounded-full"
+              className="gradient-2"
+              icon={<ArrowRightCircleIcon width={20} height={20} />}
+              iconPosition="right"
               onClick={async () => {
                 const isTestEnv = process.env.NEXT_PUBLIC_TEST_ENV === 'true'
                 if (!account && !isTestEnv) {
@@ -191,11 +185,8 @@ export function CreateMissionStage({
                 }
               }}
             >
-              <div className="flex items-center gap-2">
-                Continue
-                <ArrowRightCircleIcon width={20} height={20} />
-              </div>
-            </StandardButton>
+              Continue
+            </Button>
           )}
         </div>
       </div>
@@ -226,19 +217,13 @@ export default function CreateMission({
   const [selectedTeamNFT, setSelectedTeamNFT] = useState<any>()
   const [missionCache, setMissionCache, clearMissionCache] =
     useLocalStorage<MissionCache>(`MissionCacheV1`)
-  const [missionLogoUri, setMissionLogoUri] = useState<string | undefined>(
-    missionCache?.logoUri
-  )
+  const [missionLogoUri, setMissionLogoUri] = useState<string | undefined>(missionCache?.logoUri)
   const [missionData, setMissionData] = useState<MissionData>({
     name: missionCache?.name || '',
     description: missionCache?.description || '',
-    infoUri:
-      getAttribute(selectedTeamNFT?.metadata?.attributes, 'website')?.value ||
-      '',
+    infoUri: getAttribute(selectedTeamNFT?.metadata?.attributes, 'website')?.value || '',
     logoUri: missionCache?.logoUri || '',
-    socialLink:
-      getAttribute(selectedTeamNFT?.metadata?.attributes, 'communications') ||
-      '',
+    socialLink: getAttribute(selectedTeamNFT?.metadata?.attributes, 'communications') || '',
     tagline: missionCache?.tagline || '',
     fundingGoal: missionCache?.fundingGoal || undefined,
     youtubeLink: missionCache?.youtubeLink || '',
@@ -253,23 +238,15 @@ export default function CreateMission({
   })
 
   const [formattedFundingGoal, setFormattedFundingGoal] = useState<string>(
-    missionCache?.fundingGoal
-      ? Number(missionCache.fundingGoal).toLocaleString()
-      : ''
+    missionCache?.fundingGoal ? Number(missionCache.fundingGoal).toLocaleString() : ''
   )
 
   useEffect(() => {
     if (selectedTeamNFT) {
       setMissionData({
         ...missionData,
-        infoUri:
-          getAttribute(selectedTeamNFT?.metadata?.attributes, 'website')
-            ?.value || '',
-        socialLink:
-          getAttribute(
-            selectedTeamNFT?.metadata?.attributes,
-            'communications'
-          ) || '',
+        infoUri: getAttribute(selectedTeamNFT?.metadata?.attributes, 'website')?.value || '',
+        socialLink: getAttribute(selectedTeamNFT?.metadata?.attributes, 'communications') || '',
       })
     }
   }, [selectedTeamNFT])
@@ -278,23 +255,21 @@ export default function CreateMission({
   const [createdMission, setCreatedMission] = useState(false)
   const [fundingGoalIsLoading, setFundingGoalIsLoading] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
-  const [agreedToTokenNotSecurity, setAgreedToTokenNotSecurity] =
-    useState(false)
+  const [agreedToTokenNotSecurity, setAgreedToTokenNotSecurity] = useState(false)
 
-  const [teamRequirementModalEnabled, setTeamRequirementModalEnabled] =
-    useState(
-      !userTeamsAsManagerLoading &&
-        userTeamsAsManager &&
-        userTeamsAsManager?.[0] === undefined
-    )
+  const [teamRequirementModalEnabled, setTeamRequirementModalEnabled] = useState(
+    !userTeamsAsManagerLoading && userTeamsAsManager && userTeamsAsManager?.[0] === undefined
+  )
 
   useEffect(() => {
     if (userTeams && !userTeamsAsManagerLoading)
       setTeamRequirementModalEnabled(userTeamsAsManager?.[0] === undefined)
   }, [userTeams, userTeamsAsManager, userTeamsAsManagerLoading])
 
-  const { data: fundingGoalInETH, isLoading: fundingGoalInETHIsLoading } =
-    useETHPrice(missionData?.fundingGoal || 0, 'USD_TO_ETH')
+  const { data: fundingGoalInETH, isLoading: fundingGoalInETHIsLoading } = useETHPrice(
+    missionData?.fundingGoal || 0,
+    'USD_TO_ETH'
+  )
 
   const [isUploadingImage, setIsUploadingImage] = useState(false)
 
@@ -302,8 +277,7 @@ export default function CreateMission({
     try {
       if (!account) throw new Error('Please connect your wallet')
       if (!missionLogoUri) throw new Error('Please upload a mission image')
-      if (!fundingGoalInETH || +fundingGoalInETH <= 0)
-        throw new Error('Funding goal is not set')
+      if (!fundingGoalInETH || +fundingGoalInETH <= 0) throw new Error('Funding goal is not set')
 
       // Calculate deadline timestamp
       let deadlineTimestamp: number
@@ -314,8 +288,7 @@ export default function CreateMission({
         )
       } else {
         // No deadline defined - use defaults based on environment
-        deadlineTimestamp =
-          Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60 // 28 days
+        deadlineTimestamp = Math.floor(new Date().getTime() / 1000) + 28 * 24 * 60 * 60 // 28 days
       }
 
       // Calculate refund period
@@ -354,9 +327,7 @@ export default function CreateMission({
         }
       )
 
-      const { cid: missionMetadataIpfsHash } = await pinBlobOrFile(
-        missionMetadataBlob
-      )
+      const { cid: missionMetadataIpfsHash } = await pinBlobOrFile(missionMetadataBlob)
 
       // Single contract call using calculated values
       const transaction = prepareContractCall({
@@ -391,9 +362,7 @@ export default function CreateMission({
         (log: any) => log.topics[0] === missionCreatedEventSignature
       )
 
-      const missionId = ethers.BigNumber.from(
-        missionCreatedLog?.topics[1]
-      ).toString()
+      const missionId = ethers.BigNumber.from(missionCreatedLog?.topics[1]).toString()
 
       setCreatedMission(true)
 
@@ -414,16 +383,11 @@ export default function CreateMission({
             params: [],
           })
 
-          const result = await waitForRowById(
-            missionTableName,
-            'id',
-            missionId,
-            {
-              pollInterval: 1000, // Check every 1 second
-              timeout: 120000, // Wait up to 2 minutes
-              maxRetries: 120,
-            }
-          )
+          const result = await waitForRowById(missionTableName, 'id', missionId, {
+            pollInterval: 1000, // Check every 1 second
+            timeout: 120000, // Wait up to 2 minutes
+            maxRetries: 120,
+          })
 
           if (result.success) {
             toast.success('Mission created successfully!')
@@ -457,9 +421,7 @@ export default function CreateMission({
           }
         } catch (dbError) {
           console.error('Database polling error:', dbError)
-          toast.error(
-            'Mission created but database sync failed. Redirecting anyway...'
-          )
+          toast.error('Mission created but database sync failed. Redirecting anyway...')
           setCreatedMission(false)
           router.push(`/mission/${missionId}`)
         }
@@ -496,11 +458,8 @@ export default function CreateMission({
       setMissionData({
         ...missionData,
         socialLink:
-          getAttribute(selectedTeamNFT?.metadata?.attributes, 'communications')
-            ?.value || '',
-        infoUri:
-          getAttribute(selectedTeamNFT?.metadata?.attributes, 'website')
-            ?.value || '',
+          getAttribute(selectedTeamNFT?.metadata?.attributes, 'communications')?.value || '',
+        infoUri: getAttribute(selectedTeamNFT?.metadata?.attributes, 'website')?.value || '',
       })
     }
   }, [selectedTeamNFT])
@@ -563,9 +522,7 @@ export default function CreateMission({
                   setStep={setStage}
                 />
               </div>
-              {teamRequirementModalEnabled && (
-                <TeamRequirementModal setStatus={setStatus} />
-              )}
+              {teamRequirementModalEnabled && <TeamRequirementModal setStatus={setStatus} />}
               {stage === 0 && (
                 <CreateMissionStage
                   id="mission-overview-stage"
@@ -575,16 +532,10 @@ export default function CreateMission({
                   description="Enter your mission concept from a high level, overview perspective. These fields should encapsulate the mission idea succinctly to potential backers and compel them to contribute.
 "
                   action={() => {
-                    if (
-                      !userTeamsAsManager ||
-                      userTeamsAsManager.length === 0
-                    ) {
-                      return toast.error(
-                        'Please create a team or join one as a manager.',
-                        {
-                          style: toastStyle,
-                        }
-                      )
+                    if (!userTeamsAsManager || userTeamsAsManager.length === 0) {
+                      return toast.error('Please create a team or join one as a manager.', {
+                        style: toastStyle,
+                      })
                     } else if (selectedTeamId === undefined) {
                       return toast.error('Please select a team.', {
                         style: toastStyle,
@@ -609,12 +560,9 @@ export default function CreateMission({
                       missionData.youtubeLink.trim() &&
                       !isValidYouTubeUrl(missionData.youtubeLink)
                     ) {
-                      return toast.error(
-                        'Please enter a valid YouTube video link.',
-                        {
-                          style: toastStyle,
-                        }
-                      )
+                      return toast.error('Please enter a valid YouTube video link.', {
+                        style: toastStyle,
+                      })
                     }
                     return true
                   }}
@@ -623,19 +571,12 @@ export default function CreateMission({
                     {userTeamsAsManagerLoading ? (
                       <div className="flex items-center space-x-2">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span className="text-white">
-                          Loading your teams...
-                        </span>
+                        <span className="text-white">Loading your teams...</span>
                       </div>
-                    ) : !userTeamsAsManager ||
-                      userTeamsAsManager.length === 0 ? (
-                      <StandardButton
-                        className="gradient-2"
-                        hoverEffect={false}
-                        link="/team"
-                      >
+                    ) : !userTeamsAsManager || userTeamsAsManager.length === 0 ? (
+                      <Button variant="gradient" className="gradient-2" link="/team">
                         Create a Team
-                      </StandardButton>
+                      </Button>
                     ) : (
                       <></>
                     )}
@@ -658,10 +599,7 @@ export default function CreateMission({
                     userTeamsAsManager &&
                     userTeamsAsManager.length > 1 && (
                       <div>
-                        <p>
-                          You are a manager of multiple teams, please select
-                          one:
-                        </p>
+                        <p>You are a manager of multiple teams, please select one:</p>
                         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
                           {userTeamsAsManager.map((team: any) => (
                             <button
@@ -779,9 +717,7 @@ export default function CreateMission({
                         file,
                         `${missionData.name} Mission Image`
                       )
-                      const { cid: missionLogoIpfsHash } = await pinBlobOrFile(
-                        renamedMissionImage
-                      )
+                      const { cid: missionLogoIpfsHash } = await pinBlobOrFile(renamedMissionImage)
                       setMissionLogoUri(`${IPFS_GATEWAY}${missionLogoIpfsHash}`)
                     }}
                     dimensions={[1024, 1024]}
@@ -792,12 +728,7 @@ export default function CreateMission({
                   />
                   <div>
                     {missionLogoUri && (
-                      <Image
-                        src={missionLogoUri}
-                        alt="Mission Image"
-                        width={200}
-                        height={200}
-                      />
+                      <Image src={missionLogoUri} alt="Mission Image" width={200} height={200} />
                     )}
                   </div>
                 </CreateMissionStage>
@@ -809,10 +740,7 @@ export default function CreateMission({
                   stage={stage}
                   setStage={setStage}
                   action={() => {
-                    if (
-                      !missionData?.fundingGoal ||
-                      missionData.fundingGoal <= 0
-                    ) {
+                    if (!missionData?.fundingGoal || missionData.fundingGoal <= 0) {
                       return toast.error('Please enter a funding goal.', {
                         style: toastStyle,
                       })
@@ -825,21 +753,14 @@ export default function CreateMission({
                       })
                     }
 
-                    const selectedDate = new Date(
-                      missionData.deadline + 'T23:59:59'
-                    )
+                    const selectedDate = new Date(missionData.deadline + 'T23:59:59')
                     const now = new Date()
-                    const oneDayFromNow = new Date(
-                      now.getTime() + 24 * 60 * 60 * 1000
-                    )
+                    const oneDayFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
 
                     if (selectedDate <= oneDayFromNow) {
-                      return toast.error(
-                        'Deadline must be at least 1 day in the future.',
-                        {
-                          style: toastStyle,
-                        }
-                      )
+                      return toast.error('Deadline must be at least 1 day in the future.', {
+                        style: toastStyle,
+                      })
                     }
 
                     if (missionData.token.tradeable) {
@@ -884,9 +805,7 @@ export default function CreateMission({
                         if (rawValue) {
                           const numValue = parseFloat(rawValue)
                           if (!isNaN(numValue)) {
-                            setFormattedFundingGoal(
-                              `$${numValue.toLocaleString()}`
-                            )
+                            setFormattedFundingGoal(`$${numValue.toLocaleString()}`)
                           }
                         } else {
                           setFormattedFundingGoal('') // Allow empty value
@@ -960,11 +879,7 @@ export default function CreateMission({
                       />
                     </div>
 
-                    <div
-                      className={`${
-                        !missionData.token.tradeable && 'opacity-60'
-                      }`}
-                    >
+                    <div className={`${!missionData.token.tradeable && 'opacity-60'}`}>
                       <FormInput
                         id="mission-token-name"
                         label="Token Name"
@@ -985,11 +900,7 @@ export default function CreateMission({
                         tooltip="The name for your mission token (e.g.: Ethereum, Bitcoin)."
                       />
                     </div>
-                    <div
-                      className={`${
-                        !missionData.token.tradeable && 'opacity-60'
-                      }`}
-                    >
+                    <div className={`${!missionData.token.tradeable && 'opacity-60'}`}>
                       <FormInput
                         id="mission-token-symbol"
                         label="Token Symbol"
@@ -1030,9 +941,10 @@ export default function CreateMission({
                     return true
                   }}
                 >
-                  <StandardButton
-                    className="gradient-2 rounded-full"
-                    hoverEffect={false}
+                  <Button
+                    variant="gradient"
+                    borderRadius="rounded-full"
+                    className="gradient-2"
                     onClick={() => {
                       if (isUploadingImage) return
                       setMarkdown(MISSION_DESCRIPTION_TEMPLATE)
@@ -1040,7 +952,7 @@ export default function CreateMission({
                     disabled={isUploadingImage}
                   >
                     Restore Template
-                  </StandardButton>
+                  </Button>
                   <div
                     id="mission-description-editor"
                     className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50% relative"
@@ -1072,9 +984,7 @@ export default function CreateMission({
                           alt="Uploading..."
                           className="w-16 h-16 mb-4"
                         />
-                        <p className="text-white text-lg font-medium">
-                          Uploading image...
-                        </p>
+                        <p className="text-white text-lg font-medium">Uploading image...</p>
                         <p className="text-gray-300 text-sm mt-2">
                           Please wait, do not close this window
                         </p>
@@ -1104,8 +1014,7 @@ export default function CreateMission({
                       noPadding
                       isDisabled={
                         !agreedToTerms ||
-                        (missionData.token.tradeable &&
-                          !agreedToTokenNotSecurity) ||
+                        (missionData.token.tradeable && !agreedToTokenNotSecurity) ||
                         signingTx ||
                         createdMission
                       }
@@ -1133,9 +1042,7 @@ export default function CreateMission({
                       }
                       deadline={
                         missionData.deadline
-                          ? new Date(
-                              missionData.deadline + 'T23:59:59'
-                            ).getTime()
+                          ? new Date(missionData.deadline + 'T23:59:59').getTime()
                           : 0
                       }
                       token={missionData.token}
@@ -1180,8 +1087,8 @@ export default function CreateMission({
                       id="token-security-checkbox"
                       label={
                         <p>
-                          I ACKNOWLEDGE THAT THIS TOKEN IS NOT A SECURITY,
-                          CARRIES NO PROFIT EXPECTATION, AND I ACCEPT ALL{' '}
+                          I ACKNOWLEDGE THAT THIS TOKEN IS NOT A SECURITY, CARRIES NO PROFIT
+                          EXPECTATION, AND I ACCEPT ALL{' '}
                           <Link
                             className="text-blue-500 hover:underline"
                             href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
@@ -1190,8 +1097,7 @@ export default function CreateMission({
                           >
                             RISKS
                           </Link>{' '}
-                          ASSOCIATED WITH PARTICIPATION IN THE MOONDAO
-                          LAUNCHPAD.
+                          ASSOCIATED WITH PARTICIPATION IN THE MOONDAO LAUNCHPAD.
                         </p>
                       }
                       agreedToCondition={agreedToTokenNotSecurity}

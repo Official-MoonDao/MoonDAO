@@ -9,9 +9,9 @@ import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { daysUntilTimestamp } from '@/lib/utils/timestamp'
-import Card from '../layout/Card'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import ShareButton from '../layout/ShareButton'
+import StandardCard from '../layout/StandardCard'
 import BuyTeamListingModal from './BuyTeamListingModal'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
@@ -258,7 +258,7 @@ export default function TeamListing({
 
   return (
     <>
-      <Card
+      <StandardCard
         title={listing?.title || ''}
         headerLink={`/team/${listing?.teamId || ''}`}
         headerLinkLabel={teamNFT?.metadata?.name || `Team ${listing?.teamId || ''}`}

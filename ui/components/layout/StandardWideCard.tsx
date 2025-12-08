@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
-import StandardButton from '../layout/StandardButton'
+import Button from '../layout/Button'
 import IPFSRenderer from './IPFSRenderer'
 
 type StandardWideCardProps = {
@@ -60,18 +60,14 @@ export default function StandardWideCard({
             id="content-container"
             className={`h-full md:p-[32px] rounded-[20px] overflow-hidden flex flex-col justify-between bg-slate-800/50`}
           >
-            <span
-              id="content"
-              className={`animate-fadeIn relative z-50 flex flex-col gap-6`}
-            >
+            <span id="content" className={`animate-fadeIn relative z-50 flex flex-col gap-6`}>
               <div className="relative flex flex-col lg:flex-row gap-4 items-center">
                 {/* Image section */}
                 {(image || orgimage) && (
                   <div className="relative w-full h-full md:w-[275px] md:h-[275px] md:mx-8">
                     <div className="relative w-full h-full md:w-[275px] md:h-[275px] md:rounded-full overflow-hidden bg-gray-300 flex-shrink-0">
                       {image ? (
-                        typeof image !== 'string' ||
-                        image?.startsWith('blob:') ? (
+                        typeof image !== 'string' || image?.startsWith('blob:') ? (
                           <Image
                             className="w-full h-full object-cover"
                             src={image}
@@ -118,13 +114,9 @@ export default function StandardWideCard({
                     <h2 className="font-GoodTimes text-2xl text-white">
                       {header || title || (profile && 'Anon')}
                     </h2>
-                    {subheader && (
-                      <div className="text-gray-400 text-lg">{subheader}</div>
-                    )}
+                    {subheader && <div className="text-gray-400 text-lg">{subheader}</div>}
                   </div>
-                  {stats && (
-                    <div className="mt-4 flex flex-row gap-4">{stats}</div>
-                  )}
+                  {stats && <div className="mt-4 flex flex-row gap-4">{stats}</div>}
                 </div>
               </div>
 
@@ -148,7 +140,11 @@ export default function StandardWideCard({
       </span>
       {fullParagraph && showMoreButton && (
         <div className="absolute bottom-[-20px] left-[5%] gradient-2 rounded-full z-[50]">
-          <StandardButton
+          <Button
+            variant="gradient"
+            size="md"
+            borderRadius="rounded-full"
+            className="gradient-2"
             onClick={(e: React.MouseEvent) => {
               e.preventDefault()
               e.stopPropagation()
@@ -157,7 +153,7 @@ export default function StandardWideCard({
             styleOnly={true}
           >
             {isExpanded ? 'Show Less' : 'Show More'}
-          </StandardButton>
+          </Button>
         </div>
       )}
     </div>

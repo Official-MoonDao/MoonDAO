@@ -2,8 +2,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ReactNode } from 'react'
+import Button from '../layout/Button'
 import Frame from '../layout/Frame'
-import StandardButton from '../layout/StandardButton'
 import CollapsibleContainer from './CollapsibleContainer'
 import IPFSRenderer from './IPFSRenderer'
 
@@ -66,15 +66,9 @@ export default function StandardCard({
           id="content-container"
           className={`h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between`}
         >
-          <span
-            id="content"
-            className={`animate-fadeIn relative z-50 flex flex-col`}
-          >
+          <span id="content" className={`animate-fadeIn relative z-50 flex flex-col`}>
             {orgimage && (
-              <div
-                id="featured-image-container"
-                className="z-50 animate-fadeIn"
-              >
+              <div id="featured-image-container" className="z-50 animate-fadeIn">
                 <Frame noPadding marginBottom="0px">
                   <Image
                     id="featured-image"
@@ -145,9 +139,7 @@ export default function StandardCard({
                       width="250"
                       height="250"
                       className={`z-20 ${
-                        inline
-                          ? 'pt-[20px] w-[50px] h-[50px]'
-                          : 'w-[100px] h-[100px] pb-5'
+                        inline ? 'pt-[20px] w-[50px] h-[50px]' : 'w-[100px] h-[100px] pb-5'
                       }`}
                     />
                   )}
@@ -159,11 +151,7 @@ export default function StandardCard({
                 id="main-header"
                 className={`
                     w-full z-20 static-sub-header font-GoodTimes flex min-h-[50px]
-                    ${
-                      inline
-                        ? 'text-left'
-                        : 'text-center justify-center md:justify-start'
-                    }
+                    ${inline ? 'text-left' : 'text-center justify-center md:justify-start'}
                 `}
               >
                 {header && header}
@@ -174,19 +162,12 @@ export default function StandardCard({
 
             {subheader && subheader}
             <div id="description-and-id-container" className="relative z-50">
-              <div
-                id="description-and-id"
-                className={`text-left ${hovertext && 'description'}`}
-              >
+              <div id="description-and-id" className={`text-left ${hovertext && 'description'}`}>
                 {fullParagraph ? (
-                  <CollapsibleContainer minHeight="100px">
-                    {paragraph}
-                  </CollapsibleContainer>
+                  <CollapsibleContainer minHeight="100px">{paragraph}</CollapsibleContainer>
                 ) : (
                   <div
-                    className={`flex opacity-[70%] ${
-                      paragraph ? 'min-h-[100px]' : 'min-h-[20px]'
-                    }`}
+                    className={`flex opacity-[70%] ${paragraph ? 'min-h-[100px]' : 'min-h-[20px]'}`}
                   >
                     <div className="flex opacity-[70%] min-h-[100px] break-words">
                       {paragraph &&
@@ -204,7 +185,8 @@ export default function StandardCard({
                     id="mobile-button-container"
                     className="md:hidden flex pt-5 pb-5 justify-start w-full"
                   >
-                    <StandardButton
+                    <Button
+                      variant="gradient"
                       textColor="text-white"
                       borderRadius="rounded-tl-[10px] rounded-[2vmax]"
                       link="#"
@@ -213,7 +195,7 @@ export default function StandardCard({
                       styleOnly={true}
                     >
                       {hovertext}
-                    </StandardButton>
+                    </Button>
                   </span>
                 )}
               </div>
@@ -242,7 +224,6 @@ export default function StandardCard({
                 ${link ? 'cursor-pointer' : ''}
             `}
     >
-
       {onClick ? (
         <button onClick={onClick} className="w-full h-full block">
           {cardContent}

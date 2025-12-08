@@ -1,4 +1,4 @@
-import StandardButton from '../layout/StandardButton'
+import Button from '../layout/Button'
 import Tooltip from '../layout/Tooltip'
 
 type FormYesNoProps = {
@@ -33,28 +33,26 @@ export default function FormYesNo({
         )}
       </div>
       <div className="flex gap-4">
-        <StandardButton
+        <Button
           styleOnly
           onClick={() => onChange(true)}
           disabled={disabled}
-          backgroundColor={value === true ? 'bg-[#4052B6]' : 'bg-[#000000]'}
-          borderRadius="rounded-full"
-          hoverEffect={false}
-          className={`w-24 ${className}`}
+          className={`w-24 rounded-full ${
+            value === true ? 'bg-[#4052B6]' : 'bg-[#000000]'
+          } ${className}`}
         >
           <span className="font-GoodTimes">Yes</span>
-        </StandardButton>
-        <StandardButton
+        </Button>
+        <Button
           styleOnly
           onClick={() => onChange(false)}
           disabled={disabled}
-          backgroundColor={value === false ? 'bg-[#4052B6]' : 'bg-[#000000]'}
-          borderRadius="rounded-full"
-          hoverEffect={false}
-          className={`w-24 ${className}`}
+          className={`w-24 rounded-full ${
+            value === false ? 'bg-[#4052B6]' : 'bg-[#000000]'
+          } ${className}`}
         >
           <span className="font-GoodTimes">No</span>
-        </StandardButton>
+        </Button>
       </div>
     </div>
   )

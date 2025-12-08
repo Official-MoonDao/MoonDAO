@@ -7,8 +7,8 @@ import { useActiveAccount } from 'thirdweb/react'
 import { unpinCitizenImage, unpinTeamImage } from '@/lib/ipfs/unpin'
 import deleteResponse from '@/lib/typeform/deleteResponse'
 import { getAttribute } from '@/lib/utils/nft'
+import Button from '../layout/Button'
 import Modal from '../layout/Modal'
-import StandardButton from '../layout/StandardButton'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 type DeleteProfileDataProps = {
@@ -43,18 +43,16 @@ function DeleteProfileDataModal({
   return (
     <Modal id="delete-profile-data-modal" setEnabled={setDeleteModalEnabled}>
       <div className="p-12 bg-darkest-cool rounded-md">
-        <h2 className="text-xl font-bold">
-          Are you sure you want to delete this data?
-        </h2>
+        <h2 className="text-xl font-bold">Are you sure you want to delete this data?</h2>
         <div className="flex justify-end mt-5">
-          <StandardButton
+          <Button
             className="mr-2"
             onClick={() => {
               setDeleteModalEnabled(false)
             }}
           >
             Cancel
-          </StandardButton>
+          </Button>
           <PrivyWeb3Button
             requiredChain={DEFAULT_CHAIN_V5}
             label={isLoading ? 'Loading...' : 'Delete'}
@@ -129,10 +127,9 @@ function DeleteProfileDataModal({
                 })
 
                 if (receipt) {
-                  toast.success(
-                    'Data deleted successfully, please wait for the page to reload.',
-                    { duration: 10000 }
-                  )
+                  toast.success('Data deleted successfully, please wait for the page to reload.', {
+                    duration: 10000,
+                  })
                 }
 
                 setTimeout(() => {
@@ -172,12 +169,14 @@ export default function DeleteProfileData({
           type={type}
         />
       )}
-      <StandardButton
-        className="gradient-2 rounded-full"
+      <Button
+        variant="gradient"
+        borderRadius="rounded-full"
+        className="gradient-2"
         onClick={() => setDeleteModalEnabled(true)}
       >
         Delete Data
-      </StandardButton>
+      </Button>
     </>
   )
 }

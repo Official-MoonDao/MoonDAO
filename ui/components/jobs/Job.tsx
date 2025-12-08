@@ -6,10 +6,10 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount, useReadContract } from 'thirdweb/react'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { daysSinceTimestamp } from '@/lib/utils/timestamp'
+import Button from '../layout/Button'
+import Card from '../layout/Card'
 import Frame from '../layout/Frame'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
-import StandardButton from '../layout/StandardButton'
-import Card from '../layout/Card'
 import TeamJobModal from '../subscription/TeamJobModal'
 
 export type Job = {
@@ -76,11 +76,7 @@ export default function Job({
       setIsActive(false)
     }
 
-    if (
-      currTime > job.endTime &&
-      job.endTime !== 0 &&
-      job.endTime !== undefined
-    ) {
+    if (currTime > job.endTime && job.endTime !== 0 && job.endTime !== undefined) {
       setIsExpired(true)
     } else {
       setIsExpired(false)
@@ -92,14 +88,16 @@ export default function Job({
   const jobActions = (
     <div className="flex gap-2 items-center">
       {job.contactInfo && !previewMode && (
-        <StandardButton
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 hover:scale-105"
+        <Button
+          variant="primary"
+          size="sm"
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold hover:scale-105"
           onClick={() => {
             window.open(job.contactInfo)
           }}
         >
           Apply
-        </StandardButton>
+        </Button>
       )}
       {editable && (
         <div className="flex gap-2">
@@ -111,9 +109,7 @@ export default function Job({
               setEnabledEditJobModal(true)
             }}
           >
-            {!isDeleting && (
-              <PencilIcon className="h-4 w-4 text-slate-300 hover:text-white" />
-            )}
+            {!isDeleting && <PencilIcon className="h-4 w-4 text-slate-300 hover:text-white" />}
           </button>
           {isDeleting ? (
             <div className="p-2">
@@ -174,9 +170,7 @@ export default function Job({
                 {teamNFT.metadata.name}
               </Link>
             )}
-            <h3 className="font-GoodTimes text-white text-base leading-tight">
-              {job.title}
-            </h3>
+            <h3 className="font-GoodTimes text-white text-base leading-tight">{job.title}</h3>
             {job.tag && (
               <span className="inline-block mt-2 px-2 py-1 text-xs bg-blue-500/20 text-blue-300 rounded-md border border-blue-500/30">
                 {job.tag}
@@ -187,9 +181,7 @@ export default function Job({
 
         {/* Description */}
         <div className="flex-1 mb-4">
-          <p className="text-sm text-slate-300 line-clamp-3 leading-relaxed">
-            {job.description}
-          </p>
+          <p className="text-sm text-slate-300 line-clamp-3 leading-relaxed">{job.description}</p>
         </div>
 
         {/* Metadata (compensation, location) */}
@@ -234,9 +226,7 @@ export default function Job({
             {jobActions}
           </div>
           {editable && isExpired && (
-            <p className="text-xs text-red-400 mt-2">
-              This job post has expired
-            </p>
+            <p className="text-xs text-red-400 mt-2">This job post has expired</p>
           )}
         </div>
       </div>

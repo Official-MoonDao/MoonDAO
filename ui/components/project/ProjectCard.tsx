@@ -1,16 +1,16 @@
 //This component dipslays a project card using project data directly from tableland
+import { usePrivy } from '@privy-io/react-auth'
 import Link from 'next/link'
 import React, { useContext, memo, useState, useMemo, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
-import { usePrivy } from '@privy-io/react-auth'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { normalizeJsonString } from '@/lib/utils/rewards'
+import Button from '../layout/Button'
 import NumberStepper from '../layout/NumberStepper'
-import StandardButton from '../layout/StandardButton'
 
 type ProjectCardProps = {
   project: Project | undefined
@@ -37,13 +37,14 @@ const ProjectCardContent = memo(
     isVotingPeriod,
   }: any) => {
     const [isExpanded, setIsExpanded] = useState(false)
-    const description = project && project.MDP < 13
-      ? project.description
-      : proposalJSON?.abstract || project?.description || ''
-    
+    const description =
+      project && project.MDP < 13
+        ? project.description
+        : proposalJSON?.abstract || project?.description || ''
+
     // Set character limits that better match the new card height
     const [characterLimit, setCharacterLimit] = useState(380)
-    
+
     useEffect(() => {
       const handleResize = () => {
         if (typeof window !== 'undefined') {
@@ -51,17 +52,17 @@ const ProjectCardContent = memo(
           setCharacterLimit(window.innerWidth >= 1024 ? 420 : 380)
         }
       }
-      
+
       if (typeof window !== 'undefined') {
         handleResize()
         window.addEventListener('resize', handleResize)
         return () => window.removeEventListener('resize', handleResize)
       }
     }, [])
-    
+
     const isLongText = description.length > characterLimit
     const shouldTruncate = isLongText && !isExpanded
-    const truncatedDescription = shouldTruncate 
+    const truncatedDescription = shouldTruncate
       ? description.slice(0, characterLimit) + '...'
       : description
 
@@ -73,26 +74,27 @@ const ProjectCardContent = memo(
         <div className="flex justify-between items-start">
           <div className="w-full flex flex-col gap-3">
             <Link href={`/project/${project?.id}`} passHref>
-              <h1 className="font-GoodTimes text-white text-xl hover:text-moon-gold transition-colors cursor-pointer">{project?.name || ''}</h1>
+              <h1 className="font-GoodTimes text-white text-xl hover:text-moon-gold transition-colors cursor-pointer">
+                {project?.name || ''}
+              </h1>
             </Link>
             {project?.finalReportLink || project?.finalReportIPFS ? (
-              <StandardButton
-                className={`bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-fit text-sm px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${
+              <Button
+                variant="primary"
+                size="sm"
+                className={`bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white w-fit text-sm shadow-md hover:shadow-lg transition-all duration-200 ${
                   distribute && 'mr-4'
                 }`}
                 link={
-                  project?.finalReportIPFS
-                    ? `/project/${project.id}`
-                    : project?.finalReportLink
+                  project?.finalReportIPFS ? `/project/${project.id}` : project?.finalReportLink
                 }
                 onClick={(e: any) => {
                   e.stopPropagation()
                 }}
-                hoverEffect={false}
                 target={project?.finalReportIPFS ? '_self' : '_blank'}
               >
                 <p className="text-sm font-medium">📋 Final Report</p>
-              </StandardButton>
+              </Button>
             ) : (
               <div className="px-3 py-2 bg-green-600/20 border border-green-500/30 rounded-lg">
                 <p className="text-sm text-green-400 font-medium">🚀 Active Project</p>
@@ -189,11 +191,7 @@ export default function ProjectCard({
   const account = useActiveAccount()
   const address = account?.address
 
-  const { adminHatId, proposalJSON } = useProjectData(
-    projectContract,
-    hatsContract,
-    project
-  )
+  const { adminHatId, proposalJSON } = useProjectData(projectContract, hatsContract, project)
   const { authenticated } = usePrivy()
 
   const { selectedChain } = useContext(ChainContextV5)
@@ -252,9 +250,7 @@ export default function ProjectCard({
       {distribute ? (
         <ProjectCardContent
           project={project}
-          distribute={
-            distribute && (project!.finalReportLink || project!.finalReportIPFS)
-          }
+          distribute={distribute && (project!.finalReportLink || project!.finalReportIPFS)}
           userContributed={userContributed}
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}

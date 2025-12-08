@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import Job, { Job as JobType } from '../jobs/Job'
-import StandardButton from '../layout/StandardButton'
+import Button from '../layout/Button'
 import Card from './Card'
 import TeamJobModal from './TeamJobModal'
 
@@ -54,9 +54,7 @@ export default function TeamJobs({
   }, [jobTableContract, shouldFetch])
 
   const statement =
-    shouldFetch && tableName
-      ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
-      : null
+    shouldFetch && tableName ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}` : null
   const { data, mutate } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
   })
@@ -84,9 +82,7 @@ export default function TeamJobs({
       }
 
       function scrollToJob() {
-        const jobElement = document.getElementById(
-          `team-job-${router.query.job}`
-        )
+        const jobElement = document.getElementById(`team-job-${router.query.job}`)
         if (jobElement) {
           jobElement.scrollIntoView({
             behavior: 'smooth',
@@ -117,26 +113,20 @@ export default function TeamJobs({
           className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center"
         >
           <div className="flex gap-5">
-            <Image
-              src={jobIcon}
-              alt="Job icon"
-              width={30}
-              height={30}
-              className="opacity-70"
-            />
-            <h2 className="font-GoodTimes text-2xl text-white">
-              Open Job Board
-            </h2>
+            <Image src={jobIcon} alt="Job icon" width={30} height={30} className="opacity-70" />
+            <h2 className="font-GoodTimes text-2xl text-white">Open Job Board</h2>
           </div>{' '}
           {isManager && (
-            <StandardButton
-              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
+            <Button
+              variant="gradient"
+              borderRadius="rounded-[2vmax] rounded-bl-[10px]"
+              className="min-w-[200px] gradient-2 transition-all duration-200 hover:scale-105"
               onClick={() => {
                 setTeamJobModalEnabled(true)
               }}
             >
               Add a Job
-            </StandardButton>
+            </Button>
           )}
         </div>
         {isManager || isCitizen ? (
@@ -168,17 +158,19 @@ export default function TeamJobs({
                   🔒 {jobs.length} Job{jobs.length !== 1 ? 's' : ''} Available
                 </h4>
                 <p className="text-slate-300 mb-4">
-                  This team has active job postings. Become a Citizen to view
-                  full details, salary information, and application links.
+                  This team has active job postings. Become a Citizen to view full details, salary
+                  information, and application links.
                 </p>
-                <StandardButton
-                  className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"
+                <Button
+                  variant="gradient"
+                  borderRadius="rounded-[2vmax] rounded-bl-[10px]"
+                  className="min-w-[200px] gradient-2"
                   onClick={() => {
                     router.push('/citizen')
                   }}
                 >
                   Become a Citizen
-                </StandardButton>
+                </Button>
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 opacity-50 pointer-events-none">
@@ -210,14 +202,16 @@ export default function TeamJobs({
                 '⚠️ You must be a Citizen of the Space Acceleration Network or a Manager of the team to view the job board. If you are already a Citizen or Manager, please sign in.'
               }
             </p>
-            <StandardButton
-              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"
+            <Button
+              variant="gradient"
+              borderRadius="rounded-[2vmax] rounded-bl-[10px]"
+              className="min-w-[200px] gradient-2"
               onClick={() => {
                 router.push('/citizen')
               }}
             >
               Become a Citizen
-            </StandardButton>
+            </Button>
           </div>
         )}
 

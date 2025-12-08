@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
-import StandardButton from '../layout/StandardButton'
+import Button from '../layout/Button'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
@@ -102,12 +102,15 @@ export default function TeamMarketplace({
           <h2 className="font-GoodTimes text-2xl text-white">Marketplace</h2>
         </div>
         {isManager && (
-          <StandardButton
-            className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
+          <Button
+            variant="gradient"
+            size="md"
+            borderRadius="rounded-[2vmax] rounded-bl-[10px]"
+            className="min-w-[200px] gradient-2 transition-all duration-200 hover:scale-105"
             onClick={() => setListingModalEnabled(true)}
           >
             Create a Listing
-          </StandardButton>
+          </Button>
         )}
       </div>
       <div className="mt-4">

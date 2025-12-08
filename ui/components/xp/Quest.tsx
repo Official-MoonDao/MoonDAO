@@ -4,14 +4,7 @@ import ERC20ABI from 'const/abis/ERC20.json'
 import StagedXPVerifierABI from 'const/abis/StagedXPVerifier.json'
 import XPVerifierABI from 'const/abis/XPVerifier.json'
 import { DEFAULT_CHAIN_V5, MOONEY_ADDRESSES } from 'const/config'
-import React, {
-  ComponentType,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import React, { ComponentType, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Chain, getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -26,7 +19,7 @@ import {
   getNextUnclamedThreshold,
   type StagedQuestProgress,
 } from '@/lib/xp/staged-quest-info'
-import StandardButton from '@/components/layout/StandardButton'
+import Button from '@/components/layout/Button'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -73,8 +66,7 @@ export default function Quest({
   const [isLoadingXpAmount, setIsLoadingXpAmount] = useState(false)
 
   // Staged quest state
-  const [stagedProgress, setStagedProgress] =
-    useState<StagedQuestProgress | null>(null)
+  const [stagedProgress, setStagedProgress] = useState<StagedQuestProgress | null>(null)
   const [isLoadingStagedProgress, setIsLoadingStagedProgress] = useState(false)
   const [userMetric, setUserMetric] = useState(0)
 
@@ -121,9 +113,7 @@ export default function Quest({
     : userMetric.toLocaleString()
 
   const formattedNextUnclamedThreshold = quest.verifier.metricFormatting
-    ? quest.verifier
-        .metricFormatting(getNextUnclamedThreshold(stagedProgress))
-        .toLocaleString()
+    ? quest.verifier.metricFormatting(getNextUnclamedThreshold(stagedProgress)).toLocaleString()
     : stagedProgress
     ? getNextUnclamedThreshold(stagedProgress).toLocaleString()
     : 0
@@ -184,9 +174,7 @@ export default function Quest({
           )
 
           if (!response.ok) {
-            throw new Error(
-              `Failed to fetch user metric: ${response.statusText}`
-            )
+            throw new Error(`Failed to fetch user metric: ${response.statusText}`)
           }
 
           const data = await response.json()
@@ -229,17 +217,11 @@ export default function Quest({
       console.error('Error fetching user metric after retries:', error)
       return 0
     }
-  }, [
-    quest.verifier.route,
-    quest.verifier.metricKey,
-    userAddress,
-    retryWithBackoff,
-  ])
+  }, [quest.verifier.route, quest.verifier.metricKey, userAddress, retryWithBackoff])
 
   // Simplified staged progress fetching with retry logic
   const fetchStagedProgress = useCallback(async () => {
-    if (quest.verifier.type !== 'staged' || !verifierContract || !userAddress)
-      return
+    if (quest.verifier.type !== 'staged' || !verifierContract || !userAddress) return
 
     setIsLoadingStagedProgress(true)
     try {
@@ -250,11 +232,7 @@ export default function Quest({
       // Get progress with real user metric, also with retry
       const progress = await retryWithBackoff(
         async () => {
-          return await getStagedQuestProgress(
-            verifierContract,
-            userAddress,
-            metric
-          )
+          return await getStagedQuestProgress(verifierContract, userAddress, metric)
         },
         3,
         1000
@@ -266,13 +244,7 @@ export default function Quest({
     } finally {
       setIsLoadingStagedProgress(false)
     }
-  }, [
-    verifierContract,
-    userAddress,
-    quest.verifier.type,
-    fetchUserMetric,
-    retryWithBackoff,
-  ])
+  }, [verifierContract, userAddress, quest.verifier.type, fetchUserMetric, retryWithBackoff])
 
   // Define pollForClaimConfirmation after fetchStagedProgress
   const pollForClaimConfirmation = useCallback(async () => {
@@ -354,25 +326,16 @@ export default function Quest({
         console.error('Error polling for claim confirmation:', error)
         setIsPollingClaim(false)
         pollingTimeoutRef.current = null
-        toast.error(
-          'Error checking claim status. Please refresh and try again.',
-          {
-            duration: 5000,
-            style: toastStyle,
-          }
-        )
+        toast.error('Error checking claim status. Please refresh and try again.', {
+          duration: 5000,
+          style: toastStyle,
+        })
       }
     }
 
     // Start polling after initial delay - give blockchain more time
     pollingTimeoutRef.current = setTimeout(poll, 3000) // Start checking after 3 seconds
-  }, [
-    fetchHasClaimed,
-    isPollingClaim,
-    onClaimConfirmed,
-    quest.verifier.type,
-    fetchStagedProgress,
-  ])
+  }, [fetchHasClaimed, isPollingClaim, onClaimConfirmed, quest.verifier.type, fetchStagedProgress])
 
   const claimQuest = useCallback(async () => {
     if (!quest.verifier.route || !userAddress) return
@@ -428,18 +391,13 @@ export default function Quest({
         if (txHash) {
           console.log('Quest claim successful, txHash:', txHash)
           setError(null) // Clear any previous errors
-          toast.success(
-            'Quest claimed successfully! Waiting for blockchain confirmation...',
-            {
-              duration: 3000,
-              style: toastStyle,
-            }
-          )
+          toast.success('Quest claimed successfully! Waiting for blockchain confirmation...', {
+            duration: 3000,
+            style: toastStyle,
+          })
           pollForClaimConfirmation()
         } else {
-          console.warn(
-            'Quest claim was eligible but no transaction hash returned'
-          )
+          console.warn('Quest claim was eligible but no transaction hash returned')
           toast.error('Claim failed: No transaction hash returned')
         }
       } else {
@@ -476,8 +434,7 @@ export default function Quest({
       console.error('Quest claim error:', error)
 
       // Handle specific ERC20 balance error in catch block as well
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       if (errorMessage.includes('ERC20: transfer amount exceeds balance')) {
         setError(errorMessage) // Store the error for UI display
         toast.error(
@@ -547,9 +504,7 @@ export default function Quest({
     if (
       quest.verifier.type !== 'staged' &&
       quest.verifier.errorButtons &&
-      quest.verifier.errorButtons[
-        'No GitHub account linked to your Privy account'
-      ]
+      quest.verifier.errorButtons['No GitHub account linked to your Privy account']
     ) {
       fetchUserMetric()
     }
@@ -637,11 +592,11 @@ export default function Quest({
       if (!quest.verifier.errorButtons) return null
 
       // Find the first error button that matches the error message
-      const errorButtonConfig = Object.entries(
-        quest.verifier.errorButtons
-      ).find(([errorPattern]) => {
-        return errorMessage.includes(errorPattern)
-      })
+      const errorButtonConfig = Object.entries(quest.verifier.errorButtons).find(
+        ([errorPattern]) => {
+          return errorMessage.includes(errorPattern)
+        }
+      )
 
       if (!errorButtonConfig) return null
 
@@ -669,9 +624,7 @@ export default function Quest({
                   setError(null) // Clear any errors after successful GitHub linking
                 } catch (error) {
                   console.error('Error linking GitHub:', error)
-                  toast.error(
-                    'Failed to link GitHub account. Please try again.'
-                  )
+                  toast.error('Failed to link GitHub account. Please try again.')
                 }
               }}
               className={buttonClasses}
@@ -770,9 +723,7 @@ export default function Quest({
       className={`px-4 py-4 rounded-xl border transition-all duration-500 group relative overflow-hidden ${getContainerClasses()}`}
     >
       {/* Progress Background - Makes the whole card act as a progress bar */}
-      {(quest.verifier.type === 'staged' &&
-        stagedProgress &&
-        !isLoadingStagedProgress) ||
+      {(quest.verifier.type === 'staged' && stagedProgress && !isLoadingStagedProgress) ||
       isCompleted ? (
         <>
           {/* Main Progress Gradient */}
@@ -783,15 +734,11 @@ export default function Quest({
                 rgba(34, 197, 94, 0.15) 0%, 
                 rgba(34, 197, 94, 0.08) ${Math.min(
                   100,
-                  (Number(userMetric) /
-                    Number(getNextUnclamedThreshold(stagedProgress))) *
-                    100
+                  (Number(userMetric) / Number(getNextUnclamedThreshold(stagedProgress))) * 100
                 )}%, 
                 rgba(255, 255, 255, 0.02) ${Math.min(
                   100,
-                  (Number(userMetric) /
-                    Number(getNextUnclamedThreshold(stagedProgress))) *
-                    100
+                  (Number(userMetric) / Number(getNextUnclamedThreshold(stagedProgress))) * 100
                 )}%, 
                 rgba(255, 255, 255, 0.02) 100%)`,
             }}
@@ -811,9 +758,7 @@ export default function Quest({
               animation: 'shimmer 10s ease-in-out infinite',
               width: `${Math.min(
                 100,
-                (Number(userMetric) /
-                  Number(getNextUnclamedThreshold(stagedProgress))) *
-                  100
+                (Number(userMetric) / Number(getNextUnclamedThreshold(stagedProgress))) * 100
               )}%`,
             }}
           />
@@ -825,9 +770,7 @@ export default function Quest({
               style={{
                 left: `${Math.min(
                   100,
-                  (Number(userMetric) /
-                    Number(getNextUnclamedThreshold(stagedProgress))) *
-                    100
+                  (Number(userMetric) / Number(getNextUnclamedThreshold(stagedProgress))) * 100
                 )}%`,
                 transform: 'translateX(-50%)',
                 animation: 'pulse-glow 2s ease-in-out infinite',
@@ -849,13 +792,11 @@ export default function Quest({
             @keyframes pulse-glow {
               0%,
               100% {
-                box-shadow: 0 0 20px rgba(34, 197, 94, 0.5),
-                  0 0 40px rgba(34, 197, 94, 0.3),
+                box-shadow: 0 0 20px rgba(34, 197, 94, 0.5), 0 0 40px rgba(34, 197, 94, 0.3),
                   0 0 60px rgba(34, 197, 94, 0.1);
               }
               50% {
-                box-shadow: 0 0 30px rgba(34, 197, 94, 0.8),
-                  0 0 60px rgba(34, 197, 94, 0.5),
+                box-shadow: 0 0 30px rgba(34, 197, 94, 0.8), 0 0 60px rgba(34, 197, 94, 0.5),
                   0 0 90px rgba(34, 197, 94, 0.2);
               }
             }
@@ -899,36 +840,31 @@ export default function Quest({
           </div>
 
           {/* Stage and Threshold Info - Moved to upper right */}
-          {quest.verifier.type === 'staged' &&
-            stagedProgress &&
-            !isLoadingStagedProgress && (
-              <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-yellow-300 text-sm font-medium bg-gradient-to-r from-yellow-500/30 to-orange-500/30 px-2.5 py-1 rounded-full border border-yellow-400/30 shadow-lg shadow-yellow-500/20 backdrop-blur-sm">
-                    Stage{' '}
-                    {Math.min(
-                      (stagedProgress.nextClaimableStage ?? -1) + 2,
-                      stagedProgress.stages.length
-                    )}{' '}
-                    of {stagedProgress.stages.length}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-white">
-                  <span className="font-medium">{formattedUserMetric}</span>
-                  <span className="text-gray-400">/</span>
-                  <span className="font-medium">
-                    {formattedNextUnclamedThreshold}
-                  </span>
-                  <span className="font-sm">
-                    {`(${(
-                      (Number(userMetric) /
-                        Number(getNextUnclamedThreshold(stagedProgress))) *
-                      100
-                    ).toFixed(0)}%)`}
-                  </span>
-                </div>
+          {quest.verifier.type === 'staged' && stagedProgress && !isLoadingStagedProgress && (
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-yellow-300 text-sm font-medium bg-gradient-to-r from-yellow-500/30 to-orange-500/30 px-2.5 py-1 rounded-full border border-yellow-400/30 shadow-lg shadow-yellow-500/20 backdrop-blur-sm">
+                  Stage{' '}
+                  {Math.min(
+                    (stagedProgress.nextClaimableStage ?? -1) + 2,
+                    stagedProgress.stages.length
+                  )}{' '}
+                  of {stagedProgress.stages.length}
+                </span>
               </div>
-            )}
+              <div className="flex items-center gap-2 text-sm text-white">
+                <span className="font-medium">{formattedUserMetric}</span>
+                <span className="text-gray-400">/</span>
+                <span className="font-medium">{formattedNextUnclamedThreshold}</span>
+                <span className="font-sm">
+                  {`(${(
+                    (Number(userMetric) / Number(getNextUnclamedThreshold(stagedProgress))) *
+                    100
+                  ).toFixed(0)}%)`}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Content Section */}
@@ -955,8 +891,7 @@ export default function Quest({
                       {/* Ready to Claim Section */}
                       {stagedProgress.totalClaimableXP > 0 && (
                         <div className="text-green-300 text-sm font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-2.5 py-1.5 rounded-lg border border-green-400/20 backdrop-blur-sm shadow-lg shadow-green-500/20">
-                          Ready to Claim: +{stagedProgress.totalClaimableXP}{' '}
-                          MOONEY
+                          Ready to Claim: +{stagedProgress.totalClaimableXP} MOONEY
                         </div>
                       )}
 
@@ -975,8 +910,7 @@ export default function Quest({
                           )
                         } else if (
                           stagedProgress.nextStageXP !== null &&
-                          stagedProgress.userHighestStage !==
-                            stagedProgress.stages.length - 1
+                          stagedProgress.userHighestStage !== stagedProgress.stages.length - 1
                         ) {
                           // Next stage available - Blue
                           return (
@@ -988,8 +922,7 @@ export default function Quest({
                           // Final stage info - Orange
                           return (
                             <div className="text-orange-300 text-sm font-medium bg-gradient-to-r from-orange-500/20 to-amber-500/20 px-2.5 py-1.5 rounded-lg border border-orange-400/20 backdrop-blur-sm shadow-lg shadow-purple-500/20">
-                              🎯 Final Stage: +{stagedProgress.nextStageXP}{' '}
-                              MOONEY
+                              🎯 Final Stage: +{stagedProgress.nextStageXP} MOONEY
                             </div>
                           )
                         }
@@ -1020,55 +953,39 @@ export default function Quest({
                           )}
 
                         {getErrorButton(error || '') && (
-                          <div className="flex justify-center">
-                            {getErrorButton(error || '')}
-                          </div>
+                          <div className="flex justify-center">{getErrorButton(error || '')}</div>
                         )}
 
-                        {!isCompleted &&
-                          quest.link &&
-                          quest.linkText &&
-                          !needsGitHubLink && (
-                            <StandardButton
-                              className={getButtonClasses()}
-                              link={
-                                quest.link === 'citizenProfile'
-                                  ? `/citizen/${generatePrettyLinkWithId(
-                                      citizen.name,
-                                      citizen.id
-                                    )}`
-                                  : quest.link
-                              }
-                              target={
-                                quest.link.startsWith('/') ||
-                                quest.link === 'citizenProfile'
-                                  ? '_self'
-                                  : '_blank'
-                              }
-                            >
-                              {quest.linkText}
-                            </StandardButton>
-                          )}
+                        {!isCompleted && quest.link && quest.linkText && !needsGitHubLink && (
+                          <Button
+                            variant="primary"
+                            className={getButtonClasses()}
+                            link={
+                              quest.link === 'citizenProfile'
+                                ? `/citizen/${generatePrettyLinkWithId(citizen.name, citizen.id)}`
+                                : quest.link
+                            }
+                            target={
+                              quest.link.startsWith('/') || quest.link === 'citizenProfile'
+                                ? '_self'
+                                : '_blank'
+                            }
+                          >
+                            {quest.linkText}
+                          </Button>
+                        )}
 
-                        {!isCompleted &&
-                          quest.action &&
-                          quest.actionText &&
-                          !needsGitHubLink && (
-                            <button
-                              onClick={quest.action}
-                              className={getButtonClasses()}
-                            >
-                              {quest.actionText}
-                            </button>
-                          )}
+                        {!isCompleted && quest.action && quest.actionText && !needsGitHubLink && (
+                          <button onClick={quest.action} className={getButtonClasses()}>
+                            {quest.actionText}
+                          </button>
+                        )}
                       </div>
                       {!isCompleted && ModalButton && <ModalButton />}
                     </div>
                   </div>
                 ) : (
-                  <span className="text-gray-400 text-sm">
-                    No progress data available
-                  </span>
+                  <span className="text-gray-400 text-sm">No progress data available</span>
                 )}
               </div>
             ) : (
@@ -1104,51 +1021,40 @@ export default function Quest({
                     </div>
                   )}
 
-                  <div className="inline-block">
-                    {getErrorButton(error || '')}
-                  </div>
+                  <div className="inline-block">{getErrorButton(error || '')}</div>
 
                   <div className="flex flex-col gap-2">
-                    {!isCompleted &&
-                      quest.link &&
-                      quest.linkText &&
-                      !needsGitHubLink && (
-                        <div className="inline-block">
-                          <StandardButton
-                            className={getButtonClasses()}
-                            link={
-                              quest.link === 'citizenProfile'
-                                ? `/citizen/${generatePrettyLinkWithId(
-                                    citizen.metadata.name,
-                                    citizen.id
-                                  )}`
-                                : quest.link
-                            }
-                            target={
-                              quest.link.startsWith('/') ||
-                              quest.link === 'citizenProfile'
-                                ? '_self'
-                                : '_blank'
-                            }
-                          >
-                            {quest.linkText}
-                          </StandardButton>
-                        </div>
-                      )}
+                    {!isCompleted && quest.link && quest.linkText && !needsGitHubLink && (
+                      <div className="inline-block">
+                        <Button
+                          variant="primary"
+                          className={getButtonClasses()}
+                          link={
+                            quest.link === 'citizenProfile'
+                              ? `/citizen/${generatePrettyLinkWithId(
+                                  citizen.metadata.name,
+                                  citizen.id
+                                )}`
+                              : quest.link
+                          }
+                          target={
+                            quest.link.startsWith('/') || quest.link === 'citizenProfile'
+                              ? '_self'
+                              : '_blank'
+                          }
+                        >
+                          {quest.linkText}
+                        </Button>
+                      </div>
+                    )}
 
-                    {!isCompleted &&
-                      quest.action &&
-                      quest.actionText &&
-                      !needsGitHubLink && (
-                        <div className="inline-block">
-                          <button
-                            onClick={quest.action}
-                            className={getButtonClasses()}
-                          >
-                            {quest.actionText}
-                          </button>
-                        </div>
-                      )}
+                    {!isCompleted && quest.action && quest.actionText && !needsGitHubLink && (
+                      <div className="inline-block">
+                        <button onClick={quest.action} className={getButtonClasses()}>
+                          {quest.actionText}
+                        </button>
+                      </div>
+                    )}
 
                     {!isCompleted && ModalButton && <ModalButton />}
                   </div>
@@ -1200,21 +1106,16 @@ export default function Quest({
                 {error.includes('ERC20: transfer amount exceeds balance') && (
                   <div className="bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-400/30 rounded-lg p-3 backdrop-blur-sm">
                     <p className="text-red-300 text-sm mb-2">
-                      ⚠️ Insufficient token balance detected. This usually
-                      means:
+                      ⚠️ Insufficient token balance detected. This usually means:
                     </p>
                     <ul className="text-red-200 text-xs space-y-1 ml-4">
-                      <li>
-                        • The contract doesn't have enough tokens to distribute
-                      </li>
-                      <li>
-                        • There might be a temporary issue with the reward pool
-                      </li>
+                      <li>• The contract doesn't have enough tokens to distribute</li>
+                      <li>• There might be a temporary issue with the reward pool</li>
                       <li>• The quest reward amount may need adjustment</li>
                     </ul>
                     <p className="text-red-200 text-xs mt-2">
-                      💡 Try refreshing the data or retrying. If the issue
-                      persists, please contact support.
+                      💡 Try refreshing the data or retrying. If the issue persists, please contact
+                      support.
                     </p>
                   </div>
                 )}
