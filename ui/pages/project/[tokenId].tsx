@@ -28,13 +28,13 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import Card from '@/components/layout/Card'
 import CollapsibleContainer from '@/components/layout/CollapsibleContainer'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import SectionCard from '@/components/layout/SectionCard'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
@@ -48,11 +48,7 @@ type ProjectProfileProps = {
   safeOwners: string[]
 }
 
-export default function ProjectProfile({
-  tokenId,
-  project,
-  safeOwners,
-}: ProjectProfileProps) {
+export default function ProjectProfile({ tokenId, project, safeOwners }: ProjectProfileProps) {
   const account = useActiveAccount()
   const address = account?.address
 
@@ -128,10 +124,7 @@ export default function ProjectProfile({
         marginBottom="0px"
       >
         <div id="frame-content-container" className="w-full">
-          <div
-            id="frame-content"
-            className="w-full flex flex-col items-start justify-between"
-          >
+          <div id="frame-content" className="w-full flex flex-col items-start justify-between">
             <div
               id="profile-description-section"
               className="flex flex-col lg:flex-row items-start lg:items-center gap-4"
@@ -139,10 +132,7 @@ export default function ProjectProfile({
               <div id="team-name-container">
                 <div id="profile-container">
                   {project?.description ? (
-                    <p
-                      id="profile-description-container"
-                      className="mb-5 w-full lg:w-[80%]"
-                    >
+                    <p id="profile-description-container" className="mb-5 w-full lg:w-[80%]">
                       {project.description || ''}
                     </p>
                   ) : (
@@ -182,10 +172,12 @@ export default function ProjectProfile({
       >
         <div
           id="page-container"
-          className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]"
+          className="animate-fadeIn flex flex-col gap-6 w-full"
+          style={{ width: '100%', minWidth: 0, display: 'flex', flexDirection: 'column' }}
         >
           {/* Project Overview */}
-          <SectionCard
+          <Card
+            className="!w-full !max-w-full"
             header="Proposal"
             iconSrc="/assets/icon-star.svg"
             action={
@@ -194,12 +186,7 @@ export default function ProjectProfile({
                 href={`/proposal/${MDP}`}
                 passHref
               >
-                <Image
-                  src="/assets/report.png"
-                  alt="Report Icon"
-                  width={16}
-                  height={16}
-                />
+                <Image src="/assets/report.png" alt="Report Icon" width={16} height={16} />
                 <span>Review Original Proposal</span>
               </Link>
             }
@@ -207,20 +194,22 @@ export default function ProjectProfile({
             <div className="prose prose-invert max-w-none">
               <MarkdownWithTOC body={nanceProposal?.body || ''} />
             </div>
-          </SectionCard>
+          </Card>
           {finalReportMarkdown && (
-            <SectionCard
+            <Card
+              className="!w-full !max-w-full"
               header="Final Report"
               iconSrc="/assets/icon-star.svg"
             >
               <div className="prose prose-invert max-w-none">
                 <MarkdownWithTOC body={finalReportMarkdown} />
               </div>
-            </SectionCard>
+            </Card>
           )}
 
           <div className="z-50 flex flex-col gap-6 mb-[50px]">
-            <SectionCard
+            <Card
+              className="!w-full !max-w-full"
               header="Meet the Team"
               iconSrc="/assets/icon-team.svg"
               action={
@@ -252,7 +241,7 @@ export default function ProjectProfile({
                   )}
                 </div>
               </SlidingCardMenu>
-            </SectionCard>
+            </Card>
             {/* Mooney and Voting Power */}
             <TeamTreasury
               isSigner={isSigner}
