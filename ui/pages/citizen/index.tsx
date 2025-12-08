@@ -1,5 +1,6 @@
 import useTranslation from 'next-translate/useTranslation'
-import { useContext, useState } from 'react'
+import { useContext, useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { StringParam, useQueryParams, withDefault } from 'next-query-params'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -14,6 +15,7 @@ import CreateCitizen from '@/components/onboarding/CreateCitizen'
 export default function Join() {
   const { t } = useTranslation('common')
   const { selectedChain } = useContext(ChainContextV5)
+  const router = useRouter()
 
   const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
   const [{ freeMint }] = useQueryParams({
@@ -23,6 +25,13 @@ export default function Join() {
 
   // Ensures default chain settings
   useChainDefault()
+
+  // Auto-select citizen tier when returning from onramp redirect
+  useEffect(() => {
+    if (router.isReady && router.query.onrampSuccess === 'true') {
+      setSelectedTier('citizen')
+    }
+  }, [router.isReady, router.query.onrampSuccess])
 
   // Render CreateCitizen component if 'citizen' is selected
   if (selectedTier === 'citizen') {
