@@ -56,7 +56,12 @@ describe('<TeamJobModal />', () => {
       </TestnetProviders>
     )
 
-    cy.get('form').submit()
-    cy.contains('Please fill out all fields.', { timeout: 5000 }).should('exist')
+    cy.get('form').then(($form) => {
+      $form[0].requestSubmit()
+    })
+    // Wait a bit for toast to appear, then check in the document
+    // eslint-disable-next-line cypress/no-unnecessary-waiting
+    cy.wait(100)
+    cy.get('body', { timeout: 5000 }).should('contain', 'Please fill out all fields.')
   })
 })
