@@ -42,16 +42,19 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import Modal from '@/components/layout/Modal'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import { CopyIcon } from '../assets'
 import { CBOnramp } from '../coinbase/CBOnramp'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
-import Modal from '../layout/Modal'
 import ProgressBar from '../layout/ProgressBar'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import MissionTokenNotice from './MissionTokenNotice'
 import { PaymentBreakdown } from './PaymentBreakdown'
+import { MissionContributeModalHeader } from './MissionContributeModalHeader'
+import { MissionContributeAutoTriggeringView } from './MissionContributeAutoTriggeringView'
+import { MissionContributeStatusNotices } from './MissionContributeStatusNotices'
 
 type MissionContributeModalProps = {
   mission: any
@@ -1316,186 +1319,46 @@ export default function MissionContributeModal({
   if (!modalEnabled) return null
 
   return (
-    <Modal id="mission-contribute-modal" setEnabled={handleModalClose}>
-      <div className="w-screen md:w-[550px] mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-              <Image
-                src="/assets/icon-star.svg"
-                alt="Contribute"
-                width={20}
-                height={20}
-                className="text-white"
-              />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-white">Contribute to Mission</h2>
-              <p className="text-gray-300 text-sm">{mission?.metadata?.name}</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200"
-            onClick={handleModalClose}
-          >
-            <XMarkIcon className="h-5 w-5 text-gray-300 hover:text-white" />
-          </button>
-        </div>
+    <Modal
+      id="mission-contribute-modal"
+      setEnabled={handleModalClose}
+      size="md"
+      showCloseButton={false}
+    >
+      <div className="p-6">
+        <MissionContributeModalHeader
+          missionName={mission?.metadata?.name}
+          onClose={handleModalClose}
+        />
 
         <div className="p-4 space-y-4">
-          {/* Show simplified loading UI during auto-trigger */}
           {isAutoTriggering ? (
-            <div className="flex flex-col items-center justify-center py-12 px-6 space-y-6">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                <LoadingSpinner width="w-10" height="h-10" className="text-white" />
-              </div>
-
-              <div className="text-center space-y-2">
-                <h3 className="text-xl font-semibold text-white">
-                  {!account
-                    ? 'Connecting Your Wallet'
-                    : isVerifyingJWT || (!onrampJWTPayload && getStoredJWT())
-                    ? 'Verifying Onramp Success'
-                    : jwtVerificationError
-                    ? 'Verification Failed'
-                    : !hasEnoughBalance || isLoadingGasEstimate
-                    ? 'Preparing Transaction'
-                    : 'Processing Your Contribution'}
-                </h3>
-                <p className="text-gray-300 text-sm max-w-md">
-                  {!account
-                    ? 'Please connect or unlock your wallet to continue'
-                    : isVerifyingJWT || (!onrampJWTPayload && getStoredJWT())
-                    ? 'Verifying your onramp session...'
-                    : jwtVerificationError
-                    ? jwtVerificationError
-                    : !hasEnoughBalance
-                    ? router?.query?.onrampSuccess === 'true'
-                      ? process.env.NEXT_PUBLIC_ENV === 'dev'
-                        ? 'Proceeding with transaction in dev mode...'
-                        : 'Refreshing balance after purchase...'
-                      : 'Verifying your balance...'
-                    : isLoadingGasEstimate
-                    ? 'Calculating gas fees...'
-                    : 'Please confirm the transaction in your wallet'}
-                </p>
-                {jwtVerificationError && (
-                  <button
-                    onClick={() => {
-                      setJwtVerificationError(null)
-                      setIsAutoTriggering(false)
-                      clearOnrampJWT()
-                    }}
-                    className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors"
-                  >
-                    Dismiss
-                  </button>
-                )}
-              </div>
-
-              <div className="w-full max-w-md">
-                <ProgressBar
-                  progress={!account ? 33 : !hasEnoughBalance || isLoadingGasEstimate ? 66 : 100}
-                  height="24px"
-                  label={
-                    !account
-                      ? 'Step 1/3: Wallet Connection'
-                      : !hasEnoughBalance || isLoadingGasEstimate
-                      ? 'Step 2/3: Preparing'
-                      : 'Step 3/3: Contributing'
-                  }
-                />
-              </div>
-
-              {/* Info card with contribution details */}
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 w-full max-w-md">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-blue-400 text-sm">💰</span>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-blue-300 font-medium text-sm">
-                      Contributing ${formatWithCommas(usdInput)} USD
-                    </p>
-                    <p className="text-blue-200/80 text-xs mt-1">To {mission?.metadata?.name}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Show wallet connection prompt if needed */}
-              {!account && router?.isReady && (
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 w-full max-w-md">
-                  <p className="text-orange-300 text-sm text-center">
-                    Your wallet is not connected. Please close this modal and connect your wallet to
-                    continue.
-                  </p>
-                </div>
-              )}
-            </div>
+            <MissionContributeAutoTriggeringView
+              account={account}
+              isVerifyingJWT={isVerifyingJWT}
+              onrampJWTPayload={onrampJWTPayload}
+              getStoredJWT={getStoredJWT}
+              jwtVerificationError={jwtVerificationError}
+              hasEnoughBalance={hasEnoughBalance}
+              isLoadingGasEstimate={isLoadingGasEstimate}
+              usdInput={usdInput}
+              missionName={mission?.metadata?.name}
+              onDismissError={() => {
+                setJwtVerificationError(null)
+                setIsAutoTriggering(false)
+                clearOnrampJWT()
+              }}
+              router={router}
+              formatWithCommas={formatWithCommas}
+            />
           ) : (
             <>
-              {/* Post-Onramp Success Indicator or Rejection Notice */}
-              {router?.query?.onrampSuccess === 'true' &&
-                !transactionRejected &&
-                hasEnoughBalance && (
-                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
-                        <span className="text-green-400 text-lg">✓</span>
-                      </div>
-                      <div>
-                        <p className="text-green-300 font-semibold text-sm">
-                          ETH Purchase Successful!
-                        </p>
-                        <p className="text-green-200/80 text-xs mt-1">
-                          Ready to contribute to the mission
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-              {/* Insufficient balance after onramp redirect */}
-              {router?.query?.onrampSuccess === 'true' &&
-                !transactionRejected &&
-                !hasEnoughBalance &&
-                ethDeficit > 0 && (
-                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center">
-                        <span className="text-orange-400 text-lg">⚠️</span>
-                      </div>
-                      <div>
-                        <p className="text-orange-300 font-semibold text-sm">
-                          Additional ETH Required
-                        </p>
-                        <p className="text-orange-200/80 text-xs mt-1">
-                          You still need {ethDeficit.toFixed(6)} ETH to complete this contribution.
-                          Please purchase ETH below.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-              {/* Transaction Rejected Notice */}
-              {transactionRejected && (
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center">
-                      <span className="text-orange-400 text-lg">⚠️</span>
-                    </div>
-                    <div>
-                      <p className="text-orange-300 font-semibold text-sm">Transaction Rejected</p>
-                      <p className="text-orange-200/80 text-xs mt-1">
-                        Review the details below and try again when ready
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <MissionContributeStatusNotices
+                onrampSuccess={router?.query?.onrampSuccess === 'true'}
+                transactionRejected={transactionRejected}
+                hasEnoughBalance={hasEnoughBalance}
+                ethDeficit={ethDeficit}
+              />
 
               {/* Total Amount Section */}
               <div className="space-y-2">
