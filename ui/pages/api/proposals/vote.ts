@@ -28,7 +28,7 @@ import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
-import { runQuadraticVoting } from '@/lib/utils/rewards'
+import { runQuadraticVoting, getApprovedProjects } from '@/lib/utils/rewards'
 
 // Configuration constants
 const chain = DEFAULT_CHAIN_V5
@@ -118,22 +118,10 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       outcome,
     })
   }
-  const sortedOutcome = Object.keys(outcome)
-    .map((projectId) => {
-      return { projectId: projectId, percent: outcome[projectId], budget: ethBudgets[projectId] }
-    })
-    .sort((a, b) => {
-      return b.percent - a.percent
-    })
   const account = await createHSMWallet()
-  const numApprovedProjects = Math.min(Math.max(Math.ceil(projects.length / 2), 3), projects.length)
-  console.log('numApprovedProjects', numApprovedProjects)
-  let approvedBudget = 0
-  for (let i = 0; i < sortedOutcome.length; i++) {
-    const projectId = sortedOutcome[i].projectId
-    approvedBudget += sortedOutcome[i].budget
-    const approved = i < numApprovedProjects && approvedBudget <= (ETH_BUDGET * 3) / 4
-    console.log('approved!', sortedOutcome)
+  const projectIdToApproved = getApprovedProjects(projects, outcome, ethBudgets, ETH_BUDGET)
+  for (const projectId in projectIdToApproved) {
+    const approved = projectIdToApproved[projectId]
     const transaction = prepareContractCall({
       contract: projectTableContract,
       method: 'updateTableCol',
