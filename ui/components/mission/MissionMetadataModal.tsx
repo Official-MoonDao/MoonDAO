@@ -22,9 +22,9 @@ import { renameFile } from '@/lib/utils/files'
 import { isValidYouTubeUrl } from '@/lib/utils/links'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
-import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import FileInput from '../layout/FileInput'
+import Input from '../layout/Input'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -56,69 +56,63 @@ function MissionMetadataForm({ missionData, setMissionData }: any) {
   return (
     <div className="w-full flex flex-col gap-4">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <FormInput
+        <Input
           id="mission-name-input"
           label="Mission Name *"
           value={missionData?.name}
-          onChange={({ target }: any) =>
-            setMissionData((prev: any) => ({ ...prev, name: target.value }))
-          }
+          onChange={(e) => setMissionData((prev: any) => ({ ...prev, name: e.target.value }))}
           placeholder="Enter mission name"
           maxLength={100}
-          mode="dark"
+          variant="dark"
         />
-        <FormInput
+        <Input
           id="mission-tagline-input"
           label="Tagline *"
           value={missionData?.tagline}
-          onChange={({ target }: any) =>
-            setMissionData((prev: any) => ({ ...prev, tagline: target.value }))
-          }
+          onChange={(e) => setMissionData((prev: any) => ({ ...prev, tagline: e.target.value }))}
           placeholder="Enter a compelling tagline"
           maxLength={100}
-          mode="dark"
+          variant="dark"
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <FormInput
+        <Input
           id="mission-website-input"
           label="Website"
           value={missionData?.infoUri}
-          onChange={({ target }: any) =>
-            setMissionData((prev: any) => ({ ...prev, infoUri: target.value }))
-          }
+          onChange={(e) => setMissionData((prev: any) => ({ ...prev, infoUri: e.target.value }))}
           placeholder="https://yourwebsite.com"
           maxLength={500}
-          mode="dark"
+          variant="dark"
         />
-        <FormInput
+        <Input
           id="mission-social-input"
           label="Social Link"
           value={missionData?.socialLink}
-          onChange={({ target }: any) =>
+          onChange={(e) =>
             setMissionData((prev: any) => ({
               ...prev,
-              socialLink: target.value,
+              socialLink: e.target.value,
             }))
           }
           placeholder="https://discord.gg/... or https://t.me/..."
           maxLength={500}
-          mode="dark"
+          variant="dark"
         />
       </div>
-      <FormInput
+      <Input
         id="mission-youtube-input"
         label="YouTube Video Link"
         value={missionData?.youtubeLink}
-        onChange={({ target }: any) =>
+        onChange={(e) =>
           setMissionData((prev: any) => ({
             ...prev,
-            youtubeLink: target.value,
+            youtubeLink: e.target.value,
           }))
         }
         placeholder="https://youtube.com/watch?v=..."
         maxLength={500}
-        mode="dark"
+        variant="dark"
       />
     </div>
   )
@@ -143,9 +137,7 @@ export default function MissionMetadataModal({
   const [safeOwners, setSafeOwners] = useState<string[]>([])
 
   const [newMissionImage, setNewMissionImage] = useState<File>()
-  const [missionLogoUri, setMissionLogoUri] = useState<string>(
-    mission?.metadata?.logoUri || ''
-  )
+  const [missionLogoUri, setMissionLogoUri] = useState<string>(mission?.metadata?.logoUri || '')
   const [missionData, setMissionData] = useState<any>({
     name: mission?.metadata?.name || '',
     tagline: mission?.metadata?.tagline || '',
@@ -200,8 +192,7 @@ export default function MissionMetadataModal({
       try {
         // Check if the current account is in the list of Safe owners
         const isOwner = owners.some(
-          (owner: string) =>
-            owner.toLowerCase() === account.address.toLowerCase()
+          (owner: string) => owner.toLowerCase() === account.address.toLowerCase()
         )
 
         setSafeOwners(owners)
@@ -253,14 +244,9 @@ export default function MissionMetadataModal({
       let imageIpfsLink = missionLogoUri
 
       if (newMissionImage) {
-        const renamedMissionImage = renameFile(
-          newMissionImage,
-          `${missionData.name} Mission Image`
-        )
+        const renamedMissionImage = renameFile(newMissionImage, `${missionData.name} Mission Image`)
 
-        const { cid: newImageIpfsHash } = await pinBlobOrFile(
-          renamedMissionImage
-        )
+        const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedMissionImage)
 
         imageIpfsLink = `ipfs://${newImageIpfsHash}`
       }
@@ -286,9 +272,7 @@ export default function MissionMetadataModal({
         }
       )
 
-      const { cid: missionMetadataIpfsHash } = await pinBlobOrFile(
-        missionMetadataBlob
-      )
+      const { cid: missionMetadataIpfsHash } = await pinBlobOrFile(missionMetadataBlob)
 
       // Encode the setUriOf transaction for the Safe
       const iface = new ethers.utils.Interface(JBV5ControllerABI.abi as any)
@@ -328,9 +312,7 @@ export default function MissionMetadataModal({
         const tx = await safeApiKit.getTransaction(txHash)
         if (tx.isExecuted) {
           clearInterval(pollInterval)
-          toast.success(
-            'Transaction executed! Reloading page to show updated metadata...'
-          )
+          toast.success('Transaction executed! Reloading page to show updated metadata...')
           // Wait a bit for subgraph/tableland to sync, then reload
           setTimeout(() => {
             router.reload()
@@ -380,24 +362,18 @@ export default function MissionMetadataModal({
         {stage === 0 && !isSafeSigner && (
           <div className="w-full space-y-6">
             <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-red-300 mb-3">
-                Insufficient Permissions
-              </h2>
+              <h2 className="text-xl font-semibold text-red-300 mb-3">Insufficient Permissions</h2>
               <p className="text-white/80 mb-4">
-                To edit mission metadata, you must be a signer/owner of the
-                team's Safe multisig wallet.
+                To edit mission metadata, you must be a signer/owner of the team's Safe multisig
+                wallet.
               </p>
               {teamOwnerAddress && (
                 <div className="bg-black/20 rounded-lg p-3 mb-4">
-                  <p className="text-gray-400 text-sm mb-1">
-                    Team Safe Address:
-                  </p>
+                  <p className="text-gray-400 text-sm mb-1">Team Safe Address:</p>
                   <Link
                     className="text-white font-mono text-sm break-all hover:underline"
                     href={`https://app.safe.global/home?safe=${
-                      process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-                        ? 'arb1'
-                        : 'sep'
+                      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
                     }:${teamOwnerAddress}`}
                     target="_blank"
                     rel="noreferrer noopener"
@@ -413,10 +389,7 @@ export default function MissionMetadataModal({
                   </p>
                   <div className="space-y-1">
                     {safeOwners.map((owner: string) => (
-                      <p
-                        key={owner}
-                        className="text-white/70 font-mono text-xs"
-                      >
+                      <p key={owner} className="text-white/70 font-mono text-xs">
                         {owner}
                       </p>
                     ))}
@@ -425,8 +398,7 @@ export default function MissionMetadataModal({
               )}
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
                 <p className="text-yellow-200 text-sm">
-                  <strong>What to do:</strong> Contact one of the Safe signers
-                  above to either:
+                  <strong>What to do:</strong> Contact one of the Safe signers above to either:
                 </p>
                 <ul className="text-yellow-100/80 text-sm mt-2 space-y-1 list-disc list-inside">
                   <li>Add you as a signer/owner to the Safe</li>
@@ -450,13 +422,8 @@ export default function MissionMetadataModal({
         {stage === 0 && isSafeSigner && (
           <>
             <div className="w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">
-                Basic Information
-              </h2>
-              <MissionMetadataForm
-                missionData={missionData}
-                setMissionData={setMissionData}
-              />
+              <h2 className="text-lg font-semibold text-white mb-4">Basic Information</h2>
+              <MissionMetadataForm missionData={missionData} setMissionData={setMissionData} />
             </div>
             <div className="flex gap-4 mt-4 w-full justify-end">
               <button
@@ -466,10 +433,7 @@ export default function MissionMetadataModal({
                     toast.error('Please enter a mission name')
                     return
                   }
-                  if (
-                    !missionData.tagline ||
-                    missionData.tagline.trim() === ''
-                  ) {
+                  if (!missionData.tagline || missionData.tagline.trim() === '') {
                     toast.error('Please enter a tagline')
                     return
                   }
@@ -494,9 +458,7 @@ export default function MissionMetadataModal({
         {stage === 1 && (
           <>
             <div className="w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">
-                Mission Logo
-              </h2>
+              <h2 className="text-lg font-semibold text-white mb-4">Mission Logo</h2>
               <FileInput
                 id="mission-image-update"
                 label="Mission Logo"
@@ -507,9 +469,7 @@ export default function MissionMetadataModal({
                     file,
                     `${missionData.name} Mission Image Preview`
                   )
-                  const { cid: missionLogoIpfsHash } = await pinBlobOrFile(
-                    renamedMissionImage
-                  )
+                  const { cid: missionLogoIpfsHash } = await pinBlobOrFile(renamedMissionImage)
                   setMissionLogoUri(`${IPFS_GATEWAY}${missionLogoIpfsHash}`)
                 }}
                 dimensions={[1024, 1024]}
@@ -550,9 +510,7 @@ export default function MissionMetadataModal({
         {stage === 2 && (
           <>
             <div className="w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">
-                Mission Description
-              </h2>
+              <h2 className="text-lg font-semibold text-white mb-4">Mission Description</h2>
               <div
                 id="mission-description-editor"
                 className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50% relative"
@@ -582,9 +540,7 @@ export default function MissionMetadataModal({
                       height={64}
                       className="mb-4"
                     />
-                    <p className="text-white text-lg font-medium">
-                      Uploading image...
-                    </p>
+                    <p className="text-white text-lg font-medium">Uploading image...</p>
                     <p className="text-gray-300 text-sm mt-2">
                       Please wait, do not close this window
                     </p>
@@ -603,10 +559,7 @@ export default function MissionMetadataModal({
               <button
                 className="px-6 py-3 rounded-xl gradient-2 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={async () => {
-                  if (
-                    !missionData.description ||
-                    missionData.description.trim().length < 10
-                  ) {
+                  if (!missionData.description || missionData.description.trim().length < 10) {
                     toast.error('Please enter a mission description')
                     return
                   }
@@ -627,15 +580,11 @@ export default function MissionMetadataModal({
           <>
             <div className="w-full space-y-6">
               <div>
-                <h2 className="text-lg font-semibold text-white mb-4">
-                  Review Changes
-                </h2>
+                <h2 className="text-lg font-semibold text-white mb-4">Review Changes</h2>
                 <div className="bg-white/5 rounded-xl p-4 space-y-4">
                   <div>
                     <p className="text-gray-400 text-sm">Mission Name</p>
-                    <p className="text-white font-semibold">
-                      {missionData.name}
-                    </p>
+                    <p className="text-white font-semibold">{missionData.name}</p>
                   </div>
                   <div>
                     <p className="text-gray-400 text-sm">Tagline</p>
@@ -644,25 +593,19 @@ export default function MissionMetadataModal({
                   {missionData.infoUri && (
                     <div>
                       <p className="text-gray-400 text-sm">Website</p>
-                      <p className="text-white break-all">
-                        {missionData.infoUri}
-                      </p>
+                      <p className="text-white break-all">{missionData.infoUri}</p>
                     </div>
                   )}
                   {missionData.socialLink && (
                     <div>
                       <p className="text-gray-400 text-sm">Social Link</p>
-                      <p className="text-white break-all">
-                        {missionData.socialLink}
-                      </p>
+                      <p className="text-white break-all">{missionData.socialLink}</p>
                     </div>
                   )}
                   {missionData.youtubeLink && (
                     <div>
                       <p className="text-gray-400 text-sm">YouTube Link</p>
-                      <p className="text-white break-all">
-                        {missionData.youtubeLink}
-                      </p>
+                      <p className="text-white break-all">{missionData.youtubeLink}</p>
                     </div>
                   )}
                   {missionLogoUri && (
@@ -684,14 +627,12 @@ export default function MissionMetadataModal({
             {transactionQueued && (
               <div className="w-full bg-green-500/10 border border-green-500/30 rounded-xl p-4">
                 <p className="text-white text-sm mb-3">
-                  Transaction has been queued in the Safe! Please sign and
-                  execute the transaction in the team's{' '}
+                  Transaction has been queued in the Safe! Please sign and execute the transaction
+                  in the team's{' '}
                   <Link
                     className="font-bold text-green-400 hover:underline"
                     href={`https://app.safe.global/home?safe=${
-                      process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-                        ? 'arb1'
-                        : 'sep'
+                      process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
                     }:${teamOwnerAddress}`}
                     target="_blank"
                     rel="noreferrer noopener"
@@ -703,23 +644,18 @@ export default function MissionMetadataModal({
                 <div className="flex items-center gap-2 mt-3 text-green-300/80">
                   <div className="animate-pulse flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                    <p className="text-xs">
-                      Monitoring for transaction execution...
-                    </p>
+                    <p className="text-xs">Monitoring for transaction execution...</p>
                   </div>
                 </div>
                 <p className="text-white/70 text-xs mt-2">
-                  This page will automatically reload once the transaction is
-                  executed.
+                  This page will automatically reload once the transaction is executed.
                 </p>
               </div>
             )}
 
             {isSubmitting && !transactionQueued && (
               <div className="w-full bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-                <p className="text-white text-sm">
-                  Queueing transaction in Safe...
-                </p>
+                <p className="text-white text-sm">Queueing transaction in Safe...</p>
               </div>
             )}
 

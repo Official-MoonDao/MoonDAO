@@ -18,8 +18,8 @@ import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
 import { addHttpsIfMissing, bytesOfString } from '@/lib/utils/strings'
-import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
+import Input from '../layout/Input'
 import Modal from '../layout/Modal'
 import { ImageGenerator } from '../onboarding/CitizenImageGenerator'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -28,106 +28,74 @@ import DeleteProfileData from './DeleteProfileData'
 function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
   return (
     <div className="w-full flex flex-col gap-2">
-      <FormInput
+      <Input
         id="citizen-name-input"
         label="Name *"
         value={citizenData?.name}
-        onChange={({ target }: any) =>
-          setCitizenData((prev: any) => ({ ...prev, name: target.value }))
-        }
+        onChange={(e) => setCitizenData((prev: any) => ({ ...prev, name: e.target.value }))}
         placeholder="Enter your name"
         maxLength={100}
       />
-      <FormInput
+      <Input
         id="citizen-bio-input"
         label="Bio"
         value={citizenData?.description}
-        onChange={({ target }: any) =>
+        onChange={(e) =>
           setCitizenData((prev: any) => ({
             ...prev,
-            description: target.value,
+            description: e.target.value,
           }))
         }
         placeholder="Enter your bio"
         maxLength={
-          bytesOfString(citizenData?.description) >= 1024
-            ? citizenData?.description.length
-            : 1024
+          bytesOfString(citizenData?.description) >= 1024 ? citizenData?.description.length : 1024
         }
       />
-      <FormInput
+      <Input
         id="citizen-location-input"
         label="Location"
         value={citizenData?.location}
-        onChange={({ target }: any) =>
-          setCitizenData((prev: any) => ({ ...prev, location: target.value }))
-        }
+        onChange={(e) => setCitizenData((prev: any) => ({ ...prev, location: e.target.value }))}
         placeholder="Enter your city and/or country"
         maxLength={
-          bytesOfString(citizenData?.location) >= 1024
-            ? citizenData?.location.length
-            : 1024
+          bytesOfString(citizenData?.location) >= 1024 ? citizenData?.location.length : 1024
         }
       />
-      <FormInput
+      <Input
         id="citizen-discord-input"
         label="Discord"
         value={citizenData?.discord}
-        onChange={({ target }: any) =>
-          setCitizenData((prev: any) => ({ ...prev, discord: target.value }))
-        }
+        onChange={(e) => setCitizenData((prev: any) => ({ ...prev, discord: e.target.value }))}
         placeholder="Enter your discord username"
-        maxLength={
-          bytesOfString(citizenData?.discord) >= 1024
-            ? citizenData?.discord.length
-            : 1024
-        }
+        maxLength={bytesOfString(citizenData?.discord) >= 1024 ? citizenData?.discord.length : 1024}
       />
-      <FormInput
+      <Input
         id="citizen-twitter-input"
         label="X/Twitter"
         value={citizenData?.twitter}
-        onChange={({ target }: any) =>
-          setCitizenData((prev: any) => ({ ...prev, twitter: target.value }))
-        }
+        onChange={(e) => setCitizenData((prev: any) => ({ ...prev, twitter: e.target.value }))}
         placeholder="Enter your Twitter link including https://"
-        maxLength={
-          bytesOfString(citizenData?.twitter) >= 1024
-            ? citizenData?.twitter.length
-            : 1024
-        }
+        maxLength={bytesOfString(citizenData?.twitter) >= 1024 ? citizenData?.twitter.length : 1024}
       />
-      <FormInput
+      <Input
         id="citizen-website-input"
         label="Website"
         value={citizenData?.website}
-        onChange={({ target }: any) =>
-          setCitizenData((prev: any) => ({ ...prev, website: target.value }))
-        }
+        onChange={(e) => setCitizenData((prev: any) => ({ ...prev, website: e.target.value }))}
         placeholder="Enter your website link including https://"
-        maxLength={
-          bytesOfString(citizenData?.website) >= 1024
-            ? citizenData?.website.length
-            : 1024
-        }
+        maxLength={bytesOfString(citizenData?.website) >= 1024 ? citizenData?.website.length : 1024}
       />
     </div>
   )
 }
 
-export default function CitizenMetadataModal({
-  nft,
-  selectedChain,
-  setEnabled,
-}: any) {
+export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
   const account = useActiveAccount()
   const router = useRouter()
 
   const [stage, setStage] = useState(0)
   const [inputImage, setInputImage] = useState<File>()
-  const [currCitizenImage, setCurrCitizenImage] = useState<string>(
-    nft?.metadata?.image
-  )
+  const [currCitizenImage, setCurrCitizenImage] = useState<string>(nft?.metadata?.image)
   const [newCitizenImage, setNewCitizenImage] = useState<File>()
   const [citizenData, setCitizenData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
@@ -177,10 +145,7 @@ export default function CitizenMetadataModal({
 
   useEffect(() => {
     setCitizenData(() => {
-      const citizenLocation = getAttribute(
-        nft.metadata.attributes,
-        'location'
-      ).value
+      const citizenLocation = getAttribute(nft.metadata.attributes, 'location').value
 
       let locationName
       if (citizenLocation.startsWith('{')) {
@@ -216,9 +181,7 @@ export default function CitizenMetadataModal({
         {stage === 0 && (
           <>
             <div className="w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">
-                Basic Information
-              </h2>
+              <h2 className="text-lg font-semibold text-white mb-4">Basic Information</h2>
               <CitizenMetadataForm
                 nft={nft}
                 citizenData={citizenData}
@@ -258,9 +221,7 @@ export default function CitizenMetadataModal({
         {stage === 2 && (
           <>
             <div className="text-center mb-6 w-full">
-              <h3 className="text-xl font-semibold text-white mb-3">
-                Almost Done!
-              </h3>
+              <h3 className="text-xl font-semibold text-white mb-3">Almost Done!</h3>
               <p className="text-white/70">
                 Would you like to update your email for notifications?
               </p>
@@ -283,17 +244,12 @@ export default function CitizenMetadataModal({
         )}
         {stage === 3 && (
           <div className="w-full">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Update Email
-            </h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Update Email</h3>
             <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden relative">
               <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
                 <Widget
                   className="w-full"
-                  id={
-                    process.env
-                      .NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string
-                  }
+                  id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string}
                   onSubmit={submitTypeform}
                   height={500}
                 />
@@ -308,9 +264,7 @@ export default function CitizenMetadataModal({
         {stage === 4 && (
           <>
             <div className="w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">
-                Review & Submit
-              </h2>
+              <h2 className="text-lg font-semibold text-white mb-4">Review & Submit</h2>
               <CitizenMetadataForm
                 nft={nft}
                 citizenData={citizenData}
@@ -340,11 +294,7 @@ export default function CitizenMetadataModal({
                   let imageIpfsLink
                   const currCitizenImage = nft.metadata.image || ''
 
-                  if (
-                    !newCitizenImage &&
-                    currCitizenImage &&
-                    currCitizenImage !== ''
-                  ) {
+                  if (!newCitizenImage && currCitizenImage && currCitizenImage !== '') {
                     imageIpfsLink = currCitizenImage
                   } else {
                     if (!newCitizenImage) return console.error('No new image')
@@ -355,9 +305,7 @@ export default function CitizenMetadataModal({
                     )
 
                     //pin new image
-                    const { cid: newImageIpfsHash } = await pinBlobOrFile(
-                      renamedCitizenImage
-                    )
+                    const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
 
                     //unpin old image
                     await unpinCitizenImage(nft.metadata.id)
@@ -365,16 +313,12 @@ export default function CitizenMetadataModal({
                     imageIpfsLink = `ipfs://${newImageIpfsHash}`
                   }
 
-                  const oldFormResponseId = getAttribute(
-                    nft?.metadata?.attributes,
-                    'formId'
-                  )?.value
+                  const oldFormResponseId = getAttribute(nft?.metadata?.attributes, 'formId')?.value
 
                   if (oldFormResponseId !== formResponseId) {
                     //delete old typeform response
                     await deleteResponse(
-                      process.env
-                        .NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
+                      process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
                       oldFormResponseId
                     )
                   }
@@ -392,13 +336,9 @@ export default function CitizenMetadataModal({
                     }),
                   })
                   const { data: locationData } = await locationDataRes.json()
-                  const locationLat =
-                    locationData?.results?.[0]?.geometry?.location?.lat || -90
-                  const locationLng =
-                    locationData?.results?.[0]?.geometry?.location?.lng || 0
-                  const locationName =
-                    locationData?.results?.[0]?.formatted_address ||
-                    'Antarctica'
+                  const locationLat = locationData?.results?.[0]?.geometry?.location?.lat || -90
+                  const locationLng = locationData?.results?.[0]?.geometry?.location?.lng || 0
+                  const locationName = locationData?.results?.[0]?.formatted_address || 'Antarctica'
                   const citizenLocationData = {
                     lat: locationLat,
                     lng: locationLng,
