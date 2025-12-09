@@ -65,6 +65,7 @@ export default function Modal({
                 onClick={handleClose}
                 className="absolute top-4 right-4 z-10 text-gray-400 hover:text-white transition-colors p-2"
                 aria-label="Close modal"
+                data-testid="modal-close"
               >
                 <XMarkIcon className="w-6 h-6" />
               </button>
@@ -79,18 +80,22 @@ export default function Modal({
                   onClick={handleClose}
                   className="absolute top-4 right-4 z-10 text-gray-400 hover:text-white transition-colors p-2"
                   aria-label="Close modal"
+                  data-testid="modal-close"
                 >
                   <XMarkIcon className="w-6 h-6" />
                 </button>
               )}
               {title && (
                 <div className="flex items-center justify-between p-6 border-b border-white/10 relative">
-                  <h2 className="text-xl font-semibold text-white">{title}</h2>
+                  <h2 className="text-xl font-semibold text-white" data-testid="modal-title">
+                    {title}
+                  </h2>
                   {showCloseButton && (
                     <button
                       onClick={handleClose}
                       className="text-gray-400 hover:text-white transition-colors"
                       aria-label="Close modal"
+                      data-testid="modal-close"
                     >
                       <XMarkIcon className="w-6 h-6" />
                     </button>
