@@ -31,6 +31,7 @@ type WalletInfoCardProps = {
   isUnlockedLoading?: boolean
   isLockedLoading?: boolean
   onSendClick?: () => void
+  setSendModalEnabled?: (enabled: boolean) => void
 }
 
 const selectedNativeToken: any = {
@@ -60,6 +61,7 @@ export default function WalletInfoCard({
   isUnlockedLoading,
   isLockedLoading,
   onSendClick,
+  setSendModalEnabled,
 }: WalletInfoCardProps) {
   const account = useActiveAccount()
   const address = account?.address
@@ -152,7 +154,7 @@ export default function WalletInfoCard({
 
         {/* Network Dropdown */}
         {networkDropdownOpen && (
-          <div className="absolute top-full mt-2 w-full bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 rounded-lg shadow-2xl z-[10000] max-h-48 overflow-y-auto">
+          <div className="absolute top-full mt-2 w-full bg-gradient-to-br from-gray-900 via-blue-900/50 to-purple-900/30 backdrop-blur-xl border border-white/20 rounded-lg shadow-2xl z-[9999] max-h-48 overflow-y-auto">
             {availableChains.map((chain) => (
               <button
                 key={chain.id}
@@ -284,7 +286,7 @@ export default function WalletInfoCard({
           Fund
         </button>
         <button
-          onClick={onSendClick}
+          onClick={() => setSendModalEnabled ? setSendModalEnabled(true) : onSendClick?.()}
           className="flex items-center justify-center gap-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 py-2 px-3 rounded-lg text-xs font-medium transition-all"
         >
           <ArrowUpIcon className="w-3.5 h-3.5" />

@@ -52,6 +52,8 @@ import {
 } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useTotalLockedMooney } from '@/lib/tokens/hooks/useTotalLockedMooney'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
@@ -71,6 +73,8 @@ import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
+import { SendModal } from '@/components/privy/PrivyConnectWallet'
+import { useWalletTokens } from '@/components/privy/PrivyConnectWallet'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
@@ -124,6 +128,9 @@ export default function SingedInDashboard({
   const { fundWallet } = useFundWallet()
 
   const { citizen, isLoading: isLoadingCitizen } = useContext(CitizenContext)
+
+  // Send modal state
+  const [sendModalEnabled, setSendModalEnabled] = useState(false)
 
   // Modal state for charts
   const [chartModalOpen, setChartModalOpen] = useState(false)
@@ -210,6 +217,10 @@ export default function SingedInDashboard({
 
   const account = useActiveAccount()
   const address = account?.address
+
+  // Hooks for SendModal
+  const { nativeBalance } = useNativeBalance()
+  const { tokens: walletTokens } = useWalletTokens(address, chainSlug)
 
   const { data: voteCount, isValidating: isLoadingVoteCount } =
     useVoteCountOfAddress(address)
@@ -1033,7 +1044,7 @@ export default function SingedInDashboard({
                 lockedMooney={lockedMooneyAmount || 0}
                 isUnlockedLoading={false}
                 isLockedLoading={isLoadingLockedMooney}
-                onSendClick={() => router.push('/mooney')}
+                setSendModalEnabled={setSendModalEnabled}
               />
             )}
 
@@ -1542,6 +1553,26 @@ export default function SingedInDashboard({
       {/* Newsletter Modal */}
       {newsletterModalOpen && (
         <NewsletterSubModal setEnabled={setNewsletterModalOpen} />
+      )}
+
+      {/* Send Modal */}
+      {sendModalEnabled && (
+        <SendModal
+          account={account}
+          selectedChain={selectedChain}
+          setEnabled={setSendModalEnabled}
+          networkIcon={
+            <Image
+              src={`/icons/networks/${chainSlug}.svg`}
+              width={20}
+              height={20}
+              alt="Network Icon"
+              className="object-contain"
+            />
+          }
+          nativeBalance={nativeBalance}
+          tokens={walletTokens}
+        />
       )}
 
       {/* Citizen Metadata Modal */}
