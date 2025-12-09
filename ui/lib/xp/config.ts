@@ -22,6 +22,9 @@ import CitizenReferral from '@/components/subscription/CitizenReferral'
 import CitizenContext from '../citizen/citizen-context'
 import toastStyle from '../marketplace/marketplace-utils/toastConfig'
 
+// Onboarding quest order
+export const ONBOARDING_QUEST_IDS = [3, 0, 2, 4] // Profile, Voting Power, Contributions, Join Team
+
 // Static verifiers array for server-side use
 export const XP_VERIFIERS = [
   {
@@ -35,6 +38,7 @@ export const XP_VERIFIERS = [
     icon: UserGroupIcon,
     actionText: 'Copy Referral Link',
     modalButton: CitizenReferral,
+    category: 'advanced',
   },
   {
     verifierId: 0,
@@ -47,6 +51,9 @@ export const XP_VERIFIERS = [
     icon: BanknotesIcon,
     link: '/lock',
     linkText: 'Stake Now',
+    category: 'onboarding',
+    onboardingOrder: 2,
+    onboardingRequirement: 'Complete at least stage 1 (stake any amount)',
   },
   {
     verifierId: 1,
@@ -59,6 +66,7 @@ export const XP_VERIFIERS = [
     icon: CheckBadgeIcon,
     link: '/vote',
     linkText: 'Vote Now',
+    category: 'advanced',
   },
   {
     verifierId: 2,
@@ -71,6 +79,9 @@ export const XP_VERIFIERS = [
     icon: UserGroupIcon,
     link: '/contribute',
     linkText: 'Contribute',
+    category: 'onboarding',
+    onboardingOrder: 3,
+    onboardingRequirement: 'Make at least one contribution',
   },
   {
     verifierId: 3,
@@ -84,6 +95,8 @@ export const XP_VERIFIERS = [
     icon: UserGroupIcon,
     link: 'citizenProfile',
     linkText: 'Complete Profile',
+    category: 'onboarding',
+    onboardingOrder: 1,
   },
   {
     verifierId: 4,
@@ -97,6 +110,8 @@ export const XP_VERIFIERS = [
     icon: UserGroupIcon,
     link: '/network',
     linkText: 'Join Team',
+    category: 'onboarding',
+    onboardingOrder: 4,
   },
   {
     verifierId: 5,
@@ -118,6 +133,7 @@ export const XP_VERIFIERS = [
           'from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700',
       },
     },
+    category: 'advanced',
   },
   {
     verifierId: 6,
@@ -138,6 +154,7 @@ export const XP_VERIFIERS = [
           'from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700',
       },
     },
+    category: 'advanced',
   },
 ]
 
