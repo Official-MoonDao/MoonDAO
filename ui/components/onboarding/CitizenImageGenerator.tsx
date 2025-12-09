@@ -493,16 +493,16 @@ export function ImageGenerator({
             {image && !generating ? (
               <Image
                 src={URL.createObjectURL(image)}
-                layout="fill"
-                objectFit="contain"
+                fill
+                style={{ objectFit: 'contain' }}
                 className=""
                 alt={''}
               />
             ) : generating ? (
               <Image
                 src={'/assets/MoonDAO-Loading-Animation.svg'}
-                layout="fill"
-                objectFit="contain"
+                fill
+                style={{ objectFit: 'contain' }}
                 className=""
                 alt={''}
               />
@@ -511,8 +511,8 @@ export function ImageGenerator({
                 <Image
                   ref={imageRef}
                   src={URL.createObjectURL(inputImage)}
-                  layout="fill"
-                  objectFit="contain"
+                  fill
+                  style={{ objectFit: 'contain' }}
                   className="pointer-events-none"
                   alt={''}
                 />
