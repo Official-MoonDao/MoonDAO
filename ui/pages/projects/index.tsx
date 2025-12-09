@@ -10,13 +10,13 @@ import {
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
+import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
 import { ProjectRewards, ProjectRewardsProps } from '@/components/nance/ProjectRewards'
-import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
 
 export default function Projects({
   proposals,
@@ -50,6 +50,7 @@ export async function getStaticProps() {
     const proposals = []
     const currentProjects = []
     const pastProjects = []
+    console.log('projects', projects)
     for (let i = 0; i < projects.length; i++) {
       if (!BLOCKED_PROJECTS.has(projects[i].id)) {
         const activeStatus = projects[i].active
@@ -57,7 +58,7 @@ export async function getStaticProps() {
           proposals.push(projects[i])
         } else if (activeStatus == PROJECT_ACTIVE) {
           currentProjects.push(projects[i])
-        } else if (activeStatus == PROJECT_ENDED) {
+        } else {
           pastProjects.push(projects[i])
         }
       }

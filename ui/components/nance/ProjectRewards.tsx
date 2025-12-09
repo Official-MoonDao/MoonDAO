@@ -27,6 +27,7 @@ import { useAssets } from '@/lib/dashboard/hooks'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { Project } from '@/lib/project/useProjectData'
 import { ethereum } from '@/lib/rpc/chains'
+import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
@@ -45,6 +46,7 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
+import Tooltip from '@/components/layout/Tooltip'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import PastProjects from '@/components/project/PastProjects'
 import ProjectCard from '@/components/project/ProjectCard'
@@ -144,6 +146,7 @@ export function ProjectRewards({
   const router = useRouter()
 
   const chain = DEFAULT_CHAIN_V5
+  const { isMobile } = useWindowSize()
   const chainSlug = getChainSlug(chain)
   const account = useActiveAccount()
   const userAddress = account?.address
@@ -152,8 +155,6 @@ export function ProjectRewards({
   const [approvalVotingActive, setApprovalVotingActive] = useState(false)
   const { quarter, year } = getRelativeQuarter(rewardVotingActive ? -1 : 0)
   const { quarter: submissionQuarter, year: submissionYear } = getSubmissionQuarter()
-  console.log('submissionYear', submissionYear)
-  console.log('submissionQuarter', submissionQuarter)
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>({})
@@ -493,13 +494,24 @@ export function ProjectRewards({
             >
               <h1
                 className="font-GoodTimes text-white/80 text-xl mb-6"
-                style={{
-                  'justify-content': 'space-between',
-                  display: 'flex',
-                }}
+                style={
+                  !isMobile
+                    ? {
+                        'justify-content': 'space-between',
+                        display: 'flex',
+                      }
+                    : {}
+                }
               >
-                <div>Proposals</div>
-                {totalAllocated > 0 && <div>Total Allocated: {totalAllocated}%</div>}
+                <Tooltip text="Distribute voting power among the proposals by percentage." wrap>
+                  Proposals
+                </Tooltip>
+                {
+                  <div>
+                    Allocated: {totalAllocated}% &nbsp;&nbsp;Voting Power:{' '}
+                    {Math.round(userVotingPower)}{' '}
+                  </div>
+                }
               </h1>
               <div className="flex flex-col gap-6">
                 {proposals && proposals.length > 0 ? (
