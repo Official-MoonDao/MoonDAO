@@ -198,16 +198,18 @@ describe('<Network />', () => {
 
       cy.wait('@getTablelandQuery')
       cy.wait('@getTablelandQuery')
-      
+
       // Pagination arrows only show when there's more than one page
       // Check if pagination exists, and if so, verify arrows
-      cy.get('#page-number', { timeout: 15000 }).should('exist').then(($pageNum) => {
-        const pageText = $pageNum.text()
-        const maxPage = parseInt(pageText.split('of')[1]?.trim() || '1')
-        if (maxPage > 1) {
-          cy.get('img[alt="Right Arrow"]').should('exist')
-        }
-      })
+      cy.get('#page-number', { timeout: 15000 })
+        .should('exist')
+        .then(($pageNum) => {
+          const pageText = $pageNum.text()
+          const maxPage = parseInt(pageText.split('of')[1]?.trim() || '1')
+          if (maxPage > 1) {
+            cy.get('img[alt="Right Arrow"]').should('exist')
+          }
+        })
     })
 
     it('should navigate to previous page', () => {
@@ -219,16 +221,18 @@ describe('<Network />', () => {
 
       cy.wait('@getTablelandQuery')
       cy.wait('@getTablelandQuery')
-      
+
       // Pagination arrows only show when there's more than one page
       // Check if pagination exists, and if so, verify arrows
-      cy.get('#page-number', { timeout: 15000 }).should('exist').then(($pageNum) => {
-        const pageText = $pageNum.text()
-        const maxPage = parseInt(pageText.split('of')[1]?.trim() || '1')
-        if (maxPage > 1) {
-          cy.get('img[alt="Left Arrow"]').should('exist')
-        }
-      })
+      cy.get('#page-number', { timeout: 15000 })
+        .should('exist')
+        .then(($pageNum) => {
+          const pageText = $pageNum.text()
+          const maxPage = parseInt(pageText.split('of')[1]?.trim() || '1')
+          if (maxPage > 1) {
+            cy.get('img[alt="Left Arrow"]').should('exist')
+          }
+        })
     })
   })
 })
