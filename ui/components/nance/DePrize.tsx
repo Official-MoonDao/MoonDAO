@@ -18,7 +18,7 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import { CompetitorPreview } from '@/components/nance/CompetitorPreview'
 import { JoinDePrizeModal } from '@/components/nance/JoinDePrizeModal'
-import StandardButton from '../layout/StandardButton'
+import Button from '../layout/Button'
 
 export type Metadata = {}
 export type Competitor = {
@@ -109,12 +109,14 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
         >
           {!isCompetitor && (
             <>
-              <StandardButton
+              <Button
+                variant="gradient"
+                borderRadius="rounded-full"
+                className="gradient-2"
                 onClick={() => setJoinModalOpen(true)}
-                className="gradient-2 rounded-full"
               >
                 Join
-              </StandardButton>
+              </Button>
               {joinModalOpen && (
                 <JoinDePrizeModal
                   userTeams={userTeams}

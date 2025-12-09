@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { ReactNode, useEffect, useState } from 'react'
-import StandardButton from '../layout/StandardButton'
+import Button from '../layout/Button'
 
 interface IndexCardProps {
   icon?: string
@@ -79,7 +79,9 @@ export default function IndexCard({
               className="description text-left relative z-50 w-full opacity-100 !opacity-100"
               style={{ opacity: '1 !important' }}
             >
-              <div className="flex justify-center text-center text-sm md:text-base 2xl:text-lg 3xl:text-xl">{paragraph}</div>
+              <div className="flex justify-center text-center text-sm md:text-base 2xl:text-lg 3xl:text-xl">
+                {paragraph}
+              </div>
               {metadata?.id && (
                 <div id="index-details-container" className="mt-4">
                   <p id="index-org-description">
@@ -88,9 +90,7 @@ export default function IndexCard({
                       : metadata.description}
                   </p>
                   {citizenDiscord && (
-                    <div id="index-handle-container">
-                      Discord: @{citizenDiscord}
-                    </div>
+                    <div id="index-handle-container">Discord: @{citizenDiscord}</div>
                   )}
                 </div>
               )}
@@ -99,7 +99,8 @@ export default function IndexCard({
                   id="index-hovertext-always-container"
                   className="mt-5 flex justify-start w-full relative z-50"
                 >
-                  <StandardButton
+                  <Button
+                    variant="gradient"
                     textColor="text-white"
                     borderRadius="rounded-tl-[10px] rounded-[2vmax]"
                     link="#"
@@ -108,7 +109,7 @@ export default function IndexCard({
                     styleOnly={true}
                   >
                     {hovertext}
-                  </StandardButton>
+                  </Button>
                 </div>
               )}
             </div>

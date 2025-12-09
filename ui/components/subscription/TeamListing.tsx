@@ -1,4 +1,4 @@
-import { PencilIcon, ShareIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { useEffect, useState, useRef } from 'react'
 import toast from 'react-hot-toast'

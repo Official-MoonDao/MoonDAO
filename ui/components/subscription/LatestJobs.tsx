@@ -3,18 +3,15 @@ import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import Job, { Job as JobType } from '../jobs/Job'
+import Button from '../layout/Button'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
-import StandardButton from '../layout/StandardButton'
 
 type LatestJobsProps = {
   teamContract: any
   jobTableContract: any
 }
 
-export default function LatestJobs({
-  teamContract,
-  jobTableContract,
-}: LatestJobsProps) {
+export default function LatestJobs({ teamContract, jobTableContract }: LatestJobsProps) {
   const router = useRouter()
   const [latestJobs, setLatestJobs] = useState<JobType[]>([])
   const [tableName, setTableName] = useState<string | null>(null)
@@ -82,23 +79,20 @@ export default function LatestJobs({
           <h2 className="header font-GoodTimes">Latest Jobs</h2>
         </div>
 
-        <StandardButton
-          className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
+        <Button
+          variant="gradient"
+          borderRadius="rounded-[5vmax] rounded-bl-[10px]"
+          className="min-w-[200px] gradient-2"
           onClick={() => router.push('/jobs')}
         >
           See More
-        </StandardButton>
+        </Button>
       </div>
 
       <SlidingCardMenu>
         <div id="latest-jobs-container" className="flex gap-5">
           {latestJobs.map((job, i) => (
-            <Job
-              key={`job-${i}`}
-              job={job}
-              showTeam
-              teamContract={teamContract}
-            />
+            <Job key={`job-${i}`} job={job} showTeam teamContract={teamContract} />
           ))}
         </div>
       </SlidingCardMenu>

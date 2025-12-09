@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import StandardButton from '../layout/StandardButton'
+import Button from '../layout/Button'
 
 export default function LaunchpadSection() {
   return (
@@ -10,7 +10,7 @@ export default function LaunchpadSection() {
         <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] rounded-full opacity-20 blur-xl animate-pulse"></div>
         <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-gradient-to-r from-[#5159CC] to-[#4660E7] rounded-full opacity-30 blur-lg animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 right-1/3 w-20 h-20 bg-gradient-to-r from-[#4660E7] to-[#6C407D] rounded-full opacity-25 blur-lg animate-pulse delay-2000"></div>
-        
+
         {/* Constellation dots */}
         <div className="absolute top-1/5 right-1/3 w-1 h-1 bg-white/30 rounded-full"></div>
         <div className="absolute top-2/5 left-1/5 w-1 h-1 bg-cyan-400/40 rounded-full"></div>
@@ -25,8 +25,8 @@ export default function LaunchpadSection() {
             MoonDAO Launchpad
           </h2>
           <p className="text-white/90 text-lg md:text-xl lg:text-2xl max-w-4xl mx-auto leading-relaxed">
-            Fund the future of space exploration with decentralized crowdfunding.
-            Join our proven platform that has already sent people to space.
+            Fund the future of space exploration with decentralized crowdfunding. Join our proven
+            platform that has already sent people to space.
           </p>
         </div>
 
@@ -62,8 +62,8 @@ export default function LaunchpadSection() {
                   Decentralized Space Funding
                 </h3>
                 <p className="text-white/80 text-base md:text-lg leading-relaxed">
-                  Experience the next generation of space funding with transparent, 
-                  community-driven support for missions that matter.
+                  Experience the next generation of space funding with transparent, community-driven
+                  support for missions that matter.
                 </p>
               </div>
 
@@ -118,7 +118,8 @@ export default function LaunchpadSection() {
                   <div>
                     <h4 className="text-white font-semibold text-lg mb-1">Launch in Minutes</h4>
                     <p className="text-white/70 text-sm md:text-base">
-                      Fund your mission in minutes, not months, with instant global access to capital.
+                      Fund your mission in minutes, not months, with instant global access to
+                      capital.
                     </p>
                   </div>
                 </div>
@@ -126,13 +127,13 @@ export default function LaunchpadSection() {
 
               {/* CTA Button */}
               <div className="pt-4">
-                <StandardButton
-                  className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white font-semibold text-sm md:text-base px-6 py-3 rounded-xl hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border-0"
+                <Button
+                  variant="primary"
+                  className="bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] text-white font-semibold text-sm md:text-base hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 border-0"
                   link="/launch"
-                  hoverEffect={false}
                 >
                   Launch Your Mission
-                </StandardButton>
+                </Button>
               </div>
             </div>
           </div>
@@ -181,9 +182,7 @@ export default function LaunchpadSection() {
                   <h4 className="text-xl md:text-2xl lg:text-3xl font-GoodTimes text-white mb-2">
                     12K
                   </h4>
-                  <p className="text-white/70 text-xs md:text-sm">
-                    $MOONEY token holders.
-                  </p>
+                  <p className="text-white/70 text-xs md:text-sm">$MOONEY token holders.</p>
                 </div>
               </div>
 
@@ -200,9 +199,7 @@ export default function LaunchpadSection() {
                   <h4 className="text-xl md:text-2xl lg:text-3xl font-GoodTimes text-white mb-2">
                     80+
                   </h4>
-                  <p className="text-white/70 text-xs md:text-sm">
-                    Projects successfully funded.
-                  </p>
+                  <p className="text-white/70 text-xs md:text-sm">Projects successfully funded.</p>
                 </div>
               </div>
 
@@ -219,9 +216,7 @@ export default function LaunchpadSection() {
                   <h4 className="text-xl md:text-2xl lg:text-3xl font-GoodTimes text-white mb-2">
                     2
                   </h4>
-                  <p className="text-white/70 text-xs md:text-sm">
-                    People sent to space.
-                  </p>
+                  <p className="text-white/70 text-xs md:text-sm">People sent to space.</p>
                 </div>
               </div>
             </div>

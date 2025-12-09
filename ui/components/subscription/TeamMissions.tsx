@@ -7,8 +7,8 @@ import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useMissionData from '@/lib/mission/useMissionData'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import Button from '../layout/Button'
 import PaginationButtons from '../layout/PaginationButtons'
-import StandardButton from '../layout/StandardButton'
 import { Mission } from '../mission/MissionCard'
 import MissionWideCard from '../mission/MissionWideCard'
 
@@ -48,28 +48,19 @@ export function TeamMission({
   teamContract,
   isManager,
 }: TeamMissionProps) {
-  const {
-    subgraphData,
-    token,
-    fundingGoal,
-    ruleset,
-    primaryTerminalAddress,
-    deadline,
-  } = useMissionData({
-    mission,
-    missionTableContract,
-    missionCreatorContract,
-    jbControllerContract,
-    jbDirectoryContract,
-    jbTokensContract,
-    teamContract,
-  })
+  const { subgraphData, token, fundingGoal, ruleset, primaryTerminalAddress, deadline } =
+    useMissionData({
+      mission,
+      missionTableContract,
+      missionCreatorContract,
+      jbControllerContract,
+      jbDirectoryContract,
+      jbTokensContract,
+      teamContract,
+    })
 
   return (
-    <JuiceProviders
-      projectId={mission?.projectId}
-      selectedChain={selectedChain}
-    >
+    <JuiceProviders projectId={mission?.projectId} selectedChain={selectedChain}>
       <MissionWideCard
         mission={mission}
         token={token}
@@ -141,9 +132,7 @@ export default function TeamMissions({
 
   // Build statement and fetch with SWR
   const statement =
-    shouldFetch && tableName
-      ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}`
-      : null
+    shouldFetch && tableName ? `SELECT * FROM ${tableName} WHERE teamId = ${teamId}` : null
   const { data: rows, mutate } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
   })
@@ -192,9 +181,7 @@ export default function TeamMissions({
       }
 
       const missionId = router.query.mission
-      const missionIndex = missions?.findIndex(
-        (mission) => mission.id === Number(missionId)
-      )
+      const missionIndex = missions?.findIndex((mission) => mission.id === Number(missionId))
       if (missionIndex) {
         setPageIdx(missionIndex + 1)
       }
@@ -220,12 +207,15 @@ export default function TeamMissions({
             </h2>
           </div>
           {isManager && (
-            <StandardButton
-              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
+            <Button
+              variant="gradient"
+              size="md"
+              borderRadius="rounded-[2vmax] rounded-bl-[10px]"
+              className="min-w-[200px] gradient-2 transition-all duration-200 hover:scale-105"
               onClick={() => router.push('/launch')}
             >
               Create a Mission
-            </StandardButton>
+            </Button>
           )}
         </div>
         <div className="mt-4">

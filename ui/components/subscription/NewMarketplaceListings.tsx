@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
-import StandardButton from '../layout/StandardButton'
+import Button from '../layout/Button'
 import TeamListing, { TeamListing as TeamListingType } from './TeamListing'
 
 type NewMarketplaceListingsProps = {
@@ -104,12 +104,12 @@ export default function NewMarketplaceListings({
           </p>
         </div>
 
-        <StandardButton
+        <Button
           className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all"
           onClick={() => router.push('/marketplace')}
         >
           View All Items
-        </StandardButton>
+        </Button>
       </div>
 
       <div

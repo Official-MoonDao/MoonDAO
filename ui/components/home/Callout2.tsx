@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import Speaker from '../home/Speaker'
-import StandardButton from '../layout/StandardButton'
+import Button from '../layout/Button'
 import CitizenTier from '../onboarding/CitizenTier'
 import TeamTier from '../onboarding/TeamTier'
 
@@ -36,16 +36,13 @@ export default function Callout2() {
                 id="paragraph"
                 className="pt-2 pb-5 text-lg 2xl:text-xl 3xl:text-2xl max-w-[500px] 2xl:max-w-[600px] 3xl:max-w-[700px] text-left mx-auto lg:mx-0"
               >
-                This is an open source space platform where everything is proposed,
-                governed, and created by members. Co-govern the treasury by locking
-                $MOONEY to become a voter.
+                This is an open source space platform where everything is proposed, governed, and
+                created by members. Co-govern the treasury by locking $MOONEY to become a voter.
               </p>
               <div className="flex items-center justify-start gap-2 mb-5 max-w-[500px] 2xl:max-w-[600px] 3xl:max-w-[700px] mx-auto lg:mx-0">
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(
-                      '0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395'
-                    )
+                    navigator.clipboard.writeText('0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395')
                     toast.success('Address copied to clipboard.')
                   }}
                   className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0 flex-1"
@@ -63,15 +60,16 @@ export default function Callout2() {
                 </button>
               </div>
               <div className="max-w-[500px] 2xl:max-w-[600px] 3xl:max-w-[700px] mx-auto lg:mx-0 flex justify-start">
-                <StandardButton
-                  backgroundColor="bg-white"
+                <Button
+                  variant="secondary"
+                  className="bg-white hover:bg-gray-100"
                   textColor="text-dark-cool"
                   borderRadius="rounded-tl-[10px] rounded-[2vmax]"
                   link="/get-mooney"
                   paddingOnHover="pl-5"
                 >
                   Buy $MOONEY
-                </StandardButton>
+                </Button>
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import Modal from '@/components/layout/Modal'
 import { CompetitorPreview } from '@/components/nance/CompetitorPreview'
-import StandardButton from '../layout/StandardButton'
+import Button from '../layout/Button'
 
 type JoinDePrizeModalProps = {
   userTeams: any[]
@@ -40,10 +40,7 @@ export function JoinDePrizeModal({
                   onClick={() => handleJoinWithTeam(team.teamId)}
                   className="w-full p-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <CompetitorPreview
-                    teamId={team.teamId}
-                    teamContract={teamContract}
-                  />
+                  <CompetitorPreview teamId={team.teamId} teamContract={teamContract} />
                 </button>
               ))}
             </div>
@@ -52,13 +49,14 @@ export function JoinDePrizeModal({
 
         {/* Create New Team */}
         <div className="mt-4">
-          <StandardButton
-            className="gradient-2 rounded-full w-full"
-            hoverEffect={false}
+          <Button
+            variant="gradient"
+            borderRadius="rounded-full"
+            className="w-full gradient-2"
             link="/team"
           >
             Create New Team
-          </StandardButton>
+          </Button>
         </div>
       </div>
     </Modal>

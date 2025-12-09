@@ -1,10 +1,10 @@
 import { COIN_ICONS } from 'const/icons'
 import Image from 'next/image'
-import toast from 'react-hot-toast'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSafeBalances } from '@/lib/nance/SafeHooks'
-import StandardButton from '../layout/StandardButton'
+import Button from '../layout/Button'
 import SafeBalances from '../safe/SafeBalances'
 import SafeModal from '../safe/SafeModal'
 import SafeReceiveModal from '../safe/SafeReceiveModal'
@@ -77,30 +77,39 @@ export default function TeamTreasury({ isSigner, safeData, multisigAddress }: Te
             </div>
             {safeData && isSigner && (
               <div className="flex flex-col sm:flex-row gap-3">
-                <StandardButton
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl py-2 px-5 text-sm font-semibold transition-all duration-200 hover:scale-105"
+                <Button
+                  variant="primary"
+                  size="sm"
+                  borderRadius="rounded-xl"
+                  className="text-white font-semibold hover:scale-105"
                   onClick={() => {
                     setSafeSendModalEnabled(true)
                   }}
                 >
                   {'Send'}
-                </StandardButton>
-                <StandardButton
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl py-2 px-5 text-sm font-semibold transition-all duration-200 hover:scale-105"
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  borderRadius="rounded-xl"
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold hover:scale-105"
                   onClick={() => {
                     setSafeReceiveModalEnabled(true)
                   }}
                 >
                   {'Receive'}
-                </StandardButton>
-                <StandardButton
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl py-2 px-5 text-sm font-semibold transition-all duration-200 hover:scale-105"
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  borderRadius="rounded-xl"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold hover:scale-105"
                   onClick={() => {
                     setSafeModalEnabled(true)
                   }}
                 >
                   {'Manage'}
-                </StandardButton>
+                </Button>
               </div>
             )}
           </div>

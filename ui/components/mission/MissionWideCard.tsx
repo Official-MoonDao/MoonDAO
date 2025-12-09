@@ -7,7 +7,7 @@ import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { formatTimeUntilDeadline } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
-import StandardButton from '../layout/StandardButton'
+import Button from '../layout/Button'
 import StandardWideCard from '../layout/StandardWideCard'
 import { Mission } from './MissionCard'
 import MissionFundingProgressBar from './MissionFundingProgressBar'
@@ -87,12 +87,7 @@ export default function MissionWideCard({
       }
     }
 
-    if (
-      teamContract &&
-      mission?.teamId !== undefined &&
-      mission?.teamId !== null
-    )
-      getTeamNFT()
+    if (teamContract && mission?.teamId !== undefined && mission?.teamId !== null) getTeamNFT()
   }, [teamContract, mission?.teamId])
 
   return (
@@ -100,9 +95,32 @@ export default function MissionWideCard({
       <StandardWideCard
         title={mission?.metadata?.name}
         subheader={mission?.metadata?.tagline}
-        stats={
+        paragraph={
+          <div
+            className="prose prose-invert max-w-none px-8 pb-12 md:pb-0 md:px-0"
+            dangerouslySetInnerHTML={{
+              __html: mission?.metadata?.description || '',
+            }}
+          />
+        }
+        image={
+          missionImage
+            ? typeof missionImage === 'string'
+              ? missionImage
+              : URL.createObjectURL(missionImage)
+            : getIPFSGateway(mission?.metadata?.logoUri)
+        }
+        secondaryImage={getIPFSGateway(teamNFT?.metadata?.image)}
+        showMore={showMore}
+        showMoreButton={showMoreButton}
+        onClick={() => {
+          if (onClick) onClick()
+          else if (linkToMission) router.push(`/mission/${mission.id}`)
+        }}
+        fullParagraph={!compact}
+        footer={
           <div className="w-full flex flex-col">
-            <div className="w-full grid grid-cols-1 md:grid-cols-3  items-center">
+            <div className="w-full grid grid-cols-1 md:grid-cols-3 items-center">
               <div className="w-full flex flex-col gap-4 col-span-3">
                 {ethPrice && subgraphData?.volume > 0 && (
                   <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-6 rounded-full inline-flex items-start w-fit flex-col">
@@ -115,10 +133,7 @@ export default function MissionWideCard({
                         className="mr-2"
                       />
                       <span className="mr-2">
-                        {truncateTokenValue(
-                          Number(totalFunding || 0) / 1e18,
-                          'ETH'
-                        )}
+                        {truncateTokenValue(Number(totalFunding || 0) / 1e18, 'ETH')}
                       </span>
                       <span className="text-sm md:text-base">ETH RAISED</span>
                     </div>
@@ -137,7 +152,6 @@ export default function MissionWideCard({
                   </div>
                 )}
               </div>
-
               <div />
             </div>
             <div className="mt-4 w-full grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
@@ -145,14 +159,12 @@ export default function MissionWideCard({
                 <MissionStat
                   icon="/assets/target.png"
                   label="Goal"
-                  value={`${
-                    fundingGoal
-                      ? truncateTokenValue(fundingGoal / 1e18, 'ETH')
-                      : 0
-                  } ETH`}
-                  tooltip={`~ $${Math.round(
-                    (fundingGoal / 1e18) * ethPrice
-                  ).toLocaleString()} USD`}
+                  value={`${fundingGoal ? truncateTokenValue(fundingGoal / 1e18, 'ETH') : 0} ETH`}
+                  tooltip={
+                    ethPrice
+                      ? `~ $${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()} USD`
+                      : undefined
+                  }
                 />
               </div>
               <div className="col-span-2">
@@ -182,11 +194,11 @@ export default function MissionWideCard({
                 />
               )}
               {learnMore && (
-                <StandardButton
-                  className={`gradient-2 rounded-full ${
-                    stage === 3 ? 'min-w-[225px]' : ''
-                  }`}
-                  hoverEffect={false}
+                <Button
+                  variant="gradient"
+                  size="md"
+                  borderRadius="rounded-full"
+                  className={`gradient-2 ${stage === 3 ? 'min-w-[225px]' : ''}`}
                   onClick={(e: any) => {
                     e.preventDefault()
                     e.stopPropagation()
@@ -194,14 +206,15 @@ export default function MissionWideCard({
                   }}
                 >
                   {stage === 3 ? 'Redemptions Available' : 'Learn More'}
-                </StandardButton>
+                </Button>
               )}
             </div>
-
             {contribute && mission.projectId && (
-              <StandardButton
-                className="mt-4 gradient-2 rounded-full"
-                hoverEffect={false}
+              <Button
+                variant="gradient"
+                size="md"
+                borderRadius="rounded-full"
+                className="mt-4 mb-8 gradient-2 w-full max-w-[250px]"
                 onClick={(e: any) => {
                   e.preventDefault()
                   e.stopPropagation()
@@ -209,33 +222,10 @@ export default function MissionWideCard({
                 }}
               >
                 Contribute
-              </StandardButton>
+              </Button>
             )}
           </div>
         }
-        paragraph={
-          <div
-            className="prose prose-invert max-w-none px-8 pb-12 md:pb-0 md:px-0"
-            dangerouslySetInnerHTML={{
-              __html: mission?.metadata?.description || '',
-            }}
-          />
-        }
-        image={
-          missionImage
-            ? typeof missionImage === 'string'
-              ? missionImage
-              : URL.createObjectURL(missionImage)
-            : getIPFSGateway(mission?.metadata?.logoUri)
-        }
-        secondaryImage={getIPFSGateway(teamNFT?.metadata?.image)}
-        showMore={showMore}
-        showMoreButton={showMoreButton}
-        onClick={() => {
-          if (onClick) onClick()
-          else if (linkToMission) router.push(`/mission/${mission.id}`)
-        }}
-        fullParagraph={!compact}
       />
     </>
   )
