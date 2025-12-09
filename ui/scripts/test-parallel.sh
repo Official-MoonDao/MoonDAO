@@ -383,12 +383,37 @@ parse_log_statistics() {
       fi
       
       # Also check for our formatted "✗ FAILED" lines (most reliable - from real-time detection)
+      # Strip ANSI codes first, then extract test files
+      # Format: [Worker X] ✗ FAILED path/to/test.cy.tsx
       grep "✗ FAILED" "$log_file" 2>/dev/null | \
-        grep -oE "[^[:space:]]+\.cy\.(tsx|ts|jsx|js)" >> "$failed_test_files" 2>/dev/null || true
+        sed 's/\x1b\[[0-9;]*m//g' | \
+        sed -n 's/.*✗ FAILED[[:space:]]*\([^[:space:]]*\.cy\.\(tsx\|ts\|jsx\|js\)\).*/\1/p' >> "$failed_test_files" 2>/dev/null || true
       
       # Also check for Cypress summary format: "filename.cy.tsx (failed)"
       grep -oE "[^[:space:]]+\.cy\.(tsx|ts|jsx|js).*\(failed" "$log_file" 2>/dev/null | \
         grep -oE "[^[:space:]]+\.cy\.(tsx|ts|jsx|js)" >> "$failed_test_files" 2>/dev/null || true
+      
+      # Also check for CypressError lines which indicate failures
+      # Format: [Worker X] CypressError: ... path/to/test.cy.tsx
+      grep -E "CypressError" "$log_file" 2>/dev/null | \
+        sed 's/\x1b\[[0-9;]*m//g' | \
+        grep -oE "[^[:space:]]+\.cy\.(tsx|ts|jsx|js)" >> "$failed_test_files" 2>/dev/null || true
+      
+      # Also check the real-time failure tracking file (most reliable source)
+      # This file was populated during real-time parsing when failures were detected
+      if [ -f "$FAILED_TESTS_FILE" ]; then
+        # Extract test files from this worker's log context
+        # Match test files that appear in this worker's log
+        while IFS= read -r failed_test; do
+          if [ -n "$failed_test" ]; then
+            # Check if this test appears in this worker's log
+            local test_basename=$(basename "$failed_test")
+            if grep -qE "(Running:\ +|▶ |✗ FAILED).*$test_basename" "$log_file" 2>/dev/null; then
+              echo "$failed_test" >> "$failed_test_files"
+            fi
+          fi
+        done < "$FAILED_TESTS_FILE"
+      fi
       
       # Count unique failed test files
       local unique_failed=0
@@ -405,8 +430,17 @@ parse_log_statistics() {
       assertion_error_count=$(echo "$assertion_error_count" | tr -d ' \n')
       assertion_error_count=${assertion_error_count:-0}
       
-      # Use unique_failed as the primary count
+      # Count ✗ FAILED lines directly as a reliable source
+      local failed_line_count=$(grep -c "✗ FAILED" "$log_file" 2>/dev/null || echo "0")
+      failed_line_count=$(echo "$failed_line_count" | tr -d ' \n')
+      failed_line_count=${failed_line_count:-0}
+      
+      # Use the maximum of unique_failed and failed_line_count
+      # This ensures we catch failures even if extraction isn't perfect
       local max_failed=$unique_failed
+      if [ "$failed_line_count" -gt "$max_failed" ] 2>/dev/null; then
+        max_failed=$failed_line_count
+      fi
       
       # If we have AssertionErrors but found fewer failed tests, we need to ensure we count them
       # This handles cases where test file extraction fails or AssertionError appears after test completion
@@ -430,6 +464,11 @@ parse_log_statistics() {
       # If worker exited with error but we didn't detect failures, assume at least 1 failure
       if [ "$worker_exit_failed" -gt 0 ] 2>/dev/null && [ "$max_failed" -eq 0 ] 2>/dev/null; then
         max_failed=1
+      fi
+      
+      # If we see ✗ FAILED lines but max_failed is still 0, use the line count
+      if [ "$failed_line_count" -gt 0 ] 2>/dev/null && [ "$max_failed" -eq 0 ] 2>/dev/null; then
+        max_failed=$failed_line_count
       fi
       
       # Calculate passed tests
