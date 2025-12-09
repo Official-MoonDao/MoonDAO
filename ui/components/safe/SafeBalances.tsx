@@ -13,13 +13,7 @@ function formatBalance(balance: string): string {
   return formatted.replace(/\.?0+$/, '') || '0'
 }
 
-export function SafeAsset({
-  label,
-  balance,
-}: {
-  label: string
-  balance: string
-}) {
+export function SafeAsset({ label, balance }: { label: string; balance: string }) {
   // Format large numbers with commas
   const formattedBalance = formatBalance(balance)
   const numBalance = parseFloat(formattedBalance)
@@ -63,16 +57,13 @@ export default function SafeBalances({
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="p-4 bg-slate-600/20 rounded-xl animate-pulse h-20"
-          />
+          <div key={i} className="p-4 bg-slate-600/20 rounded-xl animate-pulse h-20" />
         ))}
       </div>
     )
   }
 
-  if (!safeBalances || safeBalances.length === 0) {
+  if (!safeBalances || !Array.isArray(safeBalances) || safeBalances.length === 0) {
     return (
       <div className="text-center py-8 text-slate-400">
         <p>No balances found</p>
@@ -86,10 +77,7 @@ export default function SafeBalances({
         <SafeAsset
           key={balance.tokenAddress || 'native'}
           label={balance.token?.symbol || 'ETH'}
-          balance={formatUnits(
-            balance.balance,
-            balance.token?.decimals || 18
-          )}
+          balance={formatUnits(balance.balance, balance.token?.decimals || 18)}
         />
       ))}
     </div>

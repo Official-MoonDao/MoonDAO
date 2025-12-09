@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import {
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
@@ -127,9 +126,14 @@ export default function TeamMarketplaceListingModal({
   }, [isTimed])
 
   return (
-    <Modal id="team-marketplace-listing-modal-backdrop" setEnabled={setEnabled}>
+    <Modal
+      id="team-marketplace-listing-modal-backdrop"
+      setEnabled={setEnabled}
+      title={edit ? 'Edit Listing' : 'Create Listing'}
+      size="lg"
+    >
       <form
-        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5  bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto" // Updated styles
+        className="w-full flex flex-col gap-2 items-start justify-start"
         onSubmit={async (e) => {
           e.preventDefault()
           if (!account) return
@@ -255,16 +259,6 @@ export default function TeamMarketplaceListingModal({
           }
         }}
       >
-        <div className="w-full flex items-center justify-between">
-          <h2 className="font-GoodTimes">{edit ? 'Edit a Listing' : 'Add a Listing'}</h2>
-          <button
-            type="button"
-            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-            onClick={() => setEnabled(false)}
-          >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-          </button>
-        </div>
         {/* File input for listingdata.image */}
         {listingData.image && (
           <>

@@ -41,11 +41,10 @@ export default function Modal({
   }
 
   const sizeClass = modalSizes[size] || modalSizes.md
-  const hasCustomOverlay = !!className
-  const overlayClassName = hasCustomOverlay
-    ? className
-    : 'fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-start z-[9999] overflow-auto bg-gradient-to-t from-[#3F3FA690] via-[#00000080] to-transparent animate-fadeIn'
-  const contentClassName = hasCustomOverlay
+  const overlayClassName =
+    className ||
+    'fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-start z-[9999] overflow-auto bg-gradient-to-t from-[#3F3FA690] via-[#00000080] to-transparent animate-fadeIn'
+  const contentClassName = className
     ? 'relative'
     : `${sizeClass} mx-auto ${modalStyles.base} relative`
 
@@ -59,7 +58,7 @@ export default function Modal({
         id={id}
         className={overlayClassName}
       >
-        {hasCustomOverlay ? (
+        {className ? (
           <div className={contentClassName}>
             {showCloseButton && !title && (
               <button
@@ -73,7 +72,7 @@ export default function Modal({
             <div>{children}</div>
           </div>
         ) : (
-          <div className="mt-12 pb-12">
+          <div className="mt-12 pb-12 w-full flex justify-center px-4">
             <div className={contentClassName}>
               {showCloseButton && !title && (
                 <button
@@ -84,23 +83,23 @@ export default function Modal({
                   <XMarkIcon className="w-6 h-6" />
                 </button>
               )}
-              {(title || showCloseButton) && title && (
+              {title && (
                 <div className="flex items-center justify-between p-6 border-b border-white/10 relative">
-                {title && <h2 className="text-xl font-semibold text-white">{title}</h2>}
-                {showCloseButton && (
-                  <button
-                    onClick={handleClose}
-                    className="text-gray-400 hover:text-white transition-colors"
-                    aria-label="Close modal"
-                  >
-                    <XMarkIcon className="w-6 h-6" />
-                  </button>
-                )}
-              </div>
-            )}
-            <div className={title || showCloseButton ? 'p-6' : ''}>{children}</div>
+                  <h2 className="text-xl font-semibold text-white">{title}</h2>
+                  {showCloseButton && (
+                    <button
+                      onClick={handleClose}
+                      className="text-gray-400 hover:text-white transition-colors"
+                      aria-label="Close modal"
+                    >
+                      <XMarkIcon className="w-6 h-6" />
+                    </button>
+                  )}
+                </div>
+              )}
+              <div className={title || showCloseButton ? 'p-6' : ''}>{children}</div>
+            </div>
           </div>
-        </div>
         )}
       </div>
       {showToaster && <Toaster />}

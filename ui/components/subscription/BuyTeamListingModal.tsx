@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import { getAccessToken } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import ERC20ABI from 'const/abis/ERC20.json'
@@ -15,11 +14,7 @@ import {
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import {
-  prepareContractCall,
-  readContract,
-  sendAndConfirmTransaction,
-} from 'thirdweb'
+import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -156,10 +151,7 @@ export default function BuyTeamListingModal({
         const transaction = prepareContractCall({
           contract: currencyContract,
           method: 'transfer' as string,
-          params: [
-            recipient,
-            String(price * 10 ** currencyDecimals[listing.currency]),
-          ],
+          params: [recipient, String(price * 10 ** currencyDecimals[listing.currency])],
         })
         const receipt = await sendAndConfirmTransaction({
           transaction,
@@ -174,8 +166,7 @@ export default function BuyTeamListingModal({
             ? 'https://arbiscan.io/tx/'
             : 'https://sepolia.etherscan.io/tx/'
 
-        const transactionLink =
-          +listing.price <= 0 ? 'none' : etherscanUrl + transactionHash
+        const transactionLink = +listing.price <= 0 ? 'none' : etherscanUrl + transactionHash
 
         const shipping = Object.values(shippingInfo).join(', ')
 
@@ -198,9 +189,7 @@ export default function BuyTeamListingModal({
             recipient,
             isCitizen: citizen ? true : false,
             shipping,
-            teamLink: `${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
-              teamNFT.metadata.name
-            )}`,
+            teamLink: `${DEPLOYED_ORIGIN}/team/${generatePrettyLink(teamNFT.metadata.name)}`,
             accessToken,
           }),
         })
@@ -208,12 +197,9 @@ export default function BuyTeamListingModal({
         const { success, message: responseMessage } = await res.json()
 
         if (success) {
-          toast.success(
-            "Successful purchase! You'll receive an email shortly.",
-            {
-              duration: 10000,
-            }
-          )
+          toast.success("Successful purchase! You'll receive an email shortly.", {
+            duration: 10000,
+          })
         } else {
           console.log(responseMessage)
           toast.error('Something went wrong, please contact support.', {
@@ -232,157 +218,124 @@ export default function BuyTeamListingModal({
     setIsLoading(false)
   }
 
-  //There is a bug where setEnabled can't be called from a button in the main component
-  function Close() {
-    const [close, setClose] = useState(false)
-
-    useEffect(() => {
-      if (close) setEnabled(false)
-    }, [close])
-
-    return (
-      <button
-        type="button"
-        className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-        onClick={() => setClose(true)}
-      >
-        <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-      </button>
-    )
-  }
-
   return (
-    <Modal id="team-marketplace-buy-modal-backdrop" setEnabled={setEnabled}>
-      <div className="w-full rounded-[2vmax] flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5  bg-dark-cool h-screen md:h-auto">
-        <form
-          className="w-full flex flex-col gap-2 items-start justify-start"
-          onSubmit={(e) => {
-            e.preventDefault()
-          }}
-        >
-          <div className="w-full flex items-center justify-between">
-            <div>
-              <h2 className="font-GoodTimes">{'Buy a Listing'}</h2>
+    <Modal
+      id="team-marketplace-buy-modal-backdrop"
+      setEnabled={setEnabled}
+      title="Buy a Listing"
+      size="lg"
+    >
+      <form
+        className="w-full flex flex-col gap-2 items-start justify-start"
+        onSubmit={(e) => {
+          e.preventDefault()
+        }}
+      >
+        <div>
+          {listing.image && (
+            <div
+              id="image-container"
+              className="rounded-[20px] overflow-hidden my flex flex-wrap w-full"
+            >
+              <IPFSRenderer src={listing.image} width={500} height={500} alt="Listing Image" />
             </div>
-            <Close />
-          </div>
-          <div>
-            {listing.image && (
-              <div
-                id="image-container"
-                className="rounded-[20px] overflow-hidden my flex flex-wrap w-full"
-              >
-                <IPFSRenderer
-                  src={listing.image}
-                  width={500}
-                  height={500}
-                  alt="Listing Image"
-                />
-              </div>
-            )}
+          )}
 
-            <div className="mt-4">
-              <p>{`# ${listing.id}`}</p>
-              <p className="font-GoodTimes">{listing.title}</p>
-              <p className="text-[75%]">{listing.description}</p>
-              <p id="listing-price" className="font-bold">{`${
-                citizen
-                  ? truncateTokenValue(listing.price, listing.currency)
-                  : truncateTokenValue(+listing.price * 1.1, listing.currency)
-              } ${listing.currency}`}</p>
-            </div>
+          <div className="mt-4">
+            <p>{`# ${listing.id}`}</p>
+            <p className="font-GoodTimes">{listing.title}</p>
+            <p className="text-[75%]">{listing.description}</p>
+            <p id="listing-price" className="font-bold">{`${
+              citizen
+                ? truncateTokenValue(listing.price, listing.currency)
+                : truncateTokenValue(+listing.price * 1.1, listing.currency)
+            } ${listing.currency}`}</p>
           </div>
-          <p className="opacity-60">
-            Enter your information, confirm the transaction and wait to receive
-            an email from the vendor.
-          </p>
-          <input
-            className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm text-black"
-            placeholder="Enter your email"
-            value={email}
-            onChange={({ target }) => setEmail(target.value)}
-          />
-          {listing.shipping === 'true' && (
-            <div className="w-full flex flex-col gap-2 text-black">
+        </div>
+        <p className="opacity-60">
+          Enter your information, confirm the transaction and wait to receive an email from the
+          vendor.
+        </p>
+        <input
+          className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm text-black"
+          placeholder="Enter your email"
+          value={email}
+          onChange={({ target }) => setEmail(target.value)}
+        />
+        {listing.shipping === 'true' && (
+          <div className="w-full flex flex-col gap-2 text-black">
+            <input
+              className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+              placeholder="Street Address"
+              value={shippingInfo.streetAddress}
+              onChange={({ target }) =>
+                setShippingInfo({
+                  ...shippingInfo,
+                  streetAddress: target.value,
+                })
+              }
+            />
+            <div className="w-full flex gap-2">
               <input
                 className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-                placeholder="Street Address"
-                value={shippingInfo.streetAddress}
+                placeholder="City"
+                value={shippingInfo.city}
+                onChange={({ target }) => setShippingInfo({ ...shippingInfo, city: target.value })}
+              />
+              <input
+                className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                placeholder="State"
+                value={shippingInfo.state}
+                onChange={({ target }) => setShippingInfo({ ...shippingInfo, state: target.value })}
+              />
+            </div>
+            <div className="w-full flex gap-2">
+              <input
+                className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                placeholder="Postal Code"
+                value={shippingInfo.postalCode}
                 onChange={({ target }) =>
                   setShippingInfo({
                     ...shippingInfo,
-                    streetAddress: target.value,
+                    postalCode: target.value,
                   })
                 }
               />
-              <div className="w-full flex gap-2">
-                <input
-                  className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-                  placeholder="City"
-                  value={shippingInfo.city}
-                  onChange={({ target }) =>
-                    setShippingInfo({ ...shippingInfo, city: target.value })
-                  }
-                />
-                <input
-                  className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-                  placeholder="State"
-                  value={shippingInfo.state}
-                  onChange={({ target }) =>
-                    setShippingInfo({ ...shippingInfo, state: target.value })
-                  }
-                />
-              </div>
-              <div className="w-full flex gap-2">
-                <input
-                  className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-                  placeholder="Postal Code"
-                  value={shippingInfo.postalCode}
-                  onChange={({ target }) =>
-                    setShippingInfo({
-                      ...shippingInfo,
-                      postalCode: target.value,
-                    })
-                  }
-                />
-                <input
-                  className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
-                  placeholder="Country"
-                  value={shippingInfo.country}
-                  onChange={({ target }) =>
-                    setShippingInfo({ ...shippingInfo, country: target.value })
-                  }
-                />
-              </div>
+              <input
+                className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                placeholder="Country"
+                value={shippingInfo.country}
+                onChange={({ target }) =>
+                  setShippingInfo({ ...shippingInfo, country: target.value })
+                }
+              />
             </div>
-          )}
-          <PrivyWeb3Button
-            v5
-            requiredChain={DEFAULT_CHAIN_V5}
-            label="Buy"
-            action={async () => {
-              if (!email || email.trim() === '' || !email.includes('@'))
-                return toast.error('Please enter a valid email.')
-              if (listing.shipping === 'true') {
-                if (
-                  shippingInfo.streetAddress.trim() === '' ||
-                  shippingInfo.city.trim() === '' ||
-                  shippingInfo.state.trim() === '' ||
-                  shippingInfo.postalCode.trim() === '' ||
-                  shippingInfo.country.trim() === ''
-                )
-                  return toast.error('Please fill out all fields.')
-              }
-              await buyListing()
-            }}
-            className="mt-4 w-full gradient-2 rounded-[5vmax]"
-            isDisabled={isLoading || !recipient}
-          />
-          {isLoading && (
-            <p>Do not leave the page until the transaction is complete.</p>
-          )}
-        </form>
-      </div>
+          </div>
+        )}
+        <PrivyWeb3Button
+          v5
+          requiredChain={DEFAULT_CHAIN_V5}
+          label="Buy"
+          action={async () => {
+            if (!email || email.trim() === '' || !email.includes('@'))
+              return toast.error('Please enter a valid email.')
+            if (listing.shipping === 'true') {
+              if (
+                shippingInfo.streetAddress.trim() === '' ||
+                shippingInfo.city.trim() === '' ||
+                shippingInfo.state.trim() === '' ||
+                shippingInfo.postalCode.trim() === '' ||
+                shippingInfo.country.trim() === ''
+              )
+                return toast.error('Please fill out all fields.')
+            }
+            await buyListing()
+          }}
+          className="mt-4 w-full gradient-2 rounded-[5vmax]"
+          isDisabled={isLoading || !recipient}
+        />
+        {isLoading && <p>Do not leave the page until the transaction is complete.</p>}
+      </form>
     </Modal>
   )
 }
