@@ -2,11 +2,7 @@ import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import TeamABI from 'const/abis/Team.json'
-import {
-  JOBS_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
-  TEAM_ADDRESSES,
-} from 'const/config'
+import { JOBS_TABLE_ADDRESSES, TABLELAND_ENDPOINT, TEAM_ADDRESSES } from 'const/config'
 import { getContract } from 'thirdweb'
 import { serverClient } from '@/lib/thirdweb/client'
 import { Job } from '@/components/jobs/Job'
@@ -54,7 +50,7 @@ describe('<LatestJobs />', () => {
   it('Renders the component and jobs', () => {
     cy.wait('@getLatestJobs')
 
-    cy.get('.header').contains('Latest Jobs')
+    cy.get('h2.font-GoodTimes').contains('Latest Jobs')
     cy.get('#latest-jobs-container').children().should('have.length', 2)
   })
 })
