@@ -23,7 +23,7 @@ export const inputStyles = {
   standard: 'bg-[#0f152f] rounded-full',
   modern:
     'bg-gradient-to-r from-slate-800/50 to-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20 transition-all',
-  dark: 'bg-gradient-to-r from-[#000000] to-[#040617] placeholder:opacity-50 rounded-full',
+  dark: 'bg-gradient-to-r from-[#000000] to-[#040617] placeholder:opacity-50 rounded-full text-white',
   default:
     'bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50',
 }

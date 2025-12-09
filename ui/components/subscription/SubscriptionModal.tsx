@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useRead from '@/lib/thirdweb/hooks/useRead'
+import Input from '../layout/Input'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -25,13 +26,12 @@ export function SubscriptionModal({
   const [isLoading, setIsLoading] = useState(false)
   const [years, setYears] = useState<number>(1)
 
-  const { data: subscriptionCost, isLoading: isLoadingSubscriptionCost } =
-    useRead({
-      contract: subscriptionContract,
-      method: 'getRenewalPrice',
-      params: [address, years * 365 * 24 * 60 * 60],
-      deps: [years, address],
-    })
+  const { data: subscriptionCost, isLoading: isLoadingSubscriptionCost } = useRead({
+    contract: subscriptionContract,
+    method: 'getRenewalPrice',
+    params: [address, years * 365 * 24 * 60 * 60],
+    deps: [years, address],
+  })
 
   async function extendSubscription() {
     if (!years || subscriptionCost === undefined) return
@@ -89,10 +89,7 @@ export function SubscriptionModal({
           data-testid="subscription-modal-header"
           className="w-full flex items-center justify-between"
         >
-          <h1
-            data-testid="subscription-modal-title"
-            className="text-2xl font-GoodTimes"
-          >
+          <h1 data-testid="subscription-modal-title" className="text-2xl font-GoodTimes">
             Extend Subscription
           </h1>
           <button
@@ -111,53 +108,43 @@ export function SubscriptionModal({
           <p data-testid="expiration-date" className="text-gray-400 mb-2">
             {'Expiration Date: '}
             <span className="text-moon-orange">
-              {validPass
-                ? new Date(expiresAt?.toString() * 1000).toLocaleString()
-                : 'Expired'}
+              {validPass ? new Date(expiresAt?.toString() * 1000).toLocaleString() : 'Expired'}
             </span>
           </p>
         </div>
 
         {/* Subscription Extension */}
         <div data-testid="extension-section" className="mb-8">
-          <h3
-            data-testid="extension-title"
-            className="text-xl font-GoodTimes mb-4"
-          >
+          <h3 data-testid="extension-title" className="text-xl font-GoodTimes mb-4">
             Extension Details
           </h3>
           <p className="text-gray-300 mb-4">
-            Select the number of years you would like to extend your
-            subscription for from now.
+            Select the number of years you would like to extend your subscription for from now.
           </p>
 
           <div className="space-y-6">
-            <div
-              data-testid="years-input-section"
-              className="bg-darkest-cool p-4 rounded-lg"
-            >
+            <div data-testid="years-input-section" className="bg-darkest-cool p-4 rounded-lg">
               <label
                 data-testid="years-label"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
                 Years to Extend
               </label>
-              <input
+              <Input
                 data-testid="years-input"
-                className="w-full bg-dark-cool text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-moon-orange focus:outline-none"
                 type="number"
+                variant="dark"
+                className="w-full"
                 min={1}
                 onChange={(e: any) => {
                   setYears(parseInt(e.target.value))
                 }}
                 value={years}
+                formatNumbers={false}
               />
             </div>
 
-            <div
-              data-testid="cost-section"
-              className="bg-darkest-cool p-4 rounded-lg"
-            >
+            <div data-testid="cost-section" className="bg-darkest-cool p-4 rounded-lg">
               <p
                 data-testid="subscription-cost"
                 className="text-gray-300 flex items-center space-x-2 gap-2"
@@ -169,10 +156,7 @@ export function SubscriptionModal({
                   </div>
                 ) : (
                   <span className="text-white font-medium">
-                    {subscriptionCost
-                      ? ethers.utils.formatEther(subscriptionCost)
-                      : '0.00'}{' '}
-                    ETH
+                    {subscriptionCost ? ethers.utils.formatEther(subscriptionCost) : '0.00'} ETH
                   </span>
                 )}
               </p>

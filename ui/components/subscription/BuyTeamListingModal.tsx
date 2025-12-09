@@ -15,11 +15,7 @@ import {
 import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import {
-  prepareContractCall,
-  readContract,
-  sendAndConfirmTransaction,
-} from 'thirdweb'
+import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -31,6 +27,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { TeamListing } from '@/components/subscription/TeamListing'
 import IPFSRenderer from '../layout/IPFSRenderer'
+import Input from '../layout/Input'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -156,10 +153,7 @@ export default function BuyTeamListingModal({
         const transaction = prepareContractCall({
           contract: currencyContract,
           method: 'transfer' as string,
-          params: [
-            recipient,
-            String(price * 10 ** currencyDecimals[listing.currency]),
-          ],
+          params: [recipient, String(price * 10 ** currencyDecimals[listing.currency])],
         })
         const receipt = await sendAndConfirmTransaction({
           transaction,
@@ -174,8 +168,7 @@ export default function BuyTeamListingModal({
             ? 'https://arbiscan.io/tx/'
             : 'https://sepolia.etherscan.io/tx/'
 
-        const transactionLink =
-          +listing.price <= 0 ? 'none' : etherscanUrl + transactionHash
+        const transactionLink = +listing.price <= 0 ? 'none' : etherscanUrl + transactionHash
 
         const shipping = Object.values(shippingInfo).join(', ')
 
@@ -198,9 +191,7 @@ export default function BuyTeamListingModal({
             recipient,
             isCitizen: citizen ? true : false,
             shipping,
-            teamLink: `${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
-              teamNFT.metadata.name
-            )}`,
+            teamLink: `${DEPLOYED_ORIGIN}/team/${generatePrettyLink(teamNFT.metadata.name)}`,
             accessToken,
           }),
         })
@@ -208,12 +199,9 @@ export default function BuyTeamListingModal({
         const { success, message: responseMessage } = await res.json()
 
         if (success) {
-          toast.success(
-            "Successful purchase! You'll receive an email shortly.",
-            {
-              duration: 10000,
-            }
-          )
+          toast.success("Successful purchase! You'll receive an email shortly.", {
+            duration: 10000,
+          })
         } else {
           console.log(responseMessage)
           toast.error('Something went wrong, please contact support.', {
@@ -272,12 +260,7 @@ export default function BuyTeamListingModal({
                 id="image-container"
                 className="rounded-[20px] overflow-hidden my flex flex-wrap w-full"
               >
-                <IPFSRenderer
-                  src={listing.image}
-                  width={500}
-                  height={500}
-                  alt="Listing Image"
-                />
+                <IPFSRenderer src={listing.image} width={500} height={500} alt="Listing Image" />
               </div>
             )}
 
@@ -293,65 +276,77 @@ export default function BuyTeamListingModal({
             </div>
           </div>
           <p className="opacity-60">
-            Enter your information, confirm the transaction and wait to receive
-            an email from the vendor.
+            Enter your information, confirm the transaction and wait to receive an email from the
+            vendor.
           </p>
-          <input
-            className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm text-black"
+          <Input
+            type="text"
+            variant="dark"
+            className="text-white"
             placeholder="Enter your email"
             value={email}
-            onChange={({ target }) => setEmail(target.value)}
+            onChange={(e) => setEmail(e.target.value)}
+            formatNumbers={false}
           />
           {listing.shipping === 'true' && (
-            <div className="w-full flex flex-col gap-2 text-black">
-              <input
-                className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+            <div className="w-full flex flex-col gap-2">
+              <Input
+                type="text"
+                variant="dark"
+                className="text-white"
                 placeholder="Street Address"
                 value={shippingInfo.streetAddress}
-                onChange={({ target }) =>
+                onChange={(e) =>
                   setShippingInfo({
                     ...shippingInfo,
-                    streetAddress: target.value,
+                    streetAddress: e.target.value,
                   })
                 }
+                formatNumbers={false}
               />
               <div className="w-full flex gap-2">
-                <input
-                  className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                <Input
+                  type="text"
+                  variant="dark"
+                  className="text-white"
                   placeholder="City"
                   value={shippingInfo.city}
-                  onChange={({ target }) =>
-                    setShippingInfo({ ...shippingInfo, city: target.value })
-                  }
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
+                  formatNumbers={false}
                 />
-                <input
-                  className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                <Input
+                  type="text"
+                  variant="dark"
+                  className="text-white"
                   placeholder="State"
                   value={shippingInfo.state}
-                  onChange={({ target }) =>
-                    setShippingInfo({ ...shippingInfo, state: target.value })
-                  }
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
+                  formatNumbers={false}
                 />
               </div>
               <div className="w-full flex gap-2">
-                <input
-                  className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                <Input
+                  type="text"
+                  variant="dark"
+                  className="text-white"
                   placeholder="Postal Code"
                   value={shippingInfo.postalCode}
-                  onChange={({ target }) =>
+                  onChange={(e) =>
                     setShippingInfo({
                       ...shippingInfo,
-                      postalCode: target.value,
+                      postalCode: e.target.value,
                     })
                   }
+                  formatNumbers={false}
                 />
-                <input
-                  className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm"
+                <Input
+                  type="text"
+                  variant="dark"
+                  className="text-white"
                   placeholder="Country"
                   value={shippingInfo.country}
-                  onChange={({ target }) =>
-                    setShippingInfo({ ...shippingInfo, country: target.value })
-                  }
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, country: e.target.value })}
+                  formatNumbers={false}
                 />
               </div>
             </div>
@@ -378,9 +373,7 @@ export default function BuyTeamListingModal({
             className="mt-4 w-full gradient-2 rounded-[5vmax]"
             isDisabled={isLoading || !recipient}
           />
-          {isLoading && (
-            <p>Do not leave the page until the transaction is complete.</p>
-          )}
+          {isLoading && <p>Do not leave the page until the transaction is complete.</p>}
         </form>
       </div>
     </Modal>
