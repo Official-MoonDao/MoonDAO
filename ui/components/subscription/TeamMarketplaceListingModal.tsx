@@ -41,7 +41,7 @@ type ListingData = {
 
 type TeamMarketplaceListingModalProps = {
   teamId: number
-  setEnabled: Function
+  setEnabled: (enabled: boolean) => void
   refreshListings: Function
   marketplaceTableContract: any
   edit?: boolean
@@ -111,11 +111,7 @@ export default function TeamMarketplaceListingModal({
         setIsUpcoming(false)
       }
 
-      if (
-        currTime > listing.endTime &&
-        listing.endTime !== 0 &&
-        listing.endTime !== undefined
-      ) {
+      if (currTime > listing.endTime && listing.endTime !== 0 && listing.endTime !== undefined) {
         setIsExpired(true)
       } else {
         setIsExpired(false)
@@ -175,9 +171,7 @@ export default function TeamMarketplaceListingModal({
               listingData.image,
               `Team#${teamId} ${cleanedData.title} Listing Image`
             )
-            const { cid: imageIpfsHash } = await pinBlobOrFile(
-              renamedListingImage
-            )
+            const { cid: imageIpfsHash } = await pinBlobOrFile(renamedListingImage)
             imageIpfsLink = `ipfs://${imageIpfsHash}`
           }
 
@@ -232,10 +226,7 @@ export default function TeamMarketplaceListingModal({
 
             //Get listing id from receipt and send discord notification
             const listingId = parseInt(receipt.logs[1].topics[1], 16).toString()
-            const listingTeamId = parseInt(
-              receipt.logs[1].topics[2],
-              16
-            ).toString()
+            const listingTeamId = parseInt(receipt.logs[1].topics[2], 16).toString()
             const team = await getNFT({
               contract: teamContract,
               tokenId: BigInt(listingTeamId),
@@ -257,18 +248,15 @@ export default function TeamMarketplaceListingModal({
             }, 25000)
           } catch (err: any) {
             console.log(err)
-            toast.error(
-              'Something went wrong, please contact support if this issue persists.',
-              { duration: 10000 }
-            )
+            toast.error('Something went wrong, please contact support if this issue persists.', {
+              duration: 10000,
+            })
             setIsLoading(false)
           }
         }}
       >
         <div className="w-full flex items-center justify-between">
-          <h2 className="font-GoodTimes">
-            {edit ? 'Edit a Listing' : 'Add a Listing'}
-          </h2>
+          <h2 className="font-GoodTimes">{edit ? 'Edit a Listing' : 'Add a Listing'}</h2>
           <button
             type="button"
             className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
@@ -281,12 +269,7 @@ export default function TeamMarketplaceListingModal({
         {listingData.image && (
           <>
             {typeof listingData.image === 'string' ? (
-              <IPFSRenderer
-                src={listingData.image}
-                height={200}
-                width={200}
-                alt=""
-              />
+              <IPFSRenderer src={listingData.image} height={200} width={200} alt="" />
             ) : (
               <Image
                 className="w-[200px] h-[200px]"
@@ -301,9 +284,7 @@ export default function TeamMarketplaceListingModal({
         <div className="w-full flex flex-col gap-2 p-2 mt-2 rounded-t-[20px] rounded-bl-[10px] items-start justify-start bg-darkest-cool">
           <FileInput
             file={listingData.image}
-            setFile={(file: any) =>
-              setListingData({ ...listingData, image: file })
-            }
+            setFile={(file: any) => setListingData({ ...listingData, image: file })}
             accept="image/png, image/jpeg, image/webp, image/gif, image/svg"
             acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
           />
@@ -329,9 +310,7 @@ export default function TeamMarketplaceListingModal({
             value={listingData.description}
             style={{ resize: 'none' }}
             maxLength={
-              bytesOfString(listingData.description) >= 1024
-                ? listingData.description.length
-                : 1024
+              bytesOfString(listingData.description) >= 1024 ? listingData.description.length : 1024
             }
           />
           <div className="flex gap-2">
@@ -349,9 +328,7 @@ export default function TeamMarketplaceListingModal({
             <select
               id="listing-currency-input"
               className="p-2 bg-[#0f152f]"
-              onChange={(e) =>
-                setListingData({ ...listingData, currency: e.target.value })
-              }
+              onChange={(e) => setListingData({ ...listingData, currency: e.target.value })}
               value={listingData.currency}
             >
               <option value="ETH">ETH</option>
@@ -394,22 +371,14 @@ export default function TeamMarketplaceListingModal({
                   type="date"
                   min={
                     listing && listing?.startTime > 0
-                      ? new Date(listing?.startTime * 1000)
-                          .toISOString()
-                          .split('T')[0]
+                      ? new Date(listing?.startTime * 1000).toISOString().split('T')[0]
                       : new Date().toISOString().split('T')[0]
                   }
-                  value={
-                    startTime > 0
-                      ? new Date(startTime * 1000).toISOString().split('T')[0]
-                      : 0
-                  }
+                  value={startTime > 0 ? new Date(startTime * 1000).toISOString().split('T')[0] : 0}
                   onChange={({ target }: any) => {
                     const date = new Date(target.value)
                     const timezoneOffset = date.getTimezoneOffset() * 60 * 1000
-                    const adjustedDate = new Date(
-                      date.getTime() + timezoneOffset
-                    )
+                    const adjustedDate = new Date(date.getTime() + timezoneOffset)
                     const unixTime = Math.floor(adjustedDate.getTime() / 1000)
                     setStartTime(unixTime)
                   }}
@@ -420,22 +389,14 @@ export default function TeamMarketplaceListingModal({
                   type="date"
                   min={
                     listing && listing?.endTime > 0
-                      ? new Date(listing?.endTime * 1000)
-                          .toISOString()
-                          .split('T')[0]
+                      ? new Date(listing?.endTime * 1000).toISOString().split('T')[0]
                       : ''
                   }
-                  value={
-                    endTime > 0
-                      ? new Date(endTime * 1000).toISOString().split('T')[0]
-                      : 0
-                  }
+                  value={endTime > 0 ? new Date(endTime * 1000).toISOString().split('T')[0] : 0}
                   onChange={({ target }: any) => {
                     const date = new Date(target.value)
                     const timezoneOffset = date.getTimezoneOffset() * 60 * 1000
-                    const adjustedDate = new Date(
-                      date.getTime() + timezoneOffset
-                    )
+                    const adjustedDate = new Date(date.getTime() + timezoneOffset)
                     const unixTime = Math.floor(adjustedDate.getTime() / 1000)
                     setEndTime(unixTime)
                   }}
@@ -449,9 +410,7 @@ export default function TeamMarketplaceListingModal({
           requiredChain={DEFAULT_CHAIN_V5}
           label={edit ? 'Edit Listing' : 'Add Listing'}
           type="submit"
-          isDisabled={
-            !marketplaceTableContract || !teamContract || isLoading || !isValid
-          }
+          isDisabled={!marketplaceTableContract || !teamContract || isLoading || !isValid}
           action={() => {}}
           className={`w-full gradient-2 rounded-t0 rounded-b-[2vmax] ${
             !isValid ? 'opacity-50 cursor-not-allowed' : ''
