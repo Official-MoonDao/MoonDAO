@@ -69,7 +69,7 @@ const searchMappings = [
   // Projects & Jobs
   {
     keywords: ['projects', 'project', 'rewards', 'funding', 'grants', 'proposals'],
-    title: 'Project Rewards',
+    title: 'Projects',
     description: 'Discover and fund space exploration projects',
     link: '/projects',
     category: 'Projects'

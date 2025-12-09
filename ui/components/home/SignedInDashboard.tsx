@@ -10,7 +10,6 @@ import {
   BriefcaseIcon,
   TrophyIcon,
 } from '@heroicons/react/24/outline'
-import { BLOCKED_PROJECTS } from 'const/whitelist'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
@@ -32,6 +31,7 @@ import {
   TEAM_ADDRESSES,
   ETH_BUDGET,
 } from 'const/config'
+import { BLOCKED_PROJECTS } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useContext, useState, useEffect } from 'react'
@@ -39,6 +39,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useMissionData from '@/lib/mission/useMissionData'
+import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -58,13 +59,13 @@ import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import StandardButton from '@/components/layout/StandardButton'
 import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
+import ProjectCard from '@/components/project/ProjectCard'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
-import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import DashboardQuests from './DashboardQuests'
 import DashboardTeams from './DashboardTeams'
 
@@ -1168,34 +1169,12 @@ export default function SignedInDashboard({
               {/* Projects Grid - Larger cards with fewer columns for better visibility */}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {currentProjects.slice(0, 6).map((project: any, index: number) => (
-                  <Link key={index} href={`/project/${project.id}`} passHref>
-                    <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 min-h-[200px] flex flex-col">
-                      <div className="flex justify-between items-start mb-4">
-                        <h4 className="font-bold text-white text-lg flex-1 mr-3 leading-tight">
-                          {project.name}
-                        </h4>
-                        <span
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
-                            project.active == PROJECT_ACTIVE
-                              ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                              : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-                          }`}
-                        >
-                          {project.active == PROJECT_ACTIVE ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                      <p className="text-green-100 text-sm leading-relaxed flex-1 overflow-hidden">
-                        {project.description?.length > 180
-                          ? `${project.description.substring(0, 180)}...`
-                          : project.description || 'No description available'}
-                      </p>
-                      <div className="mt-4 pt-4 border-t border-green-500/10">
-                        <div className="text-green-300 text-xs font-medium hover:text-green-200 transition-colors">
-                          Click to view details →
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
+                  <ProjectCard
+                    project={project}
+                    userHasVotingPower={!!walletVP}
+                    isVotingPeriod={false}
+                    distribute={false}
+                  />
                 ))}
 
                 {/* Show more projects indicator if there are more than 6 */}

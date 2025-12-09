@@ -345,8 +345,6 @@ export async function getStaticProps() {
       const filteredMissionRows = missionRows.filter((mission: any) => {
         return !BLOCKED_MISSIONS.has(mission.id) && mission && mission.id
       })
-
-      // Only fetch metadata for the first mission to reduce build time
       if (filteredMissionRows.length > 0 && filteredMissionRows[0]?.projectId) {
         try {
           const chain = DEFAULT_CHAIN_V5

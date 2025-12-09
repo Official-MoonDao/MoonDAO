@@ -313,6 +313,7 @@ export function ProjectRewards({
       .filter((token: any) => token.usd > 1)
       .concat([{ symbol: 'stETH', balance: stakedEth }])
   }, [mainnetTokens, arbitrumTokens, polygonTokens, baseTokens, stakedEth])
+  const totalAllocated = _.sum(Object.values(distribution))
 
   // The quarterly ETH budget is the value of all non-mooney tokens in the treasury
   // converted to ETH on the first day of the quarter. This function calculates in
@@ -379,7 +380,7 @@ export function ProjectRewards({
     }
   }, [mooneyBudget, DAI, MOONEY])
 
-  const handleSubmit = async (contract:any) => {
+  const handleSubmit = async (contract: any) => {
     const totalPercentage = Object.values(distribution).reduce((sum, value) => sum + value, 0)
     if (totalPercentage !== 100) {
       toast.error('Total distribution must equal 100%.', {
@@ -427,7 +428,7 @@ export function ProjectRewards({
       />
       <Container>
         <ContentLayout
-          header={'Project Rewards'}
+          header={'Projects'}
           description={
             'View active projects and allocate retroactive rewards to completed projects and their contributors based on impact and results.'
           }
@@ -443,6 +444,15 @@ export function ProjectRewards({
             <div className="bg-black/20 rounded-xl p-4 border border-white/10">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                 <h1 className="font-GoodTimes text-white/80 text-lg">{`Q${quarter}: ${year} Rewards`}</h1>
+                {process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' && (
+                  <button
+                    onClick={tallyVotes}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
+                    onClick={() => router.push('/proposals')}
+                  >
+                    Close voting.
+                  </button>
+                )}
                 <button
                   className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
                   onClick={() => router.push('/proposals')}
@@ -456,7 +466,6 @@ export function ProjectRewards({
                   <span className="leading-none">Create Project</span>
                 </button>
                 {/*FIXME run on cron */}
-                <button onClick={tallyVotes}>Tally votes</button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -482,7 +491,16 @@ export function ProjectRewards({
               id="projects-container"
               className="bg-black/20 rounded-xl p-6 border border-white/10"
             >
-              <h1 className="font-GoodTimes text-white/80 text-xl mb-6">Proposals</h1>
+              <h1
+                className="font-GoodTimes text-white/80 text-xl mb-6"
+                style={{
+                  'justify-content': 'space-between',
+                  display: 'flex',
+                }}
+              >
+                <div>Proposals</div>
+                {totalAllocated > 0 && <div>Total Allocated: {totalAllocated}%</div>}
+              </h1>
               <div className="flex flex-col gap-6">
                 {proposals && proposals.length > 0 ? (
                   proposals.map((project: any, i) => (
