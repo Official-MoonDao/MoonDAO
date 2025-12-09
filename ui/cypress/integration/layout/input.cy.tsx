@@ -96,8 +96,13 @@ describe('<Input />', () => {
   })
 
   it('Renders number input', () => {
-    cy.mount(<Input type="number" placeholder="Enter number" />)
+    cy.mount(<Input type="number" placeholder="Enter number" formatNumbers={false} />)
     cy.get('input[type="number"]').should('exist')
+  })
+
+  it('Renders number input with formatting (converts to text)', () => {
+    cy.mount(<Input type="number" placeholder="Enter number" formatNumbers={true} />)
+    cy.get('input[type="text"]').should('exist')
   })
 
   it('Renders email input', () => {
@@ -139,4 +144,3 @@ describe('<Input />', () => {
     cy.get('[data-cy="input-wrapper"]').should('have.class', 'max-w-[500px]')
   })
 })
-
