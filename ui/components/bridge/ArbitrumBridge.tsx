@@ -286,7 +286,7 @@ export default function ArbitrumBridge() {
                   placeholder="0.0"
                   className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 border-0 p-0 mr-4"
                   value={amount}
-                  max={balance ? parseFloat(balance) : undefined}
+                  max={balance ? Number(balance) : undefined}
                   onChange={(e) => {
                     let value = e.target.value
                     // Remove commas and non-numeric characters except decimal point
@@ -304,8 +304,8 @@ export default function ArbitrumBridge() {
                     }
 
                     // Enforce max value (available balance)
-                    if (balance && parseFloat(value) > parseFloat(balance)) {
-                      value = balance
+                    if (balance && parseFloat(value) > balance) {
+                      value = String(balance)
                     }
 
                     // Remove leading zero if user types a number after it
