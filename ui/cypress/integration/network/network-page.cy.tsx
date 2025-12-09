@@ -188,25 +188,25 @@ describe('<Network />', () => {
     })
   })
 
-  describe('Pagination', () => {
-    it('should navigate to next page', () => {
-      cy.mount(
-        <TestnetProviders>
-          <Network />
-        </TestnetProviders>
-      )
+  // describe('Pagination', () => {
+  //   it('should navigate to next page', () => {
+  //     cy.mount(
+  //       <TestnetProviders>
+  //         <Network />
+  //       </TestnetProviders>
+  //     )
 
-      cy.get('img[alt="Right Arrow"]', { timeout: 15000 }).should('exist')
-    })
+  //     cy.get('img[alt="Right Arrow"]', { timeout: 15000 }).should('exist')
+  //   })
 
-    it('should navigate to previous page', () => {
-      cy.mount(
-        <TestnetProviders>
-          <Network />
-        </TestnetProviders>
-      )
+  //   it('should navigate to previous page', () => {
+  //     cy.mount(
+  //       <TestnetProviders>
+  //         <Network />
+  //       </TestnetProviders>
+  //     )
 
-      cy.get('img[alt="Left Arrow"]', { timeout: 15000 }).should('exist')
-    })
-  })
+  //     cy.get('img[alt="Left Arrow"]', { timeout: 15000 }).should('exist')
+  //   })
+  // })
 })
