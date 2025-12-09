@@ -28,13 +28,13 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import Card from '@/components/layout/Card'
 import CollapsibleContainer from '@/components/layout/CollapsibleContainer'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import SectionCard from '@/components/layout/SectionCard'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
@@ -172,12 +172,10 @@ export default function ProjectProfile({ tokenId, project, safeOwners }: Project
       >
         <div
           id="page-container"
-          className="animate-fadeIn flex flex-col gap-6 w-full"
-          style={{ width: '100%', minWidth: 0, display: 'flex', flexDirection: 'column' }}
+          className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]"
         >
           {/* Project Overview */}
-          <Card
-            className="!w-full !max-w-full"
+          <SectionCard
             header="Proposal"
             iconSrc="/assets/icon-star.svg"
             action={
@@ -194,22 +192,17 @@ export default function ProjectProfile({ tokenId, project, safeOwners }: Project
             <div className="prose prose-invert max-w-none">
               <MarkdownWithTOC body={nanceProposal?.body || ''} />
             </div>
-          </Card>
+          </SectionCard>
           {finalReportMarkdown && (
-            <Card
-              className="!w-full !max-w-full"
-              header="Final Report"
-              iconSrc="/assets/icon-star.svg"
-            >
+            <SectionCard header="Final Report" iconSrc="/assets/icon-star.svg">
               <div className="prose prose-invert max-w-none">
                 <MarkdownWithTOC body={finalReportMarkdown} />
               </div>
-            </Card>
+            </SectionCard>
           )}
 
           <div className="z-50 flex flex-col gap-6 mb-[50px]">
-            <Card
-              className="!w-full !max-w-full"
+            <SectionCard
               header="Meet the Team"
               iconSrc="/assets/icon-team.svg"
               action={
@@ -241,7 +234,7 @@ export default function ProjectProfile({ tokenId, project, safeOwners }: Project
                   )}
                 </div>
               </SlidingCardMenu>
-            </Card>
+            </SectionCard>
             {/* Mooney and Voting Power */}
             <TeamTreasury
               isSigner={isSigner}

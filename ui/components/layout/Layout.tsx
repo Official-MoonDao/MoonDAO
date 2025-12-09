@@ -92,7 +92,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         !lightMode ? 'dark background-dark' : 'background-light'
       } min-h-screen relative`}
     >
-      {!lightMode && <SpaceBackground />}
+      <SpaceBackground />
       <>
         {/* Mobile menu top bar - for screens smaller than xl */}
         <div className="xl:hidden">
