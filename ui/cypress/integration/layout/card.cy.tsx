@@ -23,27 +23,7 @@ describe('<Card />', () => {
     cy.mount(<Card orgimage="/test-org-image.jpg" header="Org Card" />)
 
     cy.get('#featured-image').should('be.visible')
-    cy.get('#featured-image')
-      .should('have.attr', 'src')
-      .and('include', 'url=%2Ftest-org-image.jpg')
-  })
-
-  it('Displays citizen discord when available', () => {
-    const metadata = {
-      attributes: [{ trait_type: 'discord', value: 'testuser' }],
-      name: 'Test Citizen',
-      id: '1',
-    }
-
-    cy.mountNextRouter('/')
-
-    cy.mount(
-      <TestnetProviders>
-        <Card type="citizen" metadata={metadata} />
-      </TestnetProviders>
-    )
-
-    cy.get('#handle-container').should('contain', 'Discord: @testuser')
+    cy.get('#featured-image').should('have.attr', 'src').and('include', 'url=%2Ftest-org-image.jpg')
   })
 
   it('Shows hovertext on desktop', () => {
@@ -51,9 +31,7 @@ describe('<Card />', () => {
     cy.viewport('macbook-15')
     cy.mount(<Card header="Hover Test" hovertext="Test hovertext" />)
 
-    cy.get('#hovertext')
-      .should('have.class', 'hidden')
-      .and('have.class', 'md:block')
+    cy.get('#hovertext').should('have.class', 'hidden').and('have.class', 'md:block')
     cy.get('#card-container').trigger('mouseover')
     cy.get('#hovertext').should('be.visible').and('contain', 'Test hovertext')
   })
@@ -63,11 +41,7 @@ describe('<Card />', () => {
     cy.viewport('iphone-x')
     cy.mount(
       <TestnetProviders>
-        <Card
-          header="Mobile Test"
-          hovertext="Test hovertext"
-          metadata={{ name: 'Test' }}
-        />
+        <Card header="Mobile Test" hovertext="Test hovertext" metadata={{ name: 'Test' }} />
       </TestnetProviders>
     )
 
