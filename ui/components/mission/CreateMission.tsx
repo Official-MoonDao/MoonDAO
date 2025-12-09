@@ -793,6 +793,7 @@ export default function CreateMission({
                       label="Funding Goal (USD)"
                       placeholder="Enter a goal in USD"
                       value={formattedFundingGoal}
+                      formatNumbers={false}
                       onChange={(e: any) => {
                         const value = e.target.value
                         // Remove any commas and dollar signs from the input for storage
