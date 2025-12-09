@@ -167,7 +167,12 @@ function renderWideCardContent({
 }) {
   return (
     <>
-      <span id="content" className={`animate-fadeIn relative z-50 flex flex-col gap-6`}>
+      <span
+        id="content"
+        className={`animate-fadeIn relative z-50 flex flex-col gap-6 ${
+          showMoreButton ? 'pb-8' : ''
+        }`}
+      >
         <div className="relative flex flex-col lg:flex-row gap-4 items-center">
           {(image || orgimage) && (
             <div className="relative w-full h-full md:w-[275px] md:h-[275px] md:mx-8">
@@ -226,16 +231,20 @@ function renderWideCardWrapper({
   link,
   onClick,
   children,
+  showMoreButton,
 }: {
   link?: string
   onClick?: () => void
   children: ReactNode
+  showMoreButton?: boolean
 }) {
   const cardContent = (
     <div>
       <span
         id="card-container"
-        className={`relative animate-fadeIn flex flex-col relative bg-dark-cool rounded-[20px] w-full h-full`}
+        className={`relative animate-fadeIn flex flex-col relative bg-dark-cool rounded-[20px] w-full h-full ${
+          showMoreButton ? 'pb-4' : ''
+        }`}
       >
         <div className="flex-grow">
           <div
@@ -541,6 +550,7 @@ export default function Card({
           link,
           onClick,
           children: wideCardContent,
+          showMoreButton,
         })}
       </span>
     )

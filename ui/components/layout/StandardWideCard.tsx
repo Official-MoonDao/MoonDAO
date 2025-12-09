@@ -48,7 +48,9 @@ export default function StandardWideCard({
     <div>
       <span
         id="card-container"
-        className={`relative animate-fadeIn flex flex-col relative bg-dark-cool rounded-[20px] w-full h-full`}
+        className={`relative animate-fadeIn flex flex-col relative bg-dark-cool rounded-[20px] w-full h-full ${
+          showMoreButton ? 'pb-4' : ''
+        }`}
       >
         {/* Ensure the card content takes full height */}
         <div className="flex-grow">
@@ -62,7 +64,9 @@ export default function StandardWideCard({
           >
             <span
               id="content"
-              className={`animate-fadeIn relative z-50 flex flex-col gap-6`}
+              className={`animate-fadeIn relative z-50 flex flex-col gap-6 ${
+                showMoreButton ? 'pb-8' : ''
+              }`}
             >
               <div className="relative flex flex-col lg:flex-row gap-4 items-center">
                 {/* Image section */}
@@ -70,8 +74,7 @@ export default function StandardWideCard({
                   <div className="relative w-full h-full md:w-[275px] md:h-[275px] md:mx-8">
                     <div className="relative w-full h-full md:w-[275px] md:h-[275px] md:rounded-full overflow-hidden bg-gray-300 flex-shrink-0">
                       {image ? (
-                        typeof image !== 'string' ||
-                        image?.startsWith('blob:') ? (
+                        typeof image !== 'string' || image?.startsWith('blob:') ? (
                           <Image
                             className="w-full h-full object-cover"
                             src={image}
@@ -118,13 +121,9 @@ export default function StandardWideCard({
                     <h2 className="font-GoodTimes text-2xl text-white">
                       {header || title || (profile && 'Anon')}
                     </h2>
-                    {subheader && (
-                      <div className="text-gray-400 text-lg">{subheader}</div>
-                    )}
+                    {subheader && <div className="text-gray-400 text-lg">{subheader}</div>}
                   </div>
-                  {stats && (
-                    <div className="mt-4 flex flex-row gap-4">{stats}</div>
-                  )}
+                  {stats && <div className="mt-4 flex flex-row gap-4">{stats}</div>}
                 </div>
               </div>
 
