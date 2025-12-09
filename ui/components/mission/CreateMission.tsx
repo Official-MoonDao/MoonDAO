@@ -648,6 +648,7 @@ export default function CreateMission({
                       }
                       variant="dark"
                       maxLength={100}
+                      formatNumbers={false}
                     />
                     <Input
                       id="mission-tagline"
@@ -662,6 +663,7 @@ export default function CreateMission({
                       }
                       variant="dark"
                       maxLength={100}
+                      formatNumbers={false}
                     />
 
                     <Input
@@ -677,6 +679,7 @@ export default function CreateMission({
                       }
                       variant="dark"
                       maxLength={500}
+                      formatNumbers={false}
                     />
                     <Input
                       id="mission-social"
@@ -691,6 +694,7 @@ export default function CreateMission({
                       }
                       maxLength={500}
                       variant="dark"
+                      formatNumbers={false}
                     />
                     <Input
                       id="mission-youtube"
@@ -705,6 +709,7 @@ export default function CreateMission({
                       }
                       maxLength={500}
                       variant="dark"
+                      formatNumbers={false}
                       tooltip="Add a YouTube video link to showcase your mission. This will be displayed on the mission page."
                     />
                   </div>
