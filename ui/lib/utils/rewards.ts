@@ -469,9 +469,14 @@ export function getPayouts(
   }
 }
 
-export function getApprovedProjects(projects: any[], outcome: any, ethBudgets: any, ethBudget) {
+export function getApprovedProjects(
+  projects: any[],
+  outcome: { [key: string]: number },
+  ethBudgets: { [key: string]: number },
+  ethBudget: number
+): { [key: string]: boolean } {
   const sortedOutcome = Object.keys(outcome)
-    .map((projectId) => {
+    .map((projectId: string) => {
       return { projectId: projectId, percent: outcome[projectId], budget: ethBudgets[projectId] }
     })
     .sort((a, b) => {
@@ -479,7 +484,7 @@ export function getApprovedProjects(projects: any[], outcome: any, ethBudgets: a
     })
   const numApprovedProjects = Math.min(Math.max(Math.ceil(projects.length / 2), 3), projects.length)
   let approvedBudget = 0
-  const projectIdToApproved = {}
+  const projectIdToApproved: { [key: string]: boolean } = {}
   for (let i = 0; i < sortedOutcome.length; i++) {
     const projectId = sortedOutcome[i].projectId
     approvedBudget += sortedOutcome[i].budget

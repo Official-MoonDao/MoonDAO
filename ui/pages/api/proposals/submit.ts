@@ -199,7 +199,8 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
           error: `Could not parse multi-sig signers. Found: ${signers}`,
         })
       }
-      const abstractValid = abstractText !== null && abstractText !== 'null'
+      const abstractValid =
+        abstractText !== undefined && abstractText !== null && abstractText !== 'null'
       if (!abstractValid) {
         return res.status(400).json({
           error: `Could not parse abstract. Found: ${abstractText}`,

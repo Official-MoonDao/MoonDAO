@@ -492,15 +492,9 @@ export function ProjectRewards({
               className="bg-black/20 rounded-xl p-6 border border-white/10"
             >
               <h1
-                className="font-GoodTimes text-white/80 text-xl mb-6"
-                style={
-                  !isMobile
-                    ? {
-                        'justify-content': 'space-between',
-                        display: 'flex',
-                      }
-                    : {}
-                }
+                className={`font-GoodTimes text-white/80 text-xl mb-6 ${
+                  !isMobile && 'justify-between flex'
+                }`}
               >
                 <Tooltip text="Distribute voting power among the proposals by percentage." wrap>
                   Proposals

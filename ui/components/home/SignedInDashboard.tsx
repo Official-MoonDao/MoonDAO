@@ -17,6 +17,7 @@ import JBV5Tokens from 'const/abis/JBV5Tokens.json'
 import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
+import ProjectsABI from 'const/abis/Project.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
@@ -24,6 +25,7 @@ import {
   HATS_ADDRESS,
   JBV5_CONTROLLER_ADDRESS,
   JBV5_DIRECTORY_ADDRESS,
+  PROJECT_ADDRESSES,
   JBV5_TOKENS_ADDRESS,
   MARKETPLACE_TABLE_ADDRESSES,
   MISSION_CREATOR_ADDRESSES,
@@ -278,6 +280,12 @@ export default function SignedInDashboard({
   const hatsContract = useContract({
     address: HATS_ADDRESS,
     abi: HatsABI as any,
+    chain: selectedChain,
+  })
+
+  const projectContract = useContract({
+    address: PROJECT_ADDRESSES[chainSlug],
+    abi: ProjectsABI,
     chain: selectedChain,
   })
 
@@ -1170,13 +1178,15 @@ export default function SignedInDashboard({
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {currentProjects.slice(0, 6).map((project: any, index: number) => (
                   <div key={index}>
-                  <ProjectCard
-                    project={project}
-                    userHasVotingPower={!!walletVP}
-                    isVotingPeriod={false}
-                    distribute={false}
-                  />
-                    <div>
+                    <ProjectCard
+                      project={project}
+                      projectContract={projectContract}
+                      hatsContract={hatsContract}
+                      userHasVotingPower={!!walletVP}
+                      isVotingPeriod={false}
+                      distribute={false}
+                    />
+                  </div>
                 ))}
 
                 {/* Show more projects indicator if there are more than 6 */}
