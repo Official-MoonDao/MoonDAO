@@ -4,11 +4,7 @@ import { DEPRIZE_ID, COMPETITOR_TABLE_ADDRESSES } from 'const/config'
 import { TEAM_ADDRESSES } from 'const/config'
 import { useState, useContext } from 'react'
 import toast from 'react-hot-toast'
-import {
-  getContract,
-  prepareContractCall,
-  sendAndConfirmTransaction,
-} from 'thirdweb'
+import { getContract, prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount, useActiveWallet } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
@@ -16,7 +12,6 @@ import { sepolia } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
-import Market from '@/components/betting/Market'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -67,9 +62,7 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
   const { userTeams } = useTeamWearer(teamContract, selectedChain, userAddress)
 
   const isCompetitor = userTeams?.some((team: any) =>
-    competitors.some(
-      (competitor) => competitor.teamId.toString() === team.teamId
-    )
+    competitors.some((competitor) => competitor.teamId.toString() === team.teamId)
   )
   const handleJoinWithTeam = async (teamId: string) => {
     try {
@@ -102,10 +95,7 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
   }
   return (
     <section id="rewards-container" className="overflow-hidden">
-      <Head
-        title="DePrize"
-        description="Compete for a prize or predict winners to be rewarded."
-      />
+      <Head title="DePrize" description="Compete for a prize or predict winners to be rewarded." />
       <Container>
         <ContentLayout
           header={'DePrize'}
@@ -137,11 +127,9 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
           )}
           <div className="pb-32 w-full flex flex-col gap-4 py-2">
             <div className="flex justify-between items-center">
-              <h3 className="title-text-colors text-2xl font-GoodTimes">
-                Competitors
-              </h3>
+              <h3 className="title-text-colors text-2xl font-GoodTimes">Competitors</h3>
             </div>
-            <div>
+            {/* <div>
               {competitors && (
                 <Market
                   userAddress={userAddress}
@@ -149,7 +137,7 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
                   teamContract={teamContract}
                 />
               )}
-            </div>
+            </div> */}
           </div>
         </ContentLayout>
       </Container>

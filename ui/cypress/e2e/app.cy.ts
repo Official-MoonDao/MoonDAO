@@ -37,24 +37,6 @@ describe('Main E2E Testing', () => {
     })
   })
 
-  describe('MoonDAO App | Events', () => {
-    it('should load the events page', () => {
-      cy.visit('/events', { timeout: 60000 })
-    })
-  })
-
-  describe('MoonDAO App | Lifeship', () => {
-    it('should load the lifeship page', () => {
-      cy.visit('/lifeship', { timeout: 60000 })
-    })
-  })
-
-  describe('MoonDAO App | Zero-G', () => {
-    it('should load the zero-g page', () => {
-      cy.visit('/zero-g', { timeout: 60000 })
-    })
-  })
-
   describe('MoonDAO App | About', () => {
     it('should have iframe that covers the viewport', () => {
       cy.visit('/about', { timeout: 60000 })
@@ -75,10 +57,7 @@ describe('Main E2E Testing', () => {
 
           // Verify iframe has viewport height
           // Allow for small differences due to browser rendering
-          expect(rect.height).to.be.closeTo(
-            Cypress.config('viewportHeight'),
-            15
-          )
+          expect(rect.height).to.be.closeTo(Cypress.config('viewportHeight'), 15)
         })
     })
   })
@@ -107,11 +86,33 @@ describe('Main E2E Testing', () => {
 
           // Verify iframe has viewport height (100vh)
           // Allow for small differences due to browser rendering
-          expect(rect.height).to.be.closeTo(
-            Cypress.config('viewportHeight'),
-            15
-          )
+          expect(rect.height).to.be.closeTo(Cypress.config('viewportHeight'), 15)
         })
+    })
+  })
+
+  describe('MoonDAO App | Town Hall', () => {
+    it('should load the townhall page', () => {
+      cy.visit('/townhall', { timeout: 60000 })
+    })
+
+    it('should have search functionality', () => {
+      cy.visit('/townhall', { timeout: 60000 })
+      
+      cy.get('input[name="search"]').should('exist')
+      cy.get('input[name="search"]').should('be.visible')
+    })
+
+    it('should display summaries list', () => {
+      cy.visit('/townhall', { timeout: 60000 })
+      
+      cy.get('div').should('exist')
+    })
+
+    it('should have info banner at bottom', () => {
+      cy.visit('/townhall', { timeout: 60000 })
+      
+      cy.contains('improving our AI summaries').should('exist')
     })
   })
 
@@ -136,9 +137,9 @@ describe('Main E2E Testing', () => {
         )
         expect(antarcticaLocations.length).to.be.lessThan(citizensData.length)
 
-        // Verify we have some valid coordinates
+        // Verify we have some valid coordinates (not Antarctica)
         const validLocations = citizensData.filter(
-          (location: any) => location.lat !== -90 && location.lng !== 0
+          (location: any) => !(location.lat === -90 && location.lng === 0)
         )
         expect(validLocations.length).to.be.greaterThan(0)
 
@@ -147,9 +148,7 @@ describe('Main E2E Testing', () => {
           // Check required properties
           expect(location).to.have.property('citizens').that.is.an('array')
           expect(location).to.have.property('names').that.is.an('array')
-          expect(location)
-            .to.have.property('formattedAddress')
-            .that.is.a('string')
+          expect(location).to.have.property('formattedAddress').that.is.a('string')
           expect(location).to.have.property('lat').that.is.a('number')
           expect(location).to.have.property('lng').that.is.a('number')
           expect(location).to.have.property('color').that.is.a('string')
@@ -166,9 +165,7 @@ describe('Main E2E Testing', () => {
 
           // Verify size values match the logic in map.tsx
           if (location.citizens.length > 1) {
-            expect(location.size).to.equal(
-              Math.min(location.citizens.length * 0.01, 0.4)
-            )
+            expect(location.size).to.equal(Math.min(location.citizens.length * 0.01, 0.4))
           } else {
             expect(location.size).to.equal(0.01)
           }

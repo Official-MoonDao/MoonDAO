@@ -1,8 +1,4 @@
-import {
-  ARBITRUM_ASSETS_URL,
-  POLYGON_ASSETS_URL,
-  BASE_ASSETS_URL,
-} from 'const/config'
+import { ARBITRUM_ASSETS_URL, POLYGON_ASSETS_URL, BASE_ASSETS_URL } from 'const/config'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
@@ -11,8 +7,6 @@ import { useAssets } from '@/lib/dashboard/hooks'
 import { Project } from '@/lib/project/useProjectData'
 import { ethereum } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
-import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
-import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import { getBudget } from '@/lib/utils/rewards'
 import Container from '../components/layout/Container'
@@ -36,9 +30,7 @@ const ProjectExplainerCard = ({
       <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-blue-400 to-purple-600 rounded-full flex items-center justify-center">
         {icon}
       </div>
-      <h3 className="text-xl font-GoodTimes text-white mb-4 text-center">
-        {title}
-      </h3>
+      <h3 className="text-xl font-GoodTimes text-white mb-4 text-center">{title}</h3>
       <p className="text-gray-300 leading-relaxed text-center">{description}</p>
     </div>
   )
@@ -62,7 +54,6 @@ const ProjectsOverview: React.FC<{
   const { tokens: polygonTokens } = useAssets(POLYGON_ASSETS_URL)
   const { tokens: baseTokens } = useAssets(BASE_ASSETS_URL)
   const { stakedEth } = useStakedEth()
-  const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState<number | null>(null)
   const [isLoadingMooneyUSD, setIsLoadingMooneyUSD] = useState(true)
@@ -85,7 +76,7 @@ const ProjectsOverview: React.FC<{
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
 
   // Use hardcoded value like in RetroactiveRewards for current quarter
-  const ethBudget = 17.09
+  const ethBudget = 14.15
   const usdBudget = ethBudget * ethPrice
 
   // Calculate MOONEY USD value
@@ -100,11 +91,19 @@ const ProjectsOverview: React.FC<{
           return
         }
 
-        const route = await pregenSwapRoute(ethereum, mooneyBudget, MOONEY, DAI)
+        const response = await fetch('/api/mooney/price')
+        if (!response.ok) {
+          throw new Error('Failed to fetch MOONEY price')
+        }
 
-        if (!isCancelled && route?.route[0]?.rawQuote) {
-          const usd = route.route[0].rawQuote.toString() / 1e18
+        const data = await response.json()
+        const mooneyPriceUSD = data.result?.price || 0
+
+        if (!isCancelled && mooneyPriceUSD > 0) {
+          const usd = mooneyBudget * mooneyPriceUSD
           setMooneyBudgetUSD(usd)
+          setIsLoadingMooneyUSD(false)
+        } else {
           setIsLoadingMooneyUSD(false)
         }
       } catch (error) {
@@ -116,7 +115,7 @@ const ProjectsOverview: React.FC<{
       }
     }
 
-    if (mooneyBudget && MOONEY && DAI) {
+    if (mooneyBudget) {
       getMooneyBudgetUSD()
     } else if (mooneyBudget === 0) {
       setIsLoadingMooneyUSD(false)
@@ -125,15 +124,11 @@ const ProjectsOverview: React.FC<{
     return () => {
       isCancelled = true
     }
-  }, [mooneyBudget, DAI, MOONEY])
+  }, [mooneyBudget])
 
   return (
     <>
-      <WebsiteHead
-        title={title}
-        description={description}
-        image="/assets/moondao-og.jpg"
-      />
+      <WebsiteHead title={title} description={description} image="/assets/moondao-og.jpg" />
 
       {/* Hero Section */}
       <Container>
@@ -152,9 +147,8 @@ const ProjectsOverview: React.FC<{
                 Project System
               </h1>
               <p className="sub-header text-white/90 drop-shadow-lg">
-                MoonDAO's decentralized project system funds mission-aligned
-                initiatives that advance our goal of establishing a permanent
-                settlement on the Moon.
+                MoonDAO's decentralized project system funds mission-aligned initiatives that
+                advance our goal of establishing a permanent settlement on the Moon.
               </p>
               <StandardButton
                 className="gradient-2 hover:opacity-90 transition-opacity"
@@ -180,10 +174,9 @@ const ProjectsOverview: React.FC<{
                 How Our Project System Works
               </h2>
               <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto">
-                MoonDAO Projects are goal-oriented teams working on
-                mission-aligned objectives. Our comprehensive framework supports
-                project funding, progress tracking, and provides retroactive
-                incentives for successful contributions.
+                MoonDAO Projects are goal-oriented teams working on mission-aligned objectives. Our
+                comprehensive framework supports project funding, progress tracking, and provides
+                retroactive incentives for successful contributions.
               </p>
             </div>
 
@@ -279,9 +272,8 @@ const ProjectsOverview: React.FC<{
                     Quarterly Rewards System
                   </h3>
                   <p className="text-gray-300 max-w-3xl mx-auto">
-                    MoonDAO incentivizes innovation through our quarterly
-                    rewards program, distributing both ETH and vMOONEY to
-                    successful project contributors.
+                    MoonDAO incentivizes innovation through our quarterly rewards program,
+                    distributing both ETH and vMOONEY to successful project contributors.
                   </p>
                 </div>
 
@@ -289,17 +281,11 @@ const ProjectsOverview: React.FC<{
                   {/* ETH Rewards */}
                   <div className="bg-gradient-to-br from-orange-900/20 to-yellow-900/20 rounded-2xl p-6 border border-orange-500/20">
                     <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-yellow-500 rounded-lg flex items-center justify-center mb-4">
-                      <svg
-                        className="w-6 h-6 text-white"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z" />
                       </svg>
                     </div>
-                    <h4 className="text-xl font-bold text-white mb-3">
-                      ETH Rewards
-                    </h4>
+                    <h4 className="text-xl font-bold text-white mb-3">ETH Rewards</h4>
                     <div className="bg-gradient-to-r from-orange-500/10 to-yellow-500/10 rounded-lg p-3 mb-3 border border-orange-400/20">
                       <div className="text-2xl font-bold text-orange-400">
                         {ethBudget.toFixed(2)} ETH{' '}
@@ -316,8 +302,8 @@ const ProjectsOverview: React.FC<{
                       </div>
                     </div>
                     <p className="text-gray-300 mb-3">
-                      5% of liquid non-MOONEY assets distributed quarterly to
-                      completed projects based on community evaluation.
+                      5% of liquid non-MOONEY assets distributed quarterly to completed projects
+                      based on community evaluation.
                     </p>
                     <p className="text-sm text-orange-400">
                       Paid as lump-sum within a month of quarter end
@@ -341,17 +327,14 @@ const ProjectsOverview: React.FC<{
                         />
                       </svg>
                     </div>
-                    <h4 className="text-xl font-bold text-white mb-3">
-                      vMOONEY Rewards
-                    </h4>
+                    <h4 className="text-xl font-bold text-white mb-3">vMOONEY Rewards</h4>
                     <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg p-3 mb-3 border border-blue-400/20">
                       <div className="text-2xl font-bold text-blue-400">
                         {Number(mooneyBudget.toPrecision(3)).toLocaleString()}
                         <span className="text-lg text-blue-300">
                           {isLoadingMooneyUSD ? (
                             <span className="ml-2 opacity-70">(...)</span>
-                          ) : mooneyBudgetUSD !== null &&
-                            mooneyBudgetUSD > 0 ? (
+                          ) : mooneyBudgetUSD !== null && mooneyBudgetUSD > 0 ? (
                             ` (${mooneyBudgetUSD.toLocaleString(undefined, {
                               maximumFractionDigits: 0,
                               style: 'currency',
@@ -365,13 +348,10 @@ const ProjectsOverview: React.FC<{
                       </div>
                     </div>
                     <p className="text-gray-300 mb-3">
-                      Geometric series of MOONEY tokens decreasing by 5% each
-                      quarter, distributed based on project impact and community
-                      evaluation.
+                      Geometric series of MOONEY tokens decreasing by 5% each quarter, distributed
+                      based on project impact and community evaluation.
                     </p>
-                    <p className="text-sm text-blue-400">
-                      Locked for 4 years as delegated vMOONEY
-                    </p>
+                    <p className="text-sm text-blue-400">Locked for 4 years as delegated vMOONEY</p>
                   </div>
                 </div>
               </div>
@@ -385,10 +365,9 @@ const ProjectsOverview: React.FC<{
                     Active Projects
                   </h3>
                   <p className="text-gray-300 max-w-3xl mx-auto">
-                    Explore the exciting space-focused projects currently in
-                    development by our community. Each project represents a step
-                    toward our mission of establishing a permanent settlement on
-                    the Moon.
+                    Explore the exciting space-focused projects currently in development by our
+                    community. Each project represents a step toward our mission of establishing a
+                    permanent settlement on the Moon.
                   </p>
                 </div>
 
@@ -444,10 +423,9 @@ const ProjectsOverview: React.FC<{
                 Ready to Build the Future?
               </h3>
               <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-8">
-                Join our community of space entrepreneurs and contribute to
-                humanity's multiplanetary future. Whether you're a developer,
-                engineer, researcher, or creative, there's a place for you in
-                the MoonDAO ecosystem.
+                Join our community of space entrepreneurs and contribute to humanity's
+                multiplanetary future. Whether you're a developer, engineer, researcher, or
+                creative, there's a place for you in the MoonDAO ecosystem.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <StandardButton
@@ -504,8 +482,9 @@ export default ProjectsOverview
 export const getServerSideProps: GetServerSideProps = async () => {
   try {
     // Import the same constants and functions used in the projects page
-    const { DEFAULT_CHAIN_V5, DISTRIBUTION_TABLE_NAMES, PROJECT_TABLE_NAMES } =
-      await import('const/config')
+    const { DEFAULT_CHAIN_V5, DISTRIBUTION_TABLE_NAMES, PROJECT_TABLE_NAMES } = await import(
+      'const/config'
+    )
     const { getChainSlug } = await import('@/lib/thirdweb/chain')
 
     const chain = DEFAULT_CHAIN_V5

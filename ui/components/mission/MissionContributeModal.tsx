@@ -14,8 +14,7 @@ import {
   LAYERZERO_MAX_CONTRIBUTION_ETH,
   LAYERZERO_MAX_ETH,
 } from 'const/config'
-import { FixedInt } from 'fpnum'
-import { getTokenAToBQuote, JBRuleset, ReservedPercent, RulesetWeight } from 'juice-sdk-core'
+import { JBRuleset } from 'juice-sdk-core'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -32,6 +31,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import useOnrampJWT, { OnrampJwtPayload } from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatContributionOutput } from '@/lib/mission'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
@@ -674,11 +674,8 @@ export default function MissionContributeModal({
         return
       }
 
-      const q = getTokenAToBQuote(new FixedInt(toWei(inputValue), 18), {
-        weight: new RulesetWeight(ruleset[0].weight),
-        reservedPercent: new ReservedPercent(ruleset[1].reservedPercent),
-      })
-      setOutput(+q.payerTokens.toString() / 1e18)
+      const tokensReceived = calculateTokensFromPayment(toWei(inputValue), ruleset)
+      setOutput(+tokensReceived)
     } catch (error) {
       console.error('Error calculating quote:', error)
       setOutput(0)
@@ -838,9 +835,6 @@ export default function MissionContributeModal({
         )
       }
 
-      toast.success('Mission token purchased!', {
-        style: toastStyle,
-      })
       confetti({
         particleCount: 150,
         spread: 100,

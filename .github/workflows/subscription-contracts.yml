@@ -3,12 +3,12 @@ name: SubscriptionContracts
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "**.md"
+    paths:
+      - subscription-contracts/**
   pull_request:
     branches: [main]
-    paths-ignore:
-      - "**.md"
+    paths:
+      - subscription-contracts/**
 
 env:
   FOUNDRY_PROFILE: ci

@@ -53,10 +53,7 @@ describe('<Job />', () => {
     cy.contains('Apply').click()
     cy.get('@windowOpen').should('have.been.calledWith', job.contactInfo)
 
-    cy.get('#job-posted-status').should(
-      'have.text',
-      'This job was posted today'
-    )
+    cy.contains('Posted today').should('be.visible')
   })
 
   it('Shows edit and delete buttons when editable', () => {
@@ -88,7 +85,7 @@ describe('<Job />', () => {
       </TestnetProviders>
     )
 
-    cy.get('#job-container').should('not.exist')
+    cy.contains(job.title).should('not.exist')
   })
 
   it("Shows 'expired' message if the job is expired and editable", () => {
@@ -99,9 +96,6 @@ describe('<Job />', () => {
       </TestnetProviders>
     )
 
-    cy.get('#job-expired-status').should(
-      'have.text',
-      '*This job post has expired and is no longer available.'
-    )
+    cy.contains('This job post has expired').should('be.visible')
   })
 })

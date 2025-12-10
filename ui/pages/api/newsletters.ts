@@ -37,11 +37,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         if (response.ok) {
           const data = await response.json()
 
-          if (
-            data.broadcasts &&
-            Array.isArray(data.broadcasts) &&
-            data.broadcasts.length > 0
-          ) {
+          if (data.broadcasts && Array.isArray(data.broadcasts) && data.broadcasts.length > 0) {
             // Log the dates of the newsletters we found
             const dates = data.broadcasts.slice(0, 3).map((b: any) => ({
               subject: b.subject,
@@ -58,9 +54,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             }
           }
         } else {
-          console.log(
-            `Endpoint failed: ${response.status} ${response.statusText}`
-          )
+          console.log(`Endpoint failed: ${response.status} ${response.statusText}`)
         }
       } catch (error) {
         console.log(`Endpoint error:`, error)
@@ -71,16 +65,30 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       throw new Error('No broadcasts found from any ConvertKit endpoint')
     }
 
+    // Filter out drafts, only include broadcasts that have been published
+    const publishedBroadcasts = allBroadcasts.filter(
+      (broadcast: any) => broadcast.published_at !== null && broadcast.published_at !== undefined
+    )
+
+    if (publishedBroadcasts.length === 0) {
+      console.log('No published broadcasts found (only drafts available)')
+      return res.status(200).json({
+        newsletters: [],
+        total: 0,
+        source: 'convertkit',
+      })
+    }
+
     // Sort all broadcasts by date (newest first)
-    allBroadcasts.sort((a: any, b: any) => {
-      const dateA = new Date(a.published_at || a.created_at || 0).getTime()
-      const dateB = new Date(b.published_at || b.created_at || 0).getTime()
+    publishedBroadcasts.sort((a: any, b: any) => {
+      const dateA = new Date(a.published_at || 0).getTime()
+      const dateB = new Date(b.published_at || 0).getTime()
       return dateB - dateA
     })
 
     // Transform ConvertKit data to our format
     const newsletters =
-      allBroadcasts.slice(0, 10).map((broadcast: any) => {
+      publishedBroadcasts.slice(0, 10).map((broadcast: any) => {
         // Function to convert newsletter title to URL slug
         const titleToSlug = (title: string): string => {
           return title
@@ -128,12 +136,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           publicUrl = 'https://news.moondao.com/posts'
         }
 
-        // Use published_at if available, otherwise fall back to created_at
-        const publishedDate = broadcast.published_at || broadcast.created_at
-
-
-
-
+        // Use published_at (drafts are already filtered out)
+        const publishedDate = broadcast.published_at
 
         return {
           id: broadcast.id?.toString() || Math.random().toString(),

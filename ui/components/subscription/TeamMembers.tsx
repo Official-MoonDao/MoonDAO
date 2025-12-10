@@ -111,7 +111,7 @@ function TeamMember({
       setMetadata({
         name: undefined,
         description: undefined,
-        image: '/assets/citizen_image.png',
+        image: '/assets/citizen-default.png',
         attributes: [
           {
             trait_type: '',
@@ -140,10 +140,11 @@ function TeamMember({
           <div className="w-[60px] h-[60px] flex-shrink-0">
             <IPFSRenderer
               className="w-full h-full object-cover rounded-xl border-2 border-slate-500/50"
-              src={metadata?.image || '/assets/citizen_image.png'}
+              src={metadata?.image || '/assets/citizen-default.png'}
               width={60}
               height={60}
               alt={citizenName}
+              fallback="/assets/citizen-default.png"
             />
           </div>
           <div className="flex-1 min-w-0">

@@ -4,9 +4,7 @@ import JobTableABI from 'const/abis/JobBoardTable.json'
 import { JOBS_TABLE_ADDRESSES } from 'const/config'
 import { Toaster } from 'react-hot-toast'
 import { getContract } from 'thirdweb'
-import { sepolia } from '@/lib/rpc/chains'
 import { serverClient } from '@/lib/thirdweb/client'
-import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
 import { Job } from '@/components/jobs/Job'
 import TeamJobModal from '@/components/subscription/TeamJobModal'
 
@@ -46,9 +44,7 @@ describe('<TeamJobModal />', () => {
     cy.get('h2').contains('Add a Job')
     cy.get('#job-expiration-status').should(
       'have.text',
-      `*This job post will end on ${new Date(
-        job.endTime * 1000
-      ).toLocaleDateString()}`
+      `*This job post will end on ${new Date(job.endTime * 1000).toLocaleDateString()}`
     )
   })
 
@@ -60,42 +56,12 @@ describe('<TeamJobModal />', () => {
       </TestnetProviders>
     )
 
-    cy.get('button').contains('Add Job').click()
-    cy.get('div').should('contain', 'Please fill out all fields')
+    cy.get('form').then(($form) => {
+      $form[0].requestSubmit()
+    })
+    // Wait a bit for toast to appear, then check in the document
+    // eslint-disable-next-line cypress/no-unnecessary-waiting
+    cy.wait(100)
+    cy.get('body', { timeout: 5000 }).should('contain', 'Please fill out all fields.')
   })
-
-  // it('Submits form with valid data', () => {
-  //   cy.mount(
-  //     <TestnetProviders>
-  //       <TeamJobModal {...props} />
-  //     </TestnetProviders>
-  //   )
-
-  //   cy.get('#job-title-input').type('Test Job Title')
-  //   cy.get('#job-description-input').type('Test Job Description')
-  //   cy.get('#job-application-link-input').type('contact@example.com')
-
-  //   const endTime = daysFromNowTimestamp(2)
-  //   const endTimeDate = new Date(endTime * 1000).toISOString().split('T')[0]
-  //   cy.get('#job-end-time-input').type(endTimeDate)
-
-  //   cy.get('form').submit()
-  // })
-
-  // it('Displays expiration status if job is expired', () => {
-  //   const endTime = daysFromNowTimestamp(-1)
-
-  //   cy.mount(
-  //     <TestnetProviders>
-  //       <TeamJobModal {...props} job={{ ...job, endTime }} />
-  //     </TestnetProviders>
-  //   )
-
-  //   cy.get('#job-expiration-status').should(
-  //     'have.text',
-  //     `*This job post expired on ${new Date(
-  //       endTime * 1000
-  //     ).toLocaleDateString()}`
-  //   )
-  // })
 })

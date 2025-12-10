@@ -42,13 +42,6 @@ const searchMappings = [
     link: '/lock',
     category: 'Token'
   },
-  {
-    keywords: ['bridge', 'transfer', 'cross-chain', 'arbitrum', 'ethereum', 'polygon', 'move tokens', 'chain transfer', 'blockchain', 'networks'],
-    title: 'Bridge Tokens',
-    description: 'Bridge MOONEY tokens between blockchains',
-    link: '/bridge',
-    category: 'Token'
-  },
 
   // Network & Community
   {
@@ -119,13 +112,6 @@ const searchMappings = [
     category: 'Learn'
   },
   {
-    keywords: ['events', 'calendar', 'meetings', 'conferences', 'workshops', 'upcoming events', 'schedule', 'gatherings', 'community events'],
-    title: 'Upcoming Events',
-    description: 'Join MoonDAO events and community gatherings',
-    link: '/events',
-    category: 'Learn'
-  },
-  {
     keywords: ['analytics', 'data', 'statistics', 'metrics', 'dashboard', 'stats', 'numbers', 'tracking', 'performance'],
     title: 'Analytics Dashboard',
     description: 'View MoonDAO metrics and analytics',
@@ -147,29 +133,6 @@ const searchMappings = [
     description: 'Shop for MoonDAO merchandise and products',
     link: '/marketplace',
     category: 'Shop'
-  },
-
-  // Space Projects
-  {
-    keywords: ['lifeship', 'backup', 'humanity', 'preservation', 'ark', 'life preservation', 'backup humanity', 'human preservation'],
-    title: 'Lifeship Project',
-    description: 'Help preserve humanity with the Lifeship project',
-    link: '/lifeship',
-    category: 'Projects'
-  },
-  {
-    keywords: ['zero gravity', 'zerog', 'microgravity', 'space flight', 'astronaut', 'weightless', 'zero g', 'space experience', 'astronaut experience'],
-    title: 'Zero Gravity',
-    description: 'Experience zero gravity with MoonDAO',
-    link: '/zero-gravity',
-    category: 'Projects'
-  },
-  {
-    keywords: ['sweepstakes', 'contest', 'win', 'prize', 'giveaway', 'lottery', 'competition', 'enter contest', 'win prizes', 'chance to win'],
-    title: 'Sweepstakes',
-    description: 'Enter MoonDAO sweepstakes and contests',
-    link: '/sweepstakes',
-    category: 'Projects'
   }
 ]
 

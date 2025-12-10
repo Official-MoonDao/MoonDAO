@@ -9,7 +9,6 @@ import {
   PencilIcon,
   BriefcaseIcon,
   TrophyIcon,
-  CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
@@ -21,6 +20,7 @@ import MissionTableABI from 'const/abis/MissionTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
+  FEATURED_MISSION,
   HATS_ADDRESS,
   JBV5_CONTROLLER_ADDRESS,
   JBV5_DIRECTORY_ADDRESS,
@@ -38,10 +38,7 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useMissionData from '@/lib/mission/useMissionData'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
-import {
-  generatePrettyLink,
-  generatePrettyLinkWithId,
-} from '@/lib/subscription/pretty-links'
+import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalLockedMooney } from '@/lib/tokens/hooks/useTotalLockedMooney'
@@ -65,8 +62,8 @@ import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
-import DashboardTeams from './DashboardTeams'
 import DashboardQuests from './DashboardQuests'
+import DashboardTeams from './DashboardTeams'
 
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 
@@ -77,12 +74,7 @@ function countUniqueCountries(locations: any[]): number {
   try {
     const countries = new Set(
       locations
-        .map(
-          (loc) =>
-            loc.country ||
-            loc.formattedAddress?.split(',').pop()?.trim() ||
-            'Unknown'
-        )
+        .map((loc) => loc.country || loc.formattedAddress?.split(',').pop()?.trim() || 'Unknown')
         .filter((country) => country && country !== 'Unknown' && country !== '')
     )
 
@@ -95,18 +87,17 @@ function countUniqueCountries(locations: any[]): number {
 }
 
 export default function SingedInDashboard({
-  newestNewsletters,
   newestCitizens,
   newestListings,
   newestJobs,
   citizenSubgraphData,
   aumData,
   revenueData,
-  citizensLocationData,
   filteredTeams,
   currentProjects,
   missions,
   featuredMissionData,
+  citizensLocationData = [],
 }: any) {
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
@@ -115,21 +106,17 @@ export default function SingedInDashboard({
 
   // Modal state for charts
   const [chartModalOpen, setChartModalOpen] = useState(false)
-  const [chartModalComponent, setChartModalComponent] =
-    useState<React.ReactNode>(null)
+  const [chartModalComponent, setChartModalComponent] = useState<React.ReactNode>(null)
   const [chartModalTitle, setChartModalTitle] = useState('')
 
   // Newsletter modal state
   const [newsletterModalOpen, setNewsletterModalOpen] = useState(false)
 
   // Citizen metadata modal state
-  const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] =
-    useState(false)
+  const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
 
-  // Client-side newsletter state
-  const [clientNewsletters, setClientNewsletters] = useState<any[]>(
-    newestNewsletters || []
-  )
+  // Client-side newsletter state (fetch on client-side)
+  const [clientNewsletters, setClientNewsletters] = useState<any[]>([])
   const [newslettersLoading, setNewslettersLoading] = useState(false)
 
   // Fetch newsletters on client-side to get real ConvertKit data
@@ -199,8 +186,7 @@ export default function SingedInDashboard({
   const account = useActiveAccount()
   const address = account?.address
 
-  const { data: voteCount, isValidating: isLoadingVoteCount } =
-    useVoteCountOfAddress(address)
+  const { data: voteCount, isValidating: isLoadingVoteCount } = useVoteCountOfAddress(address)
 
   const MOONEYBalance = useTotalMooneyBalance(address)
   const {
@@ -215,11 +201,7 @@ export default function SingedInDashboard({
     lockedMooneyBreakdown
   )
 
-  const {
-    walletVP,
-    isLoading: isLoadingVP,
-    isError: isErrorVP,
-  } = useTotalVP(address || '')
+  const { walletVP, isLoading: isLoadingVP, isError: isErrorVP } = useTotalVP(address || '')
 
   const ethBudget = 14.15
 
@@ -282,10 +264,7 @@ export default function SingedInDashboard({
     featuredMissionData?.mission ||
     missions?.find(
       (mission: any) =>
-        mission.projectId &&
-        mission.projectId > 0 &&
-        mission.fundingGoal &&
-        mission.fundingGoal > 0
+        mission.projectId && mission.projectId > 0 && mission.fundingGoal && mission.fundingGoal > 0
     ) ||
     (missions?.length > 0 ? missions[0] : null)
 
@@ -406,9 +385,7 @@ export default function SingedInDashboard({
                       {voteCount || 0}
                     </span>
                   )}
-                  <span className="text-white/60 group-hover:underline">
-                    Votes
-                  </span>
+                  <span className="text-white/60 group-hover:underline">Votes</span>
                 </Link>
                 <div className="h-4 w-px bg-white/20" />
                 <Link
@@ -433,6 +410,7 @@ export default function SingedInDashboard({
         </div>
 
         {/* Launchpad Feature - Featured Mission */}
+        {FEATURED_MISSION && (
         <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 sm:p-6 lg:p-8 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="min-w-0 flex-1">
@@ -478,14 +456,12 @@ export default function SingedInDashboard({
                       <div className="absolute top-3 right-3">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
-                            featuredMission.projectId &&
-                            featuredMission.projectId > 0
+                            featuredMission.projectId && featuredMission.projectId > 0
                               ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                               : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
                           }`}
                         >
-                          {featuredMission.projectId &&
-                          featuredMission.projectId > 0
+                          {featuredMission.projectId && featuredMission.projectId > 0
                             ? 'Active'
                             : 'Completed'}
                         </span>
@@ -515,9 +491,7 @@ export default function SingedInDashboard({
                         const description =
                           featuredMission.metadata.description ||
                           "Support MoonDAO's mission to democratize space exploration"
-                        const strippedDescription = description
-                          .replace(/<[^>]*>/g, '')
-                          .trim()
+                        const strippedDescription = description.replace(/<[^>]*>/g, '').trim()
                         return strippedDescription.length > 200
                           ? `${strippedDescription.substring(0, 200)}...`
                           : strippedDescription
@@ -525,47 +499,41 @@ export default function SingedInDashboard({
                     </p>
                   </div>{' '}
                   {/* Mission Stats - Exact same as launchpad */}
-                  {featuredMission.projectId &&
-                  featuredMission.projectId > 0 ? (
+                  {featuredMission.projectId && featuredMission.projectId > 0 ? (
                     <div className="space-y-4">
                       {/* Progress Bar */}
-                      {featuredMissionFundingGoal &&
-                        featuredMissionFundingGoal > 0 && (
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-blue-200 text-xs font-medium">
-                                Funding Progress
-                              </span>
-                              <span className="text-white font-bold text-sm">
-                                {Math.round(
-                                  (Number(
-                                    featuredMissionSubgraphData?.volume || 0
-                                  ) /
-                                    featuredMissionFundingGoal) *
-                                    100
-                                )}
-                                %
-                              </span>
-                            </div>
-                            <div className="w-full bg-blue-900/30 rounded-full h-2 overflow-hidden">
-                              <div
-                                className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-1000"
-                                style={{
-                                  width: `${Math.min(
-                                    100,
-                                    Math.round(
-                                      (Number(
-                                        featuredMissionSubgraphData?.volume || 0
-                                      ) /
-                                        featuredMissionFundingGoal) *
-                                        100
-                                    )
-                                  )}%`,
-                                }}
-                              />
-                            </div>
+                      {featuredMissionFundingGoal && featuredMissionFundingGoal > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-blue-200 text-xs font-medium">
+                              Funding Progress
+                            </span>
+                            <span className="text-white font-bold text-sm">
+                              {Math.round(
+                                (Number(featuredMissionSubgraphData?.volume || 0) /
+                                  featuredMissionFundingGoal) *
+                                  100
+                              )}
+                              %
+                            </span>
                           </div>
-                        )}
+                          <div className="w-full bg-blue-900/30 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-1000"
+                              style={{
+                                width: `${Math.min(
+                                  100,
+                                  Math.round(
+                                    (Number(featuredMissionSubgraphData?.volume || 0) /
+                                      featuredMissionFundingGoal) *
+                                      100
+                                  )
+                                )}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
 
                       {/* Stats Grid */}
                       <div className="grid grid-cols-2 gap-3">
@@ -573,16 +541,12 @@ export default function SingedInDashboard({
                         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
                           <div className="flex items-center gap-2 mb-2">
                             <BanknotesIcon className="w-4 h-4 text-blue-400" />
-                            <span className="text-blue-200 text-xs font-medium">
-                              Raised
-                            </span>
+                            <span className="text-blue-200 text-xs font-medium">Raised</span>
                           </div>
                           <p className="text-white font-bold text-sm">
                             {featuredMissionFundingGoal ? (
                               truncateTokenValue(
-                                Number(
-                                  featuredMissionSubgraphData?.volume || 0
-                                ) / 1e18,
+                                Number(featuredMissionSubgraphData?.volume || 0) / 1e18,
                                 'ETH'
                               )
                             ) : (
@@ -596,16 +560,11 @@ export default function SingedInDashboard({
                         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
                           <div className="flex items-center gap-2 mb-2">
                             <TrophyIcon className="w-4 h-4 text-blue-400" />
-                            <span className="text-blue-200 text-xs font-medium">
-                              Goal
-                            </span>
+                            <span className="text-blue-200 text-xs font-medium">Goal</span>
                           </div>
                           <p className="text-white font-bold text-sm">
                             {featuredMissionFundingGoal
-                              ? truncateTokenValue(
-                                  featuredMissionFundingGoal / 1e18,
-                                  'ETH'
-                                )
+                              ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
                               : '0'}{' '}
                             ETH
                           </p>
@@ -615,9 +574,7 @@ export default function SingedInDashboard({
                         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
                           <div className="flex items-center gap-2 mb-2">
                             <UserGroupIcon className="w-4 h-4 text-blue-400" />
-                            <span className="text-blue-200 text-xs font-medium">
-                              Backers
-                            </span>
+                            <span className="text-blue-200 text-xs font-medium">Backers</span>
                           </div>
                           <p className="text-white font-bold text-sm">
                             {featuredMissionBackers?.length || 0}
@@ -627,10 +584,8 @@ export default function SingedInDashboard({
                         {/* Time */}
                         <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/10">
                           <div className="flex items-center gap-2 mb-2">
-                            <CalendarDaysIcon className="w-4 h-4 text-blue-400" />
-                            <span className="text-blue-200 text-xs font-medium">
-                              Time
-                            </span>
+                            <TrophyIcon className="w-4 h-4 text-blue-400" />
+                            <span className="text-blue-200 text-xs font-medium">Time</span>
                           </div>
                           <p className="text-white font-bold text-sm">
                             {(() => {
@@ -642,16 +597,12 @@ export default function SingedInDashboard({
                                 )
 
                               const now = Date.now()
-                              if (featuredMissionDeadline <= now)
-                                return 'Expired'
+                              if (featuredMissionDeadline <= now) return 'Expired'
 
                               const daysLeft = Math.floor(
-                                (featuredMissionDeadline - now) /
-                                  (1000 * 60 * 60 * 24)
+                                (featuredMissionDeadline - now) / (1000 * 60 * 60 * 24)
                               )
-                              return daysLeft > 0
-                                ? `${daysLeft}d left`
-                                : 'Less than 1d left'
+                              return daysLeft > 0 ? `${daysLeft}d left` : 'Less than 1d left'
                             })()}
                           </p>
                         </div>
@@ -659,9 +610,7 @@ export default function SingedInDashboard({
                     </div>
                   ) : (
                     <div className="bg-blue-900/20 rounded-lg p-4 border border-blue-500/10 text-center">
-                      <p className="text-blue-200 text-sm mb-2">
-                        Mission in Planning
-                      </p>
+                      <p className="text-blue-200 text-sm mb-2">Mission in Planning</p>
                       <p className="text-white font-medium text-xs">
                         This mission is being prepared for launch
                       </p>
@@ -683,19 +632,16 @@ export default function SingedInDashboard({
                 <div className="w-16 h-16 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400 mx-auto mb-4">
                   <RocketLaunchIcon className="w-8 h-8" />
                 </div>
-                <h4 className="font-bold text-white text-xl mb-2">
-                  Missions Loading
-                </h4>
+                <h4 className="font-bold text-white text-xl mb-2">Missions Loading</h4>
                 <p className="text-blue-200 text-sm mb-4">
                   We're preparing exciting new missions for space exploration.
                 </p>
-                <div className="text-blue-300 text-xs">
-                  Stay tuned for mission updates!
-                </div>
+                <div className="text-blue-300 text-xs">Stay tuned for mission updates!</div>
               </div>
             )}
           </div>
         </div>
+        )}
 
         {/* Main Content - Facebook Style Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
@@ -708,36 +654,31 @@ export default function SingedInDashboard({
 
             {/* Key Metrics Card */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
-              <h3 className="font-semibold text-white mb-8 text-lg">
-                DAO Metrics
-              </h3>
+              <h3 className="font-semibold text-white mb-8 text-lg">DAO Metrics</h3>
               <div className="space-y-8 h-full">
-                {citizenSubgraphData?.transfers &&
-                  citizenSubgraphData?.transfers.length > 0 && (
-                    <div
-                      className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
-                      onClick={openCitizensChart}
-                      title="Click to view full chart"
-                    >
-                      <div className="flex items-center justify-between mb-5">
-                        <span className="text-gray-300 font-medium">
-                          Citizens
-                        </span>
-                        <span className="text-white font-bold text-2xl">
-                          {citizenSubgraphData?.transfers?.length || '2,341'}
-                        </span>
-                      </div>
-                      <div className="h-20">
-                        <CitizensChart
-                          transfers={citizenSubgraphData.transfers}
-                          isLoading={false}
-                          height={80}
-                          compact={true}
-                          createdAt={citizenSubgraphData.createdAt}
-                        />
-                      </div>
+                {citizenSubgraphData?.transfers && citizenSubgraphData?.transfers.length > 0 && (
+                  <div
+                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
+                    onClick={openCitizensChart}
+                    title="Click to view full chart"
+                  >
+                    <div className="flex items-center justify-between mb-5">
+                      <span className="text-gray-300 font-medium">Citizens</span>
+                      <span className="text-white font-bold text-2xl">
+                        {citizenSubgraphData?.transfers?.length || '2,341'}
+                      </span>
                     </div>
-                  )}
+                    <div className="h-20">
+                      <CitizensChart
+                        transfers={citizenSubgraphData.transfers}
+                        isLoading={false}
+                        height={80}
+                        compact={true}
+                        createdAt={citizenSubgraphData.createdAt}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {aumData && aumData.aumHistory.length > 0 && (
                   <div
@@ -752,12 +693,7 @@ export default function SingedInDashboard({
                       </span>
                     </div>
                     <div className="h-20">
-                      <AUMChart
-                        compact={true}
-                        height={80}
-                        days={365}
-                        data={aumData.aumHistory}
-                      />
+                      <AUMChart compact={true} height={80} data={aumData.aumHistory} />
                     </div>
                   </div>
                 )}
@@ -769,14 +705,9 @@ export default function SingedInDashboard({
                     title="Click to view full chart"
                   >
                     <div className="flex items-center justify-between mb-5">
-                      <span className="text-gray-300 font-medium">
-                        Annual Revenue
-                      </span>
+                      <span className="text-gray-300 font-medium">Annual Revenue</span>
                       <span className="text-white font-bold text-2xl">
-                        $
-                        {Math.round(
-                          revenueData.currentRevenue
-                        ).toLocaleString()}
+                        ${Math.round(revenueData.currentRevenue).toLocaleString()}
                       </span>
                     </div>
                     <div className="h-20">
@@ -814,18 +745,14 @@ export default function SingedInDashboard({
                   )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-1">
-                    Quick Actions
-                  </h3>
-                  <p className="text-white/70 text-sm">
-                    What would you like to do today?
-                  </p>
+                  <h3 className="text-lg font-semibold text-white mb-1">Quick Actions</h3>
+                  <p className="text-white/70 text-sm">What would you like to do today?</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <StandardButton
                   className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/governance"
+                  link="/proposals"
                 >
                   <CheckBadgeIcon className="w-4 h-4" />
                   Propose
@@ -839,7 +766,7 @@ export default function SingedInDashboard({
                 </StandardButton>
                 <StandardButton
                   className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/network"
+                  link="/team"
                 >
                   <UserGroupIcon className="w-4 h-4" />
                   Join Team
@@ -857,9 +784,7 @@ export default function SingedInDashboard({
             {/* Activity Feed */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
-                <h3 className="text-xl font-bold text-white whitespace-nowrap">
-                  Recent Activity
-                </h3>
+                <h3 className="text-xl font-bold text-white whitespace-nowrap">Recent Newsletters</h3>
                 <div className="flex gap-2 flex-shrink-0">
                   <StandardButton
                     className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
@@ -873,6 +798,12 @@ export default function SingedInDashboard({
                   >
                     Subscribe
                   </StandardButton>
+                  <StandardButton
+                    className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
+                    link="/townhall"
+                  >
+                    Town Hall
+                  </StandardButton>
                 </div>
               </div>
 
@@ -882,113 +813,98 @@ export default function SingedInDashboard({
                     <div className="text-white/60">Loading newsletters...</div>
                   </div>
                 ) : clientNewsletters && clientNewsletters.length > 0 ? (
-                  clientNewsletters
-                    .slice(0, 4)
-                    .map((newsletter: any, index: number) => (
-                      <div
-                        key={newsletter.id || index}
-                        className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5"
-                        onClick={() => {
-                          if (
-                            newsletter.url &&
-                            newsletter.url !==
-                              'https://news.moondao.com/posts' &&
-                            newsletter.url !==
-                              'https://moondao.kit.com/posts' &&
-                            newsletter.url.includes('http')
-                          ) {
-                            window.open(newsletter.url, '_blank')
-                          } else {
-                            window.open(
-                              'https://news.moondao.com/posts',
-                              '_blank'
-                            )
-                          }
-                        }}
-                      >
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-blue-600">
-                            {newsletter.image ? (
-                              <IPFSRenderer
-                                src={newsletter.image}
-                                alt={newsletter.title}
-                                className="w-full h-full object-cover"
-                                width={100}
-                                height={100}
-                              />
-                            ) : (
-                              <NewspaperIcon className="w-6 h-6 text-white" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-white font-medium mb-1">
-                              {newsletter.title || 'Newsletter Update'}
+                  clientNewsletters.slice(0, 4).map((newsletter: any, index: number) => (
+                    <div
+                      key={newsletter.id || index}
+                      className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5"
+                      onClick={() => {
+                        if (
+                          newsletter.url &&
+                          newsletter.url !== 'https://news.moondao.com/posts' &&
+                          newsletter.url !== 'https://moondao.kit.com/posts' &&
+                          newsletter.url.includes('http')
+                        ) {
+                          window.open(newsletter.url, '_blank')
+                        } else {
+                          window.open('https://news.moondao.com/posts', '_blank')
+                        }
+                      }}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-blue-600">
+                          {newsletter.image ? (
+                            <IPFSRenderer
+                              src={newsletter.image}
+                              alt={newsletter.title}
+                              className="w-full h-full object-cover"
+                              width={100}
+                              height={100}
+                            />
+                          ) : (
+                            <NewspaperIcon className="w-6 h-6 text-white" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-white font-medium mb-1">
+                            {newsletter.title || 'Newsletter Update'}
+                          </p>
+                          {newsletter.description && (
+                            <p className="text-gray-300 text-sm mb-2 line-clamp-2">
+                              {newsletter.description}
                             </p>
-                            {newsletter.description && (
-                              <p className="text-gray-300 text-sm mb-2 line-clamp-2">
-                                {newsletter.description}
-                              </p>
+                          )}
+                          <div className="flex items-center gap-4 text-sm text-gray-400">
+                            <span>
+                              {newsletter.publishedAt
+                                ? new Date(newsletter.publishedAt).toLocaleDateString()
+                                : 'Recently'}
+                            </span>
+                            {newsletter.views && newsletter.views > 0 && (
+                              <>
+                                <span>•</span>
+                                <span>{newsletter.views} recipients</span>
+                              </>
                             )}
-                            <div className="flex items-center gap-4 text-sm text-gray-400">
-                              <span>
-                                {newsletter.publishedAt
-                                  ? new Date(
-                                      newsletter.publishedAt
-                                    ).toLocaleDateString()
-                                  : 'Recently'}
-                              </span>
-                              {newsletter.views && newsletter.views > 0 && (
-                                <>
-                                  <span>•</span>
-                                  <span>{newsletter.views} recipients</span>
-                                </>
-                              )}
-                              {newsletter.readTime && (
-                                <>
-                                  <span>•</span>
-                                  <span>{newsletter.readTime} min read</span>
-                                </>
-                              )}
-                              {newsletter.isArchived && (
-                                <>
-                                  <span>•</span>
-                                  <span className="text-orange-400">
-                                    Archive
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <div
-                            className="text-gray-400 hover:text-white transition-colors"
-                            title="Click to view newsletter"
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-                              />
-                            </svg>
+                            {newsletter.readTime && (
+                              <>
+                                <span>•</span>
+                                <span>{newsletter.readTime} min read</span>
+                              </>
+                            )}
+                            {newsletter.isArchived && (
+                              <>
+                                <span>•</span>
+                                <span className="text-orange-400">Archive</span>
+                              </>
+                            )}
                           </div>
                         </div>
+                        <div
+                          className="text-gray-400 hover:text-white transition-colors"
+                          title="Click to view newsletter"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+                            />
+                          </svg>
+                        </div>
                       </div>
-                    ))
+                    </div>
+                  ))
                 ) : (
                   <div className="text-center py-16 min-h-[300px] flex flex-col justify-center">
                     <NewspaperIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-                    <p className="text-gray-400 text-sm">
-                      No newsletters available
-                    </p>
-                    <p className="text-gray-500 text-xs mt-1">
-                      Check back soon for updates
-                    </p>
+                    <p className="text-gray-400 text-sm">No newsletters available</p>
+                    <p className="text-gray-500 text-xs mt-1">Check back soon for updates</p>
                   </div>
                 )}
               </div>
@@ -997,9 +913,7 @@ export default function SingedInDashboard({
             {/* Active Proposals Card */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-4">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">
-                  Latest Proposals
-                </h3>
+                <h3 className="text-xl font-bold text-white">Latest Proposals</h3>
                 <StandardButton
                   className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
                   link="/governance"
@@ -1020,9 +934,7 @@ export default function SingedInDashboard({
             {/* Recent Citizens */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">
-                  New Citizens
-                </h3>
+                <h3 className="font-semibold text-white text-lg">New Citizens</h3>
                 <StandardButton
                   className="text-blue-300 text-sm hover:text-blue-200 transition-all"
                   link="/network?tab=citizens"
@@ -1066,9 +978,7 @@ export default function SingedInDashboard({
                     </Link>
                   ))
                 ) : (
-                  <div className="text-gray-400 text-sm text-center py-4">
-                    Loading...
-                  </div>
+                  <div className="text-gray-400 text-sm text-center py-4">Loading...</div>
                 )}
               </div>
             </div>
@@ -1076,9 +986,7 @@ export default function SingedInDashboard({
             {/* Featured Teams */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">
-                  Featured Teams
-                </h3>
+                <h3 className="font-semibold text-white text-lg">Featured Teams</h3>
                 <StandardButton
                   className="text-blue-300 text-sm hover:text-blue-200 transition-all"
                   link="/network?tab=teams"
@@ -1090,10 +998,7 @@ export default function SingedInDashboard({
               <div className="space-y-3">
                 {filteredTeams && filteredTeams.length > 0 ? (
                   filteredTeams.slice(0, 5).map((team: any, index: number) => (
-                    <Link
-                      key={team.id || index}
-                      href={`/team/${generatePrettyLink(team.name)}`}
-                    >
+                    <Link key={team.id || index} href={`/team/${generatePrettyLink(team.name)}`}>
                       <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
                         <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
                           {team.image ? (
@@ -1124,9 +1029,7 @@ export default function SingedInDashboard({
                       M
                     </div>
                     <div className="flex-1">
-                      <h4 className="text-white font-medium text-sm">
-                        Mission Control
-                      </h4>
+                      <h4 className="text-white font-medium text-sm">Mission Control</h4>
                     </div>
                   </div>
                 )}
@@ -1147,10 +1050,7 @@ export default function SingedInDashboard({
 
               <div className="space-y-3 h-full overflow-y-auto">
                 {newestJobs && newestJobs.length > 0 ? (
-                  <Link
-                    href={newestJobs[0]?.contactInfo || '/jobs'}
-                    className="block"
-                  >
+                  <Link href={newestJobs[0]?.contactInfo || '/jobs'} className="block">
                     <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
                       <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
                         <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
@@ -1176,38 +1076,12 @@ export default function SingedInDashboard({
                         <BriefcaseIcon className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm">
-                          No open positions
-                        </h4>
-                        <p className="text-gray-400 text-xs">
-                          Check back soon for opportunities
-                        </p>
+                        <h4 className="text-white font-medium text-sm">No open positions</h4>
+                        <p className="text-gray-400 text-xs">Check back soon for opportunities</p>
                       </div>
                     </div>
                   </Link>
                 )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Citizen Teams */}
-        <div className="flex-grow order-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-            <div className="flex flex-col gap-4">
-              <div>
-                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <UserGroupIcon className="w-7 h-7" />
-                  Your Teams
-                </h3>
-              </div>
-
-              <div className="space-y-3">
-                <DashboardTeams
-                  selectedChain={selectedChain}
-                  hatsContract={hatsContract}
-                  teamContract={teamContract}
-                />
               </div>
             </div>
           </div>
@@ -1221,9 +1095,7 @@ export default function SingedInDashboard({
                 <TrophyIcon className="w-7 h-7 text-yellow-400" />
                 Quests
               </h3>
-              <p className="text-slate-300 text-sm mt-2">
-                Complete quests to earn XP and level up
-              </p>
+              <p className="text-slate-300 text-sm mt-2">Complete quests to earn XP and level up</p>
             </div>
 
             <DashboardQuests selectedChain={selectedChain} />
@@ -1247,30 +1119,32 @@ export default function SingedInDashboard({
               {/* Stats next to title */}
               <div className="flex gap-4">
                 <div className="bg-black/20 rounded-xl px-5 py-3 border border-green-500/20">
-                  <div className="text-xl font-bold text-white">
-                    {Math.round(ethBudget)} ETH
-                  </div>
+                  <div className="text-xl font-bold text-white">{Math.round(ethBudget)} ETH</div>
                   <div className="text-green-200 text-sm">Quarterly Budget</div>
                 </div>
                 <div className="bg-black/20 rounded-xl px-5 py-3 border border-green-500/20">
-                  <div className="text-xl font-bold text-white">
-                    {currentProjects?.length || 0}
-                  </div>
+                  <div className="text-xl font-bold text-white">{currentProjects?.length || 0}</div>
                   <div className="text-green-200 text-sm">Total Projects</div>
                 </div>
               </div>
             </div>
 
             {/* Buttons on the right */}
-            <div className="flex gap-4">
+            <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 w-full lg:w-auto">
               <StandardButton
-                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-8 py-4 rounded-xl font-medium transition-all text-base"
+                className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 px-4 sm:px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-medium transition-all text-sm sm:text-base whitespace-nowrap w-full lg:w-auto"
+                link="/contributions"
+              >
+                Submit Contribution
+              </StandardButton>
+              <StandardButton
+                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-4 sm:px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-medium transition-all text-sm sm:text-base whitespace-nowrap w-full lg:w-auto"
                 link="/proposals"
               >
                 Propose Project
               </StandardButton>
               <StandardButton
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg transition-all text-base"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-semibold shadow-lg transition-all text-sm sm:text-base whitespace-nowrap w-full lg:w-auto"
                 link="/projects"
               >
                 View All Projects
@@ -1282,49 +1156,45 @@ export default function SingedInDashboard({
             <div>
               {/* Projects Grid - Larger cards with fewer columns for better visibility */}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {currentProjects
-                  .slice(0, 6)
-                  .map((project: any, index: number) => (
-                    <Link key={index} href={`/project/${project.id}`} passHref>
-                      <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 min-h-[200px] flex flex-col">
-                        <div className="flex justify-between items-start mb-4">
-                          <h4 className="font-bold text-white text-lg flex-1 mr-3 leading-tight">
-                            {project.name}
-                          </h4>
-                          <span
-                            className={`px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
-                              project.active
-                                ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                                : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-                            }`}
-                          >
-                            {project.active ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                        <p className="text-green-100 text-sm leading-relaxed flex-1 overflow-hidden">
-                          {project.description?.length > 180
-                            ? `${project.description.substring(0, 180)}...`
-                            : project.description || 'No description available'}
-                        </p>
-                        <div className="mt-4 pt-4 border-t border-green-500/10">
-                          <div className="text-green-300 text-xs font-medium hover:text-green-200 transition-colors">
-                            Click to view details →
-                          </div>
+                {currentProjects.slice(0, 6).map((project: any, index: number) => (
+                  <Link key={index} href={`/project/${project.id}`} passHref>
+                    <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 h-[280px] flex flex-col">
+                      <div className="flex justify-between items-start mb-4">
+                        <h4 className="font-bold text-white text-lg flex-1 mr-3 leading-tight">
+                          {project.name}
+                        </h4>
+                        <span
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
+                            project.active
+                              ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                              : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                          }`}
+                        >
+                          {project.active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <p className="text-green-100 text-sm leading-relaxed flex-1 overflow-hidden line-clamp-6">
+                        {project.description?.length > 180
+                          ? `${project.description.substring(0, 180)}...`
+                          : project.description || 'No description available'}
+                      </p>
+                      <div className="mt-4 pt-4 border-t border-green-500/10 flex-shrink-0">
+                        <div className="text-green-300 text-xs font-medium hover:text-green-200 transition-colors">
+                          Click to view details →
                         </div>
                       </div>
-                    </Link>
-                  ))}
+                    </div>
+                  </Link>
+                ))}
 
                 {/* Show more projects indicator if there are more than 6 */}
                 {currentProjects.length > 6 && (
-                  <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 min-h-[200px] flex items-center justify-center hover:bg-black/40 hover:border-green-500/20 transition-all duration-300">
+                  <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 h-[280px] flex items-center justify-center hover:bg-black/40 hover:border-green-500/20 transition-all duration-300">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-300 mb-2">
                         +{currentProjects.length - 6}
                       </div>
-                      <p className="text-green-200 text-sm mb-4">
-                        More Projects Available
-                      </p>
+                      <p className="text-green-200 text-sm mb-4">More Projects Available</p>
                       <StandardButton
                         className="bg-green-600/30 hover:bg-green-600/50 text-green-300 text-sm px-6 py-3 rounded-xl transition-all font-medium"
                         link="/projects"
@@ -1340,11 +1210,10 @@ export default function SingedInDashboard({
             <div className="bg-black/20 rounded-xl p-12 border border-green-500/20 min-h-[300px] flex items-center justify-center">
               <div className="text-center max-w-md">
                 <RocketLaunchIcon className="w-20 h-20 text-gray-500 mx-auto mb-6" />
-                <h4 className="font-bold text-white text-2xl mb-3">
-                  No Active Projects
-                </h4>
+                <h4 className="font-bold text-white text-2xl mb-3">No Active Projects</h4>
                 <p className="text-gray-400 text-base mb-6 leading-relaxed">
-                  Check back soon for new space exploration initiatives and opportunities to contribute to groundbreaking missions
+                  Check back soon for new space exploration initiatives and opportunities to
+                  contribute to groundbreaking missions
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <StandardButton
@@ -1374,9 +1243,9 @@ export default function SingedInDashboard({
           />
         </div>
 
-        {/* Events Section */}
-        <div className="mt-8 mb-8">
-          {/* Events Feature */}
+        {/* Events and Your Teams Section - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 mb-8">
+          {/* Events Section */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div className="min-w-0 flex-1">
@@ -1388,12 +1257,6 @@ export default function SingedInDashboard({
                   Join the community events and discussions
                 </p>
               </div>
-              <StandardButton
-                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
-                link="/events"
-              >
-                View All Events
-              </StandardButton>
             </div>
 
             <div className="relative">
@@ -1420,13 +1283,31 @@ export default function SingedInDashboard({
                 referrerPolicy="no-referrer-when-downgrade"
                 title="MoonDAO Events Calendar"
                 onLoad={(e) => {
-                  const loadingDiv = document.getElementById(
-                    'luma-loading-dashboard-small'
-                  )
+                  const loadingDiv = document.getElementById('luma-loading-dashboard-small')
                   if (loadingDiv) {
                     loadingDiv.style.display = 'none'
                   }
                 }}
+              />
+            </div>
+          </div>
+
+          {/* Your Teams Section */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
+            <div className="mb-6">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                  <UserGroupIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                  <span className="leading-tight">Your Teams</span>
+                </h3>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <DashboardTeams
+                selectedChain={selectedChain}
+                hatsContract={hatsContract}
+                teamContract={teamContract}
               />
             </div>
           </div>
@@ -1469,21 +1350,16 @@ export default function SingedInDashboard({
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
                   {citizenSubgraphData?.transfers?.length || '145'}
                 </div>
-                <div className="text-xs sm:text-sm opacity-90 leading-tight">
-                  Global Citizens
-                </div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">Global Citizens</div>
               </div>
             </div>
 
             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 lg:top-6 lg:right-6 bg-black/40 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none">
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
-                  {countUniqueCountries(citizensLocationData)}{' '}
-                  {/* Unique countries */}
+                  {countUniqueCountries(citizensLocationData)} {/* Unique countries */}
                 </div>
-                <div className="text-xs sm:text-sm opacity-90 leading-tight">
-                  Countries
-                </div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">Countries</div>
               </div>
             </div>
 
@@ -1492,9 +1368,7 @@ export default function SingedInDashboard({
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
                   24/7
                 </div>
-                <div className="text-xs sm:text-sm opacity-90 leading-tight">
-                  Active Community
-                </div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">Active Community</div>
               </div>
             </div>
 
@@ -1503,9 +1377,7 @@ export default function SingedInDashboard({
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
                   {filteredTeams?.length || '0'}
                 </div>
-                <div className="text-xs sm:text-sm opacity-90 leading-tight">
-                  Total Teams
-                </div>
+                <div className="text-xs sm:text-sm opacity-90 leading-tight">Total Teams</div>
               </div>
             </div>
           </div>
@@ -1521,9 +1393,7 @@ export default function SingedInDashboard({
       />
 
       {/* Newsletter Modal */}
-      {newsletterModalOpen && (
-        <NewsletterSubModal setEnabled={setNewsletterModalOpen} />
-      )}
+      {newsletterModalOpen && <NewsletterSubModal setEnabled={setNewsletterModalOpen} />}
 
       {/* Citizen Metadata Modal */}
       {citizenMetadataModalEnabled && citizen && (
@@ -1535,11 +1405,7 @@ export default function SingedInDashboard({
       )}
 
       {/* Extended Footer */}
-      <ExpandedFooter
-        hasCallToAction={false}
-        darkBackground={true}
-        isFullwidth={true}
-      />
+      <ExpandedFooter hasCallToAction={false} darkBackground={true} isFullwidth={true} />
     </Container>
   )
 }

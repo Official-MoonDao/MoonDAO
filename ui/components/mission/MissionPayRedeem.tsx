@@ -1,26 +1,17 @@
 import { ArrowDownIcon } from '@heroicons/react/20/solid'
 import JBV5MultiTerminal from 'const/abis/JBV5MultiTerminal.json'
 import { DEFAULT_CHAIN_V5, JB_NATIVE_TOKEN_ADDRESS } from 'const/config'
-import { FixedInt } from 'fpnum'
-import {
-  getTokenAToBQuote,
-  JBRuleset,
-  ReservedPercent,
-  RulesetWeight,
-} from 'juice-sdk-core'
+import { JBRuleset } from 'juice-sdk-core'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { useEffect, useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
-import {
-  prepareContractCall,
-  sendAndConfirmTransaction,
-  simulateTransaction,
-} from 'thirdweb'
+import { prepareContractCall, sendAndConfirmTransaction, simulateTransaction } from 'thirdweb'
 import { TransactionReceipt } from 'thirdweb/dist/types/transaction/types'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatContributionOutput } from '@/lib/mission'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
@@ -58,11 +49,7 @@ function MissionPayRedeemContent({
   const deadlineHasPassed = deadline ? deadline < Date.now() : false
   const shouldShowSwapOnly = deadlineHasPassed && Number(stage) === 2
 
-  if (
-    isRefundable &&
-    (!tokenCredit || tokenCredit <= 0) &&
-    (!tokenBalance || tokenBalance <= 0)
-  ) {
+  if (isRefundable && (!tokenCredit || tokenCredit <= 0) && (!tokenBalance || tokenBalance <= 0)) {
     return null
   }
 
@@ -112,9 +99,7 @@ function MissionPayRedeemContent({
                         placeholder="0"
                         maxLength={15}
                       />
-                      <span className="text-white text-sm font-medium">
-                        USD
-                      </span>
+                      <span className="text-white text-sm font-medium">USD</span>
                     </div>
                   </div>
                 </div>
@@ -147,12 +132,8 @@ function MissionPayRedeemContent({
                         />
                       </div>
                       <div>
-                        <p className="font-bold text-white text-lg">
-                          {token?.tokenSymbol}
-                        </p>
-                        <p className="text-gray-400 text-xs">
-                          {token?.tokenName}
-                        </p>
+                        <p className="font-bold text-white text-lg">{token?.tokenSymbol}</p>
+                        <p className="text-gray-400 text-xs">{token?.tokenName}</p>
                       </div>
                     </div>
                     <div className="bg-[#111C42] rounded-lg px-3 py-2 border border-white/10 w-full md:w-1/2">
@@ -180,9 +161,7 @@ function MissionPayRedeemContent({
                 id="open-contribute-modal"
                 className="mt-4 rounded-full gradient-2 rounded-full w-full py-1"
                 action={() => onOpenModal?.(usdInput)}
-                isDisabled={
-                  isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
-                }
+                isDisabled={isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0}
               />
               <p className="text-sm text-gray-300 italic mt-2">{`Sign In ● Fund ● Contribute`}</p>
             </div>
@@ -194,10 +173,9 @@ function MissionPayRedeemContent({
               <PrivyWeb3Button
                 requiredChain={DEFAULT_CHAIN_V5}
                 id="claim-button"
-                label={`Claim ${formatTokenAmount(
-                  tokenCredit.toString() / 1e18,
-                  0
-                )} $${token?.tokenSymbol}`}
+                label={`Claim ${formatTokenAmount(tokenCredit.toString() / 1e18, 0)} $${
+                  token?.tokenSymbol
+                }`}
                 className="rounded-full gradient-2 rounded-full w-full py-1"
                 action={claimTokenCredit}
               />
@@ -208,9 +186,7 @@ function MissionPayRedeemContent({
       {/* Token Section - Consolidated */}
       {(token?.tokenSupply > 0 || tokenBalance > 0 || isRefundable) && (
         <div id="mission-token-section" className="px-4 pb-4 space-y-1.5">
-          <label className="text-gray-300 font-medium text-xs uppercase tracking-wide">
-            Token
-          </label>
+          <label className="text-gray-300 font-medium text-xs uppercase tracking-wide">Token</label>
           <div className="bg-black/20 border border-white/10 rounded-lg p-3 space-y-3">
             {/* Your Balance */}
             {tokenBalance > 0 && (
@@ -221,12 +197,7 @@ function MissionPayRedeemContent({
                   <span className="text-gray-400">${token?.tokenSymbol}</span>
                   {token?.tokenSupply > 0 && (
                     <span className="text-gray-500 text-sm ml-2">
-                      (
-                      {(
-                        (tokenBalance /
-                          (+token?.tokenSupply.toString() / 1e18)) *
-                        100
-                      ).toFixed(1)}
+                      ({((tokenBalance / (+token?.tokenSupply.toString() / 1e18)) * 100).toFixed(1)}
                       % of Supply)
                     </span>
                   )}
@@ -240,10 +211,7 @@ function MissionPayRedeemContent({
                 <div className="flex-1">
                   <p className="text-gray-400 text-xs">Current Supply</p>
                   <p className="font-semibold text-white">
-                    {formatTokenAmount(
-                      +token?.tokenSupply.toString() / 1e18,
-                      2
-                    )}{' '}
+                    {formatTokenAmount(+token?.tokenSupply.toString() / 1e18, 2)}{' '}
                     <span className="text-gray-400">${token?.tokenSymbol}</span>
                   </p>
                 </div>
@@ -275,8 +243,7 @@ function MissionPayRedeemContent({
                   noPadding
                 />
                 <p className="text-sm text-gray-400 text-center">
-                  This mission did not reach its funding goal. You can claim
-                  your refund here.
+                  This mission did not reach its funding goal. You can claim your refund here.
                 </p>
               </div>
             )}
@@ -341,10 +308,7 @@ function MissionPayRedeemComponent({
   const [redeemAmount, setRedeemAmount] = useState(0)
   const [isLoadingRedeemAmount, setIsLoadingRedeemAmount] = useState(true)
 
-  const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(
-    1,
-    'ETH_TO_USD'
-  )
+  const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(1, 'ETH_TO_USD')
 
   const currentStage = useMissionFundingStage(mission?.id)
 
@@ -430,15 +394,12 @@ function MissionPayRedeemComponent({
   }, [])
 
   // Format token amount with commas
-  const formatTokenAmount = useCallback(
-    (value: number, decimals: number = 2) => {
-      return value.toLocaleString('en-US', {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      })
-    },
-    []
-  )
+  const formatTokenAmount = useCallback((value: number, decimals: number = 2) => {
+    return value.toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })
+  }, [])
 
   // When USD input changes, update ETH input
   const handleUsdInputChange = useCallback(
@@ -506,11 +467,8 @@ function MissionPayRedeemComponent({
         return
       }
 
-      const q = getTokenAToBQuote(new FixedInt(toWei(inputValue), 18), {
-        weight: new RulesetWeight(ruleset[0].weight),
-        reservedPercent: new ReservedPercent(ruleset[1].reservedPercent),
-      })
-      setOutput(+q.payerTokens.toString() / 1e18)
+      const tokensReceived = calculateTokensFromPayment(toWei(inputValue), ruleset)
+      setOutput(+tokensReceived)
     } catch (error) {
       console.error('Error calculating quote:', error)
       setOutput(0)
@@ -624,12 +582,9 @@ function MissionPayRedeemComponent({
     } catch (error: any) {
       console.error('Error redeeming tokens:', error)
       if (error.message.includes('Project funding deadline has not passed.')) {
-        toast.error(
-          'Mission funding deadline has not passed. Refunds are disabled.',
-          {
-            style: toastStyle,
-          }
-        )
+        toast.error('Mission funding deadline has not passed. Refunds are disabled.', {
+          style: toastStyle,
+        })
       } else {
         toast.error('Failed to redeem tokens.', {
           style: toastStyle,
@@ -685,14 +640,7 @@ function MissionPayRedeemComponent({
         style: toastStyle,
       })
     }
-  }, [
-    account,
-    address,
-    jbControllerContract,
-    mission?.projectId,
-    tokenCredit,
-    refreshMissionData,
-  ])
+  }, [account, address, jbControllerContract, mission?.projectId, tokenCredit, refreshMissionData])
 
   useEffect(() => {
     if (parseFloat(input) > 0 && ruleset && ruleset[0] && ruleset[1]) {
@@ -714,8 +662,7 @@ function MissionPayRedeemComponent({
   useEffect(() => {
     if (
       Number(stage) === 3 &&
-      ((jbTokenBalance && jbTokenBalance > 0) ||
-        (tokenCredit && tokenCredit > 0))
+      ((jbTokenBalance && jbTokenBalance > 0) || (tokenCredit && tokenCredit > 0))
     ) {
       getRedeemQuote()
     } else {
@@ -764,9 +711,7 @@ function MissionPayRedeemComponent({
                 label="Contribute"
                 id="open-contribute-modal"
                 className={
-                  buttonClassName
-                    ? buttonClassName
-                    : 'rounded-full gradient-2 rounded-full'
+                  buttonClassName ? buttonClassName : 'rounded-full gradient-2 rounded-full'
                 }
                 action={() => onOpenModal?.(usdInput)}
                 isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}

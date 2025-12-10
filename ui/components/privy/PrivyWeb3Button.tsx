@@ -1,6 +1,7 @@
 import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -81,8 +82,7 @@ export function PrivyWeb3Button({
   const { user, authenticated } = usePrivy()
   const { login } = useLogin({
     onComplete: (user, isNewUser, wasAlreadyAuthenticated) => {
-      const isLoggingInViaWeb3Button =
-        router.query.loggingInViaWeb3Button === 'true'
+      const isLoggingInViaWeb3Button = router.query.loggingInViaWeb3Button === 'true'
       if (user && !wasAlreadyAuthenticated && isLoggingInViaWeb3Button) {
         const { loggingInViaWeb3Button, ...restQuery } = router.query
         router.replace(
@@ -109,6 +109,8 @@ export function PrivyWeb3Button({
   const { wallets } = useWallets()
 
   const [isLoading, setIsLoading] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const isProcessingRef = useRef(false)
 
   const [btnState, setBtnState] = useState(0)
 
@@ -118,10 +120,7 @@ export function PrivyWeb3Button({
 
     if (!user) {
       setBtnState(0)
-    } else if (
-      !skipNetworkCheck &&
-      chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]
-    ) {
+    } else if (!skipNetworkCheck && chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]) {
       setBtnState(1)
     } else if (
       !skipNetworkCheck &&
@@ -180,24 +179,56 @@ export function PrivyWeb3Button({
           type="button"
           className={className}
           onClick={async () => {
-            if (requiredChain) {
-              setSelectedChain(requiredChain)
+            if (isProcessingRef.current || isProcessing) {
+              return
             }
-
+            isProcessingRef.current = true
+            flushSync(() => {
+              setIsProcessing(true)
+              setIsLoading(true)
+            })
             try {
-              const success = await addNetworkToWallet(selectedChain)
+              const targetChain = requiredChain || selectedChain
+              if (requiredChain) {
+                setSelectedChain(requiredChain)
+              }
+
+              const success = await addNetworkToWallet(targetChain)
               if (success) {
-                await wallets[selectedWallet]?.switchChain(selectedChain?.id)
+                await wallets[selectedWallet]?.switchChain(targetChain?.id)
+
+                const maxAttempts = 50
+                const pollInterval = 100
+                let attempts = 0
+
+                while (attempts < maxAttempts) {
+                  await new Promise((resolve) => setTimeout(resolve, pollInterval))
+                  const currentChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
+                  if (currentChainId === targetChain.id) {
+                    break
+                  }
+                  attempts++
+                }
               }
             } catch (err: any) {
               console.error('Error switching network:', err.message)
+            } finally {
+              setIsLoading(false)
+              setIsProcessing(false)
+              isProcessingRef.current = false
             }
           }}
-          isDisabled={isDisabled}
+          isDisabled={isDisabled || isLoading || isProcessing}
           noPadding={noPadding}
           noGradient={noGradient}
         >
-          Switch Network
+          {isLoading ? (
+            <div className="w-full">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            'Switch Network'
+          )}
         </Button>
       )}
       {btnState === 2 && (
@@ -207,17 +238,27 @@ export function PrivyWeb3Button({
           type={type}
           className={className}
           onClick={async () => {
-            setIsLoading(true)
+            if (isProcessingRef.current || isProcessing) {
+              return
+            }
+            isProcessingRef.current = true
+            flushSync(() => {
+              setIsProcessing(true)
+              setIsLoading(true)
+            })
             try {
               await action()
               onSuccess && onSuccess()
             } catch (err: any) {
               console.log(err.message)
               onError && onError()
+            } finally {
+              setIsLoading(false)
+              setIsProcessing(false)
+              isProcessingRef.current = false
             }
-            setIsLoading(false)
           }}
-          isDisabled={isDisabled || isLoading}
+          isDisabled={isDisabled || isLoading || isProcessing}
           noPadding={noPadding}
           noGradient={noGradient}
         >
