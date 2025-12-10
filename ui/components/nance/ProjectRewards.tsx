@@ -449,7 +449,6 @@ export function ProjectRewards({
                   <button
                     onClick={tallyVotes}
                     className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm flex items-center justify-center gap-2 w-fit"
-                    onClick={() => router.push('/proposals')}
                   >
                     Close voting.
                   </button>
