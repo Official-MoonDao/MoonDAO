@@ -1,0 +1,41 @@
+{
+  "name": "townhall-summarizer",
+  "version": "1.0.0",
+  "description": "Townhall processing service that extracts audio, transcribes, summarizes, and sends ConvertKit emails",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts",
+    "test": "ts-node src/test.ts",
+    "retro": "ts-node src/retro.ts",
+    "tag-broadcast": "ts-node src/tag-broadcast.ts",
+    "delete-broadcast": "ts-node src/delete-broadcast.ts",
+    "get-channel-id": "ts-node src/utils/get-channel-id.ts",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:build": "docker-compose build",
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "docker-compose restart",
+    "docker:test": "docker-compose --profile test build --no-cache townhall-summarizer test && docker-compose --profile test up -d townhall-summarizer && sleep 3 && docker-compose --profile test run --rm test yarn test",
+    "docker:retro": "./docker-retro.sh",
+    "docker:regen": "./docker-regen.sh"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "groq-sdk": "^0.37.0",
+    "marked": "^17.0.1",
+    "undici": "^5.28.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

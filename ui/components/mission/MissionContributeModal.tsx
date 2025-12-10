@@ -14,24 +14,11 @@ import {
   LAYERZERO_MAX_CONTRIBUTION_ETH,
   LAYERZERO_MAX_ETH,
 } from 'const/config'
-import { FixedInt } from 'fpnum'
-import {
-  getTokenAToBQuote,
-  JBRuleset,
-  ReservedPercent,
-  RulesetWeight,
-} from 'juice-sdk-core'
+import { JBRuleset } from 'juice-sdk-core'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, {
-  useMemo,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-  useRef,
-} from 'react'
+import React, { useMemo, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
@@ -44,16 +31,11 @@ import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import useOnrampJWT, { OnrampJwtPayload } from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatContributionOutput } from '@/lib/mission'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
-import {
-  arbitrum,
-  base,
-  ethereum,
-  sepolia,
-  optimismSepolia,
-} from '@/lib/rpc/chains'
+import { arbitrum, base, ethereum, sepolia, optimismSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -129,20 +111,13 @@ export default function MissionContributeModal({
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
   const [crossChainQuote, setCrossChainQuote] = useState<bigint>(BigInt(0))
 
-  const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(
-    1,
-    'ETH_TO_USD'
-  )
+  const { data: ethUsdPrice, isLoading: isLoadingEthUsdPrice } = useETHPrice(1, 'ETH_TO_USD')
 
-  const [coinbaseEthReceive, setCoinbaseEthReceive] = useState<number | null>(
-    null
-  )
-  const [coinbasePaymentSubtotal, setCoinbasePaymentSubtotal] =
-    useState<number>()
+  const [coinbaseEthReceive, setCoinbaseEthReceive] = useState<number | null>(null)
+  const [coinbasePaymentSubtotal, setCoinbasePaymentSubtotal] = useState<number>()
   const [coinbasePaymentTotal, setCoinbasePaymentTotal] = useState<number>()
   const [coinbaseTotalFees, setCoinbaseTotalFees] = useState<number>()
-  const [coinbaseEthInsufficient, setCoinbaseEthInsufficient] =
-    useState<boolean>(false)
+  const [coinbaseEthInsufficient, setCoinbaseEthInsufficient] = useState<boolean>(false)
 
   const {
     generateJWT: generateOnrampJWT,
@@ -162,14 +137,10 @@ export default function MissionContributeModal({
     const isPostOnramp = router?.query?.onrampSuccess === 'true'
     return !!storedJWT || isPostOnramp || !!onrampJWTPayload
   })
-  const [jwtVerificationError, setJwtVerificationError] = useState<
-    string | null
-  >(null)
+  const [jwtVerificationError, setJwtVerificationError] = useState<string | null>(null)
   const [transactionRejected, setTransactionRejected] = useState(false)
   const hasTriggeredTransaction = useRef(false)
-  const balanceFallbackTimeoutRef = useRef<ReturnType<
-    typeof setTimeout
-  > | null>(null)
+  const balanceFallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (onrampJWTPayload && typeof onrampJWTPayload.agreed === 'boolean') {
@@ -245,15 +216,12 @@ export default function MissionContributeModal({
   }, [])
 
   // Format token amount with commas
-  const formatTokenAmount = useCallback(
-    (value: number, decimals: number = 2) => {
-      return value.toLocaleString('en-US', {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      })
-    },
-    []
-  )
+  const formatTokenAmount = useCallback((value: number, decimals: number = 2) => {
+    return value.toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })
+  }, [])
 
   // Format number with commas for display
   const formatWithCommas = useCallback((value: string) => {
@@ -373,11 +341,7 @@ export default function MissionContributeModal({
 
     const isCrossChain = chainSlug !== defaultChainSlug
 
-    if (
-      isCrossChain &&
-      (chainSlug === 'ethereum' || chainSlug === 'base') &&
-      ethUsdPrice
-    ) {
+    if (isCrossChain && (chainSlug === 'ethereum' || chainSlug === 'base') && ethUsdPrice) {
       const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
       const usdValue = parseFloat(cleanUsdInput)
       if (usdValue > 0) {
@@ -451,9 +415,7 @@ export default function MissionContributeModal({
 
         try {
           const txData =
-            typeof transaction.data === 'function'
-              ? await transaction.data()
-              : transaction.data
+            typeof transaction.data === 'function' ? await transaction.data() : transaction.data
 
           const estimateResponse = await fetch('/api/rpc/estimate-gas', {
             method: 'POST',
@@ -478,10 +440,7 @@ export default function MissionContributeModal({
           const contentType = estimateResponse.headers.get('content-type')
           if (!contentType || !contentType.includes('application/json')) {
             const responseText = await estimateResponse.text()
-            console.error(
-              'Non-JSON response from gas estimation API:',
-              responseText
-            )
+            console.error('Non-JSON response from gas estimation API:', responseText)
             throw new Error('Gas estimation API returned non-JSON response')
           }
 
@@ -522,9 +481,7 @@ export default function MissionContributeModal({
 
         try {
           const txData =
-            typeof transaction.data === 'function'
-              ? await transaction.data()
-              : transaction.data
+            typeof transaction.data === 'function' ? await transaction.data() : transaction.data
 
           const estimateResponse = await fetch('/api/rpc/estimate-gas', {
             method: 'POST',
@@ -549,10 +506,7 @@ export default function MissionContributeModal({
           const contentType = estimateResponse.headers.get('content-type')
           if (!contentType || !contentType.includes('application/json')) {
             const responseText = await estimateResponse.text()
-            console.error(
-              'Non-JSON response from gas estimation API:',
-              responseText
-            )
+            console.error('Non-JSON response from gas estimation API:', responseText)
             throw new Error('Gas estimation API returned non-JSON response')
           }
 
@@ -606,21 +560,14 @@ export default function MissionContributeModal({
     const isCrossChain = chainSlug !== defaultChainSlug
 
     let transactionValueEth: number
-    if (
-      isCrossChain &&
-      crossChainQuote > BigInt(0) &&
-      !layerZeroLimitExceeded
-    ) {
+    if (isCrossChain && crossChainQuote > BigInt(0) && !layerZeroLimitExceeded) {
       transactionValueEth = Number(crossChainQuote) / 1e18
     } else {
-      transactionValueEth =
-        usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
+      transactionValueEth = usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
     }
 
     // Calculate base gas cost (estimatedGas already has buffers, effectiveGasPrice is baseFee+priorityFee)
-    const baseGasCostWei = effectiveGasPrice
-      ? estimatedGas * effectiveGasPrice
-      : BigInt(0)
+    const baseGasCostWei = effectiveGasPrice ? estimatedGas * effectiveGasPrice : BigInt(0)
 
     // Add small safety buffer (3%) for requiredEth to account for base fee fluctuations
     // This ensures users have enough after onramp, but is much smaller than previous estimates
@@ -643,8 +590,7 @@ export default function MissionContributeModal({
   ])
 
   const hasEnoughBalance = useMemo(() => {
-    const hasEnough =
-      nativeBalance && Number(nativeBalance) >= requiredEth && requiredEth > 0
+    const hasEnough = nativeBalance && Number(nativeBalance) >= requiredEth && requiredEth > 0
     return hasEnough
   }, [nativeBalance, requiredEth])
 
@@ -661,8 +607,7 @@ export default function MissionContributeModal({
       return { eth: '0', usd: '0.00' }
     }
 
-    const contributionEth =
-      usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
+    const contributionEth = usdInput && ethUsdPrice ? Number(cleanUsdInput) / ethUsdPrice : 0
     const quoteEth = Number(crossChainQuote) / 1e18
     const layerZeroFeeEth = quoteEth - contributionEth
     const layerZeroFeeUsd = ethUsdPrice ? layerZeroFeeEth * ethUsdPrice : 0
@@ -671,14 +616,7 @@ export default function MissionContributeModal({
       eth: layerZeroFeeEth.toFixed(6),
       usd: layerZeroFeeUsd.toFixed(2),
     }
-  }, [
-    crossChainQuote,
-    usdInput,
-    ethUsdPrice,
-    chainSlug,
-    defaultChainSlug,
-    layerZeroLimitExceeded,
-  ])
+  }, [crossChainQuote, usdInput, ethUsdPrice, chainSlug, defaultChainSlug, layerZeroLimitExceeded])
 
   // Calculate how much ETH the user needs to buy
   const ethDeficit = useMemo(() => {
@@ -701,11 +639,7 @@ export default function MissionContributeModal({
   }, [ethDeficit, ethUsdPrice])
 
   const isAdjustedForMinimum = useMemo(() => {
-    return (
-      parseFloat(usdDeficit) === 2.0 &&
-      ethDeficit > 0 &&
-      ethDeficit * ethUsdPrice < 2
-    )
+    return parseFloat(usdDeficit) === 2.0 && ethDeficit > 0 && ethDeficit * ethUsdPrice < 2
   }, [usdDeficit, ethDeficit, ethUsdPrice])
 
   const adjustedEthDeficit = useMemo(() => {
@@ -740,11 +674,8 @@ export default function MissionContributeModal({
         return
       }
 
-      const q = getTokenAToBQuote(new FixedInt(toWei(inputValue), 18), {
-        weight: new RulesetWeight(ruleset[0].weight),
-        reservedPercent: new ReservedPercent(ruleset[1].reservedPercent),
-      })
-      setOutput(+q.payerTokens.toString() / 1e18)
+      const tokensReceived = calculateTokensFromPayment(toWei(inputValue), ruleset)
+      setOutput(+tokensReceived)
     } catch (error) {
       console.error('Error calculating quote:', error)
       setOutput(0)
@@ -833,12 +764,9 @@ export default function MissionContributeModal({
           transaction,
           account,
         })
-        toast.success(
-          'Payment recieved! Please wait a minute or two for settlement.',
-          {
-            style: toastStyle,
-          }
-        )
+        toast.success('Payment recieved! Please wait a minute or two for settlement.', {
+          style: toastStyle,
+        })
         const destinationMessage = await waitForMessageReceived(
           isTestnet ? 19999 : 1,
           originReceipt.transactionHash
@@ -872,18 +800,15 @@ export default function MissionContributeModal({
 
       const accessToken = await getAccessToken()
 
-      const contributionNotification: any = await fetch(
-        '/api/mission/contribution-notification',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            txHash: receipt.transactionHash,
-            accessToken: accessToken,
-            txChainSlug: chainSlug,
-            projectId: mission?.projectId,
-          }),
-        }
-      )
+      const contributionNotification: any = await fetch('/api/mission/contribution-notification', {
+        method: 'POST',
+        body: JSON.stringify({
+          txHash: receipt.transactionHash,
+          accessToken: accessToken,
+          txChainSlug: chainSlug,
+          projectId: mission?.projectId,
+        }),
+      })
       const contributionNotificationData = await contributionNotification.json()
 
       if (contributionNotificationData?.message) {
@@ -910,9 +835,6 @@ export default function MissionContributeModal({
         )
       }
 
-      toast.success('Mission token purchased!', {
-        style: toastStyle,
-      })
       confetti({
         particleCount: 150,
         spread: 100,
@@ -932,7 +854,7 @@ export default function MissionContributeModal({
         if (totalPaid > FREE_MINT_THRESHOLD) {
           toast.success(
             <div>
-              <Link href={'/citizen?freeMint=true'}>
+              <Link href={'/citizen'}>
                 Mission token purchased! Click to claim free citizenship!
               </Link>
             </div>,
@@ -1037,11 +959,7 @@ export default function MissionContributeModal({
       const verifyStoredJWT = async () => {
         setJwtVerificationError(null)
         try {
-          const payload = await verifyOnrampJWT(
-            storedJWT,
-            address,
-            mission?.id?.toString()
-          )
+          const payload = await verifyOnrampJWT(storedJWT, address, mission?.id?.toString())
 
           if (!payload) {
             const errorMsg = jwtError || 'Failed to verify onramp session'
@@ -1058,8 +976,7 @@ export default function MissionContributeModal({
             payload.chainSlug !== chainSlug ||
             payload.missionId !== mission?.id?.toString()
           ) {
-            const errorMsg =
-              'Onramp session does not match current wallet, mission, or chain'
+            const errorMsg = 'Onramp session does not match current wallet, mission, or chain'
             setJwtVerificationError(errorMsg)
             setIsAutoTriggering(false)
             clearOnrampJWT() // Clear invalid JWT
@@ -1272,8 +1189,7 @@ export default function MissionContributeModal({
               !onrampJWTPayload ||
               !onrampJWTPayload.address ||
               !onrampJWTPayload.chainSlug ||
-              onrampJWTPayload.address.toLowerCase() !==
-                address.toLowerCase() ||
+              onrampJWTPayload.address.toLowerCase() !== address.toLowerCase() ||
               onrampJWTPayload.chainSlug !== chainSlug ||
               onrampJWTPayload.missionId !== mission?.id?.toString()
             ) {
@@ -1288,11 +1204,9 @@ export default function MissionContributeModal({
 
             setIsAutoTriggering(false) // Show full UI on error
             const { onrampSuccess: _, ...restQuery } = router.query
-            router.replace(
-              { pathname: router.pathname, query: restQuery },
-              undefined,
-              { shallow: true }
-            )
+            router.replace({ pathname: router.pathname, query: restQuery }, undefined, {
+              shallow: true,
+            })
           } finally {
             clearOnrampJWT()
           }
@@ -1329,12 +1243,7 @@ export default function MissionContributeModal({
 
   // Callback to receive quote data from CBOnramp
   const handleCoinbaseQuote = useCallback(
-    (
-      ethAmount: number,
-      paymentSubtotal: number,
-      paymentTotal: number,
-      totalFees: number
-    ) => {
+    (ethAmount: number, paymentSubtotal: number, paymentTotal: number, totalFees: number) => {
       setCoinbaseEthReceive(ethAmount)
       setCoinbasePaymentSubtotal(paymentSubtotal)
       setCoinbasePaymentTotal(paymentTotal)
@@ -1422,9 +1331,7 @@ export default function MissionContributeModal({
               />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-white">
-                Contribute to Mission
-              </h2>
+              <h2 className="text-xl font-semibold text-white">Contribute to Mission</h2>
               <p className="text-gray-300 text-sm">{mission?.metadata?.name}</p>
             </div>
           </div>
@@ -1442,11 +1349,7 @@ export default function MissionContributeModal({
           {isAutoTriggering ? (
             <div className="flex flex-col items-center justify-center py-12 px-6 space-y-6">
               <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                <LoadingSpinner
-                  width="w-10"
-                  height="h-10"
-                  className="text-white"
-                />
+                <LoadingSpinner width="w-10" height="h-10" className="text-white" />
               </div>
 
               <div className="text-center space-y-2">
@@ -1494,13 +1397,7 @@ export default function MissionContributeModal({
 
               <div className="w-full max-w-md">
                 <ProgressBar
-                  progress={
-                    !account
-                      ? 33
-                      : !hasEnoughBalance || isLoadingGasEstimate
-                      ? 66
-                      : 100
-                  }
+                  progress={!account ? 33 : !hasEnoughBalance || isLoadingGasEstimate ? 66 : 100}
                   height="24px"
                   label={
                     !account
@@ -1522,9 +1419,7 @@ export default function MissionContributeModal({
                     <p className="text-blue-300 font-medium text-sm">
                       Contributing ${formatWithCommas(usdInput)} USD
                     </p>
-                    <p className="text-blue-200/80 text-xs mt-1">
-                      To {mission?.metadata?.name}
-                    </p>
+                    <p className="text-blue-200/80 text-xs mt-1">To {mission?.metadata?.name}</p>
                   </div>
                 </div>
               </div>
@@ -1533,8 +1428,8 @@ export default function MissionContributeModal({
               {!account && router?.isReady && (
                 <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 w-full max-w-md">
                   <p className="text-orange-300 text-sm text-center">
-                    Your wallet is not connected. Please close this modal and
-                    connect your wallet to continue.
+                    Your wallet is not connected. Please close this modal and connect your wallet to
+                    continue.
                   </p>
                 </div>
               )}
@@ -1577,8 +1472,8 @@ export default function MissionContributeModal({
                           Additional ETH Required
                         </p>
                         <p className="text-orange-200/80 text-xs mt-1">
-                          You still need {ethDeficit.toFixed(6)} ETH to complete
-                          this contribution. Please purchase ETH below.
+                          You still need {ethDeficit.toFixed(6)} ETH to complete this contribution.
+                          Please purchase ETH below.
                         </p>
                       </div>
                     </div>
@@ -1593,9 +1488,7 @@ export default function MissionContributeModal({
                       <span className="text-orange-400 text-lg">⚠️</span>
                     </div>
                     <div>
-                      <p className="text-orange-300 font-semibold text-sm">
-                        Transaction Rejected
-                      </p>
+                      <p className="text-orange-300 font-semibold text-sm">Transaction Rejected</p>
                       <p className="text-orange-200/80 text-xs mt-1">
                         Review the details below and try again when ready
                       </p>
@@ -1660,21 +1553,15 @@ export default function MissionContributeModal({
                           alt={`${token?.tokenSymbol} logo`}
                         />
                         <div>
-                          <p className="font-medium text-white">
-                            {token?.tokenSymbol}
-                          </p>
-                          <p className="text-gray-400 text-xs">
-                            {token?.tokenName}
-                          </p>
+                          <p className="font-medium text-white">{token?.tokenSymbol}</p>
+                          <p className="text-gray-400 text-xs">{token?.tokenName}</p>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-white">
                           {formatContributionOutput(output)}
                         </p>
-                        <p className="text-gray-400 text-xs">
-                          {token?.tokenSymbol}
-                        </p>
+                        <p className="text-gray-400 text-xs">{token?.tokenSymbol}</p>
                       </div>
                     </div>
                   </div>
@@ -1734,22 +1621,18 @@ export default function MissionContributeModal({
                         </h4>
                         <div className="space-y-3 text-sm text-blue-200/80">
                           <p>
-                            <strong className="text-blue-300">Option 1:</strong>{' '}
-                            Reduce your contribution to under $
-                            {(
-                              LAYERZERO_MAX_CONTRIBUTION_ETH *
-                              (ethUsdPrice || 0)
-                            ).toFixed(0)}{' '}
-                            USD ( + fees)
+                            <strong className="text-blue-300">Option 1:</strong> Reduce your
+                            contribution to under $
+                            {(LAYERZERO_MAX_CONTRIBUTION_ETH * (ethUsdPrice || 0)).toFixed(0)} USD (
+                            + fees)
                           </p>
                           <p>
-                            <strong className="text-blue-300">Option 2:</strong>{' '}
-                            Switch to Arbitrum network and contribute any amount
-                            without limits
+                            <strong className="text-blue-300">Option 2:</strong> Switch to Arbitrum
+                            network and contribute any amount without limits
                           </p>
                           <p>
-                            <strong className="text-blue-300">Option 3:</strong>{' '}
-                            Split your contribution into multiple transactions
+                            <strong className="text-blue-300">Option 3:</strong> Split your
+                            contribution into multiple transactions
                           </p>
                         </div>
                       </div>
@@ -1799,8 +1682,6 @@ export default function MissionContributeModal({
                     />
                   )}
 
-                  <MissionTokenNotice />
-
                   {/* LayerZero Limit Warning */}
                   {layerZeroLimitExceeded && (
                     <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
@@ -1815,22 +1696,20 @@ export default function MissionContributeModal({
                           ? 'Base'
                           : 'this network'}{' '}
                         are limited to {LAYERZERO_MAX_ETH} ETH (~$
-                        {(
-                          LAYERZERO_MAX_CONTRIBUTION_ETH * (ethUsdPrice || 0)
-                        ).toFixed(0)}
-                        ) per transaction due to LayerZero protocol limits (0.24
-                        ETH total including fees).
+                        {(LAYERZERO_MAX_CONTRIBUTION_ETH * (ethUsdPrice || 0)).toFixed(0)}) per
+                        transaction due to LayerZero protocol limits (0.24 ETH total including
+                        fees).
                       </p>
                       <p className="text-red-200/80 text-xs mt-2">
-                        Please reduce your contribution amount or split it into
-                        multiple transactions. Alternatively, you can contribute
-                        directly on Arbitrum without limits.
+                        Please reduce your contribution amount or split it into multiple
+                        transactions. Alternatively, you can contribute directly on Arbitrum without
+                        limits.
                       </p>
                     </div>
                   )}
 
                   {/* Terms Checkbox */}
-                  <div className="bg-black/10 rounded-lg p-4 border border-white/5">
+                  <div className="bg-black/10 rounded-lg p-4 border border-white/5 flex flex-col gap-2">
                     <MissionTokenNotice />
                     <ConditionCheckbox
                       id="contribution-terms-checkbox"
@@ -1876,8 +1755,7 @@ export default function MissionContributeModal({
                       isDisabled={
                         !agreedToCondition ||
                         !usdInput ||
-                        parseFloat((usdInput as string).replace(/,/g, '')) <=
-                          0 ||
+                        parseFloat((usdInput as string).replace(/,/g, '')) <= 0 ||
                         !chainSlugs.includes(chainSlug) ||
                         isLoadingGasEstimate ||
                         isLoadingEthUsdPrice ||
@@ -1890,8 +1768,8 @@ export default function MissionContributeModal({
                 // User needs more ETH - show CBOnramp
                 <div className="space-y-4">
                   {/* Terms Checkbox - Required before onramp */}
-                  <MissionTokenNotice />
-                  <div className="bg-black/10 rounded-lg p-4 border border-white/5">
+                  <div className="bg-black/10 rounded-lg p-4 border border-white/5 flex flex-col gap-2">
+                    <MissionTokenNotice />
                     <ConditionCheckbox
                       id="pre-contribution-terms-checkbox"
                       label={
@@ -1988,8 +1866,7 @@ export default function MissionContributeModal({
                   {usdInput && ethDeficit > 0 && !agreedToCondition && (
                     <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
                       <p className="text-orange-300 text-sm">
-                        ⚠️ Please agree to the terms above to continue with your
-                        purchase.
+                        ⚠️ Please agree to the terms above to continue with your purchase.
                       </p>
                     </div>
                   )}
@@ -1999,9 +1876,9 @@ export default function MissionContributeModal({
                       {parseFloat(usdInput.replace(/,/g, '')) > 5000 && (
                         <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
                           <p className="text-orange-300 text-sm">
-                            <span className="font-semibold">Large Amount:</span>{' '}
-                            Coinbase has purchase limits around $5,000-$7,500.
-                            For larger contributions, please contact{' '}
+                            <span className="font-semibold">Large Amount:</span> Coinbase has
+                            purchase limits around $5,000-$7,500. For larger contributions, please
+                            contact{' '}
                             <a
                               href="mailto:info@moondao.com"
                               className="text-orange-200 underline hover:text-orange-100"

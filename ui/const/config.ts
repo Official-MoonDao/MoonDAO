@@ -3,10 +3,13 @@ import { getChainSlug } from '../lib/thirdweb/chain'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
-export const DEPLOYED_ORIGIN =
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? 'https://moondao.com'
-    : 'https://moondao-git-mission-onramp-moondao.vercel.app'
+const STAGING_ORIGIN = process.env.NEXT_PUBLIC_STAGING_ORIGIN
+
+export const DEPLOYED_ORIGIN = STAGING_ORIGIN
+  ? STAGING_ORIGIN
+  : process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
+  ? 'https://moondao.com'
+  : 'https://moondao-git-mission-onramp-moondao.vercel.app'
 
 interface DeploymentConfig {
   MOONEYToken: string
@@ -25,36 +28,26 @@ interface DeploymentConfig {
 type Index = { [key: string]: string }
 
 //vMooneySweepstakesZeroG is always mainnet address (using infura provider)
-const ethConfig =
-  require(`../../contracts/deployments/ethereum`) as DeploymentConfig
+const ethConfig = require(`../../contracts/deployments/ethereum`) as DeploymentConfig
 
-const polygonConfig =
-  require(`../../contracts/deployments/polygon`) as DeploymentConfig
+const polygonConfig = require(`../../contracts/deployments/polygon`) as DeploymentConfig
 
-const arbitrumConfig =
-  require('../../contracts/deployments/arbitrum') as DeploymentConfig
+const arbitrumConfig = require('../../contracts/deployments/arbitrum') as DeploymentConfig
 
-const baseConfig =
-  require('../../contracts/deployments/base') as DeploymentConfig
+const baseConfig = require('../../contracts/deployments/base') as DeploymentConfig
 
-const goerliConfig =
-  require(`../../contracts/deployments/goerli`) as DeploymentConfig
+const goerliConfig = require(`../../contracts/deployments/goerli`) as DeploymentConfig
 
-const sepoliaConfig =
-  require(`../../contracts/deployments/sepolia`) as DeploymentConfig
+const sepoliaConfig = require(`../../contracts/deployments/sepolia`) as DeploymentConfig
 
 const arbitrumSepoliaConfig =
   require('../../contracts/deployments/arbitrum-sepolia') as DeploymentConfig
 
-const baseSepoliaConfig =
-  require('../../contracts/deployments/base-sepolia') as DeploymentConfig
+const baseSepoliaConfig = require('../../contracts/deployments/base-sepolia') as DeploymentConfig
 
 export const TEST_CHAIN =
-  process.env.NEXT_PUBLIC_TEST_CHAIN === 'arbitrum-sepolia'
-    ? arbitrumSepolia
-    : sepolia
-export const DEFAULT_CHAIN_V5 =
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : TEST_CHAIN
+  process.env.NEXT_PUBLIC_TEST_CHAIN === 'arbitrum-sepolia' ? arbitrumSepolia : sepolia
+export const DEFAULT_CHAIN_V5 = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum : TEST_CHAIN
 
 export const DEFAULT_CHAIN_V5_SLUG = getChainSlug(DEFAULT_CHAIN_V5)
 
@@ -252,13 +245,16 @@ export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
   sepolia: '0x1e638C6120d7eF07e0978b68e22CD80bf5E70986',
 }
 
-export const FEATURED_MISSION_INDEX = 3
-export const FEATURED_MISSION = {
-  id: '3',
-  name: 'Support the Inspiration4 Complex at Space Camp',
-  description:
-    'Donate to support real training hardware and inspire future astronauts at Space Camp, USA',
-}
+export const FEATURED_MISSION =
+  process.env.NEXT_PUBLIC_FEATURED_MISSION !== 'false'
+    ? {
+        id: '3',
+        name: 'Support the Inspiration4 Complex at Space Camp',
+        description:
+          'Donate to support real training hardware and inspire future astronauts at Space Camp, USA',
+      }
+    : null
+export const FEATURED_MISSION_INDEX = FEATURED_MISSION ? 3 : null
 
 export const MISSION_TABLE_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionTable,
@@ -292,17 +288,12 @@ export const JBV4_TERMINAL_ADDRESSES: Index = {
   sepolia: '0xdb9644369c79c3633cde70d2df50d827d7dc7dbc',
 }
 
-export const JBV5_CONTROLLER_ADDRESS =
-  '0x27da30646502e2f642bE5281322Ae8C394F7668a'
+export const JBV5_CONTROLLER_ADDRESS = '0x27da30646502e2f642bE5281322Ae8C394F7668a'
 export const JBV5_TOKENS_ADDRESS = '0x4d0Edd347FB1fA21589C1E109B3474924BE87636'
-export const JBV5_DIRECTORY_ADDRESS =
-  '0x0061E516886A0540F63157f112C0588eE0651dCF'
-export const JBV5_TERMINAL_ADDRESS =
-  '0x2dB6d704058E552DeFE415753465df8dF0361846'
-export const JBV5_TERMINAL_STORE_ADDRESS =
-  '0xfE33B439Ec53748C87DcEDACb83f05aDd5014744'
-export const JB_NATIVE_TOKEN_ADDRESS =
-  '0x000000000000000000000000000000000000EEEe'
+export const JBV5_DIRECTORY_ADDRESS = '0x0061E516886A0540F63157f112C0588eE0651dCF'
+export const JBV5_TERMINAL_ADDRESS = '0x2dB6d704058E552DeFE415753465df8dF0361846'
+export const JBV5_TERMINAL_STORE_ADDRESS = '0xfE33B439Ec53748C87DcEDACb83f05aDd5014744'
+export const JB_NATIVE_TOKEN_ADDRESS = '0x000000000000000000000000000000000000EEEe'
 export const JB_NATIVE_TOKEN_ID = 61166
 export const BENDYSTRAW_JB_VERSION = '5'
 //Citzens & Teams Sepolia Hat Tree : https://app.hatsprotocol.xyz/trees/11155111/386
@@ -339,8 +330,7 @@ export const MARKETPLACE_TABLE_ADDRESSES: Index = {
 
 export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 
-export const MARKETPLACE_FEE_SPLIT: string =
-  polygonConfig.MarketplaceFeeSplit || ''
+export const MARKETPLACE_FEE_SPLIT: string = polygonConfig.MarketplaceFeeSplit || ''
 
 export const LMSR_WITH_TWAP_ADDRESSES: Index = {
   sepolia: '0x0087fCc0aF33B00a9AF2f98Eb6788Ffb72bC1C51',
@@ -361,16 +351,11 @@ export const ORACLE_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
 
 export const OPERATOR_ADDRESS = '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89'
 
-export const MOONDAO_TREASURY: string =
-  '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
-export const MOONDAO_L2_TREASURY: string =
-  '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
-export const MOONDAO_ARBITRUM_TREASURY: string =
-  '0xAF26a002d716508b7e375f1f620338442F5470c0'
-export const MOONDAO_POLYGON_TREASURY: string =
-  '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
-export const DEAD_ADDRESS: string =
-  ' 0x000000000000000000000000000000000000dEaD'
+export const MOONDAO_TREASURY: string = '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
+export const MOONDAO_L2_TREASURY: string = '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
+export const MOONDAO_ARBITRUM_TREASURY: string = '0xAF26a002d716508b7e375f1f620338442F5470c0'
+export const MOONDAO_POLYGON_TREASURY: string = '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
+export const DEAD_ADDRESS: string = ' 0x000000000000000000000000000000000000dEaD'
 
 // DB Config
 const MONGO_USERNAME = process.env.MONGO_USERNAME || ''
@@ -419,8 +404,7 @@ export const CITIZEN_CROSS_CHAIN_MINT_ADDRESSES: Index = {
 }
 
 // Shared across chains
-export const MISSION_CROSS_CHAIN_PAY_ADDRESS =
-  '0x32D7ceD515A27CB60c6dcAd47225A7f300134983'
+export const MISSION_CROSS_CHAIN_PAY_ADDRESS = '0x32D7ceD515A27CB60c6dcAd47225A7f300134983'
 
 export const LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID: {
   [key: string]: number
@@ -436,14 +420,11 @@ export const LAYERZERO_MAX_ETH = 100
 export const LAYERZERO_MAX_CONTRIBUTION_ETH = 100
 
 //GCP HSM Signer used for XP oracle verification, citizen referrals and gasless transactions
-export const GCP_HSM_SIGNER_ADDRESS =
-  '0xb206325e6562517532686dfeeead4c104d9f5d32'
+export const GCP_HSM_SIGNER_ADDRESS = '0xb206325e6562517532686dfeeead4c104d9f5d32'
 
-export const XP_ORACLE_CHAIN =
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arbitrum' : 'sepolia'
+export const XP_ORACLE_CHAIN = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arbitrum' : 'sepolia'
 
-export const XP_ORACLE_CHAIN_ID =
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 42161 : 11155111
+export const XP_ORACLE_CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 42161 : 11155111
 
 export const XP_ORACLE_NAME = 'MoonDAO XP Oracle'
 export const XP_ORACLE_VERSION = '1.0.0'
@@ -518,8 +499,7 @@ export const DISCORD_DELEGATE_ROLE_ID = '1075096990322528298'
 
 export const HATS_ADDRESS = '0x3bc1A0Ad72417f2d411118085256fC53CBdDd137'
 
-export const HATS_PASSTHROUGH_MODULE_ADDRESS =
-  '0x050079a8fbFCE76818C62481BA015b89567D2d35'
+export const HATS_PASSTHROUGH_MODULE_ADDRESS = '0x050079a8fbFCE76818C62481BA015b89567D2d35'
 
 export const TABLELAND_ENDPOINT = `https://${
   process.env.NEXT_PUBLIC_CHAIN != 'mainnet' ? 'testnets.' : ''

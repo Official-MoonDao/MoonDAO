@@ -1,0 +1,53 @@
+services:
+  townhall-summarizer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - NODE_ENV=production
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - ALLOWED_YOUTUBE_CHANNEL_ID=${ALLOWED_YOUTUBE_CHANNEL_ID}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+    restart: unless-stopped
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        KEEP_DEV_DEPS: "true"
+    environment:
+      - SERVICE_URL=http://townhall-summarizer:8080
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - ALLOWED_YOUTUBE_CHANNEL_ID=${ALLOWED_YOUTUBE_CHANNEL_ID}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+    command: ["yarn", "test"]
+    depends_on:
+      - townhall-summarizer
+    profiles:
+      - test
+
+  retro:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        KEEP_DEV_DEPS: "true"
+    env_file:
+      - .env
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+      - CONVERT_KIT_API_KEY=${CONVERT_KIT_API_KEY}
+      - CONVERT_KIT_V4_API_KEY=${CONVERT_KIT_V4_API_KEY}
+      - TOWNHALL_CONVERTKIT_TAG_ID=${TOWNHALL_CONVERTKIT_TAG_ID}
+      - ALLOWED_YOUTUBE_CHANNEL_ID=${ALLOWED_YOUTUBE_CHANNEL_ID}
+      - GROQ_MODEL=${GROQ_MODEL}
+      - WHISPER_MODEL=${WHISPER_MODEL}
+    network_mode: host
+    command: ["yarn", "retro"]
+    profiles:
+      - retro

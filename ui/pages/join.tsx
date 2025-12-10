@@ -587,8 +587,44 @@ export default function Join({
             </p>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
-            <div>
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8 relative">
+            {/* Blur overlay for non-citizens */}
+            {!citizen && (
+              <div className="absolute inset-0 z-10 bg-slate-900/40 backdrop-blur-[20px] rounded-2xl flex items-center justify-center">
+                <div className="text-center px-6 relative z-30">
+                  <div className="w-20 h-20 bg-blue-600/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg
+                      className="w-10 h-10 text-blue-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-GoodTimes text-white mb-4 drop-shadow-lg">Citizens Only</h3>
+                  <p className="text-slate-300 mb-6 max-w-md mx-auto drop-shadow-md">
+                    Become a MoonDAO Citizen to access the jobs board and connect with teams building the future of space exploration.
+                  </p>
+                  <StandardButton
+                    className="gradient-2 hover:opacity-90 transition-opacity"
+                    textColor="text-white"
+                    borderRadius="rounded-xl"
+                    hoverEffect={false}
+                    link="/citizen"
+                  >
+                    Become a Citizen
+                  </StandardButton>
+                </div>
+              </div>
+            )}
+
+            <div className={citizen ? '' : 'pointer-events-none select-none blur-md'}>
               {jobs && jobs.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {jobs.slice(0, 6).map((job: JobType, index: number) => (
@@ -645,15 +681,17 @@ export default function Join({
                   <p className="text-slate-300 mb-6">
                     Check back soon for new opportunities in the Space Acceleration Network.
                   </p>
-                  <StandardButton
-                    backgroundColor="bg-blue-600 hover:bg-blue-700"
-                    textColor="text-white"
-                    borderRadius="rounded-xl"
-                    hoverEffect={false}
-                    link="/jobs"
-                  >
-                    View All Jobs
-                  </StandardButton>
+                  {citizen && (
+                    <StandardButton
+                      backgroundColor="bg-blue-600 hover:bg-blue-700"
+                      textColor="text-white"
+                      borderRadius="rounded-xl"
+                      hoverEffect={false}
+                      link="/jobs"
+                    >
+                      View All Jobs
+                    </StandardButton>
+                  )}
                 </div>
               )}
 
@@ -694,6 +732,12 @@ export default function Join({
           </div>
         </div>
       </Container>
+
+      <div className="w-full flex justify-center bg-dark-cool">
+        <div className="w-full max-w-[1200px]">
+          <NoticeFooter />
+        </div>
+      </div>
     </section>
   )
 }

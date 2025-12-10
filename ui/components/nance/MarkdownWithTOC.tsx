@@ -45,9 +45,18 @@ export default function MarkdownWithTOC({ body }: { body: string }) {
             ),
             th: ({ node, ...props }) => <th className="whitespace-normal border-[5px] border-[#0b0c21] text-white py-[10px] px-[20px] max-w-[100%] bg-transparent" {...props} />,
             td: ({ node, ...props }) => <td className="whitespace-normal border-[5px] border-[#0b0c21] text-white py-[10px] px-[20px] max-w-[100%] bg-transparent" {...props} />,
-            p: ({ node, ...props }) => <p className="text-white" {...props} />, 
+            p: ({ node, ...props }) => <p className="text-white" {...props} />,
+            a: ({ node, ...props }) => (
+              <a className="text-blue-400 hover:text-blue-300 underline transition-colors" {...props} />
+            ),
+            ul: ({ node, ...props }) => (
+              <ul className="list-disc ml-6 mb-4 text-white" style={{ paddingLeft: '1.5rem', lineHeight: '1.8' }} {...props} />
+            ),
+            ol: ({ node, ...props }) => (
+              <ol className="list-decimal ml-6 mb-4 text-white" style={{ paddingLeft: '1.5rem', lineHeight: '1.8' }} {...props} />
+            ),
             li: ({ node, ...props }) => (
-              <li className="list-disc list-inside text-white" {...props} />
+              <li className="text-white mb-3 leading-relaxed" style={{ marginBottom: '0.75rem', display: 'list-item' }} {...props} />
             ),
           }}
         >

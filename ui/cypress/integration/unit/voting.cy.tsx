@@ -2,7 +2,7 @@ import { runIterativeNormalization } from '../../../lib/utils/rewards'
 
 describe('runIterativeNormalization', () => {
   it('should normalize distributions correctly', () => {
-      // Source: https://docs.google.com/spreadsheets/d/1oEYeNjJNXQOzP332UO53zo_iWpMmvyEZLXGmgYiJuKE/edit?gid=658868670#gid=658868670
+    // Source: https://docs.google.com/spreadsheets/d/1oEYeNjJNXQOzP332UO53zo_iWpMmvyEZLXGmgYiJuKE/edit?gid=658868670#gid=658868670
     const testDistributions = [
       {
         distribution: {
@@ -81,35 +81,36 @@ describe('runIterativeNormalization', () => {
       { id: '5', title: 'Project 5' },
     ]
 
-    const [normalizedDistributions, votes] = runIterativeNormalization(
-      testDistributions,
-      projects
-    )
+    const [normalizedDistributions, votes] = runIterativeNormalization(testDistributions, projects)
     const votesGold = [
+      [25.617465382162504, 37.19126730303909, 14.876506921215638, 22.314760381823465, 0],
       [
-        25.617465382162504, 37.19126730303909, 14.876506921215638,
-        22.314760381823465, 0,
-      ],
-      [
-        19.790022073979447, 20.650457816326366, 13.956425764473845,
-        42.16135137499968, 3.441742969387729,
+        19.790022073979447, 20.650457816326366, 13.956425764473845, 42.16135137499968,
+        3.441742969387729,
       ],
       [31, 12, 10, 42, 5],
       [20, 20, 20, 30, 10],
       [
-        28.85945564992768, 28.85945564992768, 8.824792223531608,
-        28.85945564992768, 4.596840826232873,
+        28.85945564992768, 28.85945564992768, 8.824792223531608, 28.85945564992768,
+        4.596840826232873,
       ],
       [
-        27.00161532655116, 22.852527638146107, 15.429494472314948,
-        27.00161532655116, 7.714747236157474,
+        27.00161532655116, 22.852527638146107, 15.429494472314948, 27.00161532655116,
+        7.714747236157474,
       ],
       [20.5, 22.5, 16.5, 38.5, 2],
       [
-        32.17116462467926, 18.766512697729574, 12.06418673425472,
-        32.97674039047171, 4.021395578084907,
+        32.17116462467926, 18.766512697729574, 12.06418673425472, 32.97674039047171,
+        4.021395578084907,
       ],
     ]
-    expect(votes).to.deep.equal(votesGold)
+    // Use approximate equality for floating point comparisons
+    expect(votes.length).to.equal(votesGold.length)
+    votes.forEach((voteRow, i) => {
+      expect(voteRow.length).to.equal(votesGold[i].length)
+      voteRow.forEach((vote, j) => {
+        expect(vote).to.be.closeTo(votesGold[i][j], 0.0001)
+      })
+    })
   })
 })

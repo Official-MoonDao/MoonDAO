@@ -61,7 +61,7 @@ export const TEMPLATE = `\n*Note: Please remove the italicized instructions befo
 1. *Attending weekly town hall meetings, reviewing incoming proposals and voting on them within the Senate. Missed attendance will result in a 5% penalty to the rocketeer’s retroactive rewards.*  
 2. *Creating weekly updates to the community on the progress of the project in the “progress” channel on DIscord.*  
 3. *Adding team members, removing team members, and making decisions about the use of the budget throughout the lifetime of the project.*  
-4. *Creating and managing the multi-sig Treasury for the project as well as the payments for each of the members.*  
+4. *Managing the multi-sig Treasury for the project as well as the payments for each of the members.*
 5. *Creating the Final Report and returning unused funds to the MoonDAO Treasury.*
 
 ***Initial Team:** Projects may not need an initial team. It can just be an individual submitting a proposal. You may also create generic roles and hire other teammates after the project is approved. As a general rule of thumb, try to keep teams small and focused in the beginning, **with clear roles, deliverables, and OKRs for each member**. Team members are responsible for:*
@@ -71,8 +71,7 @@ export const TEMPLATE = `\n*Note: Please remove the italicized instructions befo
 | Project Lead | *@DiscordUsername* |
 | :---- | :---- |
 | **Initial Team** | *Role 1: “Developer” @DiscordUsername1: eth:0x0...1. “Description of the role and deliverable for this member” Role 2: “Designer” @DiscordUsername2: eth:0x0...2. “Description of the role and deliverable for this member”* |
-| **Multi-sig signers\*** | *Five required with their ETH addresses listed. “@DiscordUsername1: eth:0x0...1” “@DiscordUsername2: eth:0x0...2” “@DiscordUsername3: eth:0x0...3” “@DiscordUsername4: eth:0x0...4” “@DiscordUsername5: eth:0x0...5” You can create a multi-sig [here](https://app.safe.global/welcome)* |
-| **Multi-sig Address\*** | *ETH address with the multi-sig* |
+| **Multi-sig signers\*** | *Five required with their ETH addresses listed. “@DiscordUsername1: eth:0x0...1” “@DiscordUsername2: eth:0x0...2” “@DiscordUsername3: eth:0x0...3” “@DiscordUsername4: eth:0x0...4” “@DiscordUsername5: eth:0x0...5” Multi-sig will be automaticall created after proposal is submitted. |
 
 # Timeline (Table B)
 

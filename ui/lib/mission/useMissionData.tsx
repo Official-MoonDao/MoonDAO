@@ -1,6 +1,6 @@
 import LaunchPadPayHookABI from 'const/abis/LaunchPadPayHook.json'
 import { DEFAULT_CHAIN_V5, MISSION_TABLE_NAMES } from 'const/config'
-import { useCallback, useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { readContract, getContract } from 'thirdweb'
 import client from '@/lib/thirdweb/client'
 import useJBProjectData from '../juicebox/useJBProjectData'
@@ -172,35 +172,49 @@ export default function useMissionData({
     }
   }, [missionCreatorContract, mission?.id, _deadline, _refundPeriod])
 
-  // Backers
+  // Backers - memoize projectId to prevent unnecessary refreshes
+  const projectId = useMemo(() => mission?.projectId, [mission?.projectId])
+
   const refreshBackers = useCallback(async () => {
-    if (mission?.projectId === undefined) return
+    if (projectId === undefined) return
     try {
-      const res = await fetch(
-        `/api/mission/backers?projectId=${mission?.projectId}`
-      )
+      const res = await fetch(`/api/mission/backers?projectId=${projectId}`)
       const data = await res.json()
       setBackers(data.backers)
     } catch (error) {
       console.error('Error fetching backers:', error)
     }
-  }, [mission])
+  }, [projectId])
 
   useEffect(() => {
     if (backers === undefined) {
       refreshBackers()
     }
-  }, [backers])
+  }, [backers, refreshBackers])
 
-  return {
-    ...jbProjectData,
-    fundingGoal,
-    stage,
-    backers,
-    deadline,
-    refundPeriod,
-    poolDeployerAddress,
-    refreshBackers,
-    refreshStage,
-  }
+  // Memoize return object to prevent unnecessary re-renders
+  return useMemo(
+    () => ({
+      ...jbProjectData,
+      fundingGoal,
+      stage,
+      backers,
+      deadline,
+      refundPeriod,
+      poolDeployerAddress,
+      refreshBackers,
+      refreshStage,
+    }),
+    [
+      jbProjectData,
+      fundingGoal,
+      stage,
+      backers,
+      deadline,
+      refundPeriod,
+      poolDeployerAddress,
+      refreshBackers,
+      refreshStage,
+    ]
+  )
 }

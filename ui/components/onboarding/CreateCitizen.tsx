@@ -33,14 +33,7 @@ import useTag from '@/lib/convert-kit/useTag'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
-import {
-  arbitrum,
-  base,
-  ethereum,
-  sepolia,
-  arbitrumSepolia,
-  Chain,
-} from '@/lib/rpc/chains'
+import { arbitrum, base, ethereum, sepolia, arbitrumSepolia, Chain } from '@/lib/rpc/chains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { mutateTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import cleanData from '@/lib/tableland/cleanData'
@@ -49,10 +42,7 @@ import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import waitForERC721 from '@/lib/thirdweb/waitForERC721'
-import {
-  CitizenData,
-  formatCitizenShortFormData,
-} from '@/lib/typeform/citizenFormData'
+import { CitizenData, formatCitizenShortFormData } from '@/lib/typeform/citizenFormData'
 import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import viemChains from '@/lib/viem/viemChains'
@@ -68,19 +58,13 @@ import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { ImageGenerator } from './CitizenImageGenerator'
 import { StageContainer } from './StageContainer'
 
-export default function CreateCitizen({
-  selectedChain,
-  setSelectedTier,
-  freeMint,
-}: any) {
+export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const router = useRouter()
 
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const selectedChainSlug = getChainSlug(selectedChain)
   const isTestnet = process.env.NEXT_PUBLIC_CHAIN != 'mainnet'
-  const chains = isTestnet
-    ? [sepolia, arbitrumSepolia]
-    : [arbitrum, base, ethereum]
+  const chains = isTestnet ? [sepolia, arbitrumSepolia] : [arbitrum, base, ethereum]
   const destinationChain = isTestnet ? sepolia : arbitrum
   const account = useActiveAccount()
   const address = account?.address
@@ -108,6 +92,7 @@ export default function CreateCitizen({
 
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
   const [isImageGenerating, setIsImageGenerating] = useState(false)
+  const [freeMint, setFreeMint] = useState(false)
 
   // When the generated image arrives, stop showing the loading animation in stage 2
   useEffect(() => {
@@ -142,6 +127,24 @@ export default function CreateCitizen({
 
   const { nativeBalance } = useNativeBalance()
 
+  useEffect(() => {
+    const getTotalPaid = async () => {
+      const res = await fetch(`/api/mission/freeMint?address=${address}`, {
+        method: 'GET',
+      })
+      if (!res.ok) {
+        const errorText = await res.text() // Or response.json()
+        console.error(errorText)
+      } else {
+        const { data } = await res.json()
+        if (data.eligible) {
+          setFreeMint(true)
+        }
+      }
+    }
+    getTotalPaid()
+  }, [address])
+
   const submitTypeform = useCallback(async (formResponse: any) => {
     const { formId, responseId } = formResponse
 
@@ -161,10 +164,7 @@ export default function CreateCitizen({
     const data = await responseRes.json()
 
     //fomat answers into an object
-    const citizenShortFormData = formatCitizenShortFormData(
-      data.answers,
-      responseId
-    )
+    const citizenShortFormData = formatCitizenShortFormData(data.answers, responseId)
 
     //subscribe to newsletter
     const subRes = await subscribeToNetworkSignup(citizenShortFormData.email)
@@ -182,10 +182,7 @@ export default function CreateCitizen({
 
   const callMint = async () => {
     const imageToUse = citizenImage || inputImage
-    if (!imageToUse)
-      return toast.error(
-        'Please upload an image and complete the previous steps.'
-      )
+    if (!imageToUse) return toast.error('Please upload an image and complete the previous steps.')
 
     if (!account || !address) {
       return toast.error('Please connect your wallet to continue.')
@@ -204,15 +201,13 @@ export default function CreateCitizen({
 
       const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
 
-      const estimatedMaxGas = 0.0001
-
-      let totalCost = Number(formattedCost) + estimatedMaxGas
+      let totalCost = Number(formattedCost)
       if (selectedChainSlug !== defaultChainSlug) {
         totalCost += Number(LAYER_ZERO_TRANSFER_COST) / 1e18
       }
 
       if (!freeMint && +nativeBalance < totalCost) {
-        const roundedCost = Math.ceil(+totalCost * 1000000) / 1000000
+        const roundedCost = Math.ceil(+totalCost + 0.0001 * 1000000) / 1000000 // add 0.0001 ETH to cover gas
 
         setIsLoadingMint(false)
         return await fundWallet(address, {
@@ -221,10 +216,7 @@ export default function CreateCitizen({
         })
       }
 
-      const renamedCitizenImage = renameFile(
-        imageToUse,
-        `${citizenData.name} Citizen Image`
-      )
+      const renamedCitizenImage = renameFile(imageToUse, `${citizenData.name} Citizen Image`)
 
       const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
 
@@ -260,18 +252,13 @@ export default function CreateCitizen({
         const GAS_LIMIT = 300000 // Gas limit for the executor
         const MSG_VALUE = cost // msg.value for the lzReceive() function on destination in wei
 
-        const _options = Options.newOptions().addExecutorLzReceiveOption(
-          GAS_LIMIT,
-          MSG_VALUE
-        )
+        const _options = Options.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, MSG_VALUE)
 
         const transaction = await prepareContractCall({
           contract: crossChainMintContract,
           method: 'crossChainMint' as string,
           params: [
-            LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[
-              selectedChainSlug
-            ].toString(),
+            LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[selectedChainSlug].toString(),
             _options.toHex(),
             address,
             citizenData.name,
@@ -326,27 +313,18 @@ export default function CreateCitizen({
       }
 
       // Define the event signature for the Transfer event
-      const transferEventSignature = ethers.utils.id(
-        'Transfer(address,address,uint256)'
-      )
+      const transferEventSignature = ethers.utils.id('Transfer(address,address,uint256)')
       // Find the log that matches the Transfer event signature
-      const transferLog = receipt.logs.find(
-        (log: any) => log.topics[0] === transferEventSignature
-      )
+      const transferLog = receipt.logs.find((log: any) => log.topics[0] === transferEventSignature)
 
-      const mintedTokenId = ethers.BigNumber.from(
-        transferLog.topics[3]
-      ).toString()
+      const mintedTokenId = ethers.BigNumber.from(transferLog.topics[3]).toString()
 
       if (mintedTokenId) {
         await tagToNetworkSignup(citizenData.email)
 
         const citizenNFT = await waitForERC721(citizenContract, +mintedTokenId)
         const citizenName = citizenData.name
-        const citizenPrettyLink = generatePrettyLinkWithId(
-          citizenName,
-          mintedTokenId
-        )
+        const citizenPrettyLink = generatePrettyLinkWithId(citizenName, mintedTokenId)
 
         // Call the referral API to record the referral
         try {
@@ -389,9 +367,7 @@ export default function CreateCitizen({
           )
 
           // Clear localStorage cache for citizen data
-          const cacheKey = `moondao_citizen_${address?.toLowerCase()}_${
-            DEFAULT_CHAIN_V5.id
-          }`
+          const cacheKey = `moondao_citizen_${address?.toLowerCase()}_${DEFAULT_CHAIN_V5.id}`
           if (typeof window !== 'undefined') {
             localStorage.removeItem(cacheKey)
           }
@@ -461,13 +437,10 @@ export default function CreateCitizen({
                 title="Design"
                 description={
                   <>
-                    <b>
-                      Create your unique and personalized AI passport photo.
-                    </b>{' '}
-                    The uploaded photo <u>MUST</u> contain a face, but it can be
-                    a photo of yourself or an avatar that represents you well.
-                    Image generation may take up to a minute, so please continue
-                    to the next step to fill out your profile.
+                    <b>Create your unique and personalized AI passport photo.</b> The uploaded photo{' '}
+                    <u>MUST</u> contain a face, but it can be a photo of yourself or an avatar that
+                    represents you well. Image generation may take up to a minute, so please
+                    continue to the next step to fill out your profile.
                   </>
                 }
               >
@@ -518,10 +491,7 @@ export default function CreateCitizen({
                 <div className="w-full max-w-[900px] bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden relative">
                   <Widget
                     className="w-full"
-                    id={
-                      process.env
-                        .NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID as string
-                    }
+                    id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID as string}
                     onSubmit={submitTypeform}
                     height={700}
                   />
@@ -567,17 +537,14 @@ export default function CreateCitizen({
                     {!citizenImage && !inputImage && (
                       <div className="absolute inset-0 flex items-center justify-center bg-slate-800/50 rounded-2xl">
                         <p className="text-white text-center px-4">
-                          Please complete the previous steps to generate your
-                          citizen image
+                          Please complete the previous steps to generate your citizen image
                         </p>
                       </div>
                     )}
                   </div>
                   {citizenImage && (
                     <div className="mt-4 text-center">
-                      <p className="text-slate-300">
-                        Your personalized citizen passport photo
-                      </p>
+                      <p className="text-slate-300">Your personalized citizen passport photo</p>
                       <button
                         onClick={() => setStage(0)}
                         className="mt-2 text-sky-400 hover:text-sky-300 text-sm underline transition-colors"
@@ -605,15 +572,11 @@ export default function CreateCitizen({
 
                 <div className="flex flex-col w-full md:p-5 mt-10 max-w-[600px]">
                   <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-                    <h3 className="font-GoodTimes text-xl mb-4 text-white">
-                      Citizen Overview
-                    </h3>
+                    <h3 className="font-GoodTimes text-xl mb-4 text-white">Citizen Overview</h3>
                     <div className="grid gap-4">
                       {isMobile ? (
                         Object.keys(citizenData)
-                          .filter(
-                            (v) => v != 'newsletterSub' && v != 'formResponseId'
-                          )
+                          .filter((v) => v != 'newsletterSub' && v != 'formResponseId')
                           .map((v, i) => {
                             return (
                               <div
@@ -633,10 +596,7 @@ export default function CreateCitizen({
                       ) : (
                         <div className="space-y-3">
                           {Object.keys(citizenData)
-                            .filter(
-                              (v) =>
-                                v != 'newsletterSub' && v != 'formResponseId'
-                            )
+                            .filter((v) => v != 'newsletterSub' && v != 'formResponseId')
                             .map((v, i) => {
                               return (
                                 <div
@@ -664,18 +624,14 @@ export default function CreateCitizen({
                       Important Information
                     </h2>
                     <div className="flex flex-col rounded-[20px] bg-slate-800/50 border border-slate-600/30 p-5 pb-10 md:p-5">
-                      <h3 className="font-GoodTimes text-lg mb-3 text-white">
-                        Citizenship
-                      </h3>
+                      <h3 className="font-GoodTimes text-lg mb-3 text-white">Citizenship</h3>
                       <p className="text-slate-300 leading-relaxed">
-                        Citizenship lasts for one year and can be renewed at any
-                        time. Any wallet funds are self-custodied and are not
-                        dependent on registration.
+                        Citizenship lasts for one year and can be renewed at any time. Any wallet
+                        funds are self-custodied and are not dependent on registration.
                       </p>
                     </div>
                     <p className="mt-6 text-center text-slate-300 font-medium">
-                      Welcome to the future of on-chain, off-world coordination
-                      with MoonDAO!
+                      Welcome to the future of on-chain, off-world coordination with MoonDAO!
                     </p>
                   </div>
                 </div>
@@ -740,9 +696,7 @@ export default function CreateCitizen({
                 <PrivyWeb3Button
                   id="citizen-checkout-button"
                   skipNetworkCheck={true}
-                  label={
-                    isLoadingMint ? 'Creating Citizen...' : 'Become a Citizen'
-                  }
+                  label={isLoadingMint ? 'Creating Citizen...' : 'Become a Citizen'}
                   className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   isDisabled={!agreedToCondition || isLoadingMint}
                   action={callMint}
@@ -753,8 +707,8 @@ export default function CreateCitizen({
                       Creating your citizen profile on the blockchain...
                     </p>
                     <p className="text-slate-400 text-sm text-center mt-2">
-                      This process can take up to a minute. Please wait while
-                      the transaction is processed.
+                      This process can take up to a minute. Please wait while the transaction is
+                      processed.
                     </p>
                   </div>
                 )}
@@ -765,16 +719,10 @@ export default function CreateCitizen({
         {/* Dev Buttons */}
         {process.env.NEXT_PUBLIC_ENV === 'dev' && (
           <div className="flex flex-row justify-center gap-4">
-            <button
-              id="citizen-back-button"
-              onClick={() => setStage(stage - 1)}
-            >
+            <button id="citizen-back-button" onClick={() => setStage(stage - 1)}>
               BACK
             </button>
-            <button
-              id="citizen-next-button"
-              onClick={() => setStage(stage + 1)}
-            >
+            <button id="citizen-next-button" onClick={() => setStage(stage + 1)}>
               NEXT
             </button>
           </div>

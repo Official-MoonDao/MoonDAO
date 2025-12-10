@@ -1,5 +1,6 @@
 import { COIN_ICONS } from 'const/icons'
 import Image from 'next/image'
+import toast from 'react-hot-toast'
 import { useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSafeBalances } from '@/lib/nance/SafeHooks'
@@ -17,11 +18,7 @@ type TeamTreasuryProps = {
   safeOwners: string[]
 }
 
-export default function TeamTreasury({
-  isSigner,
-  safeData,
-  multisigAddress,
-}: TeamTreasuryProps) {
+export default function TeamTreasury({ isSigner, safeData, multisigAddress }: TeamTreasuryProps) {
   const account = useActiveAccount()
   const address = account?.address
   const [safeModalEnabled, setSafeModalEnabled] = useState(false)
@@ -46,10 +43,7 @@ export default function TeamTreasury({
         />
       )}
       {safeReceiveModalEnabled && isSigner && (
-        <SafeReceiveModal
-          safeAddress={multisigAddress}
-          setEnabled={setSafeReceiveModalEnabled}
-        />
+        <SafeReceiveModal safeAddress={multisigAddress} setEnabled={setSafeReceiveModalEnabled} />
       )}
       {safeSendModalEnabled && isSigner && (
         <SafeSendModal
@@ -59,59 +53,64 @@ export default function TeamTreasury({
         />
       )}
       <section className="p-6">
-        <div className="w-full flex flex-col justify-between gap-5">
-        <div className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
-          <div className="flex gap-5">
-            <Image
-              src={'/assets/icon-treasury.svg'}
-              alt="Treasury icon"
-              width={30}
-              height={30}
-              className="opacity-70"
-            />
-            <h2 className="font-GoodTimes text-2xl text-white">Treasury</h2>
+        <div className="w-full flex flex-col gap-5">
+          <div className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
+            <div
+              className="flex gap-5"
+              onClick={() => {
+                navigator.clipboard.writeText(multisigAddress)
+                toast.success('Address copied to clipboard.')
+              }}
+            >
+              <Image
+                src={'/assets/icon-treasury.svg'}
+                alt="Treasury icon"
+                width={30}
+                height={30}
+                className="opacity-70"
+              />
+              <h2 className="font-GoodTimes text-2xl text-white">
+                Treasury
+                {multisigAddress &&
+                  ` ${multisigAddress.slice(0, 6)}...${multisigAddress.slice(-4)}`}
+              </h2>
+            </div>
+            {safeData && isSigner && (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <StandardButton
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl py-2 px-5 text-sm font-semibold transition-all duration-200 hover:scale-105"
+                  onClick={() => {
+                    setSafeSendModalEnabled(true)
+                  }}
+                >
+                  {'Send'}
+                </StandardButton>
+                <StandardButton
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl py-2 px-5 text-sm font-semibold transition-all duration-200 hover:scale-105"
+                  onClick={() => {
+                    setSafeReceiveModalEnabled(true)
+                  }}
+                >
+                  {'Receive'}
+                </StandardButton>
+                <StandardButton
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl py-2 px-5 text-sm font-semibold transition-all duration-200 hover:scale-105"
+                  onClick={() => {
+                    setSafeModalEnabled(true)
+                  }}
+                >
+                  {'Manage'}
+                </StandardButton>
+              </div>
+            )}
           </div>
-          {safeData && isSigner && (
-            <div className="flex flex-col sm:flex-row gap-3">
-              <StandardButton
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl py-3 px-6 font-semibold transition-all duration-200 hover:scale-105"
-                onClick={() => {
-                  setSafeSendModalEnabled(true)
-                }}
-              >
-                {'Send'}
-              </StandardButton>
-              <StandardButton
-                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl py-3 px-6 font-semibold transition-all duration-200 hover:scale-105"
-                onClick={() => {
-                  setSafeReceiveModalEnabled(true)
-                }}
-              >
-                {'Receive'}
-              </StandardButton>
-              <StandardButton
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl py-3 px-6 font-semibold transition-all duration-200 hover:scale-105"
-                onClick={() => {
-                  setSafeModalEnabled(true)
-                }}
-              >
-                {'Manage'}
-              </StandardButton>
+          <SafeBalances safeBalances={safeBalances} isLoading={isLoadingBalances} />
+
+          {isSigner && safeData && (
+            <div className="mt-4 pt-4 border-t border-slate-600/30">
+              <SafeTransactions address={address} safeData={safeData} />
             </div>
           )}
-        </div>
-        <div className="mt-4">
-          <SafeBalances
-            safeBalances={safeBalances}
-            isLoading={isLoadingBalances}
-          />
-        </div>
-
-        {isSigner && (
-          <div className="mt-6">
-            <SafeTransactions address={address} safeData={safeData} />
-          </div>
-        )}
         </div>
       </section>
     </>
