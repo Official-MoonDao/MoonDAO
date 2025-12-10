@@ -29,14 +29,8 @@ import { ethereum } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
-import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
-import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
-import {
-  getBudget,
-  getPayouts,
-  computeRewardPercentages,
-} from '@/lib/utils/rewards'
+import { getBudget, getPayouts, computeRewardPercentages } from '@/lib/utils/rewards'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -74,8 +68,7 @@ function formatValueForDisplay(value: string | number): {
   full: string
   abbreviated: string
 } {
-  const numValue =
-    typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
+  const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
 
   if (isNaN(numValue)) {
     return { full: value.toString(), abbreviated: value.toString() }
@@ -97,12 +90,7 @@ function formatValueForDisplay(value: string | number): {
   return { full, abbreviated: full }
 }
 
-function RewardAsset({
-  name,
-  value,
-  usdValue,
-  approximateUSD,
-}: RewardAssetProps) {
+function RewardAsset({ name, value, usdValue, approximateUSD }: RewardAssetProps) {
   const image = assetImageExtension[name]
     ? `/coins/${name}.${assetImageExtension[name]}`
     : '/coins/DEFAULT.png'
@@ -156,9 +144,7 @@ export function ProjectRewards({
   const { quarter, year } = getRelativeQuarter(active ? -1 : 0)
 
   const [edit, setEdit] = useState(false)
-  const [distribution, setDistribution] = useState<{ [key: string]: number }>(
-    {}
-  )
+  const [distribution, setDistribution] = useState<{ [key: string]: number }>({})
 
   //Check if its the rewards cycle
   useEffect(() => {
@@ -219,8 +205,7 @@ export function ProjectRewards({
   const addressToQuadraticVotingPower = Object.fromEntries(
     addresses.map((address, index) => [address, _vps[index]])
   )
-  const votingPowerSumIsNonZero =
-    _.sum(Object.values(addressToQuadraticVotingPower)) > 0
+  const votingPowerSumIsNonZero = _.sum(Object.values(addressToQuadraticVotingPower)) > 0
   const { walletVP: userVotingPower } = useTotalVP(userAddress || '')
   const userHasVotingPower = useMemo(() => {
     return userAddress && userVotingPower > 0
@@ -239,9 +224,7 @@ export function ProjectRewards({
   )
 
   let citizenDistributions = distributions?.filter((_, i) => isCitizens[i])
-  const nonCitizenDistributions = distributions?.filter(
-    (_, i) => !isCitizens[i]
-  )
+  const nonCitizenDistributions = distributions?.filter((_, i) => !isCitizens[i])
 
   const eligibleProjects = useMemo(
     () => currentProjects.filter((p) => p.eligible),
@@ -266,15 +249,14 @@ export function ProjectRewards({
     allProjectsHaveCitizenDistribution &&
     allProjectsHaveRewardDistribution &&
     communityCirclePopulated
-  const projectIdToEstimatedPercentage: { [key: string]: number } =
-    readyToRunVoting
-      ? computeRewardPercentages(
-          citizenDistributions,
-          nonCitizenDistributions,
-          eligibleProjects,
-          addressToQuadraticVotingPower
-        )
-      : {}
+  const projectIdToEstimatedPercentage: { [key: string]: number } = readyToRunVoting
+    ? computeRewardPercentages(
+        citizenDistributions,
+        nonCitizenDistributions,
+        eligibleProjects,
+        addressToQuadraticVotingPower
+      )
+    : {}
 
   const { tokens: mainnetTokens } = useAssets()
   const { tokens: arbitrumTokens } = useAssets(ARBITRUM_ASSETS_URL)
@@ -306,7 +288,6 @@ export function ProjectRewards({
 
   const usdBudget = ethBudget * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
-  const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
   const {
     addressToEthPayout,
@@ -334,10 +315,16 @@ export function ProjectRewards({
           return
         }
 
-        const route = await pregenSwapRoute(ethereum, mooneyBudget, MOONEY, DAI)
+        const response = await fetch('/api/mooney/price')
+        if (!response.ok) {
+          throw new Error('Failed to fetch MOONEY price')
+        }
 
-        if (!isCancelled && route?.route[0]?.rawQuote) {
-          const usd = route.route[0].rawQuote.toString() / 1e18
+        const data = await response.json()
+        const mooneyPriceUSD = data.result?.price || 0
+
+        if (!isCancelled && mooneyPriceUSD > 0) {
+          const usd = mooneyBudget * mooneyPriceUSD
           setMooneyBudgetUSD(usd)
         }
       } catch (error) {
@@ -349,20 +336,17 @@ export function ProjectRewards({
       }
     }
 
-    if (mooneyBudget && MOONEY && DAI) {
+    if (mooneyBudget) {
       getMooneyBudgetUSD()
     }
 
     return () => {
       isCancelled = true
     }
-  }, [mooneyBudget, DAI, MOONEY])
+  }, [mooneyBudget])
 
   const handleSubmit = async () => {
-    const totalPercentage = Object.values(distribution).reduce(
-      (sum, value) => sum + value,
-      0
-    )
+    const totalPercentage = Object.values(distribution).reduce((sum, value) => sum + value, 0)
     if (totalPercentage !== 100) {
       toast.error('Total distribution must equal 100%.', {
         style: toastStyle,
@@ -507,7 +491,6 @@ export function ProjectRewards({
               <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
                 Active Projects
               </h1>
-
               <div className="flex flex-col gap-6">
                 {currentProjects && currentProjects.length > 0 ? (
                   currentProjects.map((project: any, i) => (
@@ -521,13 +504,10 @@ export function ProjectRewards({
                         projectContract={projectContract}
                         hatsContract={hatsContract}
                         distribute={active && project.eligible}
-                        distribution={
-                          userHasVotingPower ? distribution : undefined
-                        }
+                        distribution={userHasVotingPower ? distribution : undefined}
                         handleDistributionChange={
-                          userHasVotingPower
-                            ? handleDistributionChange
-                            : undefined
+                          userHasVotingPower ? handleDistributionChange : undefined
+
                         }
                         userHasVotingPower={userHasVotingPower}
                         isVotingPeriod={active}
@@ -549,9 +529,7 @@ export function ProjectRewards({
                           action={handleSubmit}
                           requiredChain={chain}
                           className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
-                          label={
-                            edit ? 'Edit Distribution' : 'Submit Distribution'
-                          }
+                          label={edit ? 'Edit Distribution' : 'Submit Distribution'}
                         />
                       </span>
                     ) : (

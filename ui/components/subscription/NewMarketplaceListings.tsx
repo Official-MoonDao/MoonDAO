@@ -39,24 +39,33 @@ export default function NewMarketplaceListings({
     getTableName()
   }, [marketplaceTableContract])
 
-  // Build statement with current timestamp
   const now = Math.floor(Date.now() / 1000)
   const statement = tableName
-    ? `SELECT * FROM ${tableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 25`
+    ? `SELECT * FROM ${tableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 10`
     : null
 
   const { data: listings } = useTablelandQuery(statement, {
     revalidateOnFocus: false,
   })
 
-  // Process and filter listings
+  // Process and filter listings with rate limiting
   useEffect(() => {
     async function processListings() {
-      if (!listings || !teamContract) return
+      if (!listings || !teamContract || listings.length === 0) {
+        setNewListings([])
+        return
+      }
 
-      const validListings = await Promise.all(
-        listings
-          .map(async (listing: TeamListingType) => {
+      // Process in batches to avoid rate limiting
+      const BATCH_SIZE = 5
+      const DELAY_BETWEEN_BATCHES = 200 // ms
+      const validListings: TeamListingType[] = []
+
+      for (let i = 0; i < listings.length; i += BATCH_SIZE) {
+        const batch = listings.slice(i, i + BATCH_SIZE)
+
+        const batchResults = await Promise.all(
+          batch.map(async (listing: TeamListingType) => {
             try {
               const teamExpiration = await readContract({
                 contract: teamContract,
@@ -68,9 +77,14 @@ export default function NewMarketplaceListings({
               return null
             }
           })
-          .filter((listing: any) => listing !== null)
-      )
+        )
 
+        validListings.push(...batchResults.filter((listing: any) => listing !== null))
+
+        if (i + BATCH_SIZE < listings.length) {
+          await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES))
+        }
+      }
       setNewListings(validListings)
     }
 
@@ -102,10 +116,7 @@ export default function NewMarketplaceListings({
         className="overflow-x-auto overflow-y-hidden"
         style={{ msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
       >
-        <div
-          id="new-marketplace-listings-container"
-          className="flex gap-4 pb-2"
-        >
+        <div id="new-marketplace-listings-container" className="flex gap-4 pb-2">
           {newListings.map((listing, i) => (
             <TeamListing
               key={`team-listing-${i}`}

@@ -9,8 +9,14 @@ import {
   PencilIcon,
   BriefcaseIcon,
   TrophyIcon,
+  CalendarDaysIcon,
+  WalletIcon,
+  ClipboardDocumentIcon,
+  PlusIcon,
+  ArrowUpRightIcon,
 } from '@heroicons/react/24/outline'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
+import { useFundWallet } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import JBV5Directory from 'const/abis/JBV5Directory.json'
@@ -31,6 +37,9 @@ import {
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
+import { toast } from 'react-hot-toast'
+import Image from 'next/image'
+import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useContext, useState, useEffect } from 'react'
@@ -42,6 +51,8 @@ import { useVoteCountOfAddress } from '@/lib/snapshot'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useTotalLockedMooney } from '@/lib/tokens/hooks/useTotalLockedMooney'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
@@ -51,6 +62,7 @@ import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { RevenueChart } from '@/components/dashboard/treasury/RevenueChart'
 import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
 import MooneyBalances from '@/components/home/MooneyBalances'
+import WalletInfoCard from '@/components/home/WalletInfoCard'
 import ChartModal from '@/components/layout/ChartModal'
 import Container from '@/components/layout/Container'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
@@ -60,6 +72,8 @@ import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
+import { SendModal } from '@/components/privy/PrivyConnectWallet'
+import { useWalletTokens } from '@/components/privy/PrivyConnectWallet'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
@@ -124,7 +138,13 @@ export default function SignedInDashboard({
   const selectedChain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(selectedChain)
 
+  const router = useRouter()
+  const { fundWallet } = useFundWallet()
+
   const { citizen, isLoading: isLoadingCitizen } = useContext(CitizenContext)
+
+  // Send modal state
+  const [sendModalEnabled, setSendModalEnabled] = useState(false)
 
   // Modal state for charts
   const [chartModalOpen, setChartModalOpen] = useState(false)
@@ -208,7 +228,12 @@ export default function SignedInDashboard({
   const account = useActiveAccount()
   const address = account?.address
 
-  const { data: voteCount, isValidating: isLoadingVoteCount } = useVoteCountOfAddress(address)
+  // Hooks for SendModal
+  const { nativeBalance } = useNativeBalance()
+  const { tokens: walletTokens } = useWalletTokens(address, chainSlug)
+
+  const { data: voteCount, isValidating: isLoadingVoteCount } =
+    useVoteCountOfAddress(address)
 
   const MOONEYBalance = useTotalMooneyBalance(address)
   const {
@@ -774,7 +799,7 @@ export default function SignedInDashboard({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <StandardButton
                   className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/governance"
+                  link="/proposals"
                 >
                   <CheckBadgeIcon className="w-4 h-4" />
                   Propose
@@ -788,7 +813,7 @@ export default function SignedInDashboard({
                 </StandardButton>
                 <StandardButton
                   className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/network"
+                  link="/team"
                 >
                   <UserGroupIcon className="w-4 h-4" />
                   Join Team
@@ -806,7 +831,7 @@ export default function SignedInDashboard({
             {/* Activity Feed */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
-                <h3 className="text-xl font-bold text-white whitespace-nowrap">Recent Activity</h3>
+                <h3 className="text-xl font-bold text-white whitespace-nowrap">Recent Newsletters</h3>
                 <div className="flex gap-2 flex-shrink-0">
                   <StandardButton
                     className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
@@ -819,6 +844,12 @@ export default function SignedInDashboard({
                     onClick={() => setNewsletterModalOpen(true)}
                   >
                     Subscribe
+                  </StandardButton>
+                  <StandardButton
+                    className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
+                    link="/townhall"
+                  >
+                    Town Hall
                   </StandardButton>
                 </div>
               </div>
@@ -944,113 +975,19 @@ export default function SignedInDashboard({
 
           {/* Right Sidebar - Community & Stats */}
           <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3">
-            {/* Claim Rewards Section */}
+            {/* Wallet Info Card */}
+            {address && (
+              <WalletInfoCard
+                unlockedMooney={MOONEYBalance || 0}
+                lockedMooney={lockedMooneyAmount || 0}
+                isUnlockedLoading={false}
+                isLockedLoading={isLoadingLockedMooney}
+                setSendModalEnabled={setSendModalEnabled}
+              />
+            )}
+
+            {/* Retroactive Rewards Section - Moved from left sidebar */}
             {address && <ClaimRewardsSection />}
-
-            {/* Recent Citizens */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">New Citizens</h3>
-                <StandardButton
-                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
-                  link="/network?tab=citizens"
-                >
-                  See all
-                </StandardButton>
-              </div>
-
-              <div className="space-y-3">
-                {newestCitizens && newestCitizens.length > 0 ? (
-                  newestCitizens.slice(0, 5).map((citizen: any) => (
-                    <Link
-                      key={citizen.id}
-                      href={`/citizen/${
-                        citizen.name && citizen.id
-                          ? generatePrettyLinkWithId(citizen.name, citizen.id)
-                          : citizen.id || 'anonymous'
-                      }`}
-                      className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer"
-                    >
-                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                        {citizen.image ? (
-                          <IPFSRenderer
-                            src={citizen.image}
-                            alt={citizen.name}
-                            className="w-full h-full object-cover"
-                            width={100}
-                            height={100}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                            {citizen.name?.[0] || 'C'}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-sm truncate">
-                          {citizen.name || 'Anonymous'}
-                        </h4>
-                      </div>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="text-gray-400 text-sm text-center py-4">Loading...</div>
-                )}
-              </div>
-            </div>
-
-            {/* Featured Teams */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">Featured Teams</h3>
-                <StandardButton
-                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
-                  link="/network?tab=teams"
-                >
-                  See all
-                </StandardButton>
-              </div>
-
-              <div className="space-y-3">
-                {filteredTeams && filteredTeams.length > 0 ? (
-                  filteredTeams.slice(0, 5).map((team: any, index: number) => (
-                    <Link key={team.id || index} href={`/team/${generatePrettyLink(team.name)}`}>
-                      <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                        <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                          {team.image ? (
-                            <IPFSRenderer
-                              src={team.image}
-                              alt={team.name}
-                              className="w-full h-full object-cover"
-                              width={100}
-                              height={100}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                              {team.name?.[0] || 'T'}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-white font-medium text-sm truncate">
-                            {team.name || 'Team'}
-                          </h4>
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">
-                      M
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-white font-medium text-sm">Mission Control</h4>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
 
             {/* Open Jobs */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
@@ -1103,28 +1040,6 @@ export default function SignedInDashboard({
           </div>
         </div>
 
-        {/* Citizen Teams */}
-        <div className="flex-grow order-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-            <div className="flex flex-col gap-4">
-              <div>
-                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <UserGroupIcon className="w-7 h-7" />
-                  Your Teams
-                </h3>
-              </div>
-
-              <div className="space-y-3">
-                <DashboardTeams
-                  selectedChain={selectedChain}
-                  hatsContract={hatsContract}
-                  teamContract={teamContract}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Quests Section */}
         <div className="flex-grow order-5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
           <div className="flex flex-col gap-4">
@@ -1168,15 +1083,21 @@ export default function SignedInDashboard({
             </div>
 
             {/* Buttons on the right */}
-            <div className="flex gap-4">
+            <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 w-full lg:w-auto">
               <StandardButton
-                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-8 py-4 rounded-xl font-medium transition-all text-base"
+                className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 px-4 sm:px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-medium transition-all text-sm sm:text-base whitespace-nowrap w-full lg:w-auto"
+                link="/contributions"
+              >
+                Submit Contribution
+              </StandardButton>
+              <StandardButton
+                className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-4 sm:px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-medium transition-all text-sm sm:text-base whitespace-nowrap w-full lg:w-auto"
                 link="/proposals"
               >
                 Propose Project
               </StandardButton>
               <StandardButton
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg transition-all text-base"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-semibold shadow-lg transition-all text-sm sm:text-base whitespace-nowrap w-full lg:w-auto"
                 link="/projects"
               >
                 View All Projects
@@ -1190,7 +1111,7 @@ export default function SignedInDashboard({
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {currentProjects.slice(0, 6).map((project: any, index: number) => (
                   <Link key={index} href={`/project/${project.id}`} passHref>
-                    <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 min-h-[200px] flex flex-col">
+                    <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 h-[280px] flex flex-col">
                       <div className="flex justify-between items-start mb-4">
                         <h4 className="font-bold text-white text-lg flex-1 mr-3 leading-tight">
                           {project.name}
@@ -1205,12 +1126,12 @@ export default function SignedInDashboard({
                           {project.active == PROJECT_ACTIVE ? 'Active' : 'Inactive'}
                         </span>
                       </div>
-                      <p className="text-green-100 text-sm leading-relaxed flex-1 overflow-hidden">
+                      <p className="text-green-100 text-sm leading-relaxed flex-1 overflow-hidden line-clamp-6">
                         {project.description?.length > 180
                           ? `${project.description.substring(0, 180)}...`
                           : project.description || 'No description available'}
                       </p>
-                      <div className="mt-4 pt-4 border-t border-green-500/10">
+                      <div className="mt-4 pt-4 border-t border-green-500/10 flex-shrink-0">
                         <div className="text-green-300 text-xs font-medium hover:text-green-200 transition-colors">
                           Click to view details →
                         </div>
@@ -1221,7 +1142,7 @@ export default function SignedInDashboard({
 
                 {/* Show more projects indicator if there are more than 6 */}
                 {currentProjects.length > 6 && (
-                  <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 min-h-[200px] flex items-center justify-center hover:bg-black/40 hover:border-green-500/20 transition-all duration-300">
+                  <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 h-[280px] flex items-center justify-center hover:bg-black/40 hover:border-green-500/20 transition-all duration-300">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-300 mb-2">
                         +{currentProjects.length - 6}
@@ -1275,9 +1196,9 @@ export default function SignedInDashboard({
           />
         </div>
 
-        {/* Events Section */}
-        <div className="mt-8 mb-8">
-          {/* Events Feature */}
+        {/* Events and Your Teams Section - Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 mb-8">
+          {/* Events Section */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div className="min-w-0 flex-1">
@@ -1323,7 +1244,139 @@ export default function SignedInDashboard({
               />
             </div>
           </div>
+
+          {/* Your Teams Section */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
+            <div className="mb-6">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                  <UserGroupIcon className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 flex-shrink-0" />
+                  <span className="leading-tight">Your Teams</span>
+                </h3>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <DashboardTeams
+                selectedChain={selectedChain}
+                hatsContract={hatsContract}
+                teamContract={teamContract}
+              />
+            </div>
+          </div>
         </div>
+
+        {/* Citizens and Teams - Horizontal Scrollable Section Above Map */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* New Citizens - Horizontal */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white text-lg">
+                  New Citizens
+                </h3>
+                <StandardButton
+                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                  link="/network?tab=citizens"
+                >
+                  See all
+                </StandardButton>
+              </div>
+
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                {newestCitizens && newestCitizens.length > 0 ? (
+                  newestCitizens.slice(0, 8).map((citizen: any) => (
+                    <Link
+                      key={citizen.id}
+                      href={`/citizen/${
+                        citizen.name && citizen.id
+                          ? generatePrettyLinkWithId(citizen.name, citizen.id)
+                          : citizen.id || 'anonymous'
+                      }`}
+                      className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
+                    >
+                      <div className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center mx-auto mb-2">
+                        {citizen.image ? (
+                          <IPFSRenderer
+                            src={citizen.image}
+                            alt={citizen.name}
+                            className="w-full h-full object-cover"
+                            width={100}
+                            height={100}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                            {citizen.name?.[0] || 'C'}
+                          </div>
+                        )}
+                      </div>
+                      <h4 className="text-white font-medium text-xs truncate text-center">
+                        {citizen.name || 'Anonymous'}
+                      </h4>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="text-gray-400 text-sm text-center py-4 w-full">
+                    Loading...
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Featured Teams - Horizontal */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white text-lg">
+                  Featured Teams
+                </h3>
+                <StandardButton
+                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                  link="/network?tab=teams"
+                >
+                  See all
+                </StandardButton>
+              </div>
+
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                {filteredTeams && filteredTeams.length > 0 ? (
+                  filteredTeams.slice(0, 8).map((team: any, index: number) => (
+                    <Link
+                      key={team.id || index}
+                      href={`/team/${generatePrettyLink(team.name)}`}
+                      className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
+                    >
+                      <div className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center mx-auto mb-2">
+                        {team.image ? (
+                          <IPFSRenderer
+                            src={team.image}
+                            alt={team.name}
+                            className="w-full h-full object-cover"
+                            width={100}
+                            height={100}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                            {team.name?.[0] || 'T'}
+                          </div>
+                        )}
+                      </div>
+                      <h4 className="text-white font-medium text-xs truncate text-center">
+                        {team.name || 'Team'}
+                      </h4>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2">
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white mx-auto mb-2">
+                      M
+                    </div>
+                    <h4 className="text-white font-medium text-xs truncate text-center">
+                      Mission Control
+                    </h4>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
         {/* Global Community Map - Enhanced */}
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8 mb-8">
@@ -1406,6 +1459,26 @@ export default function SignedInDashboard({
 
       {/* Newsletter Modal */}
       {newsletterModalOpen && <NewsletterSubModal setEnabled={setNewsletterModalOpen} />}
+
+      {/* Send Modal */}
+      {sendModalEnabled && (
+        <SendModal
+          account={account}
+          selectedChain={selectedChain}
+          setEnabled={setSendModalEnabled}
+          networkIcon={
+            <Image
+              src={`/icons/networks/${chainSlug}.svg`}
+              width={20}
+              height={20}
+              alt="Network Icon"
+              className="object-contain"
+            />
+          }
+          nativeBalance={nativeBalance}
+          tokens={walletTokens}
+        />
+      )}
 
       {/* Citizen Metadata Modal */}
       {citizenMetadataModalEnabled && citizen && (

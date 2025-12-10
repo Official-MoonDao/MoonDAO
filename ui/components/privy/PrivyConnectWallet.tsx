@@ -45,7 +45,7 @@ import { LinkAccounts } from './LinkAccounts'
 import WalletAction from './WalletAction'
 
 // Custom hook to fetch wallet tokens from our API
-function useWalletTokens(address: string | undefined, chain: string) {
+export function useWalletTokens(address: string | undefined, chain: string) {
   const apiKey = address
     ? `/api/etherscan/wallet-tokens?address=${address}&chain=${chain}&offset=50`
     : null
@@ -113,7 +113,7 @@ type PrivyConnectWalletProps = {
   type?: 'mobile' | 'desktop'
 }
 
-const selectedNativeToken: any = {
+export const selectedNativeToken: any = {
   arbitrum: 'ETH',
   ethereum: 'ETH',
   base: 'ETH',
@@ -122,7 +122,7 @@ const selectedNativeToken: any = {
   polygon: 'MATIC',
 }
 
-function SendModal({
+export function SendModal({
   account,
   selectedChain,
   networkIcon,

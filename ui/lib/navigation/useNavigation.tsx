@@ -46,6 +46,8 @@ export default function useNavigation(citizen: any) {
           },
           { name: 'Lock $MOONEY', href: '/lock' },
           { name: 'Bridge $MOONEY', href: '/bridge' },
+          { name: 'Token Overview', href: '/mooney' },
+          { name: 'Governance Overview', href: '/governance' },
         ],
       },
       {
@@ -69,6 +71,7 @@ export default function useNavigation(citizen: any) {
             name: 'Submit Contribution',
             href: '/contributions',
           },
+          { name: 'Projects Overview', href: '/projects-overview' },
         ],
       },
       {
@@ -77,14 +80,12 @@ export default function useNavigation(citizen: any) {
         href: '/info',
         children: [
           { name: 'News', href: '/news' },
+          { name: 'Town Hall', href: '/townhall' },
           { name: 'About', href: '/about' },
           { name: 'Events', href: '/events' },
           { name: 'Analytics', href: '/analytics' },
           { name: 'Resources', href: '/resources' },
           { name: 'Constitution', href: '/constitution' },
-          { name: 'Token Overview', href: '/mooney' },
-          { name: 'Governance Overview', href: '/governance' },
-          { name: 'Projects Overview', href: '/projects-overview' },
         ],
       },
       {
