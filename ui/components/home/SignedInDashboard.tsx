@@ -1169,12 +1169,14 @@ export default function SignedInDashboard({
               {/* Projects Grid - Larger cards with fewer columns for better visibility */}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {currentProjects.slice(0, 6).map((project: any, index: number) => (
+                  <div key={index}>
                   <ProjectCard
                     project={project}
                     userHasVotingPower={!!walletVP}
                     isVotingPeriod={false}
                     distribute={false}
                   />
+                    <div>
                 ))}
 
                 {/* Show more projects indicator if there are more than 6 */}
