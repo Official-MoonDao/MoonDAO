@@ -30,6 +30,7 @@ body {
   font-family: 'Lato';
   overflow: auto;
   -webkit-overflow-scrolling: touch; /* Better iOS/Safari scrolling */
+  background-color: #000000;
 }
 
 @supports (-webkit-appearance: none) {
@@ -251,7 +252,7 @@ a {
 
 .background-dark {
   position: relative;
-  background: #000000;
+  background: #000000 !important;
 }
 
 @keyframes starTwinkle {
@@ -793,7 +794,7 @@ html {
 }
 
 body {
-  background-color: var(--darkest-cool-color);
+  background-color: #000000;
 }
 
 .toastui-editor-toolbar {
@@ -1012,6 +1013,22 @@ body {
   }
 }
 
+@keyframes sparkle-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  50% {
+    opacity: 0.75;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+.star-sparkle .star-crosshair {
+  animation: sparkle-pulse 7s ease-in-out infinite;
+}
+
 /* Shooting star animations */
 .shooting-star {
   pointer-events: none;
@@ -1023,20 +1040,23 @@ body {
   position: absolute;
   left: var(--start-x, 50%);
   top: var(--start-y, 50%);
-  width: 2.5px;
-  height: 2.5px;
+  width: 3.5px;
+  height: 3.5px;
   background: radial-gradient(
     circle,
-    rgba(255, 255, 255, 0.9) 0%,
-    rgba(200, 220, 255, 0.6) 40%,
-    transparent 70%
+    rgba(255, 255, 255, 1) 0%,
+    rgba(255, 255, 255, 0.95) 15%,
+    rgba(220, 235, 255, 0.85) 35%,
+    rgba(180, 210, 255, 0.6) 55%,
+    transparent 80%
   );
   border-radius: 50%;
-  box-shadow: 0 0 4px rgba(255, 255, 255, 0.7), 0 0 8px rgba(200, 220, 255, 0.5),
-    0 0 14px rgba(150, 200, 255, 0.3), 0 0 20px rgba(100, 180, 255, 0.15);
-  animation: shooting-star-move-head 1.8s linear forwards;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 0 12px rgba(220, 235, 255, 0.7),
+    0 0 20px rgba(180, 210, 255, 0.5), 0 0 30px rgba(150, 200, 255, 0.3),
+    0 0 45px rgba(100, 180, 255, 0.15);
+  animation: shooting-star-move-head 2.8s ease-out forwards;
   transform-origin: center;
-  filter: blur(0.3px);
+  filter: blur(0.4px);
   will-change: transform;
 }
 
@@ -1044,23 +1064,27 @@ body {
   position: absolute;
   left: var(--start-x, 50%);
   top: var(--start-y, 50%);
-  width: 150px;
-  height: 1.5px;
+  width: 220px;
+  height: 2px;
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.85) 0%,
-    rgba(220, 230, 255, 0.7) 5%,
-    rgba(180, 210, 255, 0.55) 15%,
-    rgba(150, 190, 255, 0.4) 30%,
-    rgba(120, 170, 255, 0.25) 50%,
-    rgba(100, 150, 255, 0.15) 70%,
-    rgba(80, 130, 255, 0.08) 85%,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.9) 2%,
+    rgba(240, 245, 255, 0.8) 8%,
+    rgba(220, 235, 255, 0.65) 18%,
+    rgba(200, 225, 255, 0.5) 30%,
+    rgba(180, 210, 255, 0.35) 45%,
+    rgba(150, 190, 255, 0.25) 60%,
+    rgba(120, 170, 255, 0.15) 75%,
+    rgba(100, 150, 255, 0.08) 88%,
+    rgba(80, 130, 255, 0.03) 95%,
     transparent 100%
   );
   transform-origin: left center;
-  animation: shooting-star-move-trail 1.8s linear forwards;
-  filter: blur(0.8px);
-  box-shadow: 0 0 8px rgba(200, 220, 255, 0.25);
+  animation: shooting-star-move-trail 2.8s ease-out forwards;
+  filter: blur(1px);
+  box-shadow: 0 0 12px rgba(220, 235, 255, 0.4), 0 0 20px rgba(180, 210, 255, 0.2),
+    0 0 30px rgba(150, 200, 255, 0.1);
   will-change: transform;
 }
 
@@ -1093,33 +1117,33 @@ body {
 
 @keyframes shooting-star-move-trail {
   0% {
-    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(0) scaleX(0.5);
-    opacity: 0.6;
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(0) scaleX(0.3);
+    opacity: 0.3;
   }
-  1% {
-    opacity: 0.75;
+  2% {
+    opacity: 0.9;
     transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(0) scaleX(1);
   }
-  50% {
-    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(300vw) scaleX(1);
+  40% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(250vw) scaleX(1);
+    opacity: 0.85;
+  }
+  85% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(350vw) scaleX(1);
     opacity: 0.7;
   }
-  95% {
-    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(400vw) scaleX(1);
-    opacity: 0.65;
-  }
   100% {
-    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(400vw) scaleX(0.5);
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(380vw) scaleX(0.4);
     opacity: 0;
   }
 }
 
 @media (max-width: 768px) {
   .shooting-star-head {
-    animation: shooting-star-move-head 1.2s linear forwards;
+    animation: shooting-star-move-head 2.2s ease-out forwards;
   }
 
   .shooting-star-trail {
-    animation: shooting-star-move-trail 1.2s linear forwards;
+    animation: shooting-star-move-trail 2.2s ease-out forwards;
   }
 }
