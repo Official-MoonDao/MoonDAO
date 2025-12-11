@@ -58,7 +58,7 @@ describe('Layout Styles', () => {
   describe('modalStyles', () => {
     it('Should have base styles', () => {
       expect(modalStyles.base).to.be.a('string')
-      expect(modalStyles.base).to.include('bg-gradient-to-br')
+      expect(modalStyles.base).to.include('bg-dark-cool')
     })
 
     it('Should have overlay styles', () => {
@@ -232,4 +232,3 @@ describe('Layout Styles', () => {
     })
   })
 })
-
