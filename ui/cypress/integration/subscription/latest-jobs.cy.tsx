@@ -4,6 +4,7 @@ import JobTableABI from 'const/abis/JobBoardTable.json'
 import TeamABI from 'const/abis/Team.json'
 import { JOBS_TABLE_ADDRESSES, TABLELAND_ENDPOINT, TEAM_ADDRESSES } from 'const/config'
 import { getContract } from 'thirdweb'
+import * as thirdweb from 'thirdweb'
 import { serverClient } from '@/lib/thirdweb/client'
 import { Job } from '@/components/jobs/Job'
 import LatestJobs from '@/components/subscription/LatestJobs'
@@ -11,6 +12,8 @@ import LatestJobs from '@/components/subscription/LatestJobs'
 describe('<LatestJobs />', () => {
   let props: any
   let job: Job
+  const mockTableName = 'jobs_table_12345'
+  const futureTimestamp = Math.floor(Date.now() / 1000) + 86400 // 24 hours in the future
 
   before(() => {
     cy.fixture('jobs/job.json').then((j) => {
@@ -19,6 +22,17 @@ describe('<LatestJobs />', () => {
   })
 
   beforeEach(() => {
+    // Mock readContract for getTableName and expiresAt
+    cy.stub(thirdweb, 'readContract').callsFake(async (options: any) => {
+      if (options.method === 'getTableName') {
+        return mockTableName
+      }
+      if (options.method === 'expiresAt') {
+        return BigInt(futureTimestamp)
+      }
+      return null
+    })
+
     props = {
       teamContract: getContract({
         client: serverClient,

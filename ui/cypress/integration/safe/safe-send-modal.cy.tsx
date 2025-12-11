@@ -2,6 +2,7 @@ import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import { Toaster } from 'react-hot-toast'
 import * as SafeHooks from '@/lib/nance/SafeHooks'
 import { SafeData } from '@/lib/safe/useSafe'
+import * as NetworkMismatchHook from '@/lib/thirdweb/hooks/useNetworkMismatch'
 import * as PrivyComponents from '@/components/privy/PrivyWeb3Button'
 import SafeSendModal from '@/components/safe/SafeSendModal'
 
@@ -27,6 +28,9 @@ describe('<SafeSendModal />', () => {
   ]
 
   beforeEach(() => {
+    // Mock the useNetworkMismatch hook to return false
+    cy.stub(NetworkMismatchHook, 'default').returns(false)
+
     // Mock the useSafeBalances hook
     cy.stub(SafeHooks, 'useSafeBalances').returns({
       data: mockBalances,
