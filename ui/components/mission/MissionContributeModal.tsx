@@ -50,11 +50,11 @@ import ConditionCheckbox from '../layout/ConditionCheckbox'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import ProgressBar from '../layout/ProgressBar'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import { MissionContributeAutoTriggeringView } from './MissionContributeAutoTriggeringView'
+import { MissionContributeModalHeader } from './MissionContributeModalHeader'
+import { MissionContributeStatusNotices } from './MissionContributeStatusNotices'
 import MissionTokenNotice from './MissionTokenNotice'
 import { PaymentBreakdown } from './PaymentBreakdown'
-import { MissionContributeModalHeader } from './MissionContributeModalHeader'
-import { MissionContributeAutoTriggeringView } from './MissionContributeAutoTriggeringView'
-import { MissionContributeStatusNotices } from './MissionContributeStatusNotices'
 
 type MissionContributeModalProps = {
   mission: any
@@ -1322,16 +1322,16 @@ export default function MissionContributeModal({
     <Modal
       id="mission-contribute-modal"
       setEnabled={handleModalClose}
-      size="md"
+      size="xl"
       showCloseButton={false}
     >
-      <div className="p-6">
+      <div className="p-8 bg-gradient-to-br from-gray-900/95 via-blue-900/20 to-purple-900/15 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl">
         <MissionContributeModalHeader
           missionName={mission?.metadata?.name}
           onClose={handleModalClose}
         />
 
-        <div className="p-4 space-y-4">
+        <div className="space-y-5">
           {isAutoTriggering ? (
             <MissionContributeAutoTriggeringView
               account={account}
@@ -1361,39 +1361,41 @@ export default function MissionContributeModal({
               />
 
               {/* Total Amount Section */}
-              <div className="space-y-2">
-                <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+              <div className="space-y-3">
+                <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                   Total Amount
                 </label>
-                <div className="bg-black/20 border border-white/10 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Image
-                        src="/coins/ETH.svg"
-                        alt="ETH"
-                        width={20}
-                        height={20}
-                        className="w-6 h-6 bg-light-cool rounded-full"
-                      />
+                <div className="bg-gradient-to-r from-slate-800/40 to-slate-700/30 backdrop-blur-sm border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all duration-300">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-white/10">
+                        <Image
+                          src="/coins/ETH.svg"
+                          alt="ETH"
+                          width={24}
+                          height={24}
+                          className="w-6 h-6"
+                        />
+                      </div>
                       <div>
-                        <p className="font-medium text-white flex items-center gap-1">
+                        <p className="font-semibold text-white text-lg">
                           {calculateEthAmount()} ETH
                         </p>
                         <p className="text-gray-400 text-xs">Ethereum</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="text-white">$</span>
+                      <span className="text-gray-400 text-lg">$</span>
                       <input
                         id="payment-input"
                         type="text"
-                        className="bg-black/20 border border-white/10 rounded-lg p-2 text-white text-right w-24 placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="bg-black/40 border border-white/10 rounded-xl p-3 text-white text-right w-28 text-lg font-medium placeholder-gray-500 hover:bg-black/50 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={usdInput}
                         onChange={handleUsdInputChange}
                         placeholder="0"
                         maxLength={15}
                       />
-                      <span className="text-white">USD</span>
+                      <span className="text-gray-400 font-medium">USD</span>
                     </div>
                   </div>
                 </div>
@@ -1401,27 +1403,29 @@ export default function MissionContributeModal({
 
               {/* Token Receive Section */}
               {token?.tokenSymbol && (
-                <div className="space-y-2">
-                  <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+                <div className="space-y-3">
+                  <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                     You Receive
                   </label>
-                  <div className="bg-black/20 border border-white/10 rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <Image
-                          src={mission?.metadata.logoUri}
-                          width={40}
-                          height={40}
-                          className="rounded-full"
-                          alt={`${token?.tokenSymbol} logo`}
-                        />
+                  <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/20 backdrop-blur-sm border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/30 transition-all duration-300">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/30 shadow-lg shadow-purple-500/10">
+                          <Image
+                            src={mission?.metadata.logoUri}
+                            width={48}
+                            height={48}
+                            className="w-full h-full object-cover"
+                            alt={`${token?.tokenSymbol} logo`}
+                          />
+                        </div>
                         <div>
-                          <p className="font-medium text-white">{token?.tokenSymbol}</p>
+                          <p className="font-semibold text-white text-lg">{token?.tokenSymbol}</p>
                           <p className="text-gray-400 text-xs">{token?.tokenName}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-white">
+                        <p className="font-bold text-white text-xl bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
                           {formatContributionOutput(output)}
                         </p>
                         <p className="text-gray-400 text-xs">{token?.tokenSymbol}</p>
@@ -1432,21 +1436,21 @@ export default function MissionContributeModal({
               )}
 
               {/* Recipient Address */}
-              <div className="space-y-2">
-                <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+              <div className="space-y-3">
+                <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                   Recipient Address
                 </label>
-                <div className="flex items-center justify-between w-full gap-2">
-                  <div className="bg-black/20 border border-white/10 rounded-lg p-3 w-full">
+                <div className="flex items-center justify-between w-full gap-3">
+                  <div className="bg-gradient-to-r from-slate-800/40 to-slate-700/30 backdrop-blur-sm border border-white/10 rounded-xl p-4 flex-1 hover:border-white/20 transition-all duration-300">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <p className="text-white font-mono text-sm">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-500/30"></div>
+                        <p className="text-white font-mono text-sm tracking-wide">
                           {address?.slice(0, 6)}...{address?.slice(-4)}
                         </p>
                       </div>
                       <button
-                        className="p-1 hover:bg-white/10 rounded transition-colors duration-200 group"
+                        className="p-2 hover:bg-white/10 rounded-lg transition-all duration-200 group"
                         onClick={() => {
                           navigator.clipboard.writeText(address || '')
                           toast.success('Address copied to clipboard.', {
@@ -1458,7 +1462,7 @@ export default function MissionContributeModal({
                       </button>
                     </div>
                   </div>
-                  <div className="">
+                  <div>
                     <NetworkSelector
                       chains={chains}
                       compact={true}
@@ -1472,17 +1476,15 @@ export default function MissionContributeModal({
               {/* Conditional Content Based on Balance */}
               {layerZeroLimitExceeded ? (
                 // LayerZero limit exceeded
-                <div className="space-y-6 pt-4">
-                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-6">
+                <div className="space-y-6 pt-2">
+                  <div className="bg-gradient-to-r from-blue-500/15 to-purple-500/10 backdrop-blur-sm border border-blue-500/30 rounded-xl p-6">
                     <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
-                        <span className="text-blue-400 text-xl">💡</span>
+                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500/30 to-purple-500/20 rounded-xl flex items-center justify-center border border-blue-500/20">
+                        <span className="text-2xl">💡</span>
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-blue-300 font-semibold text-base mb-2">
-                          How to Proceed
-                        </h4>
-                        <div className="space-y-3 text-sm text-blue-200/80">
+                        <h4 className="text-white font-semibold text-lg mb-3">How to Proceed</h4>
+                        <div className="space-y-3 text-sm text-gray-300">
                           <p>
                             <strong className="text-blue-300">Option 1:</strong> Reduce your
                             contribution to under $
@@ -1506,14 +1508,14 @@ export default function MissionContributeModal({
                 // User has enough balance
                 <>
                   {/* Message Input */}
-                  <div className="space-y-2">
-                    <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+                  <div className="space-y-3">
+                    <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                       Message (Optional)
                     </label>
                     <input
                       id="payment-message-input"
                       type="text"
-                      className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                      className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 hover:bg-black/40 hover:border-white/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30"
                       placeholder="Attach an on-chain message to this payment"
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
@@ -1547,11 +1549,11 @@ export default function MissionContributeModal({
 
                   {/* LayerZero Limit Warning */}
                   {layerZeroLimitExceeded && (
-                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-                      <p className="text-red-300 text-sm font-medium">
-                        ⚠️ Contribution Limit Exceeded
+                    <div className="bg-red-500/10 backdrop-blur-sm border border-red-500/30 rounded-xl p-5">
+                      <p className="text-red-300 text-sm font-semibold mb-2">
+                        Contribution Limit Exceeded
                       </p>
-                      <p className="text-red-200/80 text-xs mt-2">
+                      <p className="text-red-200/80 text-sm leading-relaxed">
                         Cross-chain contributions from{' '}
                         {chainSlug === 'ethereum'
                           ? 'Ethereum'
@@ -1563,7 +1565,7 @@ export default function MissionContributeModal({
                         transaction due to LayerZero protocol limits (0.24 ETH total including
                         fees).
                       </p>
-                      <p className="text-red-200/80 text-xs mt-2">
+                      <p className="text-red-200/80 text-sm mt-3 leading-relaxed">
                         Please reduce your contribution amount or split it into multiple
                         transactions. Alternatively, you can contribute directly on Arbitrum without
                         limits.
@@ -1572,16 +1574,16 @@ export default function MissionContributeModal({
                   )}
 
                   {/* Terms Checkbox */}
-                  <div className="bg-black/10 rounded-lg p-4 border border-white/5 flex flex-col gap-2">
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
                     <MissionTokenNotice />
                     <ConditionCheckbox
                       id="contribution-terms-checkbox"
                       label={
-                        <p className="text-sm text-gray-300">
+                        <p className="text-sm text-gray-300 leading-relaxed">
                           {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
                           <Link
                             href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
-                            className="text-blue-400 hover:text-blue-300"
+                            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
                             target="_blank"
                             rel="noopener noreferrer"
                           >
@@ -1596,10 +1598,10 @@ export default function MissionContributeModal({
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex flex-col md:flex-row gap-3 pt-4">
+                  <div className="flex flex-col md:flex-row gap-4 pt-6">
                     <button
                       type="button"
-                      className="flex-1 bg-black/20 border border-white/10 hover:bg-black/30 hover:border-white/20 text-white py-4 px-6 rounded-lg font-medium transition-all duration-200"
+                      className="flex-1 bg-gradient-to-r from-slate-800/60 to-slate-700/50 backdrop-blur-sm border border-white/10 hover:border-white/20 hover:from-slate-700/60 hover:to-slate-600/50 text-white py-4 px-6 rounded-xl font-medium transition-all duration-300"
                       onClick={handleModalClose}
                     >
                       Cancel
@@ -1613,7 +1615,7 @@ export default function MissionContributeModal({
                           : `Contribute $${formattedUsdInput || '0'} USD`
                       }
                       id="contribute-button"
-                      className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white py-4 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-gray-700 disabled:to-gray-600 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] disabled:hover:scale-100 shadow-xl shadow-purple-500/20 hover:shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                       action={buyMissionToken}
                       isDisabled={
                         !agreedToCondition ||
@@ -1629,18 +1631,18 @@ export default function MissionContributeModal({
                 </>
               ) : (
                 // User needs more ETH - show CBOnramp
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {/* Terms Checkbox - Required before onramp */}
-                  <div className="bg-black/10 rounded-lg p-4 border border-white/5 flex flex-col gap-2">
+                  <div className="bg-gradient-to-r from-slate-800/30 to-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-white/10 flex flex-col gap-3">
                     <MissionTokenNotice />
                     <ConditionCheckbox
                       id="pre-contribution-terms-checkbox"
                       label={
-                        <p className="text-sm text-gray-300">
+                        <p className="text-sm text-gray-300 leading-relaxed">
                           {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
                           <Link
                             href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
-                            className="text-blue-400 hover:text-blue-300"
+                            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
                             target="_blank"
                             rel="noopener noreferrer"
                           >
@@ -1655,14 +1657,14 @@ export default function MissionContributeModal({
                   </div>
 
                   {/* Message Input */}
-                  <div className="space-y-2">
-                    <label className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+                  <div className="space-y-3">
+                    <label className="text-gray-300 font-medium text-sm uppercase tracking-wider">
                       Message (Optional)
                     </label>
                     <input
                       id="payment-message-input-onramp"
                       type="text"
-                      className="w-full bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                      className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 hover:bg-black/40 hover:border-white/20 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30"
                       placeholder="Attach an on-chain message to this payment"
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
@@ -1727,9 +1729,9 @@ export default function MissionContributeModal({
 
                   {/* Show warning if checkbox not agreed */}
                   {usdInput && ethDeficit > 0 && !agreedToCondition && (
-                    <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+                    <div className="bg-orange-500/10 backdrop-blur-sm border border-orange-500/30 rounded-xl p-4">
                       <p className="text-orange-300 text-sm">
-                        ⚠️ Please agree to the terms above to continue with your purchase.
+                        Please agree to the terms above to continue with your purchase.
                       </p>
                     </div>
                   )}
@@ -1737,14 +1739,14 @@ export default function MissionContributeModal({
                   {usdInput && (
                     <>
                       {parseFloat(usdInput.replace(/,/g, '')) > 5000 && (
-                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
-                          <p className="text-orange-300 text-sm">
+                        <div className="bg-orange-500/10 backdrop-blur-sm border border-orange-500/20 rounded-xl p-4">
+                          <p className="text-orange-300 text-sm leading-relaxed">
                             <span className="font-semibold">Large Amount:</span> Coinbase has
                             purchase limits around $5,000-$7,500. For larger contributions, please
                             contact{' '}
                             <a
                               href="mailto:info@moondao.com"
-                              className="text-orange-200 underline hover:text-orange-100"
+                              className="text-orange-200 underline underline-offset-2 hover:text-orange-100"
                             >
                               info@moondao.com
                             </a>{' '}
@@ -1757,7 +1759,7 @@ export default function MissionContributeModal({
 
                   <button
                     type="button"
-                    className="w-full bg-black/20 border border-white/10 hover:bg-black/30 hover:border-white/20 text-white py-4 px-6 rounded-lg font-medium transition-all duration-200"
+                    className="w-full bg-gradient-to-r from-slate-800/60 to-slate-700/50 backdrop-blur-sm border border-white/10 hover:border-white/20 hover:from-slate-700/60 hover:to-slate-600/50 text-white py-4 px-6 rounded-xl font-medium transition-all duration-300"
                     onClick={handleModalClose}
                   >
                     Close
