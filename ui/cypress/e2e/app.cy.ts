@@ -33,7 +33,7 @@ describe('Main E2E Testing', () => {
 
   describe('MoonDAO App | Analytics', () => {
     it('should load the analytics page', () => {
-      cy.visit('/analytics', { timeout: 60000 })
+      cy.visit('/treasury', { timeout: 60000 })
     })
   })
 

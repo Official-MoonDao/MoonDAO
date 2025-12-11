@@ -92,9 +92,9 @@ const infoCards = [
   },
   {
     icon: '/assets/icon-analytics.svg',
-    iconAlt: 'MoonDAO Analytics',
-    header: 'Analytics',
-    link: '/analytics',
+    iconAlt: 'MoonDAO Treasury',
+    header: 'Treasury',
+    link: '/treasury',
     hovertext: 'Learn More',
     paragraph:
       'Transparent data and analytics related to our treasury, token, transactions, and more.',

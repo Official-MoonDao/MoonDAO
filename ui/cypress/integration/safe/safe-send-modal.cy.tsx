@@ -92,7 +92,7 @@ describe('<SafeSendModal />', () => {
         <Toaster />
       </TestnetProviders>
     )
-    cy.get('[data-testid="safe-modal-title"]').should('contain', 'Send Funds')
+    cy.get('[data-testid="modal-title"]').should('contain', 'Send Funds')
     cy.get('[data-testid="safe-address"]').should('contain', '0x1234...7890')
   })
 
@@ -108,7 +108,7 @@ describe('<SafeSendModal />', () => {
         <Toaster />
       </TestnetProviders>
     )
-    cy.get('[data-testid="safe-modal-close"]').click()
+    cy.get('[data-testid="modal-close"]').click()
     cy.wrap(setEnabled).should('have.been.calledWith', false)
   })
 
@@ -120,6 +120,9 @@ describe('<SafeSendModal />', () => {
       </TestnetProviders>
     )
 
+    // Wait for the form to be visible
+    cy.get('[data-testid="safe-send-form"]').should('be.visible')
+
     // Test invalid address
     cy.get('[data-testid="recipient-address"]').type('invalid-address')
     cy.get('[data-testid="send-button"]').should('be.disabled')
@@ -127,7 +130,7 @@ describe('<SafeSendModal />', () => {
     // Test valid address
     cy.get('[data-testid="recipient-address"]').clear()
     cy.get('[data-testid="recipient-address"]').type('0x1234567890123456789012345678901234567890')
-    cy.get('[data-testid="amount-input"]').type('1')
+    cy.get('[data-testid="amount-input"]').should('be.visible').type('1')
     cy.get('[data-testid="send-button"]').should('be.enabled')
   })
 
@@ -139,9 +142,12 @@ describe('<SafeSendModal />', () => {
       </TestnetProviders>
     )
 
+    // Wait for the form to be visible
+    cy.get('[data-testid="safe-send-form"]').should('be.visible')
+
     // Test invalid amount (0)
     cy.get('[data-testid="recipient-address"]').type('0x1234567890123456789012345678901234567890')
-    cy.get('[data-testid="amount-input"]').type('0')
+    cy.get('[data-testid="amount-input"]').should('be.visible').type('0')
     cy.get('[data-testid="send-button"]').should('be.disabled')
 
     // Test valid amount

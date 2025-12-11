@@ -1,7 +1,5 @@
 import useTranslation from 'next-translate/useTranslation'
 import React from 'react'
-import { getVMOONEYData } from '@/lib/tokens/ve-subgraph'
-import AnalyticsPage from '../components/dashboard/analytics/AnalyticsPage'
 import TreasuryPage from '../components/dashboard/treasury/TreasuryPage'
 import Head from '../components/layout/Head'
 import Container from '@/components/layout/Container'
@@ -9,13 +7,13 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
-export default function Analytics({ vMooneyData, dateUpdated }: any) {
+export default function Treasury({ dateUpdated }: any) {
   const { t } = useTranslation('common')
 
   const descriptionSection = (
     <div className="flex flex-col gap-2">
       {
-        'Key stats and insights around our governance token $MOONEY, including voting power distribution and locking stats. Dive into detailed and transparent analytics on treasury holdings, transaction history, and more to stay informed.'
+        "Detailed and transparent analytics on treasury holdings, transaction history, and more to stay informed about MoonDAO's financial health."
       }
       {dateUpdated ? (
         <span className="font-bold">{dateUpdated}</span>
@@ -28,12 +26,15 @@ export default function Analytics({ vMooneyData, dateUpdated }: any) {
   )
 
   return (
-    <section id="jobs-container" className="overflow-hidden">
-      <Head title={t('analyticsTitle')} description={t('analyticsDesc')} />
+    <section id="treasury-container" className="overflow-hidden">
+      <Head
+        title="Treasury"
+        description="Detailed and transparent analytics on MoonDAO's treasury holdings, transaction history, and more."
+      />
 
       <Container>
         <ContentLayout
-          header="Analytics"
+          header="Treasury"
           headerSize="max(20px, 3vw)"
           description={descriptionSection}
           preFooter={
@@ -53,9 +54,8 @@ export default function Analytics({ vMooneyData, dateUpdated }: any) {
           isProfile
           contentwide
         >
-          <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8 lg:p-10 shadow-2xl w-full">
-            <div className="flex flex-col gap-6 md:gap-8 w-full">
-              <AnalyticsPage vMooneyData={vMooneyData} />
+          <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
+            <div className="grid gap-6 xl:grid-cols-1 lg:w-full lg:max-w-[1380px] items-center justify-center">
               <TreasuryPage />
             </div>
           </div>
@@ -67,8 +67,6 @@ export default function Analytics({ vMooneyData, dateUpdated }: any) {
 
 export async function getStaticProps() {
   try {
-    const vMooneyData = await getVMOONEYData()
-
     const today = new Date()
     const formattedDate = `${today.getFullYear()}-${(today.getMonth() + 1)
       .toString()
@@ -76,7 +74,6 @@ export async function getStaticProps() {
 
     return {
       props: {
-        vMooneyData,
         dateUpdated: formattedDate,
       },
       revalidate: 60,
@@ -84,7 +81,7 @@ export async function getStaticProps() {
   } catch (error) {
     console.error(error)
     return {
-      props: { vMooneyData: [], dateUpdated: '' },
+      props: { dateUpdated: '' },
     }
   }
 }
