@@ -48,11 +48,7 @@ type ProjectProfileProps = {
   safeOwners: string[]
 }
 
-export default function ProjectProfile({
-  tokenId,
-  project,
-  safeOwners,
-}: ProjectProfileProps) {
+export default function ProjectProfile({ tokenId, project, safeOwners }: ProjectProfileProps) {
   const account = useActiveAccount()
   const address = account?.address
 
@@ -128,10 +124,7 @@ export default function ProjectProfile({
         marginBottom="0px"
       >
         <div id="frame-content-container" className="w-full">
-          <div
-            id="frame-content"
-            className="w-full flex flex-col items-start justify-between"
-          >
+          <div id="frame-content" className="w-full flex flex-col items-start justify-between">
             <div
               id="profile-description-section"
               className="flex flex-col lg:flex-row items-start lg:items-center gap-4"
@@ -139,10 +132,7 @@ export default function ProjectProfile({
               <div id="team-name-container">
                 <div id="profile-container">
                   {project?.description ? (
-                    <p
-                      id="profile-description-container"
-                      className="mb-5 w-full lg:w-[80%]"
-                    >
+                    <p id="profile-description-container" className="mb-5 w-full lg:w-[80%]">
                       {project.description || ''}
                     </p>
                   ) : (
@@ -194,12 +184,7 @@ export default function ProjectProfile({
                 href={`/proposal/${MDP}`}
                 passHref
               >
-                <Image
-                  src="/assets/report.png"
-                  alt="Report Icon"
-                  width={16}
-                  height={16}
-                />
+                <Image src="/assets/report.png" alt="Report Icon" width={16} height={16} />
                 <span>Review Original Proposal</span>
               </Link>
             }
@@ -209,10 +194,7 @@ export default function ProjectProfile({
             </div>
           </SectionCard>
           {finalReportMarkdown && (
-            <SectionCard
-              header="Final Report"
-              iconSrc="/assets/icon-star.svg"
-            >
+            <SectionCard header="Final Report" iconSrc="/assets/icon-star.svg">
               <div className="prose prose-invert max-w-none">
                 <MarkdownWithTOC body={finalReportMarkdown} />
               </div>

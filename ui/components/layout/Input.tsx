@@ -21,6 +21,7 @@ export interface InputProps {
   extra?: ReactNode
   tooltip?: string
   onBlur?: () => void
+  onFocus?: () => void
   rows?: number
   maxWidth?: string
   min?: Date | string | number
@@ -45,6 +46,7 @@ export default function Input({
   extra,
   tooltip,
   onBlur,
+  onFocus,
   rows,
   maxWidth = 'max-w-[400px]',
   min,
@@ -168,6 +170,7 @@ export default function Input({
       disabled={disabled}
       maxLength={maxLength}
       onBlur={onBlur}
+      onFocus={onFocus}
       rows={rows || 4}
     />
   ) : (
@@ -187,6 +190,7 @@ export default function Input({
       disabled={disabled}
       maxLength={maxLength}
       onBlur={onBlur}
+      onFocus={onFocus}
       {...getMinMaxProps()}
     />
   )

@@ -26,6 +26,7 @@ import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
 import Input from '@/components/layout/Input'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import SpaceBackground from '@/components/layout/SpaceBackground'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import RetroactiveRewards from '@/components/tokens/RetroactiveRewards'
 import ERC20ABI from '../const/abis/ERC20.json'
@@ -86,6 +87,7 @@ export default function Lock() {
   }, [VMOONEYLock, VMOONEYLockLoading, address])
 
   const [lockAmount, setLockAmount] = useState<string>('')
+  const [isAmountInputFocused, setIsAmountInputFocused] = useState(false)
   //reset lock amount on chain switch
   useEffect(() => {
     setLockAmount('')
@@ -194,9 +196,10 @@ export default function Lock() {
       <Head title="Lock $MOONEY" />
 
       <Container is_fullwidth={true}>
-        <div className="min-h-screen bg-dark-cool text-white w-full">
+        <SpaceBackground />
+        <div className="min-h-screen text-white w-full relative z-10">
           {/* Lock MOONEY Section */}
-          <section className="py-12 px-6 bg-gradient-to-br from-gray-900/50 to-blue-900/20 w-full min-h-screen">
+          <section className="py-12 px-6 w-full min-h-screen">
             <div className="max-w-4xl mx-auto w-full">
               <div className="text-center mb-8">
                 <h1 className="text-3xl md:text-4xl font-bold font-GoodTimes text-white mb-4">
@@ -289,7 +292,16 @@ export default function Lock() {
                                   type="text"
                                   placeholder="0.00"
                                   className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 border-0 p-0"
-                                  value={lockAmount || ''}
+                                  value={
+                                    isAmountInputFocused
+                                      ? lockAmount || ''
+                                      : lockAmount && !isNaN(parseFloat(lockAmount))
+                                      ? parseFloat(lockAmount).toLocaleString('en-US', {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        })
+                                      : ''
+                                  }
                                   disabled={
                                     (!MOONEYBalance || +MOONEYBalance.toString() === 0) && !hasLock
                                   }
@@ -300,6 +312,21 @@ export default function Lock() {
                                         )
                                       : undefined
                                   }
+                                  onFocus={() => {
+                                    setIsAmountInputFocused(true)
+                                    // Remove formatting when focusing for easier editing
+                                    if (lockAmount && !isNaN(parseFloat(lockAmount))) {
+                                      setLockAmount(parseFloat(lockAmount).toString())
+                                    }
+                                  }}
+                                  onBlur={() => {
+                                    setIsAmountInputFocused(false)
+                                    // Format the value on blur if it's a valid number
+                                    if (lockAmount && !isNaN(parseFloat(lockAmount))) {
+                                      const numValue = parseFloat(lockAmount)
+                                      setLockAmount(numValue.toString())
+                                    }
+                                  }}
                                   onChange={(e: any) => {
                                     let value = e.target.value
                                     // Remove commas and non-numeric characters except decimal point

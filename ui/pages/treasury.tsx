@@ -13,7 +13,7 @@ export default function Treasury({ dateUpdated }: any) {
   const descriptionSection = (
     <div className="flex flex-col gap-2">
       {
-        'Detailed and transparent analytics on treasury holdings, transaction history, and more to stay informed about MoonDAO\'s financial health.'
+        "Detailed and transparent analytics on treasury holdings, transaction history, and more to stay informed about MoonDAO's financial health."
       }
       {dateUpdated ? (
         <span className="font-bold">{dateUpdated}</span>
@@ -27,7 +27,10 @@ export default function Treasury({ dateUpdated }: any) {
 
   return (
     <section id="treasury-container" className="overflow-hidden">
-      <Head title="Treasury" description="Detailed and transparent analytics on MoonDAO's treasury holdings, transaction history, and more." />
+      <Head
+        title="Treasury"
+        description="Detailed and transparent analytics on MoonDAO's treasury holdings, transaction history, and more."
+      />
 
       <Container>
         <ContentLayout
@@ -35,7 +38,7 @@ export default function Treasury({ dateUpdated }: any) {
           headerSize="max(20px, 3vw)"
           description={descriptionSection}
           preFooter={
-            <NoticeFooter 
+            <NoticeFooter
               defaultImage="../assets/MoonDAO-Logo-White.svg"
               defaultTitle="Need Help?"
               defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
@@ -45,10 +48,11 @@ export default function Treasury({ dateUpdated }: any) {
               imageHeight={200}
             />
           }
-          mainPadding
+          mainPadding={false}
           mode="compact"
           popOverEffect={false}
           isProfile
+          contentwide
         >
           <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
             <div className="grid gap-6 xl:grid-cols-1 lg:w-full lg:max-w-[1380px] items-center justify-center">
