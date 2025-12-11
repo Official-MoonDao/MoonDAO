@@ -83,7 +83,6 @@ export default function useNavigation(citizen: any) {
           { name: 'Town Hall', href: '/townhall' },
           { name: 'About', href: '/about' },
           { name: 'Events', href: '/events' },
-          { name: 'Analytics', href: '/analytics' },
           { name: 'Resources', href: '/resources' },
           { name: 'Constitution', href: '/constitution' },
         ],

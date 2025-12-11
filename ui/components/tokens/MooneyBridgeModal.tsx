@@ -3,7 +3,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { MOONEY_ADDRESSES } from '../../const/config'
 
 type SubmitInfoModalProps = {
-  setEnabled: Function
+  setEnabled: (enabled: boolean) => void
 }
 
 export function MooneyBridgeModal({ setEnabled }: SubmitInfoModalProps) {

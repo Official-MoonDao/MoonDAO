@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
@@ -34,7 +33,7 @@ type JobData = {
 
 type TeamJobModalProps = {
   teamId: string
-  setEnabled: Function
+  setEnabled: (enabled: boolean) => void
   refreshJobs: Function
   jobTableContract: any
   edit?: boolean
@@ -87,11 +86,7 @@ export default function TeamJobModal({
   })
 
   useEffect(() => {
-    if (
-      job?.endTime !== undefined &&
-      job.endTime !== 0 &&
-      job.endTime < currTime
-    ) {
+    if (job?.endTime !== undefined && job.endTime !== 0 && job.endTime < currTime) {
       setIsExpired(true)
     } else {
       setIsExpired(false)
@@ -99,9 +94,14 @@ export default function TeamJobModal({
   }, [currTime, job?.endTime])
 
   return (
-    <Modal id="team-job-modal-backdrop" setEnabled={setEnabled}>
+    <Modal
+      id="team-job-modal-backdrop"
+      setEnabled={setEnabled}
+      title={edit ? 'Edit Job' : 'Create Job'}
+      size="lg"
+    >
       <form
-        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5 bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto"
+        className="w-full flex flex-col gap-2 items-start justify-start"
         onSubmit={async (e) => {
           e.preventDefault()
           if (
@@ -200,18 +200,6 @@ export default function TeamJobModal({
           }
         }}
       >
-        <div className="w-full flex items-center justify-between">
-          <h2 className="font-GoodTimes">
-            {edit ? 'Edit a Job' : 'Add a Job'}
-          </h2>
-          <button
-            type="button"
-            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-            onClick={() => setEnabled(false)}
-          >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-          </button>
-        </div>
         <div className="w-full flex flex-col gap-2 p-2 mt-2 rounded-t-[20px] rounded-bl-[10px] items-start justify-start bg-darkest-cool">
           <input
             id="job-title-input"
@@ -234,9 +222,7 @@ export default function TeamJobModal({
             value={jobData.description}
             style={{ resize: 'none' }}
             maxLength={
-              bytesOfString(jobData.description) >= 1024
-                ? jobData.description.length
-                : 1024
+              bytesOfString(jobData.description) >= 1024 ? jobData.description.length : 1024
             }
           />
           <input
@@ -257,11 +243,7 @@ export default function TeamJobModal({
               className="p-2 rounded-sm text-black"
               type="date"
               min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
-              value={
-                endTime > 0
-                  ? new Date(endTime * 1000).toISOString().split('T')[0]
-                  : 0
-              }
+              value={endTime > 0 ? new Date(endTime * 1000).toISOString().split('T')[0] : 0}
               onChange={({ target }: any) => {
                 const date = new Date(target.value)
                 const timezoneOffset = date.getTimezoneOffset() * 60 * 1000
@@ -274,12 +256,8 @@ export default function TeamJobModal({
           {job?.endTime && (
             <p id="job-expiration-status" className="mt-4 opacity-60">
               {isExpired
-                ? `*This job post expired on ${new Date(
-                    job.endTime * 1000
-                  ).toLocaleDateString()}`
-                : `*This job post will end on ${new Date(
-                    job.endTime * 1000
-                  ).toLocaleDateString()}`}
+                ? `*This job post expired on ${new Date(job.endTime * 1000).toLocaleDateString()}`
+                : `*This job post will end on ${new Date(job.endTime * 1000).toLocaleDateString()}`}
             </p>
           )}
         </div>

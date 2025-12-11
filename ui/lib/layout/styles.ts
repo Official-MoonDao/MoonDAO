@@ -13,12 +13,6 @@ export const cardStyles = {
   launchpad: 'bg-gradient-to-br backdrop-blur-sm rounded-3xl border border-white/20',
 }
 
-export const modalStyles = {
-  base: 'w-screen md:w-[550px] mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white',
-  overlay:
-    'fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-start z-[9999] overflow-auto bg-gradient-to-t from-[#3F3FA690] via-[#00000080] to-transparent animate-fadeIn',
-}
-
 export const inputStyles = {
   standard: 'bg-[#0f152f] rounded-full',
   modern:
@@ -84,6 +78,10 @@ export const commonCombinations = {
   buttonBase: 'px-4 py-2 font-medium transition-all duration-200 shadow-lg hover:shadow-xl',
   buttonDisabled: 'opacity-50 cursor-not-allowed',
   buttonEnabled: 'cursor-pointer',
+}
+
+export const modalStyles = {
+  base: 'bg-dark-cool rounded-lg shadow-xl',
 }
 
 export const utilityFunctions = {
