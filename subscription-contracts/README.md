@@ -27,6 +27,7 @@ forge build
 ETHERSCAN_API_KEY=$ETH PRIVATE_KEY=$PRIVATE_KEY forge script script/Project.s.sol:MyScript --via-ir --rpc-url https://42161.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast --verify -vv
 // sepolia
 ETHERSCAN_API_KEY=$ETH PRIVATE_KEY=$PRIVATE_KEY forge script script/Proposals.s.sol:MyScript --via-ir --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast --verify -vv
+ETHERSCAN_API_KEY=$ETH PRIVATE_KEY=$PRIVATE_KEY forge script script/NonProjectProposal.s.sol:MyScript --via-ir --rpc-url https://11155111.rpc.thirdweb.com/$THIRDWEB_TOKEN --broadcast --verify -vv
 ```
 
 ### Running tests on test chain
