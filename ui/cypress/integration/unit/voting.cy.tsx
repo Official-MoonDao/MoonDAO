@@ -104,7 +104,14 @@ describe('voting', () => {
         4.021395578084907,
       ],
     ]
-    expect(votes).to.deep.equal(votesGold)
+    // Use approximate equality for floating point comparisons
+    expect(votes.length).to.equal(votesGold.length)
+    votes.forEach((voteRow, i) => {
+      expect(voteRow.length).to.equal(votesGold[i].length)
+      voteRow.forEach((vote, j) => {
+        expect(vote).to.be.closeTo(votesGold[i][j], 0.0001)
+      })
+    })
   })
   it('getApprovedProjects all approved', () => {
     const projects = [1, 2]

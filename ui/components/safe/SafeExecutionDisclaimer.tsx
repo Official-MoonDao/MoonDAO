@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/20/solid'
 import { ethers } from 'ethers'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
@@ -25,9 +24,7 @@ export default function SafeExecutionDisclaimer({
   const [agreedToDisclaimer, setAgreedToDisclaimer] = useState(false)
   const [expandedTx, setExpandedTx] = useState(false)
 
-  const transaction = safeData.pendingTransactions.find(
-    (tx) => tx.safeTxHash === safeTxHash
-  )
+  const transaction = safeData.pendingTransactions.find((tx) => tx.safeTxHash === safeTxHash)
 
   const isEthTransfer =
     transaction &&
@@ -77,33 +74,9 @@ export default function SafeExecutionDisclaimer({
   if (!transaction) return null
 
   return (
-    <Modal id="safe-modal" setEnabled={setEnabled}>
-      <div
-        data-testid="safe-modal-content"
-        className="bg-dark-cool rounded-[2vmax] p-8 max-w-2xl min-w-[350px] w-full relative md:min-w-[600px]"
-      >
-        <div
-          data-testid="safe-modal-header"
-          className="w-full flex items-center justify-between"
-        >
-          <h1
-            data-testid="safe-modal-title"
-            className="text-2xl font-GoodTimes"
-          >
-            Safe Execution Disclaimer
-          </h1>
-          <button
-            data-testid="safe-modal-close"
-            id="close-modal"
-            type="button"
-            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-            onClick={() => setEnabled(false)}
-          >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-          </button>
-        </div>
-
-        <div className="bg-moon-indigo p-4 rounded-lg mt-4">
+    <Modal id="safe-modal" setEnabled={setEnabled} title="Safe Execution Disclaimer" size="2xl">
+      <div data-testid="safe-modal-content" className="space-y-4">
+        <div className="bg-moon-indigo p-4 rounded-lg">
           <p className="text-gray-300 mb-2 flex items-center gap-2">{method}</p>
           <p className="text-gray-300 mb-2">
             To: <span className="text-sm">{recipientAddress}</span>
@@ -125,10 +98,9 @@ export default function SafeExecutionDisclaimer({
         </div>
 
         <p className="text-white my-4">
-          Please be aware that executing a Safe transaction requires careful
-          consideration. By proceeding, you confirm that you understand the
-          implications of this transaction and have verified all transaction
-          details.
+          Please be aware that executing a Safe transaction requires careful consideration. By
+          proceeding, you confirm that you understand the implications of this transaction and have
+          verified all transaction details.
         </p>
         <ConditionCheckbox
           label="I understand and agree to execute this transaction."

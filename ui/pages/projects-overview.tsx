@@ -7,8 +7,6 @@ import { useAssets } from '@/lib/dashboard/hooks'
 import { Project } from '@/lib/project/useProjectData'
 import { ethereum } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
-import { useUniswapTokens } from '@/lib/uniswap/hooks/useUniswapTokens'
-import { pregenSwapRoute } from '@/lib/uniswap/pregenSwapRoute'
 import { getRelativeQuarter } from '@/lib/utils/dates'
 import { getBudget } from '@/lib/utils/rewards'
 import Container from '../components/layout/Container'
@@ -57,7 +55,6 @@ const ProjectsOverview: React.FC<{
   const { tokens: polygonTokens } = useAssets(POLYGON_ASSETS_URL)
   const { tokens: baseTokens } = useAssets(BASE_ASSETS_URL)
   const { stakedEth } = useStakedEth()
-  const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState<number | null>(null)
   const [isLoadingMooneyUSD, setIsLoadingMooneyUSD] = useState(true)
@@ -94,11 +91,19 @@ const ProjectsOverview: React.FC<{
           return
         }
 
-        const route = await pregenSwapRoute(ethereum, mooneyBudget, MOONEY, DAI)
+        const response = await fetch('/api/mooney/price')
+        if (!response.ok) {
+          throw new Error('Failed to fetch MOONEY price')
+        }
 
-        if (!isCancelled && route?.route[0]?.rawQuote) {
-          const usd = route.route[0].rawQuote.toString() / 1e18
+        const data = await response.json()
+        const mooneyPriceUSD = data.result?.price || 0
+
+        if (!isCancelled && mooneyPriceUSD > 0) {
+          const usd = mooneyBudget * mooneyPriceUSD
           setMooneyBudgetUSD(usd)
+          setIsLoadingMooneyUSD(false)
+        } else {
           setIsLoadingMooneyUSD(false)
         }
       } catch (error) {
@@ -110,7 +115,7 @@ const ProjectsOverview: React.FC<{
       }
     }
 
-    if (mooneyBudget && MOONEY && DAI) {
+    if (mooneyBudget) {
       getMooneyBudgetUSD()
     } else if (mooneyBudget === 0) {
       setIsLoadingMooneyUSD(false)
@@ -119,7 +124,7 @@ const ProjectsOverview: React.FC<{
     return () => {
       isCancelled = true
     }
-  }, [mooneyBudget, DAI, MOONEY])
+  }, [mooneyBudget])
 
   return (
     <>

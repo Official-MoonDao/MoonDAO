@@ -201,15 +201,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
 
-      const estimatedMaxGas = 0.0001
-
-      let totalCost = Number(formattedCost) + estimatedMaxGas
+      let totalCost = Number(formattedCost)
       if (selectedChainSlug !== defaultChainSlug) {
         totalCost += Number(LAYER_ZERO_TRANSFER_COST) / 1e18
       }
 
       if (!freeMint && +nativeBalance < totalCost) {
-        const roundedCost = Math.ceil(+totalCost * 1000000) / 1000000
+        const roundedCost = Math.ceil(+totalCost + 0.0001 * 1000000) / 1000000 // add 0.0001 ETH to cover gas
 
         setIsLoadingMint(false)
         return await fundWallet(address, {

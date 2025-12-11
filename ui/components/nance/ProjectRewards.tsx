@@ -329,7 +329,6 @@ export function ProjectRewards({
 
   const usdBudget = ETH_BUDGET * ethPrice
   const [mooneyBudgetUSD, setMooneyBudgetUSD] = useState(0)
-  const { MOONEY, DAI } = useUniswapTokens(ethereum)
 
   const {
     addressToEthPayout,
@@ -357,10 +356,16 @@ export function ProjectRewards({
           return
         }
 
-        const route = await pregenSwapRoute(ethereum, mooneyBudget, MOONEY, DAI)
+        const response = await fetch('/api/mooney/price')
+        if (!response.ok) {
+          throw new Error('Failed to fetch MOONEY price')
+        }
 
-        if (!isCancelled && route?.route[0]?.rawQuote) {
-          const usd = route.route[0].rawQuote.toString() / 1e18
+        const data = await response.json()
+        const mooneyPriceUSD = data.result?.price || 0
+
+        if (!isCancelled && mooneyPriceUSD > 0) {
+          const usd = mooneyBudget * mooneyPriceUSD
           setMooneyBudgetUSD(usd)
         }
       } catch (error) {
@@ -372,14 +377,14 @@ export function ProjectRewards({
       }
     }
 
-    if (mooneyBudget && MOONEY && DAI) {
+    if (mooneyBudget) {
       getMooneyBudgetUSD()
     }
 
     return () => {
       isCancelled = true
     }
-  }, [mooneyBudget, DAI, MOONEY])
+  }, [mooneyBudget])
 
   const handleSubmit = async (contract: any) => {
     const totalPercentage = Object.values(distribution).reduce((sum, value) => sum + value, 0)

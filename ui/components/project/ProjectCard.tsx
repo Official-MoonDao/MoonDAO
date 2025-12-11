@@ -68,7 +68,7 @@ const ProjectCardContent = memo(
     return (
       <div
         id="card-container"
-        className="p-6 pb-6 flex flex-col gap-3 relative w-full h-[200px] min-h-[200px] max-h-[200px] overflow-hidden bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg transition-all duration-300 hover:bg-gradient-to-br hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl hover:scale-[1.02]"
+        className="p-6 pb-6 flex flex-col gap-3 relative w-full h-[200px] max-h-[200px] overflow-hidden bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg transition-all duration-300 hover:bg-gradient-to-br hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl hover:scale-[1.02]"
       >
         <div className="flex justify-between items-start">
           <div className="w-full flex flex-col gap-3">
@@ -144,13 +144,13 @@ const ProjectCardContent = memo(
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="pr-2 break-words flex-1 flex flex-col justify-between">
             <div className="description-container flex-1 overflow-hidden min-h-[80px] max-h-[140px]">
-              <p className="text-green-100 text-sm leading-relaxed flex-1 overflow-hidden">
+              <p className="text-green-100 text-sm leading-relaxed flex-1 overflow-hidden line-clamp-6">
                 {project.description?.length > characterLimit
                   ? `${project.description.substring(0, characterLimit)}...`
                   : project.description || 'No description available'}
               </p>
             </div>
-            <div className="mt-4 pt-4 border-t border-green-500/10">
+            <div className="mt-4 pt-4 border-t border-green-500/10 flex-shrink-0">
               <div className="text-green-300 text-xs font-medium hover:text-green-200 transition-colors">
                 Click to view details →
               </div>

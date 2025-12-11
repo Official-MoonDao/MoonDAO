@@ -69,6 +69,14 @@ const infoCards = [
     paragraph: 'Weekly updates from MoonDAO about projects, proposals, open votes, and other initiatives. Be sure to subscribe to get updates in your inbox.',
   },
   {
+    icon: '/assets/icon-events.svg',
+    iconAlt: 'Town Hall Summaries',
+    header: 'Town Hall Summaries',
+    link: '/townhall',
+    hovertext: 'View Summaries',
+    paragraph: 'Weekly summaries of our Town Hall meetings with key topics, decisions, action items, and important updates for community members.',
+  },
+  {
     icon: '/assets/icon-about.svg',
     iconAlt: 'About MoonDAO',
     header: 'About MoonDAO',
@@ -86,9 +94,9 @@ const infoCards = [
   },
   {
     icon: '/assets/icon-analytics.svg',
-    iconAlt: 'MoonDAO Analytics',
-    header: 'Analytics',
-    link: '/analytics',
+    iconAlt: 'MoonDAO Treasury',
+    header: 'Treasury',
+    link: '/treasury',
     hovertext: 'Learn More',
     paragraph: 'Transparent data and analytics related to our treasury, token, transactions, and more.',
   },

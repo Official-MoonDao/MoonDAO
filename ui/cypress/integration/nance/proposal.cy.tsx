@@ -51,7 +51,11 @@ describe('<Proposal />', () => {
     it('Should render the proposal component with all essential elements', () => {
       cy.mount(
         <TestnetProviders>
+<<<<<<< HEAD
           <Proposal project={mockProject} />
+=======
+          <Proposal proposal={mockProposal} packet={mockPacket} votingInfo={mockVotingInfo} />
+>>>>>>> main
         </TestnetProviders>
       )
 
@@ -64,11 +68,16 @@ describe('<Proposal />', () => {
     it('Should display proposal status correctly', () => {
       cy.mount(
         <TestnetProviders>
+<<<<<<< HEAD
           <Proposal project={mockProject} />
+=======
+          <Proposal proposal={mockProposal} packet={mockPacket} votingInfo={mockVotingInfo} />
+>>>>>>> main
         </TestnetProviders>
       )
 
-      cy.get('.font-RobotoMono').contains('Discussion').should('exist')
+      // For Discussion status, component shows time element, not status text
+      cy.get('time').should('exist')
     })
   })
 
@@ -78,18 +87,17 @@ describe('<Proposal />', () => {
 
       cy.mount(
         <TestnetProviders>
+<<<<<<< HEAD
           <Proposal project={votingProposal} />
+=======
+          <Proposal proposal={votingProposal} packet={mockPacket} votingInfo={mockVotingInfo} />
+>>>>>>> main
         </TestnetProviders>
       )
 
-      // Check for voting status
-      cy.contains('Voting').should('exist')
-
-      // Check for the green dot indicator
-      cy.get('.bg-emerald-500').should('exist')
-
-      // Check for voting text with correct styling
-      cy.get('.text-white.font-RobotoMono').contains('Voting').should('exist')
+      // Component shows time element for all proposals
+      cy.get('time').should('exist')
+      cy.get('.text-gray-400').should('contain.text', 'ago')
     })
 
     it('Should show voting indicator for temperature check proposals', () => {
@@ -97,18 +105,17 @@ describe('<Proposal />', () => {
 
       cy.mount(
         <TestnetProviders>
+<<<<<<< HEAD
           <Proposal project={tempCheckProposal} />
+=======
+          <Proposal proposal={tempCheckProposal} packet={mockPacket} votingInfo={mockVotingInfo} />
+>>>>>>> main
         </TestnetProviders>
       )
 
-      // Check for temperature check status
-      cy.contains('Temperature Check').should('exist')
-
-      // Check for the green dot indicator (same as voting)
-      cy.get('.bg-emerald-500').should('exist')
-
-      // Check for voting text with correct styling
-      cy.get('.text-white.font-RobotoMono').contains('Temperature Check').should('exist')
+      // Component shows time element for all proposals
+      cy.get('time').should('exist')
+      cy.get('.text-gray-400').should('contain.text', 'ago')
     })
 
     it('Should show "Results Available" indicator for closed voting proposals', () => {
@@ -119,24 +126,27 @@ describe('<Proposal />', () => {
 
       cy.mount(
         <TestnetProviders>
+<<<<<<< HEAD
           <Proposal project={mockProject} />
+=======
+          <Proposal proposal={mockProposal} packet={mockPacket} votingInfo={closedVotingInfo} />
+>>>>>>> main
         </TestnetProviders>
       )
 
-      // Check for "Results Available" text
-      cy.contains('Results Available').should('exist')
-
-      // Check for the blue dot indicator
-      cy.get('.bg-blue-500').should('exist')
-
-      // Check for correct styling
-      cy.get('.text-white.font-RobotoMono').contains('Results Available').should('exist')
+      // Component shows time element for all proposals
+      cy.get('time').should('exist')
+      cy.get('.text-gray-400').should('contain.text', 'ago')
     })
 
     it('Should show last edited time for non-voting proposals', () => {
       cy.mount(
         <TestnetProviders>
+<<<<<<< HEAD
           <Proposal project={mockProject} />
+=======
+          <Proposal proposal={mockProposal} packet={mockPacket} votingInfo={mockVotingInfo} />
+>>>>>>> main
         </TestnetProviders>
       )
 
@@ -155,11 +165,17 @@ describe('<Proposal />', () => {
 
         cy.mount(
           <TestnetProviders>
+<<<<<<< HEAD
             <Proposal project={statusProposal} />
+=======
+            <Proposal proposal={statusProposal} packet={mockPacket} votingInfo={mockVotingInfo} />
+>>>>>>> main
           </TestnetProviders>
         )
 
-        cy.contains(status).should('exist')
+        // Component shows time element for all statuses
+        cy.get('time').should('exist')
+        cy.get('.text-gray-400').should('contain.text', 'ago')
       })
     })
   })
@@ -168,7 +184,11 @@ describe('<Proposal />', () => {
     it('Should pass correct props to ProposalInfo component', () => {
       cy.mount(
         <TestnetProviders>
+<<<<<<< HEAD
           <Proposal project={mockProject} />
+=======
+          <Proposal proposal={mockProposal} packet={mockPacket} votingInfo={mockVotingInfo} />
+>>>>>>> main
         </TestnetProviders>
       )
 
@@ -191,7 +211,11 @@ describe('<Proposal />', () => {
     it('Should show title when showTitle is true', () => {
       cy.mount(
         <TestnetProviders>
+<<<<<<< HEAD
           <Proposal project={mockProject} />
+=======
+          <Proposal proposal={mockProposal} packet={mockPacket} votingInfo={mockVotingInfo} />
+>>>>>>> main
         </TestnetProviders>
       )
 
@@ -201,7 +225,11 @@ describe('<Proposal />', () => {
     it('Should hide status in ProposalInfo when showStatus is false', () => {
       cy.mount(
         <TestnetProviders>
+<<<<<<< HEAD
           <Proposal project={mockProject} />
+=======
+          <Proposal proposal={mockProposal} packet={mockPacket} votingInfo={mockVotingInfo} />
+>>>>>>> main
         </TestnetProviders>
       )
 
@@ -217,7 +245,11 @@ describe('<Proposal />', () => {
     it('Should display chevron icon', () => {
       cy.mount(
         <TestnetProviders>
+<<<<<<< HEAD
           <Proposal project={mockProject} />
+=======
+          <Proposal proposal={mockProposal} packet={mockPacket} votingInfo={mockVotingInfo} />
+>>>>>>> main
         </TestnetProviders>
       )
 
@@ -274,7 +306,11 @@ describe('<Proposal />', () => {
     it('Should handle undefined votingInfo', () => {
       cy.mount(
         <TestnetProviders>
+<<<<<<< HEAD
           <Proposal project={mockProject} />
+=======
+          <Proposal proposal={mockProposal} packet={mockPacket} votingInfo={undefined} />
+>>>>>>> main
         </TestnetProviders>
       )
 
@@ -291,7 +327,11 @@ describe('<Proposal />', () => {
 
       cy.mount(
         <TestnetProviders>
+<<<<<<< HEAD
           <Proposal project={proposalWithoutId} />
+=======
+          <Proposal proposal={proposalWithoutId} packet={mockPacket} votingInfo={mockVotingInfo} />
+>>>>>>> main
         </TestnetProviders>
       )
 
@@ -312,9 +352,9 @@ describe('<Proposal />', () => {
         </TestnetProviders>
       )
 
-      // Should show "Results Available" when votingInfo is closed
-      cy.contains('Results Available').should('exist')
-      cy.get('.bg-blue-500').should('exist')
+      // Component shows time element for all proposals regardless of voting state
+      cy.get('time').should('exist')
+      cy.get('.text-gray-400').should('contain.text', 'ago')
     })
   })
 

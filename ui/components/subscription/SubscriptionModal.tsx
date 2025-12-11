@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
@@ -25,13 +24,12 @@ export function SubscriptionModal({
   const [isLoading, setIsLoading] = useState(false)
   const [years, setYears] = useState<number>(1)
 
-  const { data: subscriptionCost, isLoading: isLoadingSubscriptionCost } =
-    useRead({
-      contract: subscriptionContract,
-      method: 'getRenewalPrice',
-      params: [address, years * 365 * 24 * 60 * 60],
-      deps: [years, address],
-    })
+  const { data: subscriptionCost, isLoading: isLoadingSubscriptionCost } = useRead({
+    contract: subscriptionContract,
+    method: 'getRenewalPrice',
+    params: [address, years * 365 * 24 * 60 * 60],
+    deps: [years, address],
+  })
 
   async function extendSubscription() {
     if (!years || subscriptionCost === undefined) return
@@ -80,62 +78,29 @@ export function SubscriptionModal({
   }
 
   return (
-    <Modal id="subscription-modal" setEnabled={setEnabled}>
-      <div
-        data-testid="subscription-modal-content"
-        className="bg-dark-cool rounded-[2vmax] p-8 max-w-2xl min-w-[350px] w-full relative md:min-w-[600px]"
-      >
-        <div
-          data-testid="subscription-modal-header"
-          className="w-full flex items-center justify-between"
-        >
-          <h1
-            data-testid="subscription-modal-title"
-            className="text-2xl font-GoodTimes"
-          >
-            Extend Subscription
-          </h1>
-          <button
-            data-testid="subscription-modal-close"
-            id="close-modal"
-            type="button"
-            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-            onClick={() => setEnabled(false)}
-          >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-          </button>
-        </div>
-
+    <Modal id="subscription-modal" setEnabled={setEnabled} title="Extend Subscription" size="2xl">
+      <div data-testid="subscription-modal-content">
         {/* Current Subscription Info */}
         <div data-testid="subscription-info" className="mb-8">
           <p data-testid="expiration-date" className="text-gray-400 mb-2">
             {'Expiration Date: '}
             <span className="text-moon-orange">
-              {validPass
-                ? new Date(expiresAt?.toString() * 1000).toLocaleString()
-                : 'Expired'}
+              {validPass ? new Date(expiresAt?.toString() * 1000).toLocaleString() : 'Expired'}
             </span>
           </p>
         </div>
 
         {/* Subscription Extension */}
         <div data-testid="extension-section" className="mb-8">
-          <h3
-            data-testid="extension-title"
-            className="text-xl font-GoodTimes mb-4"
-          >
+          <h3 data-testid="extension-title" className="text-xl font-GoodTimes mb-4">
             Extension Details
           </h3>
           <p className="text-gray-300 mb-4">
-            Select the number of years you would like to extend your
-            subscription for from now.
+            Select the number of years you would like to extend your subscription for from now.
           </p>
 
           <div className="space-y-6">
-            <div
-              data-testid="years-input-section"
-              className="bg-darkest-cool p-4 rounded-lg"
-            >
+            <div data-testid="years-input-section" className="bg-darkest-cool p-4 rounded-lg">
               <label
                 data-testid="years-label"
                 className="block text-sm font-medium text-gray-300 mb-2"
@@ -154,10 +119,7 @@ export function SubscriptionModal({
               />
             </div>
 
-            <div
-              data-testid="cost-section"
-              className="bg-darkest-cool p-4 rounded-lg"
-            >
+            <div data-testid="cost-section" className="bg-darkest-cool p-4 rounded-lg">
               <p
                 data-testid="subscription-cost"
                 className="text-gray-300 flex items-center space-x-2 gap-2"
@@ -169,10 +131,7 @@ export function SubscriptionModal({
                   </div>
                 ) : (
                   <span className="text-white font-medium">
-                    {subscriptionCost
-                      ? ethers.utils.formatEther(subscriptionCost)
-                      : '0.00'}{' '}
-                    ETH
+                    {subscriptionCost ? ethers.utils.formatEther(subscriptionCost) : '0.00'} ETH
                   </span>
                 )}
               </p>
