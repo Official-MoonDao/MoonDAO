@@ -82,6 +82,7 @@ export const commonCombinations = {
 
 export const modalStyles = {
   base: 'bg-dark-cool rounded-lg shadow-xl',
+  overlay: 'backdrop-blur-sm bg-black/50',
 }
 
 export const utilityFunctions = {
