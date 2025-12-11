@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import TeamTableABI from 'const/abis/TeamTable.json'
@@ -147,22 +146,14 @@ export default function TeamMetadataModal({ account, nft, selectedChain, setEnab
   }, [nft])
 
   return (
-    <Modal id="entity-metadata-modal-backdrop" setEnabled={setEnabled}>
-      <div className="w-full flex flex-col gap-6 items-start justify-start w-[100vw] md:w-[700px] p-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl h-screen md:h-auto">
-        <div className="w-full flex items-center justify-between">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-GoodTimes text-white">Update Team Info</h1>
-            <p className="text-slate-300 text-sm">Manage your team profile and settings</p>
-          </div>
-          <button
-            id="close-modal"
-            type="button"
-            className="flex h-10 w-10 border-2 border-slate-600 items-center justify-center rounded-full hover:border-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-            onClick={() => setEnabled(false)}
-          >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-          </button>
-        </div>
+    <Modal
+      id="entity-metadata-modal-backdrop"
+      setEnabled={setEnabled}
+      title="Update Team Info"
+      size="3xl"
+    >
+      <div className="flex flex-col gap-6 items-start justify-start">
+        <p className="text-slate-300 text-sm -mt-4">Manage your team profile and settings</p>
         {stage === 0 && (
           <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 p-6">
             <div className="flex flex-col gap-4">

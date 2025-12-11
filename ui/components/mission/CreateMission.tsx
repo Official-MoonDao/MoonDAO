@@ -510,7 +510,9 @@ export default function CreateMission({
               <div className="relative flex flex-col md:flex-row items-center p-2 pb-0 w-full">
                 <button
                   className="absolute top-1 right-1 hover:scale-110 transition-transform"
-                  onClick={() => setStatus('idle')}
+                  onClick={() => {
+                    router.reload()
+                  }}
                 >
                   <XMarkIcon width={50} height={50} className="text-white" />
                 </button>
@@ -522,7 +524,12 @@ export default function CreateMission({
                   setStep={setStage}
                 />
               </div>
-              {teamRequirementModalEnabled && <TeamRequirementModal setStatus={setStatus} />}
+              {teamRequirementModalEnabled && (
+                <TeamRequirementModal
+                  setStatus={setStatus}
+                  setEnabled={setTeamRequirementModalEnabled}
+                />
+              )}
               {stage === 0 && (
                 <CreateMissionStage
                   id="mission-overview-stage"

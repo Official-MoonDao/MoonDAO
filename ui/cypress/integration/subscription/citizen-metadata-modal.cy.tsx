@@ -27,7 +27,7 @@ describe('<CitizenMetadataModal /> ', () => {
   })
 
   it('Renders the component and all stages', () => {
-    cy.get('h1').contains('Edit Profile')
+    cy.get('[data-testid="modal-title"]').contains('Edit Profile')
     cy.get('button').contains('Next: Update Profile Picture').click()
     cy.get('button').contains('Next').click()
     cy.get('button').contains('Yes, Update Email').should('exist')

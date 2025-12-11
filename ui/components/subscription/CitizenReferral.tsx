@@ -274,39 +274,26 @@ export default function CitizenReferral({
       </StandardButton>
 
       {isModalOpen && (
-        <Modal id="san-referral-modal-backdrop" setEnabled={setIsModalOpen}>
-          <div className="flex flex-col gap-6 items-start justify-start w-[100vw] md:w-[500px] p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl h-screen md:h-auto md:min-h-[600px] md:max-h-[95vh] overflow-y-auto">
-            {/* Header */}
-            <div className="w-full flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                  {referrerStatus?.hasReferrer ? (
-                    <CheckCircleIcon className="w-5 h-5 text-white" />
-                  ) : (
-                    <UserPlusIcon className="w-5 h-5 text-white" />
-                  )}
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-white">
-                    {referrerStatus?.hasReferrer
-                      ? 'Referrer Already Set'
-                      : 'Record Citizen Referral'}
-                  </h1>
-                  <p className="text-gray-300 text-sm">
-                    {referrerStatus?.hasReferrer
-                      ? 'You already have a referrer assigned'
-                      : 'Assign a referrer to your citizen NFT'}
-                  </p>
-                </div>
+        <Modal
+          id="san-referral-modal-backdrop"
+          setEnabled={setIsModalOpen}
+          title={referrerStatus?.hasReferrer ? 'Referrer Already Set' : 'Record Citizen Referral'}
+          size="lg"
+        >
+          <div className="flex flex-col gap-6 items-start justify-start">
+            <div className="flex items-center gap-3 -mt-4">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                {referrerStatus?.hasReferrer ? (
+                  <CheckCircleIcon className="w-5 h-5 text-white" />
+                ) : (
+                  <UserPlusIcon className="w-5 h-5 text-white" />
+                )}
               </div>
-              <button
-                id="close-modal"
-                type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onClick={handleCloseModal}
-              >
-                <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-              </button>
+              <p className="text-gray-300 text-sm">
+                {referrerStatus?.hasReferrer
+                  ? 'You already have a referrer assigned'
+                  : 'Assign a referrer to your citizen NFT'}
+              </p>
             </div>
 
             {/* Content */}

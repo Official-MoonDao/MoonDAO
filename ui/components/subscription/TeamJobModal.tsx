@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
@@ -35,7 +34,7 @@ type JobData = {
 
 type TeamJobModalProps = {
   teamId: string
-  setEnabled: Function
+  setEnabled: (enabled: boolean) => void
   refreshJobs: Function
   jobTableContract: any
   edit?: boolean
@@ -96,9 +95,14 @@ export default function TeamJobModal({
   }, [currTime, job?.endTime])
 
   return (
-    <Modal id="team-job-modal-backdrop" setEnabled={setEnabled}>
+    <Modal
+      id="team-job-modal-backdrop"
+      setEnabled={setEnabled}
+      title={edit ? 'Edit Job' : 'Create Job'}
+      size="lg"
+    >
       <form
-        className="w-full flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5 bg-gradient-to-b from-dark-cool to-darkest-cool rounded-[2vmax] h-screen md:h-auto"
+        className="w-full flex flex-col gap-2 items-start justify-start"
         onSubmit={async (e) => {
           e.preventDefault()
           if (
@@ -197,16 +201,6 @@ export default function TeamJobModal({
           }
         }}
       >
-        <div className="w-full flex items-center justify-between">
-          <h2 className="font-GoodTimes">{edit ? 'Edit a Job' : 'Add a Job'}</h2>
-          <button
-            type="button"
-            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-            onClick={() => setEnabled(false)}
-          >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-          </button>
-        </div>
         <div className="w-full flex flex-col gap-2 p-2 mt-2 rounded-t-[20px] rounded-bl-[10px] items-start justify-start bg-darkest-cool">
           <Input
             id="job-title-input"

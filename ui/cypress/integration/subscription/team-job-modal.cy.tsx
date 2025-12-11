@@ -41,7 +41,7 @@ describe('<TeamJobModal />', () => {
         <TeamJobModal {...props} />
       </TestnetProviders>
     )
-    cy.get('h2').contains('Add a Job')
+    cy.get('[data-testid="modal-title"]').contains('Create Job')
     cy.get('#job-expiration-status').should(
       'have.text',
       `*This job post will end on ${new Date(job.endTime * 1000).toLocaleDateString()}`

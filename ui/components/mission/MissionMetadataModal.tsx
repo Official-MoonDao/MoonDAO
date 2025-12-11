@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import JBV5ControllerABI from 'const/abis/JBV5Controller.json'
 import TeamABI from 'const/abis/Team.json'
@@ -344,20 +343,13 @@ export default function MissionMetadataModal({
   }
 
   return (
-    <Modal id="mission-metadata-modal-backdrop" setEnabled={setEnabled}>
-      <div className="flex flex-col gap-6 items-start justify-start w-[100vw] md:w-[700px] p-6 md:p-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl h-screen md:h-auto md:max-h-[90vh] overflow-y-auto">
-        <div className="w-full flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white">Edit Mission</h1>
-          <button
-            id="close-modal"
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onClick={() => setEnabled(false)}
-          >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-          </button>
-        </div>
-
+    <Modal
+      id="mission-metadata-modal-backdrop"
+      setEnabled={setEnabled}
+      title="Edit Mission"
+      size="3xl"
+    >
+      <div className="flex flex-col gap-6 items-start justify-start">
         {/* Stage 0: Permission Check or Basic Info */}
         {stage === 0 && !isSafeSigner && (
           <div className="w-full space-y-6">

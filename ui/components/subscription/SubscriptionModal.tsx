@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
@@ -80,29 +79,8 @@ export function SubscriptionModal({
   }
 
   return (
-    <Modal id="subscription-modal" setEnabled={setEnabled}>
-      <div
-        data-testid="subscription-modal-content"
-        className="bg-dark-cool rounded-[2vmax] p-8 max-w-2xl min-w-[350px] w-full relative md:min-w-[600px]"
-      >
-        <div
-          data-testid="subscription-modal-header"
-          className="w-full flex items-center justify-between"
-        >
-          <h1 data-testid="subscription-modal-title" className="text-2xl font-GoodTimes">
-            Extend Subscription
-          </h1>
-          <button
-            data-testid="subscription-modal-close"
-            id="close-modal"
-            type="button"
-            className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-            onClick={() => setEnabled(false)}
-          >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-          </button>
-        </div>
-
+    <Modal id="subscription-modal" setEnabled={setEnabled} title="Extend Subscription" size="2xl">
+      <div data-testid="subscription-modal-content">
         {/* Current Subscription Info */}
         <div data-testid="subscription-info" className="mb-8">
           <p data-testid="expiration-date" className="text-gray-400 mb-2">

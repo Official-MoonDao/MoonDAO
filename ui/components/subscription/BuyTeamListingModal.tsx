@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import { getAccessToken } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import ERC20ABI from 'const/abis/ERC20.json'
@@ -12,7 +11,6 @@ import {
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
 } from 'const/config'
-import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
@@ -22,7 +20,6 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { TeamListing } from '@/components/subscription/TeamListing'
@@ -35,7 +32,7 @@ type BuyListingModalProps = {
   selectedChain: any
   listing: TeamListing
   recipient: string | undefined | null
-  setEnabled: Function
+  setEnabled: (enabled: boolean) => void
 }
 
 export default function BuyTeamListingModal({
@@ -220,162 +217,140 @@ export default function BuyTeamListingModal({
     setIsLoading(false)
   }
 
-  //There is a bug where setEnabled can't be called from a button in the main component
-  function Close() {
-    const [close, setClose] = useState(false)
-
-    useEffect(() => {
-      if (close) setEnabled(false)
-    }, [close])
-
-    return (
-      <button
-        type="button"
-        className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-        onClick={() => setClose(true)}
-      >
-        <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-      </button>
-    )
-  }
-
   return (
-    <Modal id="team-marketplace-buy-modal-backdrop" setEnabled={setEnabled}>
-      <div className="w-full rounded-[2vmax] flex flex-col gap-2 items-start justify-start w-auto md:w-[500px] p-5  bg-dark-cool h-screen md:h-auto">
-        <form
-          className="w-full flex flex-col gap-2 items-start justify-start"
-          onSubmit={(e) => {
-            e.preventDefault()
-          }}
-        >
-          <div className="w-full flex items-center justify-between">
-            <div>
-              <h2 className="font-GoodTimes">{'Buy a Listing'}</h2>
+    <Modal
+      id="team-marketplace-buy-modal-backdrop"
+      setEnabled={setEnabled}
+      title="Buy a Listing"
+      size="lg"
+    >
+      <form
+        className="w-full flex flex-col gap-2 items-start justify-start"
+        onSubmit={(e) => {
+          e.preventDefault()
+        }}
+      >
+        <div>
+          {listing.image && (
+            <div
+              id="image-container"
+              className="rounded-[20px] overflow-hidden my flex flex-wrap w-full"
+            >
+              <IPFSRenderer src={listing.image} width={500} height={500} alt="Listing Image" />
             </div>
-            <Close />
-          </div>
-          <div>
-            {listing.image && (
-              <div
-                id="image-container"
-                className="rounded-[20px] overflow-hidden my flex flex-wrap w-full"
-              >
-                <IPFSRenderer src={listing.image} width={500} height={500} alt="Listing Image" />
-              </div>
-            )}
+          )}
 
-            <div className="mt-4">
-              <p>{`# ${listing.id}`}</p>
-              <p className="font-GoodTimes">{listing.title}</p>
-              <p className="text-[75%]">{listing.description}</p>
-              <p id="listing-price" className="font-bold">{`${
-                citizen
-                  ? truncateTokenValue(listing.price, listing.currency)
-                  : truncateTokenValue(+listing.price * 1.1, listing.currency)
-              } ${listing.currency}`}</p>
-            </div>
+          <div className="mt-4">
+            <p>{`# ${listing.id}`}</p>
+            <p className="font-GoodTimes">{listing.title}</p>
+            <p className="text-[75%]">{listing.description}</p>
+            <p id="listing-price" className="font-bold">{`${
+              citizen
+                ? truncateTokenValue(listing.price, listing.currency)
+                : truncateTokenValue(+listing.price * 1.1, listing.currency)
+            } ${listing.currency}`}</p>
           </div>
-          <p className="opacity-60">
-            Enter your information, confirm the transaction and wait to receive an email from the
-            vendor.
-          </p>
-          <Input
-            type="text"
-            variant="dark"
-            className="text-white"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            formatNumbers={false}
-          />
-          {listing.shipping === 'true' && (
-            <div className="w-full flex flex-col gap-2">
+        </div>
+        <p className="opacity-60">
+          Enter your information, confirm the transaction and wait to receive an email from the
+          vendor.
+        </p>
+        <Input
+          type="text"
+          variant="dark"
+          className="text-white"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          formatNumbers={false}
+        />
+        {listing.shipping === 'true' && (
+          <div className="w-full flex flex-col gap-2">
+            <Input
+              type="text"
+              variant="dark"
+              className="text-white"
+              placeholder="Street Address"
+              value={shippingInfo.streetAddress}
+              onChange={(e) =>
+                setShippingInfo({
+                  ...shippingInfo,
+                  streetAddress: e.target.value,
+                })
+              }
+              formatNumbers={false}
+            />
+            <div className="w-full flex gap-2">
               <Input
                 type="text"
                 variant="dark"
                 className="text-white"
-                placeholder="Street Address"
-                value={shippingInfo.streetAddress}
+                placeholder="City"
+                value={shippingInfo.city}
+                onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
+                formatNumbers={false}
+              />
+              <Input
+                type="text"
+                variant="dark"
+                className="text-white"
+                placeholder="State"
+                value={shippingInfo.state}
+                onChange={(e) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
+                formatNumbers={false}
+              />
+            </div>
+            <div className="w-full flex gap-2">
+              <Input
+                type="text"
+                variant="dark"
+                className="text-white"
+                placeholder="Postal Code"
+                value={shippingInfo.postalCode}
                 onChange={(e) =>
                   setShippingInfo({
                     ...shippingInfo,
-                    streetAddress: e.target.value,
+                    postalCode: e.target.value,
                   })
                 }
                 formatNumbers={false}
               />
-              <div className="w-full flex gap-2">
-                <Input
-                  type="text"
-                  variant="dark"
-                  className="text-white"
-                  placeholder="City"
-                  value={shippingInfo.city}
-                  onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
-                  formatNumbers={false}
-                />
-                <Input
-                  type="text"
-                  variant="dark"
-                  className="text-white"
-                  placeholder="State"
-                  value={shippingInfo.state}
-                  onChange={(e) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
-                  formatNumbers={false}
-                />
-              </div>
-              <div className="w-full flex gap-2">
-                <Input
-                  type="text"
-                  variant="dark"
-                  className="text-white"
-                  placeholder="Postal Code"
-                  value={shippingInfo.postalCode}
-                  onChange={(e) =>
-                    setShippingInfo({
-                      ...shippingInfo,
-                      postalCode: e.target.value,
-                    })
-                  }
-                  formatNumbers={false}
-                />
-                <Input
-                  type="text"
-                  variant="dark"
-                  className="text-white"
-                  placeholder="Country"
-                  value={shippingInfo.country}
-                  onChange={(e) => setShippingInfo({ ...shippingInfo, country: e.target.value })}
-                  formatNumbers={false}
-                />
-              </div>
+              <Input
+                type="text"
+                variant="dark"
+                className="text-white"
+                placeholder="Country"
+                value={shippingInfo.country}
+                onChange={(e) => setShippingInfo({ ...shippingInfo, country: e.target.value })}
+                formatNumbers={false}
+              />
             </div>
-          )}
-          <PrivyWeb3Button
-            v5
-            requiredChain={DEFAULT_CHAIN_V5}
-            label="Buy"
-            action={async () => {
-              if (!email || email.trim() === '' || !email.includes('@'))
-                return toast.error('Please enter a valid email.')
-              if (listing.shipping === 'true') {
-                if (
-                  shippingInfo.streetAddress.trim() === '' ||
-                  shippingInfo.city.trim() === '' ||
-                  shippingInfo.state.trim() === '' ||
-                  shippingInfo.postalCode.trim() === '' ||
-                  shippingInfo.country.trim() === ''
-                )
-                  return toast.error('Please fill out all fields.')
-              }
-              await buyListing()
-            }}
-            className="mt-4 w-full gradient-2 rounded-[5vmax]"
-            isDisabled={isLoading || !recipient}
-          />
-          {isLoading && <p>Do not leave the page until the transaction is complete.</p>}
-        </form>
-      </div>
+          </div>
+        )}
+        <PrivyWeb3Button
+          v5
+          requiredChain={DEFAULT_CHAIN_V5}
+          label="Buy"
+          action={async () => {
+            if (!email || email.trim() === '' || !email.includes('@'))
+              return toast.error('Please enter a valid email.')
+            if (listing.shipping === 'true') {
+              if (
+                shippingInfo.streetAddress.trim() === '' ||
+                shippingInfo.city.trim() === '' ||
+                shippingInfo.state.trim() === '' ||
+                shippingInfo.postalCode.trim() === '' ||
+                shippingInfo.country.trim() === ''
+              )
+                return toast.error('Please fill out all fields.')
+            }
+            await buyListing()
+          }}
+          className="mt-4 w-full gradient-2 rounded-[5vmax]"
+          isDisabled={isLoading || !recipient}
+        />
+        {isLoading && <p>Do not leave the page until the transaction is complete.</p>}
+      </form>
     </Modal>
   )
 }
