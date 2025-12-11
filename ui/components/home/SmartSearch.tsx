@@ -16,7 +16,7 @@ const searchMappings = [
     keywords: ['vote', 'voting', 'proposal', 'proposals', 'governance', 'ballot', 'election'],
     title: 'Vote on Proposals',
     description: 'Participate in MoonDAO governance by voting on proposals',
-    link: '/vote',
+    link: '/projects',
     category: 'Governance'
   },
   {
@@ -69,7 +69,7 @@ const searchMappings = [
   // Projects & Jobs
   {
     keywords: ['projects', 'project', 'rewards', 'funding', 'grants', 'proposals'],
-    title: 'Project Rewards',
+    title: 'Projects',
     description: 'Discover and fund space exploration projects',
     link: '/projects',
     category: 'Projects'

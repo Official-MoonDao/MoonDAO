@@ -3,6 +3,7 @@ import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
+import ProposalsABI from 'const/abis/Proposals.json'
 import {
   CITIZEN_ADDRESSES,
   DEFAULT_CHAIN_V5,
@@ -10,6 +11,8 @@ import {
   PROJECT_ADDRESSES,
   PROJECT_CREATOR_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
+  PROPOSALS_ADDRESSES,
+  PROPOSALS_TABLE_NAMES,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -20,14 +23,19 @@ import { getContract, readContract } from 'thirdweb'
 import { getRpcUrlForChain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
+import { PROJECT_PENDING, PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
+import { getProposalStatus } from '@/lib/nance/useProposalStatus'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import useSafe from '@/lib/safe/useSafe'
 import queryTable from '@/lib/tableland/queryTable'
+import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client, { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
+import { runQuadraticVoting } from '@/lib/utils/rewards'
 import CollapsibleContainer from '@/components/layout/CollapsibleContainer'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -37,7 +45,10 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
+import DropDownMenu from '@/components/nance/DropDownMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
+import ProposalInfo from '@/components/nance/ProposalInfo'
+import TempCheck from '@/components/project/TempCheck'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
@@ -46,9 +57,17 @@ type ProjectProfileProps = {
   tokenId: string
   project: Project
   safeOwners: string[]
+  proposalJSON: any
+  proposalStatus: any
 }
 
-export default function ProjectProfile({ tokenId, project, safeOwners }: ProjectProfileProps) {
+export default function ProjectProfile({
+  tokenId,
+  project,
+  safeOwners,
+  proposalJSON,
+  proposalStatus,
+}: ProjectProfileProps) {
   const account = useActiveAccount()
   const address = account?.address
 
@@ -92,9 +111,7 @@ export default function ProjectProfile({ tokenId, project, safeOwners }: Project
     managerHatId,
     isManager,
     isActive,
-    nanceProposal,
     finalReportMarkdown,
-    proposalJSON,
     totalBudget,
     MDP,
     isLoading: isLoadingProjectData,
@@ -110,7 +127,6 @@ export default function ProjectProfile({ tokenId, project, safeOwners }: Project
   const toggleExpand = () => {
     setIsExpanded(!isExpanded)
   }
-
   //Profile Header Section
   const ProfileHeader = (
     <div id="orgheader-container">
@@ -146,6 +162,8 @@ export default function ProjectProfile({ tokenId, project, safeOwners }: Project
       </Frame>
     </div>
   )
+  const gridCols =
+    proposalStatus !== PROJECT_PENDING ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2'
 
   return (
     <Container>
@@ -153,7 +171,17 @@ export default function ProjectProfile({ tokenId, project, safeOwners }: Project
       <ContentLayout
         header={project.name}
         headerSize="max(20px, 3vw)"
-        description={ProfileHeader}
+        description={
+          <ProposalInfo
+            proposalJSON={proposalJSON}
+            proposalStatus={proposalStatus}
+            project={project}
+            linkDisabled
+            showTitle={false}
+            showStatus={true}
+          />
+          //'prop'
+        }
         mainPadding
         mode="compact"
         popOverEffect={false}
@@ -175,22 +203,36 @@ export default function ProjectProfile({ tokenId, project, safeOwners }: Project
           className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]"
         >
           {/* Project Overview */}
-          <SectionCard
-            header="Proposal"
-            iconSrc="/assets/icon-star.svg"
+          <SectionCard header="Proposal" iconSrc="/assets/icon-star.svg"
             action={
               <Link
                 className="flex gap-2 items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm"
-                href={`/proposal/${MDP}`}
+                href={`/project/${project.jDP}`}
                 passHref
               >
                 <Image src="/assets/report.png" alt="Report Icon" width={16} height={16} />
                 <span>Review Original Proposal</span>
               </Link>
             }
+
           >
-            <div className="prose prose-invert max-w-none">
-              <MarkdownWithTOC body={nanceProposal?.body || ''} />
+            <div className="mt-10 mb-10">
+              <div className={`grid ${gridCols} gap-8`}>
+                <div className="lg:col-span-2 relative">
+                  <div className="absolute top-2 right-[20px]">
+                    <DropDownMenu project={project} proposalStatus={proposalStatus} />
+                  </div>
+                  <div>
+                    <MarkdownWithTOC body={proposalJSON.body || ''} />
+                  </div>
+                </div>
+                <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] flex flex-col h-fit">
+                  <div className="px-[10px] p-5">
+                    {project.active == PROJECT_PENDING &&
+                      proposalStatus === 'Temperature Check' && <TempCheck mdp={project.MDP} />}
+                  </div>
+                </div>
+              </div>
             </div>
           </SectionCard>
           {finalReportMarkdown && (
@@ -273,6 +315,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     method: 'getTableName' as string,
     params: [],
   })
+  const proposalContract = getContract({
+    client: serverClient,
+    address: PROPOSALS_ADDRESSES[chainSlug],
+    abi: ProposalsABI.abi as any,
+    chain: chain,
+  })
 
   const statement = `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`
 
@@ -284,6 +332,24 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       notFound: true,
     }
   }
+
+  const mdp = project.MDP
+  const tempCheckApproved = await readContract({
+    contract: proposalContract,
+    method: 'tempCheckApproved' as string,
+    params: [mdp],
+  })
+  const tempCheckFailed = await readContract({
+    contract: proposalContract,
+    method: 'tempCheckFailed' as string,
+    params: [mdp],
+  })
+  const tempCheckApprovedTimestamp = await readContract({
+    contract: proposalContract,
+    method: 'tempCheckApprovedTimestamp' as string,
+    params: [mdp],
+  })
+  const proposalStatus = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
 
   const projectContract = getContract({
     client: serverClient,
@@ -309,12 +375,16 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   })
 
   const safeOwners = await safe.getOwners()
+  const proposalResponse = await fetch(project.proposalIPFS)
+  const proposalJSON = await proposalResponse.json()
 
   return {
     props: {
       project,
       tokenId,
       safeOwners,
+      proposalStatus,
+      proposalJSON,
     },
   }
 }

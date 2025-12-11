@@ -13,14 +13,12 @@ type ProjectsDropdownProps = {
   projects: Project[] | undefined
   selectedProject: Project | undefined
   setSelectedProject: (project: Project) => void
-  setProposalId?: (id: string) => void
 }
 
 export default function ProjectsDropdown({
   projects,
   selectedProject,
   setSelectedProject,
-  setProposalId,
 }: ProjectsDropdownProps) {
   return (
     <>
@@ -58,7 +56,6 @@ export default function ProjectsDropdown({
                         type="button"
                         onClick={() => {
                           setSelectedProject(aP)
-                          setProposalId && setProposalId(aP.MDP)
                         }}
                       >
                         {aP.name}
