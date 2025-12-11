@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
@@ -50,9 +49,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         }
         placeholder="Enter your bio"
         maxLength={
-          bytesOfString(citizenData?.description) >= 1024
-            ? citizenData?.description.length
-            : 1024
+          bytesOfString(citizenData?.description) >= 1024 ? citizenData?.description.length : 1024
         }
       />
       <FormInput
@@ -64,9 +61,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         }
         placeholder="Enter your city and/or country"
         maxLength={
-          bytesOfString(citizenData?.location) >= 1024
-            ? citizenData?.location.length
-            : 1024
+          bytesOfString(citizenData?.location) >= 1024 ? citizenData?.location.length : 1024
         }
       />
       <FormInput
@@ -77,11 +72,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           setCitizenData((prev: any) => ({ ...prev, discord: target.value }))
         }
         placeholder="Enter your discord username"
-        maxLength={
-          bytesOfString(citizenData?.discord) >= 1024
-            ? citizenData?.discord.length
-            : 1024
-        }
+        maxLength={bytesOfString(citizenData?.discord) >= 1024 ? citizenData?.discord.length : 1024}
       />
       <FormInput
         id="citizen-twitter-input"
@@ -91,11 +82,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           setCitizenData((prev: any) => ({ ...prev, twitter: target.value }))
         }
         placeholder="Enter your Twitter link including https://"
-        maxLength={
-          bytesOfString(citizenData?.twitter) >= 1024
-            ? citizenData?.twitter.length
-            : 1024
-        }
+        maxLength={bytesOfString(citizenData?.twitter) >= 1024 ? citizenData?.twitter.length : 1024}
       />
       <FormInput
         id="citizen-website-input"
@@ -105,29 +92,19 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           setCitizenData((prev: any) => ({ ...prev, website: target.value }))
         }
         placeholder="Enter your website link including https://"
-        maxLength={
-          bytesOfString(citizenData?.website) >= 1024
-            ? citizenData?.website.length
-            : 1024
-        }
+        maxLength={bytesOfString(citizenData?.website) >= 1024 ? citizenData?.website.length : 1024}
       />
     </div>
   )
 }
 
-export default function CitizenMetadataModal({
-  nft,
-  selectedChain,
-  setEnabled,
-}: any) {
+export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }: any) {
   const account = useActiveAccount()
   const router = useRouter()
 
   const [stage, setStage] = useState(0)
   const [inputImage, setInputImage] = useState<File>()
-  const [currCitizenImage, setCurrCitizenImage] = useState<string>(
-    nft?.metadata?.image
-  )
+  const [currCitizenImage, setCurrCitizenImage] = useState<string>(nft?.metadata?.image)
   const [newCitizenImage, setNewCitizenImage] = useState<File>()
   const [citizenData, setCitizenData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
@@ -177,10 +154,7 @@ export default function CitizenMetadataModal({
 
   useEffect(() => {
     setCitizenData(() => {
-      const citizenLocation = getAttribute(
-        nft.metadata.attributes,
-        'location'
-      ).value
+      const citizenLocation = getAttribute(nft.metadata.attributes, 'location').value
 
       let locationName
       if (citizenLocation.startsWith('{')) {
@@ -200,25 +174,17 @@ export default function CitizenMetadataModal({
   }, [nft])
 
   return (
-    <Modal id="citizen-metadata-modal-backdrop" setEnabled={setEnabled}>
-      <div className="flex flex-col gap-6 items-start justify-start w-[100vw] md:w-[700px] p-6 md:p-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl h-screen md:h-auto md:max-h-[90vh] overflow-y-auto">
-        <div className="w-full flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white">Edit Profile</h1>
-          <button
-            id="close-modal"
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onClick={() => setEnabled(false)}
-          >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-          </button>
-        </div>
+    <Modal
+      id="citizen-metadata-modal-backdrop"
+      setEnabled={setEnabled}
+      title="Edit Profile"
+      size="3xl"
+    >
+      <div className="flex flex-col gap-6 items-start justify-start">
         {stage === 0 && (
           <>
             <div className="w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">
-                Basic Information
-              </h2>
+              <h2 className="text-lg font-semibold text-white mb-4">Basic Information</h2>
               <CitizenMetadataForm
                 nft={nft}
                 citizenData={citizenData}
@@ -258,9 +224,7 @@ export default function CitizenMetadataModal({
         {stage === 2 && (
           <>
             <div className="text-center mb-6 w-full">
-              <h3 className="text-xl font-semibold text-white mb-3">
-                Almost Done!
-              </h3>
+              <h3 className="text-xl font-semibold text-white mb-3">Almost Done!</h3>
               <p className="text-white/70">
                 Would you like to update your email for notifications?
               </p>
@@ -283,17 +247,12 @@ export default function CitizenMetadataModal({
         )}
         {stage === 3 && (
           <div className="w-full">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Update Email
-            </h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Update Email</h3>
             <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden relative">
               <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
                 <Widget
                   className="w-full"
-                  id={
-                    process.env
-                      .NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string
-                  }
+                  id={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string}
                   onSubmit={submitTypeform}
                   height={500}
                 />
@@ -308,9 +267,7 @@ export default function CitizenMetadataModal({
         {stage === 4 && (
           <>
             <div className="w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">
-                Review & Submit
-              </h2>
+              <h2 className="text-lg font-semibold text-white mb-4">Review & Submit</h2>
               <CitizenMetadataForm
                 nft={nft}
                 citizenData={citizenData}
@@ -340,11 +297,7 @@ export default function CitizenMetadataModal({
                   let imageIpfsLink
                   const currCitizenImage = nft.metadata.image || ''
 
-                  if (
-                    !newCitizenImage &&
-                    currCitizenImage &&
-                    currCitizenImage !== ''
-                  ) {
+                  if (!newCitizenImage && currCitizenImage && currCitizenImage !== '') {
                     imageIpfsLink = currCitizenImage
                   } else {
                     if (!newCitizenImage) return console.error('No new image')
@@ -355,9 +308,7 @@ export default function CitizenMetadataModal({
                     )
 
                     //pin new image
-                    const { cid: newImageIpfsHash } = await pinBlobOrFile(
-                      renamedCitizenImage
-                    )
+                    const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
 
                     //unpin old image
                     await unpinCitizenImage(nft.metadata.id)
@@ -365,16 +316,12 @@ export default function CitizenMetadataModal({
                     imageIpfsLink = `ipfs://${newImageIpfsHash}`
                   }
 
-                  const oldFormResponseId = getAttribute(
-                    nft?.metadata?.attributes,
-                    'formId'
-                  )?.value
+                  const oldFormResponseId = getAttribute(nft?.metadata?.attributes, 'formId')?.value
 
                   if (oldFormResponseId !== formResponseId) {
                     //delete old typeform response
                     await deleteResponse(
-                      process.env
-                        .NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
+                      process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
                       oldFormResponseId
                     )
                   }
@@ -392,13 +339,9 @@ export default function CitizenMetadataModal({
                     }),
                   })
                   const { data: locationData } = await locationDataRes.json()
-                  const locationLat =
-                    locationData?.results?.[0]?.geometry?.location?.lat || -90
-                  const locationLng =
-                    locationData?.results?.[0]?.geometry?.location?.lng || 0
-                  const locationName =
-                    locationData?.results?.[0]?.formatted_address ||
-                    'Antarctica'
+                  const locationLat = locationData?.results?.[0]?.geometry?.location?.lat || -90
+                  const locationLng = locationData?.results?.[0]?.geometry?.location?.lng || 0
+                  const locationName = locationData?.results?.[0]?.formatted_address || 'Antarctica'
                   const citizenLocationData = {
                     lat: locationLat,
                     lng: locationLng,
