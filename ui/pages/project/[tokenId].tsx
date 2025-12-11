@@ -203,7 +203,19 @@ export default function ProjectProfile({
           className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]"
         >
           {/* Project Overview */}
-          <SectionCard header="Proposal" iconSrc="/assets/icon-star.svg">
+          <SectionCard header="Proposal" iconSrc="/assets/icon-star.svg"
+            action={
+              <Link
+                className="flex gap-2 items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm"
+                href={`/project/${project.jDP}`}
+                passHref
+              >
+                <Image src="/assets/report.png" alt="Report Icon" width={16} height={16} />
+                <span>Review Original Proposal</span>
+              </Link>
+            }
+
+          >
             <div className="mt-10 mb-10">
               <div className={`grid ${gridCols} gap-8`}>
                 <div className="lg:col-span-2 relative">

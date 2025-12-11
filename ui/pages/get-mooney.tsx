@@ -12,6 +12,7 @@ import viemChains from '@/lib/viem/viemChains'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import SpaceBackground from '@/components/layout/SpaceBackground'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import NativeToMooney from '@/components/uniswap/NativeToMooney'
 
@@ -32,9 +33,10 @@ export default function GetMooney() {
       />
 
       <Container is_fullwidth={true}>
-        <div className="min-h-screen bg-dark-cool text-white w-full">
+        <SpaceBackground />
+        <div className="min-h-screen text-white w-full relative z-10">
           {/* Buy MOONEY Section */}
-          <section className="py-12 px-6 bg-gradient-to-br from-gray-900/50 to-blue-900/20 w-full min-h-screen flex items-center">
+          <section className="py-12 px-6 w-full min-h-screen flex items-center">
             <div className="max-w-4xl mx-auto w-full">
               <div className="text-center mb-8">
                 <h1 className="text-3xl md:text-4xl font-bold font-GoodTimes text-white mb-4">
