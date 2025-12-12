@@ -170,8 +170,8 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
               className="flex w-full flex-col lg:flex-row items-stretch gap-6"
             >
               {nft?.metadata?.image ? (
-                <div id="citizen-image-container" className="relative flex-shrink-0">
-                  <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
+                <div id="citizen-image-container" className="flex-shrink-0">
+                  <div className="relative w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
                     <IPFSRenderer
                       src={nft?.metadata?.image}
                       className="w-full h-full object-cover rounded-2xl border-4 border-slate-500/50"
@@ -179,10 +179,10 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                       width={250}
                       alt="Citizen Image"
                     />
-                  </div>
-                  <div id="star-asset-container" className="absolute -bottom-2 -right-2">
-                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
-                      <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
+                    <div id="star-asset-container" className="absolute -bottom-2 -right-2">
+                      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
+                        <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -634,37 +634,43 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
-    // Use optimized batch hat operations
     const hatsSubgraphClient = (await import('@/lib/hats/hatsSubgraphClient')).default
     const { MOONDAO_HAT_TREE_IDS } = await import('const/config')
     const { processHatsWithTeamData } = await import('@/lib/hats/batchHatOperations')
 
-    const wearerData = await hatsSubgraphClient.getWearer({
-      chainId: chain.id,
-      wearerAddress: nft.owner,
-      props: {
-        currentHats: {
-          props: {
-            tree: {},
-            admin: {
+    let hats: any[] = []
+
+    try {
+      const wearerData = await hatsSubgraphClient.getWearer({
+        chainId: chain.id,
+        wearerAddress: nft.owner,
+        props: {
+          currentHats: {
+            props: {
+              tree: {},
               admin: {
-                admin: {},
+                admin: {
+                  admin: {},
+                },
               },
             },
           },
         },
-      },
-    })
+      })
 
-    let hats: any[] = []
-    if (wearerData.currentHats) {
-      // Filter to MoonDAO hats only
-      const moondaoHats = wearerData.currentHats.filter(
-        (hat: any) => hat.tree.id === MOONDAO_HAT_TREE_IDS[chainSlug]
-      )
+      if (wearerData.currentHats) {
+        // Filter to MoonDAO hats only
+        const moondaoHats = wearerData.currentHats.filter(
+          (hat: any) => hat.tree.id === MOONDAO_HAT_TREE_IDS[chainSlug]
+        )
 
-      // Batch process all hats to get team IDs
-      hats = await processHatsWithTeamData(chain, moondaoHats)
+        // Batch process all hats to get team IDs
+        hats = await processHatsWithTeamData(chain, moondaoHats)
+      }
+    } catch (error) {
+      // Citizen doesn't wear any hats
+      console.log(`Citizen ${tokenId} does not wear any hats`)
+      hats = []
     }
 
     console.log('HATS', hats)

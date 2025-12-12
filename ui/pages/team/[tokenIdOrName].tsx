@@ -227,8 +227,8 @@ export default function TeamDetailPage({
               className="flex w-full flex-col lg:flex-row items-stretch gap-6"
             >
               {nft?.metadata?.image ? (
-                <div id="team-image-container" className="relative flex-shrink-0">
-                  <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
+                <div id="team-image-container" className="flex-shrink-0">
+                  <div className="relative w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
                     <IPFSRenderer
                       src={nft?.metadata?.image}
                       className="w-full h-full object-cover rounded-2xl border-4 border-slate-500/50"
@@ -236,10 +236,10 @@ export default function TeamDetailPage({
                       width={250}
                       alt="Team Image"
                     />
-                  </div>
-                  <div id="star-asset-container" className="absolute -bottom-2 -right-2">
-                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
-                      <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
+                    <div id="star-asset-container" className="absolute -bottom-2 -right-2">
+                      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
+                        <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
+                      </div>
                     </div>
                   </div>
                 </div>
