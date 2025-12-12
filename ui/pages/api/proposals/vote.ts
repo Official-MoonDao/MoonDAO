@@ -37,6 +37,7 @@ const chainSlug = getChainSlug(chain)
 async function POST(req: NextApiRequest, res: NextApiResponse) {
   const { quarter, year } = req.body
 
+  // FIXME only select project proposals, and make sure they have passed temp check
   const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE QUARTER = ${quarter} AND YEAR = ${year}`
   const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
   const voteAddresses = votes.map((pv) => pv.address)
@@ -52,28 +53,17 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     abi: ProjectTableABI as any,
     chain: chain,
   })
-  //const tempCheckApproved = await readContract({
-  //contract: proposalContract,
-  //method: 'tempCheckApproved' as string,
-  //params: [mdp],
-  //})
   //const tempCheckApprovedTimestamp = await readContract({
   //contract: proposalContract,
   //method: 'tempCheckApprovedTimestamp' as string,
   //params: [mdp],
   //})
-  //if (!tempCheckApproved) {
-  //return res.status(400).json({
-  //error: 'Proposal has not passed temp check.',
-  //})
-  //}
   //const { quarter, year } = getSubmissionQuarter()
   const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE QUARTER = ${quarter} AND YEAR = ${year}`
   const projects = await queryTable(chain, projectStatement)
   const ethBudgets = Object.fromEntries(
     await Promise.all(
       projects.map(async (project: any) => {
-        console.log(project.proposalIPFS)
         const proposalResponse = await fetch(project.proposalIPFS)
         const proposal = await proposalResponse.json()
         let budget = 0
@@ -87,13 +77,23 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     )
   )
   const projectIds = projects.map((project: any) => project.id)
-  //projects.forEach((project) => {
-  //if (project.active === PROJECT_ACTIVE) {
-  //return res.status(400).json({
-  //error: 'Project has already passed.',
-  //})
-  //}
-  //})
+  projects.forEach(async (project) => {
+    if (project.active === PROJECT_ACTIVE) {
+      return res.status(400).json({
+        error: 'Project has already passed.',
+      })
+    }
+    const tempCheckApproved = await readContract({
+      contract: proposalContract,
+      method: 'tempCheckApproved' as string,
+      params: [project.MDP],
+    })
+    if (!tempCheckApproved) {
+      return res.status(400).json({
+        error: `MDP-${project.MDP} has not passed temp check.`,
+      })
+    }
+  })
   const currentTimestamp: number = Math.floor(Date.now() / 1000)
   // FIXME how long is the voting period? at least 5 days but in practice how long?
   //const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7

@@ -166,6 +166,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
       setSigningStatus('error')
     } else {
       const response = await res.json()
+      setSubmittedProposalId(response.proposalId)
       setSigningStatus('success')
       setShowSubmissionCTA(true)
       try {
