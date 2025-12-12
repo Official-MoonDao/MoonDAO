@@ -11,6 +11,7 @@ import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
 import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
+import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
@@ -47,26 +48,25 @@ export async function getStaticProps() {
     const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
     const projects = await queryTable(chain, projectStatement)
 
-    const proposals = []
-    const currentProjects = []
-    const pastProjects = []
-    console.log('projects', projects)
-    for (let i = 0; i < projects.length; i++) {
-      if (!BLOCKED_PROJECTS.has(projects[i].id)) {
-        const activeStatus = projects[i].active
+    const proposals: Project[] = []
+    const currentProjects: Project[] = []
+    const pastProjects: Project[] = []
+    projects.forEach(async (project: Project) => {
+      if (!BLOCKED_PROJECTS.has(project.id)) {
+        const activeStatus = project.active
         if (activeStatus == PROJECT_PENDING) {
           const proposalResponse = await fetch(project.proposalIPFS)
           const proposalJSON = await proposalResponse.json()
           if (!proposalJSON.nonProjectProposal) {
-            proposals.push(projects[i])
+            proposals.push(project)
           }
         } else if (activeStatus == PROJECT_ACTIVE) {
-          currentProjects.push(projects[i])
+          currentProjects.push(project)
         } else {
-          pastProjects.push(projects[i])
+          pastProjects.push(project)
         }
       }
-    }
+    })
     currentProjects.sort((a, b) => {
       if (a.eligible === b.eligible) {
         return 0

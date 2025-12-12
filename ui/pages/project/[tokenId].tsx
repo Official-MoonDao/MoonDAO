@@ -228,7 +228,7 @@ export default function ProjectProfile({
             action={
               <Link
                 className="flex gap-2 items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm"
-                href={`/project/${project.jDP}`}
+                href={`/project/${project.MDP}`}
                 passHref
               >
                 <Image src="/assets/report.png" alt="Report Icon" width={16} height={16} />
@@ -389,7 +389,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const proposalResponse = await fetch(project.proposalIPFS)
   const proposalJSON = await proposalResponse.json()
 
-  let votes = []
+  let votes: DistributionVote[] = []
   let voteOutcome = {}
   if (proposalJSON.nonProjectProposal) {
     const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
