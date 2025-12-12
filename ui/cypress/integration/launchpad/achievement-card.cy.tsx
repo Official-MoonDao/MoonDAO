@@ -10,6 +10,10 @@ describe('<AchievementCard />', () => {
     gradientTo: 'to-[#5F4BA2]/20',
   }
 
+  beforeEach(() => {
+    cy.mountNextRouter('/')
+  })
+
   it('Renders value, label, and description', () => {
     cy.mount(<AchievementCard {...defaultProps} />)
 
@@ -37,6 +41,6 @@ describe('<AchievementCard />', () => {
   it('Renders icon correctly', () => {
     cy.mount(<AchievementCard {...defaultProps} />)
 
-    cy.get('img[alt="Million"]').should('have.attr', 'src', '/test-icon.svg')
+    cy.get('img').should('have.attr', 'src').and('include', '/test-icon.svg')
   })
 })

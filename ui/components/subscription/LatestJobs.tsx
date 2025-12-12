@@ -11,10 +11,7 @@ type LatestJobsProps = {
   jobTableContract: any
 }
 
-export default function LatestJobs({
-  teamContract,
-  jobTableContract,
-}: LatestJobsProps) {
+export default function LatestJobs({ teamContract, jobTableContract }: LatestJobsProps) {
   const router = useRouter()
   const [latestJobs, setLatestJobs] = useState<JobType[]>([])
   const [tableName, setTableName] = useState<string | null>(null)
@@ -76,14 +73,12 @@ export default function LatestJobs({
   }, [jobs, teamContract, now])
 
   return (
-    <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 pr-12">
-        <div className="flex gap-5 opacity-[50%]">
-          <h2 className="header font-GoodTimes">Latest Jobs</h2>
-        </div>
+    <div className="w-full">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-8">
+        <h2 className="font-GoodTimes text-2xl text-white">Latest Jobs</h2>
 
         <StandardButton
-          className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
+          className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px] mt-2 lg:mt-0"
           onClick={() => router.push('/jobs')}
         >
           See More
@@ -93,12 +88,7 @@ export default function LatestJobs({
       <SlidingCardMenu>
         <div id="latest-jobs-container" className="flex gap-5">
           {latestJobs.map((job, i) => (
-            <Job
-              key={`job-${i}`}
-              job={job}
-              showTeam
-              teamContract={teamContract}
-            />
+            <Job key={`job-${i}`} job={job} showTeam teamContract={teamContract} />
           ))}
         </div>
       </SlidingCardMenu>
