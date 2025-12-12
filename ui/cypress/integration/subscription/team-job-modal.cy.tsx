@@ -41,7 +41,7 @@ describe('<TeamJobModal />', () => {
         <TeamJobModal {...props} />
       </TestnetProviders>
     )
-    cy.get('h2').contains('Add a Job')
+    cy.get('[data-testid="modal-title"]').contains('Create Job')
     cy.get('#job-expiration-status').should(
       'have.text',
       `*This job post will end on ${new Date(job.endTime * 1000).toLocaleDateString()}`
@@ -56,7 +56,12 @@ describe('<TeamJobModal />', () => {
       </TestnetProviders>
     )
 
-    cy.get('form').submit()
-    cy.contains('Please fill out all fields.', { timeout: 5000 }).should('exist')
+    cy.get('form').then(($form) => {
+      $form[0].requestSubmit()
+    })
+    // Wait for toast to appear - react-hot-toast renders in a div with role="status"
+    cy.get('[role="status"]', { timeout: 5000 })
+      .should('be.visible')
+      .should('contain', 'Please fill out all fields.')
   })
 })

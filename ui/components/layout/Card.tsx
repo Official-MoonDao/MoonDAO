@@ -14,6 +14,11 @@ interface CardProps {
   metadata?: any
   type?: string
   profile?: boolean
+  children?: ReactNode
+  variant?: string
+  maxWidthClassNames?: string
+  className?: string
+  layout?: string
 }
 
 export default function Card({
@@ -29,6 +34,11 @@ export default function Card({
   metadata,
   type,
   profile = false,
+  children,
+  variant,
+  maxWidthClassNames,
+  className = '',
+  layout,
 }: CardProps) {
   const [citizenDiscord, setCitizenDiscord] = useState<string | undefined>()
 
@@ -40,6 +50,20 @@ export default function Card({
       setCitizenDiscord(discordAttribute?.value)
     }
   }, [type, metadata])
+
+  // If variant and maxWidthClassNames are provided, render as a simple card container with children
+  if (variant || maxWidthClassNames !== undefined) {
+    const baseClasses =
+      'bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-lg transition-all duration-300 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40'
+    const widthClasses = maxWidthClassNames || 'max-w-md md:max-w-xl'
+    const layoutClasses = layout === 'wide' ? 'w-full' : ''
+
+    return (
+      <div className={`${baseClasses} ${widthClasses} ${layoutClasses} ${className}`}>
+        {children}
+      </div>
+    )
+  }
 
   // Prepare enhanced paragraph content with additional details
   const enhancedParagraph = (
@@ -81,7 +105,7 @@ export default function Card({
       image={metadata?.image}
       title={metadata?.name}
       type={type}
-      profile={profile} // Add any footer content if needed
+      profile={profile}
     />
   )
 }

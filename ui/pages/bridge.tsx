@@ -1,33 +1,38 @@
 import useTranslation from 'next-translate/useTranslation'
-import React from 'react'
 import Link from 'next/link'
+import React from 'react'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import ArbitrumBridge from '@/components/bridge/ArbitrumBridge'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import SpaceBackground from '@/components/layout/SpaceBackground'
 
 export default function Bridge() {
   const { t } = useTranslation('common')
 
   return (
     <>
-      <WebsiteHead title="Bridge MOONEY - MoonDAO" description="Bridge MOONEY tokens across different blockchain networks securely and efficiently." />
-      
+      <WebsiteHead
+        title="Bridge MOONEY - MoonDAO"
+        description="Bridge MOONEY tokens across different blockchain networks securely and efficiently."
+      />
+
       <Container is_fullwidth={true}>
-        <div className="min-h-screen bg-dark-cool text-white w-full">
-          
+        <SpaceBackground />
+        <div className="min-h-screen text-white w-full relative z-10">
           {/* Bridge MOONEY Section */}
-          <section className="py-12 px-6 bg-gradient-to-br from-gray-900/50 to-blue-900/20 w-full min-h-screen flex items-center">
+          <section className="py-12 px-6 w-full min-h-screen flex items-center">
             <div className="max-w-4xl mx-auto w-full">
               <div className="text-center mb-8">
                 <h1 className="text-3xl md:text-4xl font-bold font-GoodTimes text-white mb-4">
                   Bridge MOONEY
                 </h1>
                 <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-                  Transfer your MOONEY tokens securely across different blockchain networks to access various DeFi opportunities and governance features.
+                  Transfer your MOONEY tokens securely across different blockchain networks to
+                  access various DeFi opportunities and governance features.
                 </p>
               </div>
-              
+
               {/* Centered Bridge Interface */}
               <div className="max-w-xl mx-auto">
                 <div>

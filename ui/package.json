@@ -14,6 +14,8 @@
     "cy:open": "cypress open",
     "cy:run": "cypress run",
     "cy:run-ct": "cypress run --component",
+    "cy:run-ct:fast": "bash scripts/test-parallel.sh 4",
+    "cy:run-ct:warp": "bash scripts/test-parallel.sh 8",
     "cleanup:offchain-prune": "ts-node -r tsconfig-paths/register scripts/cleanup/offchain-prune.ts"
   },
   "dependencies": {
@@ -47,7 +49,6 @@
     "@typeform/embed-react": "^3.17.0",
     "@types/canvas-confetti": "^1.9.0",
     "@uniswap/sdk-core": "^4.0.7",
-    "@uniswap/smart-order-router": "github:namedotget/smart-order-router#main",
     "@uniswap/universal-router-sdk": "^4.19.6",
     "@uniswap/v4-sdk": "^1.21.4",
     "@upstash/ratelimit": "^2.0.1",
@@ -68,6 +69,7 @@
     "formidable": "^3.5.1",
     "fpnum": "^1.0.0",
     "google-spreadsheet": "^3.3.0",
+    "googleapis": "^128.0.0",
     "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",
     "gsap": "^3.12.7",
@@ -137,6 +139,7 @@
     "autoprefixer": "^10.4.0",
     "cypress": "12.17.3",
     "cypress-file-upload": "^5.0.8",
+    "cypress-split": "^1.24.2",
     "dotenv": "^17.2.2",
     "eslint": "8.4.1",
     "eslint-config-next": "13.4.10",

@@ -1,9 +1,4 @@
-import {
-  LockClosedIcon,
-  ScaleIcon,
-  UsersIcon,
-  ShieldCheckIcon,
-} from '@heroicons/react/24/outline'
+import { LockClosedIcon, ScaleIcon, UsersIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
 import { useFundWallet } from '@privy-io/react-auth'
 import { BigNumber, ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
@@ -15,12 +10,7 @@ import React from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { approveToken } from '../lib/tokens/approve'
-import {
-  calculateVMOONEY,
-  createLock,
-  increaseLock,
-  withdrawLock,
-} from '../lib/tokens/ve-token'
+import { calculateVMOONEY, createLock, increaseLock, withdrawLock } from '../lib/tokens/ve-token'
 import { bigNumberToDate, dateOut, dateToReadable } from '../lib/utils/dates'
 import { NumberType, transformNumber } from '../lib/utils/numbers'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -34,7 +24,9 @@ import Head from '../components/layout/Head'
 import { LockData } from '../components/lock/LockData'
 import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
+import Input from '@/components/layout/Input'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import SpaceBackground from '@/components/layout/SpaceBackground'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import RetroactiveRewards from '@/components/tokens/RetroactiveRewards'
 import ERC20ABI from '../const/abis/ERC20.json'
@@ -90,13 +82,12 @@ export default function Lock() {
       setHasExpired(
         VMOONEYLock &&
           VMOONEYLock[1] != 0 &&
-          ethers.BigNumber.from(+new Date()).gte(
-            BigNumber.from(VMOONEYLock[1]).mul(1000)
-          )
+          ethers.BigNumber.from(+new Date()).gte(BigNumber.from(VMOONEYLock[1]).mul(1000))
       )
   }, [VMOONEYLock, VMOONEYLockLoading, address])
 
   const [lockAmount, setLockAmount] = useState<string>('')
+  const [isAmountInputFocused, setIsAmountInputFocused] = useState(false)
   //reset lock amount on chain switch
   useEffect(() => {
     setLockAmount('')
@@ -193,9 +184,7 @@ export default function Lock() {
         time:
           lockTime?.value &&
           lockTime.value.gt(ethers.BigNumber.from(+oneWeekOut)) &&
-          lockTime.value.lte(
-            BigNumber.from(+dateOut(new Date(), { days: 1460 }))
-          ),
+          lockTime.value.lte(BigNumber.from(+dateOut(new Date(), { days: 1460 }))),
       })
     }
   }, [hasLock, lockAmount, lockTime, VMOONEYLock, address])
@@ -207,17 +196,18 @@ export default function Lock() {
       <Head title="Lock $MOONEY" />
 
       <Container is_fullwidth={true}>
-        <div className="min-h-screen bg-dark-cool text-white w-full">
+        <SpaceBackground />
+        <div className="min-h-screen text-white w-full relative z-10">
           {/* Lock MOONEY Section */}
-          <section className="py-12 px-6 bg-gradient-to-br from-gray-900/50 to-blue-900/20 w-full min-h-screen">
+          <section className="py-12 px-6 w-full min-h-screen">
             <div className="max-w-4xl mx-auto w-full">
               <div className="text-center mb-8">
                 <h1 className="text-3xl md:text-4xl font-bold font-GoodTimes text-white mb-4">
                   Lock MOONEY
                 </h1>
                 <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-                  Lock your MOONEY tokens to receive vMOONEY and gain voting
-                  power in MoonDAO governance.
+                  Lock your MOONEY tokens to receive vMOONEY and gain voting power in MoonDAO
+                  governance.
                 </p>
               </div>
 
@@ -239,12 +229,10 @@ export default function Lock() {
 
               {/* Network Selection */}
               <div className="mb-8">
-                <div className="max-w-2xl mx-auto">
+                <div className="max-w-xl mx-auto">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-2">
-                        Network Selection
-                      </h3>
+                      <h3 className="text-lg font-semibold text-white mb-2">Network Selection</h3>
                       <p className="text-gray-300 text-sm">
                         Select a network to lock your MOONEY tokens
                       </p>
@@ -266,18 +254,12 @@ export default function Lock() {
                         <div className="p-5 border-b border-white/10 bg-black/20">
                           <div className="flex items-center justify-between">
                             <div>
-                              <h2 className="text-xl font-bold text-white">
-                                Lock MOONEY
-                              </h2>
-                              <p className="text-gray-400 text-xs mt-0.5">
-                                Earn voting power
-                              </p>
+                              <h2 className="text-xl font-bold text-white">Lock MOONEY</h2>
+                              <p className="text-gray-400 text-xs mt-0.5">Earn voting power</p>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="text-right">
-                                <p className="text-gray-400 text-xs">
-                                  Available
-                                </p>
+                                <p className="text-gray-400 text-xs">Available</p>
                                 <div className="text-white text-lg font-RobotoMono font-semibold flex items-center gap-2">
                                   <div className="text-white">
                                     <Balance
@@ -303,31 +285,48 @@ export default function Lock() {
                         <div className="p-5 space-y-5">
                           {/* Amount Input */}
                           <div className="space-y-2">
-                            <label className="text-gray-300 text-sm font-medium">
-                              Amount
-                            </label>
+                            <label className="text-gray-300 text-sm font-medium">Amount</label>
                             <div className="bg-black/30 rounded-xl p-3 border border-white/10 focus-within:border-blue-400/50 transition-colors">
                               <div className="flex items-center justify-between">
-                                <input
+                                <Input
                                   type="text"
                                   placeholder="0.00"
-                                  className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1"
+                                  className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 border-0 p-0"
                                   value={
-                                    lockAmount
-                                      ? parseFloat(lockAmount).toLocaleString(
-                                          'en-US',
-                                          {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2,
-                                          }
-                                        )
+                                    isAmountInputFocused
+                                      ? lockAmount || ''
+                                      : lockAmount && !isNaN(parseFloat(lockAmount))
+                                      ? parseFloat(lockAmount).toLocaleString('en-US', {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        })
                                       : ''
                                   }
                                   disabled={
-                                    (!MOONEYBalance ||
-                                      +MOONEYBalance.toString() === 0) &&
-                                    !hasLock
+                                    (!MOONEYBalance || +MOONEYBalance.toString() === 0) && !hasLock
                                   }
+                                  max={
+                                    MOONEYBalance
+                                      ? parseFloat(
+                                          ethers.utils.formatEther(MOONEYBalance.toString())
+                                        )
+                                      : undefined
+                                  }
+                                  onFocus={() => {
+                                    setIsAmountInputFocused(true)
+                                    // Remove formatting when focusing for easier editing
+                                    if (lockAmount && !isNaN(parseFloat(lockAmount))) {
+                                      setLockAmount(parseFloat(lockAmount).toString())
+                                    }
+                                  }}
+                                  onBlur={() => {
+                                    setIsAmountInputFocused(false)
+                                    // Format the value on blur if it's a valid number
+                                    if (lockAmount && !isNaN(parseFloat(lockAmount))) {
+                                      const numValue = parseFloat(lockAmount)
+                                      setLockAmount(numValue.toString())
+                                    }
+                                  }}
                                   onChange={(e: any) => {
                                     let value = e.target.value
                                     // Remove commas and non-numeric characters except decimal point
@@ -336,13 +335,22 @@ export default function Lock() {
                                     // Prevent multiple decimal points
                                     const parts = value.split('.')
                                     if (parts.length > 2) {
-                                      value =
-                                        parts[0] + '.' + parts.slice(1).join('')
+                                      value = parts[0] + '.' + parts.slice(1).join('')
                                     }
 
                                     // Prevent negative values
                                     if (parseFloat(value) < 0) {
                                       value = '0'
+                                    }
+
+                                    // Enforce max value (available MOONEY balance)
+                                    if (MOONEYBalance) {
+                                      const maxValue = parseFloat(
+                                        ethers.utils.formatEther(MOONEYBalance.toString())
+                                      )
+                                      if (parseFloat(value) > maxValue) {
+                                        value = maxValue.toString()
+                                      }
                                     }
 
                                     // Remove leading zero if user types a number after it
@@ -356,29 +364,25 @@ export default function Lock() {
                                     setLockAmount(value)
                                     setWantsToIncrease(true)
                                   }}
+                                  formatNumbers={true}
+                                  maxWidth="max-w-none"
                                 />
                                 <div className="flex items-center gap-2">
-                                  <span className="text-gray-400 text-sm">
-                                    MOONEY
-                                  </span>
+                                  <span className="text-gray-400 text-sm">MOONEY</span>
                                   <button
                                     className="text-blue-400 hover:text-blue-300 font-medium transition-colors px-2 py-1 bg-blue-400/10 hover:bg-blue-400/20 rounded text-xs"
                                     disabled={
-                                      (!MOONEYBalance ||
-                                        +MOONEYBalance?.toString() === 0) &&
+                                      (!MOONEYBalance || +MOONEYBalance?.toString() === 0) &&
                                       !hasLock
                                     }
                                     onClick={() => {
                                       setLockAmount(
                                         VMOONEYLock
                                           ? ethers.utils.formatEther(
-                                              BigNumber.from(
-                                                VMOONEYLock[0]
-                                              ).add(MOONEYBalance || 0)
+                                              BigNumber.from(VMOONEYLock[0]).add(MOONEYBalance || 0)
                                             )
                                           : ethers.utils.formatEther(
-                                              MOONEYBalance?.value.toString() ||
-                                                '0'
+                                              MOONEYBalance?.value.toString() || '0'
                                             )
                                       )
                                       setWantsToIncrease(true)
@@ -390,11 +394,7 @@ export default function Lock() {
                                     <button
                                       className="text-orange-400 hover:text-orange-300 font-medium transition-colors px-2 py-1 bg-orange-400/10 hover:bg-orange-400/20 rounded text-xs"
                                       onClick={() => {
-                                        setLockAmount(
-                                          ethers.utils.formatEther(
-                                            VMOONEYLock[0]
-                                          )
-                                        )
+                                        setLockAmount(ethers.utils.formatEther(VMOONEYLock[0]))
                                         setWantsToIncrease(true)
                                       }}
                                     >
@@ -408,9 +408,7 @@ export default function Lock() {
 
                           {/* Duration Selection */}
                           <div className="space-y-3">
-                            <label className="text-gray-300 text-sm font-medium">
-                              Lock Until
-                            </label>
+                            <label className="text-gray-300 text-sm font-medium">Lock Until</label>
 
                             {/* Lock Duration Buttons */}
                             <div className="grid grid-cols-4 gap-2">
@@ -422,16 +420,13 @@ export default function Lock() {
                               ].map(({ label, days }) => {
                                 const targetDate = dateOut(new Date(), { days })
                                 const isSelected =
-                                  lockTime?.formatted ===
-                                  dateToReadable(targetDate)
+                                  lockTime?.formatted === dateToReadable(targetDate)
                                 // Check if the target date is beyond the current lock end time
                                 const canSelectThisDate =
                                   !hasLock ||
                                   (VMOONEYLock &&
                                     +targetDate >
-                                      BigNumber.from(VMOONEYLock[1])
-                                        .mul(1000)
-                                        .toNumber())
+                                      BigNumber.from(VMOONEYLock[1]).mul(1000).toNumber())
 
                                 return (
                                   <button
@@ -444,16 +439,13 @@ export default function Lock() {
                                         : 'bg-gray-700/30 text-gray-500 border border-gray-600/30 cursor-not-allowed'
                                     }`}
                                     disabled={
-                                      ((!MOONEYBalance ||
-                                        +MOONEYBalance.toString() === 0) &&
+                                      ((!MOONEYBalance || +MOONEYBalance.toString() === 0) &&
                                         !hasLock) ||
                                       !canSelectThisDate
                                     }
                                     onClick={() => {
                                       setLockTime({
-                                        value: ethers.BigNumber.from(
-                                          +targetDate
-                                        ),
+                                        value: ethers.BigNumber.from(+targetDate),
                                         formatted: dateToReadable(targetDate),
                                       })
                                       setWantsToIncrease(true)
@@ -474,22 +466,15 @@ export default function Lock() {
                                 min={
                                   hasLock && VMOONEYLock
                                     ? dateToReadable(
-                                        dateOut(
-                                          bigNumberToDate(
-                                            BigNumber.from(VMOONEYLock[1])
-                                          ),
-                                          { days: 1 }
-                                        )
+                                        dateOut(bigNumberToDate(BigNumber.from(VMOONEYLock[1])), {
+                                          days: 1,
+                                        })
                                       )
-                                    : dateToReadable(
-                                        dateOut(new Date(), { days: 7 })
-                                      )
+                                    : dateToReadable(dateOut(new Date(), { days: 7 }))
                                 }
                                 max={minMaxLockTime.max}
                                 disabled={
-                                  (!MOONEYBalance ||
-                                    +MOONEYBalance.toString() === 0) &&
-                                  !hasLock
+                                  (!MOONEYBalance || +MOONEYBalance.toString() === 0) && !hasLock
                                 }
                                 onChange={(e: any) => {
                                   const inputValue = e.target.value
@@ -497,13 +482,9 @@ export default function Lock() {
                                   // Update state immediately without validation during typing
                                   setLockTime({
                                     ...lockTime,
-                                    formatted: inputValue
-                                      ? inputValue
-                                      : lockTime.orig?.formatted,
+                                    formatted: inputValue ? inputValue : lockTime.orig?.formatted,
                                     value: inputValue
-                                      ? ethers.BigNumber.from(
-                                          Date.parse(inputValue)
-                                        )
+                                      ? ethers.BigNumber.from(Date.parse(inputValue))
                                       : lockTime.orig?.value,
                                   })
                                   setWantsToIncrease(!!inputValue)
@@ -530,9 +511,7 @@ export default function Lock() {
                                       setLockTime({
                                         ...lockTime,
                                         formatted: validDate,
-                                        value: ethers.BigNumber.from(
-                                          Date.parse(validDate)
-                                        ),
+                                        value: ethers.BigNumber.from(Date.parse(validDate)),
                                       })
                                     } else if (selectedDate > maxDate) {
                                       toast.error(
@@ -543,9 +522,7 @@ export default function Lock() {
                                       setLockTime({
                                         ...lockTime,
                                         formatted: validDate,
-                                        value: ethers.BigNumber.from(
-                                          Date.parse(validDate)
-                                        ),
+                                        value: ethers.BigNumber.from(Date.parse(validDate)),
                                       })
                                     }
                                   }
@@ -558,105 +535,83 @@ export default function Lock() {
                           </div>
 
                           {/* Voting Power Preview */}
-                          {(canIncrease.time || canIncrease.amount) &&
-                            wantsToIncrease && (
-                              <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl p-4 border border-blue-400/20 space-y-3">
-                                <p className="text-gray-300 text-xs">
-                                  Locking MOONEY gives you vMOONEY tokens. Your
-                                  voting power is calculated as the square root
-                                  of your vMOONEY balance.
-                                </p>
+                          {(canIncrease.time || canIncrease.amount) && wantsToIncrease && (
+                            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl p-4 border border-blue-400/20 space-y-3">
+                              <p className="text-gray-300 text-xs">
+                                Locking MOONEY gives you vMOONEY tokens. Your voting power is
+                                calculated as the square root of your vMOONEY balance.
+                              </p>
 
-                                {/* vMOONEY Amount */}
-                                <div className="flex items-center justify-between">
-                                  <span className="text-gray-300 text-sm">
-                                    vMOONEY Received
+                              {/* vMOONEY Amount */}
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-300 text-sm">vMOONEY Received</span>
+                                <div className="text-right min-w-0 flex-shrink-0">
+                                  <span className="text-white text-xl font-RobotoMono">
+                                    {calculateVMOONEY({
+                                      CurrentMOONEYLock: ethers.utils.formatEther(
+                                        VMOONEYLock?.[0] || 0
+                                      ),
+                                      MOONEYAmount:
+                                        +lockAmount ||
+                                        ethers.utils.formatEther(VMOONEYLock?.[0] || 0),
+                                      VMOONEYAmount: transformNumber(
+                                        VMOONEYBalance ? +VMOONEYBalance?.toString() / 10 ** 18 : 0,
+                                        NumberType.number
+                                      ),
+                                      time: Date.parse(lockTime.formatted),
+                                      lockTime: Date.parse(
+                                        hasLock && lockTime?.orig
+                                          ? lockTime.orig.formatted
+                                          : new Date()
+                                      ),
+                                      max: Date.parse(minMaxLockTime.max),
+                                    })}
                                   </span>
-                                  <div className="text-right min-w-0 flex-shrink-0">
-                                    <span className="text-white text-xl font-RobotoMono">
-                                      {calculateVMOONEY({
-                                        CurrentMOONEYLock:
-                                          ethers.utils.formatEther(
-                                            VMOONEYLock?.[0] || 0
-                                          ),
-                                        MOONEYAmount:
-                                          +lockAmount ||
-                                          ethers.utils.formatEther(
-                                            VMOONEYLock?.[0] || 0
-                                          ),
-                                        VMOONEYAmount: transformNumber(
-                                          VMOONEYBalance
-                                            ? +VMOONEYBalance?.toString() /
-                                                10 ** 18
-                                            : 0,
-                                          NumberType.number
-                                        ),
-                                        time: Date.parse(lockTime.formatted),
-                                        lockTime: Date.parse(
-                                          hasLock && lockTime?.orig
-                                            ? lockTime.orig.formatted
-                                            : new Date()
-                                        ),
-                                        max: Date.parse(minMaxLockTime.max),
-                                      })}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Voting Power */}
-                                <div className="flex items-center justify-between">
-                                  <span className="text-gray-300 text-sm">
-                                    Voting Power
-                                  </span>
-                                  <div className="text-right min-w-0 flex-shrink-0">
-                                    <span className="text-white text-xl font-RobotoMono">
-                                      {(() => {
-                                        const vMooneyAmount = parseFloat(
-                                          calculateVMOONEY({
-                                            CurrentMOONEYLock:
-                                              ethers.utils.formatEther(
-                                                VMOONEYLock?.[0] || 0
-                                              ),
-                                            MOONEYAmount:
-                                              +lockAmount ||
-                                              ethers.utils.formatEther(
-                                                VMOONEYLock?.[0] || 0
-                                              ),
-                                            VMOONEYAmount: transformNumber(
-                                              VMOONEYBalance
-                                                ? +VMOONEYBalance?.toString() /
-                                                    10 ** 18
-                                                : 0,
-                                              NumberType.number
-                                            ),
-                                            time: Date.parse(
-                                              lockTime.formatted
-                                            ),
-                                            lockTime: Date.parse(
-                                              hasLock && lockTime?.orig
-                                                ? lockTime.orig.formatted
-                                                : new Date()
-                                            ),
-                                            max: Date.parse(minMaxLockTime.max),
-                                          })
-                                            .toString()
-                                            .replace(/,/g, '')
-                                        )
-                                        const votingPower =
-                                          Math.sqrt(vMooneyAmount)
-                                        return votingPower.toLocaleString(
-                                          'en-US',
-                                          {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2,
-                                          }
-                                        )
-                                      })()}
-                                    </span>
-                                  </div>
                                 </div>
                               </div>
-                            )}
+
+                              {/* Voting Power */}
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-300 text-sm">Voting Power</span>
+                                <div className="text-right min-w-0 flex-shrink-0">
+                                  <span className="text-white text-xl font-RobotoMono">
+                                    {(() => {
+                                      const vMooneyAmount = parseFloat(
+                                        calculateVMOONEY({
+                                          CurrentMOONEYLock: ethers.utils.formatEther(
+                                            VMOONEYLock?.[0] || 0
+                                          ),
+                                          MOONEYAmount:
+                                            +lockAmount ||
+                                            ethers.utils.formatEther(VMOONEYLock?.[0] || 0),
+                                          VMOONEYAmount: transformNumber(
+                                            VMOONEYBalance
+                                              ? +VMOONEYBalance?.toString() / 10 ** 18
+                                              : 0,
+                                            NumberType.number
+                                          ),
+                                          time: Date.parse(lockTime.formatted),
+                                          lockTime: Date.parse(
+                                            hasLock && lockTime?.orig
+                                              ? lockTime.orig.formatted
+                                              : new Date()
+                                          ),
+                                          max: Date.parse(minMaxLockTime.max),
+                                        })
+                                          .toString()
+                                          .replace(/,/g, '')
+                                      )
+                                      const votingPower = Math.sqrt(vMooneyAmount)
+                                      return votingPower.toLocaleString('en-US', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      })
+                                    })()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Action Section */}
@@ -677,8 +632,7 @@ export default function Lock() {
                             }
                             action={async () => {
                               try {
-                                if (!account)
-                                  throw new Error('No account connected')
+                                if (!account) throw new Error('No account connected')
 
                                 // Additional validation before attempting lock
                                 const maxLockTime = dateOut(new Date(), {
@@ -686,9 +640,7 @@ export default function Lock() {
                                 })
                                 if (
                                   lockTime?.value &&
-                                  lockTime.value.gt(
-                                    BigNumber.from(+maxLockTime)
-                                  )
+                                  lockTime.value.gt(BigNumber.from(+maxLockTime))
                                 ) {
                                   throw new Error(
                                     'Lock period cannot exceed 4 years. Please adjust your lock duration.'
@@ -696,18 +648,14 @@ export default function Lock() {
                                 }
 
                                 const lockedMooney = VMOONEYLock?.[0]
-                                const lockAmountBigNum =
-                                  ethers.utils.parseEther(lockAmount)
+                                const lockAmountBigNum = ethers.utils.parseEther(lockAmount)
 
                                 const increaseAmount = lockedMooney
                                   ? lockAmountBigNum.sub(lockedMooney)
                                   : lockAmountBigNum
 
                                 // Only check approval if we're actually increasing the amount
-                                if (
-                                  increaseAmount.gt(0) &&
-                                  increaseAmount.gt(tokenAllowance)
-                                ) {
+                                if (increaseAmount.gt(0) && increaseAmount.gt(tokenAllowance)) {
                                   const approvalReceipt = await approveToken({
                                     account,
                                     tokenContract: mooneyContract,
@@ -715,28 +663,21 @@ export default function Lock() {
                                     allowance: increaseAmount,
                                   })
                                   approvalReceipt &&
-                                    toast.success(
-                                      'Successfully approved MOONEY for lock.'
-                                    )
+                                    toast.success('Successfully approved MOONEY for lock.')
                                 }
 
                                 const lockReceipt: any = hasLock
                                   ? await increaseLock({
                                       account,
                                       votingEscrowContract: vMooneyContract,
-                                      newAmount: increaseAmount.gt(0)
-                                        ? increaseAmount
-                                        : undefined,
-                                      currentTime:
-                                        VMOONEYLock && VMOONEYLock[1],
+                                      newAmount: increaseAmount.gt(0) ? increaseAmount : undefined,
+                                      currentTime: VMOONEYLock && VMOONEYLock[1],
                                       newTime: lockTime?.value.div(1000),
                                     })
                                   : await createLock({
                                       account,
                                       votingEscrowContract: vMooneyContract,
-                                      amount:
-                                        lockAmount &&
-                                        ethers.utils.parseEther(lockAmount),
+                                      amount: lockAmount && ethers.utils.parseEther(lockAmount),
                                       time: lockTime?.value.div(1000),
                                     })
 
@@ -753,9 +694,7 @@ export default function Lock() {
                                 if (
                                   error.message?.includes('Lock period') ||
                                   error.message?.includes('exceed') ||
-                                  error.reason?.includes(
-                                    'VOTING_ESCROW_LOCK_TIME_TOO_BIG'
-                                  )
+                                  error.reason?.includes('VOTING_ESCROW_LOCK_TIME_TOO_BIG')
                                 ) {
                                   toast.error(
                                     'Lock period exceeds maximum allowed time. Please reduce the lock duration.'
@@ -793,28 +732,21 @@ export default function Lock() {
                           <div className="w-12 h-12 rounded-full bg-red-500/20 mx-auto mb-3 flex items-center justify-center">
                             <span className="text-red-400 text-xl">⏰</span>
                           </div>
-                          <h3 className="text-lg font-bold text-white mb-2">
-                            Lock Expired
-                          </h3>
-                          <p className="text-gray-300 text-sm mb-5">
-                            {t('expDesc')}
-                          </p>
+                          <h3 className="text-lg font-bold text-white mb-2">Lock Expired</h3>
+                          <p className="text-gray-300 text-sm mb-5">{t('expDesc')}</p>
                           <PrivyWeb3Button
                             v5
                             className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg"
                             label="Withdraw"
                             action={async () => {
-                              if (!account)
-                                throw new Error('No account connected')
+                              if (!account) throw new Error('No account connected')
                               try {
                                 const receipt = await withdrawLock({
                                   account,
                                   votingEscrowContract: vMooneyContract,
                                 })
                                 if (receipt) {
-                                  toast.success(
-                                    'Successfully withdrew your locked MOONEY.'
-                                  )
+                                  toast.success('Successfully withdrew your locked MOONEY.')
                                   setTimeout(() => {
                                     router.reload()
                                   }, 3000)
@@ -831,283 +763,13 @@ export default function Lock() {
                 </div>
               </div>
 
-              {/* User Lock Overview Section */}
-              {hasLock && VMOONEYLock && (
-                <div className="max-w-4xl mx-auto mb-12">
-                  <div className="text-center mb-8">
-                    <h2 className="text-2xl md:text-3xl font-bold font-GoodTimes text-white mb-4">
-                      Your Lock Overview
-                    </h2>
-                    <p className="text-lg text-gray-300 max-w-3xl mx-auto">
-                      Monitor your locked MOONEY, voting power, and manage your
-                      lock duration.
-                    </p>
-                  </div>
-
-                  <div className="grid md:grid-cols-3 gap-6 mb-8">
-                    {/* Locked MOONEY */}
-                    <div className="bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
-                      <div className="text-center">
-                        <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <LockClosedIcon className="w-6 h-6 text-blue-400" />
-                        </div>
-                        <h3 className="text-lg font-bold text-white mb-2">
-                          Locked MOONEY
-                        </h3>
-                        <div className="text-2xl font-bold text-blue-400 mb-1">
-                          <Balance
-                            balance={
-                              VMOONEYLock && BigNumber.from(VMOONEYLock[0])
-                            }
-                            loading={VMOONEYLockLoading}
-                            decimals={2}
-                          />
-                        </div>
-                        <p className="text-gray-400 text-sm">
-                          Original amount locked
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Current vMOONEY */}
-                    <div className="bg-gradient-to-br from-gray-900/50 to-purple-900/20 rounded-xl p-6 border border-white/10">
-                      <div className="text-center">
-                        <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <ScaleIcon className="w-6 h-6 text-purple-400" />
-                        </div>
-                        <h3 className="text-lg font-bold text-white mb-2">
-                          Current vMOONEY
-                        </h3>
-                        <div className="text-2xl font-bold text-purple-400 mb-1">
-                          <Balance
-                            balance={VMOONEYBalance?.toString() / 10 ** 18}
-                            loading={VMOONEYBalanceLoading}
-                            decimals={2}
-                          />
-                        </div>
-                        <p className="text-gray-400 text-sm">
-                          Decays until unlock
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Voting Power */}
-                    <div className="bg-gradient-to-br from-gray-900/50 to-green-900/20 rounded-xl p-6 border border-white/10">
-                      <div className="text-center">
-                        <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <UsersIcon className="w-6 h-6 text-green-400" />
-                        </div>
-                        <h3 className="text-lg font-bold text-white mb-2">
-                          Voting Power
-                        </h3>
-                        <div className="text-2xl font-bold text-green-400 mb-1">
-                          {VMOONEYBalance && !VMOONEYBalanceLoading
-                            ? Math.sqrt(
-                                VMOONEYBalance?.toString() / 10 ** 18
-                              ).toLocaleString('en-US', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })
-                            : '...'}
-                        </div>
-                        <p className="text-gray-400 text-sm">
-                          √(vMOONEY balance)
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Lock Details & Extension */}
-                  <div className="grid md:grid-cols-2 gap-8">
-                    {/* Lock Information */}
-                    <div className="bg-gradient-to-br from-gray-900/50 to-blue-900/20 rounded-xl p-6 border border-white/10">
-                      <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                        <LockClosedIcon className="h-5 w-5 text-blue-400" />
-                        Lock Details
-                      </h3>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-300">Lock Expires:</span>
-                          <span className="text-blue-400 font-semibold">
-                            {VMOONEYLock &&
-                              dateToReadable(bigNumberToDate(VMOONEYLock?.[1]))}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-300">Days Remaining:</span>
-                          <span className="text-purple-400 font-semibold">
-                            {VMOONEYLock &&
-                              (() => {
-                                const lockEndDate = bigNumberToDate(
-                                  VMOONEYLock?.[1]
-                                )
-                                if (!lockEndDate) return 0
-                                const now = new Date()
-                                const diffMs =
-                                  lockEndDate.getTime() - now.getTime()
-                                const diffDays = Math.max(
-                                  0,
-                                  Math.floor(diffMs / (1000 * 60 * 60 * 24))
-                                )
-                                return diffDays
-                              })()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-300">Lock Status:</span>
-                          <span
-                            className={`font-semibold ${
-                              hasExpired ? 'text-red-400' : 'text-green-400'
-                            }`}
-                          >
-                            {hasExpired ? 'Expired' : 'Active'}
-                          </span>
-                        </div>
-                        {!hasExpired && (
-                          <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-400/20 mt-4">
-                            <p className="text-blue-300 text-sm">
-                              💡 Your vMOONEY balance decays linearly until
-                              unlock date
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Extend Lock */}
-                    <div className="bg-gradient-to-br from-gray-900/50 to-purple-900/20 rounded-xl p-6 border border-white/10">
-                      <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                        <ScaleIcon className="h-5 w-5 text-purple-400" />
-                        Extend Lock
-                      </h3>
-                      <div className="space-y-4">
-                        <p className="text-gray-300 text-sm">
-                          Extend your lock duration to maintain or increase your
-                          voting power. Longer locks give more influence in
-                          governance.
-                        </p>
-
-                        {!hasExpired ? (
-                          <div className="space-y-4">
-                            <div className="bg-black/20 rounded-lg p-4">
-                              <h4 className="text-purple-300 font-semibold mb-2">
-                                Benefits of Extending:
-                              </h4>
-                              <ul className="text-gray-300 text-sm space-y-1">
-                                <li>• Maintain higher voting power</li>
-                                <li>• Show long-term commitment</li>
-                                <li>• Increase governance influence</li>
-                              </ul>
-                            </div>
-
-                            <div className="text-center">
-                              <p className="text-gray-400 text-xs mb-3">
-                                Use the lock interface above to extend your lock
-                                duration
-                              </p>
-                              <div className="inline-flex items-center gap-2 bg-purple-500/10 rounded-lg px-3 py-2 border border-purple-400/20">
-                                <span className="text-purple-300 text-sm">
-                                  Max extension: 4 years from today
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-center">
-                            <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                              <span className="text-red-400 text-lg">⏰</span>
-                            </div>
-                            <p className="text-red-400 font-semibold mb-2">
-                              Lock Expired
-                            </p>
-                            <p className="text-gray-300 text-sm mb-4">
-                              Your lock has expired. Withdraw your MOONEY or
-                              create a new lock.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Voting Power Chart */}
-                  <div className="bg-gradient-to-r from-black/40 via-blue-900/20 to-purple-900/20 rounded-2xl p-6 border border-white/10 mt-8">
-                    <h3 className="text-xl font-bold text-white mb-6 text-center">
-                      Your Voting Power Over Time
-                    </h3>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div className="bg-black/20 rounded-lg p-4">
-                          <h4 className="text-blue-300 font-semibold mb-2">
-                            Current Status
-                          </h4>
-                          <div className="space-y-2 text-sm text-gray-300">
-                            <div className="flex justify-between">
-                              <span>vMOONEY Balance:</span>
-                              <span className="text-blue-400">
-                                <Balance
-                                  balance={
-                                    VMOONEYBalance?.toString() / 10 ** 18
-                                  }
-                                  loading={VMOONEYBalanceLoading}
-                                  decimals={2}
-                                />
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Voting Power:</span>
-                              <span className="text-purple-400">
-                                {VMOONEYBalance && !VMOONEYBalanceLoading
-                                  ? Math.sqrt(
-                                      VMOONEYBalance?.toString() / 10 ** 18
-                                    ).toLocaleString('en-US', {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    })
-                                  : '...'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="bg-black/20 rounded-lg p-4">
-                          <h4 className="text-green-300 font-semibold mb-2">
-                            At Lock Expiry
-                          </h4>
-                          <div className="space-y-2 text-sm text-gray-300">
-                            <div className="flex justify-between">
-                              <span>vMOONEY Balance:</span>
-                              <span className="text-blue-400">0</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Voting Power:</span>
-                              <span className="text-purple-400">0</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-center mt-4">
-                      <p className="text-gray-400 text-sm">
-                        💡 vMOONEY decays linearly from lock amount to 0 over
-                        the lock period
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Next Steps */}
               <div className="max-w-2xl mx-auto">
                 <div className="text-center mb-6">
-                  <h3 className="text-xl font-bold text-white mb-2">
-                    After Locking
-                  </h3>
+                  <h3 className="text-xl font-bold text-white mb-2">After Locking</h3>
                   <p className="text-gray-300 text-sm">
-                    Once you lock MOONEY tokens, you'll receive vMOONEY for
-                    voting in governance proposals.
+                    Once you lock MOONEY tokens, you'll receive vMOONEY for voting in governance
+                    proposals.
                   </p>
                 </div>
                 <div className="bg-gradient-to-br from-gray-900/50 to-purple-900/20 rounded-xl p-6 border border-white/10">

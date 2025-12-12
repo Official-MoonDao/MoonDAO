@@ -42,6 +42,14 @@ declare global {
   namespace Cypress {
     interface Chainable {
       loginWithPrivy(): Chainable<void>
+      mockWalletAddress(address: string): Chainable<void>
+      visitWithMockWallet(
+        url: string,
+        address: string,
+        options?: Partial<Cypress.VisitOptions> & {
+          localStorage?: Record<string, string>
+        }
+      ): Chainable<void>
     }
   }
 }
@@ -50,10 +58,12 @@ declare global {
 Cypress.on('log:changed', (log, interactive) => {
   if (log.displayName !== 'fetch') return
   const windo: any = window
-  const logs = windo?.top.document.querySelectorAll('li.command-name-request')
-  if (logs.length) {
-    const last = [...logs][logs.length - 1]
-    last.remove()
+  if (windo && windo.top && windo.top.document) {
+    const logs = windo.top.document.querySelectorAll('li.command-name-request')
+    if (logs.length) {
+      const last = [...logs][logs.length - 1]
+      last.remove()
+    }
   }
 })
 
@@ -71,7 +81,10 @@ Cypress.on('uncaught:exception', (err, runnable) => {
     err.message.includes('spec-') ||
     err.message.includes('missing:') ||
     err.name === 'ChunkLoadError' ||
-    (err.stack && (err.stack.includes('spec-') || err.stack.includes('__webpack_require__') || err.stack.includes('webpack.js')))
+    (err.stack &&
+      (err.stack.includes('spec-') ||
+        err.stack.includes('__webpack_require__') ||
+        err.stack.includes('webpack.js')))
   ) {
     console.warn('Suppressing chunk loading error:', err.message || err.name)
     return false
@@ -122,3 +135,62 @@ Cypress.Commands.add('loginWithPrivy', () => {
     cy.wrap($input).type(otp[index])
   })
 })
+
+Cypress.Commands.add('mockWalletAddress', (address: string) => {
+  cy.window().then((win) => {
+    // Inject mock address into window for thirdweb to read in test mode
+    ;(win as any).__CYPRESS_MOCK_ADDRESS__ = address
+    // Also set up window.ethereum for wallet detection
+    if (!(win as any).ethereum) {
+      ;(win as any).ethereum = {
+        isMetaMask: false,
+        request: cy.stub().as('ethereumRequest'),
+        on: cy.stub(),
+        removeListener: cy.stub(),
+      }
+    }
+  })
+})
+
+Cypress.Commands.add(
+  'visitWithMockWallet',
+  (
+    url: string,
+    address: string,
+    options?: Partial<Cypress.VisitOptions> & {
+      localStorage?: Record<string, string>
+    }
+  ) => {
+    const {
+      localStorage: localStorageData,
+      onBeforeLoad: originalOnBeforeLoad,
+      ...visitOptions
+    } = options || {}
+    const finalOptions = {
+      url,
+      ...visitOptions,
+      onBeforeLoad: (win: Cypress.AUTWindow) => {
+        // Inject mock address before page loads
+        ;(win as any).__CYPRESS_MOCK_ADDRESS__ = address
+        // Set up window.ethereum for wallet detection
+        ;(win as any).ethereum = {
+          isMetaMask: false,
+          request: cy.stub().as('ethereumRequest'),
+          on: cy.stub(),
+          removeListener: cy.stub(),
+        }
+        // Set localStorage if provided
+        if (localStorageData) {
+          Object.entries(localStorageData).forEach(([key, value]) => {
+            win.localStorage.setItem(key, value)
+          })
+        }
+        // Call original onBeforeLoad if provided
+        if (originalOnBeforeLoad) {
+          originalOnBeforeLoad(win)
+        }
+      },
+    } as Cypress.VisitOptions
+    cy.visit(finalOptions)
+  }
+)

@@ -49,11 +49,16 @@ describe('<CreateMission />', () => {
     // Move to next stage
     cy.get('#continue-button').click({ force: true })
 
-    // STAGE 1 - Mission Goals
+    // STAGE 1 - Mission Goals - wait for stage and input to be ready
     cy.get('#mission-goals-stage').should('be.visible')
 
-    // Set funding goal
-    cy.get('input[placeholder="Enter a goal in USD"]').type('1000')
+    // Wait for the funding goal input to appear - try by placeholder since id might not work
+    cy.get('input[placeholder="Enter a goal in USD"]', { timeout: 10000 })
+      .should('exist')
+      .should('be.visible')
+      .should('not.be.disabled')
+      .clear({ force: true })
+      .type('1000', { force: true })
 
     // Configure token
     cy.get('#mission-token-toggle').within(() => {

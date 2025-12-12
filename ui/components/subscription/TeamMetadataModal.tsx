@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import { getAccessToken } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import TeamTableABI from 'const/abis/TeamTable.json'
@@ -17,8 +16,8 @@ import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
 import { addHttpsIfMissing, bytesOfString } from '@/lib/utils/strings'
-import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
+import Input from '../layout/Input'
 import Modal from '../layout/Modal'
 import { ImageGenerator } from '../onboarding/TeamImageGenerator'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -27,97 +26,68 @@ import DeleteProfileData from './DeleteProfileData'
 function TeamMetadataForm({ teamData, setTeamData }: any) {
   return (
     <div className="w-full flex flex-col gap-4">
-      <FormInput
+      <Input
         id="team-name-input"
         label="Team Name *"
         value={teamData.name}
-        onChange={({ target }: any) =>
-          setTeamData((prev: any) => ({ ...prev, name: target.value }))
-        }
+        onChange={(e) => setTeamData((prev: any) => ({ ...prev, name: e.target.value }))}
         placeholder="Enter your team name"
         maxLength={100}
-        mode="modern"
+        variant="modern"
       />
-      <FormInput
+      <Input
         id="team-bio-input"
         label="Bio"
         value={teamData.description}
-        onChange={({ target }: any) =>
-          setTeamData((prev: any) => ({ ...prev, description: target.value }))
-        }
+        onChange={(e) => setTeamData((prev: any) => ({ ...prev, description: e.target.value }))}
         placeholder="Tell us about your team"
-        maxLength={
-          bytesOfString(teamData.description) >= 1024
-            ? teamData.description.length
-            : 1024
-        }
-        mode="modern"
+        maxLength={bytesOfString(teamData.description) >= 1024 ? teamData.description.length : 1024}
+        variant="modern"
       />
-      <FormInput
+      <Input
         id="team-twitter-input"
         label="Twitter"
         value={teamData.twitter}
-        onChange={({ target }: any) =>
-          setTeamData((prev: any) => ({ ...prev, twitter: target.value }))
-        }
+        onChange={(e) => setTeamData((prev: any) => ({ ...prev, twitter: e.target.value }))}
         placeholder="Twitter profile or handle"
-        maxLength={
-          bytesOfString(teamData.twitter) >= 1024
-            ? teamData.twitter.length
-            : 1024
-        }
-        mode="modern"
+        maxLength={bytesOfString(teamData.twitter) >= 1024 ? teamData.twitter.length : 1024}
+        variant="modern"
       />
-      <FormInput
+      <Input
         id="team-communications-input"
         label="Communications"
         value={teamData.communications}
-        onChange={({ target }: any) =>
+        onChange={(e) =>
           setTeamData((prev: any) => ({
             ...prev,
-            communications: target.value,
+            communications: e.target.value,
           }))
         }
         placeholder="Discord, Slack, or other communication link"
         maxLength={
-          bytesOfString(teamData.communications) >= 1024
-            ? teamData.communications.length
-            : 1024
+          bytesOfString(teamData.communications) >= 1024 ? teamData.communications.length : 1024
         }
-        mode="modern"
+        variant="modern"
       />
-      <FormInput
+      <Input
         id="team-website-input"
         label="Website"
         value={teamData.website}
-        onChange={({ target }: any) =>
-          setTeamData((prev: any) => ({ ...prev, website: target.value }))
-        }
+        onChange={(e) => setTeamData((prev: any) => ({ ...prev, website: e.target.value }))}
         placeholder="Team website URL"
-        maxLength={
-          bytesOfString(teamData.website) >= 1024
-            ? teamData.website.length
-            : 1024
-        }
-        mode="modern"
+        maxLength={bytesOfString(teamData.website) >= 1024 ? teamData.website.length : 1024}
+        variant="modern"
       />
     </div>
   )
 }
 
-export default function TeamMetadataModal({
-  account,
-  nft,
-  selectedChain,
-  setEnabled,
-}: any) {
+export default function TeamMetadataModal({ account, nft, selectedChain, setEnabled }: any) {
   const router = useRouter()
 
   const [stage, setStage] = useState(0)
 
-  const [currTeamImage, setCurrTeamImage] = useState<string>(
-    nft?.metadata?.image
-  )
+  const [currTeamImage, setCurrTeamImage] = useState<string>(nft?.metadata?.image)
   const [newTeamImage, setNewTeamImage] = useState<File>()
   const [teamData, setTeamData] = useState<any>()
   const [formResponseId, setFormResponseId] = useState<string>(
@@ -169,42 +139,27 @@ export default function TeamMetadataModal({
       name: nft?.metadata?.name,
       description: nft?.metadata?.description,
       twitter: getAttribute(nft.metadata.attributes, 'twitter')?.value,
-      communications: getAttribute(nft.metadata.attributes, 'communications')
-        ?.value,
+      communications: getAttribute(nft.metadata.attributes, 'communications')?.value,
       website: getAttribute(nft.metadata.attributes, 'website')?.value,
       view: 'public',
     })
   }, [nft])
 
   return (
-    <Modal id="entity-metadata-modal-backdrop" setEnabled={setEnabled}>
-      <div className="w-full flex flex-col gap-6 items-start justify-start w-[100vw] md:w-[700px] p-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-[2vmax] shadow-2xl h-screen md:h-auto">
-        <div className="w-full flex items-center justify-between">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-GoodTimes text-white">
-              Update Team Info
-            </h1>
-            <p className="text-slate-300 text-sm">
-              Manage your team profile and settings
-            </p>
-          </div>
-          <button
-            id="close-modal"
-            type="button"
-            className="flex h-10 w-10 border-2 border-slate-600 items-center justify-center rounded-full hover:border-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-            onClick={() => setEnabled(false)}
-          >
-            <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-          </button>
-        </div>
+    <Modal
+      id="entity-metadata-modal-backdrop"
+      setEnabled={setEnabled}
+      title="Update Team Info"
+      size="3xl"
+    >
+      <div className="flex flex-col gap-6 items-start justify-start">
+        <p className="text-slate-300 text-sm -mt-4">Manage your team profile and settings</p>
         {stage === 0 && (
           <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 p-6">
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <h3 className="text-lg font-semibold text-white">Team Image</h3>
-                <p className="text-slate-300 text-sm">
-                  Upload or update your team image
-                </p>
+                <p className="text-slate-300 text-sm">Upload or update your team image</p>
               </div>
               <ImageGenerator
                 setImage={setNewTeamImage}
@@ -228,9 +183,7 @@ export default function TeamMetadataModal({
           <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 p-6">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <h3 className="text-lg font-semibold text-white">
-                  Email Update
-                </h3>
+                <h3 className="text-lg font-semibold text-white">Email Update</h3>
                 <p className="text-slate-300">
                   {"Would you like to update your team's email address?"}
                 </p>
@@ -264,10 +217,7 @@ export default function TeamMetadataModal({
               <div className="min-h-[500px] max-h-[60vh] typeform-widget-container">
                 <Widget
                   className="w-full"
-                  id={
-                    process.env
-                      .NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string
-                  }
+                  id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string}
                   onSubmit={submitTypeform}
                   height={500}
                 />
@@ -283,9 +233,7 @@ export default function TeamMetadataModal({
           <div className="w-full bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-2xl border border-slate-600/30 p-6">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <h3 className="text-lg font-semibold text-white">
-                  Team Information
-                </h3>
+                <h3 className="text-lg font-semibold text-white">Team Information</h3>
                 <p className="text-slate-300 text-sm">
                   Update your team details and contact information
                 </p>
@@ -312,11 +260,7 @@ export default function TeamMetadataModal({
                   try {
                     let imageIpfsLink
 
-                    if (
-                      !newTeamImage &&
-                      currTeamImage &&
-                      currTeamImage !== ''
-                    ) {
+                    if (!newTeamImage && currTeamImage && currTeamImage !== '') {
                       imageIpfsLink = currTeamImage
                     } else {
                       if (!newTeamImage) return console.error('No new image')
@@ -327,9 +271,7 @@ export default function TeamMetadataModal({
                       )
 
                       //pin new image
-                      const { cid: newImageIpfsHash } = await pinBlobOrFile(
-                        renamedTeamImage
-                      )
+                      const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedTeamImage)
 
                       //unpin old iamge
                       await unpinTeamImage(nft.metadata.id)
@@ -337,10 +279,7 @@ export default function TeamMetadataModal({
                       imageIpfsLink = `ipfs://${newImageIpfsHash}`
                     }
 
-                    const oldFormResponseId = getAttribute(
-                      nft.metadata.attributes,
-                      'formId'
-                    ).value
+                    const oldFormResponseId = getAttribute(nft.metadata.attributes, 'formId').value
 
                     if (oldFormResponseId !== formResponseId) {
                       //delete old typeform response
@@ -355,10 +294,9 @@ export default function TeamMetadataModal({
                     const formattedTeamTwitter = cleanedTeamData.twitter
                       ? addHttpsIfMissing(cleanedTeamData.twitter)
                       : ''
-                    const formattedTeamCommunications =
-                      cleanedTeamData.communications
-                        ? addHttpsIfMissing(cleanedTeamData.communications)
-                        : ''
+                    const formattedTeamCommunications = cleanedTeamData.communications
+                      ? addHttpsIfMissing(cleanedTeamData.communications)
+                      : ''
                     const formattedTeamWebsite = cleanedTeamData.website
                       ? addHttpsIfMissing(cleanedTeamData.website)
                       : ''

@@ -6,13 +6,13 @@ import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 // Define a new info card component with the new styling
-const InfoCard = ({ 
-  icon, 
-  iconAlt, 
-  header, 
-  paragraph, 
-  link, 
-  hovertext 
+const InfoCard = ({
+  icon,
+  iconAlt,
+  header,
+  paragraph,
+  link,
+  hovertext,
 }: {
   icon?: string
   iconAlt?: string
@@ -39,20 +39,14 @@ const InfoCard = ({
       <div className="flex flex-row items-start gap-4 w-full h-full">
         {icon && (
           <div className="w-[60px] h-[60px] flex-shrink-0">
-            <img
-              className="w-full h-full object-contain"
-              src={icon}
-              alt={iconAlt || ''}
-            />
+            <img className="w-full h-full object-contain" src={icon} alt={iconAlt || ''} />
           </div>
         )}
         <div className="flex-1 min-w-0 text-left flex flex-col justify-start">
           <h3 className="font-bold font-GoodTimes text-lg text-white mb-2 break-words group-hover:text-slate-200 transition-colors">
             {header}
           </h3>
-          <div className="text-sm text-slate-300 leading-relaxed break-words">
-            {paragraph}
-          </div>
+          <div className="text-sm text-slate-300 leading-relaxed break-words">{paragraph}</div>
         </div>
       </div>
     </button>
@@ -66,7 +60,17 @@ const infoCards = [
     header: 'News & Updates',
     link: '/news',
     hovertext: 'Read More',
-    paragraph: 'Weekly updates from MoonDAO about projects, proposals, open votes, and other initiatives. Be sure to subscribe to get updates in your inbox.',
+    paragraph:
+      'Weekly updates from MoonDAO about projects, proposals, open votes, and other initiatives. Be sure to subscribe to get updates in your inbox.',
+  },
+  {
+    icon: '/assets/icon-events.svg',
+    iconAlt: 'Town Hall Summaries',
+    header: 'Town Hall Summaries',
+    link: '/townhall',
+    hovertext: 'View Summaries',
+    paragraph:
+      'Weekly summaries of our Town Hall meetings with key topics, decisions, action items, and important updates for community members.',
   },
   {
     icon: '/assets/icon-about.svg',
@@ -74,7 +78,8 @@ const infoCards = [
     header: 'About MoonDAO',
     link: '/about',
     hovertext: 'Learn About MoonDAO',
-    paragraph: 'Learn about how MoonDAO operates, how you can contribute or propose a project, read about our mission and vision, and more.',
+    paragraph:
+      'Learn about how MoonDAO operates, how you can contribute or propose a project, read about our mission and vision, and more.',
   },
   {
     icon: '/assets/icon-events.svg',
@@ -82,15 +87,17 @@ const infoCards = [
     header: 'Our Events',
     link: '/events',
     hovertext: 'Attend an Event',
-    paragraph: 'Get started by attending one of our upcoming online events to find out how you can contribute to our plans by helping out on a project.',
+    paragraph:
+      'Get started by attending one of our upcoming online events to find out how you can contribute to our plans by helping out on a project.',
   },
   {
     icon: '/assets/icon-analytics.svg',
-    iconAlt: 'MoonDAO Analytics',
-    header: 'Analytics',
-    link: '/analytics',
+    iconAlt: 'MoonDAO Treasury',
+    header: 'Treasury',
+    link: '/treasury',
     hovertext: 'Learn More',
-    paragraph: 'Transparent data and analytics related to our treasury, token, transactions, and more.',
+    paragraph:
+      'Transparent data and analytics related to our treasury, token, transactions, and more.',
   },
   {
     icon: '/assets/icon-contract.svg',
@@ -112,21 +119,20 @@ const Info: React.FC = () => {
   return (
     <>
       <WebsiteHead title={title} description={description} image={image} />
-      <section className="w-[calc(100vw-20px)]">
+      <section>
         <Container>
           <ContentLayout
             header="Info Center"
             headerSize="max(20px, 3vw)"
             description={
               <>
-                Learn more about the Internet's Space Program with the latest
-                news and project updates, dive into the documentation, join an
-                upcoming online event, or explore transparent analytics about
-                our treasury and transactions.
+                Learn more about the Internet's Space Program with the latest news and project
+                updates, dive into the documentation, join an upcoming online event, or explore
+                transparent analytics about our treasury and transactions.
               </>
             }
             preFooter={
-              <NoticeFooter 
+              <NoticeFooter
                 defaultImage="../assets/MoonDAO-Logo-White.svg"
                 defaultTitle="Need Help?"
                 defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
