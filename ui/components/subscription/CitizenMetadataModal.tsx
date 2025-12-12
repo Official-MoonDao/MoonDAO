@@ -17,8 +17,8 @@ import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
 import { addHttpsIfMissing, bytesOfString } from '@/lib/utils/strings'
-import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
+import Input from '../layout/Input'
 import Modal from '../layout/Modal'
 import { ImageGenerator } from '../onboarding/CitizenImageGenerator'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -27,24 +27,22 @@ import DeleteProfileData from './DeleteProfileData'
 function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
   return (
     <div className="w-full flex flex-col gap-2">
-      <FormInput
+      <Input
         id="citizen-name-input"
         label="Name *"
         value={citizenData?.name}
-        onChange={({ target }: any) =>
-          setCitizenData((prev: any) => ({ ...prev, name: target.value }))
-        }
+        onChange={(e) => setCitizenData((prev: any) => ({ ...prev, name: e.target.value }))}
         placeholder="Enter your name"
         maxLength={100}
       />
-      <FormInput
+      <Input
         id="citizen-bio-input"
         label="Bio"
         value={citizenData?.description}
-        onChange={({ target }: any) =>
+        onChange={(e) =>
           setCitizenData((prev: any) => ({
             ...prev,
-            description: target.value,
+            description: e.target.value,
           }))
         }
         placeholder="Enter your bio"
@@ -52,45 +50,37 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
           bytesOfString(citizenData?.description) >= 1024 ? citizenData?.description.length : 1024
         }
       />
-      <FormInput
+      <Input
         id="citizen-location-input"
         label="Location"
         value={citizenData?.location}
-        onChange={({ target }: any) =>
-          setCitizenData((prev: any) => ({ ...prev, location: target.value }))
-        }
+        onChange={(e) => setCitizenData((prev: any) => ({ ...prev, location: e.target.value }))}
         placeholder="Enter your city and/or country"
         maxLength={
           bytesOfString(citizenData?.location) >= 1024 ? citizenData?.location.length : 1024
         }
       />
-      <FormInput
+      <Input
         id="citizen-discord-input"
         label="Discord"
         value={citizenData?.discord}
-        onChange={({ target }: any) =>
-          setCitizenData((prev: any) => ({ ...prev, discord: target.value }))
-        }
+        onChange={(e) => setCitizenData((prev: any) => ({ ...prev, discord: e.target.value }))}
         placeholder="Enter your discord username"
         maxLength={bytesOfString(citizenData?.discord) >= 1024 ? citizenData?.discord.length : 1024}
       />
-      <FormInput
+      <Input
         id="citizen-twitter-input"
         label="X/Twitter"
         value={citizenData?.twitter}
-        onChange={({ target }: any) =>
-          setCitizenData((prev: any) => ({ ...prev, twitter: target.value }))
-        }
+        onChange={(e) => setCitizenData((prev: any) => ({ ...prev, twitter: e.target.value }))}
         placeholder="Enter your Twitter link including https://"
         maxLength={bytesOfString(citizenData?.twitter) >= 1024 ? citizenData?.twitter.length : 1024}
       />
-      <FormInput
+      <Input
         id="citizen-website-input"
         label="Website"
         value={citizenData?.website}
-        onChange={({ target }: any) =>
-          setCitizenData((prev: any) => ({ ...prev, website: target.value }))
-        }
+        onChange={(e) => setCitizenData((prev: any) => ({ ...prev, website: e.target.value }))}
         placeholder="Enter your website link including https://"
         maxLength={bytesOfString(citizenData?.website) >= 1024 ? citizenData?.website.length : 1024}
       />

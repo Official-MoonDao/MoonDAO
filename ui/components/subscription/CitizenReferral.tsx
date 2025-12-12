@@ -14,7 +14,6 @@ import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
-import FormInput from '../forms/FormInput'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 

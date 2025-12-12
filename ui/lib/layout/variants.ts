@@ -9,11 +9,11 @@ export type CardVariant =
   | 'launchpad'
 export type CardSize = 'sm' | 'md' | 'lg'
 export type CardLayout = 'standard' | 'wide' | 'compact' | 'stats' | 'feature' | 'launchpad'
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full'
 export type InputVariant = 'standard' | 'modern' | 'dark' | 'default'
 export type InputSize = 'sm' | 'md' | 'lg'
 export type ButtonVariant = 'primary' | 'secondary' | 'gradient'
 export type ButtonSize = 'sm' | 'md' | 'lg'
-export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full'
 
 export const cardSizes = {
   sm: 'max-w-[300px]',

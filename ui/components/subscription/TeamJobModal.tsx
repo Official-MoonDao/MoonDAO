@@ -20,6 +20,7 @@ import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { bytesOfString } from '@/lib/utils/strings'
 import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
 import { Job } from '../jobs/Job'
+import Input from '../layout/Input'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -201,40 +202,47 @@ export default function TeamJobModal({
         }}
       >
         <div className="w-full flex flex-col gap-2 p-2 mt-2 rounded-t-[20px] rounded-bl-[10px] items-start justify-start bg-darkest-cool">
-          <input
+          <Input
             id="job-title-input"
             type="text"
             placeholder="Title"
-            className="w-full mt-2 py-2 px-5 border-2 dark:border-0 dark:bg-[#0f152f] rounded-t-[20px] focus:outline-none focus:ring-2 focus:ring-light-warm text-black"
+            variant="dark"
+            className="w-full mt-2 text-white"
             onChange={(e) => {
               setJobData({ ...jobData, title: e.target.value })
             }}
             value={jobData.title}
             maxLength={100}
+            formatNumbers={false}
           />
-          <textarea
+          <Input
             id="job-description-input"
+            type="textarea"
             placeholder="Description"
-            className="w-full h-[250px] py-2 px-5 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm focus:outline-none focus:ring-2 focus:ring-light-warm text-black"
+            variant="dark"
+            className="w-full h-[250px] text-white"
             onChange={(e) => {
               setJobData({ ...jobData, description: e.target.value })
             }}
             value={jobData.description}
-            style={{ resize: 'none' }}
+            rows={10}
             maxLength={
               bytesOfString(jobData.description) >= 1024 ? jobData.description.length : 1024
             }
+            formatNumbers={false}
           />
-          <input
+          <Input
             id="job-application-link-input"
             type="text"
             placeholder="Application Link"
-            className="w-full py-2 px-5 border-2 rounded-b-[20px] dark:border-0 dark:bg-[#0f152f] focus:outline-none focus:ring-2 focus:ring-light-warm text-black"
+            variant="dark"
+            className="w-full text-white"
             onChange={(e) => {
               setJobData({ ...jobData, contactInfo: e.target.value })
             }}
             value={jobData.contactInfo}
             maxLength={500}
+            formatNumbers={false}
           />
           <div className="w-full flex gap-2 items-center">
             <p>Expiration:</p>

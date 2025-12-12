@@ -23,6 +23,7 @@ import { bytesOfString } from '@/lib/utils/strings'
 import TeamABI from '../../const/abis/Team.json'
 import FileInput from '../layout/FileInput'
 import IPFSRenderer from '../layout/IPFSRenderer'
+import Input from '../layout/Input'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { TeamListing } from './TeamListing'
@@ -283,40 +284,47 @@ export default function TeamMarketplaceListingModal({
             acceptText="Accepted file types: PNG, JPEG, WEBP, GIF, SVG"
           />
 
-          <input
+          <Input
             id="listing-title-input"
             type="text"
             placeholder="Title"
-            className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm text-black"
+            variant="dark"
+            className="text-white"
             onChange={(e) => {
               setListingData({ ...listingData, title: e.target.value })
             }}
             value={listingData.title}
             maxLength={100}
+            formatNumbers={false}
           />
-          <textarea
+          <Input
             id="listing-description-input"
+            type="textarea"
             placeholder="Description"
-            className="w-full h-[200px] p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm text-black"
+            variant="dark"
+            className="h-[200px] text-white"
             onChange={(e) => {
               setListingData({ ...listingData, description: e.target.value })
             }}
             value={listingData.description}
-            style={{ resize: 'none' }}
+            rows={8}
             maxLength={
               bytesOfString(listingData.description) >= 1024 ? listingData.description.length : 1024
             }
+            formatNumbers={false}
           />
           <div className="flex gap-2">
-            <input
+            <Input
               id="listing-price-input"
               type="text"
               placeholder="Price"
-              className="w-full p-2 border-2 dark:border-0 dark:bg-[#0f152f] rounded-sm text-black"
+              variant="dark"
+              className="text-white"
               onChange={(e) => {
                 setListingData({ ...listingData, price: e.target.value })
               }}
               value={listingData.price}
+              formatNumbers={true}
             />
 
             <select

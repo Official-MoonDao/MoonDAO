@@ -1,10 +1,5 @@
 import { ArrowDownIcon } from '@heroicons/react/24/outline'
-import {
-  CHAIN_TOKEN_NAMES,
-  MOONEY_ADDRESSES,
-  FEE_HOOK_ADDRESSES,
-  TICK_SPACING,
-} from 'const/config'
+import { CHAIN_TOKEN_NAMES, MOONEY_ADDRESSES, FEE_HOOK_ADDRESSES, TICK_SPACING } from 'const/config'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -13,6 +8,7 @@ import { useUniswapV4 } from '../../lib/uniswap/hooks/useUniswapV4'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import GasIcon from '../assets/GasIcon'
+import Input from '../layout/Input'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
 export default function NativeToMooney({ selectedChain }: any) {
@@ -92,9 +88,7 @@ export default function NativeToMooney({ selectedChain }: any) {
         {/* Header Section */}
         <div className="mb-6">
           <h3 className="font-semibold text-xl text-white">Swap Tokens</h3>
-          <p className="text-gray-300 text-sm">
-            Get MOONEY on {selectedChain.name}
-          </p>
+          <p className="text-gray-300 text-sm">Get MOONEY on {selectedChain.name}</p>
         </div>
 
         {/* Main Swap Section - Vertical Layout */}
@@ -112,9 +106,9 @@ export default function NativeToMooney({ selectedChain }: any) {
                     className="object-contain"
                     onError={(e) => {
                       console.log(
-                        `Failed to load icon for chain: ${
-                          selectedChain.name
-                        }, slug: ${getChainSlug(selectedChain)}`
+                        `Failed to load icon for chain: ${selectedChain.name}, slug: ${getChainSlug(
+                          selectedChain
+                        )}`
                       )
                       // Fallback to showing the first letter of the chain name
                       const target = e.target as HTMLImageElement
@@ -145,26 +139,37 @@ export default function NativeToMooney({ selectedChain }: any) {
               </div>
             </div>
             <div className="flex items-center justify-between mb-2">
-              <input
-                className="text-white bg-transparent text-2xl lg:text-3xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1"
+              <Input
+                type="text"
                 placeholder="0.0"
-                pattern="[0-9]*[.,]?[0-9]*"
+                className="text-white bg-transparent text-2xl lg:text-3xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 border-0 p-0"
                 value={amount}
-                onChange={({ target }) => {
-                  // Allow decimal input by keeping it as string
-                  let value = target.value.replace(/[^0-9.]/g, '') // Only allow numbers and decimal point
+                max={nativeBalance ? parseFloat(nativeBalance) : undefined}
+                onChange={(e) => {
+                  let value = e.target.value
+                  // Remove commas and non-numeric characters except decimal point
+                  value = value.replace(/[^0-9.]/g, '')
 
-                  // Prevent negative values (though regex above should handle this)
+                  // Prevent multiple decimal points
+                  const parts = value.split('.')
+                  if (parts.length > 2) {
+                    value = parts[0] + '.' + parts.slice(1).join('')
+                  }
+
+                  // Prevent negative values
                   if (parseFloat(value) < 0) {
                     value = '0'
                   }
 
-                  const parts = value.split('.')
-                  if (parts.length <= 2) {
-                    // Only allow one decimal point
-                    setAmount(value)
+                  // Enforce max value (available native balance)
+                  if (nativeBalance && parseFloat(value) > parseFloat(nativeBalance)) {
+                    value = nativeBalance
                   }
+
+                  setAmount(value)
                 }}
+                formatNumbers={true}
+                maxWidth="max-w-none"
               />
               {parseFloat(amount) > 0 && (
                 <button
@@ -232,9 +237,7 @@ export default function NativeToMooney({ selectedChain }: any) {
           {/* Transaction Details */}
           {(parseFloat(amount) > 0 || hasValidRoute) && (
             <div className="lg:col-span-2 space-y-3">
-              <h4 className="text-gray-300 font-medium text-xs uppercase tracking-wide">
-                Details
-              </h4>
+              <h4 className="text-gray-300 font-medium text-xs uppercase tracking-wide">Details</h4>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-black/10 rounded-xl p-3 border border-white/5 hover:bg-black/20 transition-colors duration-200">
@@ -257,18 +260,14 @@ export default function NativeToMooney({ selectedChain }: any) {
                 </div>
               </div>
 
-              {(selectedChain.slug === 'arbitrum' ||
-                selectedChain.slug === 'base') && (
+              {(selectedChain.slug === 'arbitrum' || selectedChain.slug === 'base') && (
                 <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3">
                   <div className="flex items-center space-x-2 mb-1">
                     <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></div>
-                    <p className="text-orange-400 font-medium text-xs">
-                      Low Liquidity
-                    </p>
+                    <p className="text-orange-400 font-medium text-xs">Low Liquidity</p>
                   </div>
                   <p className="text-gray-300 text-xs leading-relaxed">
-                    Limited liquidity may affect swap output on{' '}
-                    {selectedChain.name}.
+                    Limited liquidity may affect swap output on {selectedChain.name}.
                   </p>
                 </div>
               )}
@@ -309,10 +308,7 @@ export default function NativeToMooney({ selectedChain }: any) {
                 }
               }}
               isDisabled={
-                isGeneratingRoute ||
-                !amount ||
-                parseFloat(amount) === 0 ||
-                !hasValidRoute
+                isGeneratingRoute || !amount || parseFloat(amount) === 0 || !hasValidRoute
               }
             />
 

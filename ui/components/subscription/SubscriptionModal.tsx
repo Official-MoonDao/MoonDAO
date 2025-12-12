@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useRead from '@/lib/thirdweb/hooks/useRead'
+import Input from '../layout/Input'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -107,15 +108,17 @@ export function SubscriptionModal({
               >
                 Years to Extend
               </label>
-              <input
+              <Input
                 data-testid="years-input"
-                className="w-full bg-dark-cool text-white px-4 py-2 rounded-lg border border-gray-600 focus:border-moon-orange focus:outline-none"
                 type="number"
+                variant="dark"
+                className="w-full"
                 min={1}
                 onChange={(e: any) => {
                   setYears(parseInt(e.target.value))
                 }}
                 value={years}
+                formatNumbers={false}
               />
             </div>
 

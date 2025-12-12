@@ -13,11 +13,17 @@ export const cardStyles = {
   launchpad: 'bg-gradient-to-br backdrop-blur-sm rounded-3xl border border-white/20',
 }
 
+export const modalStyles = {
+  base: 'bg-dark-cool rounded-lg shadow-xl',
+  overlay:
+    'fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-start z-[9999] overflow-auto bg-gradient-to-t from-[#3F3FA690] via-[#00000080] to-transparent animate-fadeIn',
+}
+
 export const inputStyles = {
   standard: 'bg-[#0f152f] rounded-full',
   modern:
     'bg-gradient-to-r from-slate-800/50 to-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20 transition-all',
-  dark: 'bg-gradient-to-r from-[#000000] to-[#040617] placeholder:opacity-50 rounded-full',
+  dark: 'bg-gradient-to-r from-[#000000] to-[#040617] placeholder:opacity-50 rounded-full text-white',
   default:
     'bg-black/20 border border-white/10 rounded-lg p-4 text-white placeholder-gray-400 hover:bg-black/30 hover:border-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50',
 }
@@ -78,11 +84,6 @@ export const commonCombinations = {
   buttonBase: 'px-4 py-2 font-medium transition-all duration-200 shadow-lg hover:shadow-xl',
   buttonDisabled: 'opacity-50 cursor-not-allowed',
   buttonEnabled: 'cursor-pointer',
-}
-
-export const modalStyles = {
-  base: 'bg-dark-cool rounded-lg shadow-xl',
-  overlay: 'backdrop-blur-sm bg-black/50',
 }
 
 export const utilityFunctions = {
