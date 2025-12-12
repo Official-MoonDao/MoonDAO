@@ -454,6 +454,6 @@ export async function getStaticProps() {
       featuredMissionData,
       citizensLocationData,
     },
-    revalidate: 120, // 2 minutes - more frequent updates for dashboard
+    revalidate: 60, // 1 minute - optimized with batched validation
   }
 }

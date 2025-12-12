@@ -99,10 +99,8 @@ export default function TeamDetailPage({
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const { citizen } = useContext(CitizenContext)
-  const [teamMetadataModalEnabled, setTeamMetadataModalEnabled] =
-    useState(false)
-  const [teamSubscriptionModalEnabled, setTeamSubscriptionModalEnabled] =
-    useState(false)
+  const [teamMetadataModalEnabled, setTeamMetadataModalEnabled] = useState(false)
+  const [teamSubscriptionModalEnabled, setTeamSubscriptionModalEnabled] = useState(false)
   const [teamJobModalEnabled, setTeamJobModalEnabled] = useState(false)
   const [teamListingModalEnabled, setTeamListingModalEnabled] = useState(false)
 
@@ -229,11 +227,8 @@ export default function TeamDetailPage({
               className="flex w-full flex-col lg:flex-row items-stretch gap-6"
             >
               {nft?.metadata?.image ? (
-                <div
-                  id="team-image-container"
-                  className="relative flex-shrink-0"
-                >
-                  <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
+                <div id="team-image-container" className="flex-shrink-0">
+                  <div className="relative w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
                     <IPFSRenderer
                       src={nft?.metadata?.image}
                       className="w-full h-full object-cover rounded-2xl border-4 border-slate-500/50"
@@ -241,18 +236,10 @@ export default function TeamDetailPage({
                       width={250}
                       alt="Team Image"
                     />
-                  </div>
-                  <div
-                    id="star-asset-container"
-                    className="absolute -bottom-2 -right-2"
-                  >
-                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
-                      <Image
-                        src="/../.././assets/icon-star.svg"
-                        alt=""
-                        width={40}
-                        height={40}
-                      />
+                    <div id="star-asset-container" className="absolute -bottom-2 -right-2">
+                      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
+                        <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -266,27 +253,19 @@ export default function TeamDetailPage({
                 className="flex-1 min-w-0 flex flex-col justify-center min-h-[200px] lg:min-h-[250px]"
               >
                 <div id="team-name" className="flex flex-col gap-4 w-full">
-                  <div
-                    id="team-name-container"
-                    className="flex flex-col w-full"
-                  >
+                  <div id="team-name-container" className="flex flex-col w-full">
                     {subIsValid && isManager && (
                       <button
                         className="absolute top-4 right-4 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
                         onClick={() => {
-                          if (address === nft?.owner || isManager)
-                            setTeamMetadataModalEnabled(true)
+                          if (address === nft?.owner || isManager) setTeamMetadataModalEnabled(true)
                           else
                             return toast.error(
                               'Connect the entity admin wallet or multisig to edit metadata.'
                             )
                         }}
                       >
-                        <PencilIcon
-                          width={24}
-                          height={24}
-                          className="text-white"
-                        />
+                        <PencilIcon width={24} height={24} className="text-white" />
                       </button>
                     )}
                     {nft ? (
@@ -320,11 +299,7 @@ export default function TeamDetailPage({
                             target="_blank"
                             passHref
                           >
-                            <ChatBubbleLeftIcon
-                              height={20}
-                              width={20}
-                              className="text-slate-300"
-                            />
+                            <ChatBubbleLeftIcon height={20} width={20} className="text-slate-300" />
                           </Link>
                         )}
                         {socials.twitter && (
@@ -344,11 +319,7 @@ export default function TeamDetailPage({
                             target="_blank"
                             passHref
                           >
-                            <GlobeAltIcon
-                              height={20}
-                              width={20}
-                              className="text-slate-300"
-                            />
+                            <GlobeAltIcon height={20} width={20} className="text-slate-300" />
                           </Link>
                         )}
                       </div>
@@ -410,9 +381,7 @@ export default function TeamDetailPage({
         title={nft.metadata.name}
         secondaryTitle={queriedListing?.title || queriedJob?.title}
         description={
-          queriedListing?.description ||
-          queriedJob?.description ||
-          nft.metadata.description
+          queriedListing?.description || queriedJob?.description || nft.metadata.description
         }
         image={`https://ipfs.io/ipfs/${
           queriedListing
@@ -465,12 +434,7 @@ export default function TeamDetailPage({
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
           >
             <span>Extend Subscription</span>
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -531,36 +495,21 @@ export default function TeamDetailPage({
                 <DashboardCard
                   title="Quick Actions"
                   icon={
-                    <Image
-                      src="/assets/icon-rocket.svg"
-                      alt="Actions"
-                      width={30}
-                      height={30}
-                    />
+                    <Image src="/assets/icon-rocket.svg" alt="Actions" width={30} height={30} />
                   }
                 >
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <Action
                       title="Fund"
                       description="Launch a mission to raise funds."
-                      icon={
-                        <BanknotesIcon
-                          height={24}
-                          width={24}
-                          className="text-white"
-                        />
-                      }
+                      icon={<BanknotesIcon height={24} width={24} className="text-white" />}
                       onClick={() => router.push('/launch?status=create')}
                     />
                     <Action
                       title="Hire"
                       description="List job openings or contracts to a global talent pool."
                       icon={
-                        <ClipboardDocumentListIcon
-                          height={24}
-                          width={24}
-                          className="text-white"
-                        />
+                        <ClipboardDocumentListIcon height={24} width={24} className="text-white" />
                       }
                       onClick={() => setTeamJobModalEnabled(true)}
                     />
@@ -568,11 +517,7 @@ export default function TeamDetailPage({
                       title="Sell"
                       description="List products, services, or ticketed events for sale."
                       icon={
-                        <BuildingStorefrontIcon
-                          height={24}
-                          width={24}
-                          className="text-white"
-                        />
+                        <BuildingStorefrontIcon height={24} width={24} className="text-white" />
                       }
                       onClick={() => setTeamListingModalEnabled(true)}
                     />
@@ -625,9 +570,7 @@ export default function TeamDetailPage({
                       height={30}
                       className="opacity-70"
                     />
-                    <h2 className="font-GoodTimes text-2xl text-white">
-                      Meet the Team
-                    </h2>
+                    <h2 className="font-GoodTimes text-2xl text-white">Meet the Team</h2>
                   </div>
                   {isManager && hats?.[0]?.id && (
                     <div
@@ -726,10 +669,7 @@ export default function TeamDetailPage({
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async ({
-  params,
-  query,
-}) => {
+export const getServerSideProps: GetServerSideProps = async ({ params, query }) => {
   const tokenIdOrName: any = params?.tokenIdOrName
 
   const chain = DEFAULT_CHAIN_V5
@@ -752,21 +692,8 @@ export const getServerSideProps: GetServerSideProps = async ({
     }
   }
 
-  const teamContract = getContract({
-    client: serverClient,
-    address: TEAM_ADDRESSES[chainSlug],
-    abi: TeamABI as any,
-    chain: chain,
-  })
-
-  const owner = await readContract({
-    contract: teamContract,
-    method: 'ownerOf',
-    params: [tokenId],
-  })
-
-  const nft = teamRowToNFT(allTeams.find((team: any) => +team.id === +tokenId))
-  nft.owner = owner
+  const { fetchTeamWithOwner } = await import('@/lib/team/teamDataService')
+  const nft = await fetchTeamWithOwner(chain, tokenId)
 
   if (!nft || BLOCKED_TEAMS.has(Number(nft.metadata.id))) {
     return {

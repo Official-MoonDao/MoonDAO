@@ -13,23 +13,19 @@ import Tab from '@/components/layout/Tab'
 const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
 const Moon = dynamic(() => import('@/components/globe/Moon'), { ssr: false })
 
-export default function NetworkMap({
-  citizensLocationData,
-}: {
-  citizensLocationData: any
-}) {
+export default function NetworkMap({ citizensLocationData }: { citizensLocationData: any }) {
   const router = useRouter()
 
   const [tab, setTab] = useState('earth')
 
   const descriptionSection = (
     <div className="pt-2">
-      <div className="mb-4">
-        Explore an interactive map of Citizens in the Space Acceleration Network
-        to make connections locally and globally.
+      <div className="mb-6 text-white/80">
+        Explore an interactive map of Citizens in the Space Acceleration Network to make connections
+        locally and globally.
       </div>
       <div className="flex gap-4">
-        <div className="w-fit h-fit bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 p-1.5">
+        <div className="w-fit h-fit bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
           <div className="flex text-sm gap-1">
             <Tab
               tab="earth"
@@ -81,16 +77,16 @@ export default function NetworkMap({
           popOverEffect={false}
           isProfile
         >
-          <div className="w-full md:w-auto inline-block md:mr-12 rounded-lg z-[100] min-h-[50vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
-            <div
-              className={`flex items-center justify-center ${
-                tab !== 'earth' && 'hidden'
-              }`}
-            >
-              <Earth pointsData={citizensLocationData} />
-            </div>
-            <div className={`${tab !== 'moon' && 'hidden'}`}>
-              <Moon />
+          <div className="w-full flex justify-center">
+            <div className="w-full max-w-5xl bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
+              <div className="w-full rounded-lg z-[100] min-h-[60vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
+                <div className={`flex items-center justify-center ${tab !== 'earth' && 'hidden'}`}>
+                  <Earth pointsData={citizensLocationData} />
+                </div>
+                <div className={`${tab !== 'moon' && 'hidden'}`}>
+                  <Moon />
+                </div>
+              </div>
             </div>
           </div>
         </ContentLayout>
@@ -101,18 +97,20 @@ export default function NetworkMap({
 
 export async function getStaticProps() {
   try {
+    // Use the optimized centralized service
     const citizensLocationData = await getCitizensLocationData()
 
     return {
       props: {
         citizensLocationData,
       },
-      revalidate: 600,
+      revalidate: 60, // Refresh every minute for fresher data
     }
   } catch (error) {
-    console.error(error)
+    console.error('Error in getStaticProps for map:', error)
     return {
       props: { citizensLocationData: [] },
+      revalidate: 60,
     }
   }
 }
