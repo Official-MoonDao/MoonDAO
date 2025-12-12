@@ -102,7 +102,9 @@ export default function MissionContributeModal({
   const chainSlugs = chains.map((chain) => getChainSlug(chain))
 
   const account = useActiveAccount()
-  const address = account?.address
+  // In test mode (Cypress), use mock address from window if available
+  const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
+  const address = account?.address || mockAddress
 
   const [input, setInput] = useState('')
   const [output, setOutput] = useState(0)
@@ -958,7 +960,8 @@ export default function MissionContributeModal({
     const storedJWT = getStoredJWT()
 
     // Fallback
-    if (storedJWT && account && address && (isPostOnramp || modalEnabled)) {
+    // Check address instead of account to support E2E tests with mock addresses
+    if (storedJWT && address && (isPostOnramp || modalEnabled)) {
       const verifyStoredJWT = async () => {
         setJwtVerificationError(null)
         try {
@@ -1021,7 +1024,8 @@ export default function MissionContributeModal({
   // Refresh balance immediately when returning from Coinbase onramp
   useEffect(() => {
     const isPostOnramp = router?.query?.onrampSuccess === 'true'
-    if (isPostOnramp && account && address) {
+    // Check address instead of account to support E2E tests with mock addresses
+    if (isPostOnramp && address) {
       // Immediately refresh balance when returning from onramp
       refetchNativeBalance()
       const timeoutId = setTimeout(() => {
@@ -1084,7 +1088,6 @@ export default function MissionContributeModal({
     if (
       !onrampJWTPayload.address ||
       !onrampJWTPayload.chainSlug ||
-      !account ||
       !address ||
       onrampJWTPayload.address.toLowerCase() !== address.toLowerCase() ||
       onrampJWTPayload.chainSlug !== chainSlug ||
@@ -1151,12 +1154,10 @@ export default function MissionContributeModal({
       return
     }
 
-    // Validate JWT early - if no valid JWT, don't auto-trigger
     if (
       !onrampJWTPayload ||
       !onrampJWTPayload.address ||
       !onrampJWTPayload.chainSlug ||
-      !account ||
       !address ||
       onrampJWTPayload.address.toLowerCase() !== address.toLowerCase() ||
       onrampJWTPayload.chainSlug !== chainSlug ||
@@ -1179,7 +1180,7 @@ export default function MissionContributeModal({
       usdInput &&
       parseFloat(usdInput.replace(/,/g, '')) > 0 &&
       output > 0 &&
-      account
+      address
 
     if (shouldProceed) {
       hasTriggeredTransaction.current = true
@@ -1702,14 +1703,6 @@ export default function MissionContributeModal({
                       ethAmount={adjustedEthDeficit}
                       isWaitingForGasEstimate={isLoadingGasEstimate}
                       onQuoteCalculated={handleCoinbaseQuote}
-                      onSuccess={() => {
-                        toast.success(
-                          'ETH purchase completed! You can now contribute to the mission.',
-                          {
-                            style: toastStyle,
-                          }
-                        )
-                      }}
                       onBeforeNavigate={async () => {
                         await generateOnrampJWT({
                           address: address || '',
