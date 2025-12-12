@@ -12,7 +12,7 @@ import {
   PROJECT_CREATOR_ADDRESSES,
   PROJECT_TABLE_ADDRESSES,
   PROPOSALS_ADDRESSES,
-  PROPOSALS_TABLE_NAMES,
+  NON_PROJECT_PROPOSAL_TABLE_NAMES,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -48,6 +48,8 @@ import StandardButton from '@/components/layout/StandardButton'
 import DropDownMenu from '@/components/nance/DropDownMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 import ProposalInfo from '@/components/nance/ProposalInfo'
+import ProposalVotes from '@/components/nance/ProposalVotes'
+import VotingResults from '@/components/nance/VotingResults'
 import TempCheck from '@/components/project/TempCheck'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
 import TeamMembers from '@/components/subscription/TeamMembers'
@@ -131,6 +133,19 @@ export default function ProjectProfile({
   const toggleExpand = () => {
     setIsExpanded(!isExpanded)
   }
+  const tallyVotes = async () => {
+    const res = await fetch(`/api/proposals/nonProjectVote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        mdp: project?.MDP,
+      }),
+    })
+    const resJson = await res.json()
+  }
+
   //Profile Header Section
   const ProfileHeader = (
     <div id="orgheader-container">
@@ -233,10 +248,11 @@ export default function ProjectProfile({
                 </div>
                 <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] flex flex-col h-fit">
                   <div className="px-[10px] p-5">
-                    {project.active == PROJECT_PENDING ? (
-                      proposalStatus === 'Temperature Check' ? (
-                        <TempCheck mdp={project.MDP} />
-                      ) : (
+                    {project.active == PROJECT_PENDING &&
+                      proposalStatus === 'Temperature Check' && <TempCheck mdp={project.MDP} />}
+                    {project.active == PROJECT_PENDING &&
+                      proposalStatus === 'Voting' &&
+                      proposalJSON.nonProjectProposal && (
                         <>
                           <ProposalVotes
                             project={project}
@@ -246,8 +262,8 @@ export default function ProjectProfile({
                           {/*FIXME run on cron */}
                           <button onClick={tallyVotes}>Tally votes</button>
                         </>
-                      )
-                    ) : (
+                      )}
+                    {project.active !== PROJECT_PENDING && proposalJSON.nonProjectProposal && (
                       <VotingResults voteOutcome={voteOutcome} votes={votes} threshold={0} />
                     )}
                   </div>
@@ -370,24 +386,23 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     params: [mdp],
   })
   const proposalStatus = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
-  const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
-  const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
-  const voteAddresses = [
-    '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89',
-    '0x679d87d8640e66778c3419d164998e720d7495f6',
-    '0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6',
-    '0xb2d3900807094d4fe47405871b0c8adb58e10d42',
-  ]
-  //const voteAddresses = votes.map((pv) => pv.address)
-  const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
-  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, 1764016844)
-  const addressToQuadraticVotingPower = Object.fromEntries(
-    voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
-  )
-  console.log('addressToQuadraticVotingPower')
-  console.log(addressToQuadraticVotingPower)
-  const SUM_TO_ONE_HUNDRED = 100
-  const voteOutcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
+  const proposalResponse = await fetch(project.proposalIPFS)
+  const proposalJSON = await proposalResponse.json()
+
+  let votes = []
+  let voteOutcome = {}
+  if (proposalJSON.nonProjectProposal) {
+    const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
+    votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+    const voteAddresses = votes.map((v) => v.address)
+    const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
+    const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, 1764016844)
+    const addressToQuadraticVotingPower = Object.fromEntries(
+      voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
+    )
+    const SUM_TO_ONE_HUNDRED = 100
+    voteOutcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
+  }
 
   const projectContract = getContract({
     client: serverClient,
@@ -413,9 +428,6 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   })
 
   const safeOwners = await safe.getOwners()
-  const proposalResponse = await fetch(project.proposalIPFS)
-  const proposalJSON = await proposalResponse.json()
-
   return {
     props: {
       project,

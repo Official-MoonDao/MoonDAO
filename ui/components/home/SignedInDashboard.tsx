@@ -40,12 +40,12 @@ import {
   ETH_BUDGET,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
-import { toast } from 'react-hot-toast'
-import Image from 'next/image'
-import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
+import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useContext, useState, useEffect } from 'react'
+import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
@@ -54,9 +54,9 @@ import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import { useVoteCountOfAddress } from '@/lib/snapshot'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useTotalLockedMooney } from '@/lib/tokens/hooks/useTotalLockedMooney'
 import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
@@ -73,12 +73,12 @@ import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import StandardButton from '@/components/layout/StandardButton'
 import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
+import { SendModal } from '@/components/privy/PrivyConnectWallet'
+import { useWalletTokens } from '@/components/privy/PrivyConnectWallet'
 import ProjectCard from '@/components/project/ProjectCard'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import CitizensChart from '@/components/subscription/CitizensChart'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
-import { SendModal } from '@/components/privy/PrivyConnectWallet'
-import { useWalletTokens } from '@/components/privy/PrivyConnectWallet'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
@@ -236,8 +236,7 @@ export default function SignedInDashboard({
   const { nativeBalance } = useNativeBalance()
   const { tokens: walletTokens } = useWalletTokens(address, chainSlug)
 
-  const { data: voteCount, isValidating: isLoadingVoteCount } =
-    useVoteCountOfAddress(address)
+  const { data: voteCount, isValidating: isLoadingVoteCount } = useVoteCountOfAddress(address)
 
   const MOONEYBalance = useTotalMooneyBalance(address)
   const {
@@ -775,7 +774,7 @@ export default function SignedInDashboard({
                     </div>
                   </div>
                 )}
-                
+
                 {/* Link to Treasury Page */}
                 <div className="pt-4">
                   <Link
@@ -989,7 +988,18 @@ export default function SignedInDashboard({
                 </StandardButton>
               </div>
 
-              <ProposalList noPagination compact proposalLimit={2} projects={proposals} />
+              {proposals.slice(0, 6).map((project: any, index: number) => (
+                <div key={index}>
+                  <ProjectCard
+                    project={project}
+                    projectContract={projectContract}
+                    hatsContract={hatsContract}
+                    userHasVotingPower={!!walletVP}
+                    isVotingPeriod={false}
+                    distribute={false}
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
@@ -1272,113 +1282,107 @@ export default function SignedInDashboard({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {/* New Citizens - Horizontal */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">
-                  New Citizens
-                </h3>
-                <StandardButton
-                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
-                  link="/network?tab=citizens"
-                >
-                  See all
-                </StandardButton>
-              </div>
-
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                {newestCitizens && newestCitizens.length > 0 ? (
-                  newestCitizens.slice(0, 8).map((citizen: any) => (
-                    <Link
-                      key={citizen.id}
-                      href={`/citizen/${
-                        citizen.name && citizen.id
-                          ? generatePrettyLinkWithId(citizen.name, citizen.id)
-                          : citizen.id || 'anonymous'
-                      }`}
-                      className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
-                    >
-                      <div className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center mx-auto mb-2">
-                        {citizen.image ? (
-                          <IPFSRenderer
-                            src={citizen.image}
-                            alt={citizen.name}
-                            className="w-full h-full object-cover"
-                            width={100}
-                            height={100}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                            {citizen.name?.[0] || 'C'}
-                          </div>
-                        )}
-                      </div>
-                      <h4 className="text-white font-medium text-xs truncate text-center">
-                        {citizen.name || 'Anonymous'}
-                      </h4>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="text-gray-400 text-sm text-center py-4 w-full">
-                    Loading...
-                  </div>
-                )}
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-white text-lg">New Citizens</h3>
+              <StandardButton
+                className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                link="/network?tab=citizens"
+              >
+                See all
+              </StandardButton>
             </div>
 
-            {/* Featured Teams - Horizontal */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">
-                  Featured Teams
-                </h3>
-                <StandardButton
-                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
-                  link="/network?tab=teams"
-                >
-                  See all
-                </StandardButton>
-              </div>
-
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                {filteredTeams && filteredTeams.length > 0 ? (
-                  filteredTeams.slice(0, 8).map((team: any, index: number) => (
-                    <Link
-                      key={team.id || index}
-                      href={`/team/${generatePrettyLink(team.name)}`}
-                      className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
-                    >
-                      <div className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center mx-auto mb-2">
-                        {team.image ? (
-                          <IPFSRenderer
-                            src={team.image}
-                            alt={team.name}
-                            className="w-full h-full object-cover"
-                            width={100}
-                            height={100}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                            {team.name?.[0] || 'T'}
-                          </div>
-                        )}
-                      </div>
-                      <h4 className="text-white font-medium text-xs truncate text-center">
-                        {team.name || 'Team'}
-                      </h4>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2">
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white mx-auto mb-2">
-                      M
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+              {newestCitizens && newestCitizens.length > 0 ? (
+                newestCitizens.slice(0, 8).map((citizen: any) => (
+                  <Link
+                    key={citizen.id}
+                    href={`/citizen/${
+                      citizen.name && citizen.id
+                        ? generatePrettyLinkWithId(citizen.name, citizen.id)
+                        : citizen.id || 'anonymous'
+                    }`}
+                    className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
+                  >
+                    <div className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center mx-auto mb-2">
+                      {citizen.image ? (
+                        <IPFSRenderer
+                          src={citizen.image}
+                          alt={citizen.name}
+                          className="w-full h-full object-cover"
+                          width={100}
+                          height={100}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                          {citizen.name?.[0] || 'C'}
+                        </div>
+                      )}
                     </div>
                     <h4 className="text-white font-medium text-xs truncate text-center">
-                      Mission Control
+                      {citizen.name || 'Anonymous'}
                     </h4>
-                  </div>
-                )}
-              </div>
+                  </Link>
+                ))
+              ) : (
+                <div className="text-gray-400 text-sm text-center py-4 w-full">Loading...</div>
+              )}
             </div>
           </div>
+
+          {/* Featured Teams - Horizontal */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-white text-lg">Featured Teams</h3>
+              <StandardButton
+                className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                link="/network?tab=teams"
+              >
+                See all
+              </StandardButton>
+            </div>
+
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+              {filteredTeams && filteredTeams.length > 0 ? (
+                filteredTeams.slice(0, 8).map((team: any, index: number) => (
+                  <Link
+                    key={team.id || index}
+                    href={`/team/${generatePrettyLink(team.name)}`}
+                    className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2"
+                  >
+                    <div className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center mx-auto mb-2">
+                      {team.image ? (
+                        <IPFSRenderer
+                          src={team.image}
+                          alt={team.name}
+                          className="w-full h-full object-cover"
+                          width={100}
+                          height={100}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                          {team.name?.[0] || 'T'}
+                        </div>
+                      )}
+                    </div>
+                    <h4 className="text-white font-medium text-xs truncate text-center">
+                      {team.name || 'Team'}
+                    </h4>
+                  </Link>
+                ))
+              ) : (
+                <div className="flex-shrink-0 w-24 hover:bg-white/5 rounded-xl transition-all cursor-pointer p-2">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white mx-auto mb-2">
+                    M
+                  </div>
+                  <h4 className="text-white font-medium text-xs truncate text-center">
+                    Mission Control
+                  </h4>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Global Community Map - Enhanced */}
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8 mb-8">

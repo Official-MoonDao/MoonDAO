@@ -72,6 +72,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)
+  const [nonProjectProposal, setNonProjectProposal] = useState<boolean>(false)
   const [proposalTitle, setProposalTitle] = useState<string | undefined>()
   const [proposalBody, setProposalBody] = useState<string | undefined>()
   const [proposalStatus, setProposalStatus] = useState<ProposalStatus>('Discussion')
@@ -103,7 +104,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
   })
-  const { handleSubmit, reset, getValues, watch } = methods
+  const { reset, getValues, watch } = methods
 
   function restoreFromTitleAndBody(t: string, b: string) {
     setProposalTitle(t)
@@ -136,6 +137,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
       body: header + body,
       budget: getValues()['budget'],
       authorAddress: address,
+      nonProjectProposal: nonProjectProposal
     })
     const file = new File([fileContents], fileName, {
       type: 'application/json',
@@ -291,8 +293,8 @@ export default function ProposalEditor({ project }: { project: Project }) {
               )}
             </div>
 
-            <div className="p-5 rounded-b-[20px] rounded-t-[0px] ">
-              <Field as="div" className="\ flex items-center mt-5">
+            <div className="p-5 rounded-b-[20px] rounded-t-[0px] flex flex-row">
+              <Field as="div" className="\ flex items-center mt-5 pr-4">
                 <Switch
                   checked={attachBudget}
                   onChange={(checked) => {
@@ -316,6 +318,31 @@ export default function ProposalEditor({ project }: { project: Project }) {
                 </Switch>
                 <Label as="span" className="ml-3 text-sm">
                   <span className="font-medium text-gray-900 dark:text-white">Attach Budget</span>{' '}
+                </Label>
+              </Field>
+              <Field as="div" className="\ flex items-center mt-5">
+                <Switch
+                  checked={nonProjectProposal}
+                  onChange={(checked) => {
+                    setNonProjectProposal(checked)
+                  }}
+                  className={classNames(
+                    nonProjectProposal ? 'bg-indigo-600' : 'bg-gray-200',
+                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2'
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={classNames(
+                      nonProjectProposal ? 'translate-x-5' : 'translate-x-0',
+                      'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
+                    )}
+                  />
+                </Switch>
+                <Label as="span" className="ml-3 text-sm">
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    Non Project Proposal
+                  </span>{' '}
                 </Label>
               </Field>
             </div>

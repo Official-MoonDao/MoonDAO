@@ -55,7 +55,11 @@ export async function getStaticProps() {
       if (!BLOCKED_PROJECTS.has(projects[i].id)) {
         const activeStatus = projects[i].active
         if (activeStatus == PROJECT_PENDING) {
-          proposals.push(projects[i])
+          const proposalResponse = await fetch(project.proposalIPFS)
+          const proposalJSON = await proposalResponse.json()
+          if (!proposalJSON.nonProjectProposal) {
+            proposals.push(projects[i])
+          }
         } else if (activeStatus == PROJECT_ACTIVE) {
           currentProjects.push(projects[i])
         } else {

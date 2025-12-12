@@ -145,11 +145,11 @@ export const SENATORS_ADDRESSES: Index = {
 
 export const NON_PROJECT_PROPOSAL_ADDRESSES: Index = {
   //arbitrum: '...',
-  sepolia: 'NonProjectProposal_11155111_2037',
+  sepolia: '0x3804D425a95Ea86cE8B5E260a4f092934C2117b5',
 }
 export const NON_PROJECT_PROPOSAL_TABLE_NAMES: Index = {
   //arbitrum: '...',
-  sepolia: '',
+  sepolia: 'NonProjectProposal_11155111_2037',
 }
 export const PROPOSALS_ADDRESSES: Index = {
   //arbitrum: '...',

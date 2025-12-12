@@ -1,13 +1,13 @@
 import { CalendarDaysIcon } from '@heroicons/react/24/outline'
-import { Project } from '@/lib/project/useProjectData'
 import { add, differenceInDays, formatDistanceToNow, fromUnixTime } from 'date-fns'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
 import useAccount from '../../lib/nance/useAccountAddress'
+import { STATUS_CONFIG, ProposalStatus } from '@/lib/nance/useProposalStatus'
+import { Project } from '@/lib/project/useProjectData'
 import { AddressLink } from './AddressLink'
 import RequestingTokensOfProposal from './RequestingTokensOfProposal'
-import { STATUS_CONFIG, ProposalStatus } from '@/lib/nance/useProposalStatus'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -90,11 +90,11 @@ export default function ProposalInfo({
                 style={{ fontFamily: 'Lato' }}
               >
                 <span className="absolute inset-x-0 -top-px bottom-0" />
-                {`MDP${project.MDP}: ${project.name}`}
+                {`MDP-${project.MDP}: ${project.name}`}
               </Link>
             ) : (
               <span className="text-lg font-semibold text-white" style={{ fontFamily: 'Lato' }}>
-                {`MDP${project.MDP}: ${project.name}`}
+                {`MDP-${project.MDP}: ${project.name}`}
               </span>
             ))}
         </div>
