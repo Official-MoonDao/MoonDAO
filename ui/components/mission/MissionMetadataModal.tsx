@@ -21,9 +21,9 @@ import { renameFile } from '@/lib/utils/files'
 import { isValidYouTubeUrl } from '@/lib/utils/links'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
-import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import FileInput from '../layout/FileInput'
+import Input from '../layout/Input'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -55,69 +55,63 @@ function MissionMetadataForm({ missionData, setMissionData }: any) {
   return (
     <div className="w-full flex flex-col gap-4">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <FormInput
+        <Input
           id="mission-name-input"
           label="Mission Name *"
           value={missionData?.name}
-          onChange={({ target }: any) =>
-            setMissionData((prev: any) => ({ ...prev, name: target.value }))
-          }
+          onChange={(e) => setMissionData((prev: any) => ({ ...prev, name: e.target.value }))}
           placeholder="Enter mission name"
           maxLength={100}
-          mode="dark"
+          variant="dark"
         />
-        <FormInput
+        <Input
           id="mission-tagline-input"
           label="Tagline *"
           value={missionData?.tagline}
-          onChange={({ target }: any) =>
-            setMissionData((prev: any) => ({ ...prev, tagline: target.value }))
-          }
+          onChange={(e) => setMissionData((prev: any) => ({ ...prev, tagline: e.target.value }))}
           placeholder="Enter a compelling tagline"
           maxLength={100}
-          mode="dark"
+          variant="dark"
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <FormInput
+        <Input
           id="mission-website-input"
           label="Website"
           value={missionData?.infoUri}
-          onChange={({ target }: any) =>
-            setMissionData((prev: any) => ({ ...prev, infoUri: target.value }))
-          }
+          onChange={(e) => setMissionData((prev: any) => ({ ...prev, infoUri: e.target.value }))}
           placeholder="https://yourwebsite.com"
           maxLength={500}
-          mode="dark"
+          variant="dark"
         />
-        <FormInput
+        <Input
           id="mission-social-input"
           label="Social Link"
           value={missionData?.socialLink}
-          onChange={({ target }: any) =>
+          onChange={(e) =>
             setMissionData((prev: any) => ({
               ...prev,
-              socialLink: target.value,
+              socialLink: e.target.value,
             }))
           }
           placeholder="https://discord.gg/... or https://t.me/..."
           maxLength={500}
-          mode="dark"
+          variant="dark"
         />
       </div>
-      <FormInput
+      <Input
         id="mission-youtube-input"
         label="YouTube Video Link"
         value={missionData?.youtubeLink}
-        onChange={({ target }: any) =>
+        onChange={(e) =>
           setMissionData((prev: any) => ({
             ...prev,
-            youtubeLink: target.value,
+            youtubeLink: e.target.value,
           }))
         }
         placeholder="https://youtube.com/watch?v=..."
         maxLength={500}
-        mode="dark"
+        variant="dark"
       />
     </div>
   )

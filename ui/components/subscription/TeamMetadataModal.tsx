@@ -16,8 +16,8 @@ import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import { getAttribute } from '@/lib/utils/nft'
 import { addHttpsIfMissing, bytesOfString } from '@/lib/utils/strings'
-import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
+import Input from '../layout/Input'
 import Modal from '../layout/Modal'
 import { ImageGenerator } from '../onboarding/TeamImageGenerator'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
@@ -26,65 +26,57 @@ import DeleteProfileData from './DeleteProfileData'
 function TeamMetadataForm({ teamData, setTeamData }: any) {
   return (
     <div className="w-full flex flex-col gap-4">
-      <FormInput
+      <Input
         id="team-name-input"
         label="Team Name *"
         value={teamData.name}
-        onChange={({ target }: any) =>
-          setTeamData((prev: any) => ({ ...prev, name: target.value }))
-        }
+        onChange={(e) => setTeamData((prev: any) => ({ ...prev, name: e.target.value }))}
         placeholder="Enter your team name"
         maxLength={100}
-        mode="modern"
+        variant="modern"
       />
-      <FormInput
+      <Input
         id="team-bio-input"
         label="Bio"
         value={teamData.description}
-        onChange={({ target }: any) =>
-          setTeamData((prev: any) => ({ ...prev, description: target.value }))
-        }
+        onChange={(e) => setTeamData((prev: any) => ({ ...prev, description: e.target.value }))}
         placeholder="Tell us about your team"
         maxLength={bytesOfString(teamData.description) >= 1024 ? teamData.description.length : 1024}
-        mode="modern"
+        variant="modern"
       />
-      <FormInput
+      <Input
         id="team-twitter-input"
         label="Twitter"
         value={teamData.twitter}
-        onChange={({ target }: any) =>
-          setTeamData((prev: any) => ({ ...prev, twitter: target.value }))
-        }
+        onChange={(e) => setTeamData((prev: any) => ({ ...prev, twitter: e.target.value }))}
         placeholder="Twitter profile or handle"
         maxLength={bytesOfString(teamData.twitter) >= 1024 ? teamData.twitter.length : 1024}
-        mode="modern"
+        variant="modern"
       />
-      <FormInput
+      <Input
         id="team-communications-input"
         label="Communications"
         value={teamData.communications}
-        onChange={({ target }: any) =>
+        onChange={(e) =>
           setTeamData((prev: any) => ({
             ...prev,
-            communications: target.value,
+            communications: e.target.value,
           }))
         }
         placeholder="Discord, Slack, or other communication link"
         maxLength={
           bytesOfString(teamData.communications) >= 1024 ? teamData.communications.length : 1024
         }
-        mode="modern"
+        variant="modern"
       />
-      <FormInput
+      <Input
         id="team-website-input"
         label="Website"
         value={teamData.website}
-        onChange={({ target }: any) =>
-          setTeamData((prev: any) => ({ ...prev, website: target.value }))
-        }
+        onChange={(e) => setTeamData((prev: any) => ({ ...prev, website: e.target.value }))}
         placeholder="Team website URL"
         maxLength={bytesOfString(teamData.website) >= 1024 ? teamData.website.length : 1024}
-        mode="modern"
+        variant="modern"
       />
     </div>
   )

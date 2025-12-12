@@ -16,6 +16,7 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import { MOONEY_ADDRESSES } from '../../const/config'
 import Frame from '../layout/Frame'
+import Input from '../layout/Input'
 import Tab from '../layout/Tab'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -47,10 +48,7 @@ export default function ArbitrumBridge() {
     const allowance = await readContract({
       contract: mooneyContract,
       method: 'allowance',
-      params: [
-        wallets[selectedWallet]?.address,
-        '0xa3A7B6F88361F48403514059F1F16C8E78d60EeC',
-      ],
+      params: [wallets[selectedWallet]?.address, '0xa3A7B6F88361F48403514059F1F16C8E78d60EeC'],
     })
 
     if (ethers.utils.parseEther(amount).gt(allowance)) {
@@ -75,10 +73,9 @@ export default function ArbitrumBridge() {
       l1Signer: signer,
     })
     const depositReceipt = await depositTx.wait()
-    toast.success(
-      'Your ETH has been bridged to Arbitrum. Please wait up to 15 minutes.',
-      { duration: 10000 }
-    )
+    toast.success('Your ETH has been bridged to Arbitrum. Please wait up to 15 minutes.', {
+      duration: 10000,
+    })
     return depositReceipt
   }
 
@@ -107,10 +104,9 @@ export default function ArbitrumBridge() {
       from: wallets[selectedWallet]?.address,
     })
     const withdrawReceipt = await withdrawTx.wait()
-    toast.success(
-      'Your ETH has been withdrawn from Arbitrum. Please wait up to 7 days.',
-      { duration: 10000 }
-    )
+    toast.success('Your ETH has been withdrawn from Arbitrum. Please wait up to 7 days.', {
+      duration: 10000,
+    })
     return withdrawReceipt
   }
   async function depositMooney() {
@@ -132,10 +128,9 @@ export default function ArbitrumBridge() {
       l2Provider,
     })
     const depositReceipt = await depositTx.wait()
-    toast.success(
-      'Your MOONEY has been bridged to Arbitrum. Please wait up to 15 minutes.',
-      { duration: 10000 }
-    )
+    toast.success('Your MOONEY has been bridged to Arbitrum. Please wait up to 15 minutes.', {
+      duration: 10000,
+    })
     return depositReceipt
   }
   async function withdrawMooney() {
@@ -152,10 +147,9 @@ export default function ArbitrumBridge() {
       l2Signer: signer,
     })
     const withdrawReceipt = await withdrawTx.wait()
-    toast.success(
-      'Your MOONEY has been withdrawn from Arbitrum. Please wait up to 7 days.',
-      { duration: 10000 }
-    )
+    toast.success('Your MOONEY has been withdrawn from Arbitrum. Please wait up to 7 days.', {
+      duration: 10000,
+    })
     return withdrawReceipt
   }
 
@@ -170,12 +164,7 @@ export default function ArbitrumBridge() {
     return (
       <>
         {inputToken === 'eth' ? (
-          <Image
-            src={`/icons/networks/ethereum.svg`}
-            width={15}
-            height={15}
-            alt=""
-          />
+          <Image src={`/icons/networks/ethereum.svg`} width={15} height={15} alt="" />
         ) : (
           <Image src={`/Original.png`} width={20} height={20} alt="" />
         )}
@@ -269,9 +258,8 @@ export default function ArbitrumBridge() {
     <div className="w-full max-w-2xl">
       <div className="mb-4">
         <p className="text-gray-400 text-sm">
-          This bridge transfers your ETH and MOONEY tokens from Ethereum mainnet
-          to Arbitrum. Arbitrum offers faster transactions and lower fees while
-          maintaining full security.
+          This bridge transfers your ETH and MOONEY tokens from Ethereum mainnet to Arbitrum.
+          Arbitrum offers faster transactions and lower fees while maintaining full security.
         </p>
       </div>
 
@@ -281,9 +269,7 @@ export default function ArbitrumBridge() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-white">Bridge Assets</h2>
-              <p className="text-gray-400 text-xs mt-0.5">
-                Transfer from Ethereum to Arbitrum
-              </p>
+              <p className="text-gray-400 text-xs mt-0.5">Transfer from Ethereum to Arbitrum</p>
             </div>
           </div>
         </div>
@@ -295,27 +281,41 @@ export default function ArbitrumBridge() {
             <label className="text-gray-300 text-sm font-medium">You Pay</label>
             <div className="bg-black/30 rounded-xl p-4 border border-white/10 focus-within:border-blue-400/50 transition-colors">
               <div className="flex items-center justify-between mb-3">
-                <input
-                  type="number"
-                  step="any"
+                <Input
+                  type="text"
                   placeholder="0.0"
-                  className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  onChange={({ target }) => {
-                    let value = target.value
+                  className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 border-0 p-0 mr-4"
+                  value={amount}
+                  max={balance ? Number(balance) : undefined}
+                  onChange={(e) => {
+                    let value = e.target.value
+                    // Remove commas and non-numeric characters except decimal point
+                    value = value.replace(/[^0-9.]/g, '')
+
+                    // Prevent multiple decimal points
+                    const parts = value.split('.')
+                    if (parts.length > 2) {
+                      value = parts[0] + '.' + parts.slice(1).join('')
+                    }
+
                     // Prevent negative values
                     if (parseFloat(value) < 0) {
                       value = '0'
                     }
+
+                    // Enforce max value (available balance)
+                    if (balance && parseFloat(value) > balance) {
+                      value = String(balance)
+                    }
+
                     // Remove leading zero if user types a number after it
-                    if (
-                      value.startsWith('0') &&
-                      value.length > 1 &&
-                      value[1] !== '.'
-                    ) {
+                    if (value.startsWith('0') && value.length > 1 && value[1] !== '.') {
                       value = value.substring(1)
                     }
                     setAmount(value)
                   }}
+                  formatNumbers={true}
+                  maxWidth="max-w-none"
                 />
 
                 {/* Token Selector */}
@@ -326,14 +326,8 @@ export default function ArbitrumBridge() {
                   }}
                 >
                   <TokenSymbol />
-                  <span className="text-white font-medium">
-                    {inputToken.toUpperCase()}
-                  </span>
-                  <ChevronUpDownIcon
-                    width={16}
-                    height={16}
-                    className="text-gray-400"
-                  />
+                  <span className="text-white font-medium">{inputToken.toUpperCase()}</span>
+                  <ChevronUpDownIcon width={16} height={16} className="text-gray-400" />
                 </button>
               </div>
 
@@ -362,26 +356,15 @@ export default function ArbitrumBridge() {
 
           {/* You Receive Section */}
           <div className="space-y-3">
-            <label className="text-gray-300 text-sm font-medium">
-              You Receive
-            </label>
+            <label className="text-gray-300 text-sm font-medium">You Receive</label>
             <div className="bg-black/30 rounded-xl p-4 border border-white/10">
               <div className="flex items-center justify-between">
-                <span className="text-white text-2xl font-RobotoMono">
-                  {amount || '0.0'}
-                </span>
+                <span className="text-white text-2xl font-RobotoMono">{amount || '0.0'}</span>
 
                 <div className="flex items-center gap-2 bg-black/50 px-3 py-2 rounded-xl border border-white/10">
-                  <Image
-                    src="/icons/networks/arbitrum.svg"
-                    width={20}
-                    height={20}
-                    alt="Arbitrum"
-                  />
+                  <Image src="/icons/networks/arbitrum.svg" width={20} height={20} alt="Arbitrum" />
                   <TokenSymbol />
-                  <span className="text-white font-medium">
-                    {inputToken.toUpperCase()}
-                  </span>
+                  <span className="text-white font-medium">{inputToken.toUpperCase()}</span>
                 </div>
               </div>
             </div>
@@ -390,8 +373,7 @@ export default function ArbitrumBridge() {
           {/* Info Box */}
           <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-xl p-3 border border-amber-400/20">
             <p className="text-amber-200 text-xs">
-              Bridging can take up to 15 minutes after the transaction has been
-              confirmed.
+              Bridging can take up to 15 minutes after the transaction has been confirmed.
             </p>
           </div>
         </div>
