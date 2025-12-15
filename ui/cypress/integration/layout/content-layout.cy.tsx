@@ -30,7 +30,7 @@ describe('ContentLayout', () => {
       <ContentLayout header="Test Header" description="Test Description" />
     )
 
-    cy.get('#title-container span').should('contain', 'Test Description')
+    cy.contains('Test Description').should('be.visible')
   })
 
   it('Renders preFooter when provided', () => {

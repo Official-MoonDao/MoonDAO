@@ -404,7 +404,9 @@ export default function Card({
             {stats && layout === 'launchpad' ? (
               <>
                 <h3 className="text-base md:text-xl lg:text-2xl font-GoodTimes text-white mb-1 md:mb-2">
-                  {stats.value}
+                  {typeof stats.value === 'number' 
+                    ? formatNumberWithCommas(stats.value.toString()) 
+                    : stats.value}
                   <br />
                   {header || title}
                 </h3>
@@ -453,6 +455,41 @@ export default function Card({
           </div>
         </div>
         {children}
+      </div>
+    )
+  }
+
+  if (layout === 'stats') {
+    const formattedValue = typeof stats?.value === 'number' 
+      ? formatNumberWithCommas(stats.value.toString()) 
+      : stats?.value
+
+    return (
+      <div
+        id={id || 'card-container'}
+        className={`${variantClass} ${paddingClass} rounded-xl border border-white/10 transition-all duration-300 group h-full ${className}`}
+      >
+        <div id="content-container" className="flex flex-col space-y-2">
+          <div className="flex items-center justify-between">
+            {icon && <div className="text-gray-400">{icon}</div>}
+            {stats?.trend && (
+              <span
+                className={`text-sm font-semibold ${
+                  stats.trend.isPositive ? 'text-green-500' : 'text-red-500'
+                }`}
+              >
+                {stats.trend.isPositive ? '↑' : '↓'} {stats.trend.value}
+              </span>
+            )}
+          </div>
+          <div>
+            <h3 className="text-3xl font-bold text-white">{formattedValue}</h3>
+            {stats?.subtitle && <p className="text-sm text-gray-400 mt-1">{stats.subtitle}</p>}
+          </div>
+          {header && (
+            <p className="text-sm font-medium text-gray-300">{header}</p>
+          )}
+        </div>
       </div>
     )
   }
