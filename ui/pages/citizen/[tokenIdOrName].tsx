@@ -36,6 +36,7 @@ import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { useVotesOfAddress } from '@/lib/snapshot'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { citizenRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -56,6 +57,7 @@ import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
 import Action from '@/components/subscription/Action'
 import Card from '@/components/subscription/Card'
@@ -64,9 +66,9 @@ import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal
 import GeneralActions from '@/components/subscription/GeneralActions'
 import GuestActions from '@/components/subscription/GuestActions'
 import LatestJobs from '@/components/subscription/LatestJobs'
-import NewMarketplaceListings from '@/components/subscription/NewMarketplaceListings'
 import OpenVotes from '@/components/subscription/OpenVotes'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
+import TeamListing, { TeamListing as TeamListingType } from '@/components/subscription/TeamListing'
 import CitizenABI from '../../const/abis/Citizen.json'
 import HatsABI from '../../const/abis/Hats.json'
 import JobsABI from '../../const/abis/JobBoardTable.json'
@@ -82,8 +84,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
   const chainSlug = getChainSlug(selectedChain)
 
   const [subModalEnabled, setSubModalEnabled] = useState(false)
-  const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] =
-    useState(false)
+  const [citizenMetadataModalEnabled, setCitizenMetadataModalEnabled] = useState(false)
 
   const isGuest = tokenId === 'guest'
 
@@ -156,6 +157,77 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
   //Nance
   const { proposals, packet, votingInfoMap } = useNewestProposals(100)
 
+  // Marketplace Listings
+  const [newListings, setNewListings] = useState<TeamListingType[]>([])
+  const [marketplaceTableName, setMarketplaceTableName] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function getTableName() {
+      if (!marketplaceTableContract) return
+      try {
+        const name: any = await readContract({
+          contract: marketplaceTableContract,
+          method: 'getTableName' as string,
+          params: [],
+        })
+        setMarketplaceTableName(name)
+      } catch (error) {
+        console.error('Error fetching marketplace table name:', error)
+      }
+    }
+    getTableName()
+  }, [marketplaceTableContract])
+
+  const now = Math.floor(Date.now() / 1000)
+  const marketplaceStatement = marketplaceTableName
+    ? `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 10`
+    : null
+
+  const { data: listings } = useTablelandQuery(marketplaceStatement, {
+    revalidateOnFocus: false,
+  })
+
+  useEffect(() => {
+    async function processListings() {
+      if (!listings || !teamContract || listings.length === 0) {
+        setNewListings([])
+        return
+      }
+
+      const BATCH_SIZE = 5
+      const DELAY_BETWEEN_BATCHES = 200
+      const validListings: TeamListingType[] = []
+
+      for (let i = 0; i < listings.length; i += BATCH_SIZE) {
+        const batch = listings.slice(i, i + BATCH_SIZE)
+
+        const batchResults = await Promise.all(
+          batch.map(async (listing: TeamListingType) => {
+            try {
+              const teamExpiration = await readContract({
+                contract: teamContract,
+                method: 'expiresAt' as string,
+                params: [listing.teamId],
+              })
+              return +teamExpiration.toString() > now ? listing : null
+            } catch {
+              return null
+            }
+          })
+        )
+
+        validListings.push(...batchResults.filter((listing: any) => listing !== null))
+
+        if (i + BATCH_SIZE < listings.length) {
+          await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES))
+        }
+      }
+      setNewListings(validListings)
+    }
+
+    processListings()
+  }, [listings, teamContract, now])
+
   useChainDefault()
 
   const ProfileHeader = (
@@ -171,10 +243,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
               className="flex w-full flex-col lg:flex-row items-stretch gap-6"
             >
               {nft?.metadata?.image ? (
-                <div
-                  id="citizen-image-container"
-                  className="relative flex-shrink-0"
-                >
+                <div id="citizen-image-container" className="relative flex-shrink-0">
                   <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
                     <IPFSRenderer
                       src={nft?.metadata?.image}
@@ -184,17 +253,9 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                       alt="Citizen Image"
                     />
                   </div>
-                  <div
-                    id="star-asset-container"
-                    className="absolute -bottom-2 -right-2"
-                  >
+                  <div id="star-asset-container" className="absolute -bottom-2 -right-2">
                     <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
-                      <Image
-                        src="/../.././assets/icon-star.svg"
-                        alt=""
-                        width={40}
-                        height={40}
-                      />
+                      <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
                     </div>
                   </div>
                 </div>
@@ -208,10 +269,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                 className="flex-1 min-w-0 flex flex-col justify-center min-h-[200px] lg:min-h-[250px]"
               >
                 <div id="team-name" className="flex flex-col gap-4 w-full">
-                  <div
-                    id="team-name-container"
-                    className="flex flex-col w-full"
-                  >
+                  <div id="team-name-container" className="flex flex-col w-full">
                     {subIsValid && isOwner && (
                       <button
                         className="absolute top-4 right-4 p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-xl transition-colors"
@@ -223,11 +281,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                             )
                         }}
                       >
-                        <PencilIcon
-                          width={24}
-                          height={24}
-                          className="text-white"
-                        />
+                        <PencilIcon width={24} height={24} className="text-white" />
                       </button>
                     )}
                     {nft ? (
@@ -251,24 +305,22 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                     id="interactions-container"
                     className="flex flex-col sm:flex-row items-start gap-4"
                   >
-                    {(discordLink &&
-                      !discordLink.includes('/users/undefined')) ||
+                    {(discordLink && !discordLink.includes('/users/undefined')) ||
                     (socials && (socials.twitter || socials.website)) ? (
                       <div
                         id="socials-container"
                         className="flex items-center gap-3 bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12"
                       >
-                        {discordLink &&
-                          !discordLink.includes('/users/undefined') && (
-                            <Link
-                              className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
-                              href={discordLink}
-                              target="_blank"
-                              passHref
-                            >
-                              <DiscordIcon />
-                            </Link>
-                          )}
+                        {discordLink && !discordLink.includes('/users/undefined') && (
+                          <Link
+                            className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
+                            href={discordLink}
+                            target="_blank"
+                            passHref
+                          >
+                            <DiscordIcon />
+                          </Link>
+                        )}
                         {socials.twitter && (
                           <Link
                             className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
@@ -286,11 +338,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                             target="_blank"
                             passHref
                           >
-                            <GlobeAltIcon
-                              height={20}
-                              width={20}
-                              className="text-white"
-                            />
+                            <GlobeAltIcon height={20} width={20} className="text-white" />
                           </Link>
                         )}
                       </div>
@@ -344,9 +392,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
         <Head
           title={nft?.metadata?.name}
           description={nft?.metadata?.description}
-          image={`https://ipfs.io/ipfs/${
-            nft?.metadata?.image.split('ipfs://')[1]
-          }`}
+          image={`https://ipfs.io/ipfs/${nft?.metadata?.image.split('ipfs://')[1]}`}
         />
         {!isDeleted && subIsValid && isOwner && (
           <CitizenActions
@@ -393,32 +439,24 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
             {citizen || isOwner ? (
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="font-GoodTimes text-2xl text-white">
-                    Governance
-                  </h2>
+                  <h2 className="font-GoodTimes text-2xl text-white">Governance</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-slate-600/20 rounded-xl p-4">
                     <p className="text-lg text-slate-300 mb-2">$MOONEY</p>
                     <p className="text-3xl font-bold text-white">
-                      {MOONEYBalance
-                        ? Math.round(MOONEYBalance).toLocaleString()
-                        : 0}
+                      {MOONEYBalance ? Math.round(MOONEYBalance).toLocaleString() : 0}
                     </p>
                   </div>
                   <div className="bg-slate-600/20 rounded-xl p-4">
                     <p className="text-lg text-slate-300 mb-2">Voting Power</p>
                     <p className="text-3xl font-bold text-white">
-                      {VMOONEYBalance
-                        ? Math.round(VMOONEYBalance).toLocaleString()
-                        : 0}
+                      {VMOONEYBalance ? Math.round(VMOONEYBalance).toLocaleString() : 0}
                     </p>
                   </div>
                   <div className="bg-slate-600/20 rounded-xl p-4">
                     <p className="text-lg text-slate-300 mb-2">Votes</p>
-                    <p className="text-3xl font-bold text-white">
-                      {votes?.length}
-                    </p>
+                    <p className="text-3xl font-bold text-white">{votes?.length}</p>
                   </div>
                 </div>
                 {isOwner && (
@@ -442,19 +480,13 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
               <></>
             )}
             {isOwner && (
-              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
-                <OpenVotes
-                  proposals={proposals}
-                  packet={packet}
-                  votingInfoMap={votingInfoMap}
-                />
+              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+                <OpenVotes proposals={proposals} packet={packet} votingInfoMap={votingInfoMap} />
               </div>
             )}
             {hats && hats?.length > 0 && (
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-                <h2 className="font-GoodTimes text-2xl text-white mb-6">
-                  Teams
-                </h2>
+                <h2 className="font-GoodTimes text-2xl text-white mb-6">Teams</h2>
                 <div className="space-y-4">
                   {hats?.map((hat: any) => (
                     <div
@@ -475,18 +507,38 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
             )}
             {isOwner && (
               <>
-                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
-                  <NewMarketplaceListings
-                    selectedChain={selectedChain}
-                    teamContract={teamContract}
-                    marketplaceTableContract={marketplaceTableContract}
-                  />
+                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+                  <div className="w-full">
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-8">
+                      <h2 className="font-GoodTimes text-2xl text-white">Newest Listings</h2>
+
+                      <StandardButton
+                        className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px] mt-2 lg:mt-0"
+                        onClick={() => router.push('/marketplace')}
+                      >
+                        See More
+                      </StandardButton>
+                    </div>
+
+                    <SlidingCardMenu>
+                      <div id="new-marketplace-listings-container" className="flex gap-5">
+                        {newListings.map((listing, i) => (
+                          <TeamListing
+                            key={`team-listing-${i}`}
+                            listing={listing}
+                            selectedChain={selectedChain}
+                            teamContract={teamContract}
+                            marketplaceTableContract={marketplaceTableContract}
+                            teamName
+                            isCitizen={true}
+                          />
+                        ))}
+                      </div>
+                    </SlidingCardMenu>
+                  </div>
                 </div>
-                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
-                  <LatestJobs
-                    teamContract={teamContract}
-                    jobTableContract={jobTableContract}
-                  />
+                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+                  <LatestJobs teamContract={teamContract} jobTableContract={jobTableContract} />
                 </div>
                 <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
                   <GeneralActions />
@@ -525,11 +577,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
   )
 }
 
-async function getTeamWearerServerSide(
-  chain: any,
-  teamContract: any,
-  address: any
-) {
+async function getTeamWearerServerSide(chain: any, teamContract: any, address: any) {
   try {
     if (!address) return []
 
@@ -594,9 +642,7 @@ async function getTeamWearerServerSide(
             method: 'teamAdminHat' as string,
             params: [teamId],
           })
-          const prettyAdminHatId = hatIdDecimalToHex(
-            BigInt(adminHatId.toString())
-          )
+          const prettyAdminHatId = hatIdDecimalToHex(BigInt(adminHatId.toString()))
 
           if (
             hat.id === prettyAdminHatId ||

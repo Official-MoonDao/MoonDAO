@@ -28,6 +28,7 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import { networkCard } from '@/lib/layout/styles'
 import { getAttribute } from '@/lib/utils/nft'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Card from '../components/layout/Card'
@@ -485,7 +486,7 @@ export default function Join({
         <div id="network-content" className="max-w-6xl mx-auto px-6">
           {tab === 'map' ? (
             /* Map View */
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
+            <div className={`${networkCard.base} p-6 md:p-8`}>
               <div className="mb-6">
                 <div className="flex justify-center">
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
@@ -511,7 +512,7 @@ export default function Join({
                 </div>
               </div>
               <div className="w-full flex justify-center">
-                <div className="w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
+                <div className={`w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] ${networkCard.base} shadow-xl overflow-hidden`}>
                   <div
                     className={`flex items-center justify-center ${
                       mapView !== 'earth' && 'hidden'

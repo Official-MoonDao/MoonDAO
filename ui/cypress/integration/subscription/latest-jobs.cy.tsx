@@ -64,7 +64,7 @@ describe('<LatestJobs />', () => {
   it('Renders the component and jobs', () => {
     cy.wait('@getLatestJobs')
 
-    cy.get('.header').contains('Latest Jobs')
+    cy.get('h2.font-GoodTimes').contains('Latest Jobs')
     cy.get('#latest-jobs-container').children().should('have.length', 2)
   })
 })

@@ -90,7 +90,7 @@ export default function TeamMarketplace({
 
   return (
     <div id="team-marketplace" className="w-full p-6">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-6">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-8">
         <div className="flex gap-5">
           <Image
             src={'/assets/icon-marketplace.svg'}
@@ -103,7 +103,7 @@ export default function TeamMarketplace({
         </div>
         {isManager && (
           <StandardButton
-            className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105"
+            className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px] transition-all duration-200 hover:scale-105 mt-2 lg:mt-0"
             onClick={() => setListingModalEnabled(true)}
           >
             Create a Listing

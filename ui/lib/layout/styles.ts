@@ -72,6 +72,12 @@ export const hoverEffects = {
   shadow: 'transition-all duration-200 shadow-lg hover:shadow-xl',
 }
 
+export const networkCard = {
+  base: 'bg-gradient-to-br from-blue-900/20 to-purple-900/20 backdrop-blur-sm rounded-2xl border border-white/5',
+  hover: 'hover:shadow-2xl',
+  full: 'bg-gradient-to-br from-blue-900/20 to-purple-900/20 backdrop-blur-sm rounded-2xl border border-white/5 hover:shadow-2xl transition-all duration-300',
+}
+
 export const commonCombinations = {
   cardContainer: 'backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl',
   slateCardContainer: 'backdrop-blur-xl border border-white/10 rounded-xl shadow-lg',

@@ -15,7 +15,7 @@ describe('<Action />', () => {
   })
 
   it('Renders with title, description, and icon', () => {
-    cy.get('h3.font-bold').should('contain', props.title)
+    cy.get('h3.font-semibold').should('contain', props.title)
     cy.get('p.text-xs').should('contain', props.description)
     cy.get('span').should('contain', 'Icon')
   })

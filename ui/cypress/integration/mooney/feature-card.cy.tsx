@@ -7,6 +7,9 @@ describe('<FeatureCard />', () => {
       <ScaleIcon className="w-6 h-6 text-blue-400" />
     </div>
   )
+  beforeEach(() => {
+    cy.mountNextRouter('/')
+  })
 
   it('renders with required props', () => {
     cy.mount(<FeatureCard icon={mockIcon} title="Test Feature" description="Test description" />)

@@ -112,16 +112,6 @@ const SlidingCardMenu: React.FC<SlidingCardMenuProps> = ({ id, children }) => {
       >
         {children}
       </div>
-      <div
-        id="left-fadeout"
-        className={`hidden ${
-          isHovered && 'animate-fadeIn md:block'
-        } left-fadeout h-full w-[80px] bg-red-500 absolute top-0 left-0 z-50`}
-      ></div>
-      <div
-        id="right-fadein"
-        className="hidden md:block right-fadein h-full w-[80px] bg-red-500 absolute top-0 right-0 z-50"
-      ></div>
     </div>
   )
 }
