@@ -1,13 +1,13 @@
-// Type definition for Next.js Web Vitals
+import { track } from '@vercel/analytics'
+
 export interface NextWebVitalsMetric {
   id: string
   name: string
   value: number
   label: 'web-vital' | 'custom'
   startTime?: number
+  rating?: 'good' | 'needs-improvement' | 'poor'
 }
-
-const vitalsUrl = '/api/vitals'
 
 function getConnectionSpeed(): string {
   if (typeof navigator !== 'undefined' && 'connection' in navigator) {
@@ -18,33 +18,32 @@ function getConnectionSpeed(): string {
 }
 
 export function reportWebVitals(metric: NextWebVitalsMetric) {
-  const body = {
-    id: metric.id,
-    name: metric.name,
-    value: metric.value,
-    label: metric.label,
-    url: typeof window !== 'undefined' ? window.location.href : '',
-    connectionSpeed: getConnectionSpeed(),
-    navigationType: typeof performance !== 'undefined' 
-      ? (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming)?.type || 'unknown'
-      : 'unknown',
+  // Vercel Analytics automatically captures web vitals (CLS, FCP, FID, LCP, TTFB, INP)
+  // We only track custom metrics explicitly
+  if (metric.label === 'custom') {
+    track(metric.name, {
+      value: metric.value,
+      id: metric.id,
+    })
   }
 
-  // Log to console in development
   if (process.env.NODE_ENV === 'development') {
-    console.log('[Web Vitals]', body.name, body.value, body.label)
-  }
+    const connectionSpeed = getConnectionSpeed()
+    const navigationType =
+      typeof performance !== 'undefined'
+        ? (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming)?.type ||
+          'unknown'
+        : 'unknown'
 
-  // Send to analytics endpoint
-  if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-    navigator.sendBeacon(vitalsUrl, JSON.stringify(body))
-  } else if (typeof fetch !== 'undefined') {
-    fetch(vitalsUrl, {
-      body: JSON.stringify(body),
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      keepalive: true,
-    }).catch(console.error)
+    console.log('[Web Vitals]', {
+      name: metric.name,
+      value: metric.value,
+      rating: metric.rating,
+      label: metric.label,
+      connectionSpeed,
+      navigationType,
+      url: typeof window !== 'undefined' ? window.location.href : '',
+    })
   }
 }
 
@@ -56,22 +55,19 @@ export function monitorLongTasks() {
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.duration > 50) {
-          console.warn('[Performance] Long task detected:', {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[Performance] Long task detected:', {
+              duration: entry.duration,
+              startTime: entry.startTime,
+            })
+          }
+
+          // Send custom metric to Vercel Analytics
+          track('long_task', {
             duration: entry.duration,
             startTime: entry.startTime,
+            url: window.location.pathname,
           })
-
-          // Send to analytics
-          fetch('/api/vitals', {
-            body: JSON.stringify({
-              name: 'LONG_TASK',
-              value: entry.duration,
-              url: window.location.href,
-            }),
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            keepalive: true,
-          }).catch(() => {})
         }
       }
     })
@@ -82,7 +78,6 @@ export function monitorLongTasks() {
   }
 }
 
-// Monitor page visibility for battery optimization
 export function monitorPageVisibility(onVisibilityChange?: (hidden: boolean) => void) {
   if (typeof document === 'undefined') return
 
@@ -94,17 +89,12 @@ export function monitorPageVisibility(onVisibilityChange?: (hidden: boolean) => 
       hiddenTime = Date.now()
       const timeVisible = hiddenTime - visibleTime
 
-      // Report time visible
-      fetch('/api/vitals', {
-        body: JSON.stringify({
-          name: 'TIME_VISIBLE',
-          value: timeVisible,
-          url: window.location.href,
-        }),
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        keepalive: true,
-      }).catch(() => {})
+      if (timeVisible > 5000) {
+        track('time_visible', {
+          duration: timeVisible,
+          url: window.location.pathname,
+        })
+      }
 
       onVisibilityChange?.(true)
     } else {
@@ -119,4 +109,3 @@ export function monitorPageVisibility(onVisibilityChange?: (hidden: boolean) => 
     document.removeEventListener('visibilitychange', handleVisibilityChange)
   }
 }
-
