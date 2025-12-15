@@ -22,6 +22,7 @@ import { teamRowToNFT, citizenRowToNFT } from '@/lib/tableland/convertRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import { networkCard } from '@/lib/layout/styles'
 import Container from '../components/layout/Container'
 import Frame from '../components/layout/Frame'
 import Head from '../components/layout/Head'
@@ -249,7 +250,7 @@ export default function Network({
 
           <div id="network-content" className="max-w-6xl mx-auto px-6 pb-16">
             {isMapTab ? (
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
+              <div className={`${networkCard.base} p-6 md:p-8`}>
                 <div className="mb-6">
                   <div className="flex justify-center">
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
@@ -275,7 +276,7 @@ export default function Network({
                   </div>
                 </div>
                 <div className="w-full flex justify-center">
-                  <div className="w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
+                  <div className={`w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] ${networkCard.base} shadow-xl overflow-hidden`}>
                     <div
                       className={`flex items-center justify-center ${
                         mapView !== 'earth' && 'hidden'
@@ -290,7 +291,7 @@ export default function Network({
                 </div>
               </div>
             ) : (
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
+              <div className={`${networkCard.base} p-6 md:p-8`}>
                 <CardGridContainer xsCols={1} smCols={1} mdCols={2} lgCols={2} maxCols={2} center>
                   {renderNFTs()}
                 </CardGridContainer>

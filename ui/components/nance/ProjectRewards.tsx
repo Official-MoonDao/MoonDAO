@@ -400,7 +400,7 @@ export function ProjectRewards({
           popOverEffect={false}
           isProfile
         >
-          <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px]">
+          <div className="flex flex-col gap-6 p-6 md:p-8 max-w-[1200px]">
             {/* Condensed Top Section - Rewards + Create Button */}
             <div className="bg-black/20 rounded-xl p-4 border border-white/10">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
@@ -440,31 +440,26 @@ export function ProjectRewards({
 
             <div
               id="projects-container"
-              className="bg-black/20 rounded-xl p-6 border border-white/10"
+              className="p-6"
             >
               <h1 className="font-GoodTimes text-white/80 text-xl mb-6">Active Projects</h1>
 
               <div className="flex flex-col gap-6">
                 {currentProjects && currentProjects.length > 0 ? (
                   currentProjects.map((project: any, i) => (
-                    <div
+                    <ProjectCard
                       key={`project-card-${i}`}
-                      className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
-                    >
-                      <ProjectCard
-                        key={`project-card-${i}`}
-                        project={project}
-                        projectContract={projectContract}
-                        hatsContract={hatsContract}
-                        distribute={active && project.eligible}
-                        distribution={userHasVotingPower ? distribution : undefined}
-                        handleDistributionChange={
-                          userHasVotingPower ? handleDistributionChange : undefined
-                        }
-                        userHasVotingPower={userHasVotingPower}
-                        isVotingPeriod={active}
-                      />
-                    </div>
+                      project={project}
+                      projectContract={projectContract}
+                      hatsContract={hatsContract}
+                      distribute={active && project.eligible}
+                      distribution={userHasVotingPower ? distribution : undefined}
+                      handleDistributionChange={
+                        userHasVotingPower ? handleDistributionChange : undefined
+                      }
+                      userHasVotingPower={userHasVotingPower}
+                      isVotingPeriod={active}
+                    />
                   ))
                 ) : (
                   <div className="text-center py-8 text-gray-400">

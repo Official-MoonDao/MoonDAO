@@ -11,6 +11,7 @@ type StatsCardProps = {
     isPositive: boolean
   }
   className?: string
+  children?: React.ReactNode
 }
 
 export default function StatsCard({

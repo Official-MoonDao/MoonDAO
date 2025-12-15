@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { getCitizensLocationData } from '@/lib/map'
+import { networkCard } from '@/lib/layout/styles'
 import IconOrg from '@/components/assets/IconOrg'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -81,7 +82,7 @@ export default function NetworkMap({
           popOverEffect={false}
           isProfile
         >
-          <div className="w-full md:w-auto inline-block md:mr-12 rounded-lg z-[100] min-h-[50vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
+          <div className={`w-full md:w-auto inline-block md:mr-12 rounded-lg z-[100] min-h-[50vh] ${networkCard.base} shadow-xl overflow-hidden`}>
             <div
               className={`flex items-center justify-center ${
                 tab !== 'earth' && 'hidden'

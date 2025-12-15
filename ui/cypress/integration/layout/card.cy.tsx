@@ -1,6 +1,7 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import React from 'react'
 import Card from '../../../components/layout/Card'
+import StatsCard from '../../../components/dashboard/StatsCard'
 
 describe('<Card />', () => {
   describe('Basic Functionality', () => {
@@ -123,15 +124,11 @@ describe('<Card />', () => {
 
     it('Renders stats layout with value and trend', () => {
       cy.mount(
-        <Card
-          variant="stats"
-          layout="stats"
-          header="Active Users"
-          stats={{
-            value: 1234,
-            subtitle: 'Monthly',
-            trend: { value: '+12%', isPositive: true },
-          }}
+        <StatsCard
+          title="Active Users"
+          value={1234}
+          subtitle="Monthly"
+          trend={{ value: '+12%', isPositive: true }}
           icon={<div>📊</div>}
         />
       )
