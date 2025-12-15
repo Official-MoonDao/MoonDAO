@@ -13,6 +13,7 @@ export default function CardStack({ children }: CardStackProps) {
   const [isActive, setIsActive] = useState(false)
   const hasCompletedStack = useRef(false)
   const touchStart = useRef<number | null>(null)
+  const [isPageVisible, setIsPageVisible] = useState(true)
 
   // For scroll-linked animation
   const targetProgress = useRef(0)
@@ -37,8 +38,41 @@ export default function CardStack({ children }: CardStackProps) {
     cardRefs.current = cardRefs.current.slice(0, children.length)
   }, [children])
 
+  // Page Visibility API - pause animations when tab is hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden)
+      
+      // Cancel animation frame when page is hidden
+      if (document.hidden && animationFrame.current !== null) {
+        cancelAnimationFrame(animationFrame.current)
+        animationFrame.current = null
+      }
+      // Resume animation when page becomes visible
+      else if (!document.hidden && animationFrame.current === null && targetProgress.current !== currentProgress.current) {
+        animationFrame.current = requestAnimationFrame(animateFrame)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      // Clean up animation frame on unmount
+      if (animationFrame.current !== null) {
+        cancelAnimationFrame(animationFrame.current)
+      }
+    }
+  }, [])
+
   // Smooth animation function that runs on each frame
   const animateFrame = () => {
+    // Pause animations when page is not visible
+    if (!isPageVisible) {
+      animationFrame.current = null
+      return
+    }
+
     // Calculate the new progress with damping for smoothness
     // The damping factor controls the smoothing - lower = smoother but slower
     const progressDiff = targetProgress.current - currentProgress.current
@@ -88,8 +122,8 @@ export default function CardStack({ children }: CardStackProps) {
   const setTargetProgress = (progress: number) => {
     targetProgress.current = Math.max(0, Math.min(1, progress))
 
-    // Start the animation loop if it's not already running
-    if (animationFrame.current === null) {
+    // Start the animation loop if it's not already running and page is visible
+    if (animationFrame.current === null && isPageVisible) {
       animationFrame.current = requestAnimationFrame(animateFrame)
     }
   }
@@ -103,11 +137,12 @@ export default function CardStack({ children }: CardStackProps) {
     const clampedProgress = Math.max(0, Math.min(1, progress))
 
     if (lastDirection.current === 'down') {
-      // Current card moves left and fades
+      // Current card moves left and fades - use transform for better performance
       gsap.set(current, {
         x: '0%',
         opacity: 1 - clampedProgress * 2,
         scale: 1 - clampedProgress * 0.2,
+        force3D: true, // Enable hardware acceleration
       })
 
       // Next card comes in from right
@@ -115,6 +150,7 @@ export default function CardStack({ children }: CardStackProps) {
         x: (1 - clampedProgress) * 100 + '%',
         opacity: clampedProgress,
         scale: 0.8 + clampedProgress * 0.2,
+        force3D: true,
       })
     } else {
       // Current card moves right
@@ -122,6 +158,7 @@ export default function CardStack({ children }: CardStackProps) {
         x: clampedProgress * 100 + '%',
         opacity: 1 - clampedProgress * 0.7,
         scale: 1 - clampedProgress * 0.2,
+        force3D: true,
       })
 
       // Next card fades in
@@ -129,6 +166,7 @@ export default function CardStack({ children }: CardStackProps) {
         x: '0%',
         opacity: clampedProgress,
         scale: 0.8 + clampedProgress * 0.2,
+        force3D: true,
       })
     }
   }

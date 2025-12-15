@@ -1,5 +1,9 @@
 const nextTranslate = require('next-translate')
 const withTM = require('next-transpile-modules')(['thirdweb', 'ox'])
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+})
+
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://www.googletagmanager.com https://pay.google.com https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com;
@@ -16,11 +20,17 @@ const cspHeader = `
     worker-src 'self' blob:;
 `
 
-module.exports = withTM(
-  nextTranslate({
+module.exports = withBundleAnalyzer(
+  withTM(
+    nextTranslate({
     reactStrictMode: true,
+    swcMinify: true,
+    compiler: {
+      removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+    },
     experimental: {
       serverComponentsExternalPackages: ['thirdweb'],
+      optimizePackageImports: ['@heroicons/react', 'gsap', 'react-globe.gl'],
     },
     typescript: {
       // Enable faster TypeScript builds
@@ -43,8 +53,10 @@ module.exports = withTM(
         'safe-transaction-assets.safe.global',
         'test.com',
       ],
+      formats: ['image/avif', 'image/webp'],
     },
     output: 'standalone',
+    poweredByHeader: false,
     async headers() {
       return [
         {
@@ -340,14 +352,66 @@ module.exports = withTM(
         },
       ]
     },
-    webpack: (config, { isServer }) => {
+    webpack: (config, { isServer, webpack }) => {
       if (!isServer) {
         config.resolve.fallback.fs = false
         config.resolve.fallback.tls = false
         config.resolve.fallback.net = false
         config.resolve.fallback.child_process = false
       }
+
+      // Optimize chunk splitting
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Vendor chunk for node_modules
+            vendor: {
+              name: 'vendor',
+              chunks: 'all',
+              test: /node_modules/,
+              priority: 20,
+            },
+            // Separate chunk for large libraries
+            thirdweb: {
+              test: /[\\/]node_modules[\\/](thirdweb|@thirdweb)[\\/]/,
+              name: 'thirdweb',
+              chunks: 'all',
+              priority: 30,
+            },
+            privy: {
+              test: /[\\/]node_modules[\\/](@privy-io)[\\/]/,
+              name: 'privy',
+              chunks: 'all',
+              priority: 30,
+            },
+            web3: {
+              test: /[\\/]node_modules[\\/](ethers|viem|wagmi|@safe-global)[\\/]/,
+              name: 'web3',
+              chunks: 'all',
+              priority: 30,
+            },
+            globe: {
+              test: /[\\/]node_modules[\\/](react-globe\.gl|three)[\\/]/,
+              name: 'globe',
+              chunks: 'async',
+              priority: 30,
+            },
+            // Common chunk for shared code
+            common: {
+              minChunks: 2,
+              priority: 10,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      }
+
       return config
     },
-  })
+    })
+  )
 )

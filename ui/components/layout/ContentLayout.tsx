@@ -47,7 +47,8 @@ const ContentLayout: React.FC<ContentProps> = ({
             <div id="graphic-element-container" className="relative overflow-hidden">
               <div
                 id="graphic-element"
-                className="w-full h-full absolute top-0 left-0 bg-gradient-to-br from-gray-900/80 via-blue-900/40 to-purple-900/30 backdrop-blur-xl border-b border-white/10 rounded-b-3xl shadow-2xl"
+                className="w-full h-full absolute top-0 left-0 bg-gradient-to-br from-gray-900/80 via-blue-900/40 to-purple-900/30 border-b border-white/10 rounded-b-3xl shadow-2xl"
+                style={{ contain: 'paint' }}
               ></div>
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 pointer-events-none"></div>
             </div>

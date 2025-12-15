@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "NODE_OPTIONS='--max-old-space-size=8192' next dev",
     "build": "NODE_OPTIONS='--max-old-space-size=8192' next build",
+    "analyze": "ANALYZE=true NODE_OPTIONS='--max-old-space-size=8192' next build",
     "postbuild": "next-sitemap",
     "start": "next start",
     "lint": "next lint",
@@ -74,6 +75,7 @@
     "graphql-request": "^6.1.0",
     "gsap": "^3.12.7",
     "html2canvas-pro": "^1.5.8",
+    "install": "^0.13.0",
     "jose": "^4.15.4",
     "juice-sdk-core": "2.1.0",
     "juice-sdk-react": "5.0.1",
@@ -120,6 +122,7 @@
   "devDependencies": {
     "@bygdle/javascript-lp-solver": "^0.4.26",
     "@cypress/webpack-preprocessor": "^6.0.2",
+    "@next/bundle-analyzer": "^16.0.10",
     "@tailwindcss/typography": "^0.5.16",
     "@trivago/prettier-plugin-sort-imports": "^3.2.0",
     "@types/ethereum-block-by-date": "^1.4.1",
