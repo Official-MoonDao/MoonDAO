@@ -13,15 +13,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import {
-  prepareContractCall,
-  readContract,
-  sendAndConfirmTransaction,
-} from 'thirdweb'
+import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -58,6 +55,10 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
+  const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
+  const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
+
+  const { effectiveGasPrice } = useGasPrice(selectedChain)
 
   const { isMobile } = useWindowSize()
 
@@ -92,6 +93,106 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   const { nativeBalance } = useNativeBalance()
 
   const { fundWallet } = useFundWallet()
+
+  const estimateMintGas = useCallback(async () => {
+    if (!account || !address || !teamData.name) return
+
+    setIsLoadingGasEstimate(true)
+
+    try {
+      const cost: any = await readContract({
+        contract: teamContract,
+        method: 'getRenewalPrice' as string,
+        params: [address, 365 * 24 * 60 * 60],
+      })
+
+      const transaction = await prepareContractCall({
+        contract: teamCreatorContract,
+        method: 'createMoonDAOTeam' as string,
+        params: [
+          {
+            adminHatURI: 'ipfs://placeholder',
+            managerHatURI: 'ipfs://placeholder',
+            memberHatURI: 'ipfs://placeholder',
+          },
+          {
+            name: teamData.name,
+            bio: teamData.description,
+            image: 'ipfs://placeholder',
+            twitter: teamData.twitter,
+            communications: teamData.communications,
+            website: teamData.website,
+            _view: teamData.view,
+            formId: teamData.formResponseId || '0000',
+          },
+          [],
+        ],
+        value: cost,
+      })
+
+      let gasEstimate: bigint = BigInt(0)
+
+      try {
+        const txData = typeof transaction.data === 'function' ? await transaction.data() : transaction.data
+
+        const estimateResponse = await fetch('/api/rpc/estimate-gas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chainId: selectedChain.id,
+            from: address,
+            to: TEAM_CREATOR_ADDRESSES[chainSlug],
+            data: txData,
+            value: `0x${cost.toString(16)}`,
+          }),
+        })
+
+        if (!estimateResponse.ok) {
+          throw new Error(`Gas estimation API returned ${estimateResponse.status}`)
+        }
+
+        const estimateData = await estimateResponse.json()
+
+        if (estimateData.error) {
+          throw new Error(estimateData.error)
+        }
+
+        gasEstimate = BigInt(estimateData.gasEstimate)
+      } catch (estimationError: any) {
+        console.error('Gas estimation error:', estimationError)
+        gasEstimate = BigInt(200000)
+      }
+
+      const bufferPercent = 130
+      const gasWithBuffer = (gasEstimate * BigInt(bufferPercent)) / BigInt(100)
+      setEstimatedGas(gasWithBuffer)
+      setIsLoadingGasEstimate(false)
+    } catch (error) {
+      console.error('Error estimating gas:', error instanceof Error ? error.message : error)
+      setEstimatedGas(BigInt(200000))
+      setIsLoadingGasEstimate(false)
+    }
+  }, [
+    account,
+    address,
+    teamData.name,
+    teamData.description,
+    teamData.twitter,
+    teamData.communications,
+    teamData.website,
+    teamData.view,
+    teamData.formResponseId,
+    teamContract,
+    teamCreatorContract,
+    selectedChain,
+    chainSlug,
+  ])
+
+  useEffect(() => {
+    if (stage === 2 && address && teamData.name) {
+      estimateMintGas()
+    }
+  }, [stage, address, teamData.name, estimateMintGas])
 
   const submitTypeform = useCallback(async (formResponse: any) => {
     try {
@@ -132,9 +233,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     } catch (error) {
       console.error('Error submitting typeform:', error)
       // You might want to show an error message to the user here
-      alert(
-        'There was an error processing your form submission. Please try again.'
-      )
+      alert('There was an error processing your form submission. Please try again.')
     }
   }, [])
 
@@ -204,9 +303,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   <div className="w-full bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden relative">
                     <Widget
                       className="w-full"
-                      id={
-                        process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string
-                      }
+                      id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string}
                       onSubmit={submitTypeform}
                       height={700}
                     />
@@ -221,9 +318,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                 >
                   {teamImage && (
                     <div className="w-full bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6 mb-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">
-                        Team Image Preview
-                      </h3>
+                      <h3 className="text-lg font-semibold text-white mb-4">Team Image Preview</h3>
                       <div className="flex justify-start">
                         <Image
                           src={URL.createObjectURL(teamImage)}
@@ -238,9 +333,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
 
                   <div className="flex flex-col w-full md:p-5 mt-8 max-w-[600px]">
                     <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-                      <h3 className="font-GoodTimes text-xl mb-4 text-white">
-                        Team Overview
-                      </h3>
+                      <h3 className="font-GoodTimes text-xl mb-4 text-white">Team Overview</h3>
                       <div className="grid gap-4">
                         {isMobile ? (
                           Object.keys(teamData)
@@ -292,36 +385,29 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                         Important Information
                       </h2>
                       <div className="flex flex-col rounded-[20px] bg-slate-800/50 border border-slate-600/30 p-5 pb-10 md:p-5">
-                        <h3 className="font-GoodTimes text-lg mb-3 text-white">
-                          Treasury
-                        </h3>
+                        <h3 className="font-GoodTimes text-lg mb-3 text-white">Treasury</h3>
                         <p className="text-slate-300 leading-relaxed">
-                          A self-custodied multisignature treasury will secure
-                          your organization’s assets, allowing interaction with
-                          any smart contracts within the Ethereum ecosystem.
+                          A self-custodied multisignature treasury will secure your organization’s
+                          assets, allowing interaction with any smart contracts within the Ethereum
+                          ecosystem.
                           <br />
                           <br />
-                          You can add more signers later via your Team
-                          management portal.
+                          You can add more signers later via your Team management portal.
                         </p>
                       </div>
                       <div className="flex flex-col bg-slate-800/50 border border-slate-600/30 rounded-[20px] pb-10 p-5 mt-5">
-                        <h3 className="font-GoodTimes text-lg mb-3 text-white">
-                          Manager
-                        </h3>
+                        <h3 className="font-GoodTimes text-lg mb-3 text-white">Manager</h3>
                         <p className="text-slate-300 leading-relaxed">
-                          The manager can modify your organization’s
-                          information. To begin, the currently connected wallet
-                          will act as the Manager.
+                          The manager can modify your organization’s information. To begin, the
+                          currently connected wallet will act as the Manager.
                           <br />
                           <br />
-                          You can add a manager or members to your organization
-                          using your Team Management Portal.
+                          You can add a manager or members to your organization using your Team
+                          Management Portal.
                         </p>
                       </div>
                       <p className="mt-6 text-center text-slate-300 font-medium">
-                        Welcome to the future of on-chain, off-world
-                        coordination with MoonDAO!
+                        Welcome to the future of on-chain, off-world coordination with MoonDAO!
                       </p>
                     </div>
                   </div>
@@ -387,9 +473,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                     isDisabled={!agreedToCondition || isLoadingMint}
                     action={async () => {
                       if (!account || !address) {
-                        return toast.error(
-                          'Please connect your wallet to continue.'
-                        )
+                        return toast.error('Please connect your wallet to continue.')
                       }
                       try {
                         const cost: any = await readContract({
@@ -398,18 +482,15 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           params: [address, 365 * 24 * 60 * 60],
                         })
 
-                        const formattedCost = ethers.utils
-                          .formatEther(cost.toString())
-                          .toString()
+                        const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
 
-                        const estimatedMaxGas = 0.0003
+                        const gasCostWei = estimatedGas * effectiveGasPrice
+                        const gasCostEth = Number(gasCostWei) / 1e18
 
-                        const totalCost =
-                          Number(formattedCost) + estimatedMaxGas
+                        const totalCost = Number(formattedCost) + gasCostEth
 
                         if (+nativeBalance < totalCost) {
-                          const roundedCost =
-                            Math.ceil(+totalCost * 1000000) / 1000000
+                          const roundedCost = Math.ceil(totalCost * 1000000) / 1000000
 
                           return await fundWallet(address, {
                             amount: String(roundedCost),
@@ -432,8 +513,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           }
                         )
 
-                        const { cid: adminHatMetadataIpfsHash } =
-                          await pinBlobOrFile(adminHatMetadataBlob)
+                        const { cid: adminHatMetadataIpfsHash } = await pinBlobOrFile(
+                          adminHatMetadataBlob
+                        )
 
                         const managerHatMetadataBlob = new Blob(
                           [
@@ -450,8 +532,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           }
                         )
 
-                        const { cid: managerHatMetadataIpfsHash } =
-                          await pinBlobOrFile(managerHatMetadataBlob)
+                        const { cid: managerHatMetadataIpfsHash } = await pinBlobOrFile(
+                          managerHatMetadataBlob
+                        )
 
                         const memberHatMetadataBlob = new Blob(
                           [
@@ -468,8 +551,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           }
                         )
 
-                        const { cid: memberHatMetadataIpfsHash } =
-                          await pinBlobOrFile(memberHatMetadataBlob)
+                        const { cid: memberHatMetadataIpfsHash } = await pinBlobOrFile(
+                          memberHatMetadataBlob
+                        )
 
                         //pin image to IPFS
 
@@ -478,9 +562,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                           `${teamData.name} Team Image`
                         )
 
-                        const { cid: newImageIpfsHash } = await pinBlobOrFile(
-                          renamedTeamImage
-                        )
+                        const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedTeamImage)
 
                         if (!newImageIpfsHash) {
                           return toast.error('Error pinning image to IPFS.')
@@ -496,10 +578,8 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                             // HatURIs struct
                             {
                               adminHatURI: 'ipfs://' + adminHatMetadataIpfsHash,
-                              managerHatURI:
-                                'ipfs://' + managerHatMetadataIpfsHash,
-                              memberHatURI:
-                                'ipfs://' + memberHatMetadataIpfsHash,
+                              managerHatURI: 'ipfs://' + managerHatMetadataIpfsHash,
+                              memberHatURI: 'ipfs://' + memberHatMetadataIpfsHash,
                             },
                             // TeamMetadata struct
                             {
@@ -537,10 +617,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                         ).toString()
 
                         if (mintedTokenId) {
-                          const teamNFT = await waitForERC721(
-                            teamContract,
-                            mintedTokenId
-                          )
+                          const teamNFT = await waitForERC721(teamContract, mintedTokenId)
                           const teamName = teamData.name
                           const teamPrettyLink = generatePrettyLink(teamName)
                           setTimeout(async () => {
@@ -565,8 +642,8 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                         Creating your team on the blockchain...
                       </p>
                       <p className="text-slate-400 text-sm text-center mt-2">
-                        This process can take up to a minute. Please wait while
-                        the transaction is processed.
+                        This process can take up to a minute. Please wait while the transaction is
+                        processed.
                       </p>
                     </div>
                   )}

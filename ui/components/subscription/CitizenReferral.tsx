@@ -5,10 +5,7 @@ import {
   CheckCircleIcon,
 } from '@heroicons/react/24/outline'
 import { getAccessToken } from '@privy-io/react-auth'
-import {
-  CITIZEN_REFERRAL_VERIFIER_ADDRESSES,
-  DEFAULT_CHAIN_V5,
-} from 'const/config'
+import { CITIZEN_REFERRAL_VERIFIER_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { utils as ethersUtils } from 'ethers'
 import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
@@ -17,7 +14,6 @@ import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
-import FormInput from '../forms/FormInput'
 import Modal from '../layout/Modal'
 import StandardButton from '../layout/StandardButton'
 
@@ -65,9 +61,7 @@ export default function CitizenReferral({
   const [isSearching, setIsSearching] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [selectedCitizen, setSelectedCitizen] = useState<Citizen | null>(null)
-  const [referrerStatus, setReferrerStatus] = useState<ReferrerStatus | null>(
-    null
-  )
+  const [referrerStatus, setReferrerStatus] = useState<ReferrerStatus | null>(null)
   const [isLoadingStatus, setIsLoadingStatus] = useState(false)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -84,9 +78,7 @@ export default function CitizenReferral({
     setIsLoadingStatus(true)
     try {
       const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
-      const verifierAddress = CITIZEN_REFERRAL_VERIFIER_ADDRESSES[
-        chainSlug
-      ] as Address
+      const verifierAddress = CITIZEN_REFERRAL_VERIFIER_ADDRESSES[chainSlug] as Address
 
       if (!verifierAddress) {
         throw new Error('Referral verifier address not configured')
@@ -106,8 +98,7 @@ export default function CitizenReferral({
         params: [account.address as Address],
       })) as Address
 
-      const hasReferrer =
-        existingReferrer !== '0x0000000000000000000000000000000000000000'
+      const hasReferrer = existingReferrer !== '0x0000000000000000000000000000000000000000'
 
       setReferrerStatus({
         hasReferrer,
@@ -148,9 +139,7 @@ export default function CitizenReferral({
 
     setIsSearching(true)
     try {
-      const response = await fetch(
-        `/api/citizens/search?q=${encodeURIComponent(query)}`
-      )
+      const response = await fetch(`/api/citizens/search?q=${encodeURIComponent(query)}`)
       const data = await response.json()
 
       if (response.ok) {
@@ -198,10 +187,7 @@ export default function CitizenReferral({
   // Handle click outside dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false)
       }
     }
@@ -288,39 +274,26 @@ export default function CitizenReferral({
       </StandardButton>
 
       {isModalOpen && (
-        <Modal id="san-referral-modal-backdrop" setEnabled={setIsModalOpen}>
-          <div className="flex flex-col gap-6 items-start justify-start w-[100vw] md:w-[500px] p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl h-screen md:h-auto md:min-h-[600px] md:max-h-[95vh] overflow-y-auto">
-            {/* Header */}
-            <div className="w-full flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                  {referrerStatus?.hasReferrer ? (
-                    <CheckCircleIcon className="w-5 h-5 text-white" />
-                  ) : (
-                    <UserPlusIcon className="w-5 h-5 text-white" />
-                  )}
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-white">
-                    {referrerStatus?.hasReferrer
-                      ? 'Referrer Already Set'
-                      : 'Record Citizen Referral'}
-                  </h1>
-                  <p className="text-gray-300 text-sm">
-                    {referrerStatus?.hasReferrer
-                      ? 'You already have a referrer assigned'
-                      : 'Assign a referrer to your citizen NFT'}
-                  </p>
-                </div>
+        <Modal
+          id="san-referral-modal-backdrop"
+          setEnabled={setIsModalOpen}
+          title={referrerStatus?.hasReferrer ? 'Referrer Already Set' : 'Record Citizen Referral'}
+          size="lg"
+        >
+          <div className="flex flex-col gap-6 items-start justify-start">
+            <div className="flex items-center gap-3 -mt-4">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                {referrerStatus?.hasReferrer ? (
+                  <CheckCircleIcon className="w-5 h-5 text-white" />
+                ) : (
+                  <UserPlusIcon className="w-5 h-5 text-white" />
+                )}
               </div>
-              <button
-                id="close-modal"
-                type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onClick={handleCloseModal}
-              >
-                <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-              </button>
+              <p className="text-gray-300 text-sm">
+                {referrerStatus?.hasReferrer
+                  ? 'You already have a referrer assigned'
+                  : 'Assign a referrer to your citizen NFT'}
+              </p>
             </div>
 
             {/* Content */}
@@ -331,40 +304,31 @@ export default function CitizenReferral({
                     <div className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center">
                       <span className="text-white text-sm font-bold">!</span>
                     </div>
-                    <h3 className="text-lg font-semibold text-white">
-                      Wallet Not Connected
-                    </h3>
+                    <h3 className="text-lg font-semibold text-white">Wallet Not Connected</h3>
                   </div>
                   <p className="text-gray-300 text-sm">
-                    Please connect your wallet to check your referrer status and
-                    record referrals.
+                    Please connect your wallet to check your referrer status and record referrals.
                   </p>
                 </div>
               ) : isLoadingStatus ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span className="ml-3 text-white">
-                    Checking referrer status...
-                  </span>
+                  <span className="ml-3 text-white">Checking referrer status...</span>
                 </div>
               ) : referrerStatus?.hasReferrer ? (
                 /* Already has referrer - show status */
                 <div className="bg-green-500/10 backdrop-blur-sm border border-green-500/20 rounded-xl p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <CheckCircleIcon className="w-6 h-6 text-green-400" />
-                    <h3 className="text-lg font-semibold text-white">
-                      Referrer Already Set
-                    </h3>
+                    <h3 className="text-lg font-semibold text-white">Referrer Already Set</h3>
                   </div>
                   <div className="space-y-2">
                     <p className="text-gray-300 text-sm">
-                      Your citizen NFT already has a referrer assigned.
-                      Referrals can only be set once and cannot be changed.
+                      Your citizen NFT already has a referrer assigned. Referrals can only be set
+                      once and cannot be changed.
                     </p>
                     <div className="bg-white/5 rounded-lg p-3 mt-4">
-                      <p className="text-gray-400 text-xs mb-1">
-                        Referrer Address:
-                      </p>
+                      <p className="text-gray-400 text-xs mb-1">Referrer Address:</p>
                       <p className="text-white font-mono text-sm break-all">
                         {referrerStatus.referrerAddress}
                       </p>
@@ -376,14 +340,9 @@ export default function CitizenReferral({
                 <>
                   {/* Info Section */}
                   <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-                    <h3 className="text-lg font-semibold text-white mb-2">
-                      How it works
-                    </h3>
+                    <h3 className="text-lg font-semibold text-white mb-2">How it works</h3>
                     <ul className="text-gray-300 text-sm space-y-1">
-                      <li>
-                        • Search for the person who referred you by name or
-                        token ID
-                      </li>
+                      <li>• Search for the person who referred you by name or token ID</li>
                       <li>• They must own a valid citizen NFT</li>
                       <li>• This action cannot be undone</li>
                     </ul>
@@ -421,12 +380,8 @@ export default function CitizenReferral({
                             onClick={() => handleCitizenSelect(citizen)}
                             className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0"
                           >
-                            <div className="text-white font-medium">
-                              {citizen.displayName}
-                            </div>
-                            <div className="text-gray-400 text-sm truncate">
-                              {citizen.owner}
-                            </div>
+                            <div className="text-white font-medium">{citizen.displayName}</div>
+                            <div className="text-gray-400 text-sm truncate">{citizen.owner}</div>
                           </button>
                         ))}
                       </div>
@@ -436,13 +391,10 @@ export default function CitizenReferral({
                     {showDropdown &&
                       searchResults.length === 0 &&
                       searchQuery.trim().length > 0 &&
-                      (searchQuery.length >= 2 ||
-                        /^\d+$/.test(searchQuery.trim())) &&
+                      (searchQuery.length >= 2 || /^\d+$/.test(searchQuery.trim())) &&
                       !isSearching && (
                         <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/20 rounded-xl shadow-lg p-4">
-                          <div className="text-gray-400 text-center">
-                            No citizens found
-                          </div>
+                          <div className="text-gray-400 text-center">No citizens found</div>
                         </div>
                       )}
                   </div>
@@ -455,9 +407,7 @@ export default function CitizenReferral({
                           <div className="text-white font-medium">
                             {selectedCitizen.displayName}
                           </div>
-                          <div className="text-gray-400 text-sm">
-                            {selectedCitizen.owner}
-                          </div>
+                          <div className="text-gray-400 text-sm">{selectedCitizen.owner}</div>
                         </div>
                         <button
                           onClick={() => {

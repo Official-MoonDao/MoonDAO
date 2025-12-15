@@ -70,8 +70,8 @@ const indexCardData = [
     icon: '/assets/icon-governance.svg',
     iconAlt: 'Governance',
     header: 'Transparent Governance',
-    link: '/analytics',
-    hovertext: 'See Our Analytics',
+    link: '/treasury',
+    hovertext: 'View Treasury',
     paragraph: (
       <>
         As a DAO, we utilize blockchain technologies offering

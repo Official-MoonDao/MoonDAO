@@ -33,6 +33,7 @@ import useTag from '@/lib/convert-kit/useTag'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { arbitrum, base, ethereum, sepolia, arbitrumSepolia } from '@/lib/rpc/chains'
+import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -66,8 +67,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const destinationChain = isTestnet ? sepolia : arbitrum
   const account = useActiveAccount()
   // In test mode (Cypress), use mock address from window if available
-  const mockAddress =
-    typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
+  const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
   const address = account?.address || mockAddress
 
   const [stage, setStage] = useState<number>(0)
@@ -96,6 +96,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const [freeMint, setFreeMint] = useState(false)
   const [onrampModalOpen, setOnrampModalOpen] = useState(false)
   const [requiredEthAmount, setRequiredEthAmount] = useState(0)
+  const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
+  const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
+
+  const { effectiveGasPrice } = useGasPrice(selectedChain)
 
   const citizenContract = useContract({
     address: CITIZEN_ADDRESSES[defaultChainSlug],
@@ -120,15 +124,19 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // Redirect handling and auto-transaction
   const calculateCost = useCallback(
     async (formattedCost: string) => {
-      const estimatedMaxGas = 0.0002
       const LAYER_ZERO_TRANSFER_COST = BigInt('3000000000000000')
-      let totalCost = Number(formattedCost) + estimatedMaxGas
+
+      // Use effectiveGasPrice if available, otherwise fallback to 0
+      const gasCostWei = effectiveGasPrice ? estimatedGas * effectiveGasPrice : BigInt(0)
+      const gasCostEth = Number(gasCostWei) / 1e18
+
+      let totalCost = Number(formattedCost) + gasCostEth
       if (selectedChainSlug !== defaultChainSlug) {
         totalCost += Number(LAYER_ZERO_TRANSFER_COST) / 1e18
       }
       return totalCost
     },
-    [selectedChainSlug, defaultChainSlug]
+    [selectedChainSlug, defaultChainSlug, estimatedGas, effectiveGasPrice]
   )
 
   const handleFormRestore = useCallback((restored: any) => {
@@ -159,6 +167,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       return toast.error('Please connect your wallet to continue.')
     }
 
+    // Check if gas estimation is ready
+    if (
+      !estimatedGas ||
+      estimatedGas === BigInt(0) ||
+      !effectiveGasPrice ||
+      effectiveGasPrice === BigInt(0)
+    ) {
+      setIsLoadingMint(false)
+      return toast.error('Gas estimation is still loading. Please wait a moment and try again.')
+    }
+
     // Set loading state immediately to prevent multiple clicks
     setIsLoadingMint(true)
 
@@ -172,26 +191,25 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
 
-      const estimatedMaxGas = 0.0002
+      const gasCostWei = estimatedGas * effectiveGasPrice
+      const gasCostEth = Number(gasCostWei) / 1e18
 
-      let totalCost = Number(formattedCost) + estimatedMaxGas
+      let totalCost = Number(formattedCost) + gasCostEth
       if (selectedChainSlug !== defaultChainSlug) {
         totalCost += Number(LAYER_ZERO_TRANSFER_COST) / 1e18
       }
 
       if (!freeMint && +nativeBalance < totalCost) {
-        // Calculate the amount needed
+        // Calculate the amount needed (shortfall already includes gas cost)
         const shortfall = totalCost - +nativeBalance
 
-        // Add gas buffer and LayerZero fee if cross-chain
-        let requiredAmount = shortfall + estimatedMaxGas
-        if (selectedChainSlug !== defaultChainSlug) {
-          requiredAmount += Number(LAYER_ZERO_TRANSFER_COST) / 1e18
-        }
+        // Add a small buffer (5%) to ensure transaction succeeds after onramp
+        const requiredAmount = shortfall * 1.05
 
-        setIsLoadingMint(false)
+        // Open the onramp modal with the required amount
         setRequiredEthAmount(requiredAmount)
         setOnrampModalOpen(true)
+        setIsLoadingMint(false)
         return
       }
 
@@ -389,6 +407,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     tagToNetworkSignup,
     clearCache,
     router,
+    estimatedGas,
+    effectiveGasPrice,
   ])
 
   const checkBalanceSufficient = useCallback(async () => {
@@ -406,6 +426,160 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       return false
     }
   }, [address, citizenContract, nativeBalance, calculateCost])
+
+  const estimateMintGas = useCallback(async () => {
+    if (!account || !address || !citizenData.name) return
+
+    setIsLoadingGasEstimate(true)
+
+    try {
+      const cost: any = await readContract({
+        contract: citizenContract,
+        method: 'getRenewalPrice' as string,
+        params: [address, 365 * 24 * 60 * 60],
+      })
+
+      const LAYER_ZERO_TRANSFER_COST = BigInt('3000000000000000')
+      const isCrossChain = selectedChainSlug !== defaultChainSlug
+
+      let gasEstimate: bigint = BigInt(0)
+
+      if (isCrossChain) {
+        const GAS_LIMIT = 300000
+        const MSG_VALUE = cost
+
+        const _options = Options.newOptions().addExecutorLzReceiveOption(GAS_LIMIT, MSG_VALUE)
+
+        const transaction = await prepareContractCall({
+          contract: crossChainMintContract,
+          method: 'crossChainMint' as string,
+          params: [
+            LAYERZERO_SOURCE_CHAIN_TO_DESTINATION_EID[selectedChainSlug].toString(),
+            _options.toHex(),
+            address,
+            citizenData.name,
+            '',
+            'ipfs://placeholder',
+            '',
+            '',
+            '',
+            '',
+            'public',
+            citizenData.formResponseId || '0000',
+          ],
+          value: MSG_VALUE + LAYER_ZERO_TRANSFER_COST,
+        })
+
+        try {
+          const txData =
+            typeof transaction.data === 'function' ? await transaction.data() : transaction.data
+
+          const estimateResponse = await fetch('/api/rpc/estimate-gas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chainId: selectedChain.id,
+              from: address,
+              to: CITIZEN_CROSS_CHAIN_MINT_ADDRESSES[selectedChainSlug],
+              data: txData,
+              value: `0x${(MSG_VALUE + LAYER_ZERO_TRANSFER_COST).toString(16)}`,
+            }),
+          })
+
+          if (!estimateResponse.ok) {
+            throw new Error(`Gas estimation API returned ${estimateResponse.status}`)
+          }
+
+          const estimateData = await estimateResponse.json()
+
+          if (estimateData.error) {
+            throw new Error(estimateData.error)
+          }
+
+          gasEstimate = BigInt(estimateData.gasEstimate)
+        } catch (estimationError: any) {
+          console.error('Gas estimation error:', estimationError)
+          gasEstimate = BigInt(300000)
+        }
+      } else {
+        const transaction = await prepareContractCall({
+          contract: citizenContract,
+          method: 'mintTo' as string,
+          params: [
+            address,
+            citizenData.name,
+            '',
+            'ipfs://placeholder',
+            '',
+            '',
+            '',
+            '',
+            'public',
+            citizenData.formResponseId || '0000',
+          ],
+          value: cost,
+        })
+
+        try {
+          const txData =
+            typeof transaction.data === 'function' ? await transaction.data() : transaction.data
+
+          const estimateResponse = await fetch('/api/rpc/estimate-gas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chainId: selectedChain.id,
+              from: address,
+              to: CITIZEN_ADDRESSES[defaultChainSlug],
+              data: txData,
+              value: `0x${cost.toString(16)}`,
+            }),
+          })
+
+          if (!estimateResponse.ok) {
+            throw new Error(`Gas estimation API returned ${estimateResponse.status}`)
+          }
+
+          const estimateData = await estimateResponse.json()
+
+          if (estimateData.error) {
+            throw new Error(estimateData.error)
+          }
+
+          gasEstimate = BigInt(estimateData.gasEstimate)
+        } catch (estimationError: any) {
+          console.error('Gas estimation error:', estimationError)
+          gasEstimate = BigInt(200000)
+        }
+      }
+
+      const bufferPercent = isCrossChain ? 180 : 130
+      const gasWithBuffer = (gasEstimate * BigInt(bufferPercent)) / BigInt(100)
+      setEstimatedGas(gasWithBuffer)
+      setIsLoadingGasEstimate(false)
+    } catch (error) {
+      console.error('Error estimating gas:', error instanceof Error ? error.message : error)
+      const isCrossChain = selectedChainSlug !== defaultChainSlug
+      setEstimatedGas(isCrossChain ? BigInt(300000) : BigInt(200000))
+      setIsLoadingGasEstimate(false)
+    }
+  }, [
+    account,
+    address,
+    citizenData.name,
+    citizenData.formResponseId,
+    citizenContract,
+    crossChainMintContract,
+    selectedChainSlug,
+    defaultChainSlug,
+    selectedChain,
+  ])
+
+  useEffect(() => {
+    if (stage === 2 && address && citizenData.name) {
+      estimateMintGas()
+    }
+  }, [stage, address, citizenData.name, selectedChainSlug, estimateMintGas])
 
   useOnrampAutoTransaction({
     address,
@@ -811,9 +985,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 <PrivyWeb3Button
                   id="citizen-checkout-button"
                   skipNetworkCheck={true}
-                  label={isLoadingMint ? 'Creating Citizen...' : 'Become a Citizen'}
+                  label={
+                    isLoadingMint
+                      ? 'Creating Citizen...'
+                      : isLoadingGasEstimate
+                      ? 'Estimating Gas...'
+                      : 'Become a Citizen'
+                  }
                   className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                  isDisabled={!agreedToCondition || isLoadingMint}
+                  isDisabled={!agreedToCondition || isLoadingMint || isLoadingGasEstimate}
                   action={callMint}
                 />
                 {isLoadingMint && (

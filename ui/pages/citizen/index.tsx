@@ -17,10 +17,13 @@ export default function Join() {
   const { selectedChain } = useContext(ChainContextV5)
   const router = useRouter()
 
-  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen'>()
-  const [{ freeMint }] = useQueryParams({
+  const [{ freeMint, create }] = useQueryParams({
     freeMint: withDefault(StringParam, undefined),
+    create: withDefault(StringParam, undefined),
   })
+  const [selectedTier, setSelectedTier] = useState<'team' | 'citizen' | undefined>(
+    create === 'true' ? 'citizen' : undefined
+  )
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   // Ensures default chain settings
