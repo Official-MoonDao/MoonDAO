@@ -67,8 +67,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     })
   }
   const currentTimestamp: number = Math.floor(Date.now() / 1000)
-  // FIXME how long is the voting period? at least 5 days but in practice how long?
-  const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
+  const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 5
   // Don't require voting period for testnet
   if (
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' &&

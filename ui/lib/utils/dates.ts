@@ -34,6 +34,10 @@ export function getRelativeQuarter(offset: number = 0) {
   return { quarter, year }
 }
 
+export function getCurrentQuarter(offset: number = 0) {
+  return getRelativeQuarter(0)
+}
+
 export function daysUntilDate(date: Date) {
   const now = new Date()
   return Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
@@ -140,4 +144,15 @@ export function getSubmissionQuarter() {
   )
 
   return new Date() <= firstThursdayAfterTwentyOneDays ? thisQuarter : nextQuarter
+}
+
+function getThirdThursdayOfQuarterTimestamp(quarter, year) {
+  const startMonth = (quarter - 1) * 3
+  const date = new Date(year, startMonth, 1)
+  const THURSDAY = 4
+  let currentDayOfWeek = date.getDay()
+  const daysToAdd = (THURSDAY - currentDayOfWeek + 7) % 7
+  date.setDate(date.getDate() + daysToAdd)
+  date.setDate(date.getDate() + 14)
+  return date
 }

@@ -7,16 +7,11 @@ import {
   PROJECT_TABLE_ADDRESSES,
   ETH_BUDGET,
 } from 'const/config'
-import { getSubmissionQuarter } from 'lib/utils/dates'
+import { getRelativeQuarter } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
-import {
-  readContract,
-  prepareContractCall,
-  sendAndConfirmTransaction,
-  getContract,
-} from 'thirdweb'
+import { readContract, prepareContractCall, sendAndConfirmTransaction, getContract } from 'thirdweb'
 import { createHSMWallet } from '@/lib/google/hsm-signer'
 import { PROJECT_ACTIVE, PROJECT_VOTE_FAILED } from '@/lib/nance/types'
 import queryTable from '@/lib/tableland/queryTable'
@@ -45,7 +40,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     abi: ProjectTableABI as any,
     chain: chain,
   })
-  const { quarter, year } = getSubmissionQuarter()
+  const { quarter, year } = getCurrentQuarter()
   const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE QUARTER = ${quarter} AND YEAR = ${year}`
   const projects = await queryTable(chain, projectStatement)
   const ethBudgets = Object.fromEntries(
@@ -79,20 +74,18 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       passedProjects.push(project)
     }
   })
+  const voteOpenTimestamp: number = Math.floor(
+    getThirdThursdayOfQuarterTimestamp(quarter, year) / 1000
+  )
+  const voteCloseTimestamp: number = voteOpenTimestamp + 60 * 60 * 24 * 5 // 5 days after vote opens
   const currentTimestamp: number = Math.floor(Date.now() / 1000)
-  // FIXME how long is the voting period? at least 5 days but in practice how long?
-  //const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
   // Don't require voting period for testnet
-  //if (
-  //process.env.NEXT_PUBLIC_CHAIN === 'mainnet' &&
-  //currentTimestamp <= votingPeriodClosedTimestamp
-  //) {
-  //return res.status(400).json({
-  //error: 'Voting period has not ended.',
-  //})
-  //}
-  // FIXME set timestamp appropriately
-  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, currentTimestamp)
+  if (process.env.NEXT_PUBLIC_CHAIN === 'mainnet' && currentTimestamp <= voteCloseTimestamp) {
+    return res.status(400).json({
+      error: 'Voting period has not ended.',
+    })
+  }
+  const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, voteCloseTimestamp)
   const addressToQuadraticVotingPower = Object.fromEntries(
     voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
   )
@@ -112,11 +105,10 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       method: 'updateTableCol',
       params: [projectId, 'active', approved ? PROJECT_ACTIVE : PROJECT_VOTE_FAILED],
     })
-    // FIXME actually update the table
-    //const receipt = await sendAndConfirmTransaction({
-    //transaction,
-    //account,
-    //})
+    const receipt = await sendAndConfirmTransaction({
+      transaction,
+      account,
+    })
   }
   res.status(200).json({
     url: 'https://moondao.com/projects',
