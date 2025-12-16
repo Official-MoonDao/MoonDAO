@@ -30,7 +30,29 @@ module.exports = withBundleAnalyzer(
     },
     experimental: {
       serverComponentsExternalPackages: ['thirdweb'],
-      optimizePackageImports: ['@heroicons/react', 'gsap', 'react-globe.gl'],
+      optimizePackageImports: [
+        '@heroicons/react',
+        'gsap',
+        'react-globe.gl',
+        'thirdweb',
+        '@privy-io/react-auth',
+        'ethers',
+        'viem',
+        'wagmi',
+        'react-hot-toast',
+        '@safe-global/safe-apps-sdk',
+      ],
+    },
+    modularizeImports: {
+      '@heroicons/react/24/outline': {
+        transform: '@heroicons/react/24/outline/{{member}}',
+      },
+      '@heroicons/react/24/solid': {
+        transform: '@heroicons/react/24/solid/{{member}}',
+      },
+      '@heroicons/react/20/solid': {
+        transform: '@heroicons/react/20/solid/{{member}}',
+      },
     },
     typescript: {
       // Enable faster TypeScript builds
@@ -360,7 +382,7 @@ module.exports = withBundleAnalyzer(
         config.resolve.fallback.child_process = false
       }
 
-      // Optimize chunk splitting
+      // Optimize chunk splitting for better LCP and First Load JS
       config.optimization = {
         ...config.optimization,
         splitChunks: {
@@ -368,43 +390,46 @@ module.exports = withBundleAnalyzer(
           cacheGroups: {
             default: false,
             vendors: false,
-            // Vendor chunk for node_modules
-            vendor: {
-              name: 'vendor',
+            // Framework chunk - React/Next.js core (always needed, load sync)
+            framework: {
+              test: /[\\/]node_modules[\\/](react|react-dom|scheduler|next)[\\/]/,
+              name: 'framework',
               chunks: 'all',
-              test: /node_modules/,
-              priority: 20,
+              priority: 50,
+              enforce: true,
             },
-            // Separate chunk for large libraries
+            // Web3 libraries - load async (only when wallet functionality needed)
             thirdweb: {
               test: /[\\/]node_modules[\\/](thirdweb|@thirdweb)[\\/]/,
               name: 'thirdweb',
-              chunks: 'all',
-              priority: 30,
+              chunks: 'async',
+              priority: 40,
             },
             privy: {
               test: /[\\/]node_modules[\\/](@privy-io)[\\/]/,
               name: 'privy',
-              chunks: 'all',
-              priority: 30,
+              chunks: 'async',
+              priority: 40,
             },
             web3: {
-              test: /[\\/]node_modules[\\/](ethers|viem|wagmi|@safe-global)[\\/]/,
+              test: /[\\/]node_modules[\\/](ethers|viem|wagmi|@safe-global|ox)[\\/]/,
               name: 'web3',
-              chunks: 'all',
-              priority: 30,
+              chunks: 'async',
+              priority: 40,
             },
+            // Globe/Three.js - load async (heavy 3D library)
             globe: {
-              test: /[\\/]node_modules[\\/](react-globe\.gl|three)[\\/]/,
+              test: /[\\/]node_modules[\\/](react-globe\.gl|three|gsap)[\\/]/,
               name: 'globe',
               chunks: 'async',
-              priority: 30,
+              priority: 40,
             },
-            // Common chunk for shared code
+            // Common chunk for shared code between pages
             common: {
               minChunks: 2,
               priority: 10,
               reuseExistingChunk: true,
+              chunks: 'async',
             },
           },
         },
