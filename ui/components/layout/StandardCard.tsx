@@ -83,6 +83,8 @@ export default function StandardCard({
                     width="675"
                     height="675"
                     className="w-full h-full"
+                    sizes="(max-width: 768px) 100vw, 675px"
+                    loading="lazy"
                   />
                 </Frame>
               </div>
@@ -98,6 +100,8 @@ export default function StandardCard({
                       alt={title || ''}
                       width={500}
                       height={500}
+                      sizes="(max-width: 768px) 100vw, 500px"
+                      loading="lazy"
                     />
                   ) : (
                     // For IPFS/remote URLs
@@ -107,6 +111,8 @@ export default function StandardCard({
                       width={500}
                       height={500}
                       alt={title || ''}
+                      sizes="(max-width: 768px) 100vw, 500px"
+                      loading="lazy"
                     />
                   )}
                 </Frame>

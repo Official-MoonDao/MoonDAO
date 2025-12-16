@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useMemo, useState } from 'react'
+import { useAnimationFrameWithVisibility } from '@/lib/utils/hooks/usePageVisibility'
 
 interface Star {
   x: number
@@ -144,14 +145,28 @@ const generateStars = (
 }
 
 export default function SpaceBackground() {
-  const farStars = useMemo(() => generateStars(100, [0.5, 1.5], 1, [200, 220, 255]), [])
+  // Reduce star count on mobile for better performance
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+  const starMultiplier = isMobile ? 0.5 : 1
+
+  const farStars = useMemo(
+    () => generateStars(Math.floor(100 * starMultiplier), [0.5, 1.5], 1, [200, 220, 255]),
+    [starMultiplier]
+  )
   const midStars = useMemo(
-    () => generateStars(80, [1, 3], 2, [240, 245, 255], farStars),
-    [farStars]
+    () => generateStars(Math.floor(80 * starMultiplier), [1, 3], 2, [240, 245, 255], farStars),
+    [farStars, starMultiplier]
   )
   const nearStars = useMemo(
-    () => generateStars(60, [2, 5], 3, [255, 250, 240], [...farStars, ...midStars]),
-    [farStars, midStars]
+    () =>
+      generateStars(
+        Math.floor(60 * starMultiplier),
+        [2, 5],
+        3,
+        [255, 250, 240],
+        [...farStars, ...midStars]
+      ),
+    [farStars, midStars, starMultiplier]
   )
   const containerRef = useRef<HTMLDivElement>(null)
   const baseGradientRef = useRef<HTMLDivElement>(null)
@@ -163,6 +178,8 @@ export default function SpaceBackground() {
   const shootingStarIdRef = useRef(0)
   const typedSequenceRef = useRef('')
   const sequenceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const { isPageVisible, rafRef, cancelRAF } = useAnimationFrameWithVisibility()
+  const lastScrollY = useRef(0)
 
   const renderStarLayer = (stars: Star[], layerName: string) => {
     const layerRef =
@@ -176,8 +193,9 @@ export default function SpaceBackground() {
           left: 0,
           right: 0,
           height: '200vh',
-          willChange: 'transform',
+          willChange: isPageVisible ? 'transform' : 'auto', // Remove will-change when paused
           transition: 'transform 0.1s ease-out',
+          contain: 'layout style paint', // CSS containment for better performance
         }}
       >
         {stars.map((star, index) => {
@@ -233,10 +251,13 @@ export default function SpaceBackground() {
                   height: `${star.size}px`,
                   background: backgroundGradient,
                   boxShadow: boxShadowLayers,
-                  animation: `${animationName} ${star.twinkleDuration}s ease-in-out infinite`,
+                  animation: isPageVisible
+                    ? `${animationName} ${star.twinkleDuration}s ease-in-out infinite`
+                    : 'none', // Pause animations when page hidden
                   animationDelay: `${star.twinkleDelay}s`,
+                  animationPlayState: isPageVisible ? 'running' : 'paused',
                   transform: 'translate(-50%, -50%)',
-                  willChange: 'opacity',
+                  willChange: isPageVisible ? 'opacity' : 'auto',
                   '--min-opacity': minOpacity,
                   '--max-opacity': maxOpacity,
                   '--star-size': `${star.size}px`,
@@ -286,57 +307,59 @@ export default function SpaceBackground() {
     )
   }
 
+  // Optimized scroll handler with throttling
   useEffect(() => {
-    let animationFrame: number
+    if (!isPageVisible) return
 
     const handleScroll = () => {
-      if (!containerRef.current) return
+      if (!containerRef.current || !isPageVisible) return
 
       const scrolled = window.scrollY
 
+      // Skip update if scroll hasn't changed significantly (throttle)
+      if (Math.abs(scrolled - lastScrollY.current) < 2) {
+        rafRef.current = requestAnimationFrame(handleScroll)
+        return
+      }
+
+      lastScrollY.current = scrolled
+
       // Natural space parallax - forward movement through space
-      // Far stars (distant): slowest movement
+      // Use transform3d for hardware acceleration
       if (farStarsRef.current) {
         const yPos = scrolled * 0.01
         farStarsRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
       }
 
-      // Mid stars (medium distance): medium movement
       if (midStarsRef.current) {
         const yPos = scrolled * 0.02
         midStarsRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
       }
 
-      // Near stars (close): fastest movement
       if (nearStarsRef.current) {
         const yPos = scrolled * 0.03
         nearStarsRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
       }
 
-      // Nebula (background): slower than near stars
       if (nebulaRef.current) {
         const yPos = scrolled * 0.015
         nebulaRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
       }
 
-      // Base gradient: same speed as nebula for consistency
       if (baseGradientRef.current) {
         const yPos = scrolled * 0.015
         baseGradientRef.current.style.transform = `translate3d(0, ${yPos}px, 0)`
       }
+
+      rafRef.current = requestAnimationFrame(handleScroll)
     }
 
-    const animate = () => {
-      handleScroll()
-      animationFrame = requestAnimationFrame(animate)
-    }
-
-    animate()
+    rafRef.current = requestAnimationFrame(handleScroll)
 
     return () => {
-      if (animationFrame) cancelAnimationFrame(animationFrame)
+      cancelRAF()
     }
-  }, [])
+  }, [isPageVisible, cancelRAF, rafRef])
 
   const createShootingStar = (baseX?: number, baseY?: number, baseAngle?: number) => {
     const side = Math.floor(Math.random() * 4)
@@ -382,10 +405,17 @@ export default function SpaceBackground() {
     }, 2800)
   }
 
+  // Shooting star scheduler - only when page is visible
   useEffect(() => {
+    if (!isPageVisible) return
+
     const scheduleNext = () => {
+      if (!isPageVisible) return
+
       const delay = 60000 + Math.random() * 60000
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
+        if (!isPageVisible) return
+
         const isShower = Math.random() < 0.04
         const count = isShower ? 2 : 1
 
@@ -415,7 +445,9 @@ export default function SpaceBackground() {
 
           for (let i = 0; i < count; i++) {
             setTimeout(() => {
-              createShootingStar(baseX, baseY, baseAngle)
+              if (isPageVisible) {
+                createShootingStar(baseX, baseY, baseAngle)
+              }
             }, i * (150 + Math.random() * 200))
           }
         } else {
@@ -424,10 +456,13 @@ export default function SpaceBackground() {
 
         scheduleNext()
       }, delay)
+
+      return () => clearTimeout(timeoutId)
     }
 
-    scheduleNext()
-  }, [])
+    const cleanup = scheduleNext()
+    return cleanup
+  }, [isPageVisible])
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -545,27 +580,28 @@ export default function SpaceBackground() {
       {/* Near stars layer - subtle movement, slightly larger stars */}
       {renderStarLayer(nearStars, 'near')}
 
-      {/* Shooting stars */}
-      {shootingStars.map((shootingStar) => (
-        <div
-          key={shootingStar.id}
-          className="absolute inset-0 w-full h-full shooting-star"
-          style={
-            {
-              '--start-x': `${shootingStar.startX}%`,
-              '--start-y': `${shootingStar.startY}%`,
-              '--angle': `${shootingStar.angle}deg`,
-            } as React.CSSProperties & {
-              '--start-x': string
-              '--start-y': string
-              '--angle': string
+      {/* Shooting stars - only render when page is visible */}
+      {isPageVisible &&
+        shootingStars.map((shootingStar) => (
+          <div
+            key={shootingStar.id}
+            className="absolute inset-0 w-full h-full shooting-star"
+            style={
+              {
+                '--start-x': `${shootingStar.startX}%`,
+                '--start-y': `${shootingStar.startY}%`,
+                '--angle': `${shootingStar.angle}deg`,
+              } as React.CSSProperties & {
+                '--start-x': string
+                '--start-y': string
+                '--angle': string
+              }
             }
-          }
-        >
-          <div className="shooting-star-trail" />
-          <div className="shooting-star-head" />
-        </div>
-      ))}
+          >
+            <div className="shooting-star-trail" />
+            <div className="shooting-star-head" />
+          </div>
+        ))}
 
       {/* Nebula-like depth clouds - realistic emission and reflection nebulae */}
       <div

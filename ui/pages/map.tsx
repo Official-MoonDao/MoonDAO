@@ -1,5 +1,4 @@
 import { GlobeAmericasIcon, MoonIcon } from '@heroicons/react/24/outline'
-import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { getCitizensLocationData } from '@/lib/map'
@@ -9,9 +8,8 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Tab from '@/components/layout/Tab'
-
-const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
-const Moon = dynamic(() => import('@/components/globe/Moon'), { ssr: false })
+import LazyEarth from '@/components/globe/LazyEarth'
+import LazyMoon from '@/components/globe/LazyMoon'
 
 export default function NetworkMap({
   citizensLocationData,
@@ -87,10 +85,10 @@ export default function NetworkMap({
                 tab !== 'earth' && 'hidden'
               }`}
             >
-              <Earth pointsData={citizensLocationData} />
+              <LazyEarth pointsData={citizensLocationData} />
             </div>
             <div className={`${tab !== 'moon' && 'hidden'}`}>
-              <Moon />
+              <LazyMoon />
             </div>
           </div>
         </ContentLayout>

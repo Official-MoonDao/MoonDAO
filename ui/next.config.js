@@ -1,5 +1,9 @@
 const nextTranslate = require('next-translate')
 const withTM = require('next-transpile-modules')(['thirdweb', 'ox'])
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+})
+
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://www.googletagmanager.com https://pay.google.com https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com;
@@ -16,11 +20,39 @@ const cspHeader = `
     worker-src 'self' blob:;
 `
 
-module.exports = withTM(
-  nextTranslate({
+module.exports = withBundleAnalyzer(
+  withTM(
+    nextTranslate({
     reactStrictMode: true,
+    swcMinify: true,
+    compiler: {
+      removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+    },
     experimental: {
       serverComponentsExternalPackages: ['thirdweb'],
+      optimizePackageImports: [
+        '@heroicons/react',
+        'gsap',
+        'react-globe.gl',
+        'thirdweb',
+        '@privy-io/react-auth',
+        'ethers',
+        'viem',
+        'wagmi',
+        'react-hot-toast',
+        '@safe-global/safe-apps-sdk',
+      ],
+    },
+    modularizeImports: {
+      '@heroicons/react/24/outline': {
+        transform: '@heroicons/react/24/outline/{{member}}',
+      },
+      '@heroicons/react/24/solid': {
+        transform: '@heroicons/react/24/solid/{{member}}',
+      },
+      '@heroicons/react/20/solid': {
+        transform: '@heroicons/react/20/solid/{{member}}',
+      },
     },
     typescript: {
       // Enable faster TypeScript builds
@@ -43,8 +75,10 @@ module.exports = withTM(
         'safe-transaction-assets.safe.global',
         'test.com',
       ],
+      formats: ['image/avif', 'image/webp'],
     },
     output: 'standalone',
+    poweredByHeader: false,
     async headers() {
       return [
         {
@@ -340,14 +374,69 @@ module.exports = withTM(
         },
       ]
     },
-    webpack: (config, { isServer }) => {
+    webpack: (config, { isServer, webpack }) => {
       if (!isServer) {
         config.resolve.fallback.fs = false
         config.resolve.fallback.tls = false
         config.resolve.fallback.net = false
         config.resolve.fallback.child_process = false
       }
+
+      // Optimize chunk splitting for better LCP and First Load JS
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Framework chunk - React/Next.js core (always needed, load sync)
+            framework: {
+              test: /[\\/]node_modules[\\/](react|react-dom|scheduler|next)[\\/]/,
+              name: 'framework',
+              chunks: 'all',
+              priority: 50,
+              enforce: true,
+            },
+            // Web3 libraries - load async (only when wallet functionality needed)
+            thirdweb: {
+              test: /[\\/]node_modules[\\/](thirdweb|@thirdweb)[\\/]/,
+              name: 'thirdweb',
+              chunks: 'async',
+              priority: 40,
+            },
+            privy: {
+              test: /[\\/]node_modules[\\/](@privy-io)[\\/]/,
+              name: 'privy',
+              chunks: 'async',
+              priority: 40,
+            },
+            web3: {
+              test: /[\\/]node_modules[\\/](ethers|viem|wagmi|@safe-global|ox)[\\/]/,
+              name: 'web3',
+              chunks: 'async',
+              priority: 40,
+            },
+            // Globe/Three.js - load async (heavy 3D library)
+            globe: {
+              test: /[\\/]node_modules[\\/](react-globe\.gl|three|gsap)[\\/]/,
+              name: 'globe',
+              chunks: 'async',
+              priority: 40,
+            },
+            // Common chunk for shared code between pages
+            common: {
+              minChunks: 2,
+              priority: 10,
+              reuseExistingChunk: true,
+              chunks: 'async',
+            },
+          },
+        },
+      }
+
       return config
     },
-  })
+    })
+  )
 )
