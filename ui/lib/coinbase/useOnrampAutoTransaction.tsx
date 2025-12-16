@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import useOnrampJWT from './useOnrampJWT'
 import { useOnrampRedirect } from './useOnrampRedirect'
 
@@ -36,10 +36,16 @@ export function useOnrampAutoTransaction({
   const { isReturningFromOnramp, clearRedirectParams } = useOnrampRedirect()
   const { verifyJWT, getStoredJWT, clearJWT } = useOnrampJWT()
 
+  // Use ref to always have the latest onTransaction callback
+  const onTransactionRef = useRef(onTransaction)
+  useEffect(() => {
+    onTransactionRef.current = onTransaction
+  }, [onTransaction])
+
   const pollBalanceAndExecute = useCallback(async () => {
     // In mock mode, skip balance polling and execute immediately
     if (MOCK_ONRAMP) {
-      await onTransaction()
+      await onTransactionRef.current()
       clearJWT()
       return
     }
@@ -51,7 +57,7 @@ export function useOnrampAutoTransaction({
       try {
         const isSufficient = await checkBalanceSufficient()
         if (isSufficient) {
-          await onTransaction()
+          await onTransactionRef.current()
           clearJWT()
           return
         }
@@ -60,12 +66,12 @@ export function useOnrampAutoTransaction({
       }
     }
 
-    await onTransaction()
+    await onTransactionRef.current()
     clearJWT()
-  }, [maxAttempts, delayMs, refetchNativeBalance, checkBalanceSufficient, onTransaction, clearJWT])
+  }, [maxAttempts, delayMs, refetchNativeBalance, checkBalanceSufficient, clearJWT])
 
   useEffect(() => {
-    if (!isReturningFromOnramp || !address || !onTransaction) {
+    if (!isReturningFromOnramp || !address || !onTransactionRef.current) {
       return
     }
 
@@ -82,9 +88,7 @@ export function useOnrampAutoTransaction({
     }
 
     // Use chain slug from cache if available, otherwise fall back to prop
-    const cachedChainSlug = getChainSlugFromCache
-      ? getChainSlugFromCache(restored)
-      : undefined
+    const cachedChainSlug = getChainSlugFromCache ? getChainSlugFromCache(restored) : undefined
     const chainSlugToVerify = cachedChainSlug || expectedChainSlug
 
     verifyJWT(storedJWT, address, undefined, context).then((payload) => {
@@ -126,7 +130,6 @@ export function useOnrampAutoTransaction({
     clearJWT,
     onFormRestore,
     shouldProceed,
-    onTransaction,
     pollBalanceAndExecute,
     getChainSlugFromCache,
   ])
