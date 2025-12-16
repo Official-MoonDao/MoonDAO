@@ -25,20 +25,12 @@ export interface RevenueReward {
   rewardETH: number
 }
 
-export interface EBMemberAllocation {
-  address: string
-  name: string
-  rewardPercentage: number
-  rewardETH: number
-}
-
 export interface EBRewardResult {
   quarter: number
   year: number
   treasuryGrowth: TreasuryGrowthReward
   revenue: RevenueReward
   totalRewardETH: number
-  memberAllocations: EBMemberAllocation[]
   ethPrice: number
   calculatedAt: string
 }
@@ -222,11 +214,6 @@ export async function convertUSDToETH(usdAmount: number): Promise<number> {
   }
 }
 
-export function distributeRewardsToMembers(totalRewardETH: number): EBMemberAllocation[] {
-  // Member allocations removed - only showing total rewards
-  return []
-}
-
 export async function calculateEBRewards(quarter: number, year: number): Promise<EBRewardResult> {
   try {
     const ethPrice = await getETHPrice()
@@ -246,15 +233,12 @@ export async function calculateEBRewards(quarter: number, year: number): Promise
 
     const totalRewardETH = treasuryGrowth.rewardETH
 
-    const memberAllocations = distributeRewardsToMembers(totalRewardETH)
-
     return {
       quarter,
       year,
       treasuryGrowth,
       revenue,
       totalRewardETH,
-      memberAllocations,
       ethPrice,
       calculatedAt: new Date().toISOString(),
     }

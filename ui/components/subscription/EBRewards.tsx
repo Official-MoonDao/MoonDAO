@@ -18,12 +18,6 @@ interface EBRewardResult {
     rewardETH: number
   }
   totalRewardETH: number
-  memberAllocations: Array<{
-    address: string
-    name: string
-    rewardPercentage: number
-    rewardETH: number
-  }>
   ethPrice: number
   calculatedAt: string
 }
