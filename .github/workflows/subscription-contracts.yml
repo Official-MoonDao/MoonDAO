@@ -69,7 +69,7 @@ jobs:
       - name: Run Forge build
         run: |
           forge --version
-          cd subscription-contracts && forge build --sizes --via-ir --optimize --optimizer-runs 200
+          cd subscription-contracts && forge build --sizes --via-ir --optimize --optimizer-runs 2000
         id: build
 
       - name: Run Forge tests
