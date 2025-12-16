@@ -24,6 +24,7 @@ import { runQuadraticVoting } from '@/lib/utils/rewards'
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
 
+// Tally votes for non project proposals and set approved proposals to active
 async function POST(req: NextApiRequest, res: NextApiResponse) {
   const { mdp } = req.body
 

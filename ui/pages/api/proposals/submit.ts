@@ -150,6 +150,7 @@ async function pinBlobOrFile(blob: Blob, name: string): Promise<PinResponse> {
   }
 }
 
+// Submit a proposal, project based on non-project. Creates a new entry in the table and a new discord thread.
 async function POST(req: NextApiRequest, res: NextApiResponse) {
   try {
     const account = await createHSMWallet()

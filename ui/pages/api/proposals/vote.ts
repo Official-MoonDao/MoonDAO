@@ -25,6 +25,7 @@ import { runQuadraticVoting, getApprovedProjects } from '@/lib/utils/rewards'
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
 
+// Tally votes for projects and set approved projects to active
 async function POST(req: NextApiRequest, res: NextApiResponse) {
   const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
   const voteAddresses = votes.map((pv) => pv.address)
