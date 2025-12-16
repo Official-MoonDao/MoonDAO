@@ -158,7 +158,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                           isCompact && !isProfile
                             ? 'mt-0 md:mt-[-120px] lg:mt-[-200px]'
                             : isCompact && isProfile
-                            ? ''
+                            ? 'mt-6 md:mt-0'
                             : 'mt-0 md:mt-[-200px] lg:mt-[-280px] md:pb-0 '
                         }
                     `}
