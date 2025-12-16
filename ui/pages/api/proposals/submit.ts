@@ -250,11 +250,6 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
           memberHatMetadataIpfs
         )
       }
-      console.log(
-        `Create project for proposal ${proposalId} ${proposalTitle}?\n\nlead ${lead}\nmembers [${
-          members.length > 0 ? members : [address]
-        }]\n (${membersUsernames})\nsigners [${signers}]\n (${signersUsernames})\nabstract:\n ${abstractText}\n (y/n)`
-      )
       const transaction = prepareContractCall({
         contract: projectTeamCreatorContract,
         method: 'createProjectTeam',

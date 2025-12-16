@@ -9,7 +9,7 @@ import {
   ETH_BUDGET,
 } from 'const/config'
 import { ethers } from 'ethers'
-import { getRelativeQuarter } from 'lib/utils/dates'
+import { getSubmissionQuarter } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
@@ -35,10 +35,6 @@ const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
 
 async function POST(req: NextApiRequest, res: NextApiResponse) {
-  const { quarter, year } = req.body
-
-  // FIXME only select project proposals, and make sure they have passed temp check
-  const voteStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE QUARTER = ${quarter} AND YEAR = ${year}`
   const votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
   const voteAddresses = votes.map((pv) => pv.address)
   const proposalContract = getContract({
@@ -53,12 +49,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     abi: ProjectTableABI as any,
     chain: chain,
   })
-  //const tempCheckApprovedTimestamp = await readContract({
-  //contract: proposalContract,
-  //method: 'tempCheckApprovedTimestamp' as string,
-  //params: [mdp],
-  //})
-  //const { quarter, year } = getSubmissionQuarter()
+  const { quarter, year } = getSubmissionQuarter()
   const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE QUARTER = ${quarter} AND YEAR = ${year}`
   const projects = await queryTable(chain, projectStatement)
   const ethBudgets = Object.fromEntries(
@@ -76,7 +67,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       })
     )
   )
-  const projectIds = projects.map((project: any) => project.id)
+  const passedProjects = []
   projects.forEach(async (project) => {
     if (project.active === PROJECT_ACTIVE) {
       return res.status(400).json({
@@ -88,10 +79,8 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       method: 'tempCheckApproved' as string,
       params: [project.MDP],
     })
-    if (!tempCheckApproved) {
-      return res.status(400).json({
-        error: `MDP-${project.MDP} has not passed temp check.`,
-      })
+    if (tempCheckApproved) {
+      passedProjects.push(project)
     }
   })
   const currentTimestamp: number = Math.floor(Date.now() / 1000)
@@ -119,7 +108,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     })
   }
   const account = await createHSMWallet()
-  const projectIdToApproved = getApprovedProjects(projects, outcome, ethBudgets, ETH_BUDGET)
+  const projectIdToApproved = getApprovedProjects(passedProjects, outcome, ethBudgets, ETH_BUDGET)
   for (const projectId in projectIdToApproved) {
     const approved = projectIdToApproved[projectId]
     const transaction = prepareContractCall({
