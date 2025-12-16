@@ -1,6 +1,6 @@
 import { getAUMHistory } from '../coinstats'
 import { getETHPrice } from '../etherscan'
-import { getHistoricalRevenue, RevenueDataPoint } from './revenue'
+import { getHistoricalRevenue } from './revenue'
 
 export interface QuarterlyData {
   quarter: number
@@ -124,15 +124,12 @@ export async function calculateTreasuryGrowthReward(
   ethPrice: number
 ): Promise<TreasuryGrowthReward> {
   try {
-    const [currentQuarterData, previousQuarterInfo] = await Promise.all([
-      getQuarterlyAverageValue(currentQuarter, currentYear),
-      Promise.resolve(getPreviousQuarter(currentQuarter, currentYear)),
-    ])
+    const previousQuarterInfo = getPreviousQuarter(currentQuarter, currentYear)
 
-    const previousQuarterData = await getQuarterlyAverageValue(
-      previousQuarterInfo.quarter,
-      previousQuarterInfo.year
-    )
+    const [currentQuarterData, previousQuarterData] = await Promise.all([
+      getQuarterlyAverageValue(currentQuarter, currentYear),
+      getQuarterlyAverageValue(previousQuarterInfo.quarter, previousQuarterInfo.year),
+    ])
 
     const currentQuarterAvgUSD = currentQuarterData.averageValueUSD
     const previousQuarterAvgUSD = previousQuarterData.averageValueUSD
@@ -164,14 +161,14 @@ export async function calculateRevenueReward(
     const revenueData = await getHistoricalRevenue(defiData, 365)
 
     const currentYear = new Date().getFullYear()
-    
+
     // If selected year is in the future, use current year's data
     const yearToUse = year > currentYear ? currentYear : year
 
     // Use the annual totals directly from getHistoricalRevenue
     // These represent the total revenue from all available history (last 365 days)
     // For annual revenue, we use the sum of all revenue components
-    const annualRevenueUSD = 
+    const annualRevenueUSD =
       revenueData.citizenRevenue +
       revenueData.teamRevenue +
       revenueData.defiRevenue +
@@ -182,41 +179,21 @@ export async function calculateRevenueReward(
     let annualRevenueFromHistory = 0
     if (revenueData.revenueHistory.length > 0) {
       const yearStart = new Date(Date.UTC(yearToUse, 0, 1, 0, 0, 0, 0)).getTime()
-      const yearEnd = yearToUse === currentYear 
-        ? new Date().getTime()
-        : new Date(Date.UTC(yearToUse, 11, 31, 23, 59, 59, 999)).getTime()
+      const yearEnd =
+        yearToUse === currentYear
+          ? new Date().getTime()
+          : new Date(Date.UTC(yearToUse, 11, 31, 23, 59, 59, 999)).getTime()
 
       const relevantRevenue = revenueData.revenueHistory.filter((point) => {
         return point.timestamp >= yearStart && point.timestamp <= yearEnd
       })
 
       annualRevenueFromHistory = relevantRevenue.reduce((sum, point) => sum + point.totalRevenue, 0)
-
-      console.log(`[EB Rewards] Revenue calculation for year ${year} (using ${yearToUse}):`, {
-        totalRevenuePoints: revenueData.revenueHistory.length,
-        relevantRevenuePoints: relevantRevenue.length,
-        yearStart: new Date(yearStart).toISOString(),
-        yearEnd: new Date(yearEnd).toISOString(),
-        annualRevenueFromHistory,
-        annualRevenueFromTotals: annualRevenueUSD,
-      })
-    } else {
-      // If no history points, use the annual totals
-      console.log(`[EB Rewards] Revenue calculation for year ${year} (using ${yearToUse}):`, {
-        totalRevenuePoints: 0,
-        usingAnnualTotals: true,
-        annualRevenueUSD,
-        citizenRevenue: revenueData.citizenRevenue,
-        teamRevenue: revenueData.teamRevenue,
-        defiRevenue: revenueData.defiRevenue,
-        stakingRevenue: revenueData.stakingRevenue,
-      })
     }
 
     // Use history-based calculation if available, otherwise use annual totals
-    const finalAnnualRevenueUSD = annualRevenueFromHistory > 0 
-      ? annualRevenueFromHistory 
-      : annualRevenueUSD
+    const finalAnnualRevenueUSD =
+      annualRevenueFromHistory > 0 ? annualRevenueFromHistory : annualRevenueUSD
 
     const rewardUSD = finalAnnualRevenueUSD * 0.1
     const rewardETH = ethPrice > 0 ? rewardUSD / ethPrice : 0

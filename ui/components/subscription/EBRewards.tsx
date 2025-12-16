@@ -1,4 +1,4 @@
-import { CurrencyDollarIcon } from '@heroicons/react/24/outline'
+import { CurrencyDollarIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 import { useState, useEffect } from 'react'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 
@@ -44,17 +44,27 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
   const [rewards, setRewards] = useState<EBRewardResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  const handleRefresh = () => {
+    setRefreshTrigger((prev) => prev + 1)
+  }
 
   useEffect(() => {
     if (!isManager) return
+
+    // Clear old rewards immediately when selection changes
+    setRewards(null)
 
     const fetchRewards = async () => {
       setLoading(true)
       setError(null)
       try {
+        const nocache = refreshTrigger > 0 ? '&nocache=1' : ''
         const response = await fetch(
-          `/api/eb/rewards?quarter=${selectedQuarter}&year=${selectedYear}`
+          `/api/eb/rewards?quarter=${selectedQuarter}&year=${selectedYear}${nocache}`
         )
+
         if (!response.ok) {
           if (response.status === 403) {
             throw new Error('Access denied: Executive Branch membership required')
@@ -63,6 +73,14 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
           throw new Error(errorData.message || 'Failed to fetch rewards')
         }
         const data = await response.json()
+
+        // Verify the response matches what we requested
+        if (data.quarter !== selectedQuarter || data.year !== selectedYear) {
+          console.error(
+            `[EB Rewards UI] MISMATCH! Requested Q${selectedQuarter} ${selectedYear} but got Q${data.quarter} ${data.year}`
+          )
+        }
+
         setRewards(data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load rewards')
@@ -72,7 +90,7 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
     }
 
     fetchRewards()
-  }, [selectedQuarter, selectedYear, isManager])
+  }, [selectedQuarter, selectedYear, isManager, refreshTrigger])
 
   const formatETH = (value: number) => {
     return value.toFixed(4)
@@ -87,6 +105,13 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
     }).format(value)
   }
 
+  const isIncompleteQuarter = () => {
+    const now = new Date()
+    const currentQuarter = Math.floor(now.getMonth() / 3) + 1
+    const currentYear = now.getFullYear()
+    return selectedQuarter === currentQuarter && selectedYear === currentYear
+  }
+
   if (!isManager) {
     return null
   }
@@ -95,7 +120,7 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
     <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold text-white">Rewards</h2>
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <select
             value={selectedQuarter}
             onChange={(e) => setSelectedQuarter(parseInt(e.target.value, 10))}
@@ -114,6 +139,14 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
             max={2100}
             className="bg-slate-700/50 border border-slate-600 text-white rounded-lg px-4 py-2 w-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="bg-slate-700/50 border border-slate-600 text-white rounded-lg px-4 py-2 hover:bg-slate-600/50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Refresh data (bypass cache)"
+          >
+            <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 
@@ -129,6 +162,25 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
         </div>
       ) : rewards ? (
         <div className="space-y-6">
+          {(rewards.quarter !== selectedQuarter || rewards.year !== selectedYear) && (
+            <div className="bg-red-900/30 backdrop-blur-md border border-red-700/50 rounded-xl p-4 text-red-200 text-sm">
+              <p className="font-semibold">Data Mismatch Warning</p>
+              <p className="mt-1">
+                Selected: Q{selectedQuarter} {selectedYear} | Displaying: Q{rewards.quarter}{' '}
+                {rewards.year}
+              </p>
+              <p className="mt-1 text-xs">Try clicking the refresh button to reload the data.</p>
+            </div>
+          )}
+          {isIncompleteQuarter() && (
+            <div className="bg-yellow-900/30 backdrop-blur-md border border-yellow-700/50 rounded-xl p-4 text-yellow-200 text-sm">
+              <p className="font-semibold">Note: Incomplete Quarter</p>
+              <p className="mt-1">
+                You're viewing the current quarter which is still in progress. The data shown
+                reflects the partial quarter and will change as more data becomes available.
+              </p>
+            </div>
+          )}
           <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <CurrencyDollarIcon className="w-6 h-6 text-green-400" />
@@ -136,13 +188,18 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-slate-200">
-                <span>Previous Quarter Avg:</span>
+                <span>
+                  Previous Quarter (Q{selectedQuarter === 1 ? 4 : selectedQuarter - 1}{' '}
+                  {selectedQuarter === 1 ? selectedYear - 1 : selectedYear}) Avg:
+                </span>
                 <span className="text-white">
                   {formatUSD(rewards.treasuryGrowth.previousQuarterAvgUSD)}
                 </span>
               </div>
               <div className="flex justify-between text-slate-200">
-                <span>Current Quarter Avg:</span>
+                <span>
+                  Current Quarter (Q{selectedQuarter} {selectedYear}) Avg:
+                </span>
                 <span className="text-white">
                   {formatUSD(rewards.treasuryGrowth.currentQuarterAvgUSD)}
                 </span>

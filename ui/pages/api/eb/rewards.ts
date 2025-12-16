@@ -1,5 +1,5 @@
-import { rateLimit } from 'middleware/rateLimit'
 import { isEBManager } from 'middleware/isEBManager'
+import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { calculateEBRewards } from '@/lib/treasury/eb-rewards'
@@ -14,7 +14,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   try {
-    const { quarter, year } = req.query
+    const { quarter, year, nocache, clearcache } = req.query
+
+    // Allow clearing the entire cache
+    if (clearcache) {
+      const cacheSize = rewardCache.size
+      rewardCache.clear()
+      return res.status(200).json({ message: 'Cache cleared', entriesRemoved: cacheSize })
+    }
 
     if (!quarter || !year) {
       return res.status(400).json({
@@ -45,11 +52,29 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const now = Date.now()
     const cached = rewardCache.get(cacheKey)
 
-    if (cached && now - cached.timestamp < CACHE_DURATION) {
-      return res.status(200).json(cached.data)
+    if (!nocache && cached && now - cached.timestamp < CACHE_DURATION) {
+      // Verify cached data matches the request
+      if (cached.data.quarter === quarterNum && cached.data.year === yearNum) {
+        return res.status(200).json(cached.data)
+      } else {
+        console.warn(
+          `[EB Rewards API] Cache mismatch! Requested Q${quarterNum} ${yearNum} but cached data is Q${cached.data.quarter} ${cached.data.year}. Invalidating cache.`
+        )
+        rewardCache.delete(cacheKey)
+      }
     }
 
     const result = await calculateEBRewards(quarterNum, yearNum)
+
+    // Verify result matches the request before caching
+    if (result.quarter !== quarterNum || result.year !== yearNum) {
+      console.error(
+        `[EB Rewards API] CRITICAL: Calculation returned wrong quarter! Requested Q${quarterNum} ${yearNum} but got Q${result.quarter} ${result.year}`
+      )
+      throw new Error(
+        `Calculation error: Expected Q${quarterNum} ${yearNum} but got Q${result.quarter} ${result.year}`
+      )
+    }
 
     rewardCache.set(cacheKey, {
       data: result,
