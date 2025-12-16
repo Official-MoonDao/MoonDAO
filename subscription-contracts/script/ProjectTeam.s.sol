@@ -73,8 +73,8 @@ contract MyScript is Script {
             console.log("Setting base URI to https://testnets.tableland.network/api/v1/query?unwrap=true&extract=true&statement=");
             projectTeam.setBaseURI("https://testnets.tableland.network/api/v1/query?unwrap=true&extract=true&statement=");
             // Transfer to HSM signer
-            projectTable.transferOwnership(0xb206325e6562517532686dfeeead4c104d9f5d32);
-            creator.transferOwnership(0xb206325e6562517532686dfeeead4c104d9f5d32);
+            projectTable.transferOwnership(0xb206325E6562517532686dFeeEaD4C104D9F5d32);
+            creator.transferOwnership(0xb206325E6562517532686dFeeEaD4C104D9F5d32);
         }
 
         vm.stopBroadcast();
