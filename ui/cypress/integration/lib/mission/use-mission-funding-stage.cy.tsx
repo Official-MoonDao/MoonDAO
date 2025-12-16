@@ -30,12 +30,24 @@ describe('useMissionFundingStage', () => {
   })
 
   it('returns stage from contract when missionId is provided', () => {
-    cy.stub(thirdweb, 'readContract').callsFake(async (options: any) => {
-      if (options.method === 'stage') {
-        return BigInt(1) // Stage 1
+    cy.intercept('POST', '**/rpc/**', (req) => {
+      if (req.body && req.body.method === 'eth_call') {
+        // Return stage 1 as a bigint-encoded hex value
+        // Stage 1 = 0x1, padded to 32 bytes (64 hex chars)
+        req.reply({ result: '0x' + '1'.padStart(64, '0') })
+      } else if (req.body && req.body.method === 'eth_getBalance') {
+        req.reply({ result: '0x0' })
       }
-      return null
-    })
+    }).as('rpcCalls')
+
+    cy.intercept('POST', '**/thirdweb.com/**', (req) => {
+      if (req.body && req.body.method === 'eth_call') {
+        // Return stage 1
+        req.reply({ result: '0x' + '1'.padStart(64, '0') })
+      } else if (req.body && req.body.method === 'eth_getBalance') {
+        req.reply({ result: '0x0' })
+      }
+    }).as('thirdwebRpc')
 
     cy.mount(
       <TestnetProviders>

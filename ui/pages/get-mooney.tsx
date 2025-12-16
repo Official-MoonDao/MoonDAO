@@ -1,28 +1,15 @@
-import { useFundWallet } from '@privy-io/react-auth'
-import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
-import React, { useContext, useEffect } from 'react'
-import toast from 'react-hot-toast'
-import { useActiveAccount } from 'thirdweb/react'
-import { ethereum } from '@/lib/rpc/chains'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { useContext } from 'react'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import viemChains from '@/lib/viem/viemChains'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import SpaceBackground from '@/components/layout/SpaceBackground'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import NativeToMooney from '@/components/uniswap/NativeToMooney'
 
 export default function GetMooney() {
-  const { t } = useTranslation('common')
-  const account = useActiveAccount()
-  const address = account?.address
-  const router = useRouter()
-  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
-  const { fundWallet } = useFundWallet()
+  const { selectedChain } = useContext(ChainContextV5)
 
   return (
     <>
@@ -32,9 +19,10 @@ export default function GetMooney() {
       />
 
       <Container is_fullwidth={true}>
-        <div className="min-h-screen bg-dark-cool text-white w-full">
+        <SpaceBackground />
+        <div className="min-h-screen text-white w-full relative z-10">
           {/* Buy MOONEY Section */}
-          <section className="py-12 px-6 bg-gradient-to-br from-gray-900/50 to-blue-900/20 w-full min-h-screen flex items-center">
+          <section className="py-12 px-6 w-full min-h-screen flex items-center">
             <div className="max-w-4xl mx-auto w-full">
               <div className="text-center mb-8">
                 <h1 className="text-3xl md:text-4xl font-bold font-GoodTimes text-white mb-4">

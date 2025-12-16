@@ -118,7 +118,7 @@ export function ExpandedFooter({
   const learnLinks = [
     { text: 'News', href: '/news' },
     { text: 'About', href: '/about' },
-    { text: 'Analytics', href: '/analytics' },
+    { text: 'Treasury', href: '/treasury' },
     { text: 'Resources', href: '/resources' },
     { text: 'FAQ', href: '/faq' },
   ]

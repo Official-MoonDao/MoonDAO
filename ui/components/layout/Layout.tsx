@@ -24,6 +24,7 @@ import LanguageChange from './Sidebar/LanguageChange'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
 import MobileSidebar from './Sidebar/MobileSidebar'
 import NavigationLink from './Sidebar/NavigationLink'
+import SpaceBackground from './SpaceBackground'
 import TopNavBar from './TopNavBar'
 
 interface Layout {
@@ -87,8 +88,11 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const layout = (
     <div
       id="app-layout"
-      className={`${!lightMode ? 'dark background-dark' : 'background-light'} min-h-screen`}
+      className={`${
+        !lightMode ? 'dark background-dark' : 'background-light'
+      } min-h-screen relative`}
     >
+      <SpaceBackground />
       <>
         {/* Mobile menu top bar - for screens smaller than xl */}
         <div className="xl:hidden">
@@ -121,7 +125,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
 
         {/* Main Content - Full width with top nav */}
         <main
-          className={`pt-16 w-full min-h-screen ${
+          className={`pt-16 w-full min-h-screen relative z-10 ${
             isFullscreen || isHomepage ? '' : 'flex justify-center'
           }`}
         >

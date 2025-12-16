@@ -51,13 +51,13 @@ describe('<SafeModal />', () => {
   describe('Modal Structure', () => {
     it('Renders the modal with basic information', () => {
       cy.get('[data-testid="safe-modal-content"]').should('exist')
-      cy.get('[data-testid="safe-modal-title"]').should('contain', 'Safe')
+      cy.get('[data-testid="modal-title"]').should('contain', 'Safe Settings')
       cy.get('[data-testid="safe-address"]').should('exist')
       cy.get('[data-testid="safe-info"]').should('contain', 'Safe Address')
     })
 
     it('Closes modal when close button is clicked', () => {
-      cy.get('[data-testid="safe-modal-close"]').click()
+      cy.get('[data-testid="modal-close"]').click()
       cy.wrap(props.setEnabled).should('have.been.calledWith', false)
     })
   })
@@ -78,10 +78,7 @@ describe('<SafeModal />', () => {
 
     it('Removes a signer when remove button is clicked', () => {
       cy.get('[data-testid="remove-signer-0x123..."]').click()
-      cy.wrap(props.safeData.removeSigner).should(
-        'have.been.calledWith',
-        '0x123...'
-      )
+      cy.wrap(props.safeData.removeSigner).should('have.been.calledWith', '0x123...')
     })
   })
 
@@ -96,9 +93,7 @@ describe('<SafeModal />', () => {
     it('Updates threshold when valid value is entered', () => {
       cy.get('[data-testid="threshold-input"]').clear()
       cy.get('[data-testid="threshold-input"]').type('1')
-      cy.get('[data-testid="update-threshold-button"]').should(
-        'not.be.disabled'
-      )
+      cy.get('[data-testid="update-threshold-button"]').should('not.be.disabled')
       cy.get('[data-testid="update-threshold-button"]').click()
       cy.wrap(props.safeData.changeThreshold).should('have.been.calledWith', 1)
     })

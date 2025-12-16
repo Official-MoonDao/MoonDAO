@@ -36,7 +36,7 @@ import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import Asset from '@/components/dashboard/treasury/balance/Asset'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import SectionCard from '@/components/layout/SectionCard'
+import Card from '@/components/layout/Card'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 
 export default function Fees() {
@@ -322,7 +322,7 @@ export default function Fees() {
             mode="compact"
             popOverEffect={false}
           >
-            <SectionCard>
+            <Card>
               {!authenticated ? (
                 <div className="text-center">
                   <h1 className="text-2xl font-bold mb-4">
@@ -407,7 +407,7 @@ export default function Fees() {
                     )}
                 </div>
               )}
-            </SectionCard>
+            </Card>
           </ContentLayout>
         </Container>
       </section>

@@ -9,8 +9,16 @@ export function calculateTokensFromPayment(
 
   try {
     const payment = new FixedInt(BigInt(paymentAmount.toString()), 18)
-    const weight = new RulesetWeight(ruleset[0].weight)
-    const reservedPercent = new ReservedPercent(ruleset[1].reservedPercent)
+    
+    const weightValue = typeof ruleset[0].weight === 'bigint' 
+      ? ruleset[0].weight
+      : BigInt(ruleset[0].weight.toString())
+    const reservedPercentValue = typeof ruleset[1].reservedPercent === 'bigint'
+      ? ruleset[1].reservedPercent
+      : BigInt(ruleset[1].reservedPercent.toString())
+    
+    const weight = new RulesetWeight(weightValue)
+    const reservedPercent = new ReservedPercent(reservedPercentValue)
 
     const quote = getTokenAToBQuote(payment, {
       weight,
