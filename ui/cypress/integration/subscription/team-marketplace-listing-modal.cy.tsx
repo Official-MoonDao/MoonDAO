@@ -41,7 +41,7 @@ describe('<TeamMarketplaceListingModal />', () => {
         <TeamMarketplaceListingModal {...props} />
       </TestnetProviders>
     )
-    cy.get('h2').should('contain', 'Add a Listing')
+    cy.get('[data-testid="modal-title"]').should('contain', 'Create Listing')
   })
   it('Submits form with valid data', () => {
     cy.mount(

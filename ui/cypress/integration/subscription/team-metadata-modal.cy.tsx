@@ -27,7 +27,7 @@ describe('<TeamMetadataModal /> ', () => {
   })
 
   it('Renders the component and all stages', () => {
-    cy.get('h1').contains('Update Team Info')
+    cy.get('[data-testid="modal-title"]').contains('Update Team Info')
     cy.get('button').contains('Continue with this image').click()
     cy.get('button').contains('Yes, update email').should('exist')
     cy.get('button').contains('No, skip this step').should('exist').click()

@@ -163,7 +163,7 @@ function MissionPayRedeemContent({
                 action={() => onOpenModal?.(usdInput)}
                 isDisabled={isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0}
               />
-              <p className="text-sm text-gray-300 italic">{`Sign In ● Fund ● Contribute`}</p>
+              <p className="pt-2 text-sm text-gray-300 italic">{`Sign In ● Fund ● Contribute`}</p>
             </div>
 
             <div className="w-full space-y-2">

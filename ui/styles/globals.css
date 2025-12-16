@@ -30,6 +30,7 @@ body {
   font-family: 'Lato';
   overflow: auto;
   -webkit-overflow-scrolling: touch; /* Better iOS/Safari scrolling */
+  background-color: #000000;
 }
 
 @supports (-webkit-appearance: none) {
@@ -241,7 +242,7 @@ a {
   }
 
   .sidebar-bg-dark {
-    background: linear-gradient(180deg, #090d21 70%, #46161b 100%);
+    background: linear-gradient(180deg, #090d21 70%, #040617 100%);
   }
 
   .sidebar-bg-light {
@@ -250,12 +251,40 @@ a {
 }
 
 .background-dark {
-  background: linear-gradient(
-    56.41deg,
-    #252c4d 29.98%,
-    #080c20 79.58%,
-    #2d121a 97.4%
-  );
+  position: relative;
+  background: #000000 !important;
+}
+
+@keyframes starTwinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes starTwinkleSlow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.star-layer-far {
+  animation: starTwinkleSlow 8s ease-in-out infinite;
+}
+
+.star-layer-mid {
+  animation: starTwinkle 6s ease-in-out infinite;
+}
+
+.star-layer-near {
+  animation: starTwinkle 4s ease-in-out infinite;
 }
 
 .background-light {
@@ -330,7 +359,8 @@ a {
 }
 
 .gradient-9 {
-  background: linear-gradient(180deg, #090d21 70%, #46161b 100%);
+  position: relative;
+  background: #000000;
 }
 
 .gradient-10 {
@@ -694,7 +724,7 @@ html {
 }
 
 .unbranded {
-  background-image: url('/assets/feature-5.svg');
+  background-image: none;
   background-repeat: no-repeat;
   background-position: top left;
   background-size: contain;
@@ -706,12 +736,7 @@ html {
 }
 
 .bg-search {
-  background: linear-gradient(
-    -220deg,
-    #6d3f79 5%,
-    #425eeb 50%,
-    transparent 50%
-  );
+  background: linear-gradient(-220deg, #6d3f79 5%, #425eeb 50%, transparent 50%);
 }
 
 /*Profile page cards background*/
@@ -752,11 +777,7 @@ html {
   height: 50vw;
   border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(
-    circle at center,
-    var(--dark-cool-color) 0%,
-    transparent 100%
-  );
+  background: radial-gradient(circle at center, var(--dark-cool-color) 0%, transparent 100%);
   mix-blend-mode: screen;
   left: 0;
   top: 0;
@@ -773,7 +794,7 @@ html {
 }
 
 body {
-  background-color: var(--darkest-cool-color);
+  background-color: #000000;
 }
 
 .toastui-editor-toolbar {
@@ -969,4 +990,160 @@ body {
 /* Smooth video transitions */
 #video-wrapper {
   transition: opacity 0.3s ease-in-out;
+}
+
+/* Star twinkling animations */
+@keyframes twinkle-subtle {
+  0%,
+  100% {
+    opacity: var(--min-opacity, 0.4);
+  }
+  50% {
+    opacity: var(--max-opacity, 0.6);
+  }
+}
+
+@keyframes twinkle-pronounced {
+  0%,
+  100% {
+    opacity: var(--min-opacity, 0.3);
+  }
+  50% {
+    opacity: var(--max-opacity, 0.8);
+  }
+}
+
+@keyframes sparkle-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  50% {
+    opacity: 0.75;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+.star-sparkle .star-crosshair {
+  animation: sparkle-pulse 7s ease-in-out infinite;
+}
+
+/* Shooting star animations */
+.shooting-star {
+  pointer-events: none;
+  overflow: visible;
+  z-index: 10;
+}
+
+.shooting-star-head {
+  position: absolute;
+  left: var(--start-x, 50%);
+  top: var(--start-y, 50%);
+  width: 3.5px;
+  height: 3.5px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(255, 255, 255, 0.95) 15%,
+    rgba(220, 235, 255, 0.85) 35%,
+    rgba(180, 210, 255, 0.6) 55%,
+    transparent 80%
+  );
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 0 12px rgba(220, 235, 255, 0.7),
+    0 0 20px rgba(180, 210, 255, 0.5), 0 0 30px rgba(150, 200, 255, 0.3),
+    0 0 45px rgba(100, 180, 255, 0.15);
+  animation: shooting-star-move-head 2.8s ease-out forwards;
+  transform-origin: center;
+  filter: blur(0.4px);
+  will-change: transform;
+}
+
+.shooting-star-trail {
+  position: absolute;
+  left: var(--start-x, 50%);
+  top: var(--start-y, 50%);
+  width: 220px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.9) 2%,
+    rgba(240, 245, 255, 0.8) 8%,
+    rgba(220, 235, 255, 0.65) 18%,
+    rgba(200, 225, 255, 0.5) 30%,
+    rgba(180, 210, 255, 0.35) 45%,
+    rgba(150, 190, 255, 0.25) 60%,
+    rgba(120, 170, 255, 0.15) 75%,
+    rgba(100, 150, 255, 0.08) 88%,
+    rgba(80, 130, 255, 0.03) 95%,
+    transparent 100%
+  );
+  transform-origin: left center;
+  animation: shooting-star-move-trail 2.8s ease-out forwards;
+  filter: blur(1px);
+  box-shadow: 0 0 12px rgba(220, 235, 255, 0.4), 0 0 20px rgba(180, 210, 255, 0.2),
+    0 0 30px rgba(150, 200, 255, 0.1);
+  will-change: transform;
+}
+
+@keyframes shooting-star-move-head {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(0) scale(0.8);
+    opacity: 0.6;
+    filter: brightness(0.9);
+  }
+  1% {
+    opacity: 0.8;
+    filter: brightness(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(300vw) scale(1);
+    opacity: 0.75;
+    filter: brightness(0.95);
+  }
+  95% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(400vw) scale(1);
+    opacity: 0.7;
+    filter: brightness(0.9);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(400vw) scale(0.8);
+    opacity: 0;
+    filter: brightness(0.4);
+  }
+}
+
+@keyframes shooting-star-move-trail {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(0) scaleX(0.3);
+    opacity: 0.3;
+  }
+  2% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(0) scaleX(1);
+  }
+  40% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(250vw) scaleX(1);
+    opacity: 0.85;
+  }
+  85% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(350vw) scaleX(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 45deg)) translateX(380vw) scaleX(0.4);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .shooting-star-head {
+    animation: shooting-star-move-head 2.2s ease-out forwards;
+  }
+
+  .shooting-star-trail {
+    animation: shooting-star-move-trail 2.2s ease-out forwards;
+  }
 }
