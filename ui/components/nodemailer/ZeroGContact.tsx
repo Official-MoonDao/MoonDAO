@@ -1,7 +1,10 @@
 import Link from 'next/link'
 import { useState } from 'react'
-import ReCaptcha from 'react-google-recaptcha'
 import toast from 'react-hot-toast'
+import ReCAPTCHAComponent from 'react-google-recaptcha'
+
+// Type assertion to work around React 18 compatibility issues
+const ReCAPTCHA = ReCAPTCHAComponent as any
 
 export function ZeroGContact() {
   const [name, setName] = useState('')
@@ -88,7 +91,7 @@ export function ZeroGContact() {
         </div>
         <div className="mt-2">
           {email.includes('@') && (
-            <ReCaptcha
+            <ReCAPTCHA
               sitekey={
                 process.env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY as string
               }

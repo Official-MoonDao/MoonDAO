@@ -287,7 +287,8 @@ export default function useSafe(
 
     try {
       // Execute the existing transaction directly
-      const executeTx = await safe.executeTransaction(safeTx, options)
+      // Type cast to handle version mismatch between @safe-global packages
+      const executeTx = await safe.executeTransaction(safeTx as any, options)
 
       // Get the transaction hash from the execution response
       const txHash = executeTx.hash
