@@ -17,7 +17,7 @@ import { ethers } from 'ethers'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
@@ -36,14 +36,21 @@ import { arbitrum, base, ethereum, sepolia, arbitrumSepolia } from '@/lib/rpc/ch
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import { CitizenData, formatCitizenShortFormData } from '@/lib/typeform/citizenFormData'
 import waitForResponse from '@/lib/typeform/waitForResponse'
-import { renameFile } from '@/lib/utils/files'
+import {
+  renameFile,
+  fileToBase64,
+  base64ToFile,
+  isSerializedFile,
+  SerializedFile,
+} from '@/lib/utils/files'
 import { useFormCache } from '@/lib/utils/hooks/useFormCache'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import CitizenABI from '../../const/abis/Citizen.json'
@@ -59,6 +66,7 @@ import { StageContainer } from './StageContainer'
 
 export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const router = useRouter()
+  const { setSelectedChain } = useContext(ChainContextV5)
 
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const selectedChainSlug = getChainSlug(selectedChain)
@@ -116,9 +124,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const { cache, setCache, clearCache, restoreCache } = useFormCache<{
     stage: number
     citizenData: CitizenData
-    citizenImage: any
-    inputImage: File | undefined
+    citizenImage: SerializedFile | null
+    inputImage: SerializedFile | null
     agreedToCondition: boolean
+    selectedChainSlug: string
   }>('CreateCitizenCacheV1', address)
 
   // Redirect handling and auto-transaction
@@ -139,17 +148,26 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     [selectedChainSlug, defaultChainSlug, estimatedGas, effectiveGasPrice]
   )
 
-  const handleFormRestore = useCallback((restored: any) => {
-    setStage(restored.stage || 2)
-    setCitizenData(restored.formData.citizenData)
-    if (restored.formData.citizenImage) {
-      setCitizenImage(restored.formData.citizenImage)
-    }
-    if (restored.formData.inputImage) {
-      setInputImage(restored.formData.inputImage)
-    }
-    setAgreedToCondition(restored.formData.agreedToCondition)
-  }, [])
+  const handleFormRestore = useCallback(
+    (restored: any) => {
+      setStage(restored.stage || 2)
+      setCitizenData(restored.formData.citizenData)
+      if (restored.formData.citizenImage && isSerializedFile(restored.formData.citizenImage)) {
+        setCitizenImage(base64ToFile(restored.formData.citizenImage))
+      }
+      if (restored.formData.inputImage && isSerializedFile(restored.formData.inputImage)) {
+        setInputImage(base64ToFile(restored.formData.inputImage))
+      }
+      setAgreedToCondition(restored.formData.agreedToCondition)
+      if (restored.formData.selectedChainSlug) {
+        const chain = v4SlugToV5Chain(restored.formData.selectedChainSlug)
+        if (chain) {
+          setSelectedChain(chain)
+        }
+      }
+    },
+    [setSelectedChain]
+  )
 
   const { isMobile } = useWindowSize()
 
@@ -591,6 +609,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     checkBalanceSufficient,
     shouldProceed: (restored) => restored.formData.agreedToCondition,
     restoreCache,
+    getChainSlugFromCache: (restored) => restored?.formData?.selectedChainSlug,
   })
 
   const submitTypeform = useCallback(
@@ -641,18 +660,33 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // Cache form state before navigating to onramp
   useEffect(() => {
     if (stage >= 0 && address && (citizenData.name || citizenImage || inputImage)) {
-      setCache(
-        {
-          stage,
-          citizenData,
-          citizenImage,
-          inputImage,
-          agreedToCondition,
-        },
-        stage
-      )
+      const serializeAndCache = async () => {
+        const serializedCitizenImage = citizenImage ? await fileToBase64(citizenImage) : null
+        const serializedInputImage = inputImage ? await fileToBase64(inputImage) : null
+        setCache(
+          {
+            stage,
+            citizenData,
+            citizenImage: serializedCitizenImage,
+            inputImage: serializedInputImage,
+            agreedToCondition,
+            selectedChainSlug,
+          },
+          stage
+        )
+      }
+      serializeAndCache()
     }
-  }, [stage, citizenData, citizenImage, inputImage, agreedToCondition, address, setCache])
+  }, [
+    stage,
+    citizenData,
+    citizenImage,
+    inputImage,
+    agreedToCondition,
+    address,
+    setCache,
+    selectedChainSlug,
+  ])
 
   useEffect(() => {
     if (stage > lastStage) {

@@ -14,6 +14,7 @@ interface UseOnrampAutoTransactionOptions {
   checkBalanceSufficient: () => Promise<boolean>
   shouldProceed?: (restored: any) => boolean
   restoreCache: () => any | null
+  getChainSlugFromCache?: (restored: any) => string | undefined
   maxAttempts?: number
   delayMs?: number
 }
@@ -28,6 +29,7 @@ export function useOnrampAutoTransaction({
   checkBalanceSufficient,
   shouldProceed,
   restoreCache,
+  getChainSlugFromCache,
   maxAttempts = 10,
   delayMs = 1000,
 }: UseOnrampAutoTransactionOptions) {
@@ -79,11 +81,17 @@ export function useOnrampAutoTransaction({
       return
     }
 
+    // Use chain slug from cache if available, otherwise fall back to prop
+    const cachedChainSlug = getChainSlugFromCache
+      ? getChainSlugFromCache(restored)
+      : undefined
+    const chainSlugToVerify = cachedChainSlug || expectedChainSlug
+
     verifyJWT(storedJWT, address, undefined, context).then((payload) => {
       if (
         !payload ||
         payload.address.toLowerCase() !== address.toLowerCase() ||
-        payload.chainSlug !== expectedChainSlug ||
+        payload.chainSlug !== chainSlugToVerify ||
         payload.context !== context
       ) {
         clearJWT()
@@ -120,5 +128,6 @@ export function useOnrampAutoTransaction({
     shouldProceed,
     onTransaction,
     pollBalanceAndExecute,
+    getChainSlugFromCache,
   ])
 }
