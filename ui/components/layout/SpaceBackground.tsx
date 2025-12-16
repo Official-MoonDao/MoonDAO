@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useMemo, useState } from 'react'
+import { useAnimationFrameWithVisibility } from '@/lib/utils/hooks/usePageVisibility'
 
 interface Star {
   x: number
@@ -177,9 +178,8 @@ export default function SpaceBackground() {
   const shootingStarIdRef = useRef(0)
   const typedSequenceRef = useRef('')
   const sequenceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [isPageVisible, setIsPageVisible] = useState(true)
+  const { isPageVisible, rafRef, cancelRAF } = useAnimationFrameWithVisibility()
   const lastScrollY = useRef(0)
-  const rafRef = useRef<number | null>(null)
 
   const renderStarLayer = (stars: Star[], layerName: string) => {
     const layerRef =
@@ -307,25 +307,6 @@ export default function SpaceBackground() {
     )
   }
 
-  // Page Visibility API - pause animations when tab is hidden
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsPageVisible(!document.hidden)
-
-      // Cancel animation frame when page is hidden
-      if (document.hidden && rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current)
-        rafRef.current = null
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
-  }, [])
-
   // Optimized scroll handler with throttling
   useEffect(() => {
     if (!isPageVisible) return
@@ -376,12 +357,9 @@ export default function SpaceBackground() {
     rafRef.current = requestAnimationFrame(handleScroll)
 
     return () => {
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current)
-        rafRef.current = null
-      }
+      cancelRAF()
     }
-  }, [isPageVisible])
+  }, [isPageVisible, cancelRAF, rafRef])
 
   const createShootingStar = (baseX?: number, baseY?: number, baseAngle?: number) => {
     const side = Math.floor(Math.random() * 4)
