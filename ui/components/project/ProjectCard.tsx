@@ -84,7 +84,7 @@ const ProjectCardContent = memo(
                       : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
                   }`}
                 >
-                  {proposalJSON.nonProjectProposal
+                  {proposalJSON?.nonProjectProposal
                     ? 'Non-project Proposal'
                     : project.active == PROJECT_ACTIVE
                     ? 'Active'

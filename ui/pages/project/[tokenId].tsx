@@ -252,7 +252,7 @@ export default function ProjectProfile({
                       proposalStatus === 'Temperature Check' && <TempCheck mdp={project.MDP} />}
                     {project.active == PROJECT_PENDING &&
                       proposalStatus === 'Voting' &&
-                      proposalJSON.nonProjectProposal && (
+                      proposalJSON?.nonProjectProposal && (
                         <>
                           <ProposalVotes
                             project={project}
@@ -263,7 +263,7 @@ export default function ProjectProfile({
                           <button onClick={tallyVotes}>Tally votes</button>
                         </>
                       )}
-                    {project.active !== PROJECT_PENDING && proposalJSON.nonProjectProposal && (
+                    {project.active !== PROJECT_PENDING && proposalJSON?.nonProjectProposal && (
                       <VotingResults voteOutcome={voteOutcome} votes={votes} threshold={0} />
                     )}
                   </div>
@@ -391,7 +391,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
   let votes: DistributionVote[] = []
   let voteOutcome = {}
-  if (proposalJSON.nonProjectProposal) {
+  if (proposalJSON?.nonProjectProposal) {
     const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
     votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
     const voteAddresses = votes.map((v) => v.address)

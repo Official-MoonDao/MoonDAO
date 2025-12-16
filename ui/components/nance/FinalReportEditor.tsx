@@ -174,6 +174,7 @@ export default function FinalReportEditor({ projectsFromLastQuarter }: FinalRepo
         account,
       })
 
+
       if (receipt) {
         // Reset form state
         setSelectedProject(undefined)
@@ -210,6 +211,7 @@ export default function FinalReportEditor({ projectsFromLastQuarter }: FinalRepo
   }
 
   const buttonsDisabled = !address || signingStatus === 'loading' || !isManager || !selectedProject
+
 
   const handleFormSubmit = async () => {
     // Use react-hook-form's handleSubmit to trigger validation

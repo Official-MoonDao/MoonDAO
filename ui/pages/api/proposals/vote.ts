@@ -2,13 +2,11 @@ import ProjectTableABI from 'const/abis/ProjectTable.json'
 import ProposalsABI from 'const/abis/Proposals.json'
 import {
   PROJECT_TABLE_NAMES,
-  PROPOSALS_TABLE_NAMES,
   PROPOSALS_ADDRESSES,
   DEFAULT_CHAIN_V5,
   PROJECT_TABLE_ADDRESSES,
   ETH_BUDGET,
 } from 'const/config'
-import { ethers } from 'ethers'
 import { getSubmissionQuarter } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
@@ -17,11 +15,9 @@ import {
   readContract,
   prepareContractCall,
   sendAndConfirmTransaction,
-  sendTransaction,
   getContract,
 } from 'thirdweb'
 import { createHSMWallet } from '@/lib/google/hsm-signer'
-import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { PROJECT_ACTIVE, PROJECT_VOTE_FAILED } from '@/lib/nance/types'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'

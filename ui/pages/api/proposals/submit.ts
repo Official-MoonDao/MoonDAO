@@ -5,7 +5,6 @@ import {
   PROJECT_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   PROJECT_CREATOR_ADDRESSES,
-  DISCORD_GUILD_ID,
 } from 'const/config'
 import { DISCORD_TO_ETH_ADDRESS } from 'const/usernames'
 import { ethers } from 'ethers'
@@ -13,20 +12,12 @@ import { getSubmissionQuarter } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
-import {
-  readContract,
-  prepareContractCall,
-  sendAndConfirmTransaction,
-  sendTransaction,
-  getContract,
-} from 'thirdweb'
+import { prepareContractCall, sendAndConfirmTransaction, getContract } from 'thirdweb'
 import { createHSMWallet } from '@/lib/google/hsm-signer'
-import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 
-// Configuration constants
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
 const PROD_PROPOSALS_FORUM_ID = '1034923662442254356'
@@ -34,6 +25,7 @@ const TEST_PROPOSALS_FORUM_ID = '1446583124388741252'
 const proposalsForumId =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? PROD_PROPOSALS_FORUM_ID : TEST_PROPOSALS_FORUM_ID // proposals || test-forum
 
+// Parse abstract out of proposal body via LLM
 async function getAbstract(proposalBody: string): Promise<string | null> {
   const thePrompt =
     `You are reading a DAO proposal written in markdown. Extract the Abstract section from the proposal.\n` +
@@ -63,6 +55,7 @@ async function getAbstract(proposalBody: string): Promise<string | null> {
   }
 }
 
+// Parse addresses out of proposal body via LLM
 async function getAddresses(
   proposalBody: string,
   patterns: string[]
@@ -101,7 +94,6 @@ async function getAddresses(
       parsed = []
     }
 
-    const usernames: string[] = []
     const addresses: string[] = []
     const provider = new ethers.providers.JsonRpcProvider('https://eth.llamarpc.com')
 
@@ -119,14 +111,42 @@ async function getAddresses(
         address = await provider.resolveName(ens)
       }
 
-      if (username) usernames.push(username)
       if (address) addresses.push(address)
     }
 
-    return [addresses, usernames]
+    return addresses
   } catch (error) {
     console.error('LLM address extraction failed:', error)
-    return [[], []]
+    return []
+  }
+}
+
+interface PinResponse {
+  cid: string
+}
+async function pinBlobOrFile(blob: Blob, name: string): Promise<PinResponse> {
+  try {
+    const url = 'https://api.pinata.cloud/pinning/pinFileToIPFS'
+    const formData = new FormData()
+    formData.append('pinataMetadata', JSON.stringify({ name: name }))
+    formData.append('pinataOptions', JSON.stringify({ cidVersion: 0 }))
+    formData.append('file', blob)
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.PINATA_JWT_KEY}`,
+      },
+      body: formData,
+    })
+    if (!response.ok) {
+      throw new Error(`Error pinning file to IPFS: ${response.status} ${response.statusText}`)
+    }
+
+    const jsonData = await response.json()
+    return { cid: jsonData.IpfsHash }
+  } catch (error) {
+    console.error('pinBlobToIPFS failed:', error)
+    throw error
   }
 }
 
@@ -174,18 +194,20 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       if (projects.length) {
         proposalId = projects[0].MDP + 1
       }
-      var members = []
-      var membersUsernames = []
-      const [leads, leadsUsernames] = await getAddresses(body, ['Team Rocketeer', 'Project Lead'])
-      ;[members, membersUsernames] = await getAddresses(body, ['Initial Team'])
+
+      let [leads, members, signers, abstractFull] = await Promise.all([
+        getAddresses(body, ['Team Rocketeer', 'Project Lead']),
+        getAddresses(body, ['Initial Team']),
+        getAddresses(body, ['Multi-sig signers']),
+        getAbstract(body),
+      ])
       // Only allow the first lead to be the lead for smart contract purposes
       const lead = leads[0] || address
       if (leads.length > 1) {
         members = [...leads.slice(1), ...members]
-        membersUsernames = [...leadsUsernames.slice(1), ...membersUsernames]
       }
-      const [signers, signersUsernames] = await getAddresses(body, ['Multi-sig signers'])
-      const abstractText = (await getAbstract(body))?.slice(0, 1000)
+
+      const abstractText = abstractFull?.slice(0, 1000)
 
       const membersValid = members.map((address) => ethers.utils.isAddress(address)).every(Boolean)
       if (!membersValid) {
@@ -223,15 +245,12 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
             type: 'application/json',
           }
         )
-        const { cid: hatMetadataIpfsHash } = await pinBlobOrFile(hatMetadataBlob)
+        const name = `MDP-${proposalId}-${hatType}.json`
+        const { cid: hatMetadataIpfsHash } = await pinBlobOrFile(hatMetadataBlob, name)
         return 'ipfs://' + hatMetadataIpfsHash
       }
       const { quarter, year } = getSubmissionQuarter()
       const upfrontPayment = ''
-      //proposal.upfrontPayment
-      //? JSON.stringify(proposal.upfrontPayment)
-      //: ''
-      // FIXME pinipfs not working here
       const [adminHatMetadataIpfs, managerHatMetadataIpfs, memberHatMetadataIpfs] =
         await Promise.allSettled([
           getHatMetadataIPFS('Admin'),
