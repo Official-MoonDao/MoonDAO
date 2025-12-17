@@ -178,7 +178,7 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
           <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <CurrencyDollarIcon className="w-6 h-6 text-green-400" />
-              <h3 className="text-lg font-semibold text-white">Treasury Growth</h3>
+              <h3 className="text-lg font-semibold text-white">Treasury Growth (Capital Gains)</h3>
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-slate-200">
@@ -199,18 +199,44 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
                 </span>
               </div>
               <div className="flex justify-between text-slate-200">
-                <span>Growth:</span>
+                <span>Capital Gains (Growth - Revenue):</span>
                 <span className="text-white">{formatUSD(rewards.treasuryGrowth.growthUSD)}</span>
               </div>
               <div className="pt-2 border-t border-slate-700">
                 <div className="flex justify-between">
-                  <span className="text-slate-200">Reward (2%):</span>
+                  <span className="text-slate-200">Reward (2% of Capital Gains):</span>
                   <span className="text-green-400 font-semibold">
                     {formatETH(rewards.treasuryGrowth.rewardETH)} ETH
                   </span>
                 </div>
                 <div className="text-xs text-slate-300 mt-1">
                   {formatUSD(rewards.treasuryGrowth.rewardUSD)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <CurrencyDollarIcon className="w-6 h-6 text-blue-400" />
+              <h3 className="text-lg font-semibold text-white">Revenue</h3>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between text-slate-200">
+                <span>Quarterly Revenue (Q{selectedQuarter} {selectedYear}):</span>
+                <span className="text-white">
+                  {formatUSD(rewards.revenue.annualRevenueUSD)}
+                </span>
+              </div>
+              <div className="pt-2 border-t border-slate-700">
+                <div className="flex justify-between">
+                  <span className="text-slate-200">Reward (10% of Revenue):</span>
+                  <span className="text-blue-400 font-semibold">
+                    {formatETH(rewards.revenue.rewardETH)} ETH
+                  </span>
+                </div>
+                <div className="text-xs text-slate-300 mt-1">
+                  {formatUSD(rewards.revenue.rewardUSD)}
                 </div>
               </div>
             </div>
@@ -293,32 +319,59 @@ export default function EBRewards({ isManager, teamId }: EBRewardsProps) {
                 </div>
 
                 <div>
-                  <p className="font-semibold text-slate-300 mb-2">4. Growth Calculation</p>
+                  <p className="font-semibold text-slate-300 mb-2">4. Revenue Calculation</p>
                   <p>
-                    Treasury growth is calculated as:{' '}
+                    Quarterly revenue is calculated from all revenue sources (subscriptions, DeFi
+                    fees, staking) by taking the difference between cumulative revenue at the end and
+                    start of the quarter.
+                  </p>
+                  <p className="mt-1">
+                    Revenue includes: Citizen subscriptions, Team subscriptions, DeFi protocol fees,
+                    and ETH staking rewards.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-slate-300 mb-2">5. Capital Gains Calculation</p>
+                  <p>
+                    Capital gains (market appreciation) is calculated by subtracting revenue from
+                    raw treasury growth:{' '}
                     <code className="bg-slate-900/50 px-1 rounded">
-                      Growth = Current Quarter Avg - Previous Quarter Avg
+                      Capital Gains = (Current Quarter Avg - Previous Quarter Avg) - Quarterly
+                      Revenue
                     </code>
                   </p>
                   <p className="mt-1">
-                    If growth is negative (treasury decreased), the reward is $0. Only positive
-                    growth generates rewards.
+                    This separates market appreciation from operational revenue, so ETH price
+                    changes don't affect revenue calculations.
                   </p>
                 </div>
 
                 <div>
-                  <p className="font-semibold text-slate-300 mb-2">5. Reward Calculation</p>
-                  <p>
-                    The EB reward is 2% of the positive growth:{' '}
-                    <code className="bg-slate-900/50 px-1 rounded">Reward USD = Growth × 0.02</code>
-                  </p>
+                  <p className="font-semibold text-slate-300 mb-2">6. Reward Calculation</p>
+                  <p>The EB receives two separate rewards:</p>
+                  <ul className="list-disc list-inside ml-2 mt-1 space-y-1">
+                    <li>
+                      <strong>Capital Gains Reward:</strong> 2% of positive capital gains{' '}
+                      <code className="bg-slate-900/50 px-1 rounded">
+                        Reward = Capital Gains × 0.02
+                      </code>
+                    </li>
+                    <li>
+                      <strong>Revenue Reward:</strong> 10% of quarterly revenue{' '}
+                      <code className="bg-slate-900/50 px-1 rounded">
+                        Reward = Quarterly Revenue × 0.10
+                      </code>
+                    </li>
+                  </ul>
                   <p className="mt-1">
-                    The USD reward is then converted to ETH using the current ETH price.
+                    Both rewards are converted to ETH using the current ETH price and added
+                    together for the total reward.
                   </p>
                 </div>
 
                 <div>
-                  <p className="font-semibold text-slate-300 mb-2">6. ETH Price Fetching</p>
+                  <p className="font-semibold text-slate-300 mb-2">7. ETH Price Fetching</p>
                   <p>ETH price is fetched from either:</p>
                   <ul className="list-disc list-inside ml-2 mt-1 space-y-1">
                     <li>

@@ -16,6 +16,7 @@ import {
   getValidatorIndicesFromPubKeys,
   getValidatorPerformance,
 } from '../beaconchain'
+import { MOONDAO_SAFES } from '../coinstats'
 import { fetchInternalTransactions, getETHPrice } from '../etherscan'
 import { arbitrum, ethereum } from '../rpc/chains'
 import {
@@ -31,6 +32,10 @@ import {
   getIncrementalCacheStats,
   clearExpiredIncrementalCache,
 } from './incrementalCache'
+
+const INTERNAL_TREASURY_ADDRESSES = MOONDAO_SAFES.map((s) =>
+  s.address.toLowerCase()
+)
 
 export interface RevenueDataPoint {
   timestamp: number
@@ -133,9 +138,15 @@ async function getEthTransfersToTreasury(
         parseFloat(tx.value) > 0
     )
 
+    // Exclude internal treasury transfers (transfers between MoonDAO safes)
+    const externalTxsOnly = relevantTxs.filter(
+      (tx: any) =>
+        !INTERNAL_TREASURY_ADDRESSES.includes(tx.from?.toLowerCase())
+    )
+
     // Filter transactions to last 365 days only
     const oneYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000
-    const recentTxs = relevantTxs.filter((tx: any) => {
+    const recentTxs = externalTxsOnly.filter((tx: any) => {
       const txTimestamp = parseInt(tx.timeStamp) * 1000
       return txTimestamp >= oneYearAgo
     })
@@ -820,12 +831,9 @@ export async function getHistoricalRevenue(
       }
     }
 
-    const hasRequiredRevenue =
-      finalCitizenRevenue > 0 &&
-      finalTeamRevenue > 0 &&
-      finalStakingRevenue > 0 &&
-      finalDefiRevenue > 0 &&
-      finalTotalRevenue > 0
+    // Only require total revenue > 0, not all individual sources
+    // This allows quarterly calculations even when some revenue sources are missing
+    const hasRequiredRevenue = finalTotalRevenue > 0
 
     return {
       revenueHistory: hasRequiredRevenue ? revenueHistory : [],
