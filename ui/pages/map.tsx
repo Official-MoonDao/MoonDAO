@@ -3,31 +3,27 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { getCitizensLocationData } from '@/lib/map'
 import IconOrg from '@/components/assets/IconOrg'
+import LazyEarth from '@/components/globe/LazyEarth'
+import LazyMoon from '@/components/globe/LazyMoon'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Tab from '@/components/layout/Tab'
-import LazyEarth from '@/components/globe/LazyEarth'
-import LazyMoon from '@/components/globe/LazyMoon'
 
-export default function NetworkMap({
-  citizensLocationData,
-}: {
-  citizensLocationData: any
-}) {
+export default function NetworkMap({ citizensLocationData }: { citizensLocationData: any }) {
   const router = useRouter()
 
   const [tab, setTab] = useState('earth')
 
   const descriptionSection = (
     <div className="pt-2">
-      <div className="mb-4">
-        Explore an interactive map of Citizens in the Space Acceleration Network
-        to make connections locally and globally.
+      <div className="mb-6 text-white/80">
+        Explore an interactive map of Citizens in the Space Acceleration Network to make connections
+        locally and globally.
       </div>
       <div className="flex gap-4">
-        <div className="w-fit h-fit bg-gradient-to-b from-slate-700/30 to-slate-800/40 rounded-xl border border-slate-600/30 p-1.5">
+        <div className="w-fit h-fit bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
           <div className="flex text-sm gap-1">
             <Tab
               tab="earth"
@@ -80,11 +76,7 @@ export default function NetworkMap({
           isProfile
         >
           <div className="w-full md:w-auto inline-block md:mr-12 rounded-lg z-[100] min-h-[50vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
-            <div
-              className={`flex items-center justify-center ${
-                tab !== 'earth' && 'hidden'
-              }`}
-            >
+            <div className={`flex items-center justify-center ${tab !== 'earth' && 'hidden'}`}>
               <LazyEarth pointsData={citizensLocationData} />
             </div>
             <div className={`${tab !== 'moon' && 'hidden'}`}>
@@ -99,18 +91,20 @@ export default function NetworkMap({
 
 export async function getStaticProps() {
   try {
+    // Use the optimized centralized service
     const citizensLocationData = await getCitizensLocationData()
 
     return {
       props: {
         citizensLocationData,
       },
-      revalidate: 600,
+      revalidate: 60, // Refresh every minute for fresher data
     }
   } catch (error) {
-    console.error(error)
+    console.error('Error in getStaticProps for map:', error)
     return {
       props: { citizensLocationData: [] },
+      revalidate: 60,
     }
   }
 }

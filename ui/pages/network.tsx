@@ -109,7 +109,9 @@ export default function Network({
     initialData: initialCitizens,
   })
 
-  const mapData = useMapData(isMapTab)
+  // For map tab, we don't need to fetch data client-side
+  // The map will use static data from getStaticProps
+  const mapData = useMapData(false) // Disabled - map uses its own static props
 
   const currentData = isTeamsTab
     ? teamsResult

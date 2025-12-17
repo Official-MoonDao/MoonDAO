@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
 import VMOONEY_ABI from 'const/abis/VotingEscrow.json'
-import { arbitrum, ethereum, polygon, base } from '@/lib/rpc/chains'
+import { VMOONEY_ADDRESSES } from 'const/config'
+import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
-import { VMOONEY_ADDRESSES, ZERO_ADDRESS } from 'const/config'
+import { arbitrum, ethereum, polygon, base } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { votingEscrowContracts } from '../votingEscrowContracts'
 import { LockedBreakdown } from './useTotalLockedMooney'
@@ -96,51 +96,44 @@ export function useTotalVMOONEY(
 
 export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number) {
   try {
+    const { engineBatchRead } = await import('@/lib/thirdweb/engine')
     const chains = [arbitrum, ethereum, base, polygon]
+
     const results = await Promise.all(
       chains.map(async (chain) => {
         const chainSlug = getChainSlug(chain)
         const chainId = chain.id
         const tokenAddress = VMOONEY_ADDRESSES[chainSlug]
-        const url = 'https://engine.thirdweb.com/v1/read/contract'
+
         if (!process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET) {
-          return
+          return []
         }
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-secret-key': process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET,
-          },
-          body: JSON.stringify({
-            readOptions: {
-              chainId: chainId,
-              multicall: true,
-              from: ZERO_ADDRESS,
-            },
-            params: addresses.map((address) => {
-              return {
-                contractAddress: tokenAddress,
-                method: 'balanceOf',
-                params: timestamp ? [address, timestamp] : [address],
-                abi: VMOONEY_ABI,
-              }
-            }),
-          }),
-        })
-        const jsonResponse = await response.json()
-        return jsonResponse.result
+
+        try {
+          const balances = await engineBatchRead<string>(
+            tokenAddress,
+            'balanceOf',
+            addresses.map((address) => (timestamp ? [address, timestamp] : [address])),
+            VMOONEY_ABI,
+            chainId
+          )
+
+          return balances.map((balance) => parseInt(balance) / 1e18)
+        } catch (error) {
+          console.error(`Failed to fetch vMOONEY balances for chain ${chainId}:`, error)
+          return []
+        }
       })
     )
-    const values = results.map((r) => r.map((v: any) => parseInt(v.result) / 1e18))
 
     // Sum across chains
-    const totals = values.reduce((accumulator, value) => {
+    const totals = results.reduce((accumulator, value) => {
       value.forEach((v: any, i: number) => {
         accumulator[i] = (accumulator[i] || 0) + (value[i] as number)
       })
       return accumulator
-    })
+    }, [] as number[])
+
     return totals
   } catch (error) {
     console.error('Failed to fetch vMOONEY balances:', error)
