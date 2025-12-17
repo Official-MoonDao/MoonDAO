@@ -23,6 +23,7 @@ import { MissionSkeleton, SectionSkeleton } from '../components/layout/SkeletonL
 
 const FeaturedMissionSection = dynamic(() => import('@/components/home/FeaturedMissionSection'), {
   loading: () => <MissionSkeleton />,
+  ssr: false,
 })
 
 const LaunchpadSection = dynamic(() => import('../components/home/LaunchpadSection'), {

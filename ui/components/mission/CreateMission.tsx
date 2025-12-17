@@ -36,12 +36,12 @@ import { getAttribute } from '@/lib/utils/nft'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
 import FormDate from '../forms/FormDate'
-import FormInput from '../forms/FormInput'
 import FormYesNo from '../forms/FormYesNo'
 import { Hat } from '../hats/Hat'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Container from '../layout/Container'
 import FileInput from '../layout/FileInput'
+import Input from '../layout/Input'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import StandardButton from '../layout/StandardButton'
 import { Steps } from '../layout/Steps'
@@ -645,7 +645,7 @@ export default function CreateMission({
                     </p>
                   )}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <FormInput
+                    <Input
                       id="mission-title"
                       label="Mission Title *"
                       placeholder="Enter a title for your mission"
@@ -653,10 +653,11 @@ export default function CreateMission({
                       onChange={(e: any) =>
                         setMissionData({ ...missionData, name: e.target.value })
                       }
-                      mode="dark"
+                      variant="dark"
                       maxLength={100}
+                      formatNumbers={false}
                     />
-                    <FormInput
+                    <Input
                       id="mission-tagline"
                       label="Tagline *"
                       placeholder="Enter a tagline for your mission"
@@ -667,11 +668,12 @@ export default function CreateMission({
                           tagline: e.target.value,
                         })
                       }
-                      mode="dark"
+                      variant="dark"
                       maxLength={100}
+                      formatNumbers={false}
                     />
 
-                    <FormInput
+                    <Input
                       id="mission-website"
                       label="Website"
                       placeholder="Enter a website link"
@@ -682,10 +684,11 @@ export default function CreateMission({
                           infoUri: e.target.value,
                         })
                       }
-                      mode="dark"
+                      variant="dark"
                       maxLength={500}
+                      formatNumbers={false}
                     />
-                    <FormInput
+                    <Input
                       id="mission-social"
                       label="Social Link"
                       placeholder="Enter a social media link"
@@ -697,9 +700,10 @@ export default function CreateMission({
                         })
                       }
                       maxLength={500}
-                      mode="dark"
+                      variant="dark"
+                      formatNumbers={false}
                     />
-                    <FormInput
+                    <Input
                       id="mission-youtube"
                       label="YouTube Video Link"
                       placeholder="Enter a YouTube video link"
@@ -711,7 +715,8 @@ export default function CreateMission({
                         })
                       }
                       maxLength={500}
-                      mode="dark"
+                      variant="dark"
+                      formatNumbers={false}
                       tooltip="Add a YouTube video link to showcase your mission. This will be displayed on the mission page."
                     />
                   </div>
@@ -795,11 +800,12 @@ export default function CreateMission({
                     <MissionTokenomicsExplainer />
                   </div>
                   <div className="mt-2 w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <FormInput
+                    <Input
                       id="funding-goal-input"
                       label="Funding Goal (USD)"
                       placeholder="Enter a goal in USD"
                       value={formattedFundingGoal}
+                      formatNumbers={false}
                       onChange={(e: any) => {
                         const value = e.target.value
                         // Remove any commas and dollar signs from the input for storage
@@ -819,7 +825,7 @@ export default function CreateMission({
                         }
                       }}
                       disabled={false}
-                      mode="dark"
+                      variant="dark"
                       tooltip="How much would you like to raise? Set something ambitious but achievable while accounting for the 20% set aside of the total raise. We will automatically convert the US Dollar amount into Ethereum, the native currency of the Launchpad."
                       maxLength={15}
                       extra={
@@ -887,7 +893,7 @@ export default function CreateMission({
                     </div>
 
                     <div className={`${!missionData.token.tradeable && 'opacity-60'}`}>
-                      <FormInput
+                      <Input
                         id="mission-token-name"
                         label="Token Name"
                         placeholder="Enter a token name"
@@ -903,12 +909,12 @@ export default function CreateMission({
                         }
                         maxLength={32}
                         disabled={!missionData.token.tradeable}
-                        mode="dark"
+                        variant="dark"
                         tooltip="The name for your mission token (e.g.: Ethereum, Bitcoin)."
                       />
                     </div>
                     <div className={`${!missionData.token.tradeable && 'opacity-60'}`}>
-                      <FormInput
+                      <Input
                         id="mission-token-symbol"
                         label="Token Symbol"
                         placeholder="Enter a token symbol"
@@ -924,7 +930,7 @@ export default function CreateMission({
                         }
                         maxLength={8}
                         disabled={!missionData.token.tradeable}
-                        mode="dark"
+                        variant="dark"
                         tooltip="The symbol for your mission token (e.g.: ETH, BTC)."
                       />
                     </div>

@@ -1,17 +1,15 @@
 import { GlobeAmericasIcon, MoonIcon } from '@heroicons/react/24/outline'
-import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { getCitizensLocationData } from '@/lib/map'
 import IconOrg from '@/components/assets/IconOrg'
+import LazyEarth from '@/components/globe/LazyEarth'
+import LazyMoon from '@/components/globe/LazyMoon'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Tab from '@/components/layout/Tab'
-
-const Earth = dynamic(() => import('@/components/globe/Earth'), { ssr: false })
-const Moon = dynamic(() => import('@/components/globe/Moon'), { ssr: false })
 
 export default function NetworkMap({ citizensLocationData }: { citizensLocationData: any }) {
   const router = useRouter()
@@ -77,16 +75,12 @@ export default function NetworkMap({ citizensLocationData }: { citizensLocationD
           popOverEffect={false}
           isProfile
         >
-          <div className="w-full flex justify-center">
-            <div className="w-full max-w-5xl bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
-              <div className="w-full rounded-lg z-[100] min-h-[60vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
-                <div className={`flex items-center justify-center ${tab !== 'earth' && 'hidden'}`}>
-                  <Earth pointsData={citizensLocationData} />
-                </div>
-                <div className={`${tab !== 'moon' && 'hidden'}`}>
-                  <Moon />
-                </div>
-              </div>
+          <div className="w-full md:w-auto inline-block md:mr-12 rounded-lg z-[100] min-h-[50vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
+            <div className={`flex items-center justify-center ${tab !== 'earth' && 'hidden'}`}>
+              <LazyEarth pointsData={citizensLocationData} />
+            </div>
+            <div className={`${tab !== 'moon' && 'hidden'}`}>
+              <LazyMoon />
             </div>
           </div>
         </ContentLayout>
