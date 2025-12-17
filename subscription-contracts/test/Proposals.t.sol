@@ -59,5 +59,13 @@ contract ProposalsTest is Test {
         proposals.voteTempCheck(0, false);
         assertEq(proposals.tempCheckFailed(0), true);
     }
+    function testTableOperations() public {
+        vm.prank(user1);
+        proposals.insertIntoTable(1, 2000, 'insert');
+        proposals.updateTableCol(1, 2000, 'update');
+        proposals.deletFromTable(1, 2000);
+        proposals.getTableName();
+        proposals.getTableId();
+    }
 }
 
