@@ -65,7 +65,7 @@ contract ProposalsTest is Test {
         vm.prank(user1);
         proposals.insertIntoTable(1, 2000, 'insert');
         proposals.updateTableCol(1, 2000, 'update');
-        proposals.deletFromTable(1, 2000);
+        proposals.deleteFromTable(1, 2000);
         proposals.getTableName();
         proposals.getTableId();
     }
