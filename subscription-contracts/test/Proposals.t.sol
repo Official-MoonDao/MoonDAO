@@ -20,6 +20,8 @@ contract ProposalsTest is Test {
         newSenators[1] = user2;
         newSenators[2] = user3;
         senators.addSenators(newSenators);
+        senators.addSenator(user4);
+        senators.removeSenator(user4);
     }
     function testTempCheckSenator() public {
         vm.startPrank(user1);
