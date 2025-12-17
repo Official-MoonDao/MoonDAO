@@ -110,7 +110,6 @@ export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number)
         }
 
         try {
-          // Use helper for cleaner code
           const balances = await engineBatchRead<string>(
             tokenAddress,
             'balanceOf',
