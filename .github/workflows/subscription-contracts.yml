@@ -21,21 +21,37 @@ jobs:
     name: test
     runs-on: ubuntu-latest
     steps:
-      - name: Cache dependencies
+      - name: Cache git
         uses: actions/cache@v3
         with:
           path: |
             .git
-            subscription-contracts/node_modules
-            subscription-contracts/lib
-            subscription-contracts/out
-          key: key-${{ runner.os }}-npm-${{ github.sha }}
+          key: key-${{ runner.os }}-git-
           restore-keys: |
-            key-${{ runner.os }}-npm-
+            key-${{ runner.os }}-git-
 
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+
+      - name: Cache node
+        uses: actions/cache@v3
+        with:
+          path: |
+            subscription-contracts/node_modules
+          key: key-${{ runner.os }}-npm-${{ hashFiles('subscription-contracts/package-lock.json') }}
+          restore-keys: |
+            key-${{ runner.os }}-npm-
+
+      - name: Cache forge
+        uses: actions/cache@v3
+        with:
+          path: |
+            subscription-contracts/out
+          key: key-${{ runner.os }}-forge-${{ hashFiles('subscription-contracts/foundry.toml') }}
+          restore-keys: |
+            key-${{ runner.os }}-forge-
+
 
       - name: Run apply_patch.sh
         run: |
