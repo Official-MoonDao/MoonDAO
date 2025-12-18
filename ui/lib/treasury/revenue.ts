@@ -12,16 +12,11 @@ import { Chain } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { getRpcClient, eth_getBlockByNumber } from 'thirdweb/rpc'
 import { LineChartData } from '@/components/layout/LineChart'
-import {
-  getValidatorIndicesFromPubKeys,
-  getValidatorPerformance,
-} from '../beaconchain'
+import { getValidatorIndicesFromPubKeys, getValidatorPerformance } from '../beaconchain'
+import { MOONDAO_SAFES } from '../coinstats'
 import { fetchInternalTransactions, getETHPrice } from '../etherscan'
 import { arbitrum, ethereum } from '../rpc/chains'
-import {
-  getUniswapHistoricalPoolData,
-  PoolSubgraphQueryData,
-} from '../uniswap/subgraph'
+import { getUniswapHistoricalPoolData, PoolSubgraphQueryData } from '../uniswap/subgraph'
 import {
   withIncrementalCache,
   getIncrementalCacheKey,
@@ -31,6 +26,8 @@ import {
   getIncrementalCacheStats,
   clearExpiredIncrementalCache,
 } from './incrementalCache'
+
+const INTERNAL_TREASURY_ADDRESSES = MOONDAO_SAFES.map((s) => s.address.toLowerCase())
 
 export interface RevenueDataPoint {
   timestamp: number
@@ -109,12 +106,7 @@ async function getEthTransfersToTreasury(
       // Incremental fetch function (fetch new transactions since last block)
       async (since) => {
         if (since.blockNumber) {
-          return fetchInternalTransactions(
-            chain,
-            treasuryAddress,
-            since.blockNumber + 1,
-            99999999
-          )
+          return fetchInternalTransactions(chain, treasuryAddress, since.blockNumber + 1, 99999999)
         }
         return []
       },
@@ -133,9 +125,14 @@ async function getEthTransfersToTreasury(
         parseFloat(tx.value) > 0
     )
 
+    // Exclude internal treasury transfers (transfers between MoonDAO safes)
+    const externalTxsOnly = relevantTxs.filter(
+      (tx: any) => !INTERNAL_TREASURY_ADDRESSES.includes(tx.from?.toLowerCase())
+    )
+
     // Filter transactions to last 365 days only
     const oneYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000
-    const recentTxs = relevantTxs.filter((tx: any) => {
+    const recentTxs = externalTxsOnly.filter((tx: any) => {
       const txTimestamp = parseInt(tx.timeStamp) * 1000
       return txTimestamp >= oneYearAgo
     })
@@ -151,15 +148,10 @@ async function getEthTransfersToTreasury(
       })
     }
 
-    console.log(
-      `✅ Total ETH transfers from ${fromContract}: ${transfers.length}`
-    )
+    console.log(`✅ Total ETH transfers from ${fromContract}: ${transfers.length}`)
     return transfers
   } catch (error) {
-    console.error(
-      `❌ Error fetching ETH transfers from ${fromContract}:`,
-      error
-    )
+    console.error(`❌ Error fetching ETH transfers from ${fromContract}:`, error)
     return []
   }
 }
@@ -177,11 +169,7 @@ async function getSubscriptionRevenue(): Promise<{
     const chain = arbitrum
 
     const [citizenTxs, teamTxs] = await Promise.all([
-      getEthTransfersToTreasury(
-        chain,
-        CITIZEN_ADDRESS,
-        MOONDAO_ARBITRUM_TREASURY
-      ),
+      getEthTransfersToTreasury(chain, CITIZEN_ADDRESS, MOONDAO_ARBITRUM_TREASURY),
       getEthTransfersToTreasury(chain, TEAM_ADDRESS, MOONDAO_ARBITRUM_TREASURY),
     ])
 
@@ -196,10 +184,7 @@ async function getSubscriptionRevenue(): Promise<{
     // Create weekly aggregated history
     const revenueHistory = aggregateSubscriptionRevenueByWeek(allRevenue)
 
-    const totalCitizenRevenue = citizenRevenue.reduce(
-      (sum, r) => sum + r.value,
-      0
-    )
+    const totalCitizenRevenue = citizenRevenue.reduce((sum, r) => sum + r.value, 0)
     const totalTeamRevenue = teamRevenue.reduce((sum, r) => sum + r.value, 0)
 
     return {
@@ -220,10 +205,7 @@ function aggregateSubscriptionRevenueByWeek(
     type: 'citizen' | 'team'
   }>
 ): Array<{ timestamp: number; citizenRevenue: number; teamRevenue: number }> {
-  const weeklyData = new Map<
-    number,
-    { citizenRevenue: number; teamRevenue: number }
-  >()
+  const weeklyData = new Map<number, { citizenRevenue: number; teamRevenue: number }>()
 
   for (const revenue of allRevenue) {
     // Round down to start of week (Sunday)
@@ -294,10 +276,7 @@ async function getDeFiRevenue(defiData: DeFiData): Promise<{
 
     // Get historical pool data for the last year (365 days)
     const poolsHash = hashObject(uniswapPools)
-    const poolDataCacheKey = getIncrementalCacheKey.uniswapPoolData(
-      poolsHash,
-      365
-    )
+    const poolDataCacheKey = getIncrementalCacheKey.uniswapPoolData(poolsHash, 365)
 
     const poolData = await withIncrementalCache(
       poolDataCacheKey,
@@ -311,10 +290,7 @@ async function getDeFiRevenue(defiData: DeFiData): Promise<{
             (Date.now() - since.timestamp) / (24 * 60 * 60 * 1000)
           )
           if (daysSinceLastUpdate > 0) {
-            return getUniswapHistoricalPoolData(
-              uniswapPools,
-              daysSinceLastUpdate
-            )
+            return getUniswapHistoricalPoolData(uniswapPools, daysSinceLastUpdate)
           }
         }
         return []
@@ -369,10 +345,7 @@ async function getDeFiRevenue(defiData: DeFiData): Promise<{
       if (!poolFeeContributions.has(poolAddress)) {
         poolFeeContributions.set(poolAddress, 0)
       }
-      poolFeeContributions.set(
-        poolAddress,
-        poolFeeContributions.get(poolAddress)! + moonDAOFeesUSD
-      )
+      poolFeeContributions.set(poolAddress, poolFeeContributions.get(poolAddress)! + moonDAOFeesUSD)
 
       if (!dailyRevenue.has(timestamp)) {
         dailyRevenue.set(timestamp, 0)
@@ -419,8 +392,7 @@ async function getDeFiRevenue(defiData: DeFiData): Promise<{
       analysis.minTVL = Math.min(analysis.minTVL, totalTvlUSD)
       analysis.maxTVL = Math.max(analysis.maxTVL, totalTvlUSD)
       analysis.avgTVL =
-        (analysis.avgTVL * analysis.dataPoints + totalTvlUSD) /
-        (analysis.dataPoints + 1)
+        (analysis.avgTVL * analysis.dataPoints + totalTvlUSD) / (analysis.dataPoints + 1)
       analysis.dataPoints++
 
       if (poolInfo.moonDAOValueUSD > totalTvlUSD) {
@@ -429,9 +401,7 @@ async function getDeFiRevenue(defiData: DeFiData): Promise<{
     }
 
     // Convert daily data to weekly aggregates for consistency with other revenue streams
-    const sortedDays = Array.from(dailyRevenue.entries()).sort(
-      (a, b) => a[0] - b[0]
-    )
+    const sortedDays = Array.from(dailyRevenue.entries()).sort((a, b) => a[0] - b[0])
     const weeklyRevenue = new Map<number, number>()
 
     for (const [timestamp, fees] of sortedDays) {
@@ -458,19 +428,14 @@ async function getDeFiRevenue(defiData: DeFiData): Promise<{
       .slice(-52)
       .reduce((sum, week) => sum + week.defiRevenue, 0)
 
-    console.log(
-      `Processed ${uniswapPools.length} Uniswap pools, ${poolData.length} data points`
-    )
+    console.log(`Processed ${uniswapPools.length} Uniswap pools, ${poolData.length} data points`)
 
     return {
       defiRevenue: totalAnnualRevenue,
       revenueHistory,
     }
   } catch (error) {
-    console.error(
-      'Failed to calculate DeFi revenue from Uniswap subgraph:',
-      error
-    )
+    console.error('Failed to calculate DeFi revenue from Uniswap subgraph:', error)
     return { defiRevenue: 0, revenueHistory: [] }
   }
 }
@@ -485,22 +450,14 @@ async function getStakingRevenue(): Promise<{
       chain: ethereum,
     })
     const rpcRequest = getRpcClient({ client, chain: ethereum })
-    const ethersContract = new Contract(
-      STAKED_ETH_ADDRESS,
-      StakedEthABI,
-      provider
-    )
+    const ethersContract = new Contract(STAKED_ETH_ADDRESS, StakedEthABI, provider)
 
     // Get deposit events from the staking contract
     const initialStakeBlockNumber = 21839730
 
     const filter = ethersContract.filters.Deposit(null, MOONDAO_TREASURY)
 
-    const events = await ethersContract.queryFilter(
-      filter,
-      initialStakeBlockNumber,
-      'latest'
-    )
+    const events = await ethersContract.queryFilter(filter, initialStakeBlockNumber, 'latest')
 
     const pubKeys = events.map((e) => e?.args?.publicKey).filter(Boolean)
     const deposits = await Promise.all(
@@ -521,8 +478,7 @@ async function getStakingRevenue(): Promise<{
     }
 
     const pubKeysHash = hashObject(pubKeys)
-    const validatorIndicesCacheKey =
-      getIncrementalCacheKey.validatorIndices(pubKeysHash)
+    const validatorIndicesCacheKey = getIncrementalCacheKey.validatorIndices(pubKeysHash)
 
     const validatorIndices = await withIncrementalCache(
       validatorIndicesCacheKey,
@@ -538,8 +494,7 @@ async function getStakingRevenue(): Promise<{
     }
 
     const indicesHash = hashObject(validatorIndices)
-    const performanceCacheKey =
-      getIncrementalCacheKey.validatorPerformance(indicesHash)
+    const performanceCacheKey = getIncrementalCacheKey.validatorPerformance(indicesHash)
 
     const performanceData = await withIncrementalCache(
       performanceCacheKey,
@@ -550,9 +505,7 @@ async function getStakingRevenue(): Promise<{
     )
 
     if (performanceData.length === 0) {
-      console.warn(
-        '⚠️ No performance data found, falling back to estimated rewards'
-      )
+      console.warn('⚠️ No performance data found, falling back to estimated rewards')
       return { stakingRevenue: 0, revenueHistory: [] }
     }
 
@@ -582,17 +535,10 @@ async function getStakingRevenue(): Promise<{
     const earliestDeposit = Math.min(...deposits.map((d) => d.timestamp))
     const weeklyRevenue = annualizedRevenue / 52
 
-    for (
-      let timestamp = earliestDeposit;
-      timestamp <= now;
-      timestamp += oneWeek
-    ) {
-      const activeAtTime = deposits.filter(
-        (d) => d.timestamp <= timestamp
-      ).length
+    for (let timestamp = earliestDeposit; timestamp <= now; timestamp += oneWeek) {
+      const activeAtTime = deposits.filter((d) => d.timestamp <= timestamp).length
 
-      const scaledWeeklyRevenue =
-        (weeklyRevenue * activeAtTime) / deposits.length
+      const scaledWeeklyRevenue = (weeklyRevenue * activeAtTime) / deposits.length
 
       revenueHistory.push({
         timestamp,
@@ -610,9 +556,7 @@ async function getStakingRevenue(): Promise<{
   }
 }
 
-export function revenueToLineChartData(
-  revenueHistory: RevenueDataPoint[]
-): LineChartData[] {
+export function revenueToLineChartData(revenueHistory: RevenueDataPoint[]): LineChartData[] {
   return revenueHistory.map((point) => ({
     timestamp: Math.floor(point.timestamp / 1000), // Convert to seconds
     value: point.totalRevenue,
@@ -620,9 +564,7 @@ export function revenueToLineChartData(
   }))
 }
 
-function convertToCumulativeRevenue(
-  weeklyData: RevenueDataPoint[]
-): RevenueDataPoint[] {
+function convertToCumulativeRevenue(weeklyData: RevenueDataPoint[]): RevenueDataPoint[] {
   const cumulativeData: RevenueDataPoint[] = []
   let cumulativeCitizenRevenue = 0
   let cumulativeTeamRevenue = 0
@@ -671,15 +613,14 @@ export async function getHistoricalRevenue(
     // Clear very old cache entries periodically
     clearExpiredIncrementalCache()
 
-    const [ethPrice, subscriptionData, defiRevenueData, stakingRevenueData] =
-      await Promise.all([
-        withSimpleCache(getSimpleCacheKey.ethPrice(), 'ethPrice', getETHPrice, {
-          logPrefix: 'ETH price: ',
-        }),
-        getSubscriptionRevenue(),
-        getDeFiRevenue(defiData),
-        getStakingRevenue(),
-      ])
+    const [ethPrice, subscriptionData, defiRevenueData, stakingRevenueData] = await Promise.all([
+      withSimpleCache(getSimpleCacheKey.ethPrice(), 'ethPrice', getETHPrice, {
+        logPrefix: 'ETH price: ',
+      }),
+      getSubscriptionRevenue(),
+      getDeFiRevenue(defiData),
+      getStakingRevenue(),
+    ])
 
     if (ethPrice === 0) {
       return {
@@ -778,28 +719,18 @@ export async function getHistoricalRevenue(
       0
     )
     const finalTotalRevenue =
-      finalCitizenRevenue +
-      finalTeamRevenue +
-      finalDefiRevenue +
-      finalStakingRevenue
+      finalCitizenRevenue + finalTeamRevenue + finalDefiRevenue + finalStakingRevenue
 
-    // Filter revenue history for chart display only (based on days parameter)
-    const weeklyRevenueHistory = allWeeklyRevenueHistory.filter((point) => {
-      const cutoffDate = Date.now() - days * 24 * 60 * 60 * 1000
-      return point.timestamp >= cutoffDate
-    })
+    // Convert ALL history to cumulative
+    const revenueHistory = convertToCumulativeRevenue(allWeeklyRevenueHistory)
 
-    const revenueHistory = convertToCumulativeRevenue(weeklyRevenueHistory)
-
-    console.log(
-      `\n📊 FINAL REVENUE SUMMARY (ETH Price: $${ethPrice.toFixed(2)})`
-    )
+    console.log(`\n📊 FINAL REVENUE SUMMARY (ETH Price: $${ethPrice.toFixed(2)})`)
     console.log(`💰 Citizen Revenue: $${finalCitizenRevenue.toFixed(2)}`)
     console.log(`👥 Team Revenue: $${finalTeamRevenue.toFixed(2)}`)
     console.log(`🏦 DeFi Revenue: $${finalDefiRevenue.toFixed(2)}`)
     console.log(`🥩 Staking Revenue: $${finalStakingRevenue.toFixed(2)}`)
     console.log(`🎯 TOTAL REVENUE: $${finalTotalRevenue.toFixed(2)}`)
-    console.log(`📈 Revenue History Points: ${revenueHistory.length}`)
+    console.log(`📈 Revenue History Points (All Time): ${revenueHistory.length}`)
 
     // Verify that the last chart point matches the annual calculation
     if (revenueHistory.length > 0) {
@@ -810,22 +741,21 @@ export async function getHistoricalRevenue(
         console.warn(`⚠️ Chart and annual calculations still don't match:`)
         console.warn(`  Chart: $${lastPoint.totalRevenue.toFixed(2)}`)
         console.warn(`  Annual: $${finalTotalRevenue.toFixed(2)}`)
-        console.warn(
-          `  Difference: $${(
-            finalTotalRevenue - lastPoint.totalRevenue
-          ).toFixed(2)}`
-        )
+        console.warn(`  Difference: $${(finalTotalRevenue - lastPoint.totalRevenue).toFixed(2)}`)
       } else {
         console.log(`✅ Chart and annual calculations are consistent`)
       }
     }
 
+    // On mainnet, require all revenue sources to be present for accurate calculations
+    // On testnet, allow missing sources (only require total > 0)
     const hasRequiredRevenue =
-      finalCitizenRevenue > 0 &&
-      finalTeamRevenue > 0 &&
-      finalStakingRevenue > 0 &&
-      finalDefiRevenue > 0 &&
-      finalTotalRevenue > 0
+      process.env.NEXT_PUBLIC_CHAIN !== 'mainnet'
+        ? finalTotalRevenue > 0
+        : finalCitizenRevenue > 0 &&
+          finalTeamRevenue > 0 &&
+          finalDefiRevenue > 0 &&
+          finalStakingRevenue > 0
 
     return {
       revenueHistory: hasRequiredRevenue ? revenueHistory : [],

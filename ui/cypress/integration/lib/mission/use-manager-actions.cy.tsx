@@ -50,7 +50,7 @@ describe('useManagerActions', () => {
       } else if (req.body && req.body.method === 'pendingReservedTokenBalanceOf') {
         req.reply({ result: '0x0' })
       }
-    }).as('contractCalls')
+    })
   })
 
   it('provides availableTokens and availablePayouts', () => {
