@@ -19,6 +19,7 @@ interface CBOnrampModalProps {
   allowAmountInput?: boolean
   context: string
   agreed?: boolean
+  selectedWallet?: number
   onQuoteCalculated?: (
     ethAmount: number,
     paymentSubtotal: number,
@@ -40,6 +41,7 @@ export const CBOnrampModal: React.FC<CBOnrampModalProps> = ({
   allowAmountInput = false,
   context,
   agreed,
+  selectedWallet,
   onQuoteCalculated,
 }) => {
   const router = useRouter()
@@ -82,11 +84,12 @@ export const CBOnrampModal: React.FC<CBOnrampModalProps> = ({
       chainSlug,
       agreed,
       context,
+      selectedWallet,
     })
 
     // Call original onBeforeNavigate if provided
     await onBeforeNavigate?.()
-  }, [address, chainSlug, agreed, context, generateJWT, onBeforeNavigate])
+  }, [address, chainSlug, agreed, context, selectedWallet, generateJWT, onBeforeNavigate])
 
   if (!enabled) {
     return null

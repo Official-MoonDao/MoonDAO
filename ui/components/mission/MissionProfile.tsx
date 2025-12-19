@@ -138,7 +138,6 @@ export default function MissionProfile({
 
   // Use custom hooks for extracted logic
   const {
-    onrampJWTPayload,
     usdInput,
     setUsdInput,
     contributeModalEnabled,
@@ -585,7 +584,6 @@ export default function MissionProfile({
         modalEnabled={contributeModalEnabled}
         setModalEnabled={setContributeModalEnabled}
         primaryTerminalAddress={primaryTerminalAddress}
-        onrampJWTPayload={onrampJWTPayload}
         jbControllerContract={jbControllerContract}
         refreshBackers={refreshBackers}
         backers={backers}

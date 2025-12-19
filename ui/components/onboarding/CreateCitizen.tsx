@@ -33,6 +33,7 @@ import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import useTag from '@/lib/convert-kit/useTag'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { arbitrum, base, ethereum, sepolia, arbitrumSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
@@ -68,6 +69,7 @@ import { StageContainer } from './StageContainer'
 export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const router = useRouter()
   const { setSelectedChain } = useContext(ChainContextV5)
+  const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
 
   const defaultChainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const selectedChainSlug = getChainSlug(selectedChain)
@@ -265,12 +267,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           }),
         })
         if (!res.ok) {
-          const errorText = await res.text() // Or response.json()
-          console.error(errorText)
+          const errorData = await res.json().catch(() => ({ error: 'Mint failed' }))
+          console.error(errorData)
           setIsLoadingMint(false)
-        } else {
-          receipt = await res.json()
+          return toast.error(errorData.error || 'Failed to mint citizen')
         }
+        receipt = await res.json()
       } else if (selectedChainSlug !== defaultChainSlug) {
         if (!account) {
           setIsLoadingMint(false)
@@ -345,10 +347,21 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         })
       }
 
+      // Verify receipt exists before processing
+      if (!receipt || !receipt.logs) {
+        setIsLoadingMint(false)
+        return toast.error('Transaction failed. Please try again.')
+      }
+
       // Define the event signature for the Transfer event
       const transferEventSignature = ethers.utils.id('Transfer(address,address,uint256)')
       // Find the log that matches the Transfer event signature
       const transferLog = receipt.logs.find((log: any) => log.topics[0] === transferEventSignature)
+
+      if (!transferLog) {
+        setIsLoadingMint(false)
+        return toast.error('Could not find mint event in transaction.')
+      }
 
       const mintedTokenId = ethers.BigNumber.from(transferLog.topics[3]).toString()
 
@@ -619,6 +632,18 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     restoreCache,
     getChainSlugFromCache: (restored) => restored?.formData?.selectedChainSlug,
     setStage,
+    setSelectedWallet,
+    waitForReady: () => {
+      const ready = !isLoadingGasEstimate && estimatedGas > BigInt(0) && effectiveGasPrice !== undefined && effectiveGasPrice > BigInt(0)
+      if (!ready) {
+        console.log('[WaitForReady]', {
+          isLoadingGasEstimate,
+          estimatedGas: estimatedGas.toString(),
+          effectiveGasPrice: effectiveGasPrice?.toString(),
+        })
+      }
+      return ready
+    },
   })
 
   const submitTypeform = useCallback(
@@ -1077,6 +1102,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           ethAmount={requiredEthAmount}
           context="citizen"
           agreed={agreedToCondition}
+          selectedWallet={selectedWallet}
           onExit={() => {
             setIsLoadingMint(false)
           }}

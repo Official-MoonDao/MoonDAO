@@ -1,52 +1,35 @@
 import { useWallets } from '@privy-io/react-auth'
 import type { NextRouter } from 'next/router'
-import { useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
-import useOnrampJWT, { OnrampJwtPayload } from '../coinbase/useOnrampJWT'
-import PrivyWalletContext from '../privy/privy-wallet-context'
+import useOnrampJWT from '../coinbase/useOnrampJWT'
 import { getChainSlug, v4SlugToV5Chain } from '../thirdweb/chain'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
 
-type Mission = {
-  id: string | number
-  [key: string]: any
-}
-
 type UseOnrampFlowReturn = {
-  onrampJWTPayload: OnrampJwtPayload | null
   usdInput: string
   setUsdInput: (value: string) => void
   contributeModalEnabled: boolean
   setContributeModalEnabled: (enabled: boolean) => void
-  checkAndVerifyStoredJWT: () => Promise<void>
 }
 
 /**
- * Hook to manage onramp flow including JWT verification, chain switching, and modal state
+ * Hook to manage onramp flow: chain switching and modal state.
+ * JWT verification and auto-transaction are handled by the modal using useOnrampAutoTransaction.
  */
-export function useOnrampFlow(
-  mission: Mission,
-  router: NextRouter,
-  chainSlugs: string[]
-): UseOnrampFlowReturn {
+export function useOnrampFlow(router: NextRouter, chainSlugs: string[]): UseOnrampFlowReturn {
   const account = useActiveAccount()
   const { wallets } = useWallets()
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
-  const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
 
   const chainSlug = getChainSlug(selectedChain)
 
   const [usdInput, setUsdInput] = useState<string>('')
   const [contributeModalEnabled, setContributeModalEnabled] = useState(false)
-  const [onrampJWTPayload, setOnrampJWTPayload] = useState<OnrampJwtPayload | null>(null)
   const [hasReadInitialChainParam, setHasReadInitialChainParam] = useState(false)
   const hasProcessedOnrampRef = useRef(false)
 
-  const {
-    verifyJWT: verifyOnrampJWT,
-    clearJWT: clearOnrampJWT,
-    getStoredJWT: getStoredOnrampJWT,
-  } = useOnrampJWT()
+  const { getStoredJWT } = useOnrampJWT()
 
   // Handle chain switching from URL params
   useEffect(() => {
@@ -71,15 +54,9 @@ export function useOnrampFlow(
         setHasReadInitialChainParam(true)
       }
     }
-  }, [
-    router?.query?.chain,
-    hasReadInitialChainParam,
-    chainSlug,
-    setSelectedChain,
-    chainSlugs,
-  ])
+  }, [router?.query?.chain, hasReadInitialChainParam, chainSlug, setSelectedChain, chainSlugs])
 
-  // Update URL when chain changes (but only after initial chain param has been read)
+  // Update URL when chain changes
   useEffect(() => {
     const urlChain = router?.query?.chain as string | undefined
 
@@ -99,131 +76,36 @@ export function useOnrampFlow(
     }
   }, [chainSlug, hasReadInitialChainParam, router])
 
-  // Check for stored JWT and verify it proactively
-  const checkAndVerifyStoredJWT = useCallback(async () => {
-    if (!router?.isReady || !account?.address) return
-
-    const storedJWT = getStoredOnrampJWT()
-    if (!storedJWT) {
-      // No stored JWT - clear any existing payload
-      if (onrampJWTPayload) {
-        setOnrampJWTPayload(null)
-      }
-      return
-    }
-
-    // Don't re-verify if we already have a valid payload
-    if (onrampJWTPayload) {
-      // Verify it still matches current context
-      if (
-        onrampJWTPayload.address?.toLowerCase() === account.address?.toLowerCase() &&
-        onrampJWTPayload.chainSlug === chainSlug &&
-        onrampJWTPayload.missionId === mission.id?.toString()
-      ) {
-        return // Already have valid payload
-      }
-      // Payload doesn't match - clear it and re-verify
-      setOnrampJWTPayload(null)
-    }
-
-    try {
-      const payload = await verifyOnrampJWT(
-        storedJWT,
-        account.address,
-        mission.id?.toString()
-      )
-
-      if (!payload) {
-        // Verification failed - clear invalid JWT
-        clearOnrampJWT()
-        setOnrampJWTPayload(null)
-        return
-      }
-
-      // Validate payload matches current context
-      if (
-        !payload.address ||
-        !payload.chainSlug ||
-        payload.address.toLowerCase() !== account.address?.toLowerCase() ||
-        payload.chainSlug !== chainSlug ||
-        payload.missionId !== mission.id?.toString()
-      ) {
-        // Invalid - clear JWT and payload
-        clearOnrampJWT()
-        setOnrampJWTPayload(null)
-        return
-      }
-
-      // Set wallet based on JWT payload if needed
-      if (
-        payload.selectedWallet !== undefined &&
-        payload.selectedWallet !== selectedWallet
-      ) {
-        setSelectedWallet(payload.selectedWallet)
-      }
-
-      // Set verified payload
-      setOnrampJWTPayload(payload)
-      if (payload.usdAmount) {
-        setUsdInput(payload.usdAmount)
-      }
-
-      // If coming from onramp redirect, open modal
-      const onrampSuccess = router?.query?.onrampSuccess === 'true'
-      if (onrampSuccess && !hasProcessedOnrampRef.current) {
-        hasProcessedOnrampRef.current = true
-        setContributeModalEnabled(true)
-      }
-    } catch (error) {
-      console.error('Error verifying stored JWT:', error)
-      clearOnrampJWT()
-      setOnrampJWTPayload(null)
-    }
-  }, [
-    router?.isReady,
-    router?.query?.onrampSuccess,
-    account?.address,
-    getStoredOnrampJWT,
-    verifyOnrampJWT,
-    chainSlug,
-    mission.id,
-    onrampJWTPayload,
-    selectedWallet,
-    setSelectedWallet,
-    clearOnrampJWT,
-  ])
-
-  // Check for stored JWT when component mounts or when account/chain changes
-  useEffect(() => {
-    if (!router?.isReady || !account?.address) return
-
-    checkAndVerifyStoredJWT()
-  }, [router?.isReady, account?.address, chainSlug, checkAndVerifyStoredJWT])
-
-  // Handle post-onramp modal opening (when onrampSuccess is in URL)
+  // Open modal when returning from onramp and JWT exists
   useEffect(() => {
     if (!router?.isReady) return
 
     const onrampSuccess = router?.query?.onrampSuccess === 'true'
 
     if (onrampSuccess) {
-      // Wait for account to be available
+      // Wait for wallet to be available
       if (!wallets?.[0] || !account?.address) {
         return
       }
 
-      // If already processed, just ensure modal is open if needed
+      // Check if JWT exists (modal will handle verification)
+      const storedJWT = getStoredJWT()
+      if (!storedJWT) {
+        return
+      }
+
+      // Only open modal once per onramp return
       if (hasProcessedOnrampRef.current) {
-        if (onrampJWTPayload && !contributeModalEnabled) {
+        if (!contributeModalEnabled) {
           setContributeModalEnabled(true)
         }
         return
       }
 
-      // Add a small delay to ensure account is loaded
+      // Small delay to ensure wallet is loaded
       const timeoutId = setTimeout(() => {
         hasProcessedOnrampRef.current = true
-        checkAndVerifyStoredJWT()
+        setContributeModalEnabled(true)
       }, 500)
 
       return () => clearTimeout(timeoutId)
@@ -236,9 +118,8 @@ export function useOnrampFlow(
     router?.query?.onrampSuccess,
     wallets,
     account?.address,
-    checkAndVerifyStoredJWT,
+    getStoredJWT,
     contributeModalEnabled,
-    onrampJWTPayload,
   ])
 
   // Reset ref when component unmounts or onrampSuccess is removed
@@ -251,12 +132,9 @@ export function useOnrampFlow(
   }, [router?.query?.onrampSuccess])
 
   return {
-    onrampJWTPayload,
     usdInput,
     setUsdInput,
     contributeModalEnabled,
     setContributeModalEnabled,
-    checkAndVerifyStoredJWT,
   }
 }
-
