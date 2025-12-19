@@ -607,9 +607,12 @@ export default function Join({
                       />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-GoodTimes text-white mb-4 drop-shadow-lg">Citizens Only</h3>
+                  <h3 className="text-2xl font-GoodTimes text-white mb-4 drop-shadow-lg">
+                    Citizens Only
+                  </h3>
                   <p className="text-slate-300 mb-6 max-w-md mx-auto drop-shadow-md">
-                    Become a MoonDAO Citizen to access the jobs board and connect with teams building the future of space exploration.
+                    Become a MoonDAO Citizen to access the jobs board and connect with teams
+                    building the future of space exploration.
                   </p>
                   <StandardButton
                     className="gradient-2 hover:opacity-90 transition-opacity"
@@ -853,92 +856,9 @@ export async function getStaticProps() {
       return +expiresAt.toString() > now
     })
 
-    // Generate location data for map
-    let citizensLocationData: any[] = []
-
-    if (process.env.NEXT_PUBLIC_ENV === 'prod' || process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
-      // Get location data for each citizen
-      for (const citizen of filteredValidCitizens) {
-        const citizenLocation = getAttribute(
-          citizen?.metadata?.attributes as unknown as any[],
-          'location'
-        )?.value
-
-        let locationData
-
-        if (citizenLocation && citizenLocation !== '' && !citizenLocation?.startsWith('{')) {
-          locationData = {
-            results: [
-              {
-                formatted_address: citizenLocation,
-              },
-            ],
-          }
-        } else if (citizenLocation?.startsWith('{')) {
-          const parsedLocationData = JSON.parse(citizenLocation)
-          locationData = {
-            results: [
-              {
-                formatted_address: parsedLocationData.name,
-                geometry: {
-                  location: {
-                    lat: parsedLocationData.lat,
-                    lng: parsedLocationData.lng,
-                  },
-                },
-              },
-            ],
-          }
-        } else {
-          locationData = {
-            results: [
-              {
-                formatted_address: 'Antarctica',
-                geometry: { location: { lat: -90, lng: 0 } },
-              },
-            ],
-          }
-        }
-
-        citizensLocationData.push({
-          id: citizen.metadata.id,
-          name: citizen.metadata.name,
-          location: citizenLocation,
-          formattedAddress: locationData.results?.[0]?.formatted_address || 'Antarctica',
-          image: citizen.metadata.image,
-          lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
-          lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
-        })
-      }
-
-      // Group citizens by lat and lng
-      const locationMap = new Map()
-
-      for (const citizen of citizensLocationData) {
-        const key = `${citizen.lat},${citizen.lng}`
-        if (!locationMap.has(key)) {
-          locationMap.set(key, {
-            citizens: [citizen],
-            names: [citizen.name],
-            formattedAddress: citizen.formattedAddress,
-            lat: citizen.lat,
-            lng: citizen.lng,
-          })
-        } else {
-          const existing = locationMap.get(key)
-          existing.names.push(citizen.name)
-          existing.citizens.push(citizen)
-        }
-      }
-
-      // Convert the map back to an array
-      citizensLocationData = Array.from(locationMap.values()).map((entry: any) => ({
-        ...entry,
-        color:
-          entry.citizens.length > 3 ? '#6a3d79' : entry.citizens.length > 1 ? '#5e4dbf' : '#5556eb',
-        size: entry.citizens.length > 1 ? Math.min(entry.citizens.length * 0.01, 0.4) : 0.01,
-      }))
-    }
+    // Use the optimized centralized service for location data
+    const { fetchCitizensWithLocation } = await import('@/lib/citizen/citizenDataService')
+    const citizensLocationData = await fetchCitizensWithLocation(chain)
 
     return {
       props: {

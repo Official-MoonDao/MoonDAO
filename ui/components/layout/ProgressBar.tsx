@@ -21,6 +21,26 @@ export default function ProgressBar({
   const progressBarRef = useRef<HTMLDivElement>(null)
   const labelRef = useRef<HTMLSpanElement>(null)
   const previousProgress = useRef<number | null>(null)
+  const animationRef = useRef<gsap.core.Tween | null>(null)
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && animationRef.current) {
+        animationRef.current.pause()
+      } else if (!document.hidden && animationRef.current) {
+        animationRef.current.resume()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (animationRef.current) {
+        animationRef.current.kill()
+      }
+    }
+  }, [])
 
   useEffect(() => {
     // Only animate if it's the first render or if progress changed significantly
@@ -30,9 +50,12 @@ export default function ProgressBar({
       : Math.abs(progress - (previousProgress.current || 0))
     const shouldAnimate = isFirstRender || progressDiff >= 0.1 // Only animate if change is >= 0.1%
 
-    if (shouldAnimate) {
+    if (shouldAnimate && !document.hidden) {
       if (progressBarRef.current) {
-        gsap.to(progressBarRef.current, {
+        if (animationRef.current) {
+          animationRef.current.kill()
+        }
+        animationRef.current = gsap.to(progressBarRef.current, {
           width: `${Math.min(progress, 100)}%`,
           duration: 2.5,
           ease: 'power1.inOut',

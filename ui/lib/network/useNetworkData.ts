@@ -280,34 +280,55 @@ export function useValidTeams(options: UseNetworkDataOptions = {}): NetworkDataR
         })
 
         const now = Math.floor(Date.now() / 1000)
+        const teamIds = teamsResult.data.map((t) => t.metadata.id)
 
-        // Use Promise.allSettled to handle individual failures gracefully
-        const validationResults = await Promise.allSettled(
-          teamsResult.data.map(async (team) => {
-            try {
-              const expiresAt = await readContract({
-                contract: teamContract,
-                method: 'expiresAt',
-                params: [team.metadata.id],
-              })
-              return +expiresAt.toString() > now ? team : null
-            } catch (error) {
-              // If validation fails, assume valid (optimistic) rather than filtering out
-              console.warn(
-                `Error checking expiration for team ${team.metadata.id}, showing optimistically:`,
-                error
-              )
-              return team // Return team optimistically on error
+        // Use batched validation with controlled concurrency
+        const BATCH_SIZE = 25 // Smaller batches for client-side
+        const batches = []
+        for (let i = 0; i < teamIds.length; i += BATCH_SIZE) {
+          batches.push(teamIds.slice(i, i + BATCH_SIZE))
+        }
+
+        const validTeamsMap = new Map<string | number, NetworkNFT>()
+
+        // Process batches with controlled concurrency
+        for (const batch of batches) {
+          const validationResults = await Promise.allSettled(
+            batch.map(async (id) => {
+              try {
+                const expiresAt = await readContract({
+                  contract: teamContract,
+                  method: 'expiresAt',
+                  params: [id],
+                })
+                return {
+                  id,
+                  isValid: Number(expiresAt.toString()) > now,
+                }
+              } catch (error) {
+                console.warn(
+                  `Error checking expiration for team ${id}, showing optimistically:`,
+                  error
+                )
+                return { id, isValid: true } // Optimistic on error
+              }
+            })
+          )
+
+          for (const result of validationResults) {
+            if (result.status === 'fulfilled' && result.value.isValid) {
+              const team = teamsResult.data.find((t) => t.metadata.id === result.value.id)
+              if (team) {
+                validTeamsMap.set(result.value.id, team)
+              }
             }
-          })
-        )
+          }
+        }
 
-        const valid = validationResults
-          .map((result) => (result.status === 'fulfilled' ? result.value : null))
-          .filter((team): team is NetworkNFT => team !== null)
+        const valid = teamsResult.data.filter((team) => validTeamsMap.has(team.metadata.id))
 
         // Only update if we got valid results, otherwise keep optimistic data
-        if (valid.length > 0 || validationResults.every((r) => r.status === 'rejected')) {
+        if (valid.length > 0) {
           setValidTeams(valid)
         }
       } catch (error) {
@@ -386,34 +407,57 @@ export function useValidCitizens(
         })
 
         const now = Math.floor(Date.now() / 1000)
+        const citizenIds = citizensResult.data.map((c) => c.metadata.id)
 
-        // Use Promise.allSettled to handle individual failures gracefully
-        const validationResults = await Promise.allSettled(
-          citizensResult.data.map(async (citizen) => {
-            try {
-              const expiresAt = await readContract({
-                contract: citizenContract,
-                method: 'expiresAt',
-                params: [citizen.metadata.id],
-              })
-              return +expiresAt.toString() > now ? citizen : null
-            } catch (error) {
-              // If validation fails, assume valid (optimistic) rather than filtering out
-              console.warn(
-                `Error checking expiration for citizen ${citizen.metadata.id}, showing optimistically:`,
-                error
-              )
-              return citizen // Return citizen optimistically on error
+        // Use batched validation with controlled concurrency
+        const BATCH_SIZE = 25 // Smaller batches for client-side
+        const batches = []
+        for (let i = 0; i < citizenIds.length; i += BATCH_SIZE) {
+          batches.push(citizenIds.slice(i, i + BATCH_SIZE))
+        }
+
+        const validCitizensMap = new Map<string | number, NetworkNFT>()
+
+        // Process batches with controlled concurrency
+        for (const batch of batches) {
+          const validationResults = await Promise.allSettled(
+            batch.map(async (id) => {
+              try {
+                const expiresAt = await readContract({
+                  contract: citizenContract,
+                  method: 'expiresAt',
+                  params: [id],
+                })
+                return {
+                  id,
+                  isValid: Number(expiresAt.toString()) > now,
+                }
+              } catch (error) {
+                console.warn(
+                  `Error checking expiration for citizen ${id}, showing optimistically:`,
+                  error
+                )
+                return { id, isValid: true } // Optimistic on error
+              }
+            })
+          )
+
+          for (const result of validationResults) {
+            if (result.status === 'fulfilled' && result.value.isValid) {
+              const citizen = citizensResult.data.find((c) => c.metadata.id === result.value.id)
+              if (citizen) {
+                validCitizensMap.set(result.value.id, citizen)
+              }
             }
-          })
+          }
+        }
+
+        const valid = citizensResult.data.filter((citizen) =>
+          validCitizensMap.has(citizen.metadata.id)
         )
 
-        const valid = validationResults
-          .map((result) => (result.status === 'fulfilled' ? result.value : null))
-          .filter((citizen): citizen is NetworkNFT => citizen !== null)
-
         // Only update if we got valid results, otherwise keep optimistic data
-        if (valid.length > 0 || validationResults.every((r) => r.status === 'rejected')) {
+        if (valid.length > 0) {
           setValidCitizens(valid)
         }
       } catch (error) {
