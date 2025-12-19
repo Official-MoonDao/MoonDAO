@@ -1106,6 +1106,23 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           onExit={() => {
             setIsLoadingMint(false)
           }}
+          onBeforeNavigate={async () => {
+            const serializedCitizenImage = citizenImage
+              ? await fileToBase64(citizenImage)
+              : null
+            const serializedInputImage = inputImage ? await fileToBase64(inputImage) : null
+            setCache(
+              {
+                stage,
+                citizenData,
+                citizenImage: serializedCitizenImage,
+                inputImage: serializedInputImage,
+                agreedToCondition,
+                selectedChainSlug,
+              },
+              stage
+            )
+          }}
         />
       )}
     </Container>
