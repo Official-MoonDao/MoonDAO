@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import { useLocalStorage } from 'react-use'
 
 export interface FormCacheData<T = any> {
@@ -31,6 +31,11 @@ export function useFormCache<T = any>(
     undefined
   )
 
+  const cacheRef = useRef<FormCacheData<T> | undefined>(cache)
+  useEffect(() => {
+    cacheRef.current = cache
+  }, [cache])
+
   const setCache = useCallback(
     (formData: Partial<T>, stage?: number) => {
       const cacheData: FormCacheData<T> = {
@@ -49,18 +54,19 @@ export function useFormCache<T = any>(
   }, [removeCache])
 
   const restoreCache = useCallback((): FormCacheData<T> | null => {
-    if (!cache) {
+    const currentCache = cacheRef.current
+    if (!currentCache) {
       return null
     }
 
     const now = Date.now()
-    if (now - cache.timestamp > CACHE_EXPIRY_MS) {
+    if (now - currentCache.timestamp > CACHE_EXPIRY_MS) {
       clearCache()
       return null
     }
 
-    return cache
-  }, [cache, clearCache])
+    return currentCache
+  }, [clearCache])
 
   useEffect(() => {
     if (cache) {
