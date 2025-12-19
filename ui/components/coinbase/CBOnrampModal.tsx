@@ -93,25 +93,23 @@ export const CBOnrampModal: React.FC<CBOnrampModalProps> = ({
   }
 
   return (
-    <Modal id="cbonramp-modal" setEnabled={setEnabled}>
-      <div
-        className="flex justify-center items-center min-h-screen p-4"
-        data-testid="cbonramp-modal-content"
-      >
-        <div className="w-full max-w-md">
-          <CBOnramp
-            address={address}
-            selectedChain={selectedChain}
-            ethAmount={ethAmount}
-            redirectUrl={finalRedirectUrl}
-            onExit={handleExit}
-            onBeforeNavigate={handleBeforeNavigate}
-            isWaitingForGasEstimate={isWaitingForGasEstimate}
-            allowAmountInput={allowAmountInput}
-            onQuoteCalculated={onQuoteCalculated}
-          />
-        </div>
-      </div>
+    <Modal
+      id="cbonramp-modal"
+      setEnabled={setEnabled}
+      className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[9999] overflow-auto bg-gradient-to-t from-[#3F3FA690] via-[#00000080] to-transparent animate-fadeIn"
+      showCloseButton={false}
+    >
+      <CBOnramp
+        address={address}
+        selectedChain={selectedChain}
+        ethAmount={ethAmount}
+        redirectUrl={finalRedirectUrl}
+        onExit={handleExit}
+        onBeforeNavigate={handleBeforeNavigate}
+        isWaitingForGasEstimate={isWaitingForGasEstimate}
+        allowAmountInput={allowAmountInput}
+        onQuoteCalculated={onQuoteCalculated}
+      />
     </Modal>
   )
 }
