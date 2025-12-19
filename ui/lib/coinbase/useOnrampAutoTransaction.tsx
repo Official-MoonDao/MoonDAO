@@ -15,6 +15,7 @@ interface UseOnrampAutoTransactionOptions {
   shouldProceed?: (restored: any) => boolean
   restoreCache: () => any | null
   getChainSlugFromCache?: (restored: any) => string | undefined
+  setStage?: (stage: number) => void
   maxAttempts?: number
   delayMs?: number
 }
@@ -30,6 +31,7 @@ export function useOnrampAutoTransaction({
   shouldProceed,
   restoreCache,
   getChainSlugFromCache,
+  setStage,
   maxAttempts = 10,
   delayMs = 1000,
 }: UseOnrampAutoTransactionOptions) {
@@ -81,6 +83,16 @@ export function useOnrampAutoTransaction({
       return
     }
 
+    // Synchronously restore form data and stage immediately
+    if (onFormRestore) {
+      onFormRestore(restored)
+    }
+
+    // If stage setter is provided, ensure stage is set synchronously
+    if (setStage && restored.stage !== undefined) {
+      setStage(restored.stage)
+    }
+
     const storedJWT = getStoredJWT()
     if (!storedJWT) {
       clearRedirectParams()
@@ -101,10 +113,6 @@ export function useOnrampAutoTransaction({
         clearJWT()
         clearRedirectParams()
         return
-      }
-
-      if (onFormRestore) {
-        onFormRestore(restored)
       }
 
       clearRedirectParams()
@@ -132,5 +140,6 @@ export function useOnrampAutoTransaction({
     shouldProceed,
     pollBalanceAndExecute,
     getChainSlugFromCache,
+    setStage,
   ])
 }

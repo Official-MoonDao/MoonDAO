@@ -28,6 +28,7 @@ import {
 import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
+import { useOnrampInitialStage } from '@/lib/coinbase/useOnrampInitialStage'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import useTag from '@/lib/convert-kit/useTag'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
@@ -78,7 +79,19 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
   const address = account?.address || mockAddress
 
-  const [stage, setStage] = useState<number>(0)
+  // Form state caching - needs to be defined before useOnrampInitialStage
+  const { cache, setCache, clearCache, restoreCache } = useFormCache<{
+    stage: number
+    citizenData: CitizenData
+    citizenImage: SerializedFile | null
+    inputImage: SerializedFile | null
+    agreedToCondition: boolean
+    selectedChainSlug: string
+  }>('CreateCitizenCacheV1', address)
+
+  // Get initial stage (handles onramp redirect restoration)
+  const initialStage = useOnrampInitialStage(restoreCache, 0, 2)
+  const [stage, setStage] = useState<number>(initialStage)
   const [lastStage, setLastStage] = useState<number>(0)
 
   //Input Image for Image Generator
@@ -119,16 +132,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     abi: CrossChainMinterABI,
     chain: selectedChain,
   })
-
-  // Form state caching
-  const { cache, setCache, clearCache, restoreCache } = useFormCache<{
-    stage: number
-    citizenData: CitizenData
-    citizenImage: SerializedFile | null
-    inputImage: SerializedFile | null
-    agreedToCondition: boolean
-    selectedChainSlug: string
-  }>('CreateCitizenCacheV1', address)
 
   // Redirect handling and auto-transaction
   const calculateCost = useCallback(
@@ -610,6 +613,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     shouldProceed: (restored) => restored.formData.agreedToCondition,
     restoreCache,
     getChainSlugFromCache: (restored) => restored?.formData?.selectedChainSlug,
+    setStage,
   })
 
   const submitTypeform = useCallback(
