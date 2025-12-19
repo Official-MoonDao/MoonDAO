@@ -69,6 +69,8 @@ export function useOnrampAutoTransaction({
 
   // Guard against multiple effect executions
   const isProcessingRef = useRef(false)
+  // Track if processing completed successfully to prevent re-runs
+  const hasProcessedRef = useRef(false)
 
   const clearExpectedAddress = useCallback(() => {
     expectedAddressRef.current = null
@@ -177,11 +179,9 @@ export function useOnrampAutoTransaction({
   ])
 
   useEffect(() => {
-    console.log('[AutoTx] Effect running', {
-      isReturningFromOnramp,
-      address: address?.slice(0, 10),
-      isProcessing: isProcessingRef.current,
-    })
+    if (hasProcessedRef.current) {
+      return
+    }
 
     if (!isReturningFromOnramp || !address || !onTransactionRef.current) {
       return
@@ -201,10 +201,6 @@ export function useOnrampAutoTransaction({
 
     if (onFormRestore) {
       onFormRestore(restored)
-    }
-
-    if (setStage && restored.stage !== undefined) {
-      setStage(restored.stage)
     }
 
     const storedJWT = getStoredJWT()
@@ -296,6 +292,7 @@ export function useOnrampAutoTransaction({
 
           const proceed = shouldProceed ? shouldProceed(restored) : true
           if (proceed) {
+            hasProcessedRef.current = true
             setTimeout(() => {
               waitForReadyAndExecute().finally(() => {
                 isProcessingRef.current = false
@@ -327,7 +324,6 @@ export function useOnrampAutoTransaction({
     shouldProceed,
     waitForReadyAndExecute,
     getChainSlugFromCache,
-    setStage,
     setSelectedWallet,
   ])
 }
