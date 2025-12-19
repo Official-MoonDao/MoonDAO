@@ -66,7 +66,7 @@ export function useOnrampAutoTransaction({
 
   // Store the expected address from JWT verification
   const expectedAddressRef = useRef<string | null>(null)
-  
+
   // Guard against multiple effect executions
   const isProcessingRef = useRef(false)
 
@@ -76,11 +76,16 @@ export function useOnrampAutoTransaction({
 
   const pollBalanceAndExecute = useCallback(async () => {
     console.log('[AutoTx] pollBalanceAndExecute started')
-    
+
     // Verify address hasn't changed since JWT verification
     if (expectedAddressRef.current && addressRef.current) {
       if (addressRef.current.toLowerCase() !== expectedAddressRef.current.toLowerCase()) {
-        console.error('[AutoTx] Address mismatch: expected', expectedAddressRef.current, 'got', addressRef.current)
+        console.error(
+          '[AutoTx] Address mismatch: expected',
+          expectedAddressRef.current,
+          'got',
+          addressRef.current
+        )
         clearJWT()
         clearExpectedAddress()
         return
@@ -126,19 +131,21 @@ export function useOnrampAutoTransaction({
     await onTransactionRef.current()
     clearJWT()
     clearExpectedAddress()
-  }, [maxAttempts, delayMs, refetchNativeBalance, checkBalanceSufficient, clearJWT, clearExpectedAddress])
+  }, [
+    maxAttempts,
+    delayMs,
+    refetchNativeBalance,
+    checkBalanceSufficient,
+    clearJWT,
+    clearExpectedAddress,
+  ])
 
   const waitForReadyAndExecute = useCallback(async () => {
-    console.log('[AutoTx] waitForReadyAndExecute started')
-    
-    // If no waitForReady function provided, execute immediately
     if (!waitForReadyRef.current) {
-      console.log('[AutoTx] No waitForReady function, executing immediately')
       await pollBalanceAndExecute()
       return
     }
 
-    // Poll until ready condition is met
     for (let attempt = 0; attempt < waitForReadyMaxAttempts; attempt++) {
       // Verify address hasn't changed
       if (expectedAddressRef.current && addressRef.current) {
@@ -151,55 +158,51 @@ export function useOnrampAutoTransaction({
       }
 
       const isReady = waitForReadyRef.current()
-      if (attempt % 5 === 0) {
-        console.log(`[AutoTx] waitForReady attempt ${attempt + 1}/${waitForReadyMaxAttempts}: ${isReady}`)
-      }
-      
+
       if (isReady) {
-        console.log('[AutoTx] Ready, executing pollBalanceAndExecute')
         await pollBalanceAndExecute()
         return
       }
       await new Promise((resolve) => setTimeout(resolve, waitForReadyDelayMs))
     }
 
-    // Max attempts reached, try anyway (let the transaction handler deal with the error)
-    console.warn('[AutoTx] waitForReady timed out, proceeding anyway')
+    //Final attempt
     await pollBalanceAndExecute()
-  }, [pollBalanceAndExecute, waitForReadyMaxAttempts, waitForReadyDelayMs, clearJWT, clearExpectedAddress])
+  }, [
+    pollBalanceAndExecute,
+    waitForReadyMaxAttempts,
+    waitForReadyDelayMs,
+    clearJWT,
+    clearExpectedAddress,
+  ])
 
   useEffect(() => {
-    console.log('[AutoTx] Effect running', { isReturningFromOnramp, address: address?.slice(0, 10), isProcessing: isProcessingRef.current })
-    
+    console.log('[AutoTx] Effect running', {
+      isReturningFromOnramp,
+      address: address?.slice(0, 10),
+      isProcessing: isProcessingRef.current,
+    })
+
     if (!isReturningFromOnramp || !address || !onTransactionRef.current) {
       return
     }
 
-    // Prevent multiple simultaneous executions
     if (isProcessingRef.current) {
-      console.log('[AutoTx] Already processing, skipping')
+      console.warn('[AutoTx] Already processing, skipping')
       return
     }
 
-    console.log('[AutoTx] Conditions met, restoring cache...')
     const restored = restoreCache()
     if (!restored) {
-      // Don't clear redirect params - the cache might exist for a different address
-      // that hasn't connected yet. Just wait for the correct wallet to connect.
-      console.log('[AutoTx] No cache found for this address, waiting for correct wallet...')
       return
     }
 
-    // Mark as processing
     isProcessingRef.current = true
-    console.log('[AutoTx] Cache restored:', { stage: restored.stage, hasFormData: !!restored.formData })
 
-    // Synchronously restore form data and stage immediately
     if (onFormRestore) {
       onFormRestore(restored)
     }
 
-    // If stage setter is provided, ensure stage is set synchronously
     if (setStage && restored.stage !== undefined) {
       setStage(restored.stage)
     }
@@ -216,8 +219,6 @@ export function useOnrampAutoTransaction({
     const chainSlugToVerify = cachedChainSlug || expectedChainSlug
 
     // First, decode the JWT to check the address without full verification
-    // This lets us wait for the correct wallet to connect
-    console.log('[AutoTx] Checking JWT address...')
     fetch('/api/coinbase/verify-onramp-jwt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -236,21 +237,9 @@ export function useOnrampAutoTransaction({
         const jwtPayload = data.payload
         // Use addressRef to get the CURRENT address, not the one captured when effect started
         const currentAddress = addressRef.current
-        console.log('[AutoTx] JWT payload:', {
-          jwtAddress: jwtPayload.address?.slice(0, 10),
-          currentAddress: currentAddress?.slice(0, 10),
-          jwtChainSlug: jwtPayload.chainSlug,
-          jwtContext: jwtPayload.context,
-          selectedWallet: jwtPayload.selectedWallet,
-        })
 
         // Check if current address matches JWT address
         if (!currentAddress || jwtPayload.address.toLowerCase() !== currentAddress.toLowerCase()) {
-          console.log('[AutoTx] Address mismatch, attempting to switch wallet...', {
-            jwtAddress: jwtPayload.address?.slice(0, 10),
-            currentAddress: currentAddress?.slice(0, 10),
-            selectedWallet: jwtPayload.selectedWallet,
-          })
           // If JWT has a selectedWallet, switch to it - this will trigger the effect again
           if (jwtPayload.selectedWallet !== undefined && setSelectedWallet) {
             console.log('[AutoTx] Switching to wallet index:', jwtPayload.selectedWallet)
@@ -261,11 +250,10 @@ export function useOnrampAutoTransaction({
           return
         }
 
-        // Now do full verification
-        console.log('[AutoTx] Address matches, verifying JWT...')
+        // Full verification
         return verifyJWT(storedJWT, currentAddress, undefined, context).then((payload) => {
           if (!payload) {
-            console.log('[AutoTx] JWT verification failed')
+            console.error('[AutoTx] JWT verification failed')
             clearJWT()
             clearRedirectParams()
             isProcessingRef.current = false
@@ -273,7 +261,7 @@ export function useOnrampAutoTransaction({
           }
 
           if (payload.chainSlug !== chainSlugToVerify) {
-            console.log('[AutoTx] JWT verification failed: chainSlug mismatch', {
+            console.error('[AutoTx] JWT verification failed: chainSlug mismatch', {
               jwtChainSlug: payload.chainSlug,
               expectedChainSlug: chainSlugToVerify,
             })
@@ -284,7 +272,7 @@ export function useOnrampAutoTransaction({
           }
 
           if (payload.context !== context) {
-            console.log('[AutoTx] JWT verification failed: context mismatch', {
+            console.error('[AutoTx] JWT verification failed: context mismatch', {
               jwtContext: payload.context,
               expectedContext: context,
             })
@@ -301,16 +289,13 @@ export function useOnrampAutoTransaction({
 
           // Restore wallet based on JWT payload if needed (multi-wallet support)
           if (payload.selectedWallet !== undefined && setSelectedWallet) {
-            console.log('[AutoTx] Restoring wallet:', payload.selectedWallet)
             setSelectedWallet(payload.selectedWallet)
           }
 
           clearRedirectParams()
 
           const proceed = shouldProceed ? shouldProceed(restored) : true
-          console.log('[AutoTx] Should proceed:', proceed)
           if (proceed) {
-            console.log('[AutoTx] Scheduling waitForReadyAndExecute in 1 second')
             setTimeout(() => {
               waitForReadyAndExecute().finally(() => {
                 isProcessingRef.current = false

@@ -13,9 +13,7 @@ export interface OnrampJwtPayload {
 }
 
 export interface UseOnrampJWTReturn {
-  generateJWT: (
-    payload: Omit<OnrampJwtPayload, 'timestamp'>
-  ) => Promise<string | null>
+  generateJWT: (payload: Omit<OnrampJwtPayload, 'timestamp'>) => Promise<string | null>
   verifyJWT: (
     token: string,
     expectedAddress: string,
@@ -45,54 +43,51 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
     }
   }, [])
 
-  const generateJWT = useCallback(
-    async (payload: Omit<OnrampJwtPayload, 'timestamp'>) => {
-      setIsGenerating(true)
-      setError(null)
+  const generateJWT = useCallback(async (payload: Omit<OnrampJwtPayload, 'timestamp'>) => {
+    setIsGenerating(true)
+    setError(null)
 
-      // Cancel any pending requests
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
+    // Cancel any pending requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+
+    try {
+      const response = await fetch('/api/coinbase/onramp-jwt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: abortController.signal,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate JWT')
       }
-      const abortController = new AbortController()
-      abortControllerRef.current = abortController
 
-      try {
-        const response = await fetch('/api/coinbase/onramp-jwt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: abortController.signal,
-        })
+      const data = await response.json()
+      const jwt = data.jwt
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to generate JWT')
-        }
+      if (jwt) {
+        localStorage.setItem(STORAGE_KEY, jwt)
+        setStoredJWT(jwt)
+      }
 
-        const data = await response.json()
-        const jwt = data.jwt
-
-        if (jwt) {
-          localStorage.setItem(STORAGE_KEY, jwt)
-          setStoredJWT(jwt)
-        }
-
-        return jwt
-      } catch (err: any) {
-        if (err.name === 'AbortError') {
-          return null
-        }
-        const errorMessage = err.message || 'Failed to generate JWT'
-        setError(errorMessage)
-        console.error('Error generating onramp JWT:', errorMessage)
+      return jwt
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
         return null
-      } finally {
-        setIsGenerating(false)
       }
-    },
-    []
-  )
+      const errorMessage = err.message || 'Failed to generate JWT'
+      setError(errorMessage)
+      console.error('Error generating onramp JWT:', errorMessage)
+      return null
+    } finally {
+      setIsGenerating(false)
+    }
+  }, [])
 
   const verifyJWT = useCallback(
     async (
@@ -162,7 +157,6 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
     return storedJWT
   }, [storedJWT])
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
