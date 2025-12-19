@@ -89,10 +89,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     selectedChainSlug: string
   }>('CreateCitizenCacheV1', address)
 
-  // Get initial stage (handles onramp redirect restoration)
-  const initialStage = useOnrampInitialStage(restoreCache, 0, 2)
-  const [stage, setStage] = useState<number>(initialStage)
+  const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
+
+  const restoredStage = useOnrampInitialStage(address, restoreCache, 0, 2)
+  useEffect(() => {
+    if (restoredStage !== 0) {
+      setStage(restoredStage)
+    }
+  }, [restoredStage])
 
   //Input Image for Image Generator
   const [inputImage, setInputImage] = useState<File>()
@@ -699,6 +704,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   }, [stage, lastStage])
 
   useEffect(() => {
+    if (!address) return
+
     const getTotalPaid = async () => {
       const res = await fetch(`/api/mission/freeMint?address=${address}`, {
         method: 'GET',
