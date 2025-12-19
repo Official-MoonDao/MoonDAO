@@ -71,6 +71,8 @@ export function useOnrampAutoTransaction({
   const isProcessingRef = useRef(false)
   // Track if processing completed successfully to prevent re-runs
   const hasProcessedRef = useRef(false)
+  // Track the previous isReturningFromOnramp value to reset refs when it changes
+  const prevIsReturningFromOnrampRef = useRef(false)
 
   const clearExpectedAddress = useCallback(() => {
     expectedAddressRef.current = null
@@ -90,6 +92,8 @@ export function useOnrampAutoTransaction({
         )
         clearJWT()
         clearExpectedAddress()
+        clearRedirectParams()
+        hasProcessedRef.current = false
         return
       }
     }
@@ -97,9 +101,16 @@ export function useOnrampAutoTransaction({
     // In mock mode, skip balance polling and execute immediately
     if (MOCK_ONRAMP) {
       console.log('[AutoTx] Mock mode, executing immediately')
-      await onTransactionRef.current()
-      clearJWT()
-      clearExpectedAddress()
+      try {
+        await onTransactionRef.current()
+        clearJWT()
+        clearExpectedAddress()
+        clearRedirectParams()
+      } catch (error) {
+        console.error('[AutoTx] Transaction failed:', error)
+        hasProcessedRef.current = false
+        throw error
+      }
       return
     }
 
@@ -110,6 +121,8 @@ export function useOnrampAutoTransaction({
           console.error('Address changed during balance polling')
           clearJWT()
           clearExpectedAddress()
+          clearRedirectParams()
+          hasProcessedRef.current = false
           return
         }
       }
@@ -120,9 +133,16 @@ export function useOnrampAutoTransaction({
       try {
         const isSufficient = await checkBalanceSufficient()
         if (isSufficient) {
-          await onTransactionRef.current()
-          clearJWT()
-          clearExpectedAddress()
+          try {
+            await onTransactionRef.current()
+            clearJWT()
+            clearExpectedAddress()
+            clearRedirectParams()
+          } catch (error) {
+            console.error('[AutoTx] Transaction failed:', error)
+            hasProcessedRef.current = false
+            throw error
+          }
           return
         }
       } catch (error) {
@@ -130,9 +150,16 @@ export function useOnrampAutoTransaction({
       }
     }
 
-    await onTransactionRef.current()
-    clearJWT()
-    clearExpectedAddress()
+    try {
+      await onTransactionRef.current()
+      clearJWT()
+      clearExpectedAddress()
+      clearRedirectParams()
+    } catch (error) {
+      console.error('[AutoTx] Transaction failed:', error)
+      hasProcessedRef.current = false
+      throw error
+    }
   }, [
     maxAttempts,
     delayMs,
@@ -140,6 +167,7 @@ export function useOnrampAutoTransaction({
     checkBalanceSufficient,
     clearJWT,
     clearExpectedAddress,
+    clearRedirectParams,
   ])
 
   const waitForReadyAndExecute = useCallback(async () => {
@@ -155,6 +183,8 @@ export function useOnrampAutoTransaction({
           console.error('[AutoTx] Address changed while waiting for ready')
           clearJWT()
           clearExpectedAddress()
+          clearRedirectParams()
+          hasProcessedRef.current = false
           return
         }
       }
@@ -176,9 +206,16 @@ export function useOnrampAutoTransaction({
     waitForReadyDelayMs,
     clearJWT,
     clearExpectedAddress,
+    clearRedirectParams,
   ])
 
   useEffect(() => {
+    if (prevIsReturningFromOnrampRef.current && !isReturningFromOnramp) {
+      hasProcessedRef.current = false
+      isProcessingRef.current = false
+    }
+    prevIsReturningFromOnrampRef.current = isReturningFromOnramp
+
     if (hasProcessedRef.current) {
       return
     }
@@ -207,6 +244,7 @@ export function useOnrampAutoTransaction({
     if (!storedJWT) {
       console.log('[AutoTx] No stored JWT, clearing redirect params')
       clearRedirectParams()
+      isProcessingRef.current = false
       return
     }
 
@@ -288,18 +326,25 @@ export function useOnrampAutoTransaction({
             setSelectedWallet(payload.selectedWallet)
           }
 
-          clearRedirectParams()
-
           const proceed = shouldProceed ? shouldProceed(restored) : true
           if (proceed) {
             hasProcessedRef.current = true
             setTimeout(() => {
-              waitForReadyAndExecute().finally(() => {
-                isProcessingRef.current = false
-              })
+              waitForReadyAndExecute()
+                .then(() => {
+                  clearRedirectParams()
+                })
+                .catch((error) => {
+                  console.error('[AutoTx] Execution failed:', error)
+                  hasProcessedRef.current = false
+                })
+                .finally(() => {
+                  isProcessingRef.current = false
+                })
             }, 1000)
           } else {
             clearJWT()
+            clearRedirectParams()
             isProcessingRef.current = false
           }
         })
