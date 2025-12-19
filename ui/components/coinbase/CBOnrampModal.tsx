@@ -1,6 +1,6 @@
 import { DEPLOYED_ORIGIN } from 'const/config'
 import { useRouter } from 'next/router'
-import React, { useCallback, useMemo, useEffect } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import Modal from '../layout/Modal'
