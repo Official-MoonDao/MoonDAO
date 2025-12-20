@@ -17,7 +17,7 @@ import { ethers } from 'ethers'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useCallback, useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
@@ -101,6 +101,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     }
   }, [restoredStage])
 
+  // Track if we've already restored form data to prevent duplicate restorations
+  const hasRestoredFormDataRef = useRef(false)
+
   //Input Image for Image Generator
   const [inputImage, setInputImage] = useState<File>()
   //Final Image for Citizen Profile
@@ -178,6 +181,28 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     },
     [setSelectedChain]
   )
+
+  // Reset restoration flag when no longer returning from onramp
+  useEffect(() => {
+    if (router.isReady && router.query.onrampSuccess !== 'true') {
+      hasRestoredFormDataRef.current = false
+    }
+  }, [router.isReady, router.query.onrampSuccess])
+
+  useEffect(() => {
+    if (
+      restoredStage !== 0 &&
+      router.isReady &&
+      router.query.onrampSuccess === 'true' &&
+      !hasRestoredFormDataRef.current
+    ) {
+      const restored = restoreCache()
+      if (restored && restored.formData) {
+        hasRestoredFormDataRef.current = true
+        handleFormRestore(restored)
+      }
+    }
+  }, [restoredStage, router.isReady, router.query.onrampSuccess, restoreCache, handleFormRestore])
 
   const { isMobile } = useWindowSize()
 
@@ -634,7 +659,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     setStage,
     setSelectedWallet,
     waitForReady: () => {
-      const ready = !isLoadingGasEstimate && estimatedGas > BigInt(0) && effectiveGasPrice !== undefined && effectiveGasPrice > BigInt(0)
+      const ready =
+        !isLoadingGasEstimate &&
+        estimatedGas > BigInt(0) &&
+        effectiveGasPrice !== undefined &&
+        effectiveGasPrice > BigInt(0)
       if (!ready) {
         console.log('[WaitForReady]', {
           isLoadingGasEstimate,
@@ -1107,9 +1136,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             setIsLoadingMint(false)
           }}
           onBeforeNavigate={async () => {
-            const serializedCitizenImage = citizenImage
-              ? await fileToBase64(citizenImage)
-              : null
+            const serializedCitizenImage = citizenImage ? await fileToBase64(citizenImage) : null
             const serializedInputImage = inputImage ? await fileToBase64(inputImage) : null
             setCache(
               {
