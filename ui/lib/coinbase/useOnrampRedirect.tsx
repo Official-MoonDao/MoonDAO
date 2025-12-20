@@ -13,12 +13,20 @@ export function useOnrampRedirect(): UseOnrampRedirectReturn {
 
   useEffect(() => {
     if (router.isReady) {
-      setIsReturningFromOnramp(router.query.onrampSuccess === 'true')
+      const isReturning = router.query.onrampSuccess === 'true'
+      console.log('[useOnrampRedirect] Checking onramp status:', {
+        isReturning,
+        query: router.query,
+        routerReady: router.isReady
+      })
+      setIsReturningFromOnramp(isReturning)
     }
   }, [router.isReady, router.query.onrampSuccess])
 
   const clearRedirectParams = useCallback(() => {
+    console.log('[useOnrampRedirect] clearRedirectParams called, current query:', router.query)
     if (router.query.onrampSuccess) {
+      console.log('[useOnrampRedirect] Clearing onrampSuccess from URL')
       const { onrampSuccess, ...restQuery } = router.query
       router.replace(
         {
@@ -29,6 +37,8 @@ export function useOnrampRedirect(): UseOnrampRedirectReturn {
         { shallow: true }
       )
       setIsReturningFromOnramp(false)
+    } else {
+      console.log('[useOnrampRedirect] No onrampSuccess to clear')
     }
   }, [router])
 

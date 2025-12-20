@@ -224,7 +224,7 @@ export function useOnrampAutoTransaction({
       isReturningFromOnramp,
       address: address?.substring(0, 10) + '...',
       hasOnTransaction: !!onTransactionRef.current,
-      currentSessionId: currentSessionIdRef.current
+      currentSessionId: currentSessionIdRef.current,
     })
 
     // Reset refs when we're no longer returning from onramp
@@ -321,7 +321,7 @@ export function useOnrampAutoTransaction({
       console.log('[useOnrampAutoTransaction] processCacheAndContinue called with cache:', {
         stage: cache.stage,
         hasFormData: !!cache.formData,
-        sessionId
+        sessionId,
       })
 
       // Start processing this session
@@ -338,8 +338,11 @@ export function useOnrampAutoTransaction({
 
       const storedJWT = getStoredJWT()
       if (!storedJWT) {
-        console.log('[AutoTx] No stored JWT, clearing redirect params')
-        clearRedirectParams()
+        console.log('[AutoTx] No stored JWT found')
+        console.log(
+          '[AutoTx] NOT clearing redirect params immediately - allowing form restoration to complete first'
+        )
+
         isProcessingRef.current = false
         processingStartTimeRef.current = null
         return
@@ -496,42 +499,51 @@ export function useOnrampAutoTransaction({
         })
     }
 
-    // Try to restore cache, with retry logic to ensure localStorage is ready
-    console.log('[useOnrampAutoTransaction] Calling restoreCache() for first attempt')
-    let restored = restoreCache()
-    
-    if (!restored) {
-      console.log('[useOnrampAutoTransaction] No cache on first attempt, scheduling retry in 100ms')
-      const delayedCheck = setTimeout(() => {
-        if (isCancelled) return
-        console.log('[useOnrampAutoTransaction] Retry: calling restoreCache() again')
-        const retryRestored = restoreCache()
-        if (!retryRestored) {
-          console.log('[AutoTx] No cache found after retry, cannot restore form state')
-          return
-        }
-        console.log('[useOnrampAutoTransaction] Cache found on retry, proceeding')
-        processCacheAndContinue(retryRestored)
-      }, 100)
+    console.log(
+      '[useOnrampAutoTransaction] Scheduling cache check with 50ms delay to allow immediate restoration first'
+    )
+    const initialDelay = setTimeout(() => {
+      if (isCancelled) return
 
-      return () => {
-        isCancelled = true
-        clearTimeout(delayedCheck)
-        if (timeoutId) clearTimeout(timeoutId)
+      console.log('[useOnrampAutoTransaction] Calling restoreCache() for first attempt')
+      let restored = restoreCache()
+
+      if (!restored) {
+        console.log(
+          '[useOnrampAutoTransaction] No cache on first attempt, scheduling retry in 100ms'
+        )
+        const delayedCheck = setTimeout(() => {
+          if (isCancelled) return
+          console.log('[useOnrampAutoTransaction] Retry: calling restoreCache() again')
+          const retryRestored = restoreCache()
+          if (!retryRestored) {
+            console.log('[AutoTx] No cache found after retry, cannot restore form state')
+            return
+          }
+          console.log('[useOnrampAutoTransaction] Cache found on retry, proceeding')
+          processCacheAndContinue(retryRestored)
+        }, 100)
+
+        timeoutId = delayedCheck
+        return
       }
-    }
 
-    // Start processing with the restored cache
-    console.log('[useOnrampAutoTransaction] Cache found immediately, proceeding')
-    processCacheAndContinue(restored)
+      // Start processing with the restored cache
+      console.log('[useOnrampAutoTransaction] Cache found immediately, proceeding')
+      processCacheAndContinue(restored)
+    }, 50)
 
-    // Cleanup function
     return () => {
       isCancelled = true
+
+      // Clear both the initial delay and any retry timeout
+      clearTimeout(initialDelay)
       if (timeoutId) {
         clearTimeout(timeoutId)
         timeoutId = null
       }
+
+      // Reset processing state if unmounting during processing
       if (isProcessingRef.current && !hasProcessedRef.current) {
         if (currentSessionIdRef.current === sessionId) {
           isProcessingRef.current = false
