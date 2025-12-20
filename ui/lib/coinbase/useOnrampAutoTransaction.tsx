@@ -306,30 +306,6 @@ export function useOnrampAutoTransaction({
       }
     }
 
-    // Try to restore cache, with retry logic to ensure localStorage is ready
-    // This is especially important when returning from onramp redirect
-    let restored = restoreCache()
-    if (!restored) {
-      // Give localStorage a moment to sync if we just returned from redirect
-      // This handles cases where cache was set right before navigation
-      const delayedCheck = setTimeout(() => {
-        if (isCancelled) return
-        const retryRestored = restoreCache()
-        if (!retryRestored) {
-          console.log('[AutoTx] No cache found after retry, cannot restore form state')
-          return
-        }
-        // Cache found on retry, process it
-        processCacheAndContinue(retryRestored)
-      }, 100)
-
-      return () => {
-        isCancelled = true
-        clearTimeout(delayedCheck)
-        if (timeoutId) clearTimeout(timeoutId)
-      }
-    }
-
     // Process the restored cache and continue with JWT verification
     const processCacheAndContinue = (cache: any) => {
       if (isCancelled) return
@@ -503,6 +479,27 @@ export function useOnrampAutoTransaction({
         })
     }
 
+    // Try to restore cache, with retry logic to ensure localStorage is ready
+    let restored = restoreCache()
+    if (!restored) {
+      const delayedCheck = setTimeout(() => {
+        if (isCancelled) return
+        const retryRestored = restoreCache()
+        if (!retryRestored) {
+          console.log('[AutoTx] No cache found after retry, cannot restore form state')
+          return
+        }
+
+        processCacheAndContinue(retryRestored)
+      }, 100)
+
+      return () => {
+        isCancelled = true
+        clearTimeout(delayedCheck)
+        if (timeoutId) clearTimeout(timeoutId)
+      }
+    }
+
     // Start processing with the restored cache
     processCacheAndContinue(restored)
 
@@ -513,9 +510,7 @@ export function useOnrampAutoTransaction({
         clearTimeout(timeoutId)
         timeoutId = null
       }
-      // Only reset if we're still processing (don't reset if we've completed)
       if (isProcessingRef.current && !hasProcessedRef.current) {
-        // Only reset if this cleanup is for the current session
         if (currentSessionIdRef.current === sessionId) {
           isProcessingRef.current = false
           processingStartTimeRef.current = null
