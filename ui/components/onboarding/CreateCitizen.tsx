@@ -29,6 +29,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import { useOnrampInitialStage } from '@/lib/coinbase/useOnrampInitialStage'
+import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import useTag from '@/lib/convert-kit/useTag'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
@@ -94,27 +95,22 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
 
-  const restoredStage = useOnrampInitialStage(address, restoreCache, 0, 2)
+  // Import JWT utilities to get original address
+  const { getAddressFromJWT } = useOnrampJWT()
+
+  const restoredStage = useOnrampInitialStage(address, restoreCache, 0, 2, getAddressFromJWT)
   useEffect(() => {
     if (restoredStage !== 0) {
-      console.log('[CreateCitizen] Setting stage from restoredStage:', restoredStage)
       setStage(restoredStage)
     }
   }, [restoredStage])
 
-  // Track if we've already restored form data to prevent duplicate restorations
   const hasRestoredFormDataRef = useRef(false)
 
   // Log when we're returning from onramp
   useEffect(() => {
     if (router.isReady) {
       const isOnrampReturn = router.query.onrampSuccess === 'true'
-      console.log(
-        '[CreateCitizen] Router ready, onrampSuccess:',
-        isOnrampReturn,
-        'query:',
-        router.query
-      )
     }
   }, [router.isReady, router.query])
 
@@ -178,90 +174,67 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const handleFormRestore = useCallback(
     (restored: any) => {
       if (hasRestoredFormDataRef.current) {
-        console.log('[CreateCitizen] Form already restored, skipping duplicate restoration')
         return
       }
-
-      console.log('[CreateCitizen] Starting form restoration with data:', {
-        stage: restored.stage,
-        citizenData: restored.formData.citizenData,
-        hasCitizenImage: !!restored.formData.citizenImage,
-        hasInputImage: !!restored.formData.inputImage,
-        agreedToCondition: restored.formData.agreedToCondition,
-        selectedChainSlug: restored.formData.selectedChainSlug,
-      })
 
       hasRestoredFormDataRef.current = true
 
       setStage(restored.stage || 2)
-      console.log('[CreateCitizen] Set stage to:', restored.stage || 2)
-
       setCitizenData(restored.formData.citizenData)
-      console.log('[CreateCitizen] Set citizenData:', restored.formData.citizenData)
 
       if (restored.formData.citizenImage && isSerializedFile(restored.formData.citizenImage)) {
         const file = base64ToFile(restored.formData.citizenImage)
         setCitizenImage(file)
-        console.log('[CreateCitizen] Restored citizenImage:', file.name, file.size)
       }
 
       if (restored.formData.inputImage && isSerializedFile(restored.formData.inputImage)) {
         const file = base64ToFile(restored.formData.inputImage)
         setInputImage(file)
-        console.log('[CreateCitizen] Restored inputImage:', file.name, file.size)
       }
 
       setAgreedToCondition(restored.formData.agreedToCondition)
-      console.log('[CreateCitizen] Set agreedToCondition to:', restored.formData.agreedToCondition)
 
       if (restored.formData.selectedChainSlug) {
         const chain = v4SlugToV5Chain(restored.formData.selectedChainSlug)
         if (chain) {
           setSelectedChain(chain)
-          console.log('[CreateCitizen] Set selectedChain to:', chain.name)
         }
       }
-
-      console.log('[CreateCitizen] Form restoration complete')
     },
     [setSelectedChain]
   )
 
-  // Reset restoration flag when no longer returning from onramp
   useEffect(() => {
     if (router.isReady && router.query.onrampSuccess !== 'true') {
-      if (hasRestoredFormDataRef.current) {
-        console.log('[CreateCitizen] Resetting restoration flag (no longer returning from onramp)')
-      }
       hasRestoredFormDataRef.current = false
     }
   }, [router.isReady, router.query.onrampSuccess])
 
   useEffect(() => {
-    console.log('[CreateCitizen] Immediate restoration useEffect check:', {
-      restoredStage,
-      routerReady: router.isReady,
-      onrampSuccess: router.query.onrampSuccess,
-      alreadyRestored: hasRestoredFormDataRef.current,
-    })
-
     if (
-      restoredStage !== 0 &&
-      router.isReady &&
-      router.query.onrampSuccess === 'true' &&
-      !hasRestoredFormDataRef.current
+      restoredStage === 0 ||
+      !router.isReady ||
+      router.query.onrampSuccess !== 'true' ||
+      hasRestoredFormDataRef.current
     ) {
-      console.log('[CreateCitizen] Calling restoreCache() for immediate restoration')
-      const restored = restoreCache()
-
-      if (restored && restored.formData) {
-        console.log('[CreateCitizen] Cache restored, triggering immediate form restoration')
-        handleFormRestore(restored)
-      } else {
-        console.log('[CreateCitizen] No cache found or missing formData:', { restored })
-      }
+      return
     }
-  }, [restoredStage, router.isReady, router.query.onrampSuccess, restoreCache, handleFormRestore])
+
+    const jwtAddress = getAddressFromJWT()
+    const restored = restoreCache(jwtAddress || undefined)
+
+    if (restored && restored.formData) {
+      handleFormRestore(restored)
+    }
+  }, [
+    restoredStage,
+    router.isReady,
+    router.query.onrampSuccess,
+    restoreCache,
+    handleFormRestore,
+    getAddressFromJWT,
+    address,
+  ])
 
   const { isMobile } = useWindowSize()
 
@@ -718,19 +691,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     setStage,
     setSelectedWallet,
     waitForReady: () => {
-      const ready =
-        !isLoadingGasEstimate &&
-        estimatedGas > BigInt(0) &&
-        effectiveGasPrice !== undefined &&
-        effectiveGasPrice > BigInt(0)
-      if (!ready) {
-        console.log('[WaitForReady]', {
-          isLoadingGasEstimate,
-          estimatedGas: estimatedGas.toString(),
-          effectiveGasPrice: effectiveGasPrice?.toString(),
-        })
-      }
-      return ready
+      const gasEstimateReady = !isLoadingGasEstimate && estimatedGas > BigInt(0)
+      const gasPriceReady = effectiveGasPrice !== undefined && effectiveGasPrice > BigInt(0)
+      return gasEstimateReady && gasPriceReady
     },
   })
 
@@ -757,10 +720,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const citizenShortFormData = formatCitizenShortFormData(data.answers, responseId)
 
       //subscribe to newsletter
-      const subRes = await subscribeToNetworkSignup(citizenShortFormData.email)
-      if (subRes.ok) {
-        console.log('Subscribed to network signup')
-      }
+      await subscribeToNetworkSignup(citizenShortFormData.email)
 
       //escape single quotes and remove emojis
       const cleanedCitizenShortFormData = cleanData(citizenShortFormData)

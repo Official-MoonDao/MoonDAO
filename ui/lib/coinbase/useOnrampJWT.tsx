@@ -22,6 +22,7 @@ export interface UseOnrampJWTReturn {
   ) => Promise<OnrampJwtPayload | null>
   clearJWT: () => void
   getStoredJWT: () => string | null
+  getAddressFromJWT: (token?: string) => string | null
   storedJWT: string | null
   isGenerating: boolean
   isVerifying: boolean
@@ -157,6 +158,27 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
     return storedJWT
   }, [storedJWT])
 
+  const getAddressFromJWT = useCallback((token?: string) => {
+    try {
+      const jwtToUse = token || storedJWT
+      if (!jwtToUse) {
+        return null
+      }
+
+      const parts = jwtToUse.split('.')
+      if (parts.length !== 3) {
+        console.error('Invalid JWT format')
+        return null
+      }
+
+      const payload = JSON.parse(atob(parts[1]))
+      return payload.address || null
+    } catch (error) {
+      console.error('Error extracting address from JWT:', error)
+      return null
+    }
+  }, [storedJWT])
+
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
@@ -170,6 +192,7 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
     verifyJWT,
     clearJWT,
     getStoredJWT,
+    getAddressFromJWT,
     storedJWT,
     isGenerating,
     isVerifying,

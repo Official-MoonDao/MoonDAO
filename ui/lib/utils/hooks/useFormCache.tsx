@@ -12,7 +12,7 @@ export interface UseFormCacheReturn<T = any> {
   cache: FormCacheData<T> | undefined
   setCache: (data: Partial<T>, stage?: number) => void
   clearCache: () => void
-  restoreCache: () => FormCacheData<T> | null
+  restoreCache: (addressOverride?: string) => FormCacheData<T> | null
 }
 
 const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000 // 24 hours
@@ -53,60 +53,47 @@ export function useFormCache<T = any>(
     removeCache()
   }, [removeCache])
 
-  const restoreCache = useCallback((): FormCacheData<T> | null => {
-    console.log('[useFormCache] restoreCache called for key:', fullCacheKey)
-    
-    // Try ref first (fast path)
-    let currentCache = cacheRef.current
+  const restoreCache = useCallback(
+    (addressOverride?: string): FormCacheData<T> | null => {
+      // If an address override is provided (from JWT), use it to construct the cache key
+      const keyToUse = addressOverride
+        ? `${cacheKey}_${addressOverride.toLowerCase()}${contextId ? `_${contextId}` : ''}`
+        : fullCacheKey
 
-    // If ref is stale or empty, read directly from localStorage
-    if (!currentCache) {
-      console.log('[useFormCache] Cache ref empty, reading from localStorage')
-      try {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          const stored = window.localStorage.getItem(fullCacheKey)
-          if (stored) {
-            currentCache = JSON.parse(stored)
-            // Update ref for next time
-            cacheRef.current = currentCache
-            console.log('[useFormCache] Cache loaded from localStorage:', {
-              stage: currentCache.stage,
-              timestamp: currentCache.timestamp,
-              hasFormData: !!currentCache.formData
-            })
-          } else {
-            console.log('[useFormCache] No cache found in localStorage')
+      let currentCache = addressOverride ? undefined : cacheRef.current
+
+      if (!currentCache) {
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            const stored = window.localStorage.getItem(keyToUse)
+            if (stored) {
+              currentCache = JSON.parse(stored)
+              if (!addressOverride) {
+                cacheRef.current = currentCache
+              }
+            }
           }
+        } catch (e) {
+          console.error('Error reading cache from localStorage:', e)
         }
-      } catch (e) {
-        console.error('[useFormCache] Error reading cache from localStorage:', e)
       }
-    } else {
-      console.log('[useFormCache] Using cache from ref:', {
-        stage: currentCache.stage,
-        timestamp: currentCache.timestamp,
-        hasFormData: !!currentCache.formData
-      })
-    }
 
-    if (!currentCache) {
-      console.log('[useFormCache] No cache available')
-      return null
-    }
+      if (!currentCache) {
+        return null
+      }
 
-    const now = Date.now()
-    const age = now - currentCache.timestamp
-    console.log('[useFormCache] Cache age:', age, 'ms (expires at', CACHE_EXPIRY_MS, 'ms)')
-    
-    if (age > CACHE_EXPIRY_MS) {
-      console.log('[useFormCache] Cache expired, clearing')
-      clearCache()
-      return null
-    }
+      const now = Date.now()
+      const age = now - currentCache.timestamp
 
-    console.log('[useFormCache] Returning valid cache')
-    return currentCache
-  }, [clearCache, fullCacheKey])
+      if (age > CACHE_EXPIRY_MS) {
+        clearCache()
+        return null
+      }
+
+      return currentCache
+    },
+    [clearCache, fullCacheKey, cacheKey, contextId]
+  )
 
   useEffect(() => {
     if (cache) {
