@@ -54,7 +54,25 @@ export function useFormCache<T = any>(
   }, [removeCache])
 
   const restoreCache = useCallback((): FormCacheData<T> | null => {
-    const currentCache = cacheRef.current
+    // Try ref first (fast path)
+    let currentCache = cacheRef.current
+
+    // If ref is stale or empty, read directly from localStorage
+    if (!currentCache) {
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const stored = window.localStorage.getItem(fullCacheKey)
+          if (stored) {
+            currentCache = JSON.parse(stored)
+            // Update ref for next time
+            cacheRef.current = currentCache
+          }
+        }
+      } catch (e) {
+        console.error('Error reading cache from localStorage:', e)
+      }
+    }
+
     if (!currentCache) {
       return null
     }
@@ -66,7 +84,7 @@ export function useFormCache<T = any>(
     }
 
     return currentCache
-  }, [clearCache])
+  }, [clearCache, fullCacheKey])
 
   useEffect(() => {
     if (cache) {

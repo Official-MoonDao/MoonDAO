@@ -306,181 +306,205 @@ export function useOnrampAutoTransaction({
       }
     }
 
-    const restored = restoreCache()
+    // Try to restore cache, with retry logic to ensure localStorage is ready
+    // This is especially important when returning from onramp redirect
+    let restored = restoreCache()
     if (!restored) {
+      // Give localStorage a moment to sync if we just returned from redirect
+      // This handles cases where cache was set right before navigation
+      const delayedCheck = setTimeout(() => {
+        if (isCancelled) return
+        const retryRestored = restoreCache()
+        if (!retryRestored) {
+          console.log('[AutoTx] No cache found after retry, cannot restore form state')
+          return
+        }
+        // Cache found on retry, process it
+        processCacheAndContinue(retryRestored)
+      }, 100)
+
       return () => {
         isCancelled = true
+        clearTimeout(delayedCheck)
         if (timeoutId) clearTimeout(timeoutId)
       }
     }
 
-    // Start processing this session
-    isProcessingRef.current = true
-    processingStartTimeRef.current = Date.now()
-    currentSessionIdRef.current = sessionId
+    // Process the restored cache and continue with JWT verification
+    const processCacheAndContinue = (cache: any) => {
+      if (isCancelled) return
 
-    if (onFormRestore) {
-      onFormRestore(restored)
-    }
+      // Start processing this session
+      isProcessingRef.current = true
+      processingStartTimeRef.current = Date.now()
+      currentSessionIdRef.current = sessionId
 
-    const storedJWT = getStoredJWT()
-    if (!storedJWT) {
-      console.log('[AutoTx] No stored JWT, clearing redirect params')
-      clearRedirectParams()
-      isProcessingRef.current = false
-      processingStartTimeRef.current = null
-      return () => {
-        isCancelled = true
-        if (timeoutId) clearTimeout(timeoutId)
+      if (onFormRestore) {
+        onFormRestore(cache)
       }
-    }
 
-    // Use chain slug from cache if available, otherwise fall back to prop
-    const cachedChainSlug = getChainSlugFromCache ? getChainSlugFromCache(restored) : undefined
-    const chainSlugToVerify = cachedChainSlug || expectedChainSlug
-
-    const resetProcessing = () => {
-      if (!isCancelled) {
+      const storedJWT = getStoredJWT()
+      if (!storedJWT) {
+        console.log('[AutoTx] No stored JWT, clearing redirect params')
+        clearRedirectParams()
         isProcessingRef.current = false
         processingStartTimeRef.current = null
-        if (currentSessionIdRef.current === sessionId) {
-          currentSessionIdRef.current = null
-        }
-        activeProcessingPromiseRef.current = null
+        return
       }
-    }
 
-    // First, decode the JWT to check the address without full verification
-    fetch('/api/coinbase/verify-onramp-jwt', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: storedJWT }),
-    })
-      .then((res) => {
-        if (isCancelled) return null
-        return res.json()
+      // Use chain slug from cache if available, otherwise fall back to prop
+      const cachedChainSlug = getChainSlugFromCache ? getChainSlugFromCache(cache) : undefined
+      const chainSlugToVerify = cachedChainSlug || expectedChainSlug
+
+      const resetProcessing = () => {
+        if (!isCancelled) {
+          isProcessingRef.current = false
+          processingStartTimeRef.current = null
+          if (currentSessionIdRef.current === sessionId) {
+            currentSessionIdRef.current = null
+          }
+          activeProcessingPromiseRef.current = null
+        }
+      }
+
+      // First, decode the JWT to check the address without full verification
+      fetch('/api/coinbase/verify-onramp-jwt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: storedJWT }),
       })
-      .then((data) => {
-        if (isCancelled) return
+        .then((res) => {
+          if (isCancelled) return null
+          return res.json()
+        })
+        .then((data) => {
+          if (isCancelled) return
 
-        if (!data || !data.valid || !data.payload) {
-          console.log('[AutoTx] JWT invalid or expired')
+          if (!data || !data.valid || !data.payload) {
+            console.log('[AutoTx] JWT invalid or expired')
+            clearJWT()
+            clearRedirectParams()
+            resetProcessing()
+            return
+          }
+
+          const jwtPayload = data.payload
+          // Use addressRef to get the CURRENT address, not the one captured when effect started
+          const currentAddress = addressRef.current
+
+          // Check if current address matches JWT address
+          if (
+            !currentAddress ||
+            jwtPayload.address.toLowerCase() !== currentAddress.toLowerCase()
+          ) {
+            // If JWT has a selectedWallet, switch to it - this will trigger the effect again
+            if (jwtPayload.selectedWallet !== undefined && setSelectedWallet) {
+              console.log('[AutoTx] Switching to wallet index:', jwtPayload.selectedWallet)
+              setSelectedWallet(jwtPayload.selectedWallet)
+            }
+            // Wait for correct wallet to connect
+            resetProcessing()
+            return
+          }
+
+          // Full verification
+          return verifyJWT(storedJWT, currentAddress, undefined, context).then((payload) => {
+            if (isCancelled) return
+
+            if (!payload) {
+              console.error('[AutoTx] JWT verification failed')
+              clearJWT()
+              clearRedirectParams()
+              resetProcessing()
+              return
+            }
+
+            if (payload.chainSlug !== chainSlugToVerify) {
+              console.error('[AutoTx] JWT verification failed: chainSlug mismatch', {
+                jwtChainSlug: payload.chainSlug,
+                expectedChainSlug: chainSlugToVerify,
+              })
+              clearJWT()
+              clearRedirectParams()
+              resetProcessing()
+              return
+            }
+
+            if (payload.context !== context) {
+              console.error('[AutoTx] JWT verification failed: context mismatch', {
+                jwtContext: payload.context,
+                expectedContext: context,
+              })
+              clearJWT()
+              clearRedirectParams()
+              resetProcessing()
+              return
+            }
+
+            console.log('[AutoTx] JWT verified successfully')
+
+            // Store the expected address for verification during execution
+            expectedAddressRef.current = payload.address
+
+            // Restore wallet based on JWT payload if needed (multi-wallet support)
+            if (payload.selectedWallet !== undefined && setSelectedWallet) {
+              setSelectedWallet(payload.selectedWallet)
+            }
+
+            const proceed = shouldProceed ? shouldProceed(cache) : true
+            if (proceed) {
+              hasProcessedRef.current = true
+              const processingPromise = new Promise<void>((resolve, reject) => {
+                timeoutId = setTimeout(() => {
+                  if (isCancelled) {
+                    resolve()
+                    return
+                  }
+                  waitForReadyAndExecute()
+                    .then(() => {
+                      if (!isCancelled) {
+                        clearRedirectParams()
+                      }
+                      resolve()
+                    })
+                    .catch((error) => {
+                      if (!isCancelled) {
+                        console.error('[AutoTx] Execution failed:', error)
+                        hasProcessedRef.current = false
+                      }
+                      reject(error)
+                    })
+                    .finally(() => {
+                      if (!isCancelled) {
+                        resetProcessing()
+                      }
+                    })
+                }, 1000)
+              })
+              activeProcessingPromiseRef.current = processingPromise
+              processingPromise.finally(() => {
+                if (activeProcessingPromiseRef.current === processingPromise) {
+                  activeProcessingPromiseRef.current = null
+                }
+              })
+            } else {
+              clearJWT()
+              clearRedirectParams()
+              resetProcessing()
+            }
+          })
+        })
+        .catch((error) => {
+          if (isCancelled) return
+          console.error('[AutoTx] Error checking JWT:', error)
           clearJWT()
           clearRedirectParams()
           resetProcessing()
-          return
-        }
-
-        const jwtPayload = data.payload
-        // Use addressRef to get the CURRENT address, not the one captured when effect started
-        const currentAddress = addressRef.current
-
-        // Check if current address matches JWT address
-        if (!currentAddress || jwtPayload.address.toLowerCase() !== currentAddress.toLowerCase()) {
-          // If JWT has a selectedWallet, switch to it - this will trigger the effect again
-          if (jwtPayload.selectedWallet !== undefined && setSelectedWallet) {
-            console.log('[AutoTx] Switching to wallet index:', jwtPayload.selectedWallet)
-            setSelectedWallet(jwtPayload.selectedWallet)
-          }
-          // Wait for correct wallet to connect
-          resetProcessing()
-          return
-        }
-
-        // Full verification
-        return verifyJWT(storedJWT, currentAddress, undefined, context).then((payload) => {
-          if (isCancelled) return
-
-          if (!payload) {
-            console.error('[AutoTx] JWT verification failed')
-            clearJWT()
-            clearRedirectParams()
-            resetProcessing()
-            return
-          }
-
-          if (payload.chainSlug !== chainSlugToVerify) {
-            console.error('[AutoTx] JWT verification failed: chainSlug mismatch', {
-              jwtChainSlug: payload.chainSlug,
-              expectedChainSlug: chainSlugToVerify,
-            })
-            clearJWT()
-            clearRedirectParams()
-            resetProcessing()
-            return
-          }
-
-          if (payload.context !== context) {
-            console.error('[AutoTx] JWT verification failed: context mismatch', {
-              jwtContext: payload.context,
-              expectedContext: context,
-            })
-            clearJWT()
-            clearRedirectParams()
-            resetProcessing()
-            return
-          }
-
-          console.log('[AutoTx] JWT verified successfully')
-
-          // Store the expected address for verification during execution
-          expectedAddressRef.current = payload.address
-
-          // Restore wallet based on JWT payload if needed (multi-wallet support)
-          if (payload.selectedWallet !== undefined && setSelectedWallet) {
-            setSelectedWallet(payload.selectedWallet)
-          }
-
-          const proceed = shouldProceed ? shouldProceed(restored) : true
-          if (proceed) {
-            hasProcessedRef.current = true
-            const processingPromise = new Promise<void>((resolve, reject) => {
-              timeoutId = setTimeout(() => {
-                if (isCancelled) {
-                  resolve()
-                  return
-                }
-                waitForReadyAndExecute()
-                  .then(() => {
-                    if (!isCancelled) {
-                      clearRedirectParams()
-                    }
-                    resolve()
-                  })
-                  .catch((error) => {
-                    if (!isCancelled) {
-                      console.error('[AutoTx] Execution failed:', error)
-                      hasProcessedRef.current = false
-                    }
-                    reject(error)
-                  })
-                  .finally(() => {
-                    if (!isCancelled) {
-                      resetProcessing()
-                    }
-                  })
-              }, 1000)
-            })
-            activeProcessingPromiseRef.current = processingPromise
-            processingPromise.finally(() => {
-              if (activeProcessingPromiseRef.current === processingPromise) {
-                activeProcessingPromiseRef.current = null
-              }
-            })
-          } else {
-            clearJWT()
-            clearRedirectParams()
-            resetProcessing()
-          }
         })
-      })
-      .catch((error) => {
-        if (isCancelled) return
-        console.error('[AutoTx] Error checking JWT:', error)
-        clearJWT()
-        clearRedirectParams()
-        resetProcessing()
-      })
+    }
+
+    // Start processing with the restored cache
+    processCacheAndContinue(restored)
 
     // Cleanup function
     return () => {
