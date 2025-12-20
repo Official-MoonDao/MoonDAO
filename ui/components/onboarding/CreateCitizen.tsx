@@ -97,12 +97,26 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const restoredStage = useOnrampInitialStage(address, restoreCache, 0, 2)
   useEffect(() => {
     if (restoredStage !== 0) {
+      console.log('[CreateCitizen] Setting stage from restoredStage:', restoredStage)
       setStage(restoredStage)
     }
   }, [restoredStage])
 
   // Track if we've already restored form data to prevent duplicate restorations
   const hasRestoredFormDataRef = useRef(false)
+
+  // Log when we're returning from onramp
+  useEffect(() => {
+    if (router.isReady) {
+      const isOnrampReturn = router.query.onrampSuccess === 'true'
+      console.log(
+        '[CreateCitizen] Router ready, onrampSuccess:',
+        isOnrampReturn,
+        'query:',
+        router.query
+      )
+    }
+  }, [router.isReady, router.query])
 
   //Input Image for Image Generator
   const [inputImage, setInputImage] = useState<File>()
@@ -163,21 +177,52 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   const handleFormRestore = useCallback(
     (restored: any) => {
+      if (hasRestoredFormDataRef.current) {
+        console.log('[CreateCitizen] Form already restored, skipping duplicate restoration')
+        return
+      }
+
+      console.log('[CreateCitizen] Starting form restoration with data:', {
+        stage: restored.stage,
+        citizenData: restored.formData.citizenData,
+        hasCitizenImage: !!restored.formData.citizenImage,
+        hasInputImage: !!restored.formData.inputImage,
+        agreedToCondition: restored.formData.agreedToCondition,
+        selectedChainSlug: restored.formData.selectedChainSlug,
+      })
+
+      hasRestoredFormDataRef.current = true
+
       setStage(restored.stage || 2)
+      console.log('[CreateCitizen] Set stage to:', restored.stage || 2)
+
       setCitizenData(restored.formData.citizenData)
+      console.log('[CreateCitizen] Set citizenData:', restored.formData.citizenData)
+
       if (restored.formData.citizenImage && isSerializedFile(restored.formData.citizenImage)) {
-        setCitizenImage(base64ToFile(restored.formData.citizenImage))
+        const file = base64ToFile(restored.formData.citizenImage)
+        setCitizenImage(file)
+        console.log('[CreateCitizen] Restored citizenImage:', file.name, file.size)
       }
+
       if (restored.formData.inputImage && isSerializedFile(restored.formData.inputImage)) {
-        setInputImage(base64ToFile(restored.formData.inputImage))
+        const file = base64ToFile(restored.formData.inputImage)
+        setInputImage(file)
+        console.log('[CreateCitizen] Restored inputImage:', file.name, file.size)
       }
+
       setAgreedToCondition(restored.formData.agreedToCondition)
+      console.log('[CreateCitizen] Set agreedToCondition to:', restored.formData.agreedToCondition)
+
       if (restored.formData.selectedChainSlug) {
         const chain = v4SlugToV5Chain(restored.formData.selectedChainSlug)
         if (chain) {
           setSelectedChain(chain)
+          console.log('[CreateCitizen] Set selectedChain to:', chain.name)
         }
       }
+
+      console.log('[CreateCitizen] Form restoration complete')
     },
     [setSelectedChain]
   )
@@ -185,21 +230,35 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // Reset restoration flag when no longer returning from onramp
   useEffect(() => {
     if (router.isReady && router.query.onrampSuccess !== 'true') {
+      if (hasRestoredFormDataRef.current) {
+        console.log('[CreateCitizen] Resetting restoration flag (no longer returning from onramp)')
+      }
       hasRestoredFormDataRef.current = false
     }
   }, [router.isReady, router.query.onrampSuccess])
 
   useEffect(() => {
+    console.log('[CreateCitizen] Immediate restoration useEffect check:', {
+      restoredStage,
+      routerReady: router.isReady,
+      onrampSuccess: router.query.onrampSuccess,
+      alreadyRestored: hasRestoredFormDataRef.current,
+    })
+
     if (
       restoredStage !== 0 &&
       router.isReady &&
       router.query.onrampSuccess === 'true' &&
       !hasRestoredFormDataRef.current
     ) {
+      console.log('[CreateCitizen] Calling restoreCache() for immediate restoration')
       const restored = restoreCache()
+
       if (restored && restored.formData) {
-        hasRestoredFormDataRef.current = true
+        console.log('[CreateCitizen] Cache restored, triggering immediate form restoration')
         handleFormRestore(restored)
+      } else {
+        console.log('[CreateCitizen] No cache found or missing formData:', { restored })
       }
     }
   }, [restoredStage, router.isReady, router.query.onrampSuccess, restoreCache, handleFormRestore])

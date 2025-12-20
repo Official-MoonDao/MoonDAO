@@ -220,8 +220,16 @@ export function useOnrampAutoTransaction({
     let isCancelled = false
     let timeoutId: NodeJS.Timeout | null = null
 
+    console.log('[useOnrampAutoTransaction] Effect triggered:', {
+      isReturningFromOnramp,
+      address: address?.substring(0, 10) + '...',
+      hasOnTransaction: !!onTransactionRef.current,
+      currentSessionId: currentSessionIdRef.current
+    })
+
     // Reset refs when we're no longer returning from onramp
     if (prevIsReturningFromOnrampRef.current && !isReturningFromOnramp) {
+      console.log('[useOnrampAutoTransaction] No longer returning from onramp, resetting refs')
       hasProcessedRef.current = false
       isProcessingRef.current = false
       processingStartTimeRef.current = null
@@ -310,13 +318,22 @@ export function useOnrampAutoTransaction({
     const processCacheAndContinue = (cache: any) => {
       if (isCancelled) return
 
+      console.log('[useOnrampAutoTransaction] processCacheAndContinue called with cache:', {
+        stage: cache.stage,
+        hasFormData: !!cache.formData,
+        sessionId
+      })
+
       // Start processing this session
       isProcessingRef.current = true
       processingStartTimeRef.current = Date.now()
       currentSessionIdRef.current = sessionId
 
       if (onFormRestore) {
+        console.log('[useOnrampAutoTransaction] Calling onFormRestore callback')
         onFormRestore(cache)
+      } else {
+        console.log('[useOnrampAutoTransaction] No onFormRestore callback provided')
       }
 
       const storedJWT = getStoredJWT()
@@ -480,16 +497,20 @@ export function useOnrampAutoTransaction({
     }
 
     // Try to restore cache, with retry logic to ensure localStorage is ready
+    console.log('[useOnrampAutoTransaction] Calling restoreCache() for first attempt')
     let restored = restoreCache()
+    
     if (!restored) {
+      console.log('[useOnrampAutoTransaction] No cache on first attempt, scheduling retry in 100ms')
       const delayedCheck = setTimeout(() => {
         if (isCancelled) return
+        console.log('[useOnrampAutoTransaction] Retry: calling restoreCache() again')
         const retryRestored = restoreCache()
         if (!retryRestored) {
           console.log('[AutoTx] No cache found after retry, cannot restore form state')
           return
         }
-
+        console.log('[useOnrampAutoTransaction] Cache found on retry, proceeding')
         processCacheAndContinue(retryRestored)
       }, 100)
 
@@ -501,6 +522,7 @@ export function useOnrampAutoTransaction({
     }
 
     // Start processing with the restored cache
+    console.log('[useOnrampAutoTransaction] Cache found immediately, proceeding')
     processCacheAndContinue(restored)
 
     // Cleanup function
