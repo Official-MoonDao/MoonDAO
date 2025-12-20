@@ -134,14 +134,20 @@ export function useOnrampAutoTransaction({
         }
       }
 
+      console.log(`[AutoTx] Balance poll attempt ${attempt + 1}/${maxAttempts}`)
       await refetchNativeBalance()
       await new Promise((resolve) => setTimeout(resolve, delayMs))
 
       try {
+        console.log('[AutoTx] Checking if balance is sufficient')
         const isSufficient = await checkBalanceSufficient()
+        console.log('[AutoTx] Balance sufficient:', isSufficient)
+
         if (isSufficient) {
+          console.log('[AutoTx] Balance sufficient, executing transaction')
           try {
             await onTransactionRef.current()
+            console.log('[AutoTx] Transaction completed successfully')
             clearJWT()
             clearExpectedAddress()
             clearRedirectParams()
@@ -151,19 +157,23 @@ export function useOnrampAutoTransaction({
             throw error
           }
           return
+        } else {
+          console.log('[AutoTx] Balance not sufficient yet, will retry')
         }
       } catch (error) {
-        console.error('Error checking balance:', error)
+        console.error('[AutoTx] Error checking balance:', error)
       }
     }
 
+    console.log('[AutoTx] Max attempts reached, executing final transaction attempt')
     try {
       await onTransactionRef.current()
+      console.log('[AutoTx] Final transaction attempt completed successfully')
       clearJWT()
       clearExpectedAddress()
       clearRedirectParams()
     } catch (error) {
-      console.error('[AutoTx] Transaction failed:', error)
+      console.error('[AutoTx] Final transaction attempt failed:', error)
       hasProcessedRef.current = false
       throw error
     }
@@ -178,11 +188,18 @@ export function useOnrampAutoTransaction({
   ])
 
   const waitForReadyAndExecute = useCallback(async () => {
+    console.log(
+      '[AutoTx] waitForReadyAndExecute called, hasWaitForReady:',
+      !!waitForReadyRef.current
+    )
+
     if (!waitForReadyRef.current) {
+      console.log('[AutoTx] No waitForReady function, executing immediately')
       await pollBalanceAndExecute()
       return
     }
 
+    console.log('[AutoTx] Waiting for ready state, max attempts:', waitForReadyMaxAttempts)
     for (let attempt = 0; attempt < waitForReadyMaxAttempts; attempt++) {
       // Verify address hasn't changed
       if (expectedAddressRef.current && addressRef.current) {
@@ -197,15 +214,17 @@ export function useOnrampAutoTransaction({
       }
 
       const isReady = waitForReadyRef.current()
+      console.log(`[AutoTx] Attempt ${attempt + 1}/${waitForReadyMaxAttempts}, isReady:`, isReady)
 
       if (isReady) {
+        console.log('[AutoTx] Ready state achieved, executing transaction')
         await pollBalanceAndExecute()
         return
       }
       await new Promise((resolve) => setTimeout(resolve, waitForReadyDelayMs))
     }
 
-    //Final attempt
+    console.log('[AutoTx] Max attempts reached, executing final attempt')
     await pollBalanceAndExecute()
   }, [
     pollBalanceAndExecute,
@@ -447,17 +466,31 @@ export function useOnrampAutoTransaction({
               setSelectedWallet(payload.selectedWallet)
             }
 
+            console.log('[AutoTx] Checking shouldProceed with cache:', {
+              hasShouldProceed: !!shouldProceed,
+              hasCacheData: !!cache,
+              agreedToCondition: cache?.formData?.agreedToCondition,
+            })
+
             const proceed = shouldProceed ? shouldProceed(cache) : true
+            console.log('[AutoTx] shouldProceed result:', proceed)
+
             if (proceed) {
+              console.log(
+                '[AutoTx] Proceeding with auto-transaction, setting hasProcessed and scheduling execution in 1s'
+              )
               hasProcessedRef.current = true
               const processingPromise = new Promise<void>((resolve, reject) => {
                 timeoutId = setTimeout(() => {
                   if (isCancelled) {
+                    console.log('[AutoTx] Cancelled before execution')
                     resolve()
                     return
                   }
+                  console.log('[AutoTx] Executing waitForReadyAndExecute')
                   waitForReadyAndExecute()
                     .then(() => {
+                      console.log('[AutoTx] waitForReadyAndExecute completed')
                       if (!isCancelled) {
                         clearRedirectParams()
                       }
@@ -484,6 +517,7 @@ export function useOnrampAutoTransaction({
                 }
               })
             } else {
+              console.log('[AutoTx] shouldProceed returned false, not executing transaction')
               clearJWT()
               clearRedirectParams()
               resetProcessing()
