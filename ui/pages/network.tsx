@@ -39,9 +39,11 @@ const Moon = dynamic(() => import('@/components/globe/Moon'), { ssr: false })
 export default function Network({
   initialTeams,
   initialCitizens,
+  citizensLocationData,
 }: {
   initialTeams?: any[]
   initialCitizens?: any[]
+  citizensLocationData?: any[]
 }) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -109,9 +111,8 @@ export default function Network({
     initialData: initialCitizens,
   })
 
-  // For map tab, we don't need to fetch data client-side
-  // The map will use static data from getStaticProps
-  const mapData = useMapData(false) // Disabled - map uses its own static props
+  // For map tab, use pre-fetched static data from getStaticProps
+  const mapData = useMapData(isMapTab, { initialData: citizensLocationData })
 
   const currentData = isTeamsTab
     ? teamsResult
@@ -373,6 +374,7 @@ export const getStaticProps: GetStaticProps = async () => {
     const TeamTableABI = (await import('const/abis/TeamTable.json')).default
     const CitizenTableABI = (await import('const/abis/CitizenTable.json')).default
     const queryTable = (await import('@/lib/tableland/queryTable')).default
+    const { getCitizensLocationData } = await import('@/lib/map')
 
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
@@ -411,7 +413,7 @@ export const getStaticProps: GetStaticProps = async () => {
     const PRE_RENDER_PAGES = 3
     const PRE_RENDER_LIMIT = PAGE_SIZE * PRE_RENDER_PAGES
 
-    const [teamRows, citizenRows] = await Promise.all([
+    const [teamRows, citizenRows, citizensLocationData] = await Promise.all([
       teamTableName
         ? queryTable(
             chain,
@@ -424,6 +426,7 @@ export const getStaticProps: GetStaticProps = async () => {
             `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT ${PRE_RENDER_LIMIT}`
           )
         : Promise.resolve([]),
+      getCitizensLocationData(),
     ])
 
     // Pass raw rows as initialData - the hooks will convert and filter them
@@ -432,6 +435,7 @@ export const getStaticProps: GetStaticProps = async () => {
       props: {
         initialTeams: teamRows || [],
         initialCitizens: citizenRows || [],
+        citizensLocationData: citizensLocationData || [],
       },
       revalidate: 60,
     }
@@ -441,6 +445,7 @@ export const getStaticProps: GetStaticProps = async () => {
       props: {
         initialTeams: [],
         initialCitizens: [],
+        citizensLocationData: [],
       },
       revalidate: 60,
     }
