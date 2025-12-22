@@ -364,10 +364,14 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         // Add a small buffer (5%) to ensure transaction succeeds after onramp
         const requiredAmount = shortfall * 1.05
 
-        console.log(
-          '[CreateCitizen] Insufficient balance, opening onramp modal. agreedToCondition:',
-          agreedToCondition
-        )
+        console.log('[CreateCitizen] Insufficient balance, opening onramp modal')
+        console.log('[CreateCitizen] Current state before opening modal:', {
+          agreedToCondition,
+          agreedToConditionRef: agreedToConditionRef.current,
+          citizenDataName: citizenData.name,
+          stage,
+          stageRef: stageRef.current,
+        })
 
         // Open the onramp modal with the required amount
         setRequiredEthAmount(requiredAmount)

@@ -446,7 +446,14 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
 
       const url = generateOnRampURL(widgetParams)
 
-      await onBeforeNavigate?.()
+      console.log('[CBOnramp] About to call onBeforeNavigate callback')
+      try {
+        await onBeforeNavigate?.()
+        console.log('[CBOnramp] onBeforeNavigate completed successfully')
+      } catch (error) {
+        console.error('[CBOnramp] onBeforeNavigate failed:', error)
+      }
+      console.log('[CBOnramp] Redirecting to:', url)
       window.location.href = url
     } catch (error: any) {
       setError('Failed to initialize payment system: ' + error.message)
