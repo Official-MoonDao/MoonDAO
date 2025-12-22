@@ -26,8 +26,7 @@ module.exports = withBundleAnalyzer(
       reactStrictMode: true,
       swcMinify: true,
       compiler: {
-        removeConsole:
-          process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+        removeConsole: false,
       },
       experimental: {
         serverComponentsExternalPackages: ['thirdweb'],

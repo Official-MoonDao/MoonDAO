@@ -18,6 +18,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -54,6 +55,10 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
+  const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
+  const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
+
+  const { effectiveGasPrice } = useGasPrice(selectedChain)
 
   const { isMobile } = useWindowSize()
 
@@ -88,6 +93,106 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   const { nativeBalance } = useNativeBalance()
 
   const { fundWallet } = useFundWallet()
+
+  const estimateMintGas = useCallback(async () => {
+    if (!account || !address || !teamData.name) return
+
+    setIsLoadingGasEstimate(true)
+
+    try {
+      const cost: any = await readContract({
+        contract: teamContract,
+        method: 'getRenewalPrice' as string,
+        params: [address, 365 * 24 * 60 * 60],
+      })
+
+      const transaction = await prepareContractCall({
+        contract: teamCreatorContract,
+        method: 'createMoonDAOTeam' as string,
+        params: [
+          {
+            adminHatURI: 'ipfs://placeholder',
+            managerHatURI: 'ipfs://placeholder',
+            memberHatURI: 'ipfs://placeholder',
+          },
+          {
+            name: teamData.name,
+            bio: teamData.description,
+            image: 'ipfs://placeholder',
+            twitter: teamData.twitter,
+            communications: teamData.communications,
+            website: teamData.website,
+            _view: teamData.view,
+            formId: teamData.formResponseId || '0000',
+          },
+          [],
+        ],
+        value: cost,
+      })
+
+      let gasEstimate: bigint = BigInt(0)
+
+      try {
+        const txData = typeof transaction.data === 'function' ? await transaction.data() : transaction.data
+
+        const estimateResponse = await fetch('/api/rpc/estimate-gas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chainId: selectedChain.id,
+            from: address,
+            to: TEAM_CREATOR_ADDRESSES[chainSlug],
+            data: txData,
+            value: `0x${cost.toString(16)}`,
+          }),
+        })
+
+        if (!estimateResponse.ok) {
+          throw new Error(`Gas estimation API returned ${estimateResponse.status}`)
+        }
+
+        const estimateData = await estimateResponse.json()
+
+        if (estimateData.error) {
+          throw new Error(estimateData.error)
+        }
+
+        gasEstimate = BigInt(estimateData.gasEstimate)
+      } catch (estimationError: any) {
+        console.error('Gas estimation error:', estimationError)
+        gasEstimate = BigInt(200000)
+      }
+
+      const bufferPercent = 130
+      const gasWithBuffer = (gasEstimate * BigInt(bufferPercent)) / BigInt(100)
+      setEstimatedGas(gasWithBuffer)
+      setIsLoadingGasEstimate(false)
+    } catch (error) {
+      console.error('Error estimating gas:', error instanceof Error ? error.message : error)
+      setEstimatedGas(BigInt(200000))
+      setIsLoadingGasEstimate(false)
+    }
+  }, [
+    account,
+    address,
+    teamData.name,
+    teamData.description,
+    teamData.twitter,
+    teamData.communications,
+    teamData.website,
+    teamData.view,
+    teamData.formResponseId,
+    teamContract,
+    teamCreatorContract,
+    selectedChain,
+    chainSlug,
+  ])
+
+  useEffect(() => {
+    if (stage === 2 && address && teamData.name) {
+      estimateMintGas()
+    }
+  }, [stage, address, teamData.name, estimateMintGas])
 
   const submitTypeform = useCallback(async (formResponse: any) => {
     try {
@@ -379,10 +484,13 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
 
                         const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
 
-                        const totalCost = Number(formattedCost)
+                        const gasCostWei = estimatedGas * effectiveGasPrice
+                        const gasCostEth = Number(gasCostWei) / 1e18
+
+                        const totalCost = Number(formattedCost) + gasCostEth
 
                         if (+nativeBalance < totalCost) {
-                          const roundedCost = Math.ceil(+totalCost + 0.0003 * 1000000) / 1000000 // add 0.0003 ETH to cover gas
+                          const roundedCost = Math.ceil(totalCost * 1000000) / 1000000
 
                           return await fundWallet(address, {
                             amount: String(roundedCost),

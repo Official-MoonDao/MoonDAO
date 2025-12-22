@@ -13,7 +13,8 @@ export function useOnrampRedirect(): UseOnrampRedirectReturn {
 
   useEffect(() => {
     if (router.isReady) {
-      setIsReturningFromOnramp(router.query.onrampSuccess === 'true')
+      const isReturning = router.query.onrampSuccess === 'true'
+      setIsReturningFromOnramp(isReturning)
     }
   }, [router.isReady, router.query.onrampSuccess])
 
@@ -46,6 +47,10 @@ export function useOnrampRedirect(): UseOnrampRedirectReturn {
 
       const queryString = new URLSearchParams(
         Object.entries(currentQuery).reduce((acc, [key, value]) => {
+          // Filter out Privy OAuth params
+          if (key.startsWith('privy_')) {
+            return acc
+          }
           if (value !== undefined && value !== null) {
             acc[key] = String(value)
           }

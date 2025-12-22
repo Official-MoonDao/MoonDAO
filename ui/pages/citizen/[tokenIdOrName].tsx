@@ -568,7 +568,7 @@ async function getTeamWearerServerSide(chain: any, teamContract: any, address: a
       return []
     }
   } catch (err) {
-    console.log(err)
+    console.error(err)
     return []
   }
 }
@@ -668,12 +668,8 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
         hats = await processHatsWithTeamData(chain, moondaoHats)
       }
     } catch (error) {
-      // Citizen doesn't wear any hats
-      console.log(`Citizen ${tokenId} does not wear any hats`)
       hats = []
     }
-
-    console.log('HATS', hats)
 
     return {
       props: {

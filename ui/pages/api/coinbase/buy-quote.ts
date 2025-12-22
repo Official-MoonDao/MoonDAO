@@ -51,15 +51,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         const stateCode = await detectUserState(req, redis)
         if (stateCode && isValidUSState(stateCode)) {
           detectedSubdivision = stateCode
-          console.log(`[Coinbase] Auto-detected US state: ${stateCode}`)
-        } else {
-          console.log(
-            '[Coinbase] Unable to detect US state, proceeding without subdivision'
-          )
         }
       } catch (error) {
-        console.error('[Coinbase] Error detecting state:', error)
-        // Continue without subdivision - don't block the purchase
+        console.error('Error detecting state:', error)
       }
     }
 
