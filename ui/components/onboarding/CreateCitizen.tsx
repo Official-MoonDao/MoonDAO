@@ -130,7 +130,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     twitter: '',
     formResponseId: '',
   })
-  const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
+  const [agreedToCondition, setAgreedToConditionRaw] = useState<boolean>(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const setAgreedToCondition = useCallback((value: boolean) => {
+    console.log(
+      '[CreateCitizen] setAgreedToCondition called:',
+      value,
+      'stack:',
+      new Error().stack?.split('\n').slice(2, 4).join('\n')
+    )
+    setAgreedToConditionRaw(value)
+  }, [])
 
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
   const [isImageGenerating, setIsImageGenerating] = useState(false)
@@ -139,6 +149,38 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const [requiredEthAmount, setRequiredEthAmount] = useState(0)
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
   const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
+
+  // Refs to ensure onBeforeNavigate always uses latest values
+  const agreedToConditionRef = useRef(agreedToCondition)
+  const citizenDataRef = useRef(citizenData)
+  const citizenImageRef = useRef(citizenImage)
+  const inputImageRef = useRef(inputImage)
+  const stageRef = useRef(stage)
+  const selectedChainSlugRef = useRef(selectedChainSlug)
+
+  useEffect(() => {
+    agreedToConditionRef.current = agreedToCondition
+  }, [agreedToCondition])
+
+  useEffect(() => {
+    citizenDataRef.current = citizenData
+  }, [citizenData])
+
+  useEffect(() => {
+    citizenImageRef.current = citizenImage
+  }, [citizenImage])
+
+  useEffect(() => {
+    inputImageRef.current = inputImage
+  }, [inputImage])
+
+  useEffect(() => {
+    stageRef.current = stage
+  }, [stage])
+
+  useEffect(() => {
+    selectedChainSlugRef.current = selectedChainSlug
+  }, [selectedChainSlug])
 
   const { effectiveGasPrice } = useGasPrice(selectedChain)
 
@@ -181,11 +223,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       console.log('[CreateCitizen] Restoring form data:', {
         stage: restored.stage,
         hasCitizenData: !!restored.formData.citizenData,
+        citizenDataName: restored.formData.citizenData?.name,
         hasCitizenImage: !!restored.formData.citizenImage,
         hasInputImage: !!restored.formData.inputImage,
         agreedToCondition: restored.formData.agreedToCondition,
         selectedChainSlug: restored.formData.selectedChainSlug,
       })
+      console.log('[CreateCitizen] Full restored object:', restored)
 
       hasRestoredFormDataRef.current = true
 
@@ -236,16 +280,25 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       return
     }
 
-    console.log('[CreateCitizen] Attempting manual form restoration after onramp redirect')
+    console.log(
+      '[CreateCitizen] Attempting manual form restoration after onramp redirect, current address:',
+      address
+    )
 
     const jwtAddress = getAddressFromJWT()
+    console.log(
+      '[CreateCitizen] JWT address:',
+      jwtAddress,
+      'will use for cache lookup:',
+      jwtAddress || address
+    )
     const restored = restoreCache(jwtAddress || undefined)
 
     if (restored && restored.formData) {
       console.log('[CreateCitizen] Found cached form data, calling handleFormRestore')
       handleFormRestore(restored)
     } else {
-      console.log('[CreateCitizen] No cached form data found')
+      console.log('[CreateCitizen] No cached form data found for address:', jwtAddress || address)
     }
   }, [
     router.isReady,
@@ -310,6 +363,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
         // Add a small buffer (5%) to ensure transaction succeeds after onramp
         const requiredAmount = shortfall * 1.05
+
+        console.log(
+          '[CreateCitizen] Insufficient balance, opening onramp modal. agreedToCondition:',
+          agreedToCondition
+        )
 
         // Open the onramp modal with the required amount
         setRequiredEthAmount(requiredAmount)
@@ -761,21 +819,31 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   // Cache form state before navigating to onramp
   useEffect(() => {
+    // Don't cache if we're about to open onramp modal - let onBeforeNavigate handle it
+    if (onrampModalOpen) {
+      console.log('[CreateCitizen] Skipping continuous cache - onramp modal is open')
+      return
+    }
+
     if (stage >= 0 && address && (citizenData.name || citizenImage || inputImage)) {
       const serializeAndCache = async () => {
         const serializedCitizenImage = citizenImage ? await fileToBase64(citizenImage) : null
         const serializedInputImage = inputImage ? await fileToBase64(inputImage) : null
-        setCache(
-          {
-            stage,
-            citizenData,
-            citizenImage: serializedCitizenImage,
-            inputImage: serializedInputImage,
-            agreedToCondition,
-            selectedChainSlug,
-          },
-          stage
-        )
+        const cacheData = {
+          stage,
+          citizenData,
+          citizenImage: serializedCitizenImage,
+          inputImage: serializedInputImage,
+          agreedToCondition,
+          selectedChainSlug,
+        }
+        console.log('[CreateCitizen] Continuous caching form data:', {
+          stage,
+          citizenDataName: citizenData?.name,
+          agreedToCondition,
+          selectedChainSlug,
+        })
+        setCache(cacheData, stage)
       }
       serializeAndCache()
     }
@@ -788,6 +856,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     address,
     setCache,
     selectedChainSlug,
+    onrampModalOpen,
   ])
 
   useEffect(() => {
@@ -1175,19 +1244,41 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             setIsLoadingMint(false)
           }}
           onBeforeNavigate={async () => {
-            const serializedCitizenImage = citizenImage ? await fileToBase64(citizenImage) : null
-            const serializedInputImage = inputImage ? await fileToBase64(inputImage) : null
-            setCache(
-              {
-                stage,
-                citizenData,
-                citizenImage: serializedCitizenImage,
-                inputImage: serializedInputImage,
-                agreedToCondition,
-                selectedChainSlug,
-              },
-              stage
+            // Use refs to get the absolute latest values
+            const currentAgreed = agreedToConditionRef.current
+            const currentCitizenData = citizenDataRef.current
+            const currentCitizenImage = citizenImageRef.current
+            const currentInputImage = inputImageRef.current
+            const currentStage = stageRef.current
+            const currentChainSlug = selectedChainSlugRef.current
+
+            console.log('[CreateCitizen] onBeforeNavigate - capturing current state:', {
+              currentStage,
+              citizenDataName: currentCitizenData?.name,
+              currentAgreed,
+              currentChainSlug,
+              address,
+            })
+
+            const serializedCitizenImage = currentCitizenImage
+              ? await fileToBase64(currentCitizenImage)
+              : null
+            const serializedInputImage = currentInputImage
+              ? await fileToBase64(currentInputImage)
+              : null
+            const cacheData = {
+              stage: currentStage,
+              citizenData: currentCitizenData,
+              citizenImage: serializedCitizenImage,
+              inputImage: serializedInputImage,
+              agreedToCondition: currentAgreed,
+              selectedChainSlug: currentChainSlug,
+            }
+            console.log(
+              '[CreateCitizen] Caching before onramp navigation with agreedToCondition:',
+              currentAgreed
             )
+            setCache(cacheData, currentStage)
           }}
         />
       )}

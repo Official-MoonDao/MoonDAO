@@ -44,9 +44,10 @@ export function useFormCache<T = any>(
         timestamp: Date.now(),
         contextId,
       }
+      console.log('[useFormCache] Setting cache with key:', fullCacheKey, 'stage:', stage)
       setCacheValue(cacheData)
     },
-    [setCacheValue, contextId]
+    [setCacheValue, contextId, fullCacheKey]
   )
 
   const clearCache = useCallback(() => {
@@ -60,17 +61,21 @@ export function useFormCache<T = any>(
         ? `${cacheKey}_${addressOverride.toLowerCase()}${contextId ? `_${contextId}` : ''}`
         : fullCacheKey
 
+      console.log('[useFormCache] Restoring cache with key:', keyToUse)
+
       let currentCache = addressOverride ? undefined : cacheRef.current
 
       if (!currentCache) {
         try {
           if (typeof window !== 'undefined' && window.localStorage) {
             const stored = window.localStorage.getItem(keyToUse)
+            console.log('[useFormCache] Raw localStorage value:', stored ? stored.substring(0, 200) + '...' : 'null')
             if (stored) {
               currentCache = JSON.parse(stored)
               if (!addressOverride) {
                 cacheRef.current = currentCache
               }
+              console.log('[useFormCache] Parsed cache:', currentCache)
             }
           }
         } catch (e) {
@@ -79,6 +84,7 @@ export function useFormCache<T = any>(
       }
 
       if (!currentCache) {
+        console.log('[useFormCache] No cache found')
         return null
       }
 
@@ -86,10 +92,12 @@ export function useFormCache<T = any>(
       const age = now - currentCache.timestamp
 
       if (age > CACHE_EXPIRY_MS) {
+        console.log('[useFormCache] Cache expired')
         clearCache()
         return null
       }
 
+      console.log('[useFormCache] Returning valid cache, age:', age, 'ms')
       return currentCache
     },
     [clearCache, fullCacheKey, cacheKey, contextId]
