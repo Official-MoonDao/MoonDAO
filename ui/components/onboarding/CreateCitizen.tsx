@@ -107,12 +107,37 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   const hasRestoredFormDataRef = useRef(false)
 
+  // Persistent debug logging to sessionStorage
+  const logToSession = useCallback((message: string, data?: any) => {
+    try {
+      const logs = JSON.parse(sessionStorage.getItem('citizenFlowDebug') || '[]')
+      logs.push({
+        timestamp: Date.now(),
+        message,
+        data,
+        url: window.location.href,
+      })
+      // Keep last 50 logs
+      if (logs.length > 50) logs.shift()
+      sessionStorage.setItem('citizenFlowDebug', JSON.stringify(logs))
+      console.log(message, data)
+    } catch (e) {
+      console.log(message, data) // Fallback to console only
+    }
+  }, [])
+
   // Log when we're returning from onramp
   useEffect(() => {
     if (router.isReady) {
       const isOnrampReturn = router.query.onrampSuccess === 'true'
+      if (isOnrampReturn) {
+        logToSession('[CreateCitizen] Component mounted after onramp redirect', {
+          query: router.query,
+          address,
+        })
+      }
     }
-  }, [router.isReady, router.query])
+  }, [router.isReady, router.query, address, logToSession])
 
   //Input Image for Image Generator
   const [inputImage, setInputImage] = useState<File>()
@@ -231,6 +256,34 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       })
       console.log('[CreateCitizen] Full restored object:', restored)
 
+      // Cache verification
+      if (router.query.onrampSuccess === 'true') {
+        const cacheAge = restored.timestamp ? Date.now() - restored.timestamp : null
+        logToSession('[CreateCitizen] Cache verification after onramp redirect', {
+          hasImage: !!restored.formData.citizenImage,
+          hasName: !!restored.formData.citizenData?.name,
+          stage: restored.stage,
+          agreedToCondition: restored.formData.agreedToCondition,
+          cacheAge,
+        })
+
+        // If cache looks wrong (stage 0 after onramp), log debug info
+        if (restored.stage === 0 || !restored.formData.citizenImage) {
+          console.warn('[CreateCitizen] Cache appears stale, checking sessionStorage debug logs')
+          try {
+            const debugLogs = sessionStorage.getItem('citizenFlowDebug')
+            console.log('[CreateCitizen] Debug logs:', debugLogs)
+            logToSession('[CreateCitizen] WARNING: Stale cache detected', {
+              stage: restored.stage,
+              hasImage: !!restored.formData.citizenImage,
+              timestamp: restored.timestamp,
+            })
+          } catch (e) {
+            console.error('[CreateCitizen] Error reading debug logs:', e)
+          }
+        }
+      }
+
       hasRestoredFormDataRef.current = true
 
       setStage(restored.stage || 2)
@@ -262,7 +315,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       console.log('[CreateCitizen] Form restoration completed')
     },
-    [setSelectedChain]
+    [setSelectedChain, router.query.onrampSuccess, logToSession, setAgreedToCondition]
   )
 
   useEffect(() => {
@@ -364,13 +417,14 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         // Add a small buffer (5%) to ensure transaction succeeds after onramp
         const requiredAmount = shortfall * 1.05
 
-        console.log('[CreateCitizen] Insufficient balance, opening onramp modal')
-        console.log('[CreateCitizen] Current state before opening modal:', {
+        logToSession('[CreateCitizen] About to open onramp modal', {
           agreedToCondition,
           agreedToConditionRef: agreedToConditionRef.current,
           citizenDataName: citizenData.name,
           stage,
           stageRef: stageRef.current,
+          selectedChainSlug,
+          selectedChainSlugRef: selectedChainSlugRef.current,
         })
 
         // Open the onramp modal with the required amount
@@ -587,6 +641,9 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     router,
     estimatedGas,
     effectiveGasPrice,
+    agreedToCondition,
+    logToSession,
+    stage,
   ])
 
   const checkBalanceSufficient = useCallback(async () => {
@@ -821,14 +878,79 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     }
   }, [citizenImage, isImageGenerating])
 
-  // Cache form state before navigating to onramp
+  // Aggressive caching: immediately cache when checkbox is checked
   useEffect(() => {
-    // Don't cache if we're about to open onramp modal - let onBeforeNavigate handle it
-    if (onrampModalOpen) {
-      console.log('[CreateCitizen] Skipping continuous cache - onramp modal is open')
-      return
+    if (stage === 2 && agreedToCondition && address) {
+      logToSession('[CreateCitizen] Checkbox checked - immediately caching state', {
+        stage,
+        agreedToCondition,
+        citizenDataName: citizenData?.name,
+        selectedChainSlug,
+      })
+
+      const serializeAndCache = async () => {
+        const serializedCitizenImage = citizenImage ? await fileToBase64(citizenImage) : null
+        const serializedInputImage = inputImage ? await fileToBase64(inputImage) : null
+        setCache(
+          {
+            stage,
+            citizenData,
+            citizenImage: serializedCitizenImage,
+            inputImage: serializedInputImage,
+            agreedToCondition: true, // Explicitly true
+            selectedChainSlug,
+          },
+          stage
+        )
+      }
+      serializeAndCache()
+    }
+  }, [
+    agreedToCondition,
+    stage,
+    citizenData,
+    citizenImage,
+    inputImage,
+    selectedChainSlug,
+    setCache,
+    address,
+    logToSession,
+  ])
+
+  // beforeunload backup: emergency state saving before page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (stage === 2 && agreedToConditionRef.current && address) {
+        logToSession('[CreateCitizen] beforeunload - emergency cache save', {
+          stage: stageRef.current,
+          agreedToCondition: agreedToConditionRef.current,
+        })
+
+        // Use synchronous localStorage directly since beforeunload timing is critical
+        const cacheKey = `CreateCitizenCacheV1_${address.toLowerCase()}`
+        const cacheData = {
+          stage: stageRef.current,
+          citizenData: citizenDataRef.current,
+          citizenImage: citizenImageRef.current ? 'PENDING_SERIALIZATION' : null,
+          inputImage: inputImageRef.current ? 'PENDING_SERIALIZATION' : null,
+          agreedToCondition: agreedToConditionRef.current,
+          selectedChainSlug: selectedChainSlugRef.current,
+          timestamp: Date.now(),
+        }
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(cacheData))
+        } catch (e) {
+          console.error('[CreateCitizen] beforeunload cache save failed:', e)
+        }
+      }
     }
 
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [stage, address, logToSession])
+
+  // Cache form state continuously (removed onrampModalOpen guard for more aggressive caching)
+  useEffect(() => {
     if (stage >= 0 && address && (citizenData.name || citizenImage || inputImage)) {
       const serializeAndCache = async () => {
         const serializedCitizenImage = citizenImage ? await fileToBase64(citizenImage) : null
@@ -841,7 +963,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           agreedToCondition,
           selectedChainSlug,
         }
-        console.log('[CreateCitizen] Continuous caching form data:', {
+        logToSession('[CreateCitizen] Continuous caching form data', {
           stage,
           citizenDataName: citizenData?.name,
           agreedToCondition,
@@ -860,7 +982,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     address,
     setCache,
     selectedChainSlug,
-    onrampModalOpen,
+    logToSession,
   ])
 
   useEffect(() => {
@@ -1027,9 +1149,11 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                     />
                     {isImageGenerating && !citizenImage && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                        <img
+                        <Image
                           src="/assets/MoonDAO-Loading-Animation.svg"
                           alt="generating"
+                          width={160}
+                          height={160}
                           className="w-40 h-40 opacity-90"
                         />
                       </div>
@@ -1142,7 +1266,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                   >
                     <input
                       checked={agreedToCondition}
-                      onChange={(e) => setAgreedToCondition(e.target.checked)}
+                      onChange={(e) => {
+                        const newValue = e.target.checked
+                        logToSession('[CreateCitizen] Checkbox changed', {
+                          newValue,
+                          stage,
+                          address,
+                        })
+                        setAgreedToCondition(newValue)
+                      }}
                       type="checkbox"
                       className="before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-slate-400 transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-slate-500 before:opacity-0 before:transition-opacity checked:border-slate-300 checked:bg-slate-700 checked:before:bg-slate-700 hover:before:opacity-10"
                       id="link"
@@ -1256,7 +1388,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             const currentStage = stageRef.current
             const currentChainSlug = selectedChainSlugRef.current
 
-            console.log('[CreateCitizen] onBeforeNavigate - capturing current state:', {
+            logToSession('[CreateCitizen] onBeforeNavigate - capturing current state', {
               currentStage,
               citizenDataName: currentCitizenData?.name,
               currentAgreed,
@@ -1278,7 +1410,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
               agreedToCondition: currentAgreed,
               selectedChainSlug: currentChainSlug,
             }
-            console.log(
+            logToSession(
               '[CreateCitizen] Caching before onramp navigation with agreedToCondition:',
               currentAgreed
             )

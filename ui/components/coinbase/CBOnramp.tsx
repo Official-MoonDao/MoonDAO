@@ -446,12 +446,17 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
 
       const url = generateOnRampURL(widgetParams)
 
-      console.log('[CBOnramp] About to call onBeforeNavigate callback')
+      console.log('[CBOnramp] About to call onBeforeNavigate callback and WAIT for completion')
       try {
-        await onBeforeNavigate?.()
-        console.log('[CBOnramp] onBeforeNavigate completed successfully')
+        if (onBeforeNavigate) {
+          await onBeforeNavigate()
+          console.log('[CBOnramp] onBeforeNavigate completed successfully')
+          // Add small delay to ensure localStorage write completes
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
       } catch (error) {
         console.error('[CBOnramp] onBeforeNavigate failed:', error)
+        // Continue anyway but log the error
       }
       console.log('[CBOnramp] Redirecting to:', url)
       window.location.href = url
