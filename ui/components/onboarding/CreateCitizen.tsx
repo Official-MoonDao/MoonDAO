@@ -174,8 +174,18 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const handleFormRestore = useCallback(
     (restored: any) => {
       if (hasRestoredFormDataRef.current) {
+        console.log('[CreateCitizen] Form already restored, skipping')
         return
       }
+
+      console.log('[CreateCitizen] Restoring form data:', {
+        stage: restored.stage,
+        hasCitizenData: !!restored.formData.citizenData,
+        hasCitizenImage: !!restored.formData.citizenImage,
+        hasInputImage: !!restored.formData.inputImage,
+        agreedToCondition: restored.formData.agreedToCondition,
+        selectedChainSlug: restored.formData.selectedChainSlug,
+      })
 
       hasRestoredFormDataRef.current = true
 
@@ -185,21 +195,28 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       if (restored.formData.citizenImage && isSerializedFile(restored.formData.citizenImage)) {
         const file = base64ToFile(restored.formData.citizenImage)
         setCitizenImage(file)
+        console.log('[CreateCitizen] Restored citizen image')
       }
 
       if (restored.formData.inputImage && isSerializedFile(restored.formData.inputImage)) {
         const file = base64ToFile(restored.formData.inputImage)
         setInputImage(file)
+        console.log('[CreateCitizen] Restored input image')
       }
 
-      setAgreedToCondition(restored.formData.agreedToCondition)
+      const agreedValue = restored.formData.agreedToCondition ?? false
+      setAgreedToCondition(agreedValue)
+      console.log('[CreateCitizen] Restored agreedToCondition:', agreedValue)
 
       if (restored.formData.selectedChainSlug) {
         const chain = v4SlugToV5Chain(restored.formData.selectedChainSlug)
         if (chain) {
           setSelectedChain(chain)
+          console.log('[CreateCitizen] Restored chain:', restored.formData.selectedChainSlug)
         }
       }
+
+      console.log('[CreateCitizen] Form restoration completed')
     },
     [setSelectedChain]
   )
@@ -212,7 +229,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   useEffect(() => {
     if (
-      restoredStage === 0 ||
       !router.isReady ||
       router.query.onrampSuccess !== 'true' ||
       hasRestoredFormDataRef.current
@@ -220,14 +236,18 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       return
     }
 
+    console.log('[CreateCitizen] Attempting manual form restoration after onramp redirect')
+
     const jwtAddress = getAddressFromJWT()
     const restored = restoreCache(jwtAddress || undefined)
 
     if (restored && restored.formData) {
+      console.log('[CreateCitizen] Found cached form data, calling handleFormRestore')
       handleFormRestore(restored)
+    } else {
+      console.log('[CreateCitizen] No cached form data found')
     }
   }, [
-    restoredStage,
     router.isReady,
     router.query.onrampSuccess,
     restoreCache,
