@@ -47,3 +47,4 @@ anvil --fork-url https://11155111.rpc.thirdweb.com/${THIRDWEB_CLIENT_ID}
 # Run tests
 ETHERSCAN_API_KEY=$ETH forge test --via-ir --fork-url 127.0.0.1:8545 --match-path test/MissionTest.t.sol -vvvv
 ```
+
