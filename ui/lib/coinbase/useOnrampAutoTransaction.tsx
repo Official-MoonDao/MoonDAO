@@ -276,6 +276,29 @@ export function useOnrampAutoTransaction({
     const processCacheAndContinue = (cache: any) => {
       if (isCancelled) return
 
+      // Ensure cache has proper structure
+      if (!cache) {
+        console.error('[useOnrampAutoTransaction] Cache is null or undefined')
+        return
+      }
+
+      // Normalize cache structure if needed (handle old format)
+      if (!cache.formData && (cache.citizenData || cache.stage !== undefined)) {
+        const { stage, timestamp, contextId: oldContextId, ...formData } = cache
+        cache = {
+          stage,
+          formData: formData,
+          timestamp: timestamp || Date.now(),
+          contextId: oldContextId,
+        }
+        console.log('[useOnrampAutoTransaction] Normalized cache structure')
+      }
+
+      if (!cache.formData) {
+        console.error('[useOnrampAutoTransaction] Cache missing formData structure', cache)
+        return
+      }
+
       isProcessingRef.current = true
       processingStartTimeRef.current = Date.now()
       currentSessionIdRef.current = sessionId

@@ -245,14 +245,22 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         return
       }
 
+      // Handle both old and new cache formats
+      const formData = restored.formData || restored
+      
+      if (!formData || !formData.citizenData) {
+        console.error('[CreateCitizen] Invalid cache structure, missing formData or citizenData', restored)
+        return
+      }
+
       console.log('[CreateCitizen] Restoring form data:', {
         stage: restored.stage,
-        hasCitizenData: !!restored.formData.citizenData,
-        citizenDataName: restored.formData.citizenData?.name,
-        hasCitizenImage: !!restored.formData.citizenImage,
-        hasInputImage: !!restored.formData.inputImage,
-        agreedToCondition: restored.formData.agreedToCondition,
-        selectedChainSlug: restored.formData.selectedChainSlug,
+        hasCitizenData: !!formData.citizenData,
+        citizenDataName: formData.citizenData?.name,
+        hasCitizenImage: !!formData.citizenImage,
+        hasInputImage: !!formData.inputImage,
+        agreedToCondition: formData.agreedToCondition,
+        selectedChainSlug: formData.selectedChainSlug,
       })
       console.log('[CreateCitizen] Full restored object:', restored)
 
@@ -260,22 +268,22 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       if (router.query.onrampSuccess === 'true') {
         const cacheAge = restored.timestamp ? Date.now() - restored.timestamp : null
         logToSession('[CreateCitizen] Cache verification after onramp redirect', {
-          hasImage: !!restored.formData.citizenImage,
-          hasName: !!restored.formData.citizenData?.name,
+          hasImage: !!formData.citizenImage,
+          hasName: !!formData.citizenData?.name,
           stage: restored.stage,
-          agreedToCondition: restored.formData.agreedToCondition,
+          agreedToCondition: formData.agreedToCondition,
           cacheAge,
         })
 
         // If cache looks wrong (stage 0 after onramp), log debug info
-        if (restored.stage === 0 || !restored.formData.citizenImage) {
+        if (restored.stage === 0 || !formData.citizenImage) {
           console.warn('[CreateCitizen] Cache appears stale, checking sessionStorage debug logs')
           try {
             const debugLogs = sessionStorage.getItem('citizenFlowDebug')
             console.log('[CreateCitizen] Debug logs:', debugLogs)
             logToSession('[CreateCitizen] WARNING: Stale cache detected', {
               stage: restored.stage,
-              hasImage: !!restored.formData.citizenImage,
+              hasImage: !!formData.citizenImage,
               timestamp: restored.timestamp,
             })
           } catch (e) {
@@ -287,29 +295,29 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       hasRestoredFormDataRef.current = true
 
       setStage(restored.stage || 2)
-      setCitizenData(restored.formData.citizenData)
+      setCitizenData(formData.citizenData)
 
-      if (restored.formData.citizenImage && isSerializedFile(restored.formData.citizenImage)) {
-        const file = base64ToFile(restored.formData.citizenImage)
+      if (formData.citizenImage && isSerializedFile(formData.citizenImage)) {
+        const file = base64ToFile(formData.citizenImage)
         setCitizenImage(file)
         console.log('[CreateCitizen] Restored citizen image')
       }
 
-      if (restored.formData.inputImage && isSerializedFile(restored.formData.inputImage)) {
-        const file = base64ToFile(restored.formData.inputImage)
+      if (formData.inputImage && isSerializedFile(formData.inputImage)) {
+        const file = base64ToFile(formData.inputImage)
         setInputImage(file)
         console.log('[CreateCitizen] Restored input image')
       }
 
-      const agreedValue = restored.formData.agreedToCondition ?? false
+      const agreedValue = formData.agreedToCondition ?? false
       setAgreedToCondition(agreedValue)
       console.log('[CreateCitizen] Restored agreedToCondition:', agreedValue)
 
-      if (restored.formData.selectedChainSlug) {
-        const chain = v4SlugToV5Chain(restored.formData.selectedChainSlug)
+      if (formData.selectedChainSlug) {
+        const chain = v4SlugToV5Chain(formData.selectedChainSlug)
         if (chain) {
           setSelectedChain(chain)
-          console.log('[CreateCitizen] Restored chain:', restored.formData.selectedChainSlug)
+          console.log('[CreateCitizen] Restored chain:', formData.selectedChainSlug)
         }
       }
 
@@ -347,9 +355,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     )
     const restored = restoreCache(jwtAddress || undefined)
 
-    if (restored && restored.formData) {
-      console.log('[CreateCitizen] Found cached form data, calling handleFormRestore')
-      handleFormRestore(restored)
+    if (restored) {
+      // Ensure cache has formData structure
+      const formData = restored.formData || restored
+      if (formData && formData.citizenData) {
+        console.log('[CreateCitizen] Found cached form data, calling handleFormRestore')
+        handleFormRestore(restored)
+      } else {
+        console.log('[CreateCitizen] Cached data found but missing citizenData:', restored)
+      }
     } else {
       console.log('[CreateCitizen] No cached form data found for address:', jwtAddress || address)
     }
@@ -927,14 +941,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         })
 
         // Use synchronous localStorage directly since beforeunload timing is critical
+        // Use correct cache structure with formData wrapper
         const cacheKey = `CreateCitizenCacheV1_${address.toLowerCase()}`
         const cacheData = {
           stage: stageRef.current,
-          citizenData: citizenDataRef.current,
-          citizenImage: citizenImageRef.current ? 'PENDING_SERIALIZATION' : null,
-          inputImage: inputImageRef.current ? 'PENDING_SERIALIZATION' : null,
-          agreedToCondition: agreedToConditionRef.current,
-          selectedChainSlug: selectedChainSlugRef.current,
+          formData: {
+            citizenData: citizenDataRef.current,
+            citizenImage: citizenImageRef.current ? 'PENDING_SERIALIZATION' : null,
+            inputImage: inputImageRef.current ? 'PENDING_SERIALIZATION' : null,
+            agreedToCondition: agreedToConditionRef.current,
+            selectedChainSlug: selectedChainSlugRef.current,
+          },
           timestamp: Date.now(),
         }
         try {

@@ -71,7 +71,23 @@ export function useFormCache<T = any>(
             const stored = window.localStorage.getItem(keyToUse)
             console.log('[useFormCache] Raw localStorage value:', stored ? stored.substring(0, 200) + '...' : 'null')
             if (stored) {
-              currentCache = JSON.parse(stored)
+              const parsed = JSON.parse(stored)
+              
+              // Normalize cache structure: handle old format where data was at top level
+              if (parsed && !parsed.formData && (parsed.citizenData || parsed.stage !== undefined)) {
+                // Old format detected - wrap in formData
+                const { stage, timestamp, contextId: oldContextId, ...formData } = parsed
+                currentCache = {
+                  stage,
+                  formData: formData as T,
+                  timestamp: timestamp || Date.now(),
+                  contextId: oldContextId || contextId,
+                }
+                console.log('[useFormCache] Normalized old cache format to new format')
+              } else {
+                currentCache = parsed
+              }
+              
               if (!addressOverride) {
                 cacheRef.current = currentCache
               }
@@ -88,8 +104,25 @@ export function useFormCache<T = any>(
         return null
       }
 
+      // Ensure cache has required structure
+      if (!currentCache.formData) {
+        console.log('[useFormCache] Cache missing formData, attempting to normalize')
+        const { stage, timestamp, contextId: oldContextId, ...formData } = currentCache
+        if (Object.keys(formData).length > 0) {
+          currentCache = {
+            stage,
+            formData: formData as T,
+            timestamp: timestamp || Date.now(),
+            contextId: oldContextId || contextId,
+          }
+        } else {
+          console.log('[useFormCache] Cache structure invalid, cannot normalize')
+          return null
+        }
+      }
+
       const now = Date.now()
-      const age = now - currentCache.timestamp
+      const age = now - (currentCache.timestamp || now)
 
       if (age > CACHE_EXPIRY_MS) {
         console.log('[useFormCache] Cache expired')
