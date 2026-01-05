@@ -81,6 +81,8 @@ export default function StandardWideCard({
                             alt={title || ''}
                             width={200}
                             height={200}
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 275px, 200px"
+                            loading="lazy"
                           />
                         ) : (
                           <IPFSRenderer
@@ -89,6 +91,8 @@ export default function StandardWideCard({
                             width={200}
                             height={200}
                             alt={title || ''}
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 275px, 200px"
+                            loading="lazy"
                           />
                         )
                       ) : (
@@ -99,6 +103,8 @@ export default function StandardWideCard({
                             width={200}
                             height={200}
                             className="w-full h-full object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 275px, 200px"
+                            loading="lazy"
                           />
                         )
                       )}

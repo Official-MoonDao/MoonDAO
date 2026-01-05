@@ -730,14 +730,44 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
-    const teamContract = getContract({
-      client: serverClient,
-      chain: chain,
-      address: TEAM_ADDRESSES[chainSlug],
-      abi: TeamABI as any,
-    })
+    const hatsSubgraphClient = (await import('@/lib/hats/hatsSubgraphClient')).default
+    const { MOONDAO_HAT_TREE_IDS } = await import('const/config')
+    const { processHatsWithTeamData } = await import('@/lib/hats/batchHatOperations')
 
-    const hats = await getTeamWearerServerSide(chain, teamContract, nft.owner)
+    let hats: any[] = []
+
+    try {
+      const wearerData = await hatsSubgraphClient.getWearer({
+        chainId: chain.id,
+        wearerAddress: nft.owner,
+        props: {
+          currentHats: {
+            props: {
+              tree: {},
+              admin: {
+                admin: {
+                  admin: {},
+                },
+              },
+            },
+          },
+        },
+      })
+
+      if (wearerData.currentHats) {
+        // Filter to MoonDAO hats only
+        const moondaoHats = wearerData.currentHats.filter(
+          (hat: any) => hat.tree.id === MOONDAO_HAT_TREE_IDS[chainSlug]
+        )
+
+        // Batch process all hats to get team IDs
+        hats = await processHatsWithTeamData(chain, moondaoHats)
+      }
+    } catch (error) {
+      // Citizen doesn't wear any hats
+      console.log(`Citizen ${tokenId} does not wear any hats`)
+      hats = []
+    }
 
     console.log('HATS', hats)
 

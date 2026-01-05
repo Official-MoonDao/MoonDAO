@@ -679,21 +679,8 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query }) 
     }
   }
 
-  const teamContract = getContract({
-    client: serverClient,
-    address: TEAM_ADDRESSES[chainSlug],
-    abi: TeamABI as any,
-    chain: chain,
-  })
-
-  const owner = await readContract({
-    contract: teamContract,
-    method: 'ownerOf',
-    params: [tokenId],
-  })
-
-  const nft = teamRowToNFT(allTeams.find((team: any) => +team.id === +tokenId))
-  nft.owner = owner
+  const { fetchTeamWithOwner } = await import('@/lib/team/teamDataService')
+  const nft = await fetchTeamWithOwner(chain, tokenId)
 
   if (!nft || BLOCKED_TEAMS.has(Number(nft.metadata.id))) {
     return {

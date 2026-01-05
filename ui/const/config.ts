@@ -51,6 +51,8 @@ export const DEFAULT_CHAIN_V5 = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? ar
 
 export const DEFAULT_CHAIN_V5_SLUG = getChainSlug(DEFAULT_CHAIN_V5)
 
+export const THIRDWEB_ENGINE_URL = 'https://engine.thirdweb.com/v1/read/contract'
+
 export const MOONEY_ADDRESSES: Index = {
   ethereum: ethConfig.MOONEYToken,
   polygon: polygonConfig.MOONEYToken,

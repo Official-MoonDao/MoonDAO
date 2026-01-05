@@ -114,7 +114,18 @@ export default function Tooltip({
   }, [isHovered, isVisible, compact])
 
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && animationRef.current) {
+        animationRef.current.pause()
+      } else if (!document.hidden && animationRef.current) {
+        animationRef.current.resume()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       if (animationRef.current) {
         animationRef.current.kill()
       }
