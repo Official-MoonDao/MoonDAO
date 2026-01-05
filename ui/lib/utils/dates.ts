@@ -1,14 +1,6 @@
 import { BigNumber } from 'ethers'
 
-const DAYS_OF_WEEK = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-]
+const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 export function dateToReadable(date: any) {
   return date && date.toISOString().substring(0, 10)
@@ -99,25 +91,17 @@ export function daysUntilDay(date: Date, day: string) {
 }
 
 export function isRewardsCycle(date: Date) {
-  if (true) return false
+  if (true) return true
   const lastQuarter = getRelativeQuarter(-1)
   const endOfQuarter = new Date(lastQuarter.year, lastQuarter.quarter * 3, 0)
-  const nextQuarterStart = new Date(
-    lastQuarter.year,
-    lastQuarter.quarter * 3,
-    1
-  )
+  const nextQuarterStart = new Date(lastQuarter.year, lastQuarter.quarter * 3, 1)
 
   const fourteenDaysIntoNextQuarter = new Date(nextQuarterStart)
-  fourteenDaysIntoNextQuarter.setDate(
-    fourteenDaysIntoNextQuarter.getDate() + 14
-  )
+  fourteenDaysIntoNextQuarter.setDate(fourteenDaysIntoNextQuarter.getDate() + 14)
 
   const firstTuesdayAfterFourteenDays = new Date(fourteenDaysIntoNextQuarter)
   const daysUntilTuesday = daysUntilDay(fourteenDaysIntoNextQuarter, 'Tuesday')
-  firstTuesdayAfterFourteenDays.setDate(
-    firstTuesdayAfterFourteenDays.getDate() + daysUntilTuesday
-  )
+  firstTuesdayAfterFourteenDays.setDate(firstTuesdayAfterFourteenDays.getDate() + daysUntilTuesday)
 
   return date >= endOfQuarter && date <= firstTuesdayAfterFourteenDays
 }
