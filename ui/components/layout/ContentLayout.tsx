@@ -89,13 +89,13 @@ const ContentLayout: React.FC<ContentProps> = ({
               <div
                 id="title-wrapper"
                 className={`
-                                    z-50 w-full overflow-x-hidden p-5 pt-0 mt-[-80px]
+                                    z-50 w-full overflow-x-hidden pt-0 mt-[-80px]
                                     ${
                                       isCompact
                                         ? isProfile
-                                          ? 'pl-5'
-                                          : 'pl-[25px]'
-                                        : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5'
+                                          ? 'px-5'
+                                          : 'px-5'
+                                        : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5 px-5'
                                     } 
                                     ${
                                       children
@@ -110,13 +110,13 @@ const ContentLayout: React.FC<ContentProps> = ({
                 <div
                   id="title-container"
                   className={`
-                                        p-5 pl-0 pb-5 md:pb-0 w-full h-full 
+                                        flex flex-col pb-5 md:pb-0 w-full h-full 
                                         ${isCompact ? '' : 'md:max-w-[700px] lg:max-w-[100%]'}
                                     `}
                 >
                   <div
                     id="header-element"
-                    className={`header-responsive w-full max-w-[1200px] leading-[1] font-GoodTimes ${
+                    className={`block w-full max-w-[1200px] header-responsive leading-[1] font-GoodTimes ${
                       isCompact ? 'pt-0' : 'lg:pt-20'
                     }`}
                   >
@@ -124,21 +124,21 @@ const ContentLayout: React.FC<ContentProps> = ({
                   </div>
 
                   {subHeader && (
-                    <div id="sub-header" className="sub-header">
+                    <div id="sub-header" className="block w-full sub-header">
                       {subHeader}
                     </div>
                   )}
-                  <div
-                    className={`
-                                            pt-2 pb-2 lg:max-w-[1200px]
-                                            ${
-                                              isCompact ? 'pb-0 w-full' : 'pb-5 md:pb-20 lg:pb-15 '
-                                            } 
-                                            ${branded ? '' : 'mt-20'}
+                  {description && (
+                    <div
+                      className={`
+                                            block w-full mt-4 pt-2 pb-2 lg:max-w-[1200px]
+                                            ${isCompact ? 'pb-0' : 'pb-5 md:pb-20 lg:pb-15 '} 
+                                            ${branded ? 'md:mt-2' : 'md:mt-20'}
                                         `}
-                  >
-                    {description && <span>{description}</span>}
-                  </div>
+                    >
+                      <div className="block w-full">{description}</div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

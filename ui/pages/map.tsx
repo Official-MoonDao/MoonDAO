@@ -1,6 +1,7 @@
 import { GlobeAmericasIcon, MoonIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { networkCard } from '@/lib/layout/styles'
 import { getCitizensLocationData } from '@/lib/map'
 import IconOrg from '@/components/assets/IconOrg'
 import LazyEarth from '@/components/globe/LazyEarth'

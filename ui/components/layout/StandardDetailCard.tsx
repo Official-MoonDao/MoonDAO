@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import Frame from '@/components/layout/Frame'
-import IPFSRenderer from './IPFSRenderer'
+import AdaptiveImage from './AdaptiveImage'
 
 type StandardDetailCardProps = {
   title?: string
@@ -30,11 +30,11 @@ export default function StandardDetailCard({
 }: StandardDetailCardProps) {
   const router = useRouter()
   const CardContent = (
-    <div className="w-full h-full p-4 bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 group">
+    <div className="w-full h-full p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 transition-all duration-300 group hover:scale-[1.01] hover:shadow-[0_0_20px_rgba(37,99,235,0.2),0_0_40px_rgba(147,51,234,0.15)] hover:bg-white/8 hover:border-white/20">
       <div className="flex flex-row items-start gap-4 w-full h-full">
         {image && (
           <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] md:w-[120px] md:h-[120px] flex-shrink-0">
-            <IPFSRenderer
+            <AdaptiveImage
               className="w-full h-full object-cover rounded-xl border border-slate-600/50"
               src={image}
               width={500}
@@ -49,10 +49,8 @@ export default function StandardDetailCard({
               {title}
             </h1>
             <div className="break-words text-left mb-3">{subheader}</div>
-            <p className="hidden md:block text-sm text-slate-300 leading-relaxed break-words text-left">
-              {paragraph && paragraph?.length > 200
-                ? paragraph.slice(0, 200) + '...'
-                : paragraph}
+            <p className="text-sm text-slate-300 leading-relaxed break-words text-left">
+              {paragraph && paragraph?.length > 200 ? paragraph.slice(0, 200) + '...' : paragraph}
             </p>
           </div>
 
@@ -70,10 +68,7 @@ export default function StandardDetailCard({
                   </p>
                   {isCitizen && (
                     <p className="line-through text-xs opacity-70 text-slate-400">
-                      {`${truncateTokenValue(
-                        +price * 1.1,
-                        currency
-                      )} ${currency}`}
+                      {`${truncateTokenValue(+price * 1.1, currency)} ${currency}`}
                     </p>
                   )}
                 </div>
