@@ -36,6 +36,7 @@ import {
   MISSION_TABLE_ADDRESSES,
   JBV5_DIRECTORY_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
+  EB_TEAM_ID,
 } from 'const/config'
 import { BLOCKED_TEAMS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -82,6 +83,7 @@ import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamMissions from '@/components/subscription/TeamMissions'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
+import EBRewards from '@/components/subscription/EBRewards'
 
 export default function TeamDetailPage({
   tokenId,
@@ -625,6 +627,26 @@ export default function TeamDetailPage({
                   <GeneralActions />
                 </div>
               )}
+              {/* EB Rewards - Only show for EB team managers */}
+              {(() => {
+                const shouldShowEBRewards =
+                  isManager &&
+                  EB_TEAM_ID &&
+                  String(tokenId) === String(EB_TEAM_ID)
+                if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+                  console.log('[EB Rewards] Render check:', {
+                    isManager,
+                    EB_TEAM_ID,
+                    tokenId,
+                    tokenIdString: String(tokenId),
+                    ebTeamIdString: String(EB_TEAM_ID),
+                    shouldShowEBRewards,
+                  })
+                }
+                return shouldShowEBRewards ? (
+                  <EBRewards isManager={isManager} teamId={tokenId} />
+                ) : null
+              })()}
             </div>
           ) : (
             // Subscription Expired
