@@ -106,6 +106,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   }, [restoredStage])
 
   const hasRestoredFormDataRef = useRef(false)
+  const imagesRestoredRef = useRef(false)
 
   // Persistent debug logging to sessionStorage
   const logToSession = useCallback((message: string, data?: any) => {
@@ -204,6 +205,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   }, [stage])
 
   useEffect(() => {
+    imagesRestoredRef.current = !!citizenImage || !!inputImage
+  }, [citizenImage, inputImage])
+
+  useEffect(() => {
     selectedChainSlugRef.current = selectedChainSlug
   }, [selectedChainSlug])
 
@@ -247,9 +252,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       // Handle both old and new cache formats
       const formData = restored.formData || restored
-      
+
       if (!formData || !formData.citizenData) {
-        console.error('[CreateCitizen] Invalid cache structure, missing formData or citizenData', restored)
+        console.error(
+          '[CreateCitizen] Invalid cache structure, missing formData or citizenData',
+          restored
+        )
         return
       }
 
@@ -297,17 +305,41 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       setStage(restored.stage || 2)
       setCitizenData(formData.citizenData)
 
-      if (formData.citizenImage && isSerializedFile(formData.citizenImage)) {
-        const file = base64ToFile(formData.citizenImage)
-        setCitizenImage(file)
-        console.log('[CreateCitizen] Restored citizen image')
+      let citizenImageRestored = false
+      let inputImageRestored = false
+
+      if (formData.citizenImage) {
+        if (isSerializedFile(formData.citizenImage)) {
+          const file = base64ToFile(formData.citizenImage)
+          setCitizenImage(file)
+          citizenImageRestored = true
+          console.log('[CreateCitizen] Restored citizen image')
+        } else if (formData.citizenImage === 'PENDING_SERIALIZATION') {
+          console.warn(
+            '[CreateCitizen] Citizen image marked as PENDING_SERIALIZATION, skipping restore. Continuous caching should have proper serialization.'
+          )
+          logToSession(
+            '[CreateCitizen] Citizen image PENDING_SERIALIZATION detected during restore'
+          )
+        }
       }
 
-      if (formData.inputImage && isSerializedFile(formData.inputImage)) {
-        const file = base64ToFile(formData.inputImage)
-        setInputImage(file)
-        console.log('[CreateCitizen] Restored input image')
+      if (formData.inputImage) {
+        if (isSerializedFile(formData.inputImage)) {
+          const file = base64ToFile(formData.inputImage)
+          setInputImage(file)
+          inputImageRestored = true
+          console.log('[CreateCitizen] Restored input image')
+        } else if (formData.inputImage === 'PENDING_SERIALIZATION') {
+          console.warn(
+            '[CreateCitizen] Input image marked as PENDING_SERIALIZATION, skipping restore. Continuous caching should have proper serialization.'
+          )
+          logToSession('[CreateCitizen] Input image PENDING_SERIALIZATION detected during restore')
+        }
       }
+
+      // Track if at least one image was restored
+      imagesRestoredRef.current = citizenImageRestored || inputImageRestored
 
       const agreedValue = formData.agreedToCondition ?? false
       setAgreedToCondition(agreedValue)
@@ -838,7 +870,17 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     onTransaction: callMint,
     onFormRestore: handleFormRestore,
     checkBalanceSufficient,
-    shouldProceed: (restored) => restored.formData.agreedToCondition,
+    shouldProceed: (restored) => {
+      const formData = restored.formData || restored
+      const hasImage = formData.citizenImage || formData.inputImage
+      const isImageValid =
+        hasImage &&
+        ((formData.citizenImage && isSerializedFile(formData.citizenImage)) ||
+          (formData.inputImage && isSerializedFile(formData.inputImage)) ||
+          (formData.citizenImage && formData.citizenImage !== 'PENDING_SERIALIZATION') ||
+          (formData.inputImage && formData.inputImage !== 'PENDING_SERIALIZATION'))
+      return formData.agreedToCondition && isImageValid
+    },
     restoreCache,
     getChainSlugFromCache: (restored) => restored?.formData?.selectedChainSlug,
     setStage,
@@ -846,7 +888,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     waitForReady: () => {
       const gasEstimateReady = !isLoadingGasEstimate && estimatedGas > BigInt(0)
       const gasPriceReady = effectiveGasPrice !== undefined && effectiveGasPrice > BigInt(0)
-      return gasEstimateReady && gasPriceReady
+      const imagesReady = imagesRestoredRef.current || !!citizenImage || !!inputImage
+      return gasEstimateReady && gasPriceReady && imagesReady
     },
   })
 
@@ -941,14 +984,39 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         })
 
         // Use synchronous localStorage directly since beforeunload timing is critical
-        // Use correct cache structure with formData wrapper
+        // Check existing cache to avoid overwriting properly serialized images
         const cacheKey = `CreateCitizenCacheV1_${address.toLowerCase()}`
+        let existingCache: any = null
+        try {
+          const existing = localStorage.getItem(cacheKey)
+          if (existing) {
+            existingCache = JSON.parse(existing)
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+
+        // Only use PENDING_SERIALIZATION if we don't have properly serialized images
+        const existingFormData = existingCache?.formData || existingCache
+        const hasSerializedCitizenImage =
+          existingFormData?.citizenImage && isSerializedFile(existingFormData.citizenImage)
+        const hasSerializedInputImage =
+          existingFormData?.inputImage && isSerializedFile(existingFormData.inputImage)
+
         const cacheData = {
           stage: stageRef.current,
           formData: {
             citizenData: citizenDataRef.current,
-            citizenImage: citizenImageRef.current ? 'PENDING_SERIALIZATION' : null,
-            inputImage: inputImageRef.current ? 'PENDING_SERIALIZATION' : null,
+            citizenImage: hasSerializedCitizenImage
+              ? existingFormData.citizenImage
+              : citizenImageRef.current
+              ? 'PENDING_SERIALIZATION'
+              : null,
+            inputImage: hasSerializedInputImage
+              ? existingFormData.inputImage
+              : inputImageRef.current
+              ? 'PENDING_SERIALIZATION'
+              : null,
             agreedToCondition: agreedToConditionRef.current,
             selectedChainSlug: selectedChainSlugRef.current,
           },
@@ -1419,8 +1487,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             const serializedInputImage = currentInputImage
               ? await fileToBase64(currentInputImage)
               : null
-            const cacheData = {
-              stage: currentStage,
+            const formData = {
               citizenData: currentCitizenData,
               citizenImage: serializedCitizenImage,
               inputImage: serializedInputImage,
@@ -1431,7 +1498,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
               '[CreateCitizen] Caching before onramp navigation with agreedToCondition:',
               currentAgreed
             )
-            setCache(cacheData, currentStage)
+            setCache(formData, currentStage)
           }}
         />
       )}
