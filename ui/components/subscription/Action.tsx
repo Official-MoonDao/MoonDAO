@@ -1,3 +1,5 @@
+import React from 'react'
+
 type ActionProps = {
   title: string
   description: string | React.ReactNode
@@ -16,18 +18,20 @@ export default function Action({
   return (
     <div
       data-testid="action-container"
-      className={`bg-slate-600/20 rounded-xl p-4 transition-colors cursor-pointer group ${
-        disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-600/30'
+      className={`flex-1 bg-slate-600/20 rounded-xl p-4 transition-all duration-200 cursor-pointer group hover:bg-slate-600/30 ${
+        disabled ? 'opacity-50 cursor-not-allowed' : ''
       }`}
       onClick={disabled ? undefined : onClick}
     >
-      <div className="flex items-center gap-3 mb-3">
-        <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">
+      <div className="flex items-center gap-3">
+        <div className="flex-shrink-0 p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-600/50 transition-colors">
           {icon}
         </div>
-        <h3 className="font-bold text-white text-sm">{title}</h3>
+        <div className="flex-1 min-w-0 flex flex-col gap-1">
+          <h3 className="font-semibold text-white text-sm leading-tight">{title}</h3>
+          <p className="text-xs text-slate-300 leading-relaxed">{description}</p>
+        </div>
       </div>
-      <p className="text-xs text-slate-300 leading-relaxed">{description}</p>
     </div>
   )
 }

@@ -10,6 +10,7 @@ import useProjectData, { Project } from '@/lib/project/useProjectData'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { normalizeJsonString } from '@/lib/utils/rewards'
 import NumberStepper from '../layout/NumberStepper'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 import StandardButton from '../layout/StandardButton'
 
 type ProjectCardProps = {
@@ -106,7 +107,7 @@ const ProjectCardContent = memo(
                   {isMembershipDataLoading ? 'Checking...' : 'Contributed'}
                 </p>
                 {isMembershipDataLoading && (
-                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mt-1"></div>
+                  <LoadingSpinner width="w-4" height="h-4" className="text-gray-400 border-gray-400 border-t-transparent mt-1" />
                 )}
               </div>
             ) : (

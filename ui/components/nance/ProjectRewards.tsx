@@ -447,10 +447,7 @@ export function ProjectRewards({
               </div>
             </div>
 
-            <div
-              id="projects-container"
-              className="bg-black/20 rounded-xl p-6 border border-white/10"
-            >
+            <div id="projects-container" className="p-6">
               <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
                 Vote on Project Allocations
               </h1>
@@ -458,24 +455,19 @@ export function ProjectRewards({
               <div className="flex flex-col gap-6">
                 {currentProjects && currentProjects.length > 0 ? (
                   currentProjects.map((project: any, i) => (
-                    <div
+                    <ProjectCard
                       key={`project-card-${i}`}
-                      className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
-                    >
-                      <ProjectCard
-                        key={`project-card-${i}`}
-                        project={project}
-                        projectContract={projectContract}
-                        hatsContract={hatsContract}
-                        distribute={active && project.eligible}
-                        distribution={userHasVotingPower ? distribution : undefined}
-                        handleDistributionChange={
-                          userHasVotingPower ? handleDistributionChange : undefined
-                        }
-                        userHasVotingPower={userHasVotingPower}
-                        isVotingPeriod={active}
-                      />
-                    </div>
+                      project={project}
+                      projectContract={projectContract}
+                      hatsContract={hatsContract}
+                      distribute={active && project.eligible}
+                      distribution={userHasVotingPower ? distribution : undefined}
+                      handleDistributionChange={
+                        userHasVotingPower ? handleDistributionChange : undefined
+                      }
+                      userHasVotingPower={userHasVotingPower}
+                      isVotingPeriod={active}
+                    />
                   ))
                 ) : (
                   <div className="text-center py-8 text-gray-400">

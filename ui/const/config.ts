@@ -537,3 +537,5 @@ export const TICK_SPACING = 200
 
 export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
 export const FREE_MINT_THRESHOLD = 1e16
+
+export const EB_TEAM_ID = '0'

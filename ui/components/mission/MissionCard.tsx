@@ -1,12 +1,12 @@
 import Link from 'next/link'
-import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { useState } from 'react'
 import { useEffect } from 'react'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import useJBProjectData from '@/lib/juicebox/useJBProjectData'
+import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
-import StandardCard from '../layout/StandardCard'
+import Card from '@/components/layout/Card'
 import MissionStat from './MissionStat'
 
 export type Mission = {
@@ -72,28 +72,20 @@ export default function MissionCard({
     const totalFunding = useTotalFunding(mission?.projectId)
     return (
       <div id="missions-stats" className="flex gap-4">
-        <MissionStat
-          label="Total Raised"
-          value={'Ξ' + Number(totalFunding || 0) / 1e18}
-        />
-        <MissionStat
-          label="PAYMENTS"
-          value={projectData?.subgraphData?.paymentsCount}
-        />
+        <MissionStat label="Total Raised" value={'Ξ' + Number(totalFunding || 0) / 1e18} />
+        <MissionStat label="PAYMENTS" value={projectData?.subgraphData?.paymentsCount} />
       </div>
     )
   }
 
   return (
-    <StandardCard
+    <Card
       id="mission-card"
+      variant="gradient"
       link={`/mission/${mission?.id}`}
       title={metadata?.name}
       subheader={
-        <Link
-          href={`/team/${generatePrettyLink(teamNFT?.metadata?.name || '')}`}
-          passHref
-        >
+        <Link href={`/team/${generatePrettyLink(teamNFT?.metadata?.name || '')}`} passHref>
           <p id="team-name" className="text-light-warm hover:underline">
             {teamNFT?.metadata?.name}
           </p>

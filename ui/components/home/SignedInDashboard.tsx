@@ -57,6 +57,7 @@ import { useTotalMooneyBalance } from '@/lib/tokens/hooks/useTotalMooneyBalance'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { useTotalVP } from '@/lib/tokens/hooks/useTotalVP'
 import { truncateTokenValue } from '@/lib/utils/numbers'
+import { networkCard } from '@/lib/layout/styles'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { RevenueChart } from '@/components/dashboard/treasury/RevenueChart'
 import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
@@ -1262,7 +1263,7 @@ export default function SingedInDashboard({
             </StandardButton>
           </div>
 
-          <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[650px] xl:h-[700px] bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-2xl overflow-hidden">
+          <div className={`relative w-full h-[400px] sm:h-[500px] lg:h-[650px] xl:h-[700px] ${networkCard.base} overflow-hidden`}>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex items-center justify-center">
                 <LazyEarth

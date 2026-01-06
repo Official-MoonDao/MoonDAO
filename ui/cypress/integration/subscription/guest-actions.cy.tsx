@@ -29,6 +29,7 @@ describe('<GuestActions />', () => {
         <GuestActions {...props} />
       </TestnetProviders>
     )
+    cy.get('.header').should('exist')
     cy.contains('Fund Wallet').should('exist')
   })
 
@@ -38,6 +39,7 @@ describe('<GuestActions />', () => {
         <GuestActions {...props} address={ZERO_ADDRESS} nativeBalance={1} />
       </TestnetProviders>
     )
+    cy.get('.header').should('exist')
     cy.contains('Become a Citizen').should('exist')
   })
 })

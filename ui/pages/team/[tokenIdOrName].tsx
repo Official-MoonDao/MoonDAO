@@ -36,6 +36,7 @@ import {
   MISSION_TABLE_ADDRESSES,
   JBV5_DIRECTORY_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
+  EB_TEAM_ID,
 } from 'const/config'
 import { BLOCKED_TEAMS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
@@ -62,7 +63,6 @@ import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import { TwitterIcon } from '@/components/assets'
-import DashboardCard from '@/components/dashboard/DashboardCard'
 import StatsCard from '@/components/dashboard/StatsCard'
 import Address from '@/components/layout/Address'
 import Container from '@/components/layout/Container'
@@ -83,6 +83,7 @@ import TeamMembers from '@/components/subscription/TeamMembers'
 import TeamMetadataModal from '@/components/subscription/TeamMetadataModal'
 import TeamMissions from '@/components/subscription/TeamMissions'
 import TeamTreasury from '@/components/subscription/TeamTreasury'
+import EBRewards from '@/components/subscription/EBRewards'
 
 export default function TeamDetailPage({
   tokenId,
@@ -227,8 +228,8 @@ export default function TeamDetailPage({
               className="flex w-full flex-col lg:flex-row items-stretch gap-6"
             >
               {nft?.metadata?.image ? (
-                <div id="team-image-container" className="flex-shrink-0">
-                  <div className="relative w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
+                <div id="team-image-container" className="relative flex-shrink-0">
+                  <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
                     <IPFSRenderer
                       src={nft?.metadata?.image}
                       className="w-full h-full object-cover rounded-2xl border-4 border-slate-500/50"
@@ -236,10 +237,10 @@ export default function TeamDetailPage({
                       width={250}
                       alt="Team Image"
                     />
-                    <div id="star-asset-container" className="absolute -bottom-2 -right-2">
-                      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
-                        <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
-                      </div>
+                  </div>
+                  <div id="star-asset-container" className="absolute -bottom-2 -right-2">
+                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
+                      <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
                     </div>
                   </div>
                 </div>
@@ -461,7 +462,7 @@ export default function TeamDetailPage({
         >
           {/* Team Statistics Overview */}
           {!isDeleted && subIsValid && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="mt-4 md:mt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
                 title="Team Members"
                 value={teamStats.memberCount}
@@ -489,43 +490,31 @@ export default function TeamDetailPage({
             </div>
           )}
 
-          {!isDeleted && subIsValid && (
-            <div id="entity-actions-container" className=" z-30">
-              {isManager || address === nft.owner ? (
-                <DashboardCard
-                  title="Quick Actions"
-                  icon={
-                    <Image src="/assets/icon-rocket.svg" alt="Actions" width={30} height={30} />
-                  }
-                >
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <Action
-                      title="Fund"
-                      description="Launch a mission to raise funds."
-                      icon={<BanknotesIcon height={24} width={24} className="text-white" />}
-                      onClick={() => router.push('/launch?status=create')}
-                    />
-                    <Action
-                      title="Hire"
-                      description="List job openings or contracts to a global talent pool."
-                      icon={
-                        <ClipboardDocumentListIcon height={24} width={24} className="text-white" />
-                      }
-                      onClick={() => setTeamJobModalEnabled(true)}
-                    />
-                    <Action
-                      title="Sell"
-                      description="List products, services, or ticketed events for sale."
-                      icon={
-                        <BuildingStorefrontIcon height={24} width={24} className="text-white" />
-                      }
-                      onClick={() => setTeamListingModalEnabled(true)}
-                    />
-                  </div>
-                </DashboardCard>
-              ) : (
-                ''
-              )}
+          {!isDeleted && subIsValid && (isManager || address === nft.owner) && (
+            <div
+              id="entity-actions-container"
+              className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6"
+            >
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Action
+                  title="Fund"
+                  description="Launch a mission to raise funds."
+                  icon={<BanknotesIcon height={24} width={24} className="text-white" />}
+                  onClick={() => router.push('/launch?status=create')}
+                />
+                <Action
+                  title="Hire"
+                  description="List job openings or contracts to a global talent pool."
+                  icon={<ClipboardDocumentListIcon height={24} width={24} className="text-white" />}
+                  onClick={() => setTeamJobModalEnabled(true)}
+                />
+                <Action
+                  title="Sell"
+                  description="List products, services, or ticketed events for sale."
+                  icon={<BuildingStorefrontIcon height={24} width={24} className="text-white" />}
+                  onClick={() => setTeamListingModalEnabled(true)}
+                />
+              </div>
             </div>
           )}
 
@@ -558,7 +547,7 @@ export default function TeamDetailPage({
             </div>
           )}
           {subIsValid && !isDeleted ? (
-            <div className="space-y-6 mb-10">
+            <div className="space-y-6 mb-10 mt-5 md:mt-0">
               {/* Team Members */}
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 mb-6">
@@ -638,6 +627,26 @@ export default function TeamDetailPage({
                   <GeneralActions />
                 </div>
               )}
+              {/* EB Rewards - Only show for EB team managers */}
+              {(() => {
+                const shouldShowEBRewards =
+                  isManager &&
+                  EB_TEAM_ID &&
+                  String(tokenId) === String(EB_TEAM_ID)
+                if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+                  console.log('[EB Rewards] Render check:', {
+                    isManager,
+                    EB_TEAM_ID,
+                    tokenId,
+                    tokenIdString: String(tokenId),
+                    ebTeamIdString: String(EB_TEAM_ID),
+                    shouldShowEBRewards,
+                  })
+                }
+                return shouldShowEBRewards ? (
+                  <EBRewards isManager={isManager} teamId={tokenId} />
+                ) : null
+              })()}
             </div>
           ) : (
             // Subscription Expired
