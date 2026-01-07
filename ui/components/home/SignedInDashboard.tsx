@@ -1058,6 +1058,7 @@ export default function SingedInDashboard({
             selectedChain={selectedChain}
             teamContract={teamContract}
             marketplaceTableContract={marketplaceTableContract}
+            initialListings={newestListings}
           />
         </div>
 
