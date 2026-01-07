@@ -539,3 +539,4 @@ export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
 export const FREE_MINT_THRESHOLD = 1e16
 
 export const EB_TEAM_ID = '0'
+export const NEXT_ETH_BUDGET = 11.60
