@@ -19,7 +19,6 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizens } from '@/lib/citizen/useCitizen'
-import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
 import { useAssets } from '@/lib/dashboard/hooks'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { Project } from '@/lib/project/useProjectData'
@@ -39,19 +38,13 @@ import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import DashboardActiveProjects from '@/components/project/DashboardActiveProjects'
 import PastProjects from '@/components/project/PastProjects'
 import ProjectCard from '@/components/project/ProjectCard'
+import RewardAsset from '@/components/project/RewardAsset'
 
 export type Distribution = {
   year: number
   quarter: number
   address: string
   distribution: { [key: string]: number }
-}
-
-export type RewardAssetProps = {
-  name: string
-  value: string | number
-  usdValue: string | number
-  approximateUSD?: boolean
 }
 
 export type ProjectRewardsProps = {
@@ -62,68 +55,6 @@ export type ProjectRewardsProps = {
 }
 
 // Helper function to format large numbers for mobile display
-function formatValueForDisplay(value: string | number): {
-  full: string
-  abbreviated: string
-} {
-  const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
-
-  if (isNaN(numValue)) {
-    return { full: value.toString(), abbreviated: value.toString() }
-  }
-
-  const full = numValue.toLocaleString()
-
-  // Create abbreviated version for very large numbers
-  if (numValue >= 1000000) {
-    const millions = numValue / 1000000
-    const abbreviated = `${millions.toFixed(2)}M`
-    return { full, abbreviated }
-  } else if (numValue >= 1000) {
-    const thousands = numValue / 1000
-    const abbreviated = `${thousands.toFixed(1)} K`
-    return { full, abbreviated }
-  }
-
-  return { full, abbreviated: full }
-}
-
-function RewardAsset({ name, value, usdValue, approximateUSD }: RewardAssetProps) {
-  const image = assetImageExtension[name]
-    ? `/coins/${name}.${assetImageExtension[name]}`
-    : '/coins/DEFAULT.png'
-  const usd = Number(usdValue)
-
-  const formattedValue = formatValueForDisplay(value)
-
-  return (
-    <div className="flex gap-3 items-center">
-      <Image
-        className="scale-[0.55] filter drop-shadow-lg"
-        src={image}
-        alt={name}
-        width={name === 'ETH' ? 42 : 50}
-        height={name === 'ETH' ? 42 : 50}
-      />
-      <div className="flex flex-col min-w-0 flex-1">
-        <div className="flex gap-2 font-GoodTimes text-lg text-white">
-          <p className="text-white/80">{name}</p>
-          {/* Show abbreviated on small screens, full on larger screens */}
-          <p className="text-white font-bold whitespace-nowrap">
-            <span className="sm:hidden">{formattedValue.abbreviated}</span>
-            <span className="hidden sm:inline">{formattedValue.full}</span>
-          </p>
-        </div>
-        {usd > 0 && (
-          <p className="text-gray-400 text-xs">{`(${
-            approximateUSD ? '~' : ''
-          }$${usd.toLocaleString()})`}</p>
-        )}
-      </div>
-    </div>
-  )
-}
-
 export function ProjectRewards({
   currentProjects,
   pastProjects,
