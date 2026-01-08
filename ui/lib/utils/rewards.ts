@@ -72,11 +72,7 @@ function minimizeL1Distance(D: number[], V: number[][]) {
   return coefficients
 }
 
-function getBestFitDistributions(
-  distributions: any,
-  projects: any,
-  votes: any
-) {
+function getBestFitDistributions(distributions: any, projects: any, votes: any) {
   const bestFitDistributions = []
   for (const d of distributions) {
     const desiredDistribution = []
@@ -100,9 +96,7 @@ export function runIterativeNormalization(distributions: any, projects: any) {
   const numProjects = projects.length
 
   const numVotes = distributions.length
-  const votes = Array.from({ length: numVotes }, () =>
-    Array(numProjects).fill(NaN)
-  )
+  const votes = Array.from({ length: numVotes }, () => Array(numProjects).fill(NaN))
   for (const [citizenIndex, d] of distributions.entries()) {
     const { address, year, quarter, distribution: dist } = d
     for (const [projectIndex, project] of projects.entries()) {
@@ -197,21 +191,14 @@ export function runQuadraticVoting(
   }
   const votingPowerSum = _.sum(Object.values(addressToQuadraticVotingPower))
   if (votingPowerSum > 0) {
-    for (const [projectId, percentages] of Object.entries(
-      projectIdToListOfPercentage
-    )) {
+    for (const [projectId, percentages] of Object.entries(projectIdToListOfPercentage)) {
       projectIdToEstimatedPercentage[projectId] =
-        _.sum(
-          percentages.map(
-            (p, i) => p * addressToQuadraticVotingPower[allAddresses[i]]
-          )
-        ) / votingPowerSum
+        _.sum(percentages.map((p, i) => p * addressToQuadraticVotingPower[allAddresses[i]])) /
+        votingPowerSum
     }
     // normalize projectIdToEstimatedPercentage
     const sum = _.sum(Object.values(projectIdToEstimatedPercentage))
-    for (const [projectId, percentage] of Object.entries(
-      projectIdToEstimatedPercentage
-    )) {
+    for (const [projectId, percentage] of Object.entries(projectIdToEstimatedPercentage)) {
       projectIdToEstimatedPercentage[projectId] =
         (percentage / sum) * budgetPercentMinusCommunityFund
     }
@@ -242,10 +229,7 @@ function fillInZeros(citizenDistributions: any, projects: any) {
   return newDistributions
 }
 
-function zeroOutDistributionForContributors(
-  citizenDistributions: any,
-  projects: any
-) {
+function zeroOutDistributionForContributors(citizenDistributions: any, projects: any) {
   // 1. if a citizen is listed in the rewardDistribution for a projects, zero out that value
   const newDistributions = []
   const zeroedOut = {}
@@ -303,12 +287,11 @@ export function computeRewardPercentages(
   projects: any,
   addressToQuadraticVotingPower: any
 ) {
-  const citizenDistributionsWithZeroes = fillInZeros(
-    citizenDistributions,
+  const citizenDistributionsWithZeroes = fillInZeros(citizenDistributions, projects)
+  const citizenDistributionsWithZeroedOutContributors = zeroOutDistributionForContributors(
+    citizenDistributionsWithZeroes,
     projects
   )
-  const citizenDistributionsWithZeroedOutContributors =
-    zeroOutDistributionForContributors(citizenDistributionsWithZeroes, projects)
   const [filledInCitizenDistributions, votes] = runIterativeNormalization(
     citizenDistributionsWithZeroedOutContributors,
     projects
@@ -332,9 +315,7 @@ export function getBudget(tokens: any, year: number, quarter: number) {
   let usdBudget = 0
   let mooneyBudget = 0
   let ethPrice = 0
-  const ethToken = tokens.find(
-    (token: any) => token.symbol === 'ETH' && token.balance > 0
-  )
+  const ethToken = tokens.find((token: any) => token.symbol === 'ETH' && token.balance > 0)
   if (tokens && ethToken) {
     ethPrice = ethToken.usd / ethToken.balance
     for (const token of tokens) {
@@ -353,8 +334,7 @@ export function getBudget(tokens: any, year: number, quarter: number) {
     const MOONEY_INITIAL_BUDGET = 15_000_000
     const MOONEY_DECAY_RATE = 0.95
 
-    mooneyBudget =
-      MOONEY_INITIAL_BUDGET * MOONEY_DECAY_RATE ** numQuartersPastQ4Y2022
+    mooneyBudget = MOONEY_INITIAL_BUDGET * MOONEY_DECAY_RATE ** numQuartersPastQ4Y2022
   }
   return {
     ethBudget,
@@ -370,9 +350,7 @@ export function normalizeJsonString(jsonString: string) {
   // replace fancy double quotes with regular double quotes
   // and add leading double quotes if needed
   return JSON.parse(
-    nonEmptyJsonString
-      .replace(/[\u201C\u201D]/g, '"')
-      .replace(/(\b0x[a-fA-F0-9]{40}\b):/g, '"$1":')
+    nonEmptyJsonString.replace(/[\u201C\u201D]/g, '"').replace(/(\b0x[a-fA-F0-9]{40}\b):/g, '"$1":')
   )
 }
 
@@ -398,25 +376,17 @@ export function getPayouts(
   for (const project of projectsAndCommunityCircle) {
     const projectId = project.id
     const projectPercentage =
-      projectId == -1
-        ? COMMUNITY_CIRCLE_PERCENTAGE
-        : projectIdToEstimatedPercentage[projectId]
-    const contributors: { [key: string]: number } = normalizeJsonString(
-      project.rewardDistribution
-    )
+      projectId == -1 ? COMMUNITY_CIRCLE_PERCENTAGE : projectIdToEstimatedPercentage[projectId]
+    const contributors: { [key: string]: number } = normalizeJsonString(project.rewardDistribution)
     const upfrontPayments: {
       [key: string]: any
     } = normalizeJsonString(project.upfrontPayments)
-    for (const [contributerAddress, contributorPercentage] of Object.entries(
-      contributors
-    )) {
+    for (const [contributerAddress, contributorPercentage] of Object.entries(contributors)) {
       if (!(contributerAddress.toLowerCase() in addressToPercent)) {
         addressToPercent[contributerAddress.toLowerCase()] = 0
       }
-      const marginalPayoutProportion =
-        (contributorPercentage / 100) * (projectPercentage / 100)
-      addressToPercent[contributerAddress.toLowerCase()] +=
-        marginalPayoutProportion * 100
+      const marginalPayoutProportion = (contributorPercentage / 100) * (projectPercentage / 100)
+      addressToPercent[contributerAddress.toLowerCase()] += marginalPayoutProportion * 100
       if (!(contributerAddress in addressToEthPayout)) {
         addressToEthPayout[contributerAddress] = 0
       }
@@ -435,23 +405,20 @@ export function getPayouts(
       ) {
         // skip mooney payment
       } else {
-        addressToMooneyPayout[contributerAddress] +=
-          marginalPayoutProportion * mooneyBudget
+        addressToMooneyPayout[contributerAddress] += marginalPayoutProportion * mooneyBudget
       }
 
       if (
         upfrontPayments &&
         ((contributerAddress in upfrontPayments &&
-          upfrontPayments[contributerAddress] >
-            marginalPayoutProportion * ethBudget) ||
+          upfrontPayments[contributerAddress] > marginalPayoutProportion * ethBudget) ||
           (utils.getAddress(contributerAddress) in upfrontPayments &&
             upfrontPayments[utils.getAddress(contributerAddress)] >
               marginalPayoutProportion * ethBudget))
       ) {
         continue
       }
-      addressToEthPayout[contributerAddress] +=
-        marginalPayoutProportion * ethBudget
+      addressToEthPayout[contributerAddress] += marginalPayoutProportion * ethBudget
     }
   }
 
@@ -500,4 +467,29 @@ export function getPayouts(
     vMooneyAmounts,
     humanFormat,
   }
+}
+
+export function getApprovedProjects(
+  projects: any[],
+  outcome: { [key: string]: number },
+  ethBudgets: { [key: string]: number },
+  ethBudget: number
+): { [key: string]: boolean } {
+  const sortedOutcome = Object.keys(outcome)
+    .map((projectId: string) => {
+      return { projectId: projectId, percent: outcome[projectId], budget: ethBudgets[projectId] }
+    })
+    .sort((a, b) => {
+      return b.percent - a.percent
+    })
+  const numApprovedProjects = Math.min(Math.max(Math.ceil(projects.length / 2), 3), projects.length)
+  let approvedBudget = 0
+  const projectIdToApproved: { [key: string]: boolean } = {}
+  for (let i = 0; i < sortedOutcome.length; i++) {
+    const projectId = sortedOutcome[i].projectId
+    approvedBudget += sortedOutcome[i].budget
+    const approved = i < numApprovedProjects && approvedBudget <= (ethBudget * 3) / 4
+    projectIdToApproved[projectId] = approved
+  }
+  return projectIdToApproved
 }
