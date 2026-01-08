@@ -20,9 +20,12 @@ import {
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
+import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useWindowSize } from 'react-use'
+import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import { getContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
@@ -55,6 +58,10 @@ import MissionMobileContributeButton from '@/components/mission/MissionMobileCon
 import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import MissionTeamSection from '@/components/mission/MissionTeamSection'
+import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
+import TeamMembers from '@/components/subscription/TeamMembers'
+import { TwitterIcon } from '@/components/assets'
+import JuiceboxLogoWhite from '../assets/JuiceboxLogoWhite'
 
 const CHAIN = DEFAULT_CHAIN_V5
 const CHAIN_SLUG = getChainSlug(CHAIN)
@@ -488,13 +495,85 @@ export default function MissionProfile({
                 />
               </div>
             </div>
-            <MissionTeamSection
-              teamSocials={teamSocials}
-              teamHats={teamHats}
-              hatsContract={hatsContract}
-              citizenContract={citizenContract}
-            />
-            <MissionJuiceboxFooter projectId={mission?.projectId} isManager={isManager} />
+            <div className="w-full px-[5vw] flex justify-center">
+              <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 pb-[5vw] md:pb-[2vw]">
+                <div className="ml-[5vw] md:ml-[2vw] mt-[2vw] flex justify-between w-full gap-2 text-light-cool">
+                  <div className="flex items-center gap-2 w-full">
+                    <Image
+                      src={'/assets/icon-star-blue.svg'}
+                      alt="Job icon"
+                      width={30}
+                      height={30}
+                    />
+                    <h2 className="text-2xl 2xl:text-4xl font-GoodTimes text-moon-indigo">
+                      Meet the Team
+                    </h2>
+                  </div>
+                  <div className="flex justify-end gap-2 w-full text-white mr-[5vw]">
+                    <div className="flex gap-2 justify-start justify-end">
+                      {teamSocials.communications && (
+                        <Link
+                          className="flex gap-2 hover:scale-105 transition-all duration-200"
+                          href={teamSocials.communications}
+                          target="_blank"
+                          passHref
+                        >
+                          <ChatBubbleLeftIcon height={25} width={25} />
+                        </Link>
+                      )}
+                      {teamSocials.twitter && (
+                        <Link
+                          className="flex gap-2 hover:scale-105 transition-all duration-200"
+                          href={teamSocials.twitter}
+                          target="_blank"
+                          passHref
+                        >
+                          <TwitterIcon />
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <SlidingCardMenu>
+                  <div className="flex gap-4"></div>
+                  {teamHats?.[0]?.id && (
+                    <TeamMembers
+                      hats={teamHats}
+                      hatsContract={hatsContract}
+                      citizenContract={citizenContract}
+                    />
+                  )}
+                </SlidingCardMenu>
+              </div>
+            </div>
+            <div className="w-full px-[5vw] pb-[5vw] md:pb-[2vw] flex justify-center">
+              <div className="w-full bg-gradient-to-r from-darkest-cool to-dark-cool max-w-[1200px] rounded-[5vw] md:rounded-[2vw] px-0 py-4">
+                <div className="flex items-center relative rounded-tl-[20px] rounded-bl-[5vmax] p-4">
+                  <div
+                    className="pl-4 pr-8 flex overflow-x-auto overflow-y-hidden"
+                    style={{
+                      msOverflowStyle: 'none',
+                      WebkitOverflowScrolling: 'touch',
+                    }}
+                  >
+                    <Link
+                      className="flex flex-col group"
+                      href={`https://juicebox.money/v5/arb:${mission?.projectId}`}
+                      target="_blank"
+                    >
+                      <div className="group-hover:scale-[1.05] transition-all duration-200">
+                        <JuiceboxLogoWhite />
+                      </div>
+                      {isManager && (
+                        <p className="text-xs opacity-90 uppercase group-hover:scale-105 transition-all duration-200">
+                          (Edit Project)
+                        </p>
+                      )}
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </ContentLayout>
       </Container>

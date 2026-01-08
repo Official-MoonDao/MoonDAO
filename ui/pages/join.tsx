@@ -28,6 +28,7 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import { networkCard } from '@/lib/layout/styles'
 import { getAttribute } from '@/lib/utils/nft'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Card from '../components/layout/Card'
@@ -485,7 +486,7 @@ export default function Join({
         <div id="network-content" className="max-w-6xl mx-auto px-6">
           {tab === 'map' ? (
             /* Map View */
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
+            <div className={`${networkCard.base} p-6 md:p-8`}>
               <div className="mb-6">
                 <div className="flex justify-center">
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
@@ -511,7 +512,7 @@ export default function Join({
                 </div>
               </div>
               <div className="w-full flex justify-center">
-                <div className="w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
+                <div className={`w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] ${networkCard.base} shadow-xl overflow-hidden`}>
                   <div
                     className={`flex items-center justify-center ${
                       mapView !== 'earth' && 'hidden'
@@ -607,9 +608,12 @@ export default function Join({
                       />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-GoodTimes text-white mb-4 drop-shadow-lg">Citizens Only</h3>
+                  <h3 className="text-2xl font-GoodTimes text-white mb-4 drop-shadow-lg">
+                    Citizens Only
+                  </h3>
                   <p className="text-slate-300 mb-6 max-w-md mx-auto drop-shadow-md">
-                    Become a MoonDAO Citizen to access the jobs board and connect with teams building the future of space exploration.
+                    Become a MoonDAO Citizen to access the jobs board and connect with teams
+                    building the future of space exploration.
                   </p>
                   <StandardButton
                     className="gradient-2 hover:opacity-90 transition-opacity"
@@ -853,92 +857,9 @@ export async function getStaticProps() {
       return +expiresAt.toString() > now
     })
 
-    // Generate location data for map
-    let citizensLocationData: any[] = []
-
-    if (process.env.NEXT_PUBLIC_ENV === 'prod' || process.env.NEXT_PUBLIC_TEST_ENV === 'true') {
-      // Get location data for each citizen
-      for (const citizen of filteredValidCitizens) {
-        const citizenLocation = getAttribute(
-          citizen?.metadata?.attributes as unknown as any[],
-          'location'
-        )?.value
-
-        let locationData
-
-        if (citizenLocation && citizenLocation !== '' && !citizenLocation?.startsWith('{')) {
-          locationData = {
-            results: [
-              {
-                formatted_address: citizenLocation,
-              },
-            ],
-          }
-        } else if (citizenLocation?.startsWith('{')) {
-          const parsedLocationData = JSON.parse(citizenLocation)
-          locationData = {
-            results: [
-              {
-                formatted_address: parsedLocationData.name,
-                geometry: {
-                  location: {
-                    lat: parsedLocationData.lat,
-                    lng: parsedLocationData.lng,
-                  },
-                },
-              },
-            ],
-          }
-        } else {
-          locationData = {
-            results: [
-              {
-                formatted_address: 'Antarctica',
-                geometry: { location: { lat: -90, lng: 0 } },
-              },
-            ],
-          }
-        }
-
-        citizensLocationData.push({
-          id: citizen.metadata.id,
-          name: citizen.metadata.name,
-          location: citizenLocation,
-          formattedAddress: locationData.results?.[0]?.formatted_address || 'Antarctica',
-          image: citizen.metadata.image,
-          lat: locationData.results?.[0]?.geometry?.location?.lat || -90,
-          lng: locationData.results?.[0]?.geometry?.location?.lng || 0,
-        })
-      }
-
-      // Group citizens by lat and lng
-      const locationMap = new Map()
-
-      for (const citizen of citizensLocationData) {
-        const key = `${citizen.lat},${citizen.lng}`
-        if (!locationMap.has(key)) {
-          locationMap.set(key, {
-            citizens: [citizen],
-            names: [citizen.name],
-            formattedAddress: citizen.formattedAddress,
-            lat: citizen.lat,
-            lng: citizen.lng,
-          })
-        } else {
-          const existing = locationMap.get(key)
-          existing.names.push(citizen.name)
-          existing.citizens.push(citizen)
-        }
-      }
-
-      // Convert the map back to an array
-      citizensLocationData = Array.from(locationMap.values()).map((entry: any) => ({
-        ...entry,
-        color:
-          entry.citizens.length > 3 ? '#6a3d79' : entry.citizens.length > 1 ? '#5e4dbf' : '#5556eb',
-        size: entry.citizens.length > 1 ? Math.min(entry.citizens.length * 0.01, 0.4) : 0.01,
-      }))
-    }
+    // Use the optimized centralized service for location data
+    const { fetchCitizensWithLocation } = await import('@/lib/citizen/citizenDataService')
+    const citizensLocationData = await fetchCitizensWithLocation(chain)
 
     return {
       props: {

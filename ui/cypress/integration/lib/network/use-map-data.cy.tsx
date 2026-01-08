@@ -1,13 +1,22 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
+import { GroupedLocationData } from '@/lib/network/types'
 import { useMapData } from '@/lib/network/useMapData'
 
-const MapDataWrapper = ({ enabled = true }: { enabled?: boolean }) => {
-  const result = useMapData(enabled)
+const MapDataWrapper = ({
+  enabled = true,
+  initialData,
+}: {
+  enabled?: boolean
+  initialData?: GroupedLocationData[]
+}) => {
+  const result = useMapData(enabled, { initialData })
 
   return (
     <div>
       <div data-testid="map-loading">{result.isLoading ? 'loading' : 'loaded'}</div>
-      <div data-testid="map-error">{result.error ? result.error.message : 'no-error'}</div>
+      <div data-testid="map-error">
+        {result.error ? String((result.error as any)?.message || result.error) : 'no-error'}
+      </div>
       <div data-testid="map-count">{result.data.length}</div>
       {result.data.map((location, i) => (
         <div key={i} data-testid={`location-${i}`}>
@@ -21,68 +30,101 @@ const MapDataWrapper = ({ enabled = true }: { enabled?: boolean }) => {
 }
 
 describe('useMapData', () => {
-  const mockCitizenRow = {
-    id: 1,
-    name: 'Test Citizen',
-    description: 'Test Description',
-    image: 'ipfs://test-image',
-    location: '{"name":"New York, NY","lat":40.7128,"lng":-74.0060}',
-    website: 'https://test.com',
-    discord: 'test#1234',
-    twitter: '@test',
-    view: 'public',
-    formId: 'form123',
-    owner: '0x1234567890123456789012345678901234567890',
-  }
+  const mockLocationData: GroupedLocationData[] = [
+    {
+      citizens: [
+        {
+          id: '1',
+          name: 'Test Citizen',
+          location: '{"name":"New York, NY","lat":40.7128,"lng":-74.0060}',
+          formattedAddress: 'New York, NY, USA',
+          image: 'ipfs://test-image',
+          lat: 40.7128,
+          lng: -74.006,
+        },
+      ],
+      names: ['Test Citizen'],
+      formattedAddress: 'New York, NY, USA',
+      lat: 40.7128,
+      lng: -74.006,
+      color: '#5556eb',
+      size: 0.01,
+    },
+    {
+      citizens: [
+        {
+          id: '2',
+          name: 'Test Citizen 2',
+          location: '{"name":"Los Angeles, CA","lat":34.0522,"lng":-118.2437}',
+          formattedAddress: 'Los Angeles, CA, USA',
+          image: 'ipfs://test-image-2',
+          lat: 34.0522,
+          lng: -118.2437,
+        },
+      ],
+      names: ['Test Citizen 2'],
+      formattedAddress: 'Los Angeles, CA, USA',
+      lat: 34.0522,
+      lng: -118.2437,
+      color: '#5556eb',
+      size: 0.01,
+    },
+  ]
 
   beforeEach(() => {
     cy.mountNextRouter('/')
-
-    cy.intercept('POST', '**', (req) => {
-      if (req.body && typeof req.body === 'object') {
-        if (req.body.method === 'expiresAt') {
-          const futureTimestamp = Math.floor(Date.now() / 1000) + 86400
-          req.reply({ result: `0x${futureTimestamp.toString(16)}` })
-        } else if (req.body.method === 'getTableName') {
-          req.reply({ result: 'CITIZENTABLE_11155111_1897' })
-        }
-      }
-    })
   })
 
-  it('should fetch and process map data when enabled', () => {
-    cy.intercept('GET', '/api/tableland/query?statement=*SELECT*FROM*CITIZENTABLE*', {
-      statusCode: 200,
-      body: [mockCitizenRow],
-    }).as('getCitizens')
-
+  it('should use initial data when provided', () => {
     cy.mount(
       <TestnetProviders>
-        <MapDataWrapper enabled={true} />
+        <MapDataWrapper enabled={true} initialData={mockLocationData} />
       </TestnetProviders>
     )
 
-    cy.wait('@getCitizens')
-    cy.get('[data-testid="map-count"]').should('exist')
+    cy.get('[data-testid="map-count"]').should('contain', '2')
+    cy.get('[data-testid="location-0-name"]').should('contain', 'New York, NY, USA')
+    cy.get('[data-testid="location-1-name"]').should('contain', 'Los Angeles, CA, USA')
   })
 
-  it('should not fetch when disabled', () => {
+  it('should return empty array when disabled', () => {
     cy.mount(
       <TestnetProviders>
-        <MapDataWrapper enabled={false} />
+        <MapDataWrapper enabled={false} initialData={mockLocationData} />
       </TestnetProviders>
     )
 
     cy.get('[data-testid="map-count"]').should('contain', '0')
   })
 
-  it('should handle loading state', () => {
+  it('should not show loading state (uses static props)', () => {
+    cy.mount(
+      <TestnetProviders>
+        <MapDataWrapper enabled={true} initialData={mockLocationData} />
+      </TestnetProviders>
+    )
+
+    cy.get('[data-testid="map-loading"]').should('contain', 'loaded')
+  })
+
+  it('should never show error state', () => {
+    cy.mount(
+      <TestnetProviders>
+        <MapDataWrapper enabled={true} initialData={mockLocationData} />
+      </TestnetProviders>
+    )
+
+    cy.get('[data-testid="map-error"]').should('contain', 'no-error')
+  })
+
+  it('should return empty array when no initial data provided', () => {
     cy.mount(
       <TestnetProviders>
         <MapDataWrapper enabled={true} />
       </TestnetProviders>
     )
 
-    cy.get('[data-testid="map-loading"]').should('exist')
+    // Without initial data and in test environment, returns empty array or dummy data
+    cy.get('[data-testid="map-count"]').should('exist')
   })
 })

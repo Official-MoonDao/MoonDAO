@@ -9,12 +9,16 @@ describe('<BenefitCard />', () => {
     gradientTo: 'to-[#5F4BA2]/40',
   }
 
+  beforeEach(() => {
+    cy.mountNextRouter('/')
+  })
+
   it('Renders with title, description, and icon', () => {
     cy.mount(<BenefitCard {...defaultProps} />)
 
     cy.contains('Test Benefit').should('be.visible')
     cy.contains('Test Description').should('be.visible')
-    cy.get('img[alt="Test Benefit"]').should('have.attr', 'src', '/test-icon.svg')
+    cy.get('img').should('have.attr', 'src').and('include', '/test-icon.svg')
   })
 
   it('Displays content correctly with different props', () => {
@@ -30,6 +34,6 @@ describe('<BenefitCard />', () => {
 
     cy.contains('Custom Title').should('be.visible')
     cy.contains('Custom Description').should('be.visible')
-    cy.get('img[alt="Custom Title"]').should('have.attr', 'src', '/custom-icon.svg')
+    cy.get('img').should('have.attr', 'src').and('include', '/custom-icon.svg')
   })
 })

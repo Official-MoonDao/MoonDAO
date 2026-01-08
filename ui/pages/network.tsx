@@ -22,6 +22,7 @@ import { teamRowToNFT, citizenRowToNFT } from '@/lib/tableland/convertRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import { networkCard } from '@/lib/layout/styles'
 import Container from '../components/layout/Container'
 import Frame from '../components/layout/Frame'
 import Head from '../components/layout/Head'
@@ -39,9 +40,11 @@ const Moon = dynamic(() => import('@/components/globe/Moon'), { ssr: false })
 export default function Network({
   initialTeams,
   initialCitizens,
+  citizensLocationData,
 }: {
   initialTeams?: any[]
   initialCitizens?: any[]
+  citizensLocationData?: any[]
 }) {
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
@@ -109,7 +112,8 @@ export default function Network({
     initialData: initialCitizens,
   })
 
-  const mapData = useMapData(isMapTab)
+  // For map tab, use pre-fetched static data from getStaticProps
+  const mapData = useMapData(isMapTab, { initialData: citizensLocationData })
 
   const currentData = isTeamsTab
     ? teamsResult
@@ -249,7 +253,7 @@ export default function Network({
 
           <div id="network-content" className="max-w-6xl mx-auto px-6 pb-16">
             {isMapTab ? (
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
+              <div className={`${networkCard.base} p-6 md:p-8`}>
                 <div className="mb-6">
                   <div className="flex justify-center">
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
@@ -275,7 +279,7 @@ export default function Network({
                   </div>
                 </div>
                 <div className="w-full flex justify-center">
-                  <div className="w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] bg-dark-cool shadow-xl shadow-[#112341] overflow-hidden">
+                  <div className={`w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] ${networkCard.base} shadow-xl overflow-hidden`}>
                     <div
                       className={`flex items-center justify-center ${
                         mapView !== 'earth' && 'hidden'
@@ -290,7 +294,7 @@ export default function Network({
                 </div>
               </div>
             ) : (
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8">
+              <div className={`${networkCard.base} p-6 md:p-8`}>
                 <CardGridContainer xsCols={1} smCols={1} mdCols={2} lgCols={2} maxCols={2} center>
                   {renderNFTs()}
                 </CardGridContainer>
@@ -371,6 +375,7 @@ export const getStaticProps: GetStaticProps = async () => {
     const TeamTableABI = (await import('const/abis/TeamTable.json')).default
     const CitizenTableABI = (await import('const/abis/CitizenTable.json')).default
     const queryTable = (await import('@/lib/tableland/queryTable')).default
+    const { getCitizensLocationData } = await import('@/lib/map')
 
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
@@ -409,7 +414,7 @@ export const getStaticProps: GetStaticProps = async () => {
     const PRE_RENDER_PAGES = 3
     const PRE_RENDER_LIMIT = PAGE_SIZE * PRE_RENDER_PAGES
 
-    const [teamRows, citizenRows] = await Promise.all([
+    const [teamRows, citizenRows, citizensLocationData] = await Promise.all([
       teamTableName
         ? queryTable(
             chain,
@@ -422,6 +427,7 @@ export const getStaticProps: GetStaticProps = async () => {
             `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT ${PRE_RENDER_LIMIT}`
           )
         : Promise.resolve([]),
+      getCitizensLocationData(),
     ])
 
     // Pass raw rows as initialData - the hooks will convert and filter them
@@ -430,6 +436,7 @@ export const getStaticProps: GetStaticProps = async () => {
       props: {
         initialTeams: teamRows || [],
         initialCitizens: citizenRows || [],
+        citizensLocationData: citizensLocationData || [],
       },
       revalidate: 60,
     }
@@ -439,6 +446,7 @@ export const getStaticProps: GetStaticProps = async () => {
       props: {
         initialTeams: [],
         initialCitizens: [],
+        citizensLocationData: [],
       },
       revalidate: 60,
     }

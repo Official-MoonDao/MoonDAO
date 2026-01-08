@@ -13,6 +13,7 @@ import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import StandardButton from '../components/layout/StandardButton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import DashboardActiveProjects from '@/components/project/DashboardActiveProjects'
 import ProjectCard from '@/components/project/ProjectCard'
 
 // Project System Explainer Card Component
@@ -359,62 +360,12 @@ const ProjectsOverview: React.FC<{
 
             {/* Active Projects Section */}
             <div className="relative mx-4 mb-16">
-              <div className="bg-gradient-to-br from-white/5 via-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-3xl p-6 md:p-8 shadow-2xl">
-                <div className="text-center mb-8">
-                  <h3 className="text-2xl md:text-3xl font-GoodTimes text-white mb-4">
-                    Active Projects
-                  </h3>
-                  <p className="text-gray-300 max-w-3xl mx-auto">
-                    Explore the exciting space-focused projects currently in development by our
-                    community. Each project represents a step toward our mission of establishing a
-                    permanent settlement on the Moon.
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-6">
-                  {currentProjects && currentProjects.length > 0 ? (
-                    currentProjects.slice(0, 3).map((project: any, i) => (
-                      <div
-                        key={`active-project-${i}`}
-                        className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
-                      >
-                        <ProjectCard
-                          key={`active-project-${i}`}
-                          project={project}
-                          projectContract={null}
-                          hatsContract={null}
-                          distribute={false}
-                          distribution={undefined}
-                          handleDistributionChange={undefined}
-                          userHasVotingPower={false}
-                          isVotingPeriod={false}
-                        />
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-gray-400">
-                      <p>There are no active projects at the moment.</p>
-                      <p className="text-sm mt-2">
-                        Check back soon or submit your own project proposal!
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {currentProjects && currentProjects.length > 3 && (
-                  <div className="text-center mt-8">
-                    <StandardButton
-                      backgroundColor="bg-gradient-to-r from-purple-600 to-pink-600"
-                      textColor="text-white"
-                      borderRadius="rounded-full"
-                      hoverEffect={false}
-                      link="/projects"
-                    >
-                      View All {currentProjects.length} Active Projects
-                    </StandardButton>
-                  </div>
-                )}
-              </div>
+              <DashboardActiveProjects
+                currentProjects={currentProjects}
+                ethBudget={ethBudget}
+                showBudget={true}
+                maxProjects={6}
+              />
             </div>
 
             {/* Call to Action */}

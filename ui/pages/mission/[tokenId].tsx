@@ -1,8 +1,8 @@
 import { CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
+import dynamic from 'next/dynamic'
 import { fetchFromIPFSWithFallback } from '@/lib/ipfs/gateway'
-import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import { getBackers } from '@/lib/mission'
 import { getMissionServerData } from '@/lib/mission/fetchMissionServerData'
 import { fetchTokenMetadata } from '@/lib/mission/fetchTokenServerData'
@@ -11,6 +11,10 @@ import { fetchTeamNFTAndHats } from '@/lib/team/fetchTeamServerData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionProfile from '@/components/mission/MissionProfile'
+
+const JuiceProviders = dynamic(() => import('@/lib/juicebox/JuiceProviders'), {
+  ssr: false,
+})
 
 const CHAIN = DEFAULT_CHAIN_V5
 const CHAIN_SLUG = getChainSlug(CHAIN)

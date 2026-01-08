@@ -175,7 +175,7 @@ export default function ProjectProfile({ tokenId, project, safeOwners }: Project
       >
         <div
           id="page-container"
-          className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]"
+          className="flex flex-col gap-6 p-6 md:p-8 max-w-[1200px]"
         >
           {/* Project Overview */}
           <SectionCard
@@ -204,48 +204,50 @@ export default function ProjectProfile({ tokenId, project, safeOwners }: Project
             </SectionCard>
           )}
 
-          <div className="z-50 flex flex-col gap-6 mb-6 md:mb-[50px]">
-            <SectionCard
-              header="Meet the Team"
-              iconSrc="/assets/icon-team.svg"
-              action={
-                isManager && (
-                  <div className="flex flex-col md:flex-row justify-start items-center gap-2">
-                    <TeamManageMembers
-                      account={account}
-                      hats={hats}
-                      hatsContract={hatsContract}
-                      teamContract={projectContract}
-                      teamId={tokenId}
-                      selectedChain={selectedChain}
-                      multisigAddress={owner}
-                      adminHatId={adminHatId}
-                      managerHatId={managerHatId}
-                    />
-                  </div>
-                )
-              }
-            >
-              <SlidingCardMenu>
-                <div className="flex gap-2 md:gap-4">
-                  {hats?.[0].id && (
-                    <TeamMembers
-                      hats={hats}
-                      hatsContract={hatsContract}
-                      citizenContract={citizenContract}
-                    />
-                  )}
+          <SectionCard
+            header="Meet the Team"
+            iconSrc="/assets/icon-team.svg"
+            action={
+              isManager && (
+                <div className="flex flex-col md:flex-row justify-start items-center gap-2">
+                  <TeamManageMembers
+                    account={account}
+                    hats={hats}
+                    hatsContract={hatsContract}
+                    teamContract={projectContract}
+                    teamId={tokenId}
+                    selectedChain={selectedChain}
+                    multisigAddress={owner}
+                    adminHatId={adminHatId}
+                    managerHatId={managerHatId}
+                  />
                 </div>
-              </SlidingCardMenu>
-            </SectionCard>
-            {/* Mooney and Voting Power */}
+              )
+            }
+          >
+            <SlidingCardMenu>
+              <div className="flex gap-2 md:gap-4">
+                {hats?.[0].id && (
+                  <TeamMembers
+                    hats={hats}
+                    hatsContract={hatsContract}
+                    citizenContract={citizenContract}
+                  />
+                )}
+              </div>
+            </SlidingCardMenu>
+          </SectionCard>
+          <SectionCard
+            header="Treasury"
+            iconSrc="/assets/icon-treasury.svg"
+          >
             <TeamTreasury
               isSigner={isSigner}
               safeData={safeData}
               multisigAddress={owner}
               safeOwners={safeOwners}
             />
-          </div>
+          </SectionCard>
         </div>
       </ContentLayout>
     </Container>

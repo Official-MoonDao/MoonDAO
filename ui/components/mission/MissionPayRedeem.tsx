@@ -698,7 +698,7 @@ function MissionPayRedeemComponent({
                   isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}
                   showSignInLabel={false}
                 />
-                <p className="text-sm text-gray-300 italic">{`Sign In ● Fund ● Contribute`}</p>
+                <p className="text-sm text-gray-300 italic mt-2">{`Sign In ● Fund ● Contribute`}</p>
               </div>
             </Modal>
           ) : onlyButton && buttonMode === 'standard' ? (

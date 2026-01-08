@@ -51,6 +51,8 @@ export const DEFAULT_CHAIN_V5 = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? ar
 
 export const DEFAULT_CHAIN_V5_SLUG = getChainSlug(DEFAULT_CHAIN_V5)
 
+export const THIRDWEB_ENGINE_URL = 'https://engine.thirdweb.com/v1/read/contract'
+
 export const MOONEY_ADDRESSES: Index = {
   ethereum: ethConfig.MOONEYToken,
   polygon: polygonConfig.MOONEYToken,
@@ -535,3 +537,5 @@ export const TICK_SPACING = 200
 
 export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
 export const FREE_MINT_THRESHOLD = 1e16
+
+export const EB_TEAM_ID = '0'

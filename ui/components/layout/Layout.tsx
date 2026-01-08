@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES } from 'const/config'
 import useTranslation from 'next-translate/useTranslation'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React from 'react'
@@ -16,16 +17,26 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { LogoSidebarLight, LogoSidebar } from '../assets'
 import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
-import CookieBanner from './CookieBanner'
-import GlobalSearch from './GlobalSearch'
-import MissionBanner from './MissionBanner'
 import ColorsAndSocials from './Sidebar/ColorsAndSocials'
 import LanguageChange from './Sidebar/LanguageChange'
 import MobileMenuTop from './Sidebar/MobileMenuTop'
 import MobileSidebar from './Sidebar/MobileSidebar'
 import NavigationLink from './Sidebar/NavigationLink'
-import SpaceBackground from './SpaceBackground'
 import TopNavBar from './TopNavBar'
+
+// Lazy load non-critical components for better LCP
+const SpaceBackground = dynamic(() => import('./SpaceBackground'), {
+  ssr: false,
+})
+const GlobalSearch = dynamic(() => import('./GlobalSearch'), {
+  ssr: false,
+})
+const MissionBanner = dynamic(() => import('./MissionBanner'), {
+  ssr: false,
+})
+const CookieBanner = dynamic(() => import('./CookieBanner'), {
+  ssr: false,
+})
 
 interface Layout {
   children: JSX.Element
