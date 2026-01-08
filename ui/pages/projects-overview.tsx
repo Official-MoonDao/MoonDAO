@@ -401,7 +401,7 @@ const ProjectsOverview: React.FC<{
                     </div>
                     <h4 className="text-lg font-bold text-white mb-2">Max Budget/Project</h4>
                     <p className="text-xl font-bold text-yellow-400">
-                      {(ethBudget * PROJECT_SYSTEM_CONFIG.maxBudgetPercentage).toFixed(2)} ETH
+                      2.08 ETH
                     </p>
                     <p className="text-sm text-yellow-300 mt-1">
                       (20% of quarterly budget)

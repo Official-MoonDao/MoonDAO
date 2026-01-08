@@ -543,13 +543,13 @@ export const EB_TEAM_ID = '0'
 // Project System Configuration
 export const PROJECT_SYSTEM_CONFIG = {
   // Q1 2026 deadline - second Thursday of the quarter
-  submissionDeadline: 'January 9, 2026',
+  submissionDeadline: 'January 15, 2026',
   // Maximum budget per project is 1/5 (20%) of quarterly budget
   maxBudgetPercentage: 0.2,
   // Approval timeline details
   senateReviewDays: 1, // Senate reviews the day after submission
-  editingDeadline: 'January 16, 2026', // 48 hours before third Thursday
-  votingDate: 'January 16, 2026', // Third Thursday of quarter
+  editingDeadline: 'January 22, 2026', // 48 hours before third Thursday
+  votingDate: 'January 22, 2026', // Third Thursday of quarter
   // Submission link
   submissionUrl: 'https://moondao.com/propose',
   // Documentation link
