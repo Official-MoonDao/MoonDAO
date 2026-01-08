@@ -428,9 +428,9 @@ const ProjectsOverview: React.FC<{
                   <div className="text-center">
                     <p className="text-sm text-purple-300 mb-2">Total Quarterly Retroactive Rewards</p>
                     <p className="text-3xl md:text-4xl font-bold text-white">
-                      {ethBudget.toFixed(2)} ETH{' '}
+                      11.6 ETH{' '}
                       <span className="text-xl text-purple-300">
-                        (${usdBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })})
+                        (~$37,000)
                       </span>
                     </p>
                     <p className="text-xs text-purple-400 mt-2">
