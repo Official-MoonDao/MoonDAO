@@ -366,7 +366,7 @@ export function getBudget(tokens: any, year: number, quarter: number) {
 }
 
 export function normalizeJsonString(jsonString: string) {
-  const nonEmptyJsonString = jsonString || '{}'
+  let nonEmptyJsonString = jsonString || '{}'
   if (typeof nonEmptyJsonString === 'object') {
     nonEmptyJsonString = '{}'
   }
