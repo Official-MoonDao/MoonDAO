@@ -72,9 +72,9 @@ export default function DashboardActiveProjects({
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {currentProjects.slice(0, maxProjects).map((project: any, index: number) => (
               <Link key={index} href={`/project/${project.id}`} passHref>
-                <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 min-h-[200px] flex flex-col">
+                <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 h-[280px] flex flex-col">
                   <div className="flex justify-between items-start mb-4">
-                    <h4 className="font-bold text-white text-lg flex-1 mr-3 leading-tight">
+                    <h4 className="font-bold text-white text-lg flex-1 mr-3 leading-tight line-clamp-2">
                       {project.name}
                     </h4>
                     <span
@@ -100,26 +100,6 @@ export default function DashboardActiveProjects({
                 </div>
               </Link>
             ))}
-
-            {/* Show more projects indicator if there are more than maxProjects */}
-            {currentProjects.length > maxProjects && (
-              <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 min-h-[200px] flex items-center justify-center hover:bg-black/40 hover:border-green-500/20 transition-all duration-300">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-300 mb-2">
-                    +{currentProjects.length - maxProjects}
-                  </div>
-                  <p className="text-green-200 text-sm mb-4">
-                    More Projects Available
-                  </p>
-                  <StandardButton
-                    className="bg-green-600/30 hover:bg-green-600/50 text-green-300 text-sm px-6 py-3 rounded-xl transition-all font-medium"
-                    link="/projects"
-                  >
-                    View All Projects
-                  </StandardButton>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       ) : (
