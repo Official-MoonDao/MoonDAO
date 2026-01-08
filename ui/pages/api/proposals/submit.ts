@@ -1,4 +1,5 @@
 import ProjectTableABI from 'const/abis/ProjectTable.json'
+import { getServerSession } from 'next-auth/next'
 import ProjectTeamCreatorABI from 'const/abis/ProjectTeamCreator.json'
 import {
   PROJECT_TABLE_ADDRESSES,
@@ -6,6 +7,7 @@ import {
   DEFAULT_CHAIN_V5,
   PROJECT_CREATOR_ADDRESSES,
 } from 'const/config'
+import { getPrivyUserData } from '@/lib/privy'
 import { DISCORD_TO_ETH_ADDRESS } from 'const/usernames'
 import { ethers } from 'ethers'
 import { getSubmissionQuarter } from 'lib/utils/dates'
@@ -17,6 +19,7 @@ import { createHSMWallet } from '@/lib/google/hsm-signer'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
+import { authOptions } from '../pages/api/auth/[...nextauth]'
 
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
@@ -153,6 +156,18 @@ async function pinBlobOrFile(blob: Blob, name: string): Promise<PinResponse> {
 // Submit a proposal, project based on non-project. Creates a new entry in the table and a new discord thread.
 async function POST(req: NextApiRequest, res: NextApiResponse) {
   try {
+    const session = await getServerSession(req, res, authOptions)
+    if (!session?.accessToken) {
+      res.status(401).json({ error: 'Unauthorized' })
+      return
+    }
+
+    const privyUserData = await getPrivyUserData(session.accessToken)
+    if (!privyUserData || privyUserData.walletAddresses.length === 0) {
+      res.status(401).json({ error: 'No wallet addresses found' })
+      return
+    }
+    for (const walletAddress of privyUserData.walletAddresses) {
     const account = await createHSMWallet()
     if (req.body.proposalId) {
       // UPDATE
