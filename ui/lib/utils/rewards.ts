@@ -365,8 +365,21 @@ export function getBudget(tokens: any, year: number, quarter: number) {
   }
 }
 
-export function normalizeJsonString(jsonString: string) {
-  const nonEmptyJsonString = jsonString || '{}'
+export function normalizeJsonString(jsonString: string | any) {
+  // If already an object, return it directly
+  if (typeof jsonString === 'object' && jsonString !== null) {
+    return jsonString
+  }
+  
+  // If null or undefined, return empty object
+  if (jsonString == null) {
+    return {}
+  }
+  
+  // Convert to string if not already
+  const stringValue = typeof jsonString === 'string' ? jsonString : String(jsonString)
+  const nonEmptyJsonString = stringValue || '{}'
+  
   // replace fancy double quotes with regular double quotes
   // and add leading double quotes if needed
   return JSON.parse(

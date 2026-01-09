@@ -41,7 +41,8 @@ describe('<CBOnrampModal />', () => {
       </TestnetProviders>
     )
 
-    cy.get('[data-testid="cbonramp-modal-content"]').should('exist')
+    cy.wait('@ethPrice')
+    cy.get('[data-testid="cbonramp-modal-content"]', { timeout: 10000 }).should('exist')
   })
 
   it('does not render modal when enabled is false', () => {
@@ -94,10 +95,34 @@ describe('<CBOnrampModal />', () => {
       </TestnetProviders>
     )
 
+    cy.wait('@ethPrice')
+    cy.get('[data-testid="cbonramp-modal-content"]', { timeout: 10000 }).should('exist')
     cy.get('[data-testid="cbonramp-close-button"]').click()
     cy.then(() => {
       expect(mockOnExit).to.have.been.called
       expect(mockSetEnabled).to.have.been.calledWith(false)
     })
+  })
+
+  it('should wait for quote to load before showing content', () => {
+    cy.mount(
+      <TestnetProviders>
+        <CBOnrampModal
+          enabled={true}
+          setEnabled={mockSetEnabled}
+          address={mockAddress}
+          selectedChain={mockChain}
+          ethAmount={0.1}
+          context="test"
+        />
+      </TestnetProviders>
+    )
+
+    // Wait for both API calls to complete
+    cy.wait('@ethPrice')
+    cy.wait('@buyQuote', { timeout: 10000 })
+
+    // Then verify modal content exists
+    cy.get('[data-testid="cbonramp-modal-content"]', { timeout: 10000 }).should('exist')
   })
 })

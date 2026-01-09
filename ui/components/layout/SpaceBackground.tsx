@@ -251,9 +251,10 @@ export default function SpaceBackground() {
                   height: `${star.size}px`,
                   background: backgroundGradient,
                   boxShadow: boxShadowLayers,
-                  animation: isPageVisible
-                    ? `${animationName} ${star.twinkleDuration}s ease-in-out infinite`
-                    : 'none', // Pause animations when page hidden
+                  animationName: isPageVisible ? animationName : 'none',
+                  animationDuration: `${star.twinkleDuration}s`,
+                  animationTimingFunction: 'ease-in-out',
+                  animationIterationCount: 'infinite',
                   animationDelay: `${star.twinkleDelay}s`,
                   animationPlayState: isPageVisible ? 'running' : 'paused',
                   transform: 'translate(-50%, -50%)',

@@ -9,7 +9,7 @@ import {
   handleAPIError,
   BuyQuoteRequest,
 } from '../../../lib/coinbase'
-import { detectUserState, isValidUSState } from '../../../lib/geo'
+import { detectUserState, isValidUSState, getCountryFromHeaders } from '../../../lib/geo'
 
 // Initialize Redis client for geolocation caching
 const redis = new Redis({
@@ -31,36 +31,47 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       purchaseNetwork = 'ethereum',
       paymentCurrency = 'USD',
       purchaseCurrency = 'ETH',
-      country = 'US',
+      country: providedCountry,
       subdivision,
-      paymentMethod = 'CARD',
+      paymentMethod,
       channelId,
     }: BuyQuoteRequest = req.body
 
     if (!paymentAmount || !destinationAddress) {
       return res.status(400).json({
-        error:
-          'Payment amount or purchase amount and destination address are required',
+        error: 'Payment amount or purchase amount and destination address are required',
       })
     }
 
-    // Detect user's US state if not provided
+    // Detect country from headers if not provided
+    const headerCountry = getCountryFromHeaders(req)
+    let country = providedCountry || headerCountry || 'US'
+
+    // Detect user's US state if not provided and country is US
     let detectedSubdivision = subdivision
-    if (!detectedSubdivision) {
+    if (!detectedSubdivision && country === 'US') {
       try {
         const stateCode = await detectUserState(req, redis)
         if (stateCode && isValidUSState(stateCode)) {
           detectedSubdivision = stateCode
-          console.log(`[Coinbase] Auto-detected US state: ${stateCode}`)
-        } else {
-          console.log(
-            '[Coinbase] Unable to detect US state, proceeding without subdivision'
-          )
         }
       } catch (error) {
-        console.error('[Coinbase] Error detecting state:', error)
-        // Continue without subdivision - don't block the purchase
+        console.error('Error detecting state:', error)
       }
+    }
+
+    // For US users, subdivision (state) is required by Coinbase
+    // Only require it if we're confident the user is in the US:
+    // - Country was explicitly provided as 'US', OR
+    // - Country was detected from headers as 'US'
+    // If we defaulted to 'US' because we couldn't detect country, don't require subdivision
+    const isConfirmedUS = country === 'US' && (providedCountry === 'US' || headerCountry === 'US')
+    if (isConfirmedUS && !detectedSubdivision) {
+      return res.status(400).json({
+        error: 'State (subdivision) is required for US users',
+        details:
+          'Unable to detect your state automatically. Please provide a subdivision (state code) in your request.',
+      })
     }
 
     // Validate CDP credentials
@@ -71,28 +82,53 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const requestBody: any = {
       country,
       destinationAddress,
-      paymentMethod,
       purchaseCurrency,
       purchaseNetwork,
-      subdivision: detectedSubdivision,
+    }
+
+    // Only include paymentMethod if explicitly provided
+    // Omitting it lets Coinbase use defaults for the country
+    if (paymentMethod) {
+      requestBody.paymentMethod = paymentMethod
+    }
+
+    // Only include subdivision if we have a valid value
+    if (detectedSubdivision) {
+      requestBody.subdivision = detectedSubdivision
     }
 
     requestBody.paymentAmount = paymentAmount.toString()
     requestBody.paymentCurrency = paymentCurrency
 
     // Call CDP buy quote endpoint
-    const response = await makeCDPRequest(
-      '/onramp/v1/buy/quote',
-      'POST',
-      requestBody,
-      credentials
-    )
+    const response = await makeCDPRequest('/onramp/v1/buy/quote', 'POST', requestBody, credentials)
 
     if (!response.ok) {
       const errorData = await response.text()
+      let parsedError
+      try {
+        parsedError = JSON.parse(errorData)
+      } catch {
+        parsedError = { message: errorData }
+      }
+
+      // Provide clearer error messages for common issues
+      if (
+        parsedError.message?.includes('payment method') &&
+        parsedError.message?.includes('not supported')
+      ) {
+        return res.status(response.status).json({
+          error: 'Payment method not supported for this country',
+          details: parsedError.message || errorData,
+          status: response.status,
+          suggestion:
+            'Please specify a supported payment method for your country, or omit paymentMethod to use Coinbase defaults.',
+        })
+      }
+
       return res.status(response.status).json({
         error: 'Failed to get buy quote',
-        details: errorData,
+        details: parsedError.message || errorData,
         status: response.status,
       })
     }

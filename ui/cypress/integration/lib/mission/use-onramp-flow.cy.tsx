@@ -16,7 +16,6 @@ const OnrampFlowWrapper = ({
     setUsdInput,
     contributeModalEnabled,
     setContributeModalEnabled,
-    checkAndVerifyStoredJWT,
   } = useOnrampFlow(mission, router, chainSlugs)
 
   return (
@@ -33,9 +32,6 @@ const OnrampFlowWrapper = ({
         onClick={() => setContributeModalEnabled(!contributeModalEnabled)}
       >
         Toggle Modal
-      </button>
-      <button data-testid="verify-jwt-btn" onClick={() => checkAndVerifyStoredJWT()}>
-        Verify JWT
       </button>
     </div>
   )
@@ -101,19 +97,5 @@ describe('useOnrampFlow', () => {
     cy.get('[data-testid="modal-enabled"]').should('contain', 'false')
     cy.get('[data-testid="toggle-modal-btn"]').click()
     cy.get('[data-testid="modal-enabled"]').should('contain', 'true')
-  })
-
-  it('provides checkAndVerifyStoredJWT function', () => {
-    cy.mount(
-      <TestnetProviders>
-        <OnrampFlowWrapper
-          mission={mockMission}
-          router={mockRouter}
-          chainSlugs={['arbitrum', 'base']}
-        />
-      </TestnetProviders>
-    )
-
-    cy.get('[data-testid="verify-jwt-btn"]').should('exist').click()
   })
 })
