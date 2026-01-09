@@ -33,7 +33,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       purchaseCurrency = 'ETH',
       country: providedCountry,
       subdivision,
-      paymentMethod = 'CARD',
+      paymentMethod,
       channelId,
     }: BuyQuoteRequest = req.body
 
@@ -46,6 +46,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Detect country from headers if not provided
     const headerCountry = getCountryFromHeaders(req)
     let country = providedCountry || headerCountry || 'US'
+
+    // Determine payment method: use provided, or default to CARD only for US
+    // For other countries, omit paymentMethod and let Coinbase determine available methods
+    const finalPaymentMethod = paymentMethod || (country === 'US' ? 'CARD' : undefined)
 
     // Detect user's US state if not provided and country is US
     let detectedSubdivision = subdivision
@@ -82,9 +86,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const requestBody: any = {
       country,
       destinationAddress,
-      paymentMethod,
       purchaseCurrency,
       purchaseNetwork,
+    }
+
+    // Only include paymentMethod if we have a value (don't force CARD for unsupported countries)
+    if (finalPaymentMethod) {
+      requestBody.paymentMethod = finalPaymentMethod
     }
 
     // Only include subdivision if we have a valid value
@@ -100,9 +108,30 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     if (!response.ok) {
       const errorData = await response.text()
+      let parsedError
+      try {
+        parsedError = JSON.parse(errorData)
+      } catch {
+        parsedError = { message: errorData }
+      }
+
+      // Provide clearer error messages for common issues
+      if (
+        parsedError.message?.includes('payment method') &&
+        parsedError.message?.includes('not supported')
+      ) {
+        return res.status(response.status).json({
+          error: 'Payment method not supported for this country',
+          details: parsedError.message || errorData,
+          status: response.status,
+          suggestion:
+            'Please specify a supported payment method for your country, or omit paymentMethod to use Coinbase defaults.',
+        })
+      }
+
       return res.status(response.status).json({
         error: 'Failed to get buy quote',
-        details: errorData,
+        details: parsedError.message || errorData,
         status: response.status,
       })
     }
