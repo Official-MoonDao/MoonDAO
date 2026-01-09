@@ -84,18 +84,31 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       destinationAddress,
       purchaseCurrency,
       purchaseNetwork,
+      paymentAmount: paymentAmount.toString(),
+      paymentCurrency,
     }
 
     // Payment method is required by Coinbase API
-    requestBody.paymentMethod = paymentMethod || 'UNSPECIFIED'
+    // Use country-specific defaults: CARD for US (works for guest checkout), CARD for most other countries
+    // If UNSPECIFIED doesn't work, fall back to CARD which works in 90+ countries
+    if (!paymentMethod) {
+      // CARD works in US (debit only) and 90+ other countries
+      // This is safer than UNSPECIFIED which may not be accepted
+      requestBody.paymentMethod = 'CARD'
+    } else {
+      requestBody.paymentMethod = paymentMethod
+    }
 
     // Only include subdivision if we have a valid value
     if (detectedSubdivision) {
       requestBody.subdivision = detectedSubdivision
     }
 
-    requestBody.paymentAmount = paymentAmount.toString()
-    requestBody.paymentCurrency = paymentCurrency
+    // Log request body for debugging (remove sensitive data in production)
+    console.log('[buy-quote] Request body:', {
+      ...requestBody,
+      destinationAddress: requestBody.destinationAddress?.substring(0, 10) + '...',
+    })
 
     // Call CDP buy quote endpoint
     const response = await makeCDPRequest('/onramp/v1/buy/quote', 'POST', requestBody, credentials)
