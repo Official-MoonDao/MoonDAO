@@ -14,7 +14,7 @@ contract ExtendTeamSubsScript is Script {
     // Duration for subscription renewal (1 year in seconds)
     uint64 constant ONE_YEAR = 365 days;
     
-    uint256[] BLOCKED_TEAMS = [];
+    uint256[] BLOCKED_TEAMS;
     
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
