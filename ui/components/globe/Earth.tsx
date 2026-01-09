@@ -53,6 +53,13 @@ function Earth({ pointsData, width, height }: EarthProps) {
           lng: -98.5795,
           altitude: 2,
         })
+        
+        // Enable damping for smoother rotation with inertia
+        const controls = globeRef.current.controls()
+        if (controls) {
+          controls.enableDamping = true
+          controls.dampingFactor = 0.02
+        }
       }
     }, 100)
 

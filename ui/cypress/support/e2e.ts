@@ -1,6 +1,9 @@
 // E2E support file for BrowserStack compatibility
 // This file is required by BrowserStack even if minimal
 
+// Import custom commands
+import './commands'
+
 // Handle React hydration errors that can occur intermittently on BrowserStack
 // due to timing differences between server and client rendering
 Cypress.on('uncaught:exception', (err, runnable) => {

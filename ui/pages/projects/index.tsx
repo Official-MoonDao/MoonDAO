@@ -1,12 +1,4 @@
-import DistributionABI from 'const/abis/DistributionTable.json'
-import ProjectTableABI from 'const/abis/ProjectTable.json'
-import {
-  PROJECT_TABLE_ADDRESSES,
-  DISTRIBUTION_TABLE_ADDRESSES,
-  DEFAULT_CHAIN_V5,
-  PROJECT_TABLE_NAMES,
-  DISTRIBUTION_TABLE_NAMES,
-} from 'const/config'
+import { DEFAULT_CHAIN_V5, PROJECT_TABLE_NAMES, DISTRIBUTION_TABLE_NAMES } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
@@ -14,7 +6,6 @@ import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/type
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
 import { ProjectRewards, ProjectRewardsProps } from '@/components/nance/ProjectRewards'
@@ -46,7 +37,7 @@ export async function getStaticProps() {
     const { quarter, year } = getRelativeQuarter(isRewardsCycle(new Date()) ? -1 : 0)
 
     const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
-    const projects = await queryTable(chain, projectStatement)
+    const projects = (await queryTable(chain, projectStatement)) || []
 
     const proposals: Project[] = []
     const currentProjects: Project[] = []
@@ -75,7 +66,7 @@ export async function getStaticProps() {
     })
 
     const distributionStatement = `SELECT * FROM ${DISTRIBUTION_TABLE_NAMES[chainSlug]} WHERE year = ${year} AND quarter = ${quarter}`
-    const distributions = await queryTable(chain, distributionStatement)
+    const distributions = (await queryTable(chain, distributionStatement)) || []
 
     return {
       props: {

@@ -19,10 +19,7 @@ describe('OpenVotes Component', () => {
     cy.mount(
       <TestnetProviders>
         <OpenVotes
-          proposals={[
-            proposal,
-            { ...proposal, uuid: 'f5db001241b14465873f06c4841d3b51' },
-          ]}
+          proposals={[proposal, { ...proposal, uuid: 'f5db001241b14465873f06c4841d3b51' }]}
           packet={proposalPacket}
           votingInfoMap={undefined}
         />
@@ -31,7 +28,7 @@ describe('OpenVotes Component', () => {
   })
 
   it('Renders the component and proposals', () => {
-    cy.get('.header').contains('Open Votes')
+    cy.get('h2.font-GoodTimes').contains('Open Votes')
     cy.get('#proposal-card').should('exist')
   })
 })

@@ -1,3 +1,5 @@
+import useETHPrice from '@/lib/etherscan/useETHPrice'
+import RewardAsset from '@/components/project/RewardAsset'
 import Image from 'next/image'
 import Link from 'next/link'
 import { GetServerSideProps } from 'next'
@@ -14,11 +16,13 @@ import ProposalEditor from '../components/nance/ProposalEditor'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { PROJECT_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { Project } from '@/lib/project/useProjectData'
+import { NEXT_ETH_BUDGET } from 'const/config'
 
 export default function ProposalsPage({ project }: { project: Project }) {
   const title = 'Propose Project'
 
   useChainDefault()
+  const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
   return (
     <>
@@ -41,6 +45,28 @@ export default function ProposalsPage({ project }: { project: Project }) {
             mode="compact"
             isProfile={true}
           >
+            <div className="bg-black/20 rounded-xl p-4 border border-white/10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                <h1 className="font-GoodTimes text-white/80 text-lg">{`Total Quarter Budget`}</h1>
+                <h1 className="font-GoodTimes text-white/80 text-lg">{`Max Project Budget`}</h1>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-black/20 rounded-lg p-3 border border-white/10">
+                  <RewardAsset
+                    name="ETH"
+                    value={NEXT_ETH_BUDGET.toFixed(4)}
+                    usdValue={ethPrice * NEXT_ETH_BUDGET}
+                  />
+                </div>
+                <div className="bg-black/20 rounded-lg p-3 border border-white/10">
+                  <RewardAsset
+                    name="ETH"
+                    value={NEXT_ETH_BUDGET.toFixed(4) / 5}
+                    usdValue={(ethPrice * NEXT_ETH_BUDGET) / 5}
+                  />
+                </div>
+              </div>
+            </div>
             <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
               <div className="mb-8 w-full bg-black/20 rounded-xl p-6 border border-white/10">
                 <div

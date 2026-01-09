@@ -37,6 +37,7 @@ import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { useVotesOfAddress } from '@/lib/snapshot'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { citizenRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -57,6 +58,7 @@ import Frame from '@/components/layout/Frame'
 import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import StandardButton from '@/components/layout/StandardButton'
 import Action from '@/components/subscription/Action'
 import Card from '@/components/subscription/Card'
@@ -65,9 +67,9 @@ import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal
 import GeneralActions from '@/components/subscription/GeneralActions'
 import GuestActions from '@/components/subscription/GuestActions'
 import LatestJobs from '@/components/subscription/LatestJobs'
-import NewMarketplaceListings from '@/components/subscription/NewMarketplaceListings'
 import OpenVotes from '@/components/subscription/OpenVotes'
 import { SubscriptionModal } from '@/components/subscription/SubscriptionModal'
+import TeamListing, { TeamListing as TeamListingType } from '@/components/subscription/TeamListing'
 import CitizenABI from '../../const/abis/Citizen.json'
 import HatsABI from '../../const/abis/Hats.json'
 import JobsABI from '../../const/abis/JobBoardTable.json'
@@ -153,7 +155,77 @@ export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any
     abi: HatsABI as any,
   })
 
-  //Nance
+  // Marketplace Listings
+  const [newListings, setNewListings] = useState<TeamListingType[]>([])
+  const [marketplaceTableName, setMarketplaceTableName] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function getTableName() {
+      if (!marketplaceTableContract) return
+      try {
+        const name: any = await readContract({
+          contract: marketplaceTableContract,
+          method: 'getTableName' as string,
+          params: [],
+        })
+        setMarketplaceTableName(name)
+      } catch (error) {
+        console.error('Error fetching marketplace table name:', error)
+      }
+    }
+    getTableName()
+  }, [marketplaceTableContract])
+
+  const now = Math.floor(Date.now() / 1000)
+  const marketplaceStatement = marketplaceTableName
+    ? `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 10`
+    : null
+
+  const { data: listings } = useTablelandQuery(marketplaceStatement, {
+    revalidateOnFocus: false,
+  })
+
+  useEffect(() => {
+    async function processListings() {
+      if (!listings || !teamContract || listings.length === 0) {
+        setNewListings([])
+        return
+      }
+
+      const BATCH_SIZE = 5
+      const DELAY_BETWEEN_BATCHES = 200
+      const validListings: TeamListingType[] = []
+
+      for (let i = 0; i < listings.length; i += BATCH_SIZE) {
+        const batch = listings.slice(i, i + BATCH_SIZE)
+
+        const batchResults = await Promise.all(
+          batch.map(async (listing: TeamListingType) => {
+            try {
+              const teamExpiration = await readContract({
+                contract: teamContract,
+                method: 'expiresAt' as string,
+                params: [listing.teamId],
+              })
+              return +teamExpiration.toString() > now ? listing : null
+            } catch {
+              return null
+            }
+          })
+        )
+
+        validListings.push(...batchResults.filter((listing: any) => listing !== null))
+
+        if (i + BATCH_SIZE < listings.length) {
+          await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES))
+        }
+      }
+      setNewListings(validListings)
+    }
+
+    processListings()
+  }, [listings, teamContract, now])
+
   useChainDefault()
 
   const ProfileHeader = (
@@ -433,12 +505,35 @@ export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any
             )}
             {isOwner && (
               <>
-                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
-                  <NewMarketplaceListings
-                    selectedChain={selectedChain}
-                    teamContract={teamContract}
-                    marketplaceTableContract={marketplaceTableContract}
-                  />
+                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+                  <div className="w-full">
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-8">
+                      <h2 className="font-GoodTimes text-2xl text-white">Newest Listings</h2>
+
+                      <StandardButton
+                        className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px] mt-2 lg:mt-0"
+                        onClick={() => router.push('/marketplace')}
+                      >
+                        See More
+                      </StandardButton>
+                    </div>
+
+                    <SlidingCardMenu>
+                      <div id="new-marketplace-listings-container" className="flex gap-5">
+                        {newListings.map((listing, i) => (
+                          <TeamListing
+                            key={`team-listing-${i}`}
+                            listing={listing}
+                            selectedChain={selectedChain}
+                            teamContract={teamContract}
+                            marketplaceTableContract={marketplaceTableContract}
+                            teamName
+                            isCitizen={true}
+                          />
+                        ))}
+                      </div>
+                    </SlidingCardMenu>
+                  </div>
                 </div>
                 <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
                   <LatestJobs teamContract={teamContract} jobTableContract={jobTableContract} />
@@ -633,14 +728,44 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       }
     }
 
-    const teamContract = getContract({
-      client: serverClient,
-      chain: chain,
-      address: TEAM_ADDRESSES[chainSlug],
-      abi: TeamABI as any,
-    })
+    const hatsSubgraphClient = (await import('@/lib/hats/hatsSubgraphClient')).default
+    const { MOONDAO_HAT_TREE_IDS } = await import('const/config')
+    const { processHatsWithTeamData } = await import('@/lib/hats/batchHatOperations')
 
-    const hats = await getTeamWearerServerSide(chain, teamContract, nft.owner)
+    let hats: any[] = []
+
+    try {
+      const wearerData = await hatsSubgraphClient.getWearer({
+        chainId: chain.id,
+        wearerAddress: nft.owner,
+        props: {
+          currentHats: {
+            props: {
+              tree: {},
+              admin: {
+                admin: {
+                  admin: {},
+                },
+              },
+            },
+          },
+        },
+      })
+
+      if (wearerData.currentHats) {
+        // Filter to MoonDAO hats only
+        const moondaoHats = wearerData.currentHats.filter(
+          (hat: any) => hat.tree.id === MOONDAO_HAT_TREE_IDS[chainSlug]
+        )
+
+        // Batch process all hats to get team IDs
+        hats = await processHatsWithTeamData(chain, moondaoHats)
+      }
+    } catch (error) {
+      // Citizen doesn't wear any hats
+      console.log(`Citizen ${tokenId} does not wear any hats`)
+      hats = []
+    }
 
     const proposalsStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE active = ${PROJECT_PENDING}`
     const proposals = await queryTable(chain, proposalsStatement)

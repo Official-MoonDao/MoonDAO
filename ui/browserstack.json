@@ -34,6 +34,7 @@
     "npm_dependencies": {
       "cypress": "12.17.3",
       "cypress-split": "^1.24.2",
+      "cypress-file-upload": "^5.0.8",
       "dotenv": "^17.2.2",
       "typescript": "^5.1.6",
       "@types/node": "^20.4.1",

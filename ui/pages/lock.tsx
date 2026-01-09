@@ -24,6 +24,7 @@ import Head from '../components/layout/Head'
 import { LockData } from '../components/lock/LockData'
 import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
+import Input from '@/components/layout/Input'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SpaceBackground from '@/components/layout/SpaceBackground'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
@@ -287,10 +288,10 @@ export default function Lock() {
                             <label className="text-gray-300 text-sm font-medium">Amount</label>
                             <div className="bg-black/30 rounded-xl p-3 border border-white/10 focus-within:border-blue-400/50 transition-colors">
                               <div className="flex items-center justify-between">
-                                <input
+                                <Input
                                   type="text"
                                   placeholder="0.00"
-                                  className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1"
+                                  className="text-white bg-transparent text-2xl font-RobotoMono placeholder-gray-500 focus:outline-none flex-1 border-0 p-0"
                                   value={
                                     isAmountInputFocused
                                       ? lockAmount || ''
@@ -303,6 +304,13 @@ export default function Lock() {
                                   }
                                   disabled={
                                     (!MOONEYBalance || +MOONEYBalance.toString() === 0) && !hasLock
+                                  }
+                                  max={
+                                    MOONEYBalance
+                                      ? parseFloat(
+                                          ethers.utils.formatEther(MOONEYBalance.toString())
+                                        )
+                                      : undefined
                                   }
                                   onFocus={() => {
                                     setIsAmountInputFocused(true)
@@ -335,6 +343,16 @@ export default function Lock() {
                                       value = '0'
                                     }
 
+                                    // Enforce max value (available MOONEY balance)
+                                    if (MOONEYBalance) {
+                                      const maxValue = parseFloat(
+                                        ethers.utils.formatEther(MOONEYBalance.toString())
+                                      )
+                                      if (parseFloat(value) > maxValue) {
+                                        value = maxValue.toString()
+                                      }
+                                    }
+
                                     // Remove leading zero if user types a number after it
                                     if (
                                       value.startsWith('0') &&
@@ -346,6 +364,8 @@ export default function Lock() {
                                     setLockAmount(value)
                                     setWantsToIncrease(true)
                                   }}
+                                  formatNumbers={true}
+                                  maxWidth="max-w-none"
                                 />
                                 <div className="flex items-center gap-2">
                                   <span className="text-gray-400 text-sm">MOONEY</span>

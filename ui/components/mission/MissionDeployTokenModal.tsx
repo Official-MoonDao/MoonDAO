@@ -10,8 +10,8 @@ import { keccak256 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { toUtf8Bytes } from 'ethers/lib/utils'
-import FormInput from '../forms/FormInput'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
+import Input from '../layout/Input'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -37,8 +37,7 @@ export default function MissionDeployTokenModal({
   const router = useRouter()
   const account = useActiveAccount()
 
-  const [agreedToTokenNotSecurity, setAgreedToTokenNotSecurity] =
-    useState(false)
+  const [agreedToTokenNotSecurity, setAgreedToTokenNotSecurity] = useState(false)
 
   const [sentTxToSafe, setSentTxToSafe] = useState(false)
 
@@ -123,7 +122,7 @@ export default function MissionDeployTokenModal({
         </div>
         <p>{`Please enter the name and symbol for your mission token.`}</p>
         <div>
-          <FormInput
+          <Input
             id="mission-token-name"
             label="Token Name"
             placeholder="Enter a token name"
@@ -135,12 +134,12 @@ export default function MissionDeployTokenModal({
               })
             }
             maxLength={32}
-            mode="dark"
+            variant="dark"
             tooltip="The name for your mission token (e.g.: Ethereum, Bitcoin)."
           />
         </div>
         <div>
-          <FormInput
+          <Input
             id="mission-token-symbol"
             label="Token Symbol"
             placeholder="Enter a token symbol"
@@ -152,7 +151,7 @@ export default function MissionDeployTokenModal({
               })
             }
             maxLength={8}
-            mode="dark"
+            variant="dark"
             tooltip="The symbol for your mission token (e.g.: ETH, BTC)."
           />
         </div>
@@ -160,8 +159,8 @@ export default function MissionDeployTokenModal({
           id="token-security-checkbox"
           label={
             <p>
-              I ACKNOWLEDGE THAT THIS TOKEN IS NOT A SECURITY, CARRIES NO PROFIT
-              EXPECTATION, AND I ACCEPT ALL{' '}
+              I ACKNOWLEDGE THAT THIS TOKEN IS NOT A SECURITY, CARRIES NO PROFIT EXPECTATION, AND I
+              ACCEPT ALL{' '}
               <Link
                 className="text-blue-500 hover:underline"
                 href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
@@ -190,9 +189,7 @@ export default function MissionDeployTokenModal({
         />
         {sentTxToSafe && (
           <p className="">
-            {
-              "Please follow the link to execute the transaction from your team's "
-            }
+            {"Please follow the link to execute the transaction from your team's "}
             <Link
               href={`https://app.safe.global/transactions/history?safe=${
                 process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'

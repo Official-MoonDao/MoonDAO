@@ -1,14 +1,6 @@
-import { useFundWallet } from '@privy-io/react-auth'
-import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
-import React, { useContext, useEffect } from 'react'
-import toast from 'react-hot-toast'
-import { useActiveAccount } from 'thirdweb/react'
-import { ethereum } from '@/lib/rpc/chains'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { useContext } from 'react'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import viemChains from '@/lib/viem/viemChains'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
@@ -17,13 +9,7 @@ import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import NativeToMooney from '@/components/uniswap/NativeToMooney'
 
 export default function GetMooney() {
-  const { t } = useTranslation('common')
-  const account = useActiveAccount()
-  const address = account?.address
-  const router = useRouter()
-  const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(selectedChain)
-  const { fundWallet } = useFundWallet()
+  const { selectedChain } = useContext(ChainContextV5)
 
   return (
     <>

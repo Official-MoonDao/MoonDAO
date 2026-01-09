@@ -47,7 +47,8 @@ const ContentLayout: React.FC<ContentProps> = ({
             <div id="graphic-element-container" className="relative overflow-hidden">
               <div
                 id="graphic-element"
-                className="w-full h-full absolute top-0 left-0 bg-gradient-to-br from-gray-900/80 via-blue-900/40 to-purple-900/30 backdrop-blur-xl border-b border-white/10 rounded-b-3xl shadow-2xl"
+                className="w-full h-full absolute top-0 left-0 bg-gradient-to-br from-gray-900/80 via-blue-900/40 to-purple-900/30 border-b border-white/10 rounded-b-3xl shadow-2xl"
+                style={{ contain: 'paint' }}
               ></div>
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 pointer-events-none"></div>
             </div>
@@ -88,13 +89,13 @@ const ContentLayout: React.FC<ContentProps> = ({
               <div
                 id="title-wrapper"
                 className={`
-                                    z-50 w-full overflow-x-hidden p-5 pt-0 mt-[-80px]
+                                    z-50 w-full overflow-x-hidden pt-0 mt-[-80px]
                                     ${
                                       isCompact
                                         ? isProfile
-                                          ? 'pl-5'
-                                          : 'pl-[25px]'
-                                        : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5'
+                                          ? 'px-5'
+                                          : 'px-5'
+                                        : 'lg:ml-[-10vw] lg:mt-0 md:p-10 md:pb-5 px-5'
                                     } 
                                     ${
                                       children
@@ -109,13 +110,13 @@ const ContentLayout: React.FC<ContentProps> = ({
                 <div
                   id="title-container"
                   className={`
-                                        p-5 pl-0 pb-5 md:pb-0 w-full h-full 
+                                        flex flex-col pb-5 md:pb-0 w-full h-full 
                                         ${isCompact ? '' : 'md:max-w-[700px] lg:max-w-[100%]'}
                                     `}
                 >
                   <div
                     id="header-element"
-                    className={`header-responsive w-full max-w-[1200px] leading-[1] font-GoodTimes ${
+                    className={`block w-full max-w-[1200px] header-responsive leading-[1] font-GoodTimes ${
                       isCompact ? 'pt-0' : 'lg:pt-20'
                     }`}
                   >
@@ -123,21 +124,21 @@ const ContentLayout: React.FC<ContentProps> = ({
                   </div>
 
                   {subHeader && (
-                    <div id="sub-header" className="sub-header">
+                    <div id="sub-header" className="block w-full sub-header">
                       {subHeader}
                     </div>
                   )}
-                  <div
-                    className={`
-                                            pt-2 pb-2 lg:max-w-[1200px]
-                                            ${
-                                              isCompact ? 'pb-0 w-full' : 'pb-5 md:pb-20 lg:pb-15 '
-                                            } 
-                                            ${branded ? '' : 'mt-20'}
+                  {description && (
+                    <div
+                      className={`
+                                            block w-full mt-4 pt-2 pb-2 lg:max-w-[1200px]
+                                            ${isCompact ? 'pb-0' : 'pb-5 md:pb-20 lg:pb-15 '} 
+                                            ${branded ? 'md:mt-2' : 'md:mt-20'}
                                         `}
-                  >
-                    {description && <span>{description}</span>}
-                  </div>
+                    >
+                      <div className="block w-full">{description}</div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -158,7 +159,7 @@ const ContentLayout: React.FC<ContentProps> = ({
                           isCompact && !isProfile
                             ? 'mt-0 md:mt-[-120px] lg:mt-[-200px]'
                             : isCompact && isProfile
-                            ? ''
+                            ? 'mt-6 md:mt-0'
                             : 'mt-0 md:mt-[-200px] lg:mt-[-280px] md:pb-0 '
                         }
                     `}

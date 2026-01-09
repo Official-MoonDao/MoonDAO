@@ -8,11 +8,9 @@ export default function OpenVotes({ proposals }: any) {
   const router = useRouter()
 
   return (
-    <div className="w-full md:rounded-tl-[2vmax] p-5 md:pr-0 md:pb-10 overflow-hidden md:rounded-bl-[5vmax] bg-slide-section">
-      <div className="flex flex-col lg:flex-row items-start justify-between gap-5 pr-12">
-        <div className="flex gap-5 opacity-[50%]">
-          <h2 className="header font-GoodTimes">Open Votes</h2>
-        </div>
+    <div className="w-full">
+      <div className="flex flex-col lg:flex-row items-start justify-between gap-5 mb-8">
+        <h2 className="font-GoodTimes text-2xl text-white">Open Votes</h2>
 
         <StandardButton
           className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
@@ -23,7 +21,7 @@ export default function OpenVotes({ proposals }: any) {
       </div>
       {proposals && proposals.length > 0 ? (
         <ul
-          className="divide-y divide-gray-100 overflow-y-auto max-h-[400px] text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl pb-12"
+          className="divide-y divide-slate-700/50 overflow-y-auto max-h-[400px] text-white"
           id="scrollableUl"
         >
           <InfiniteScroll

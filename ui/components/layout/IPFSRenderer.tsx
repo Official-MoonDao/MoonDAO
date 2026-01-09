@@ -9,6 +9,9 @@ type IPFSRendererProps = {
   height: number
   className?: string
   fallback?: string
+  priority?: boolean
+  sizes?: string
+  loading?: 'lazy' | 'eager'
 }
 
 export default function IPFSRenderer({
@@ -18,6 +21,9 @@ export default function IPFSRenderer({
   height,
   className,
   fallback,
+  priority = false,
+  sizes,
+  loading = 'lazy',
 }: IPFSRendererProps) {
   const [imageError, setImageError] = useState(false)
   const noSrc = !src || src === ''
@@ -35,6 +41,9 @@ export default function IPFSRenderer({
           alt={alt}
           width={width}
           height={height}
+          priority={priority}
+          sizes={sizes || `(max-width: 768px) 100vw, (max-width: 1200px) 50vw, ${width}px`}
+          loading={priority ? undefined : loading}
           onError={() => setImageError(true)}
         />
       ) : (

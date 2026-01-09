@@ -1,7 +1,7 @@
 import { PlusCircleIcon } from '@heroicons/react/20/solid'
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import { MOONEY_ADDRESSES } from 'const/config'
-import { ETH_BUDGET } from 'const/config'
+import { NEXT_ETH_BUDGET } from 'const/config'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import StandardButton from '../layout/StandardButton'
 import NumberForm from './form/NumberForm'
@@ -46,7 +46,7 @@ export default function RequestBudgetActionForm({ disableRequiredFields = false 
                   required={!disableRequiredFields}
                   max={
                     getValues().budget[index].token == 'ETH'
-                      ? ETH_BUDGET / 5
+                      ? NEXT_ETH_BUDGET / 5
                       : Number.MAX_SAFE_INTEGER
                   }
                 />
@@ -56,7 +56,6 @@ export default function RequestBudgetActionForm({ disableRequiredFields = false 
                 <SafeTokenForm
                   address="0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9"
                   fieldName={`budget.${index}.token`}
-                  // FIXME what tokens do we accept?
                   acceptedTokens={['ETH', 'MOONEY']}
                 />
               </div>

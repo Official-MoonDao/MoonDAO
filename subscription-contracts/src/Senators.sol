@@ -26,7 +26,7 @@ contract Senators is Ownable {
     }
 
     function removeSenator(address _address) public onlyOwner {
-        require(!isSenator(_address), "Not a senator");
+        require(isSenator(_address), "Not a senator");
         senator[_address] = false;
         senatorCount--;
     }

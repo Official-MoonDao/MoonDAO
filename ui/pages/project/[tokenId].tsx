@@ -162,12 +162,15 @@ export default function ProjectProfile({
           <div id="frame-content" className="w-full flex flex-col items-start justify-between">
             <div
               id="profile-description-section"
-              className="flex flex-col lg:flex-row items-start lg:items-center gap-4"
+              className="flex flex-col lg:flex-row items-start lg:items-center gap-4 px-4 md:px-0"
             >
-              <div id="team-name-container">
-                <div id="profile-container">
+              <div id="team-name-container" className="w-full">
+                <div id="profile-container" className="w-full">
                   {project?.description ? (
-                    <p id="profile-description-container" className="mb-5 w-full lg:w-[80%]">
+                    <p
+                      id="profile-description-container"
+                      className="mb-5 w-full lg:w-[80%] text-sm md:text-base"
+                    >
                       {project.description || ''}
                     </p>
                   ) : (
@@ -219,7 +222,7 @@ export default function ProjectProfile({
       >
         <div
           id="page-container"
-          className="animate-fadeIn flex flex-col gap-6 w-full max-w-[1080px]"
+          className="flex flex-col gap-6 p-6 md:p-8 max-w-[1200px]"
         >
           {/* Project Overview */}
           <SectionCard
@@ -227,12 +230,12 @@ export default function ProjectProfile({
             iconSrc="/assets/icon-star.svg"
             action={
               <Link
-                className="flex gap-2 items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm"
+                className="flex gap-2 items-center px-3 py-2 md:px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs md:text-sm"
                 href={`/project/${project.MDP}`}
                 passHref
               >
                 <Image src="/assets/report.png" alt="Report Icon" width={16} height={16} />
-                <span>Review Original Proposal</span>
+                <span className="whitespace-nowrap">Review Original Proposal</span>
               </Link>
             }
           >
@@ -279,48 +282,50 @@ export default function ProjectProfile({
             </SectionCard>
           )}
 
-          <div className="z-50 flex flex-col gap-6 mb-[50px]">
-            <SectionCard
-              header="Meet the Team"
-              iconSrc="/assets/icon-team.svg"
-              action={
-                isManager && (
-                  <div className="flex flex-col md:flex-row justify-start items-center gap-2">
-                    <TeamManageMembers
-                      account={account}
-                      hats={hats}
-                      hatsContract={hatsContract}
-                      teamContract={projectContract}
-                      teamId={tokenId}
-                      selectedChain={selectedChain}
-                      multisigAddress={owner}
-                      adminHatId={adminHatId}
-                      managerHatId={managerHatId}
-                    />
-                  </div>
-                )
-              }
-            >
-              <SlidingCardMenu>
-                <div className="flex gap-4">
-                  {hats?.[0].id && (
-                    <TeamMembers
-                      hats={hats}
-                      hatsContract={hatsContract}
-                      citizenContract={citizenContract}
-                    />
-                  )}
+          <SectionCard
+            header="Meet the Team"
+            iconSrc="/assets/icon-team.svg"
+            action={
+              isManager && (
+                <div className="flex flex-col md:flex-row justify-start items-center gap-2">
+                  <TeamManageMembers
+                    account={account}
+                    hats={hats}
+                    hatsContract={hatsContract}
+                    teamContract={projectContract}
+                    teamId={tokenId}
+                    selectedChain={selectedChain}
+                    multisigAddress={owner}
+                    adminHatId={adminHatId}
+                    managerHatId={managerHatId}
+                  />
                 </div>
-              </SlidingCardMenu>
-            </SectionCard>
-            {/* Mooney and Voting Power */}
+              )
+            }
+          >
+            <SlidingCardMenu>
+              <div className="flex gap-2 md:gap-4">
+                {hats?.[0].id && (
+                  <TeamMembers
+                    hats={hats}
+                    hatsContract={hatsContract}
+                    citizenContract={citizenContract}
+                  />
+                )}
+              </div>
+            </SlidingCardMenu>
+          </SectionCard>
+          <SectionCard
+            header="Treasury"
+            iconSrc="/assets/icon-treasury.svg"
+          >
             <TeamTreasury
               isSigner={isSigner}
               safeData={safeData}
               multisigAddress={owner}
               safeOwners={safeOwners}
             />
-          </div>
+          </SectionCard>
         </div>
       </ContentLayout>
     </Container>
