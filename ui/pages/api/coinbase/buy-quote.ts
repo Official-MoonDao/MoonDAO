@@ -57,6 +57,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       }
     }
 
+    // For US users, subdivision (state) is required by Coinbase
+    if (country === 'US' && !detectedSubdivision) {
+      return res.status(400).json({
+        error: 'State (subdivision) is required for US users',
+        details: 'Unable to detect your state automatically. Please provide a subdivision (state code) in your request.',
+      })
+    }
+
     // Validate CDP credentials
     const credentials = validateCDPCredentials()
 
@@ -68,7 +76,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       paymentMethod,
       purchaseCurrency,
       purchaseNetwork,
-      subdivision: detectedSubdivision,
+    }
+
+    // Only include subdivision if we have a valid value
+    if (detectedSubdivision) {
+      requestBody.subdivision = detectedSubdivision
     }
 
     requestBody.paymentAmount = paymentAmount.toString()
