@@ -340,7 +340,7 @@ export default function Timeline() {
                   const yPercent = 75 - funcY * 75 // 75% to 0% (moon at title level)
 
                   const isLastEvent = index === timelineEvents.length - 1
-                  const isCurrentEvent = index === 7 // Q2 2025 - Launchpad Launched (we are here)
+                  const isCurrentEvent = index === 9 // 2026 - Settlement Design (we are here)
 
                   return (
                     <div
