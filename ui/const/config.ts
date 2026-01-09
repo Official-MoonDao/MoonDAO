@@ -556,3 +556,6 @@ export const PROJECT_SYSTEM_CONFIG = {
   docsUrl: 'https://docs.moondao.com/Projects/Project-System',
   // Total quarterly budget is displayed dynamically on the page
 }
+
+// Quarterly budget in ETH
+export const NEXT_ETH_BUDGET = 7.83

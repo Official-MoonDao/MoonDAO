@@ -767,12 +767,18 @@ export async function getStaticProps() {
       abi: TeamTableABI as any,
     })
 
-    const teamTableName = await readContract({
-      contract: teamTableContract,
-      method: 'getTableName',
-    })
+    let teamTableName
+    try {
+      teamTableName = await readContract({
+        contract: teamTableContract,
+        method: 'getTableName',
+      })
+    } catch (error) {
+      console.error('Error reading team table name:', error)
+      teamTableName = ''
+    }
 
-    const teamRows = await queryTable(chain, `SELECT * FROM ${teamTableName}`)
+    const teamRows = teamTableName ? await queryTable(chain, `SELECT * FROM ${teamTableName}`) : []
 
     const citizenTableContract = getContract({
       client: serverClient,
@@ -780,11 +786,17 @@ export async function getStaticProps() {
       chain: chain,
       abi: CitizenTableABI as any,
     })
-    const citizenTableName = await readContract({
-      contract: citizenTableContract,
-      method: 'getTableName',
-    })
-    const citizenRows: any = await queryTable(chain, `SELECT * FROM ${citizenTableName}`)
+    let citizenTableName
+    try {
+      citizenTableName = await readContract({
+        contract: citizenTableContract,
+        method: 'getTableName',
+      })
+    } catch (error) {
+      console.error('Error reading citizen table name:', error)
+      citizenTableName = ''
+    }
+    const citizenRows: any = citizenTableName ? await queryTable(chain, `SELECT * FROM ${citizenTableName}`) : []
 
     const teams: NFT[] = []
     for (const row of teamRows) {
@@ -792,13 +804,18 @@ export async function getStaticProps() {
     }
 
     const filteredValidTeams: any = teams?.filter(async (nft: any) => {
-      const expiresAt = await readContract({
-        contract: teamContract,
-        method: 'expiresAt',
-        params: [nft?.metadata?.id],
-      })
+      try {
+        const expiresAt = await readContract({
+          contract: teamContract,
+          method: 'expiresAt',
+          params: [nft?.metadata?.id],
+        })
 
-      return +expiresAt.toString() > now
+        return +expiresAt.toString() > now
+      } catch (error) {
+        console.error('Error reading team expiration:', error)
+        return false
+      }
     })
 
     const sortedValidTeams = filteredValidTeams.reverse().sort((a: any, b: any) => {
@@ -834,13 +851,19 @@ export async function getStaticProps() {
       abi: JobsABI as any,
     })
 
-    const jobBoardTableName = await readContract({
-      contract: jobTableContract,
-      method: 'getTableName',
-    })
+    let jobBoardTableName
+    try {
+      jobBoardTableName = await readContract({
+        contract: jobTableContract,
+        method: 'getTableName',
+      })
+    } catch (error) {
+      console.error('Error reading job board table name:', error)
+      jobBoardTableName = ''
+    }
 
-    const jobStatement = `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 6`
-    const jobs = await queryTable(chain, jobStatement)
+    const jobStatement = jobBoardTableName ? `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 6` : ''
+    const jobs = jobStatement ? await queryTable(chain, jobStatement) : []
 
     const citizens: NFT[] = []
     for (const row of citizenRows) {
@@ -848,13 +871,18 @@ export async function getStaticProps() {
     }
 
     const filteredValidCitizens: any = citizens?.filter(async (nft: any) => {
-      const expiresAt = await readContract({
-        contract: citizenContract,
-        method: 'expiresAt',
-        params: [nft?.metadata?.id],
-      })
+      try {
+        const expiresAt = await readContract({
+          contract: citizenContract,
+          method: 'expiresAt',
+          params: [nft?.metadata?.id],
+        })
 
-      return +expiresAt.toString() > now
+        return +expiresAt.toString() > now
+      } catch (error) {
+        console.error('Error reading citizen expiration:', error)
+        return false
+      }
     })
 
     // Use the optimized centralized service for location data
