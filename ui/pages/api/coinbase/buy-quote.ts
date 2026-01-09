@@ -86,11 +86,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       purchaseNetwork,
     }
 
-    // Only include paymentMethod if explicitly provided
-    // Omitting it lets Coinbase use defaults for the country
-    if (paymentMethod) {
-      requestBody.paymentMethod = paymentMethod
-    }
+    // Payment method is required by Coinbase API
+    requestBody.paymentMethod = paymentMethod || 'UNSPECIFIED'
 
     // Only include subdivision if we have a valid value
     if (detectedSubdivision) {
