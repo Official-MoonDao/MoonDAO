@@ -484,3 +484,28 @@ export function getPayouts(
     humanFormat,
   }
 }
+
+export function getApprovedProjects(
+  projects: any[],
+  outcome: { [key: string]: number },
+  ethBudgets: { [key: string]: number },
+  ethBudget: number
+): { [key: string]: boolean } {
+  const sortedOutcome = Object.keys(outcome)
+    .map((projectId: string) => {
+      return { projectId: projectId, percent: outcome[projectId], budget: ethBudgets[projectId] }
+    })
+    .sort((a, b) => {
+      return b.percent - a.percent
+    })
+  const numApprovedProjects = Math.min(Math.max(Math.ceil(projects.length / 2), 3), projects.length)
+  let approvedBudget = 0
+  const projectIdToApproved: { [key: string]: boolean } = {}
+  for (let i = 0; i < sortedOutcome.length; i++) {
+    const projectId = sortedOutcome[i].projectId
+    approvedBudget += sortedOutcome[i].budget
+    const approved = i < numApprovedProjects && approvedBudget <= (ethBudget * 3) / 4
+    projectIdToApproved[projectId] = approved
+  }
+  return projectIdToApproved
+}
