@@ -365,15 +365,29 @@ export function getBudget(tokens: any, year: number, quarter: number) {
   }
 }
 
-export function normalizeJsonString(jsonString: string) {
+export function normalizeJsonString(jsonString: string | object | null | undefined) {
+  if (jsonString === null || jsonString === undefined) {
+    return {}
+  }
+  if (typeof jsonString === 'object' && !Array.isArray(jsonString)) {
+    return jsonString
+  }
+  if (typeof jsonString !== 'string') {
+    return {}
+  }
   const nonEmptyJsonString = jsonString || '{}'
   // replace fancy double quotes with regular double quotes
   // and add leading double quotes if needed
-  return JSON.parse(
-    nonEmptyJsonString
-      .replace(/[\u201C\u201D]/g, '"')
-      .replace(/(\b0x[a-fA-F0-9]{40}\b):/g, '"$1":')
-  )
+  try {
+    return JSON.parse(
+      nonEmptyJsonString
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/(\b0x[a-fA-F0-9]{40}\b):/g, '"$1":')
+    )
+  } catch (error) {
+    console.error('Error parsing JSON string:', error, jsonString)
+    return {}
+  }
 }
 
 export function getPayouts(
