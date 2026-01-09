@@ -47,9 +47,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const headerCountry = getCountryFromHeaders(req)
     let country = providedCountry || headerCountry || 'US'
 
-    // Determine payment method: use provided, or default to CARD only for US
-    // For other countries, omit paymentMethod and let Coinbase determine available methods
-    const finalPaymentMethod = paymentMethod || (country === 'US' ? 'CARD' : undefined)
+    // Determine payment method: use provided, or default to CARD
+    // Coinbase API requires paymentMethod parameter
+    const finalPaymentMethod = paymentMethod || 'CARD'
 
     // Detect user's US state if not provided and country is US
     let detectedSubdivision = subdivision
@@ -88,11 +88,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       destinationAddress,
       purchaseCurrency,
       purchaseNetwork,
-    }
-
-    // Only include paymentMethod if we have a value (don't force CARD for unsupported countries)
-    if (finalPaymentMethod) {
-      requestBody.paymentMethod = finalPaymentMethod
+      paymentMethod: finalPaymentMethod,
     }
 
     // Only include subdivision if we have a valid value
