@@ -51,6 +51,7 @@ type QuestProps = {
   variant?: 'onboarding' | 'weekly'
   userAddress?: `0x${string}`
   onClaimConfirmed?: () => void
+  isLocked?: boolean
 }
 
 export default function Quest({
@@ -60,6 +61,7 @@ export default function Quest({
   userAddress,
   xpManagerContract,
   onClaimConfirmed,
+  isLocked = false,
 }: QuestProps) {
   const { citizen } = useContext(CitizenContext)
   const { linkGithub } = usePrivy()
@@ -767,7 +769,9 @@ export default function Quest({
 
   return (
     <div
-      className={`px-4 py-4 rounded-xl border transition-all duration-500 group relative overflow-hidden ${getContainerClasses()}`}
+      className={`px-4 py-4 rounded-xl border transition-all duration-500 group relative overflow-hidden ${
+        isLocked ? 'pointer-events-none cursor-not-allowed' : ''
+      } ${getContainerClasses()}`}
     >
       {/* Progress Background - Makes the whole card act as a progress bar */}
       {(quest.verifier.type === 'staged' &&
