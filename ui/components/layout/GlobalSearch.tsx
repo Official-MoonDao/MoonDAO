@@ -329,9 +329,9 @@ export default function GlobalSearch() {
       {!isExpanded && (
         <button
           onClick={toggleExpanded}
-          className="bg-black/70 backdrop-blur-md border border-white/20 rounded-full p-3 text-white hover:bg-black/80 transition-all shadow-lg"
+          className="bg-gradient-to-br from-dark-cool to-darkest-cool backdrop-blur-md border border-white/10 rounded-full p-3 text-white/80 hover:text-light-cool hover:border-light-cool/30 transition-all shadow-lg hover:shadow-light-cool/10"
         >
-          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </button>
@@ -339,10 +339,10 @@ export default function GlobalSearch() {
 
       {/* Expanded state - full search bar */}
       {isExpanded && (
-        <div className="w-80">
+        <div className="w-72 md:w-80">
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-              <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+              <svg className="h-4 w-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
@@ -353,39 +353,57 @@ export default function GlobalSearch() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               onFocus={() => query.trim() && setIsOpen(results.length > 0)}
-              placeholder="Search..."
-              className="w-full pl-10 pr-12 py-3 bg-black/70 backdrop-blur-md border border-white/20 rounded-2xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all relative z-0"
+              placeholder="Search MoonDAO..."
+              className="w-full pl-10 pr-10 py-2.5 bg-gradient-to-br from-dark-cool to-darkest-cool backdrop-blur-md border border-white/10 rounded-xl text-sm text-white placeholder-white/40 focus:outline-none focus:border-light-cool/40 focus:ring-1 focus:ring-light-cool/20 transition-all"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
               <button
                 onClick={() => setIsExpanded(false)}
-                className="text-gray-400 hover:text-white transition-colors p-1"
+                className="text-white/40 hover:text-white/70 transition-colors p-0.5"
               >
-                <XMarkIcon className="h-5 w-5" />
+                <XMarkIcon className="h-4 w-4" />
               </button>
             </div>
           </div>
 
           {isOpen && results.length > 0 && (
-            <div className="absolute top-full mt-2 w-full bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="absolute top-full mt-2 w-full bg-gradient-to-b from-dark-cool to-darkest-cool backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden">
               {results.map((result, index) => (
                 <button
                   key={`${result.link}-${index}`}
                   onClick={() => handleResultClick(result)}
-                  className={`w-full px-4 py-3 text-left hover:bg-white/10 focus:bg-white/10 focus:outline-none transition-colors border-b border-white/5 last:border-b-0 ${
-                    index === selectedIndex ? 'bg-white/10' : ''
+                  className={`w-full px-4 py-3 text-left transition-all border-b border-white/5 last:border-b-0 group ${
+                    index === selectedIndex 
+                      ? 'bg-white/5' 
+                      : 'hover:bg-white/5'
                   }`}
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-white truncate">{result.title}</span>
-                        <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-full shrink-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className={`text-sm font-medium truncate transition-colors ${
+                          index === selectedIndex ? 'text-light-cool' : 'text-white group-hover:text-light-cool'
+                        }`}>
+                          {result.title}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 bg-white/5 text-white/50 rounded shrink-0 uppercase tracking-wide font-medium">
                           {result.category}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-300 line-clamp-2">{result.description}</p>
+                      <p className="text-xs text-white/40 line-clamp-1">{result.description}</p>
                     </div>
+                    <svg 
+                      className={`h-4 w-4 shrink-0 mt-0.5 transition-all ${
+                        index === selectedIndex 
+                          ? 'text-light-cool/60 translate-x-0' 
+                          : 'text-white/20 -translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
+                      }`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </button>
               ))}
