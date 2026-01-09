@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 
+const PROJECT_PAGES = ['/projects-overview', '/projects', '/proposals', '/submit']
+
 interface ProjectBannerProps {
   ethBudget?: number
   usdBudget?: number
@@ -13,11 +15,7 @@ export default function ProjectBanner({ ethBudget, usdBudget }: ProjectBannerPro
   const [isVisible, setIsVisible] = useState(true)
 
   // Hide banner if user is on project-related pages
-  const isOnProjectPage = 
-    router.pathname === '/projects-overview' ||
-    router.pathname === '/projects' ||
-    router.pathname === '/proposals' ||
-    router.pathname === '/submit'
+  const isOnProjectPage = PROJECT_PAGES.includes(router.pathname)
 
   if (
     !isVisible ||
