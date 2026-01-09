@@ -124,6 +124,11 @@ const ProjectCardContent = memo(
                 isDisabled={!userHasVotingPower}
               />
             ))}
+          {!distribute && isVotingPeriod && (
+            <div className="flex flex-col items-end">
+              <p className="text-gray-400 text-sm">Not Eligible</p>
+            </div>
+          )}
         </div>
         <div className="flex gap-2"></div>
         <div className="flex-1 flex flex-col overflow-hidden">
