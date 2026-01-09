@@ -25,11 +25,11 @@ export default function ProjectBanner({ ethBudget, usdBudget }: ProjectBannerPro
     return null
   }
 
-  const budgetDisplay = ethBudget && usdBudget
+  const budgetDisplay = ethBudget != null && usdBudget != null
     ? `${ethBudget.toFixed(2)} ETH ($${usdBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })})`
     : '7.83 ETH'
 
-  const maxBudgetETH = ethBudget 
+  const maxBudgetETH = ethBudget != null
     ? (ethBudget * PROJECT_SYSTEM_CONFIG.maxBudgetPercentage).toFixed(2)
     : '2.08'
 
