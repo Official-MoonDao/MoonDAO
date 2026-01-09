@@ -19,7 +19,7 @@ import { createHSMWallet } from '@/lib/google/hsm-signer'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
-import { authOptions } from '../pages/api/auth/[...nextauth]'
+import { authOptions } from '@/pages/api/auth/[...nextauth]'
 
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
@@ -170,7 +170,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     }
     let matchedAddress = false
     for (const walletAddress of privyUserData.walletAddresses) {
-      if (walletAddress.toLowerCase() == address) {
+      if (walletAddress.toLowerCase() == address.toLowerCase()) {
         matchedAddress = true
       }
     }
