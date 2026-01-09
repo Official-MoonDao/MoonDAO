@@ -156,6 +156,7 @@ async function pinBlobOrFile(blob: Blob, name: string): Promise<PinResponse> {
 // Submit a proposal, project based on non-project. Creates a new entry in the table and a new discord thread.
 async function POST(req: NextApiRequest, res: NextApiResponse) {
   try {
+    const { address, proposalTitle, proposalIPFS, body } = req.body
     const session = await getServerSession(req, res, authOptions)
     if (!session?.accessToken) {
       res.status(401).json({ error: 'Unauthorized' })
@@ -167,7 +168,17 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       res.status(401).json({ error: 'No wallet addresses found' })
       return
     }
+    let matchedAddress = false
     for (const walletAddress of privyUserData.walletAddresses) {
+      if (walletAddress.toLowerCase() == address) {
+        matchedAddress = true
+      }
+    }
+    if (!matchedAddress) {
+      res.status(401).json({ error: 'Address not authorized' })
+      return
+    }
+
     const account = await createHSMWallet()
     if (req.body.proposalId) {
       // UPDATE
@@ -196,7 +207,6 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       })
     } else {
       // CREATE
-      const { address, proposalTitle, proposalIPFS, body } = req.body
 
       const projectTeamCreatorContract = getContract({
         client: serverClient,
