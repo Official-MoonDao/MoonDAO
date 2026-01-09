@@ -30,6 +30,7 @@ const sdk = ThirdwebSDK.fromPrivateKey(privateKey, chain.slug, {
 });
 
 const discordToEthAddress = {
+  alexlayendecker_54332: "0xb87b8c495d3dae468d4351621b69d2ec10e656fe",
   "AriBruce#2325": "0x2c485a4DaD1c1a6a031A6DB08D5212b74A4A50e7",
   anastasiaadastra: "0x529bd2351476ba114f9d60e71a020a9f0b99f047",
   _anna5501: "0x6Af6DCac097EF957F0155d7Ce26CC65996226423",
@@ -47,9 +48,11 @@ const discordToEthAddress = {
   damian2848: "0x4b2F36E078A7eFeBe7A0680EDC340A4A60ca8946",
   ___mustang___: "0x1B7D7d183Bd233af690DDB33cE818f41995118a9",
   dreimanj: "0xe2d3aC725E6FFE2b28a9ED83bedAaf6672f2C801",
+  djinnmorrison: "0x8a7fd7f4b1a77a606dfdd229c194b1f22de868ff",
   flowscience: "0x66CD14267fb5a1609496CdC37eB55E6FE3f59C75",
   social_hacker_38241: "0x04877685e94E0694944D08a43d021E5768b595f0",
   engi_bob: "0x4CBf10c36b481d6afF063070E35b4F42E7Aad201",
+  frank041099: "0xf2befa4b9489c1ef75e069d16a6f829f71b4b988",
   favian23: "0xafa46468De1D6f1ab77DEFAe5F7657467911182d",
   _furda: "0x01A5109eC48a25C7c26C517b595FD7a5c2cE44eb",
   fiyinx20: "0x2753c791bCA3667f10800262FCB0168269e12DC5",
@@ -78,9 +81,11 @@ const discordToEthAddress = {
   ".rocketryder": "0xAfcB3224774297Cb67d20aF99eB2ccf80E9F51Ca",
   ionrod: "0xA64f2228cceC96076c82abb903021C33859082F8",
   royalty3684: "0x1D6CAaCB0528fd7EfFfE9029604DD2049a40B3cE",
+  malumek_41508: "0x00127f44bad82b9ea27245a14a4141e5ef0161a8",
   ryand2d: "0xB2d3900807094D4Fe47405871B0C8AdB58E10D42",
   ryan: "0xB2d3900807094D4Fe47405871B0C8AdB58E10D42",
   santiagoitzcoatl: "0xad43D363701Ed3EFC1263DC4b658745fA3E90e4B",
+  si_karahoward: "0x8687ab2ff3188f961828fc2131b6150ee97bedce",
   astrosupreme: "",
   sheldenshi: "0xc2BCF46CBC9F4CedA617cB41F2158BE525dD008b",
   "super.jellie#9120": "0x8C1Bf43198c5E7cAB13439e0C53A8650033d03ef",
