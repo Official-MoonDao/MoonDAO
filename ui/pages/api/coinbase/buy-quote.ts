@@ -9,7 +9,7 @@ import {
   handleAPIError,
   BuyQuoteRequest,
 } from '../../../lib/coinbase'
-import { detectUserState, isValidUSState } from '../../../lib/geo'
+import { detectUserState, isValidUSState, getCountryFromHeaders } from '../../../lib/geo'
 
 // Initialize Redis client for geolocation caching
 const redis = new Redis({
@@ -31,7 +31,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       purchaseNetwork = 'ethereum',
       paymentCurrency = 'USD',
       purchaseCurrency = 'ETH',
-      country = 'US',
+      country: providedCountry,
       subdivision,
       paymentMethod = 'CARD',
       channelId,
@@ -39,14 +39,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     if (!paymentAmount || !destinationAddress) {
       return res.status(400).json({
-        error:
-          'Payment amount or purchase amount and destination address are required',
+        error: 'Payment amount or purchase amount and destination address are required',
       })
     }
 
-    // Detect user's US state if not provided
+    // Detect country from headers if not provided
+    const headerCountry = getCountryFromHeaders(req)
+    let country = providedCountry || headerCountry || 'US'
+
+    // Detect user's US state if not provided and country is US
     let detectedSubdivision = subdivision
-    if (!detectedSubdivision) {
+    if (!detectedSubdivision && country === 'US') {
       try {
         const stateCode = await detectUserState(req, redis)
         if (stateCode && isValidUSState(stateCode)) {
@@ -58,10 +61,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // For US users, subdivision (state) is required by Coinbase
-    if (country === 'US' && !detectedSubdivision) {
+    // Only require it if we're confident the user is in the US:
+    // - Country was explicitly provided as 'US', OR
+    // - Country was detected from headers as 'US'
+    // If we defaulted to 'US' because we couldn't detect country, don't require subdivision
+    const isConfirmedUS = country === 'US' && (providedCountry === 'US' || headerCountry === 'US')
+    if (isConfirmedUS && !detectedSubdivision) {
       return res.status(400).json({
         error: 'State (subdivision) is required for US users',
-        details: 'Unable to detect your state automatically. Please provide a subdivision (state code) in your request.',
+        details:
+          'Unable to detect your state automatically. Please provide a subdivision (state code) in your request.',
       })
     }
 
@@ -87,12 +96,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     requestBody.paymentCurrency = paymentCurrency
 
     // Call CDP buy quote endpoint
-    const response = await makeCDPRequest(
-      '/onramp/v1/buy/quote',
-      'POST',
-      requestBody,
-      credentials
-    )
+    const response = await makeCDPRequest('/onramp/v1/buy/quote', 'POST', requestBody, credentials)
 
     if (!response.ok) {
       const errorData = await response.text()
