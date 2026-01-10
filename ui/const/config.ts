@@ -539,4 +539,23 @@ export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
 export const FREE_MINT_THRESHOLD = 1e16
 
 export const EB_TEAM_ID = '0'
-export const NEXT_ETH_BUDGET = 11.60
+
+// Project System Configuration
+export const PROJECT_SYSTEM_CONFIG = {
+  // Q1 2026 deadline - second Thursday of the quarter
+  submissionDeadline: 'January 15, 2026',
+  // Maximum budget per project is 1/5 (20%) of quarterly budget
+  maxBudgetPercentage: 0.2,
+  // Approval timeline details
+  senateReviewDays: 1, // Senate reviews the day after submission
+  editingDeadline: 'January 22, 2026', // 48 hours before third Thursday
+  votingDate: 'January 22, 2026', // Third Thursday of quarter
+  // Submission link
+  submissionUrl: 'https://moondao.com/propose',
+  // Documentation link
+  docsUrl: 'https://docs.moondao.com/Projects/Project-System',
+  // Total quarterly budget is displayed dynamically on the page
+}
+
+// Quarterly budget in ETH
+export const NEXT_ETH_BUDGET = 7.83

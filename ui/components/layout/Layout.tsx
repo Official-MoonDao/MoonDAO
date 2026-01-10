@@ -34,6 +34,9 @@ const GlobalSearch = dynamic(() => import('./GlobalSearch'), {
 const MissionBanner = dynamic(() => import('./MissionBanner'), {
   ssr: false,
 })
+const ProjectBanner = dynamic(() => import('./ProjectBanner'), {
+  ssr: false,
+})
 const CookieBanner = dynamic(() => import('./CookieBanner'), {
   ssr: false,
 })
@@ -154,6 +157,9 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
 
         {/* Mission Banner - Fixed at bottom */}
         <MissionBanner />
+
+        {/* Project Banner - Fixed at bottom (when mission banner is hidden) */}
+        <ProjectBanner />
       </>
 
       <CookieBanner />
