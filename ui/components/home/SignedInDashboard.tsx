@@ -1100,6 +1100,7 @@ export default function SignedInDashboard({
             selectedChain={selectedChain}
             teamContract={teamContract}
             marketplaceTableContract={marketplaceTableContract}
+            initialListings={newestListings}
           />
         </div>
 

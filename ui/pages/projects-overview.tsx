@@ -1,4 +1,10 @@
-import { ARBITRUM_ASSETS_URL, POLYGON_ASSETS_URL, BASE_ASSETS_URL, ETH_BUDGET } from 'const/config'
+import {
+  ARBITRUM_ASSETS_URL,
+  ETH_BUDGET,
+  POLYGON_ASSETS_URL,
+  BASE_ASSETS_URL,
+  PROJECT_SYSTEM_CONFIG,
+} from 'const/config'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
@@ -331,18 +337,22 @@ const ProjectsOverview: React.FC<{
                     <h4 className="text-xl font-bold text-white mb-3">vMOONEY Rewards</h4>
                     <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg p-3 mb-3 border border-blue-400/20">
                       <div className="text-2xl font-bold text-blue-400">
-                        {Number(mooneyBudget.toPrecision(3)).toLocaleString()}
-                        <span className="text-lg text-blue-300">
-                          {isLoadingMooneyUSD ? (
-                            <span className="ml-2 opacity-70">(...)</span>
-                          ) : mooneyBudgetUSD !== null && mooneyBudgetUSD > 0 ? (
-                            ` (${mooneyBudgetUSD.toLocaleString(undefined, {
-                              maximumFractionDigits: 0,
-                              style: 'currency',
-                              currency: 'USD',
-                            })})`
-                          ) : null}
-                        </span>
+                        {mooneyBudget > 0 ? (
+                          <>
+                            {Number(mooneyBudget.toPrecision(3)).toLocaleString()}
+                            <span className="text-lg text-blue-300">
+                              {isLoadingMooneyUSD ? (
+                                <span className="ml-2 opacity-70">(...)</span>
+                              ) : mooneyBudgetUSD !== null && mooneyBudgetUSD > 0 ? (
+                                ` ($${mooneyBudgetUSD.toLocaleString(undefined, {
+                                  maximumFractionDigits: 0,
+                                })})`
+                              ) : null}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-blue-300">Loading...</span>
+                        )}
                       </div>
                       <div className="text-sm text-blue-300">
                         vMOONEY Available Q{quarter} {year}
@@ -354,6 +364,221 @@ const ProjectsOverview: React.FC<{
                     </p>
                     <p className="text-sm text-blue-400">Locked for 4 years as delegated vMOONEY</p>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Project Submission Information Section */}
+            <div className="relative mx-4 mb-16">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-900/10 via-teal-900/10 to-blue-900/10 rounded-3xl" />
+              <div className="relative p-6 md:p-12 bg-gradient-to-br from-white/5 via-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl">
+                <div className="text-center mb-10">
+                  <div className="inline-block bg-gradient-to-r from-green-400 to-teal-500 text-white px-4 py-1 rounded-full text-sm font-bold mb-4">
+                    📝 APPLICATIONS OPEN
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-GoodTimes text-white mb-4">
+                    Submit Your Project Proposal
+                  </h3>
+                  <p className="text-gray-300 max-w-3xl mx-auto">
+                    Everything you need to know about submitting a project proposal to MoonDAO.
+                  </p>
+                </div>
+
+                {/* Key Information Grid */}
+                <div className="grid md:grid-cols-3 gap-6 mb-10">
+                  {/* Deadline */}
+                  <div className="bg-gradient-to-br from-red-900/20 to-orange-900/20 rounded-xl p-6 border border-red-500/20 text-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-orange-500 rounded-lg flex items-center justify-center mx-auto mb-4">
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                    <h4 className="text-lg font-bold text-white mb-2">Submission Deadline</h4>
+                    <p className="text-xl font-bold text-orange-400">
+                      {PROJECT_SYSTEM_CONFIG.submissionDeadline}
+                    </p>
+                    <p className="text-xs text-orange-300 mt-1">2nd Thursday of Quarter</p>
+                  </div>
+
+                  {/* Maximum Budget */}
+                  <div className="bg-gradient-to-br from-yellow-900/20 to-amber-900/20 rounded-xl p-6 border border-yellow-500/20 text-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-lg flex items-center justify-center mx-auto mb-4">
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                        />
+                      </svg>
+                    </div>
+                    <h4 className="text-lg font-bold text-white mb-2">Max Budget/Project</h4>
+                    <p className="text-xl font-bold text-yellow-400">2.08 ETH</p>
+                    <p className="text-sm text-yellow-300 mt-1">(20% of quarterly budget)</p>
+                  </div>
+
+                  {/* Approval Timeline */}
+                  <div className="bg-gradient-to-br from-green-900/20 to-teal-900/20 rounded-xl p-6 border border-green-500/20 text-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-teal-500 rounded-lg flex items-center justify-center mx-auto mb-4">
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <h4 className="text-lg font-bold text-white mb-2">Voting Date</h4>
+                    <p className="text-xl font-bold text-green-400">
+                      {PROJECT_SYSTEM_CONFIG.votingDate}
+                    </p>
+                    <p className="text-xs text-green-300 mt-1">3rd Thursday of Quarter</p>
+                  </div>
+                </div>
+
+                {/* Total Budget Available */}
+                <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-6 border border-purple-500/30 mb-8">
+                  <div className="text-center">
+                    <p className="text-sm text-purple-300 mb-2">
+                      Total Quarterly Retroactive Rewards
+                    </p>
+                    <p className="text-3xl md:text-4xl font-bold text-white">
+                      11.6 ETH <span className="text-xl text-purple-300">(~$37,000)</span>
+                    </p>
+                    <p className="text-xs text-purple-400 mt-2">
+                      Plus{' '}
+                      {mooneyBudget > 0
+                        ? Number(mooneyBudget.toPrecision(3)).toLocaleString()
+                        : '...'}{' '}
+                      vMOONEY
+                    </p>
+                    <p className="text-xs text-purple-400 mt-1">
+                      5% of liquid non-MOONEY assets minus approved project budgets
+                    </p>
+                  </div>
+                </div>
+
+                {/* Submission Steps */}
+                <div className="space-y-4 mb-8">
+                  <h4 className="text-xl font-bold text-white text-center mb-6">How to Submit</h4>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {/* Step 1 */}
+                    <div className="flex gap-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                          1
+                        </div>
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-white mb-1">Post in Ideation Channel</h5>
+                        <p className="text-sm text-gray-300">
+                          Share your problem and proposed solution in Discord's ideation channel.
+                          Get feedback and coordinate with others informally.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 2 */}
+                    <div className="flex gap-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                          2
+                        </div>
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-white mb-1">Review Documentation</h5>
+                        <p className="text-sm text-gray-300">
+                          Read our comprehensive project system guide to understand requirements,
+                          evaluation criteria, and best practices.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className="flex gap-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                          3
+                        </div>
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-white mb-1">Submit Full Proposal</h5>
+                        <p className="text-sm text-gray-300">
+                          Fill out the Project Proposal Template and submit by the 2nd Thursday of
+                          the Quarter. Budget must be ≤20% of quarterly rewards.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 4 */}
+                    <div className="flex gap-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                          4
+                        </div>
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-white mb-1">Present & Vote</h5>
+                        <p className="text-sm text-gray-300">
+                          Present at the Townhall meeting. Members vote to allocate funding. Top 50%
+                          of proposals get funded (budget permitting).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <StandardButton
+                    backgroundColor="bg-gradient-to-r from-green-600 to-teal-600"
+                    textColor="text-white"
+                    borderRadius="rounded-full"
+                    hoverEffect={false}
+                    link={PROJECT_SYSTEM_CONFIG.submissionUrl}
+                  >
+                    Submit Your Proposal
+                  </StandardButton>
+                  <StandardButton
+                    backgroundColor="bg-gradient-to-r from-blue-600 to-purple-600"
+                    textColor="text-white"
+                    borderRadius="rounded-full"
+                    hoverEffect={false}
+                    link={PROJECT_SYSTEM_CONFIG.docsUrl}
+                  >
+                    Read Full Documentation
+                  </StandardButton>
+                  <StandardButton
+                    backgroundColor="bg-gradient-to-r from-purple-600 to-pink-600"
+                    textColor="text-white"
+                    borderRadius="rounded-full"
+                    hoverEffect={false}
+                    link="https://discord.gg/moondao"
+                  >
+                    Join Discord
+                  </StandardButton>
                 </div>
               </div>
             </div>
@@ -375,8 +600,7 @@ const ProjectsOverview: React.FC<{
               </h3>
               <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-8">
                 Join our community of space entrepreneurs and contribute to humanity's
-                multiplanetary future. Whether you're a developer, engineer, researcher, or
-                creative, there's a place for you in the MoonDAO ecosystem.
+                multiplanetary future.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <StandardButton
@@ -387,24 +611,6 @@ const ProjectsOverview: React.FC<{
                   link="/projects"
                 >
                   Explore Active Projects
-                </StandardButton>
-                <StandardButton
-                  backgroundColor="bg-gradient-to-r from-green-600 to-teal-600"
-                  textColor="text-white"
-                  borderRadius="rounded-full"
-                  hoverEffect={false}
-                  link="/proposals"
-                >
-                  Submit Your Proposal
-                </StandardButton>
-                <StandardButton
-                  backgroundColor="bg-gradient-to-r from-purple-600 to-pink-600"
-                  textColor="text-white"
-                  borderRadius="rounded-full"
-                  hoverEffect={false}
-                  link="/project-system-docs"
-                >
-                  Read Full Documentation
                 </StandardButton>
               </div>
             </div>
