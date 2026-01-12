@@ -814,8 +814,14 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           (formData.inputImage && isSerializedFile(formData.inputImage)) ||
           (formData.citizenImage && formData.citizenImage !== 'PENDING_SERIALIZATION') ||
           (formData.inputImage && formData.inputImage !== 'PENDING_SERIALIZATION'))
-
-      return formData.agreedToCondition && isImageValid
+      const result = formData.agreedToCondition && isImageValid
+      console.log('[AUTO-TX] shouldProceed -', {
+        agreed: formData.agreedToCondition,
+        hasImage: !!hasImage,
+        isImageValid,
+        result,
+      })
+      return result
     },
     restoreCache: getCachedForm,
     getChainSlugFromCache: (restored) => restored?.formData?.selectedChainSlug,
@@ -825,7 +831,14 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const gasEstimateReady = !isLoadingGasEstimate && estimatedGas > BigInt(0)
       const gasPriceReady = effectiveGasPrice !== undefined && effectiveGasPrice > BigInt(0)
       const imagesReady = imagesRestoredRef.current || !!citizenImage || !!inputImage
-      return gasEstimateReady && gasPriceReady && imagesReady
+      const ready = gasEstimateReady && gasPriceReady && imagesReady
+      console.log('[AUTO-TX] waitForReady -', {
+        gasEstimateReady,
+        gasPriceReady,
+        imagesReady,
+        ready,
+      })
+      return ready
     },
   })
 
