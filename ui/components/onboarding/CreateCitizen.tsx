@@ -118,7 +118,16 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // Import JWT utilities to get original address
   const { getAddressFromJWT } = useOnrampJWT()
 
-  const restoredStage = useOnrampInitialStage(address, restoreCache, 0, 2, getAddressFromJWT)
+  const restoreCacheRef = useRef(restoreCache)
+  useEffect(() => {
+    restoreCacheRef.current = restoreCache
+  }, [restoreCache])
+
+  const getCachedForm = useCallback((addressOverride?: string) => {
+    return restoreCacheRef.current(addressOverride)
+  }, [])
+
+  const restoredStage = useOnrampInitialStage(address, getCachedForm, 0, 2, getAddressFromJWT)
   useEffect(() => {
     if (restoredStage !== 0) {
       setStage(restoredStage)
@@ -760,7 +769,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   }, [
     router.isReady,
     router.query.onrampSuccess,
-    restoreCache,
+    getCachedForm,
     handleFormRestore,
     getAddressFromJWT,
     address,
@@ -944,7 +953,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           (formData.inputImage && formData.inputImage !== 'PENDING_SERIALIZATION'))
       return formData.agreedToCondition && isImageValid
     },
-    restoreCache,
+    restoreCache: getCachedForm,
     getChainSlugFromCache: (restored) => restored?.formData?.selectedChainSlug,
     setStage,
     setSelectedWallet,
