@@ -153,12 +153,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const [agreedToCondition, setAgreedToConditionRaw] = useState<boolean>(false)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const setAgreedToCondition = useCallback((value: boolean) => {
-    console.log(
-      '[CreateCitizen] setAgreedToCondition called:',
-      value,
-      'stack:',
-      new Error().stack?.split('\n').slice(2, 4).join('\n')
-    )
     setAgreedToConditionRaw(value)
   }, [])
 
@@ -186,23 +180,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const selectedChainSlugRef = useRef(selectedChainSlug)
 
   // ===== Utilities =====
-  const logToSession = useCallback((message: string, data?: any) => {
-    try {
-      const logs = JSON.parse(sessionStorage.getItem('citizenFlowDebug') || '[]')
-      logs.push({
-        timestamp: Date.now(),
-        message,
-        data,
-        url: window.location.href,
-      })
-      // Keep last 50 logs
-      if (logs.length > 50) logs.shift()
-      sessionStorage.setItem('citizenFlowDebug', JSON.stringify(logs))
-      console.log(message, data)
-    } catch (e) {
-      console.log(message, data) // Fallback to console only
-    }
-  }, [])
 
   // ===== Custom Hooks =====
   const { effectiveGasPrice } = useGasPrice(selectedChain)
@@ -265,18 +242,16 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       if (!imageData) return false
       if (isSerializedFile(imageData)) {
         setImage(base64ToFile(imageData))
-        console.log(`[CreateCitizen] Restored ${imageName}`)
         return true
       }
       if (imageData === 'PENDING_SERIALIZATION') {
         console.warn(
-          `[CreateCitizen] ${imageName} marked as PENDING_SERIALIZATION, skipping restore. Continuous caching should have proper serialization.`
+          `[CreateCitizen] ${imageName} marked as PENDING_SERIALIZATION, skipping restore.`
         )
-        logToSession(`[CreateCitizen] ${imageName} PENDING_SERIALIZATION detected during restore`)
       }
       return false
     },
-    [logToSession]
+    []
   )
 
   const executeFreeMint = useCallback(
@@ -468,18 +443,10 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   // Gas Estimation Handler
   const estimateMintGas = useCallback(async () => {
-    console.log('[CreateCitizen] estimateMintGas called:', {
-      hasAccount: !!account,
-      hasAddress: !!address,
-      hasName: !!citizenData.name,
-    })
-
     if (!account || !address || !citizenData.name) {
-      console.log('[CreateCitizen] estimateMintGas exiting early - missing required data')
       return
     }
 
-    console.log('[CreateCitizen] Starting gas estimation...')
     setIsLoadingGasEstimate(true)
 
     try {
@@ -578,12 +545,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       const bufferPercent = isCrossChain ? 200 : 150
       const gasWithBuffer = applyGasBuffer(gasEstimate, bufferPercent)
-      console.log('[CreateCitizen] Gas estimation complete:', {
-        rawEstimate: gasEstimate.toString(),
-        withBuffer: gasWithBuffer.toString(),
-        bufferPercent,
-        isCrossChain,
-      })
       setEstimatedGas(gasWithBuffer)
       setIsLoadingGasEstimate(false)
     } catch (error) {
@@ -591,11 +552,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const fallbackGas = isCrossChain ? BigInt(500000) : BigInt(350000)
       const bufferPercent = isCrossChain ? 200 : 150
       const bufferedFallback = applyGasBuffer(fallbackGas, bufferPercent)
-      console.log('[CreateCitizen] Using buffered fallback gas estimate:', {
-        raw: fallbackGas.toString(),
-        buffered: bufferedFallback.toString(),
-        bufferPercent,
-      })
       setEstimatedGas(bufferedFallback)
       setIsLoadingGasEstimate(false)
     }
@@ -617,7 +573,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   const handleFormRestore = useCallback(
     (restored: any) => {
       if (hasRestoredFormDataRef.current) {
-        console.log('[CreateCitizen] Form already restored, skipping')
         return
       }
 
@@ -632,55 +587,14 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         return
       }
 
-      console.log('[CreateCitizen] Restoring form data:', {
-        stage: restored.stage,
-        hasCitizenData: !!formData.citizenData,
-        citizenDataName: formData.citizenData?.name,
-        hasCitizenImage: !!formData.citizenImage,
-        hasInputImage: !!formData.inputImage,
-        agreedToCondition: formData.agreedToCondition,
-        selectedChainSlug: formData.selectedChainSlug,
-      })
-      console.log('[CreateCitizen] Full restored object:', restored)
-
-      // Cache verification
-      if (router.query.onrampSuccess === 'true') {
-        const cacheAge = restored.timestamp ? Date.now() - restored.timestamp : null
-        logToSession('[CreateCitizen] Cache verification after onramp redirect', {
-          hasImage: !!formData.citizenImage,
-          hasName: !!formData.citizenData?.name,
-          stage: restored.stage,
-          agreedToCondition: formData.agreedToCondition,
-          cacheAge,
-        })
-
-        // If cache looks wrong (stage 0 after onramp), log debug info
-        if (restored.stage === 0 || !formData.citizenImage) {
-          console.warn('[CreateCitizen] Cache appears stale, checking sessionStorage debug logs')
-          try {
-            const debugLogs = sessionStorage.getItem('citizenFlowDebug')
-            console.log('[CreateCitizen] Debug logs:', debugLogs)
-            logToSession('[CreateCitizen] WARNING: Stale cache detected', {
-              stage: restored.stage,
-              hasImage: !!formData.citizenImage,
-              timestamp: restored.timestamp,
-            })
-          } catch (e) {
-            console.error('[CreateCitizen] Error reading debug logs:', e)
-          }
-        }
-      }
-
       hasRestoredFormDataRef.current = true
 
       setStage(restored.stage || 2)
       setCitizenData(formData.citizenData)
 
       // Trigger gas estimation after form restore
-      // Use setTimeout to ensure state updates have propagated
       setTimeout(() => {
         if (restored.stage === 2 && formData.citizenData?.name) {
-          console.log('[CreateCitizen] Triggering gas estimation after form restore')
           estimateMintGas()
         }
       }, 100)
@@ -700,26 +614,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       const agreedValue = formData.agreedToCondition ?? false
       setAgreedToCondition(agreedValue)
-      console.log('[CreateCitizen] Restored agreedToCondition:', agreedValue)
 
       if (formData.selectedChainSlug) {
         const chain = v4SlugToV5Chain(formData.selectedChainSlug)
         if (chain) {
           setSelectedChain(chain)
-          console.log('[CreateCitizen] Restored chain:', formData.selectedChainSlug)
         }
       }
-
-      console.log('[CreateCitizen] Form restoration completed')
     },
-    [
-      setSelectedChain,
-      router.query.onrampSuccess,
-      logToSession,
-      setAgreedToCondition,
-      restoreImageFromCache,
-      estimateMintGas,
-    ]
+    [setSelectedChain, setAgreedToCondition, restoreImageFromCache, estimateMintGas]
   )
 
   // ===== Side Effects =====
@@ -740,39 +643,21 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       return
     }
 
-    console.log(
-      '[CreateCitizen] Attempting manual form restoration after onramp redirect, current address:',
-      address
-    )
-
     const jwtAddress = getAddressFromJWT()
-    console.log(
-      '[CreateCitizen] JWT address:',
-      jwtAddress,
-      'will use for cache lookup:',
-      jwtAddress || address
-    )
     const restored = restoreCache(jwtAddress || undefined)
 
     if (restored) {
-      // Ensure cache has formData structure
       const formData = restored.formData || restored
       if (formData && formData.citizenData) {
-        console.log('[CreateCitizen] Found cached form data, calling handleFormRestore')
         handleFormRestore(restored)
-      } else {
-        console.log('[CreateCitizen] Cached data found but missing citizenData:', restored)
       }
-    } else {
-      console.log('[CreateCitizen] No cached form data found for address:', jwtAddress || address)
     }
   }, [
     router.isReady,
     router.query.onrampSuccess,
-    getCachedForm,
+    restoreCache,
     handleFormRestore,
     getAddressFromJWT,
-    address,
   ])
 
   // Mint Handler
@@ -810,16 +695,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       if (!freeMint && +nativeBalance < totalCost) {
         const shortfall = totalCost - +nativeBalance
         const requiredAmount = shortfall * 1.15
-
-        logToSession('[CreateCitizen] About to open onramp modal', {
-          agreedToCondition,
-          agreedToConditionRef: agreedToConditionRef.current,
-          citizenDataName: citizenData.name,
-          stage,
-          stageRef: stageRef.current,
-          selectedChainSlug,
-          selectedChainSlugRef: selectedChainSlugRef.current,
-        })
 
         setRequiredEthAmount(requiredAmount)
         setOnrampModalOpen(true)
@@ -874,10 +749,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
     freeMint,
     nativeBalance,
     citizenData.name,
-    logToSession,
-    agreedToCondition,
-    stage,
-    selectedChainSlug,
     executeFreeMint,
     executeCrossChainMint,
     executeDirectMint,
@@ -921,15 +792,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
   // ===== Effect Group: Gas Estimation =====
   useEffect(() => {
-    console.log('[CreateCitizen] Gas estimation useEffect triggered:', {
-      stage,
-      hasAddress: !!address,
-      hasName: !!citizenData.name,
-      selectedChainSlug,
-      shouldEstimate: stage === 2 && address && citizenData.name,
-    })
     if (stage === 2 && address && citizenData.name) {
-      console.log('[CreateCitizen] Calling estimateMintGas()')
       estimateMintGas()
     }
   }, [stage, address, citizenData.name, selectedChainSlug, estimateMintGas])
@@ -951,6 +814,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           (formData.inputImage && isSerializedFile(formData.inputImage)) ||
           (formData.citizenImage && formData.citizenImage !== 'PENDING_SERIALIZATION') ||
           (formData.inputImage && formData.inputImage !== 'PENDING_SERIALIZATION'))
+
       return formData.agreedToCondition && isImageValid
     },
     restoreCache: getCachedForm,
@@ -961,22 +825,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const gasEstimateReady = !isLoadingGasEstimate && estimatedGas > BigInt(0)
       const gasPriceReady = effectiveGasPrice !== undefined && effectiveGasPrice > BigInt(0)
       const imagesReady = imagesRestoredRef.current || !!citizenImage || !!inputImage
-      const isReady = gasEstimateReady && gasPriceReady && imagesReady
-
-      console.log('[CreateCitizen] waitForReady check:', {
-        gasEstimateReady,
-        isLoadingGasEstimate,
-        estimatedGas: estimatedGas.toString(),
-        gasPriceReady,
-        effectiveGasPrice: effectiveGasPrice?.toString(),
-        imagesReady,
-        imagesRestoredRef: imagesRestoredRef.current,
-        hasCitizenImage: !!citizenImage,
-        hasInputImage: !!inputImage,
-        isReady,
-      })
-
-      return isReady
+      return gasEstimateReady && gasPriceReady && imagesReady
     },
   })
 
@@ -1007,39 +856,18 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   // ===== Effect Group: Caching =====
   useEffect(() => {
     if (stage === 2 && agreedToCondition && address) {
-      logToSession('[CreateCitizen] Checkbox checked - immediately caching state', {
-        stage,
-        agreedToCondition,
-        citizenDataName: citizenData?.name,
-        selectedChainSlug,
-      })
-
       const performCache = async () => {
         const cacheData = await serializeCacheData()
         setCache({ ...cacheData, agreedToCondition: true }, stage)
       }
       performCache()
     }
-  }, [
-    agreedToCondition,
-    stage,
-    address,
-    logToSession,
-    serializeCacheData,
-    setCache,
-    citizenData?.name,
-    selectedChainSlug,
-  ])
+  }, [agreedToCondition, stage, address, serializeCacheData, setCache])
 
   // beforeunload backup: emergency state saving before page unload
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (stage === 2 && agreedToConditionRef.current && address) {
-        logToSession('[CreateCitizen] beforeunload - emergency cache save', {
-          stage: stageRef.current,
-          agreedToCondition: agreedToConditionRef.current,
-        })
-
         // Use synchronous localStorage directly since beforeunload timing is critical
         // Check existing cache to avoid overwriting properly serialized images
         const cacheKey = `CreateCitizenCacheV1_${address.toLowerCase()}`
@@ -1089,18 +917,12 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [stage, address, logToSession])
+  }, [stage, address])
 
   // Cache form state continuously (removed onrampModalOpen guard for more aggressive caching)
   useEffect(() => {
     if (stage >= 0 && address && (citizenData.name || citizenImage || inputImage)) {
       const performCache = async () => {
-        logToSession('[CreateCitizen] Continuous caching form data', {
-          stage,
-          citizenDataName: citizenData?.name,
-          agreedToCondition,
-          selectedChainSlug,
-        })
         const cacheData = await serializeCacheData()
         setCache(cacheData, stage)
       }
@@ -1109,7 +931,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   }, [
     stage,
     address,
-    logToSession,
     serializeCacheData,
     setCache,
     citizenData.name,
@@ -1351,11 +1172,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
                 <TermsCheckbox
                   checked={agreedToCondition}
                   onChange={(newValue) => {
-                    logToSession('[CreateCitizen] Checkbox changed', {
-                      newValue,
-                      stage,
-                      address,
-                    })
                     setAgreedToCondition(newValue)
                   }}
                 />
@@ -1417,23 +1233,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             setIsLoadingMint(false)
           }}
           onBeforeNavigate={async () => {
-            // Use refs to get the absolute latest values
             const currentStage = stageRef.current
-            const currentChainSlug = selectedChainSlugRef.current
-
-            logToSession('[CreateCitizen] onBeforeNavigate - capturing current state', {
-              currentStage,
-              citizenDataName: citizenDataRef.current?.name,
-              currentAgreed: agreedToConditionRef.current,
-              currentChainSlug,
-              address,
-            })
-
             const cacheData = await serializeCacheData()
-            logToSession(
-              '[CreateCitizen] Caching before onramp navigation with agreedToCondition:',
-              agreedToConditionRef.current
-            )
             setCache(cacheData, currentStage)
           }}
         />

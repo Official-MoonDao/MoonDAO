@@ -44,7 +44,6 @@ export function useFormCache<T = any>(
         timestamp: Date.now(),
         contextId,
       }
-      console.log('[useFormCache] Setting cache with key:', fullCacheKey, 'stage:', stage)
       setCacheValue(cacheData)
     },
     [setCacheValue, contextId, fullCacheKey]
@@ -61,15 +60,12 @@ export function useFormCache<T = any>(
         ? `${cacheKey}_${addressOverride.toLowerCase()}${contextId ? `_${contextId}` : ''}`
         : fullCacheKey
 
-      console.log('[useFormCache] Restoring cache with key:', keyToUse)
-
       let currentCache = addressOverride ? undefined : cacheRef.current
 
       if (!currentCache) {
         try {
           if (typeof window !== 'undefined' && window.localStorage) {
             const stored = window.localStorage.getItem(keyToUse)
-            console.log('[useFormCache] Raw localStorage value:', stored ? stored.substring(0, 200) + '...' : 'null')
             if (stored) {
               const parsed = JSON.parse(stored)
               
@@ -83,7 +79,6 @@ export function useFormCache<T = any>(
                   timestamp: timestamp || Date.now(),
                   contextId: oldContextId || contextId,
                 }
-                console.log('[useFormCache] Normalized old cache format to new format')
               } else {
                 currentCache = parsed
               }
@@ -91,7 +86,6 @@ export function useFormCache<T = any>(
               if (!addressOverride) {
                 cacheRef.current = currentCache
               }
-              console.log('[useFormCache] Parsed cache:', currentCache)
             }
           }
         } catch (e) {
@@ -100,13 +94,11 @@ export function useFormCache<T = any>(
       }
 
       if (!currentCache) {
-        console.log('[useFormCache] No cache found')
         return null
       }
 
       // Ensure cache has required structure
       if (!currentCache.formData) {
-        console.log('[useFormCache] Cache missing formData, attempting to normalize')
         const { stage, timestamp, contextId: oldContextId, ...formData } = currentCache
         if (Object.keys(formData).length > 0) {
           currentCache = {
@@ -116,7 +108,6 @@ export function useFormCache<T = any>(
             contextId: oldContextId || contextId,
           }
         } else {
-          console.log('[useFormCache] Cache structure invalid, cannot normalize')
           return null
         }
       }
@@ -125,12 +116,10 @@ export function useFormCache<T = any>(
       const age = now - (currentCache.timestamp || now)
 
       if (age > CACHE_EXPIRY_MS) {
-        console.log('[useFormCache] Cache expired')
         clearCache()
         return null
       }
 
-      console.log('[useFormCache] Returning valid cache, age:', age, 'ms')
       return currentCache
     },
     [clearCache, fullCacheKey, cacheKey, contextId]

@@ -67,6 +67,7 @@ export function useOnrampAutoTransaction({
   const expectedAddressRef = useRef<string | null>(null)
   const isProcessingRef = useRef(false)
   const hasProcessedRef = useRef(false)
+  const hasAttemptedRestoreRef = useRef(false)
   const prevIsReturningFromOnrampRef = useRef(false)
   const processingStartTimeRef = useRef<number | null>(null)
   const currentSessionIdRef = useRef<string | null>(null)
@@ -127,14 +128,14 @@ export function useOnrampAutoTransaction({
             clearExpectedAddress()
             clearRedirectParams()
           } catch (error) {
-            console.error('Transaction failed:', error)
+            console.error('[useOnrampAutoTransaction] Transaction failed:', error)
             hasProcessedRef.current = false
             throw error
           }
           return
         }
       } catch (error) {
-        console.error('Error checking balance:', error)
+        console.error('[useOnrampAutoTransaction] Error checking balance:', error)
       }
     }
 
@@ -144,7 +145,7 @@ export function useOnrampAutoTransaction({
       clearExpectedAddress()
       clearRedirectParams()
     } catch (error) {
-      console.error('Final transaction attempt failed:', error)
+      console.error('[useOnrampAutoTransaction] Final transaction attempt failed:', error)
       hasProcessedRef.current = false
       throw error
     }
@@ -160,15 +161,9 @@ export function useOnrampAutoTransaction({
 
   const waitForReadyAndExecute = useCallback(async () => {
     if (!waitForReadyRef.current) {
-      console.log('[useOnrampAutoTransaction] No waitForReady function, proceeding to pollBalanceAndExecute')
       await pollBalanceAndExecute()
       return
     }
-
-    console.log('[useOnrampAutoTransaction] Starting waitForReady polling', {
-      maxAttempts: waitForReadyMaxAttempts,
-      delayMs: waitForReadyDelayMs,
-    })
 
     for (let attempt = 0; attempt < waitForReadyMaxAttempts; attempt++) {
       if (expectedAddressRef.current && addressRef.current) {
@@ -183,10 +178,8 @@ export function useOnrampAutoTransaction({
       }
 
       const isReady = waitForReadyRef.current()
-      console.log(`[useOnrampAutoTransaction] waitForReady attempt ${attempt + 1}/${waitForReadyMaxAttempts}: ${isReady}`)
 
       if (isReady) {
-        console.log('[useOnrampAutoTransaction] Ready! Proceeding to pollBalanceAndExecute')
         await pollBalanceAndExecute()
         return
       }
@@ -194,7 +187,6 @@ export function useOnrampAutoTransaction({
       await new Promise((resolve) => setTimeout(resolve, waitForReadyDelayMs))
     }
 
-    console.warn(`[useOnrampAutoTransaction] waitForReady timed out after ${waitForReadyMaxAttempts} attempts, proceeding anyway`)
     await pollBalanceAndExecute()
   }, [
     pollBalanceAndExecute,
@@ -211,6 +203,7 @@ export function useOnrampAutoTransaction({
     if (prevIsReturningFromOnrampRef.current && !isReturningFromOnramp) {
       hasProcessedRef.current = false
       isProcessingRef.current = false
+      hasAttemptedRestoreRef.current = false
       processingStartTimeRef.current = null
       currentSessionIdRef.current = null
       activeProcessingPromiseRef.current = null
@@ -300,7 +293,6 @@ export function useOnrampAutoTransaction({
           timestamp: timestamp || Date.now(),
           contextId: oldContextId,
         }
-        console.log('[useOnrampAutoTransaction] Normalized cache structure')
       }
 
       if (!cache.formData) {
@@ -402,13 +394,25 @@ export function useOnrampAutoTransaction({
         return
       }
 
-      fetch('/api/coinbase/verify-onramp-jwt', {
+      const fetchWithTimeout = (url: string, options: RequestInit, timeout = 10000) => {
+        return Promise.race([
+          fetch(url, options),
+          new Promise<Response>((_, reject) =>
+            setTimeout(() => reject(new Error('Fetch timeout')), timeout)
+          ),
+        ])
+      }
+
+      fetchWithTimeout('/api/coinbase/verify-onramp-jwt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: storedJWT }),
       })
         .then((res) => {
           if (isCancelled) return null
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+          }
           return res.json()
         })
         .then((data) => {
@@ -435,45 +439,42 @@ export function useOnrampAutoTransaction({
             return
           }
 
-          return verifyJWT(storedJWT, currentAddress, undefined, context).then((payload) => {
-            if (isCancelled) return
+          if (jwtPayload.chainSlug !== chainSlugToVerify) {
+            console.error(
+              '[useOnrampAutoTransaction] JWT verification failed: chainSlug mismatch',
+              {
+                payloadChainSlug: jwtPayload.chainSlug,
+                expectedChainSlug: chainSlugToVerify,
+              }
+            )
+            clearJWT()
+            clearRedirectParams()
+            resetProcessing()
+            return
+          }
 
-            if (!payload) {
-              console.error('JWT verification failed')
-              clearJWT()
-              clearRedirectParams()
-              resetProcessing()
-              return
-            }
+          if (jwtPayload.context !== context) {
+            console.error('[useOnrampAutoTransaction] JWT verification failed: context mismatch', {
+              payloadContext: jwtPayload.context,
+              expectedContext: context,
+            })
+            clearJWT()
+            clearRedirectParams()
+            resetProcessing()
+            return
+          }
 
-            if (payload.chainSlug !== chainSlugToVerify) {
-              console.error('JWT verification failed: chainSlug mismatch')
-              clearJWT()
-              clearRedirectParams()
-              resetProcessing()
-              return
-            }
+          expectedAddressRef.current = jwtPayload.address
 
-            if (payload.context !== context) {
-              console.error('JWT verification failed: context mismatch')
-              clearJWT()
-              clearRedirectParams()
-              resetProcessing()
-              return
-            }
+          if (jwtPayload.selectedWallet !== undefined && setSelectedWallet) {
+            setSelectedWallet(jwtPayload.selectedWallet)
+          }
 
-            expectedAddressRef.current = payload.address
-
-            if (payload.selectedWallet !== undefined && setSelectedWallet) {
-              setSelectedWallet(payload.selectedWallet)
-            }
-
-            executeAutoTransaction()
-          })
+          executeAutoTransaction()
         })
         .catch((error) => {
           if (isCancelled) return
-          console.error('Error checking JWT:', error)
+          console.error('[useOnrampAutoTransaction] Error checking JWT:', error)
           clearJWT()
           clearRedirectParams()
           resetProcessing()
@@ -484,7 +485,9 @@ export function useOnrampAutoTransaction({
 
     const initialDelay = setTimeout(() => {
       if (isCancelled) return
+      if (hasAttemptedRestoreRef.current) return
 
+      hasAttemptedRestoreRef.current = true
       let restored = restoreCache()
 
       if (!restored) {
@@ -505,7 +508,10 @@ export function useOnrampAutoTransaction({
     }, 50)
 
     return () => {
-      isCancelled = true
+      // Only cancel if we haven't started processing yet
+      if (!isProcessingRef.current) {
+        isCancelled = true
+      }
 
       clearTimeout(initialDelay)
       if (timeoutId) {
