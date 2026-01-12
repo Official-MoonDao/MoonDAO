@@ -567,7 +567,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         }
       }
 
-      const bufferPercent = isCrossChain ? 180 : 130
+      const bufferPercent = isCrossChain ? 200 : 150
       const gasWithBuffer = applyGasBuffer(gasEstimate, bufferPercent)
       console.log('[CreateCitizen] Gas estimation complete:', {
         rawEstimate: gasEstimate.toString(),
@@ -794,7 +794,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       if (!freeMint && +nativeBalance < totalCost) {
         const shortfall = totalCost - +nativeBalance
-        const requiredAmount = shortfall * 1.05
+        const requiredAmount = shortfall * 1.15
 
         logToSession('[CreateCitizen] About to open onramp modal', {
           agreedToCondition,
