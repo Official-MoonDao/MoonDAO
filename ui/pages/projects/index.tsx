@@ -1,24 +1,11 @@
-import DistributionABI from 'const/abis/DistributionTable.json'
-import ProjectTableABI from 'const/abis/ProjectTable.json'
-import {
-  PROJECT_TABLE_ADDRESSES,
-  DISTRIBUTION_TABLE_ADDRESSES,
-  DEFAULT_CHAIN_V5,
-  PROJECT_TABLE_NAMES,
-  DISTRIBUTION_TABLE_NAMES,
-} from 'const/config'
+import { DEFAULT_CHAIN_V5, PROJECT_TABLE_NAMES, DISTRIBUTION_TABLE_NAMES } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
-import { getContract, readContract } from 'thirdweb'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
-import {
-  ProjectRewards,
-  ProjectRewardsProps,
-} from '@/components/nance/ProjectRewards'
+import { ProjectRewards, ProjectRewardsProps } from '@/components/nance/ProjectRewards'
 
 export default function Projects({
   currentProjects,
@@ -42,17 +29,15 @@ export async function getStaticProps() {
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
-    const { quarter, year } = getRelativeQuarter(
-      isRewardsCycle(new Date()) ? -1 : 0
-    )
+    const { quarter, year } = getRelativeQuarter(isRewardsCycle(new Date()) ? -1 : 0)
 
     const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
-    const projects = await queryTable(chain, projectStatement)
+    const projects = (await queryTable(chain, projectStatement)) || []
 
     const currentProjects = []
     const pastProjects = []
     for (let i = 0; i < projects.length; i++) {
-      if (!BLOCKED_PROJECTS.has(projects[i].id)) {
+      if (projects[i] && !BLOCKED_PROJECTS.has(projects[i].id)) {
         const current = projects[i].active
         if (!current) {
           pastProjects.push(projects[i])
@@ -69,13 +54,13 @@ export async function getStaticProps() {
     })
 
     const distributionStatement = `SELECT * FROM ${DISTRIBUTION_TABLE_NAMES[chainSlug]} WHERE year = ${year} AND quarter = ${quarter}`
-    const distributions = await queryTable(chain, distributionStatement)
+    const distributions = (await queryTable(chain, distributionStatement)) || []
 
     return {
       props: {
-        currentProjects: currentProjects.reverse(),
-        pastProjects: pastProjects.reverse(),
-        distributions,
+        currentProjects: JSON.parse(JSON.stringify(currentProjects.reverse())),
+        pastProjects: JSON.parse(JSON.stringify(pastProjects.reverse())),
+        distributions: JSON.parse(JSON.stringify(distributions)),
       },
       revalidate: 60,
     }

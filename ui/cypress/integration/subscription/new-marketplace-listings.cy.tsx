@@ -4,14 +4,12 @@ import MarketplaceTableABI from 'const/abis/MarketplaceTable.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   MARKETPLACE_TABLE_ADDRESSES,
-  TABLELAND_ENDPOINT,
   TEAM_ADDRESSES,
 } from 'const/config'
 import { getContract } from 'thirdweb'
 import { serverClient } from '@/lib/thirdweb/client'
 import NewMarketplaceListings from '@/components/subscription/NewMarketplaceListings'
 import { TeamListing } from '@/components/subscription/TeamListing'
-import * as thirdweb from 'thirdweb'
 
 describe('<NewMarketplaceListings />', () => {
   let props: any
@@ -26,17 +24,6 @@ describe('<NewMarketplaceListings />', () => {
   })
 
   beforeEach(() => {
-    // Mock readContract for getTableName and expiresAt
-    cy.stub(thirdweb, 'readContract').callsFake(async (options: any) => {
-      if (options.method === 'getTableName') {
-        return mockTableName
-      }
-      if (options.method === 'expiresAt') {
-        return BigInt(futureTimestamp)
-      }
-      return null
-    })
-
     props = {
       selectedChain: CYPRESS_CHAIN_V5,
       teamContract: getContract({
@@ -51,40 +38,61 @@ describe('<NewMarketplaceListings />', () => {
         abi: MarketplaceTableABI as any,
         chain: CYPRESS_CHAIN_V5,
       }),
+      initialListings: [],
     }
 
-    cy.intercept('GET', `/api/tableland/query?statement=*`, {
-      statusCode: 200,
-      body: [listing, listing],
-    }).as('getNewMarketplaceListings')
-
     cy.mountNextRouter('/')
+  })
+
+  it('Renders the component with initial listings', () => {
+    cy.fixture('marketplace/listing').then((listing) => {
+      props.initialListings = [listing, listing]
+      
+      cy.mount(
+        <TestnetProviders>
+          <NewMarketplaceListings {...props} />
+        </TestnetProviders>
+      )
+
+      cy.contains('h3', 'Newest Listings').should('be.visible')
+      
+      cy.get('#new-marketplace-listings-container')
+        .children()
+        .should('have.length', 2)
+        .should('be.visible')
+    })
+  })
+
+  it('Displays empty state when no listings', () => {
     cy.mount(
       <TestnetProviders>
         <NewMarketplaceListings {...props} />
       </TestnetProviders>
     )
-  })
 
-  it('Renders the component and listings', () => {
-    cy.wait('@getNewMarketplaceListings')
-
-    cy.contains('h3', 'Newest Listings').should('be.visible')
-    
-    // Wait for listings to be processed and rendered
-    cy.get('#new-marketplace-listings-container')
-      .children()
-      .should('have.length', 2)
-      .should('be.visible')
+    cy.contains('No active listings yet').should('be.visible')
+    cy.contains('Check back soon for new marketplace items').should('be.visible')
   })
 
   it('Displays the description text', () => {
+    cy.mount(
+      <TestnetProviders>
+        <NewMarketplaceListings {...props} />
+      </TestnetProviders>
+    )
+
     cy.contains('Discover and trade exclusive items from space missions').should(
       'be.visible'
     )
   })
 
   it('Has a View All Items button', () => {
+    cy.mount(
+      <TestnetProviders>
+        <NewMarketplaceListings {...props} />
+      </TestnetProviders>
+    )
+
     cy.contains('button', 'View All Items').should('be.visible')
   })
 })

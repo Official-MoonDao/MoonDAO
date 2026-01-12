@@ -204,42 +204,60 @@ export async function getStaticProps() {
         readContract({
           contract: citizenTableContract,
           method: 'getTableName',
+        }).catch((error) => {
+          console.error('Error reading citizen table name:', error)
+          return ''
         }),
         readContract({
           contract: marketplaceTableContract,
           method: 'getTableName',
+        }).catch((error) => {
+          console.error('Error reading marketplace table name:', error)
+          return ''
         }),
-        readContract({ contract: jobTableContract, method: 'getTableName' }),
-        readContract({ contract: teamTableContract, method: 'getTableName' }),
+        readContract({ contract: jobTableContract, method: 'getTableName' }).catch((error) => {
+          console.error('Error reading job table name:', error)
+          return ''
+        }),
+        readContract({ contract: teamTableContract, method: 'getTableName' }).catch((error) => {
+          console.error('Error reading team table name:', error)
+          return ''
+        }),
         readContract({
           contract: projectTableContract,
           method: 'getTableName',
+        }).catch((error) => {
+          console.error('Error reading project table name:', error)
+          return ''
         }),
         readContract({
           contract: missionTableContract,
           method: 'getTableName',
+        }).catch((error) => {
+          console.error('Error reading mission table name:', error)
+          return ''
         }),
       ])
 
       const [citizens, listings, jobs, teams, projects, missionRows] = await Promise.all([
-        queryTable(chain, `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 5`),
-        queryTable(
+        citizenTableName ? queryTable(chain, `SELECT * FROM ${citizenTableName} ORDER BY id DESC LIMIT 5`) : Promise.resolve([]),
+        marketplaceTableName ? queryTable(
           chain,
           `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${Math.floor(
             Date.now() / 1000
           )}) AND (endTime = 0 OR endTime >= ${Math.floor(
             Date.now() / 1000
           )}) ORDER BY id DESC LIMIT 5`
-        ),
-        queryTable(
+        ) : Promise.resolve([]),
+        jobTableName ? queryTable(
           chain,
           `SELECT * FROM ${jobTableName} WHERE (endTime = 0 OR endTime >= ${Math.floor(
             Date.now() / 1000
           )}) ORDER BY id DESC LIMIT 5`
-        ),
-        queryTable(chain, `SELECT * FROM ${teamTableName} ORDER BY id DESC`),
-        queryTable(chain, `SELECT * FROM ${projectTableName} ORDER BY id DESC`),
-        queryTable(chain, `SELECT * FROM ${missionTableName} ORDER BY id DESC LIMIT 1`),
+        ) : Promise.resolve([]),
+        teamTableName ? queryTable(chain, `SELECT * FROM ${teamTableName} ORDER BY id DESC`) : Promise.resolve([]),
+        projectTableName ? queryTable(chain, `SELECT * FROM ${projectTableName} ORDER BY id DESC`) : Promise.resolve([]),
+        missionTableName ? queryTable(chain, `SELECT * FROM ${missionTableName} ORDER BY id DESC LIMIT 1`) : Promise.resolve([]),
       ])
 
       return { citizens, listings, jobs, teams, projects, missionRows }
@@ -384,27 +402,32 @@ export async function getStaticProps() {
             contract: jbV5ControllerContract,
             method: 'uriOf' as string,
             params: [filteredMissionRows[0].projectId],
+          }).catch((error) => {
+            console.error('Failed to fetch featured mission metadata:', error)
+            return null
           })
 
-          const metadataRes = await fetch(getIPFSGateway(metadataURI))
-          const metadata = await metadataRes.json()
+          if (metadataURI) {
+            const metadataRes = await fetch(getIPFSGateway(metadataURI))
+            const metadata = await metadataRes.json()
 
-          missions = [
-            {
-              id: filteredMissionRows[0].id,
-              teamId: filteredMissionRows[0].teamId,
-              projectId: filteredMissionRows[0].projectId,
-              fundingGoal: filteredMissionRows[0].fundingGoal || 0,
-              deadline: filteredMissionRows[0].deadline || null,
-              stage: filteredMissionRows[0].stage || 1,
-              metadata: metadata,
-            },
-          ]
+            missions = [
+              {
+                id: filteredMissionRows[0].id,
+                teamId: filteredMissionRows[0].teamId,
+                projectId: filteredMissionRows[0].projectId,
+                fundingGoal: filteredMissionRows[0].fundingGoal || 0,
+                deadline: filteredMissionRows[0].deadline || null,
+                stage: filteredMissionRows[0].stage || 1,
+                metadata: metadata,
+              },
+            ]
 
-          // Pass basic featured mission data - let client fetch details
-          featuredMissionData = {
-            mission: missions[0],
-            projectMetadata: metadata,
+            // Pass basic featured mission data - let client fetch details
+            featuredMissionData = {
+              mission: missions[0],
+              projectMetadata: metadata,
+            }
           }
         } catch (error) {
           console.warn('Failed to fetch featured mission metadata:', error)
