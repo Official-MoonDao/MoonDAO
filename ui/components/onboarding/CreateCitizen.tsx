@@ -305,6 +305,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       setStage(restored.stage || 2)
       setCitizenData(formData.citizenData)
 
+      // Trigger gas estimation after form restore
+      // Use setTimeout to ensure state updates have propagated
+      setTimeout(() => {
+        if (restored.stage === 2 && formData.citizenData?.name) {
+          console.log('[CreateCitizen] Triggering gas estimation after form restore')
+          estimateMintGas()
+        }
+      }, 100)
+
       let citizenImageRestored = false
       let inputImageRestored = false
 
@@ -355,7 +364,13 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       console.log('[CreateCitizen] Form restoration completed')
     },
-    [setSelectedChain, router.query.onrampSuccess, logToSession, setAgreedToCondition]
+    [
+      setSelectedChain,
+      router.query.onrampSuccess,
+      logToSession,
+      setAgreedToCondition,
+      estimateMintGas,
+    ]
   )
 
   useEffect(() => {
@@ -709,8 +724,18 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   }, [address, citizenContract, nativeBalance, calculateCost])
 
   const estimateMintGas = useCallback(async () => {
-    if (!account || !address || !citizenData.name) return
+    console.log('[CreateCitizen] estimateMintGas called:', {
+      hasAccount: !!account,
+      hasAddress: !!address,
+      hasName: !!citizenData.name,
+    })
 
+    if (!account || !address || !citizenData.name) {
+      console.log('[CreateCitizen] estimateMintGas exiting early - missing required data')
+      return
+    }
+
+    console.log('[CreateCitizen] Starting gas estimation...')
     setIsLoadingGasEstimate(true)
 
     try {
@@ -836,12 +861,20 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
 
       const bufferPercent = isCrossChain ? 180 : 130
       const gasWithBuffer = (gasEstimate * BigInt(bufferPercent)) / BigInt(100)
+      console.log('[CreateCitizen] Gas estimation complete:', {
+        rawEstimate: gasEstimate.toString(),
+        withBuffer: gasWithBuffer.toString(),
+        bufferPercent,
+        isCrossChain,
+      })
       setEstimatedGas(gasWithBuffer)
       setIsLoadingGasEstimate(false)
     } catch (error) {
       console.error('Error estimating gas:', error instanceof Error ? error.message : error)
       const isCrossChain = selectedChainSlug !== defaultChainSlug
-      setEstimatedGas(isCrossChain ? BigInt(300000) : BigInt(200000))
+      const fallbackGas = isCrossChain ? BigInt(300000) : BigInt(200000)
+      console.log('[CreateCitizen] Using fallback gas estimate:', fallbackGas.toString())
+      setEstimatedGas(fallbackGas)
       setIsLoadingGasEstimate(false)
     }
   }, [
@@ -857,7 +890,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
   ])
 
   useEffect(() => {
+    console.log('[CreateCitizen] Gas estimation useEffect triggered:', {
+      stage,
+      hasAddress: !!address,
+      hasName: !!citizenData.name,
+      selectedChainSlug,
+      shouldEstimate: stage === 2 && address && citizenData.name,
+    })
     if (stage === 2 && address && citizenData.name) {
+      console.log('[CreateCitizen] Calling estimateMintGas()')
       estimateMintGas()
     }
   }, [stage, address, citizenData.name, selectedChainSlug, estimateMintGas])
@@ -889,7 +930,22 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const gasEstimateReady = !isLoadingGasEstimate && estimatedGas > BigInt(0)
       const gasPriceReady = effectiveGasPrice !== undefined && effectiveGasPrice > BigInt(0)
       const imagesReady = imagesRestoredRef.current || !!citizenImage || !!inputImage
-      return gasEstimateReady && gasPriceReady && imagesReady
+      const isReady = gasEstimateReady && gasPriceReady && imagesReady
+
+      console.log('[CreateCitizen] waitForReady check:', {
+        gasEstimateReady,
+        isLoadingGasEstimate,
+        estimatedGas: estimatedGas.toString(),
+        gasPriceReady,
+        effectiveGasPrice: effectiveGasPrice?.toString(),
+        imagesReady,
+        imagesRestoredRef: imagesRestoredRef.current,
+        hasCitizenImage: !!citizenImage,
+        hasInputImage: !!inputImage,
+        isReady,
+      })
+
+      return isReady
     },
   })
 

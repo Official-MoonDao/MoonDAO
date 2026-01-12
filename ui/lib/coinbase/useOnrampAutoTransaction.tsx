@@ -160,9 +160,15 @@ export function useOnrampAutoTransaction({
 
   const waitForReadyAndExecute = useCallback(async () => {
     if (!waitForReadyRef.current) {
+      console.log('[useOnrampAutoTransaction] No waitForReady function, proceeding to pollBalanceAndExecute')
       await pollBalanceAndExecute()
       return
     }
+
+    console.log('[useOnrampAutoTransaction] Starting waitForReady polling', {
+      maxAttempts: waitForReadyMaxAttempts,
+      delayMs: waitForReadyDelayMs,
+    })
 
     for (let attempt = 0; attempt < waitForReadyMaxAttempts; attempt++) {
       if (expectedAddressRef.current && addressRef.current) {
@@ -177,8 +183,10 @@ export function useOnrampAutoTransaction({
       }
 
       const isReady = waitForReadyRef.current()
+      console.log(`[useOnrampAutoTransaction] waitForReady attempt ${attempt + 1}/${waitForReadyMaxAttempts}: ${isReady}`)
 
       if (isReady) {
+        console.log('[useOnrampAutoTransaction] Ready! Proceeding to pollBalanceAndExecute')
         await pollBalanceAndExecute()
         return
       }
@@ -186,6 +194,7 @@ export function useOnrampAutoTransaction({
       await new Promise((resolve) => setTimeout(resolve, waitForReadyDelayMs))
     }
 
+    console.warn(`[useOnrampAutoTransaction] waitForReady timed out after ${waitForReadyMaxAttempts} attempts, proceeding anyway`)
     await pollBalanceAndExecute()
   }, [
     pollBalanceAndExecute,
