@@ -60,11 +60,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       }
     }
 
-    // For US users, subdivision (state) is required by Coinbase
-    // Only require it if we're confident the user is in the US:
-    // - Country was explicitly provided as 'US', OR
-    // - Country was detected from headers as 'US'
-    // If we defaulted to 'US' because we couldn't detect country, don't require subdivision
     const isConfirmedUS = country === 'US' && (providedCountry === 'US' || headerCountry === 'US')
     if (isConfirmedUS && !detectedSubdivision) {
       return res.status(400).json({
@@ -77,6 +72,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Validate CDP credentials
     const credentials = validateCDPCredentials()
 
+    // Enforce minimum payment amount for card transactions
+    // Coinbase requires minimum $2 USD for card purchases
+    const MINIMUM_USD_AMOUNT = 2
+    let adjustedPaymentAmount = parseFloat(paymentAmount.toString())
+
+    if (paymentCurrency === 'USD' && adjustedPaymentAmount < MINIMUM_USD_AMOUNT) {
+      adjustedPaymentAmount = MINIMUM_USD_AMOUNT
+    }
+
     // Prepare request body for buy quote
     // Use purchaseAmount (crypto amount) if provided, otherwise use paymentAmount (fiat amount)
     const requestBody: any = {
@@ -84,13 +88,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       destinationAddress,
       purchaseCurrency,
       purchaseNetwork,
-      paymentAmount: paymentAmount.toString(),
+      paymentAmount: adjustedPaymentAmount.toString(),
       paymentCurrency,
     }
 
-    // Payment method is required by Coinbase API
-    // Use country-specific defaults: CARD for US (works for guest checkout), CARD for most other countries
-    // If UNSPECIFIED doesn't work, fall back to CARD which works in 90+ countries
     if (!paymentMethod) {
       // CARD works in US (debit only) and 90+ other countries
       // This is safer than UNSPECIFIED which may not be accepted
