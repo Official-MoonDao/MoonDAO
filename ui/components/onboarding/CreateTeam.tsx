@@ -307,7 +307,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
         })
       } catch (estimationError: any) {
         console.error('Gas estimation error:', estimationError)
-        gasEstimate = BigInt(200000)
+        gasEstimate = BigInt(350000)
       }
 
       const gasWithBuffer = applyGasBuffer(gasEstimate, 130)
@@ -315,7 +315,13 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       setIsLoadingGasEstimate(false)
     } catch (error) {
       console.error('Error estimating gas:', error instanceof Error ? error.message : error)
-      setEstimatedGas(BigInt(200000))
+      const fallbackGas = BigInt(350000)
+      const bufferedFallback = applyGasBuffer(fallbackGas, 150)
+      console.log('[CreateTeam] Using buffered fallback gas estimate:', {
+        raw: fallbackGas.toString(),
+        buffered: bufferedFallback.toString(),
+      })
+      setEstimatedGas(bufferedFallback)
       setIsLoadingGasEstimate(false)
     }
   }, [

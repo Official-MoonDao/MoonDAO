@@ -524,8 +524,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             value: `0x${(MSG_VALUE + LAYER_ZERO_TRANSFER_COST).toString(16)}`,
           })
         } catch (estimationError: any) {
-          console.error('Gas estimation error:', estimationError)
-          gasEstimate = BigInt(300000)
+          console.error('Gas estimation error (cross-chain):', estimationError)
+          gasEstimate = BigInt(500000)
         }
       } else {
         const transaction = await prepareContractCall({
@@ -562,8 +562,8 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
             value: `0x${cost.toString(16)}`,
           })
         } catch (estimationError: any) {
-          console.error('Gas estimation error:', estimationError)
-          gasEstimate = BigInt(200000)
+          console.error('Gas estimation error (same-chain):', estimationError)
+          gasEstimate = BigInt(350000)
         }
       }
 
@@ -579,9 +579,15 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       setIsLoadingGasEstimate(false)
     } catch (error) {
       console.error('Error estimating gas:', error instanceof Error ? error.message : error)
-      const fallbackGas = isCrossChain ? BigInt(300000) : BigInt(200000)
-      console.log('[CreateCitizen] Using fallback gas estimate:', fallbackGas.toString())
-      setEstimatedGas(fallbackGas)
+      const fallbackGas = isCrossChain ? BigInt(500000) : BigInt(350000)
+      const bufferPercent = isCrossChain ? 200 : 150
+      const bufferedFallback = applyGasBuffer(fallbackGas, bufferPercent)
+      console.log('[CreateCitizen] Using buffered fallback gas estimate:', {
+        raw: fallbackGas.toString(),
+        buffered: bufferedFallback.toString(),
+        bufferPercent,
+      })
+      setEstimatedGas(bufferedFallback)
       setIsLoadingGasEstimate(false)
     }
   }, [
