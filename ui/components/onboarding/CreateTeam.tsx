@@ -38,30 +38,39 @@ import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import { StageContainer } from './StageContainer'
 import { ImageGenerator } from './TeamImageGenerator'
+import { TermsCheckbox } from './TermsCheckbox'
+import { DataOverview } from './DataOverview'
+import {
+  estimateGasWithAPI,
+  applyGasBuffer,
+  extractTokenIdFromReceipt,
+  handleTypeformSubmission,
+} from '@/lib/onboarding/shared-utils'
 
+/**
+ * CreateTeam Component
+ * 
+ * Component Structure:
+ * 1. Context & Constants
+ * 2. State Declarations (Form, Loading, Gas)
+ * 3. Custom Hooks
+ * 4. Computed Values (useMemo)
+ * 5. Internal Helper Functions
+ * 6. Event Handlers & Callbacks
+ * 7. Side Effects (grouped by purpose)
+ * 8. JSX Render
+ */
 export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
+  // ===== Context & Constants =====
   const router = useRouter()
-
   const chainSlug = getChainSlug(selectedChain)
-
   const account = useActiveAccount()
   const address = account?.address
 
+  // ===== State: Form State =====
   const [stage, setStage] = useState<number>(0)
   const [lastStage, setLastStage] = useState<number>(0)
-
   const [teamImage, setTeamImage] = useState<any>()
-
-  const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
-
-  const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
-  const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
-  const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
-
-  const { effectiveGasPrice } = useGasPrice(selectedChain)
-
-  const { isMobile } = useWindowSize()
-
   const [teamData, setTeamData] = useState<TeamData>({
     name: '',
     description: '',
@@ -71,12 +80,18 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     view: 'private',
     formResponseId: '',
   })
+  const [agreedToCondition, setAgreedToCondition] = useState<boolean>(false)
 
-  useEffect(() => {
-    if (stage > lastStage) {
-      setLastStage(stage)
-    }
-  }, [stage, lastStage])
+  // ===== State: Loading State =====
+  const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
+  const [isLoadingGasEstimate, setIsLoadingGasEstimate] = useState(false)
+
+  // ===== State: Gas Estimation =====
+  const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
+
+  // ===== Custom Hooks =====
+  const { effectiveGasPrice } = useGasPrice(selectedChain)
+  const { isMobile } = useWindowSize()
 
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
@@ -91,8 +106,154 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   })
 
   const { nativeBalance } = useNativeBalance()
-
   const { fundWallet } = useFundWallet()
+
+  // ===== Internal Helper Functions =====
+
+  const pinHatMetadata = useCallback(async (name: string, description: string, role: string) => {
+    const metadataBlob = new Blob(
+      [
+        JSON.stringify({
+          type: '1.0',
+          data: {
+            name: `${name} ${role}`,
+            description,
+          },
+        }),
+      ],
+      { type: 'application/json' }
+    )
+    const { cid } = await pinBlobOrFile(metadataBlob)
+    return cid
+  }, [])
+
+  const handlePostMint = useCallback(
+    async (mintedTokenId: string, teamName: string) => {
+      const teamPrettyLink = generatePrettyLink(teamName)
+      setTimeout(async () => {
+        await sendDiscordMessage(
+          'networkNotifications',
+          `## [**${teamName}**](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789) has created a team in the Space Acceleration Network! <@&${DISCORD_CITIZEN_ROLE_ID}>`
+        )
+
+        router.push(`/team/${teamPrettyLink}`)
+        setIsLoadingMint(false)
+      }, 10000)
+    },
+    [router]
+  )
+
+  // ===== Event Handlers & Callbacks =====
+
+  const calculateCost = useCallback(
+    (renewalCost: bigint) => {
+      const gasCostWei = estimatedGas * effectiveGasPrice
+      const gasCostEth = Number(gasCostWei) / 1e18
+      const totalCost = Number(ethers.utils.formatEther(renewalCost)) + gasCostEth
+      return totalCost
+    },
+    [estimatedGas, effectiveGasPrice]
+  )
+
+  const callMint = useCallback(async () => {
+    if (!teamImage) {
+      return toast.error('Please upload an image and complete the previous steps.')
+    }
+
+    if (!account || !address) {
+      return toast.error('Please connect your wallet to continue.')
+    }
+
+    setIsLoadingMint(true)
+
+    try {
+      const cost: any = await readContract({
+        contract: teamContract,
+        method: 'getRenewalPrice' as string,
+        params: [address, 365 * 24 * 60 * 60],
+      })
+
+      const totalCost = calculateCost(cost)
+
+      if (+nativeBalance < totalCost) {
+        const roundedCost = Math.ceil(totalCost * 1000000) / 1000000
+        setIsLoadingMint(false)
+        return await fundWallet(address, {
+          amount: String(roundedCost),
+          chain: viemChains[chainSlug],
+        })
+      }
+
+      const adminHatCid = await pinHatMetadata(teamData.name, teamData.description, 'Admin')
+      const managerHatCid = await pinHatMetadata(teamData.name, teamData.description, 'Manager')
+      const memberHatCid = await pinHatMetadata(teamData.name, teamData.description, 'Member')
+
+      const renamedTeamImage = renameFile(teamImage, `${teamData.name} Team Image`)
+      const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedTeamImage)
+
+      if (!newImageIpfsHash) {
+        setIsLoadingMint(false)
+        return toast.error('Error pinning image to IPFS.')
+      }
+
+      const transaction = prepareContractCall({
+        contract: teamCreatorContract,
+        method: 'createMoonDAOTeam' as string,
+        params: [
+          {
+            adminHatURI: 'ipfs://' + adminHatCid,
+            managerHatURI: 'ipfs://' + managerHatCid,
+            memberHatURI: 'ipfs://' + memberHatCid,
+          },
+          {
+            name: teamData.name,
+            bio: teamData.description,
+            image: 'ipfs://' + newImageIpfsHash,
+            twitter: teamData.twitter,
+            communications: teamData.communications,
+            website: teamData.website,
+            _view: teamData.view,
+            formId: teamData.formResponseId,
+          },
+          [],
+        ],
+        value: cost,
+      })
+
+      const receipt: any = await sendAndConfirmTransaction({
+        transaction,
+        account,
+      })
+
+      const mintedTokenId = extractTokenIdFromReceipt(receipt)
+
+      if (!mintedTokenId) {
+        setIsLoadingMint(false)
+        return toast.error('Could not find mint event in transaction.')
+      }
+
+      if (mintedTokenId) {
+        await waitForERC721(teamContract, +mintedTokenId)
+        await handlePostMint(mintedTokenId, teamData.name)
+      }
+    } catch (err) {
+      console.error(err)
+      setIsLoadingMint(false)
+    }
+  }, [
+    teamImage,
+    account,
+    address,
+    teamContract,
+    calculateCost,
+    nativeBalance,
+    fundWallet,
+    chainSlug,
+    pinHatMetadata,
+    teamData,
+    teamCreatorContract,
+    handlePostMint,
+  ])
 
   const estimateMintGas = useCallback(async () => {
     if (!account || !address || !teamData.name) return
@@ -135,36 +296,19 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       try {
         const txData = typeof transaction.data === 'function' ? await transaction.data() : transaction.data
 
-        const estimateResponse = await fetch('/api/rpc/estimate-gas', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chainId: selectedChain.id,
-            from: address,
-            to: TEAM_CREATOR_ADDRESSES[chainSlug],
-            data: txData,
-            value: `0x${cost.toString(16)}`,
-          }),
+        gasEstimate = await estimateGasWithAPI({
+          chainId: selectedChain.id,
+          from: address,
+          to: TEAM_CREATOR_ADDRESSES[chainSlug],
+          data: txData,
+          value: `0x${cost.toString(16)}`,
         })
-
-        if (!estimateResponse.ok) {
-          throw new Error(`Gas estimation API returned ${estimateResponse.status}`)
-        }
-
-        const estimateData = await estimateResponse.json()
-
-        if (estimateData.error) {
-          throw new Error(estimateData.error)
-        }
-
-        gasEstimate = BigInt(estimateData.gasEstimate)
       } catch (estimationError: any) {
         console.error('Gas estimation error:', estimationError)
         gasEstimate = BigInt(200000)
       }
 
-      const bufferPercent = 130
-      const gasWithBuffer = (gasEstimate * BigInt(bufferPercent)) / BigInt(100)
+      const gasWithBuffer = applyGasBuffer(gasEstimate, 130)
       setEstimatedGas(gasWithBuffer)
       setIsLoadingGasEstimate(false)
     } catch (error) {
@@ -188,54 +332,41 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     chainSlug,
   ])
 
+  const submitTypeform = useCallback(async (formResponse: any) => {
+    try {
+      const { formId, responseId } = formResponse
+
+      const cleanedData = await handleTypeformSubmission({
+        formId,
+        responseId,
+        formatter: formatTeamFormData,
+      })
+
+      setTeamData(cleanedData)
+      setStage(2)
+    } catch (error) {
+      console.error('Error submitting typeform:', error)
+      alert('There was an error processing your form submission. Please try again.')
+    }
+  }, [])
+
+  // ===== Side Effects =====
+
+  // ===== Effect Group: UI State Sync =====
+  useEffect(() => {
+    if (stage > lastStage) {
+      setLastStage(stage)
+    }
+  }, [stage, lastStage])
+
+  // ===== Effect Group: Gas Estimation =====
   useEffect(() => {
     if (stage === 2 && address && teamData.name) {
       estimateMintGas()
     }
   }, [stage, address, teamData.name, estimateMintGas])
 
-  const submitTypeform = useCallback(async (formResponse: any) => {
-    try {
-      //get response from form
-      const { formId, responseId } = formResponse
-
-      await waitForResponse(formId, responseId)
-
-      const accessToken = await getAccessToken()
-
-      const responseRes = await fetch(`/api/typeform/response`, {
-        body: JSON.stringify({
-          accessToken: accessToken,
-          responseId: responseId,
-          formId: formId,
-        }),
-        method: 'POST',
-      })
-
-      if (!responseRes.ok) {
-        throw new Error(`API call failed with status: ${responseRes.status}`)
-      }
-
-      const data = await responseRes.json()
-
-      if (!data.answers) {
-        throw new Error('No answers found in response')
-      }
-
-      //format answers into an object
-      const teamFormData = formatTeamFormData(data.answers, responseId)
-
-      //escape single quotes and remove emojis
-      const cleanedTeamFormData = cleanData(teamFormData)
-
-      setTeamData(cleanedTeamFormData)
-      setStage(2)
-    } catch (error) {
-      console.error('Error submitting typeform:', error)
-      // You might want to show an error message to the user here
-      alert('There was an error processing your form submission. Please try again.')
-    }
-  }, [])
+  // ===== JSX Render =====
 
   return (
     <Container>
@@ -332,52 +463,11 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   )}
 
                   <div className="flex flex-col w-full md:p-5 mt-8 max-w-[600px]">
-                    <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-                      <h3 className="font-GoodTimes text-xl mb-4 text-white">Team Overview</h3>
-                      <div className="grid gap-4">
-                        {isMobile ? (
-                          Object.keys(teamData)
-                            .filter((v) => v != 'formResponseId')
-                            .map((v, i) => {
-                              return (
-                                <div
-                                  className="flex flex-col p-4 bg-slate-800/50 rounded-lg border border-slate-600/30"
-                                  key={'entityData' + i}
-                                >
-                                  <p className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-1">
-                                    {v}:
-                                  </p>
-                                  <p className="text-white">
-                                    {/**@ts-expect-error */}
-                                    {teamData[v]!}
-                                  </p>
-                                </div>
-                              )
-                            })
-                        ) : (
-                          <div className="space-y-3">
-                            {Object.keys(teamData)
-                              .filter((v) => v != 'formResponseId')
-                              .map((v, i) => {
-                                return (
-                                  <div
-                                    className="flex justify-between p-4 bg-slate-800/50 rounded-lg border border-slate-600/30"
-                                    key={'entityData' + i}
-                                  >
-                                    <span className="text-sm font-semibold text-slate-300 uppercase tracking-wide">
-                                      {v}:
-                                    </span>
-                                    <span className="text-white max-w-xs text-right">
-                                      {/**@ts-expect-error */}
-                                      {teamData[v]!}
-                                    </span>
-                                  </div>
-                                )
-                              })}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <DataOverview
+                      data={teamData}
+                      title="Team Overview"
+                      excludeKeys={['formResponseId']}
+                    />
                   </div>
                   <div className="flex flex-col w-full md:p-5 mt-8 max-w-[600px]">
                     <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
@@ -411,230 +501,16 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-row items-center mt-6 p-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl">
-                    <label
-                      className="relative flex items-center p-3 rounded-full cursor-pointer"
-                      htmlFor="link"
-                    >
-                      <input
-                        checked={agreedToCondition}
-                        onChange={(e) => setAgreedToCondition(e.target.checked)}
-                        type="checkbox"
-                        className="before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-slate-400 transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-slate-500 before:opacity-0 before:transition-opacity checked:border-slate-300 checked:bg-slate-700 checked:before:bg-slate-700 hover:before:opacity-10"
-                        id="link"
-                      />
-                      <span className="absolute text-white transition-opacity opacity-0 pointer-events-none top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 peer-checked:opacity-100">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-3.5 w-3.5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          stroke="currentColor"
-                          strokeWidth="1"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          ></path>
-                        </svg>
-                      </span>
-                    </label>
-                    <label
-                      className="mt-px font-light text-slate-300 select-none max-w-[550px]"
-                      htmlFor="link"
-                    >
-                      <p className="text-white">
-                        I have read and accepted the
-                        <Link
-                          rel="noopener noreferrer"
-                          className="text-sky-400 hover:text-sky-300 transition-colors"
-                          href="/terms-of-service"
-                        >
-                          {' '}
-                          Terms and Conditions{' '}
-                        </Link>{' '}
-                        and the{' '}
-                        <Link
-                          className="text-sky-400 hover:text-sky-300 transition-colors"
-                          href="/privacy-policy"
-                          rel="noopener noreferrer"
-                        >
-                          Privacy Policy
-                        </Link>
-                        .
-                      </p>
-                    </label>
-                  </div>
+                  <TermsCheckbox
+                    checked={agreedToCondition}
+                    onChange={setAgreedToCondition}
+                  />
                   <PrivyWeb3Button
                     id="team-checkout-button"
-                    label="Create Team"
-                    className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base"
-                    isDisabled={!agreedToCondition || isLoadingMint}
-                    action={async () => {
-                      if (!account || !address) {
-                        return toast.error('Please connect your wallet to continue.')
-                      }
-                      try {
-                        const cost: any = await readContract({
-                          contract: teamContract,
-                          method: 'getRenewalPrice' as string,
-                          params: [address, 365 * 24 * 60 * 60],
-                        })
-
-                        const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
-
-                        const gasCostWei = estimatedGas * effectiveGasPrice
-                        const gasCostEth = Number(gasCostWei) / 1e18
-
-                        const totalCost = Number(formattedCost) + gasCostEth
-
-                        if (+nativeBalance < totalCost) {
-                          const roundedCost = Math.ceil(totalCost * 1000000) / 1000000
-
-                          return await fundWallet(address, {
-                            amount: String(roundedCost),
-                            chain: viemChains[chainSlug],
-                          })
-                        }
-
-                        const adminHatMetadataBlob = new Blob(
-                          [
-                            JSON.stringify({
-                              type: '1.0',
-                              data: {
-                                name: teamData.name + ' Admin',
-                                description: teamData.description,
-                              },
-                            }),
-                          ],
-                          {
-                            type: 'application/json',
-                          }
-                        )
-
-                        const { cid: adminHatMetadataIpfsHash } = await pinBlobOrFile(
-                          adminHatMetadataBlob
-                        )
-
-                        const managerHatMetadataBlob = new Blob(
-                          [
-                            JSON.stringify({
-                              type: '1.0',
-                              data: {
-                                name: teamData.name + ' Manager',
-                                description: teamData.description,
-                              },
-                            }),
-                          ],
-                          {
-                            type: 'application/json',
-                          }
-                        )
-
-                        const { cid: managerHatMetadataIpfsHash } = await pinBlobOrFile(
-                          managerHatMetadataBlob
-                        )
-
-                        const memberHatMetadataBlob = new Blob(
-                          [
-                            JSON.stringify({
-                              type: '1.0',
-                              data: {
-                                name: teamData.name + ' Member',
-                                description: teamData.description,
-                              },
-                            }),
-                          ],
-                          {
-                            type: 'application/json',
-                          }
-                        )
-
-                        const { cid: memberHatMetadataIpfsHash } = await pinBlobOrFile(
-                          memberHatMetadataBlob
-                        )
-
-                        //pin image to IPFS
-
-                        const renamedTeamImage = renameFile(
-                          teamImage,
-                          `${teamData.name} Team Image`
-                        )
-
-                        const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedTeamImage)
-
-                        if (!newImageIpfsHash) {
-                          return toast.error('Error pinning image to IPFS.')
-                        }
-
-                        setIsLoadingMint(true)
-                        //mint NFT to safe
-
-                        const transaction = prepareContractCall({
-                          contract: teamCreatorContract,
-                          method: 'createMoonDAOTeam' as string,
-                          params: [
-                            // HatURIs struct
-                            {
-                              adminHatURI: 'ipfs://' + adminHatMetadataIpfsHash,
-                              managerHatURI: 'ipfs://' + managerHatMetadataIpfsHash,
-                              memberHatURI: 'ipfs://' + memberHatMetadataIpfsHash,
-                            },
-                            // TeamMetadata struct
-                            {
-                              name: teamData.name,
-                              bio: teamData.description,
-                              image: 'ipfs://' + newImageIpfsHash,
-                              twitter: teamData.twitter,
-                              communications: teamData.communications,
-                              website: teamData.website,
-                              _view: teamData.view,
-                              formId: teamData.formResponseId,
-                            },
-                            // members array
-                            [],
-                          ],
-                          value: cost,
-                        })
-
-                        const receipt: any = await sendAndConfirmTransaction({
-                          transaction,
-                          account,
-                        })
-
-                        // Define the event signature for the Transfer event
-                        const transferEventSignature = ethers.utils.id(
-                          'Transfer(address,address,uint256)'
-                        )
-                        // Find the log that matches the Transfer event signature
-                        const transferLog = receipt.logs.find(
-                          (log: any) => log.topics[0] === transferEventSignature
-                        )
-
-                        const mintedTokenId = ethers.BigNumber.from(
-                          transferLog.topics[3]
-                        ).toString()
-
-                        if (mintedTokenId) {
-                          const teamNFT = await waitForERC721(teamContract, mintedTokenId)
-                          const teamName = teamData.name
-                          const teamPrettyLink = generatePrettyLink(teamName)
-                          setTimeout(async () => {
-                            await sendDiscordMessage(
-                              'networkNotifications',
-                              `## [**${teamName}**](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789) has created a team in the Space Acceleration Network! <@&${DISCORD_CITIZEN_ROLE_ID}>`
-                            )
-
-                            router.push(`/team/${teamPrettyLink}`)
-                            setIsLoadingMint(false)
-                          }, 10000)
-                        }
-                      } catch (err) {
-                        console.error(err)
-                        setIsLoadingMint(false)
-                      }
-                    }}
+                    label={isLoadingMint ? 'Creating Team...' : 'Create Team'}
+                    className="mt-6 w-auto px-8 py-2 gradient-2 hover:scale-105 transition-transform rounded-xl font-medium text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    isDisabled={!agreedToCondition || isLoadingMint || isLoadingGasEstimate}
+                    action={callMint}
                   />
                   {isLoadingMint && (
                     <div className="mt-4 p-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl">
