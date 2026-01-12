@@ -1,5 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { getAccessToken, useFundWallet } from '@privy-io/react-auth'
+import { useFundWallet } from '@privy-io/react-auth'
 import { Widget } from '@typeform/embed-react'
 import {
   DEPLOYED_ORIGIN,
@@ -9,7 +9,6 @@ import {
 } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -18,15 +17,19 @@ import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import {
+  estimateGasWithAPI,
+  applyGasBuffer,
+  extractTokenIdFromReceipt,
+  handleTypeformSubmission,
+} from '@/lib/onboarding/shared-utils'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
-import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import waitForERC721 from '@/lib/thirdweb/waitForERC721'
 import formatTeamFormData, { TeamData } from '@/lib/typeform/teamFormData'
-import waitForResponse from '@/lib/typeform/waitForResponse'
 import { renameFile } from '@/lib/utils/files'
 import viemChains from '@/lib/viem/viemChains'
 import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
@@ -36,20 +39,14 @@ import ContentLayout from '../layout/ContentLayout'
 import { ExpandedFooter } from '../layout/ExpandedFooter'
 import { Steps } from '../layout/Steps'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import { DataOverview } from './DataOverview'
 import { StageContainer } from './StageContainer'
 import { ImageGenerator } from './TeamImageGenerator'
 import { TermsCheckbox } from './TermsCheckbox'
-import { DataOverview } from './DataOverview'
-import {
-  estimateGasWithAPI,
-  applyGasBuffer,
-  extractTokenIdFromReceipt,
-  handleTypeformSubmission,
-} from '@/lib/onboarding/shared-utils'
 
 /**
  * CreateTeam Component
- * 
+ *
  * Component Structure:
  * 1. Context & Constants
  * 2. State Declarations (Form, Loading, Gas)
@@ -294,7 +291,12 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       let gasEstimate: bigint = BigInt(0)
 
       try {
-        const txData = typeof transaction.data === 'function' ? await transaction.data() : transaction.data
+        const txData =
+          typeof transaction.data === 'function' ? await transaction.data() : transaction.data
+
+        if (!txData) {
+          throw new Error('Transaction data is undefined')
+        }
 
         gasEstimate = await estimateGasWithAPI({
           chainId: selectedChain.id,
@@ -501,10 +503,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                       </p>
                     </div>
                   </div>
-                  <TermsCheckbox
-                    checked={agreedToCondition}
-                    onChange={setAgreedToCondition}
-                  />
+                  <TermsCheckbox checked={agreedToCondition} onChange={setAgreedToCondition} />
                   <PrivyWeb3Button
                     id="team-checkout-button"
                     label={isLoadingMint ? 'Creating Team...' : 'Create Team'}
