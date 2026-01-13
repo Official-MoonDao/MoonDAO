@@ -442,7 +442,12 @@ export function useOnrampAutoTransaction({
           const jwtPayload = data.payload
           const currentAddress = addressRef.current
 
-          console.log('[AUTO-TX] Address check - current:', currentAddress, 'jwt:', jwtPayload.address)
+          console.log(
+            '[AUTO-TX] Address check - current:',
+            currentAddress,
+            'jwt:',
+            jwtPayload.address
+          )
 
           if (
             !currentAddress ||
