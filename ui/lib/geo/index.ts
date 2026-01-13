@@ -12,9 +12,7 @@ export function getClientIp(req: NextApiRequest): string {
     vercel ||
     real ||
     cf ||
-    (
-      (h['x-forwarded-for'] as string | undefined)?.split(',')[0] || ''
-    ).trim() ||
+    ((h['x-forwarded-for'] as string | undefined)?.split(',')[0] || '').trim() ||
     req.socket.remoteAddress ||
     '0.0.0.0'
 
@@ -24,14 +22,31 @@ export function getClientIp(req: NextApiRequest): string {
   return ip.toLowerCase()
 }
 
+// Extract country from request headers (Vercel/Cloudflare geolocation)
+export function getCountryFromHeaders(req: NextApiRequest): string | null {
+  const h = req.headers
+
+  // Vercel provides x-vercel-ip-country
+  const vercelCountry = (h['x-vercel-ip-country'] as string | undefined)?.trim()
+  if (vercelCountry) {
+    return vercelCountry.toUpperCase()
+  }
+
+  // Cloudflare provides cf-ipcountry
+  const cfCountry = (h['cf-ipcountry'] as string | undefined)?.trim()
+  if (cfCountry) {
+    return cfCountry.toUpperCase()
+  }
+
+  return null
+}
+
 // Extract US state from request headers (Vercel/Cloudflare geolocation)
 export function getStateFromHeaders(req: NextApiRequest): string | null {
   const h = req.headers
 
   // Vercel provides x-vercel-ip-country-region with US state codes
-  const vercelRegion = (
-    h['x-vercel-ip-country-region'] as string | undefined
-  )?.trim()
+  const vercelRegion = (h['x-vercel-ip-country-region'] as string | undefined)?.trim()
   const vercelCountry = (h['x-vercel-ip-country'] as string | undefined)?.trim()
 
   if (vercelCountry === 'US' && vercelRegion) {
@@ -51,10 +66,7 @@ export function getStateFromHeaders(req: NextApiRequest): string | null {
 }
 
 // Check Redis cache for IP -> state mapping
-export async function getStateFromCache(
-  redis: Redis,
-  ip: string
-): Promise<string | null> {
+export async function getStateFromCache(redis: Redis, ip: string): Promise<string | null> {
   try {
     const cached = await redis.get<string>(`geo:ip:${ip}`)
     return cached || null
@@ -65,11 +77,7 @@ export async function getStateFromCache(
 }
 
 // Cache state in Redis with 48-hour TTL
-export async function cacheState(
-  redis: Redis,
-  ip: string,
-  state: string
-): Promise<void> {
+export async function cacheState(redis: Redis, ip: string, state: string): Promise<void> {
   try {
     // Cache for 48 hours (172800 seconds)
     await redis.set(`geo:ip:${ip}`, state, { ex: 172800 })
@@ -120,10 +128,7 @@ export async function getStateFromAPI(ip: string): Promise<string | null> {
 }
 
 // Main function: Detect user's US state
-export async function detectUserState(
-  req: NextApiRequest,
-  redis: Redis
-): Promise<string | null> {
+export async function detectUserState(req: NextApiRequest, redis: Redis): Promise<string | null> {
   // Strategy 1: Check request headers (fastest, free)
   const headerState = getStateFromHeaders(req)
   if (headerState) {

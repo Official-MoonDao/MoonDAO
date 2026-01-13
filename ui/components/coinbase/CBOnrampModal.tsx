@@ -1,6 +1,6 @@
 import { DEPLOYED_ORIGIN } from 'const/config'
 import { useRouter } from 'next/router'
-import React, { useCallback, useMemo, useEffect } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import Modal from '../layout/Modal'
@@ -19,6 +19,7 @@ interface CBOnrampModalProps {
   allowAmountInput?: boolean
   context: string
   agreed?: boolean
+  selectedWallet?: number
   onQuoteCalculated?: (
     ethAmount: number,
     paymentSubtotal: number,
@@ -40,6 +41,7 @@ export const CBOnrampModal: React.FC<CBOnrampModalProps> = ({
   allowAmountInput = false,
   context,
   agreed,
+  selectedWallet,
   onQuoteCalculated,
 }) => {
   const router = useRouter()
@@ -57,6 +59,10 @@ export const CBOnrampModal: React.FC<CBOnrampModalProps> = ({
 
     const queryString = new URLSearchParams(
       Object.entries(currentQuery).reduce((acc, [key, value]) => {
+        // Filter out Privy OAuth params
+        if (key.startsWith('privy_')) {
+          return acc
+        }
         if (value !== undefined && value !== null) {
           acc[key] = String(value)
         }
@@ -82,36 +88,40 @@ export const CBOnrampModal: React.FC<CBOnrampModalProps> = ({
       chainSlug,
       agreed,
       context,
+      selectedWallet,
     })
 
     // Call original onBeforeNavigate if provided
-    await onBeforeNavigate?.()
-  }, [address, chainSlug, agreed, context, generateJWT, onBeforeNavigate])
+    try {
+      await onBeforeNavigate?.()
+    } catch (error) {
+      console.error('[CBOnrampModal] onBeforeNavigate failed:', error)
+      throw error
+    }
+  }, [address, chainSlug, agreed, context, selectedWallet, generateJWT, onBeforeNavigate])
 
   if (!enabled) {
     return null
   }
 
   return (
-    <Modal id="cbonramp-modal" setEnabled={setEnabled}>
-      <div
-        className="flex justify-center items-center min-h-screen p-4"
-        data-testid="cbonramp-modal-content"
-      >
-        <div className="w-full max-w-md">
-          <CBOnramp
-            address={address}
-            selectedChain={selectedChain}
-            ethAmount={ethAmount}
-            redirectUrl={finalRedirectUrl}
-            onExit={handleExit}
-            onBeforeNavigate={handleBeforeNavigate}
-            isWaitingForGasEstimate={isWaitingForGasEstimate}
-            allowAmountInput={allowAmountInput}
-            onQuoteCalculated={onQuoteCalculated}
-          />
-        </div>
-      </div>
+    <Modal
+      id="cbonramp-modal"
+      setEnabled={setEnabled}
+      className="fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-center z-[9999] overflow-auto bg-gradient-to-t from-[#3F3FA690] via-[#00000080] to-transparent animate-fadeIn"
+      showCloseButton={false}
+    >
+      <CBOnramp
+        address={address}
+        selectedChain={selectedChain}
+        ethAmount={ethAmount}
+        redirectUrl={finalRedirectUrl}
+        onExit={handleExit}
+        onBeforeNavigate={handleBeforeNavigate}
+        isWaitingForGasEstimate={isWaitingForGasEstimate}
+        allowAmountInput={allowAmountInput}
+        onQuoteCalculated={onQuoteCalculated}
+      />
     </Modal>
   )
 }
