@@ -356,8 +356,6 @@ export function normalizeJsonString(jsonString: string | object | null | undefin
     return {}
   }
   const nonEmptyJsonString = jsonString || '{}'
-  // replace fancy double quotes with regular double quotes
-  // and add leading double quotes if needed
   try {
     return JSON.parse(
       nonEmptyJsonString

@@ -13,9 +13,7 @@ export interface OnrampJwtPayload {
 }
 
 export interface UseOnrampJWTReturn {
-  generateJWT: (
-    payload: Omit<OnrampJwtPayload, 'timestamp'>
-  ) => Promise<string | null>
+  generateJWT: (payload: Omit<OnrampJwtPayload, 'timestamp'>) => Promise<string | null>
   verifyJWT: (
     token: string,
     expectedAddress: string,
@@ -24,6 +22,7 @@ export interface UseOnrampJWTReturn {
   ) => Promise<OnrampJwtPayload | null>
   clearJWT: () => void
   getStoredJWT: () => string | null
+  getAddressFromJWT: (token?: string) => string | null
   storedJWT: string | null
   isGenerating: boolean
   isVerifying: boolean
@@ -45,54 +44,51 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
     }
   }, [])
 
-  const generateJWT = useCallback(
-    async (payload: Omit<OnrampJwtPayload, 'timestamp'>) => {
-      setIsGenerating(true)
-      setError(null)
+  const generateJWT = useCallback(async (payload: Omit<OnrampJwtPayload, 'timestamp'>) => {
+    setIsGenerating(true)
+    setError(null)
 
-      // Cancel any pending requests
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
+    // Cancel any pending requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+
+    try {
+      const response = await fetch('/api/coinbase/onramp-jwt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: abortController.signal,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate JWT')
       }
-      const abortController = new AbortController()
-      abortControllerRef.current = abortController
 
-      try {
-        const response = await fetch('/api/coinbase/onramp-jwt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: abortController.signal,
-        })
+      const data = await response.json()
+      const jwt = data.jwt
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to generate JWT')
-        }
+      if (jwt) {
+        localStorage.setItem(STORAGE_KEY, jwt)
+        setStoredJWT(jwt)
+      }
 
-        const data = await response.json()
-        const jwt = data.jwt
-
-        if (jwt) {
-          localStorage.setItem(STORAGE_KEY, jwt)
-          setStoredJWT(jwt)
-        }
-
-        return jwt
-      } catch (err: any) {
-        if (err.name === 'AbortError') {
-          return null
-        }
-        const errorMessage = err.message || 'Failed to generate JWT'
-        setError(errorMessage)
-        console.error('Error generating onramp JWT:', errorMessage)
+      return jwt
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
         return null
-      } finally {
-        setIsGenerating(false)
       }
-    },
-    []
-  )
+      const errorMessage = err.message || 'Failed to generate JWT'
+      setError(errorMessage)
+      console.error('Error generating onramp JWT:', errorMessage)
+      return null
+    } finally {
+      setIsGenerating(false)
+    }
+  }, [])
 
   const verifyJWT = useCallback(
     async (
@@ -162,7 +158,27 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
     return storedJWT
   }, [storedJWT])
 
-  // Cleanup on unmount
+  const getAddressFromJWT = useCallback((token?: string) => {
+    try {
+      const jwtToUse = token || storedJWT
+      if (!jwtToUse) {
+        return null
+      }
+
+      const parts = jwtToUse.split('.')
+      if (parts.length !== 3) {
+        console.error('Invalid JWT format')
+        return null
+      }
+
+      const payload = JSON.parse(atob(parts[1]))
+      return payload.address || null
+    } catch (error) {
+      console.error('Error extracting address from JWT:', error)
+      return null
+    }
+  }, [storedJWT])
+
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
@@ -176,6 +192,7 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
     verifyJWT,
     clearJWT,
     getStoredJWT,
+    getAddressFromJWT,
     storedJWT,
     isGenerating,
     isVerifying,

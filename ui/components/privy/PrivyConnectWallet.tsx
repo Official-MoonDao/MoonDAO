@@ -914,10 +914,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
             createPortal(
               <div
                 id="privy-connect-wallet-dropdown"
-                className="fixed top-20 right-4 w-[340px] text-sm font-RobotoMono rounded-2xl animate-fadeIn p-4 md:p-6 flex flex-col bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl text-white z-[9999] max-h-[80vh] overflow-y-auto scrollbar-hide"
-                style={{
-                  backgroundColor: 'rgba(17, 24, 39, 0.95)',
-                }}
+                className="fixed top-20 right-4 w-[360px] text-sm rounded-xl animate-fadeIn p-6 flex flex-col bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl text-white z-[9999] max-h-[80vh] overflow-y-auto scrollbar-hide"
               >
                 {sendModalEnabled && (
                   <SendModal
@@ -931,53 +928,46 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                 )}
 
                 {/* Header Section */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                      <WalletIcon className="w-4 h-4 text-white" />
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                      <WalletIcon className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="font-semibold text-lg text-white">Wallet</h3>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white">Wallet</h3>
+                      {address && (
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(address || '')
+                            toast.success('Address copied to clipboard.')
+                          }}
+                          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors group"
+                        >
+                          <span className="font-mono">
+                            {ens || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                          </span>
+                          <ClipboardDocumentIcon className="w-3.5 h-3.5 group-hover:text-blue-400" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <button
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors duration-200"
+                    className="p-2 hover:bg-white/10 rounded-lg transition-all duration-200 flex-shrink-0"
                     onClick={() => setEnabled(false)}
                   >
-                    <XMarkIcon className="w-5 h-5 text-gray-300 hover:text-white" />
+                    <XMarkIcon className="w-5 h-5 text-gray-400 hover:text-white transition-colors" />
                   </button>
-                </div>
-
-                {/* Address Section - Compact */}
-                <div className="bg-black/20 rounded-lg p-3 mb-4 border border-white/5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                      <p className="text-white font-mono text-sm">
-                        {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
-                      </p>
-                    </div>
-                    <button
-                      className="p-1 hover:bg-white/10 rounded transition-colors duration-200 group"
-                      onClick={() => {
-                        navigator.clipboard.writeText(address || '')
-                        toast.success('Address copied to clipboard.')
-                      }}
-                    >
-                      <ClipboardDocumentIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
-                    </button>
-                  </div>
                 </div>
 
                 {/* Network Selection */}
                 <div className="network-dropdown-container relative">
                   <div
-                    className="bg-black/20 rounded-xl p-4 mb-6 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group"
+                    className="bg-white/5 rounded-lg p-4 mb-5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer group"
                     onClick={() => setNetworkDropdownOpen(!networkDropdownOpen)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                        <div className="w-8 h-8 rounded-lg overflow-hidden bg-white/10 p-1.5 flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
                           <Image
                             src={`/icons/networks/${chainSlug}.svg`}
                             width={20}
@@ -987,32 +977,30 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                           />
                         </div>
                         <div>
-                          <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">
+                          <p className="text-gray-400 text-xs font-medium uppercase tracking-wider">
                             Network
                           </p>
-                          <span className="text-white font-medium group-hover:text-blue-300 transition-colors">
+                          <span className="text-white font-semibold group-hover:text-blue-300 transition-colors">
                             {selectedChain.name}
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <ChevronDownIcon
-                          className={`w-5 h-5 text-gray-400 group-hover:text-white transition-all duration-200 ${
-                            networkDropdownOpen ? 'rotate-180' : ''
-                          }`}
-                        />
-                      </div>
+                      <ChevronDownIcon
+                        className={`w-5 h-5 text-gray-400 group-hover:text-white transition-all duration-200 ${
+                          networkDropdownOpen ? 'rotate-180' : ''
+                        }`}
+                      />
                     </div>
                   </div>
 
                   {/* Custom Network Dropdown */}
                   {networkDropdownOpen && (
-                    <div className="absolute top-full -mt-6 w-full bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl z-[10000] max-h-48 overflow-y-auto">
+                    <div className="absolute top-full -mt-6 w-full bg-gray-900 border border-white/30 rounded-lg shadow-2xl z-[10000] max-h-48 overflow-y-auto py-1">
                       {availableChains.map((chain) => (
                         <button
                           key={chain.id}
                           type="button"
-                          className="w-full flex items-center space-x-3 p-3 hover:bg-white/10 transition-colors duration-200 text-left first:rounded-t-lg last:rounded-b-lg min-h-[48px]"
+                          className="w-full flex items-center space-x-3 px-3 py-2.5 mx-1 hover:bg-purple-500/30 transition-all duration-200 text-left rounded-lg min-h-[48px]"
                           onClick={() => {
                             setSelectedChain(chain)
                             setNetworkDropdownOpen(false)
@@ -1027,14 +1015,16 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                               className="object-contain w-full h-full"
                             />
                           </div>
-                          <span className="font-medium text-white flex-1">
+                          <span className="font-medium text-white flex-1 transition-colors">
                             {chain.name || 'Unknown Network'}
-                            <span className="ml-2 text-gray-400 text-xs font-medium uppercase tracking-wide">
-                              {chain === arbitrum ? '(Recommended)' : ''}
-                            </span>
+                            {chain === arbitrum && (
+                              <span className="ml-2 text-gray-400 text-xs font-medium uppercase tracking-wider">
+                                (Recommended)
+                              </span>
+                            )}
                           </span>
                           {chain.id === selectedChain.id && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                            <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0 shadow-lg"></div>
                           )}
                         </button>
                       ))}
@@ -1042,14 +1032,14 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                   )}
                 </div>
                 {networkMistmatch ? (
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                        <p className="text-red-400 font-medium">Network Mismatch</p>
+                        <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse shadow-lg"></div>
+                        <p className="text-red-300 font-semibold">Network Mismatch</p>
                       </div>
                       <button
-                        className="p-1 hover:bg-red-500/20 rounded-full transition-colors duration-200 group"
+                        className="p-1.5 hover:bg-red-500/20 rounded-lg transition-all duration-200 group"
                         onClick={() => {
                           // Revert to previous chain
                           setSelectedChain(previousChain)
@@ -1065,7 +1055,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                     </p>
                     <div className="flex gap-3">
                       <button
-                        className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:from-red-600 hover:to-pink-600 transition-all duration-200 transform hover:scale-105"
+                        className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 text-white py-2.5 px-4 rounded-lg font-medium hover:from-red-600 hover:to-pink-600 transition-all duration-200 transform hover:scale-105 shadow-lg"
                         onClick={() => {
                           wallets[selectedWallet].switchChain(selectedChain.id)
                         }}
@@ -1073,7 +1063,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                         Switch to {selectedChain.name}
                       </button>
                       <button
-                        className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
+                        className="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 text-white py-2.5 px-4 rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
                         onClick={() => {
                           // Revert to previous chain
                           setSelectedChain(previousChain)
@@ -1087,7 +1077,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                 ) : (
                   <div className="space-y-4 mb-6">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide">
+                      <h4 className="text-gray-400 font-semibold text-xs uppercase tracking-wider">
                         Balances
                       </h4>
                       {type === 'mobile' && (
@@ -1097,9 +1087,9 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                       )}
                     </div>
 
-                    <div className="space-y-3 max-h-60 overflow-y-auto scrollbar-hide pr-1">
+                    <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide pr-1">
                       {/* Native Token Balance - Always show first */}
-                      <div className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group">
+                      <div className="bg-white/5 rounded-lg p-3 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer group">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <div className="w-8 h-8 rounded-full overflow-hidden bg-white/5 p-1 group-hover:scale-110 transition-transform duration-200 flex items-center justify-center">
@@ -1125,7 +1115,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
 
                       {/* Loading State */}
                       {tokensLoading && (
-                        <div className="bg-black/20 rounded-lg p-3 border border-white/5">
+                        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                           <div className="flex items-center justify-center space-x-2 text-gray-400">
                             <div className="w-4 h-4 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></div>
                             <span className="text-sm">Loading tokens...</span>
@@ -1144,7 +1134,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                       {walletTokens.map((token: any, index: number) => (
                         <div
                           key={`${token.contractAddress}-${index}`}
-                          className="bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all duration-200 cursor-pointer group"
+                          className="bg-white/5 rounded-lg p-3 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 cursor-pointer group"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
@@ -1178,7 +1168,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
 
                 {/* Wallet Actions */}
                 <div className="mb-6">
-                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">
+                  <h4 className="text-gray-400 font-semibold text-xs uppercase tracking-wider mb-3">
                     Quick Actions
                   </h4>
                   <div className="grid grid-cols-4 gap-2 md:gap-3">
@@ -1221,7 +1211,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
 
                 {/* Connected Wallets */}
                 <div className="mb-6">
-                  <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wide mb-3">
+                  <h4 className="text-gray-400 font-semibold text-xs uppercase tracking-wider mb-3">
                     Connected Wallets
                   </h4>
                   <div className="space-y-2">
@@ -1230,8 +1220,8 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                         key={`wallet-${i}`}
                         className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
                           selectedWallet === i
-                            ? 'bg-blue-500/10 border-blue-500/30 shadow-lg'
-                            : 'bg-black/10 border-white/10 hover:bg-black/20'
+                            ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/40 shadow-lg'
+                            : 'bg-white/5 border-white/10 hover:bg-white/10'
                         }`}
                         onClick={() => setSelectedWallet(i)}
                       >
@@ -1273,14 +1263,14 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                 <div className="border-t border-white/10 pt-4">
                   <LinkAccounts user={user} />
                   <button
-                    className="w-full mt-4 bg-gradient-to-r from-red-500/80 to-pink-500/80 hover:from-red-500 hover:to-pink-500 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg"
+                    className="w-full mt-4 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white py-2.5 px-4 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
                     onClick={async () => {
                       wallets.forEach((wallet) => wallet.disconnect())
                       clearAllCitizenCache()
                       logout()
                     }}
                   >
-                    <strong>Log Out</strong>
+                    Log Out
                   </button>
                 </div>
               </div>,

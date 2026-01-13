@@ -446,7 +446,16 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
 
       const url = generateOnRampURL(widgetParams)
 
-      await onBeforeNavigate?.()
+      try {
+        if (onBeforeNavigate) {
+          await onBeforeNavigate()
+          // Add small delay to ensure localStorage write completes
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+      } catch (error) {
+        console.error('[CBOnramp] onBeforeNavigate failed:', error)
+        // Continue anyway but log the error
+      }
       window.location.href = url
     } catch (error: any) {
       setError('Failed to initialize payment system: ' + error.message)
@@ -457,7 +466,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   // Error state
   if (error) {
     return (
-      <div className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-red-900/30 to-purple-900/20 backdrop-blur-xl border border-red-500/20 rounded-2xl shadow-2xl text-white overflow-hidden">
+      <div data-testid="cbonramp-modal-content" className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-red-900/30 to-purple-900/20 backdrop-blur-xl border border-red-500/20 rounded-2xl shadow-2xl text-white overflow-hidden">
         {/* Header with close button */}
         <div className="flex items-center justify-between p-6 border-b border-red-500/20">
           <div className="flex items-center space-x-3">
@@ -512,7 +521,7 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
 
   // Ready state - no loading spinner on component mount
   return (
-    <div className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden">
+    <div data-testid="cbonramp-modal-content" className="w-full max-w-md mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">
