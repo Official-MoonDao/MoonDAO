@@ -82,7 +82,6 @@ export const CBOnrampModal: React.FC<CBOnrampModalProps> = ({
 
   // Generate JWT before navigating to onramp
   const handleBeforeNavigate = useCallback(async () => {
-    console.log('[CBOnrampModal] handleBeforeNavigate called with agreed:', agreed)
     // Generate JWT with context and current state
     await generateJWT({
       address,
@@ -91,14 +90,12 @@ export const CBOnrampModal: React.FC<CBOnrampModalProps> = ({
       context,
       selectedWallet,
     })
-    console.log('[CBOnrampModal] JWT generated, calling original onBeforeNavigate')
 
     // Call original onBeforeNavigate if provided
     try {
       await onBeforeNavigate?.()
-      console.log('[CBOnrampModal] Original onBeforeNavigate completed')
     } catch (error) {
-      console.error('[CBOnrampModal] Original onBeforeNavigate failed:', error)
+      console.error('[CBOnrampModal] onBeforeNavigate failed:', error)
       throw error
     }
   }, [address, chainSlug, agreed, context, selectedWallet, generateJWT, onBeforeNavigate])

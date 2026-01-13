@@ -244,11 +244,6 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
         setImage(base64ToFile(imageData))
         return true
       }
-      if (imageData === 'PENDING_SERIALIZATION') {
-        console.warn(
-          `[CreateCitizen] ${imageName} marked as PENDING_SERIALIZATION, skipping restore.`
-        )
-      }
       return false
     },
     []
@@ -580,10 +575,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const formData = restored.formData || restored
 
       if (!formData || !formData.citizenData) {
-        console.error(
-          '[CreateCitizen] Invalid cache structure, missing formData or citizenData',
-          restored
-        )
+        console.error('[CreateCitizen] Invalid cache structure, missing formData or citizenData')
         return
       }
 
@@ -814,14 +806,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
           (formData.inputImage && isSerializedFile(formData.inputImage)) ||
           (formData.citizenImage && formData.citizenImage !== 'PENDING_SERIALIZATION') ||
           (formData.inputImage && formData.inputImage !== 'PENDING_SERIALIZATION'))
-      const result = formData.agreedToCondition && isImageValid
-      console.log('[AUTO-TX] shouldProceed -', {
-        agreed: formData.agreedToCondition,
-        hasImage: !!hasImage,
-        isImageValid,
-        result,
-      })
-      return result
+      return formData.agreedToCondition && isImageValid
     },
     restoreCache: getCachedForm,
     getChainSlugFromCache: (restored) => restored?.formData?.selectedChainSlug,
@@ -831,14 +816,7 @@ export default function CreateCitizen({ selectedChain, setSelectedTier }: any) {
       const gasEstimateReady = !isLoadingGasEstimate && estimatedGas > BigInt(0)
       const gasPriceReady = effectiveGasPrice !== undefined && effectiveGasPrice > BigInt(0)
       const imagesReady = imagesRestoredRef.current || !!citizenImage || !!inputImage
-      const ready = gasEstimateReady && gasPriceReady && imagesReady
-      console.log('[AUTO-TX] waitForReady -', {
-        gasEstimateReady,
-        gasPriceReady,
-        imagesReady,
-        ready,
-      })
-      return ready
+      return gasEstimateReady && gasPriceReady && imagesReady
     },
   })
 

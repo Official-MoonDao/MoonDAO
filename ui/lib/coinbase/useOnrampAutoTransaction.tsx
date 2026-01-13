@@ -276,12 +276,11 @@ export function useOnrampAutoTransaction({
     }
 
     const processCacheAndContinue = (cache: any) => {
-      console.log('[AUTO-TX] Starting processCacheAndContinue')
       if (isCancelled) return
 
       // Ensure cache has proper structure
       if (!cache) {
-        console.error('[AUTO-TX] Cache is null or undefined')
+        console.error('[useOnrampAutoTransaction] Cache is null or undefined')
         return
       }
 
@@ -306,19 +305,16 @@ export function useOnrampAutoTransaction({
       currentSessionIdRef.current = sessionId
 
       if (onFormRestore) {
-        console.log('[AUTO-TX] Calling onFormRestore')
         onFormRestore(cache)
       }
 
       const storedJWT = getStoredJWT()
       const isMockMode = process.env.NEXT_PUBLIC_MOCK_ONRAMP === 'true'
-      console.log('[AUTO-TX] JWT check - hasJWT:', !!storedJWT, 'isMock:', isMockMode)
 
       if (!storedJWT) {
         if (isMockMode) {
           // Continue with auto-transaction in mock mode
         } else {
-          console.log('[AUTO-TX] No JWT and not mock mode - aborting')
           isProcessingRef.current = false
           processingStartTimeRef.current = null
           return
@@ -341,7 +337,6 @@ export function useOnrampAutoTransaction({
 
       const executeAutoTransaction = () => {
         const proceed = shouldProceed ? shouldProceed(cache) : true
-        console.log('[AUTO-TX] executeAutoTransaction - shouldProceed:', proceed)
 
         if (proceed) {
           hasProcessedRef.current = true
@@ -349,9 +344,7 @@ export function useOnrampAutoTransaction({
           processingStartTimeRef.current = Date.now()
 
           const processingPromise = new Promise<void>((resolve, reject) => {
-            console.log('[AUTO-TX] Starting 1s delay')
             timeoutIdRef.current = setTimeout(() => {
-              console.log('[AUTO-TX] Delay complete, cancelled:', isCancelled)
               if (isCancelled) {
                 resolve()
                 return
@@ -365,7 +358,7 @@ export function useOnrampAutoTransaction({
                 })
                 .catch((error) => {
                   if (!isCancelled) {
-                    console.error('Execution failed:', error)
+                    console.error('[useOnrampAutoTransaction] Execution failed:', error)
                     hasProcessedRef.current = false
                   }
                   reject(error)
@@ -384,7 +377,6 @@ export function useOnrampAutoTransaction({
             }
           })
         } else {
-          console.log('[AUTO-TX] shouldProceed false - aborting')
           clearJWT()
           clearRedirectParams()
           resetProcessing()
@@ -392,13 +384,10 @@ export function useOnrampAutoTransaction({
       }
 
       if (isMockMode) {
-        console.log('[AUTO-TX] Mock mode - executing directly')
         expectedAddressRef.current = addressRef.current || ''
         executeAutoTransaction()
         return
       }
-
-      console.log('[AUTO-TX] Verifying JWT')
 
       if (!storedJWT) {
         resetProcessing()
@@ -429,10 +418,7 @@ export function useOnrampAutoTransaction({
         .then((data) => {
           if (isCancelled) return
 
-          console.log('[AUTO-TX] JWT verification response - valid:', data?.valid)
-
           if (!data || !data.valid || !data.payload) {
-            console.log('[AUTO-TX] JWT invalid - aborting')
             clearJWT()
             clearRedirectParams()
             resetProcessing()
@@ -442,18 +428,10 @@ export function useOnrampAutoTransaction({
           const jwtPayload = data.payload
           const currentAddress = addressRef.current
 
-          console.log(
-            '[AUTO-TX] Address check - current:',
-            currentAddress,
-            'jwt:',
-            jwtPayload.address
-          )
-
           if (
             !currentAddress ||
             jwtPayload.address.toLowerCase() !== currentAddress.toLowerCase()
           ) {
-            console.log('[AUTO-TX] Address mismatch - aborting')
             if (jwtPayload.selectedWallet !== undefined && setSelectedWallet) {
               setSelectedWallet(jwtPayload.selectedWallet)
             }
@@ -492,12 +470,11 @@ export function useOnrampAutoTransaction({
             setSelectedWallet(jwtPayload.selectedWallet)
           }
 
-          console.log('[AUTO-TX] JWT verified - calling executeAutoTransaction')
           executeAutoTransaction()
         })
         .catch((error) => {
           if (isCancelled) return
-          console.error('[AUTO-TX] JWT verification error:', error)
+          console.error('[useOnrampAutoTransaction] JWT verification error:', error)
           clearJWT()
           clearRedirectParams()
           resetProcessing()

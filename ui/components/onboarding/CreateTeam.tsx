@@ -317,10 +317,6 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       console.error('Error estimating gas:', error instanceof Error ? error.message : error)
       const fallbackGas = BigInt(350000)
       const bufferedFallback = applyGasBuffer(fallbackGas, 150)
-      console.log('[CreateTeam] Using buffered fallback gas estimate:', {
-        raw: fallbackGas.toString(),
-        buffered: bufferedFallback.toString(),
-      })
       setEstimatedGas(bufferedFallback)
       setIsLoadingGasEstimate(false)
     }
