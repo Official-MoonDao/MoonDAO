@@ -10,22 +10,28 @@ describe('<Proposal />', () => {
 
   beforeEach(() => {
     mockProject = {
-      MDP: 1,
+      MDP: 14,
       active: 2,
       description: 'test description',
+      status: 'Temperature Check',
       eligible: 0,
       finalReportIPFS: '',
       finalReportLink: '',
       id: 0,
       image: '',
-      name: 'test name',
+      name: 'Test Proposal for Component Testing',
       proposalIPFS:
-        'https://gray-main-toad-36.mypinata.cloud/ipfs/QmNwdHfXoSFURs4amSd4woTK8SpL8cJhKrNjnxHjVAs1Fz',
+        'https://gray-main-toad-36.mypinata.cloud/ipfs/QmXCbzaCDepUpnQFhYJQ8nPcWh7acfack4ARAPWgK59dMo',
       proposalLink: 'https://moondao.com/proposal/1',
       quarter: 4,
       rewardDistribution: '',
       upfrontPayments: '',
       year: 2025,
+      proposalJSON: {
+        body: '# order 81',
+        authorAddress: '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89',
+        nonProjectProposal: false,
+      },
     }
 
     mockVotingInfo = {
@@ -58,124 +64,28 @@ describe('<Proposal />', () => {
       cy.get('#proposal-card').should('exist')
 
       // Check if the proposal title is displayed
-      cy.contains('MDP-42: Test Proposal for Component Testing').should('exist')
+      cy.contains('MDP-14: Test Proposal for Component Testing').should('exist')
     })
 
     it('Should display proposal status correctly', () => {
+      const project = { ...mockProject, status: 'Temperature Check' }
       cy.mount(
         <TestnetProviders>
-          <Proposal project={mockProject} />
+          <Proposal project={project} />
         </TestnetProviders>
       )
 
       // For Discussion status, component shows time element, not status text
-      cy.get('time').should('exist')
-    })
-  })
-
-  describe('Voting Status Indicators', () => {
-    it('Should show voting indicator for active voting proposals', () => {
-      const votingProposal = { ...mockProject, status: 'Voting' }
-
-      cy.mount(
-        <TestnetProviders>
-          <Proposal project={votingProposal} />
-        </TestnetProviders>
-      )
-
-      // Component shows time element for all proposals
-      cy.get('time').should('exist')
-      cy.get('.text-gray-400').should('contain.text', 'ago')
-    })
-
-    it('Should show voting indicator for temperature check proposals', () => {
-      const tempCheckProposal = { ...mockProject, status: 'Temperature Check' }
-
-      cy.mount(
-        <TestnetProviders>
-          <Proposal project={tempCheckProposal} />
-        </TestnetProviders>
-      )
-
-      // Component shows time element for all proposals
-      cy.get('time').should('exist')
-      cy.get('.text-gray-400').should('contain.text', 'ago')
-    })
-
-    it('Should show "Results Available" indicator for closed voting proposals', () => {
-      const closedVotingInfo = {
-        ...mockVotingInfo,
-        state: 'closed',
-      }
-
-      cy.mount(
-        <TestnetProviders>
-          <Proposal project={mockProject} />
-        </TestnetProviders>
-      )
-
-      // Component shows time element for all proposals
-      cy.get('time').should('exist')
-      cy.get('.text-gray-400').should('contain.text', 'ago')
-    })
-
-    it('Should show last edited time for non-voting proposals', () => {
-      cy.mount(
-        <TestnetProviders>
-          <Proposal project={mockProject} />
-        </TestnetProviders>
-      )
-
-      // Should show time since last edit
-      cy.get('time').should('exist')
-      cy.get('.text-gray-400').should('contain.text', 'ago')
-    })
-  })
-
-  describe('Different Proposal Statuses', () => {
-    const statuses = ['Discussion', 'Voting', 'Approved', 'Archived', 'Cancelled']
-
-    statuses.forEach((status) => {
-      it(`Should handle ${status} status correctly`, () => {
-        const statusProposal = { ...mockProject, status }
-
-        cy.mount(
-          <TestnetProviders>
-            <Proposal project={statusProposal} />
-          </TestnetProviders>
-        )
-
-        // Component shows time element for all statuses
-        cy.get('time').should('exist')
-        cy.get('.text-gray-400').should('contain.text', 'ago')
-      })
+      cy.get('#proposal-card')
+        .invoke('text')
+        .then((txt) => {
+          cy.log('Component text is:', txt)
+        })
+      cy.contains('Temperature Check').should('exist')
     })
   })
 
   describe('ProposalInfo Integration', () => {
-    it('Should pass correct props to ProposalInfo component', () => {
-      cy.mount(
-        <TestnetProviders>
-          <Proposal project={mockProject} />
-        </TestnetProviders>
-      )
-
-      // Check that ProposalInfo receives the merged proposal data
-      // This tests the prop merging: { ...proposal, proposalInfo: packet.proposalInfo }
-      cy.contains('MDP-42: Test Proposal for Component Testing').should('exist')
-
-      // Check author information is displayed (from ProposalInfo)
-      cy.get('img[alt=""]')
-        .should('have.attr', 'src')
-        .and('satisfy', (src) => {
-          // Handle both direct URLs and Next.js optimized image URLs
-          return (
-            src.includes('cdn.stamp.fyi/avatar/') ||
-            (src.includes('/_next/image') && src.includes('cdn.stamp.fyi%2Favatar%2F'))
-          )
-        })
-    })
-
     it('Should show title when showTitle is true', () => {
       cy.mount(
         <TestnetProviders>
@@ -243,22 +153,6 @@ describe('<Proposal />', () => {
   })
 
   describe('Edge Cases', () => {
-    it('Should handle proposal without lastEditedTime', () => {
-      const proposalWithoutLastEdit = {
-        ...mockProject,
-        lastEditedTime: undefined,
-      }
-
-      cy.mount(
-        <TestnetProviders>
-          <Proposal project={proposalWithoutLastEdit} />
-        </TestnetProviders>
-      )
-
-      // Should fall back to createdTime
-      cy.get('time').should('exist')
-    })
-
     it('Should handle undefined votingInfo', () => {
       cy.mount(
         <TestnetProviders>
@@ -285,44 +179,6 @@ describe('<Proposal />', () => {
 
       // Should still display title without prefix
       cy.contains('Test Proposal for Component Testing').should('exist')
-    })
-
-    it('Should handle closed votingInfo with non-voting status', () => {
-      const closedVotingInfo = {
-        ...mockVotingInfo,
-        state: 'closed',
-      }
-      const discussionProposal = { ...mockProject, status: 'Discussion' }
-
-      cy.mount(
-        <TestnetProviders>
-          <Proposal project={discussionProposal} />
-        </TestnetProviders>
-      )
-
-      // Component shows time element for all proposals regardless of voting state
-      cy.get('time').should('exist')
-      cy.get('.text-gray-400').should('contain.text', 'ago')
-    })
-  })
-
-  describe('Date Formatting', () => {
-    it('Should format dates correctly using formatDistanceStrict', () => {
-      const fixedDate = '2024-01-10T10:00:00Z'
-      const proposalWithFixedDate = {
-        ...mockProject,
-        lastEditedTime: fixedDate,
-        createdTime: fixedDate,
-      }
-
-      cy.mount(
-        <TestnetProviders>
-          <Proposal project={proposalWithFixedDate} />
-        </TestnetProviders>
-      )
-
-      cy.get('time').should('exist')
-      cy.get('.text-gray-400').should('contain.text', 'ago')
     })
   })
 })

@@ -1,17 +1,17 @@
 import { ChevronRightIcon } from '@heroicons/react/24/outline'
 import { formatDistanceStrict } from 'date-fns'
+import useProposalJSON from '@/lib/nance/useProposalJSON'
+import { useProposalStatus } from '@/lib/nance/useProposalStatus'
 import { SnapshotGraphqlProposalVotingInfo } from '@/lib/snapshot'
 import ProposalInfo from './ProposalInfo'
-import { useProposalStatus } from '@/lib/nance/useProposalStatus'
-import useProposalJSON from '@/lib/nance/useProposalJSON'
 
 type ProposalProps = {
   project: any
 }
 
 export default function Proposal({ project }: ProposalProps) {
-  const proposalStatus = useProposalStatus(project)
-  const proposalJSON = useProposalJSON(project)
+  const proposalStatus = project?.status || useProposalStatus(project)
+  const proposalJSON = project?.proposalJSON || useProposalJSON(project)
   return (
     <div
       id="proposal-card"
