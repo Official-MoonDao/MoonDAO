@@ -17,7 +17,7 @@ forge install
 ## Build Contracts
 
 ```bash
-forge build
+forge build --via-ir --optimize
 ```
 
 ## Deploy a contract
