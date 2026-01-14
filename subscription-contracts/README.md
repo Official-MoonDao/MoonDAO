@@ -10,7 +10,7 @@ curl -L https://foundry.paradigm.xyz/ | bash
 foundryup
 
 # install dependencies
-yarn install
+npm install --legacy-peer-deps
 forge install
 ```
 
