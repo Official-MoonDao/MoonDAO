@@ -28,8 +28,12 @@ import {
 type WalletInfoCardProps = {
   unlockedMooney?: number | null
   lockedMooney?: number | null
+  votingPower?: number | null
+  totalVMOONEY?: number | null
   isUnlockedLoading?: boolean
   isLockedLoading?: boolean
+  isVotingPowerLoading?: boolean
+  isVMOONEYLoading?: boolean
   onSendClick?: () => void
   setSendModalEnabled?: (enabled: boolean) => void
 }
@@ -55,11 +59,26 @@ function formatToken(value: number | null | undefined): string {
   })
 }
 
+function formatVotingPower(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '0'
+  if (value === 0) return '0'
+  if (value < 0.01) return '<0.01'
+  
+  return value.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })
+}
+
 export default function WalletInfoCard({
   unlockedMooney,
   lockedMooney,
+  votingPower,
+  totalVMOONEY,
   isUnlockedLoading,
   isLockedLoading,
+  isVotingPowerLoading,
+  isVMOONEYLoading,
   onSendClick,
   setSendModalEnabled,
 }: WalletInfoCardProps) {
@@ -270,6 +289,27 @@ export default function WalletInfoCard({
             ) : (
               <span className="text-white font-bold">
                 {formatToken(totalMooney)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Voting Power */}
+        <div className="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 rounded-lg p-3 border border-yellow-500/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-yellow-400">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+              </svg>
+              <span className="text-sm text-yellow-300 font-medium">
+                Voting Power
+              </span>
+            </div>
+            {isVotingPowerLoading ? (
+              <LoadingSpinner width="w-4" height="h-4" />
+            ) : (
+              <span className="text-white font-bold">
+                {formatVotingPower(votingPower)}
               </span>
             )}
           </div>

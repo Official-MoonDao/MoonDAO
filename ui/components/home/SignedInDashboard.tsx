@@ -46,7 +46,6 @@ import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import useMissionData from '@/lib/mission/useMissionData'
-import { useVoteCountOfAddress } from '@/lib/snapshot'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -61,7 +60,6 @@ import { networkCard } from '@/lib/layout/styles'
 import { AUMChart } from '@/components/dashboard/treasury/AUMChart'
 import { RevenueChart } from '@/components/dashboard/treasury/RevenueChart'
 import ClaimRewardsSection from '@/components/home/ClaimRewardsSection'
-import MooneyBalances from '@/components/home/MooneyBalances'
 import WalletInfoCard from '@/components/home/WalletInfoCard'
 import ChartModal from '@/components/layout/ChartModal'
 import Container from '@/components/layout/Container'
@@ -211,9 +209,6 @@ export default function SingedInDashboard({
   const { nativeBalance } = useNativeBalance()
   const { tokens: walletTokens } = useWalletTokens(address, chainSlug)
 
-  const { data: voteCount, isValidating: isLoadingVoteCount } =
-    useVoteCountOfAddress(address)
-
   const MOONEYBalance = useTotalMooneyBalance(address)
   const {
     totalLockedMooney: lockedMooneyAmount,
@@ -325,7 +320,7 @@ export default function SingedInDashboard({
         <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-4 sm:p-6 mb-6 overflow-hidden">
           <div className="absolute inset-0 bg-black/20 rounded-2xl"></div>
 
-          <div className="relative z-10 flex flex-col xl:flex-row lg:items-center gap-4 lg:gap-6">
+          <div className="relative z-10 flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
             {/* Left Side - Profile & Title */}
             <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
               {/* Profile Picture */}
@@ -342,9 +337,7 @@ export default function SingedInDashboard({
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                       <span className="text-white font-bold text-base sm:text-lg">
-                        {citizen?.metadata?.name ||
-                          `${address?.slice(0, 6)}...${address?.slice(-4)}` ||
-                          ''}
+                        {citizen?.metadata?.name?.[0] || address?.[2] || 'M'}
                       </span>
                     </div>
                   )}
@@ -366,7 +359,7 @@ export default function SingedInDashboard({
 
               {/* Title */}
               <div className="min-w-0">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-lg leading-tight max-w-[350px] break-words">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-lg leading-tight">
                   {isLoadingCitizen ? (
                     <span className="flex items-center gap-2">
                       Welcome...
@@ -378,66 +371,384 @@ export default function SingedInDashboard({
                     'Welcome to MoonDAO'
                   )}
                 </h1>
+                <p className="text-white/70 text-sm mt-1">What would you like to do today?</p>
               </div>
             </div>
 
-            {/* Center - Balance constellation */}
-            {address && (
-              <div className="">
-                <MooneyBalances
-                  unlockedMooney={MOONEYBalance}
-                  lockedMooney={lockedMooneyAmount}
-                  totalVMOONEY={totalVMOONEY}
-                  votingPower={walletVP}
-                  isLockedLoading={!!isLoadingLockedMooney}
-                  isVMOONEYLoading={isLoadingVMOONEY}
-                  isVotingPowerLoading={!!isLoadingVP}
-                />
+            {/* Quick Actions */}
+            <div className="flex items-center flex-1">
+              <div className="flex flex-wrap justify-center lg:justify-start gap-2 sm:gap-3 w-full lg:w-auto">
+                <StandardButton
+                  backgroundColor="bg-gradient-to-r from-blue-500 to-purple-500"
+                  hoverColor="hover:from-blue-600 hover:to-purple-600"
+                  className="text-white py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm gap-1.5 whitespace-nowrap shadow-lg min-w-[120px]"
+                  link="/get-mooney"
+                >
+                  <BanknotesIcon className="w-4 h-4" />
+                  Get Mooney
+                </StandardButton>
+                <StandardButton
+                  backgroundColor="bg-gradient-to-r from-purple-500 to-pink-500"
+                  hoverColor="hover:from-purple-600 hover:to-pink-600"
+                  className="text-white py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm gap-1.5 whitespace-nowrap shadow-lg min-w-[120px]"
+                  link="/proposals"
+                >
+                  <NewspaperIcon className="w-4 h-4" />
+                  Propose
+                </StandardButton>
+                <StandardButton
+                  backgroundColor="bg-gradient-to-r from-pink-500 to-red-500"
+                  hoverColor="hover:from-pink-600 hover:to-red-600"
+                  className="text-white py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm gap-1.5 whitespace-nowrap shadow-lg min-w-[120px]"
+                  link="/vote"
+                >
+                  <CheckBadgeIcon className="w-4 h-4" />
+                  Vote
+                </StandardButton>
+                <StandardButton
+                  backgroundColor="bg-gradient-to-r from-red-500 to-orange-500"
+                  hoverColor="hover:from-red-600 hover:to-orange-600"
+                  className="text-white py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm gap-1.5 whitespace-nowrap shadow-lg min-w-[120px]"
+                  link="/launchpad"
+                >
+                  <RocketLaunchIcon className="w-4 h-4" />
+                  Launch
+                </StandardButton>
+                <StandardButton
+                  backgroundColor="bg-gradient-to-r from-orange-500 to-green-500"
+                  hoverColor="hover:from-orange-600 hover:to-green-600"
+                  className="text-white py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm gap-1.5 whitespace-nowrap shadow-lg min-w-[120px]"
+                  link="/network"
+                >
+                  <UserGroupIcon className="w-4 h-4" />
+                  Teams
+                </StandardButton>
+                <StandardButton
+                  backgroundColor="bg-gradient-to-r from-green-500 to-teal-500"
+                  hoverColor="hover:from-green-600 hover:to-teal-600"
+                  className="text-white py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm gap-1.5 whitespace-nowrap shadow-lg min-w-[120px]"
+                  link="/marketplace"
+                >
+                  <ShoppingBagIcon className="w-4 h-4" />
+                  Shop
+                </StandardButton>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content - Facebook Style Three Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
+          {/* Left Sidebar - Key Metrics & Quick Actions */}
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-2 lg:order-1">
+            {/* Weekly Reward Pool - Enhanced UI */}
+            <div className="order-2">
+              <WeeklyRewardPool />
+            </div>
+
+            {/* Key Metrics Card */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
+              <h3 className="font-semibold text-white mb-8 text-lg">DAO Metrics</h3>
+              <div className="space-y-8 h-full">
+                {citizenSubgraphData?.transfers && citizenSubgraphData?.transfers.length > 0 && (
+                  <div
+                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
+                    onClick={openCitizensChart}
+                    title="Click to view full chart"
+                  >
+                    <div className="flex items-center justify-between mb-5">
+                      <span className="text-gray-300 font-medium">Citizens</span>
+                      <span className="text-white font-bold text-2xl">
+                        {citizenSubgraphData?.transfers?.length || '2,341'}
+                      </span>
+                    </div>
+                    <div className="h-20">
+                      <CitizensChart
+                        transfers={citizenSubgraphData.transfers}
+                        isLoading={false}
+                        height={80}
+                        compact={true}
+                        createdAt={citizenSubgraphData.createdAt}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {aumData && aumData.aumHistory.length > 0 && (
+                  <div
+                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
+                    onClick={openAUMChart}
+                    title="Click to view full chart"
+                  >
+                    <div className="flex items-center justify-between mb-5">
+                      <span className="text-gray-300 font-medium">AUM</span>
+                      <span className="text-white font-bold text-2xl">
+                        ${Math.round(aumData.aum).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="h-20">
+                      <AUMChart compact={true} height={80} data={aumData.aumHistory} />
+                    </div>
+                  </div>
+                )}
+
+                {revenueData && revenueData.revenueHistory.length > 0 && (
+                  <div
+                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
+                    onClick={openRevenueChart}
+                    title="Click to view full chart"
+                  >
+                    <div className="flex items-center justify-between mb-5">
+                      <span className="text-gray-300 font-medium">Annual Revenue</span>
+                      <span className="text-white font-bold text-2xl">
+                        ${Math.round(revenueData.currentRevenue).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="h-20">
+                      <RevenueChart
+                        data={revenueData.revenueHistory}
+                        compact={true}
+                        height={80}
+                        isLoading={false}
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Link to Treasury Page */}
+                <div className="pt-4">
+                  <Link
+                    href="/treasury"
+                    className="block w-full text-center py-3 px-4 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 hover:text-blue-200 rounded-lg transition-all duration-200 font-medium"
+                  >
+                    View Full Treasury Analytics →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Center Column - Main Feed */}
+          <div className="lg:col-span-6 flex flex-col space-y-6 h-full min-h-[800px] order-1 lg:order-2">
+            {/* Activity Feed */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
+                <h3 className="text-xl font-bold text-white whitespace-nowrap">Recent Newsletters</h3>
+                <div className="flex gap-2 flex-shrink-0">
+                  <StandardButton
+                    className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
+                    link="/news"
+                  >
+                    View All
+                  </StandardButton>
+                  <StandardButton
+                    className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
+                    onClick={() => setNewsletterModalOpen(true)}
+                  >
+                    Subscribe
+                  </StandardButton>
+                  <StandardButton
+                    className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
+                    link="/townhall"
+                  >
+                    Town Hall
+                  </StandardButton>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {newslettersLoading ? (
+                  <div className="text-center py-8">
+                    <div className="text-white/60">Loading newsletters...</div>
+                  </div>
+                ) : clientNewsletters && clientNewsletters.length > 0 ? (
+                  clientNewsletters.slice(0, 4).map((newsletter: any, index: number) => (
+                    <div
+                      key={newsletter.id || index}
+                      className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5"
+                      onClick={() => {
+                        if (
+                          newsletter.url &&
+                          newsletter.url !== 'https://news.moondao.com/posts' &&
+                          newsletter.url !== 'https://moondao.kit.com/posts' &&
+                          newsletter.url.includes('http')
+                        ) {
+                          window.open(newsletter.url, '_blank')
+                        } else {
+                          window.open('https://news.moondao.com/posts', '_blank')
+                        }
+                      }}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-blue-600">
+                          {newsletter.image ? (
+                            <IPFSRenderer
+                              src={newsletter.image}
+                              alt={newsletter.title}
+                              className="w-full h-full object-cover"
+                              width={100}
+                              height={100}
+                            />
+                          ) : (
+                            <NewspaperIcon className="w-6 h-6 text-white" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-white font-medium mb-1">
+                            {newsletter.title || 'Newsletter Update'}
+                          </p>
+                          {newsletter.description && (
+                            <p className="text-gray-300 text-sm mb-2 line-clamp-2">
+                              {newsletter.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-4 text-sm text-gray-400">
+                            <span>
+                              {newsletter.publishedAt
+                                ? new Date(newsletter.publishedAt).toLocaleDateString()
+                                : 'Recently'}
+                            </span>
+                            {newsletter.views && newsletter.views > 0 && (
+                              <>
+                                <span>•</span>
+                                <span>{newsletter.views} recipients</span>
+                              </>
+                            )}
+                            {newsletter.readTime && (
+                              <>
+                                <span>•</span>
+                                <span>{newsletter.readTime} min read</span>
+                              </>
+                            )}
+                            {newsletter.isArchived && (
+                              <>
+                                <span>•</span>
+                                <span className="text-orange-400">Archive</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div
+                          className="text-gray-400 hover:text-white transition-colors"
+                          title="Click to view newsletter"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-16 min-h-[300px] flex flex-col justify-center">
+                    <NewspaperIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+                    <p className="text-gray-400 text-sm">No newsletters available</p>
+                    <p className="text-gray-500 text-xs mt-1">Check back soon for updates</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Active Proposals Card */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-4">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white">Latest Proposals</h3>
+                <StandardButton
+                  className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
+                  link="/governance"
+                >
+                  View All
+                </StandardButton>
+              </div>
+
+              <ProposalList noPagination compact proposalLimit={2} />
+            </div>
+          </div>
+
+          {/* Right Sidebar - Community & Stats */}
+          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3">
+            {/* Wallet Info Card */}
+            {address && (
+              <WalletInfoCard
+                unlockedMooney={MOONEYBalance || 0}
+                lockedMooney={lockedMooneyAmount || 0}
+                votingPower={walletVP}
+                totalVMOONEY={totalVMOONEY}
+                isUnlockedLoading={false}
+                isLockedLoading={isLoadingLockedMooney}
+                isVotingPowerLoading={!!isLoadingVP}
+                isVMOONEYLoading={isLoadingVMOONEY}
+                setSendModalEnabled={setSendModalEnabled}
+              />
             )}
 
-            {/* Right Side - Votes & Teams */}
-            {address && (
-              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                <Link
-                  href="/governance"
-                  className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group font-GoodTimes"
+            {/* Retroactive Rewards Section - Moved from left sidebar */}
+            {address && <ClaimRewardsSection />}
+
+            {/* Open Jobs */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-white text-lg">Open Jobs</h3>
+                <StandardButton
+                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
+                  link="/jobs"
                 >
-                  <CheckBadgeIcon className="h-5 w-5 text-white/80 group-hover:text-white" />
-                  {isLoadingVoteCount ? (
-                    <LoadingSpinner width="w-4" height="h-4" />
-                  ) : (
-                    <span className="font-medium whitespace-nowrap text-white/80 group-hover:text-white">
-                      {voteCount || 0}
-                    </span>
-                  )}
-                  <span className="text-white/60 group-hover:underline">Votes</span>
-                </Link>
-                <div className="h-4 w-px bg-white/20" />
-                <Link
-                  href="/network"
-                  className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group font-GoodTimes"
-                >
-                  <UserGroupIcon className="h-5 w-5 text-white/80 group-hover:text-white" />
-                  {isLoadingTeams ? (
-                    <LoadingSpinner width="w-4" height="h-4" />
-                  ) : (
-                    <span className="font-medium whitespace-nowrap text-white/80 group-hover:text-white">
-                      {teamHats?.length || 0}
-                    </span>
-                  )}
-                  <span className="text-white/60 group-hover:underline">
-                    {teamHats?.length === 1 ? 'Team' : 'Teams'}
-                  </span>
-                </Link>
+                  See all
+                </StandardButton>
               </div>
-            )}
+
+              <div className="space-y-3 h-full overflow-y-auto">
+                {newestJobs && newestJobs.length > 0 ? (
+                  <Link href={newestJobs[0]?.contactInfo || '/jobs'} className="block">
+                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                          <BriefcaseIcon className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-white font-medium text-sm truncate">
+                          {newestJobs[0]?.title}
+                        </h4>
+                        <p className="text-gray-400 text-xs">
+                          {newestJobs.length > 1
+                            ? `+${newestJobs.length - 1} more positions`
+                            : 'Click to apply'}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ) : (
+                  <Link href="/jobs" className="block">
+                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">
+                        <BriefcaseIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-white font-medium text-sm">No open positions</h4>
+                        <p className="text-gray-400 text-xs">Check back soon for opportunities</p>
+                      </div>
+                    </div>
+                  </Link>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Launchpad Feature - Featured Mission */}
         {FEATURED_MISSION && (
-        <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 sm:p-6 lg:p-8 mb-6">
+        <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 sm:p-6 lg:p-8 mt-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="min-w-0 flex-1">
               <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 flex items-center gap-2">
@@ -668,366 +979,6 @@ export default function SingedInDashboard({
           </div>
         </div>
         )}
-
-        {/* Main Content - Facebook Style Three Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:items-start lg:h-full">
-          {/* Left Sidebar - Key Metrics & Quick Actions */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full order-2 lg:order-1">
-            {/* Weekly Reward Pool - Enhanced UI */}
-            <div className="order-2">
-              <WeeklyRewardPool />
-            </div>
-
-            {/* Key Metrics Card */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-5">
-              <h3 className="font-semibold text-white mb-8 text-lg">DAO Metrics</h3>
-              <div className="space-y-8 h-full">
-                {citizenSubgraphData?.transfers && citizenSubgraphData?.transfers.length > 0 && (
-                  <div
-                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
-                    onClick={openCitizensChart}
-                    title="Click to view full chart"
-                  >
-                    <div className="flex items-center justify-between mb-5">
-                      <span className="text-gray-300 font-medium">Citizens</span>
-                      <span className="text-white font-bold text-2xl">
-                        {citizenSubgraphData?.transfers?.length || '2,341'}
-                      </span>
-                    </div>
-                    <div className="h-20">
-                      <CitizensChart
-                        transfers={citizenSubgraphData.transfers}
-                        isLoading={false}
-                        height={80}
-                        compact={true}
-                        createdAt={citizenSubgraphData.createdAt}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {aumData && aumData.aumHistory.length > 0 && (
-                  <div
-                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
-                    onClick={openAUMChart}
-                    title="Click to view full chart"
-                  >
-                    <div className="flex items-center justify-between mb-5">
-                      <span className="text-gray-300 font-medium">AUM</span>
-                      <span className="text-white font-bold text-2xl">
-                        ${Math.round(aumData.aum).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="h-20">
-                      <AUMChart compact={true} height={80} data={aumData.aumHistory} />
-                    </div>
-                  </div>
-                )}
-
-                {revenueData && revenueData.revenueHistory.length > 0 && (
-                  <div
-                    className="cursor-pointer transition-all duration-200 hover:bg-white/5 rounded-xl p-6 border border-white/5"
-                    onClick={openRevenueChart}
-                    title="Click to view full chart"
-                  >
-                    <div className="flex items-center justify-between mb-5">
-                      <span className="text-gray-300 font-medium">Annual Revenue</span>
-                      <span className="text-white font-bold text-2xl">
-                        ${Math.round(revenueData.currentRevenue).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="h-20">
-                      <RevenueChart
-                        data={revenueData.revenueHistory}
-                        compact={true}
-                        height={80}
-                        isLoading={false}
-                      />
-                    </div>
-                  </div>
-                )}
-                
-                {/* Link to Treasury Page */}
-                <div className="pt-4">
-                  <Link
-                    href="/treasury"
-                    className="block w-full text-center py-3 px-4 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 hover:text-blue-200 rounded-lg transition-all duration-200 font-medium"
-                  >
-                    View Full Treasury Analytics →
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Center Column - Main Feed */}
-          <div className="lg:col-span-6 flex flex-col space-y-6 h-full min-h-[800px] order-1 lg:order-2">
-            {/* Quick Actions */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full overflow-hidden">
-                  {citizen?.metadata?.image ? (
-                    <IPFSRenderer
-                      src={citizen.metadata.image}
-                      alt={citizen.metadata.name}
-                      className="w-full h-full object-cover"
-                      width={100}
-                      height={100}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                      {citizen?.metadata?.name?.[0] || address?.[2] || 'G'}
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-1">Quick Actions</h3>
-                  <p className="text-white/70 text-sm">What would you like to do today?</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <StandardButton
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/proposals"
-                >
-                  <CheckBadgeIcon className="w-4 h-4" />
-                  Propose
-                </StandardButton>
-                <StandardButton
-                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/launchpad"
-                >
-                  <RocketLaunchIcon className="w-4 h-4" />
-                  Launch
-                </StandardButton>
-                <StandardButton
-                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/team"
-                >
-                  <UserGroupIcon className="w-4 h-4" />
-                  Join Team
-                </StandardButton>
-                <StandardButton
-                  className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white py-3 rounded-xl font-medium transition-all duration-200 w-full h-12 flex items-center justify-center text-sm gap-1 whitespace-nowrap"
-                  link="/marketplace"
-                >
-                  <ShoppingBagIcon className="w-4 h-4" />
-                  Shop
-                </StandardButton>
-              </div>
-            </div>
-
-            {/* Activity Feed */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
-                <h3 className="text-xl font-bold text-white whitespace-nowrap">Recent Newsletters</h3>
-                <div className="flex gap-2 flex-shrink-0">
-                  <StandardButton
-                    className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
-                    link="/news"
-                  >
-                    View All
-                  </StandardButton>
-                  <StandardButton
-                    className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
-                    onClick={() => setNewsletterModalOpen(true)}
-                  >
-                    Subscribe
-                  </StandardButton>
-                  <StandardButton
-                    className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-sm px-4 py-2 rounded-lg transition-all whitespace-nowrap"
-                    link="/townhall"
-                  >
-                    Town Hall
-                  </StandardButton>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {newslettersLoading ? (
-                  <div className="text-center py-8">
-                    <div className="text-white/60">Loading newsletters...</div>
-                  </div>
-                ) : clientNewsletters && clientNewsletters.length > 0 ? (
-                  clientNewsletters.slice(0, 4).map((newsletter: any, index: number) => (
-                    <div
-                      key={newsletter.id || index}
-                      className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer border border-white/5"
-                      onClick={() => {
-                        if (
-                          newsletter.url &&
-                          newsletter.url !== 'https://news.moondao.com/posts' &&
-                          newsletter.url !== 'https://moondao.kit.com/posts' &&
-                          newsletter.url.includes('http')
-                        ) {
-                          window.open(newsletter.url, '_blank')
-                        } else {
-                          window.open('https://news.moondao.com/posts', '_blank')
-                        }
-                      }}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-blue-600">
-                          {newsletter.image ? (
-                            <IPFSRenderer
-                              src={newsletter.image}
-                              alt={newsletter.title}
-                              className="w-full h-full object-cover"
-                              width={100}
-                              height={100}
-                            />
-                          ) : (
-                            <NewspaperIcon className="w-6 h-6 text-white" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-white font-medium mb-1">
-                            {newsletter.title || 'Newsletter Update'}
-                          </p>
-                          {newsletter.description && (
-                            <p className="text-gray-300 text-sm mb-2 line-clamp-2">
-                              {newsletter.description}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-4 text-sm text-gray-400">
-                            <span>
-                              {newsletter.publishedAt
-                                ? new Date(newsletter.publishedAt).toLocaleDateString()
-                                : 'Recently'}
-                            </span>
-                            {newsletter.views && newsletter.views > 0 && (
-                              <>
-                                <span>•</span>
-                                <span>{newsletter.views} recipients</span>
-                              </>
-                            )}
-                            {newsletter.readTime && (
-                              <>
-                                <span>•</span>
-                                <span>{newsletter.readTime} min read</span>
-                              </>
-                            )}
-                            {newsletter.isArchived && (
-                              <>
-                                <span>•</span>
-                                <span className="text-orange-400">Archive</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div
-                          className="text-gray-400 hover:text-white transition-colors"
-                          title="Click to view newsletter"
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-16 min-h-[300px] flex flex-col justify-center">
-                    <NewspaperIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-                    <p className="text-gray-400 text-sm">No newsletters available</p>
-                    <p className="text-gray-500 text-xs mt-1">Check back soon for updates</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Active Proposals Card */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow order-4">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">Latest Proposals</h3>
-                <StandardButton
-                  className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm px-4 py-2 rounded-lg transition-all"
-                  link="/governance"
-                >
-                  View All
-                </StandardButton>
-              </div>
-
-              <ProposalList noPagination compact proposalLimit={2} />
-            </div>
-          </div>
-
-          {/* Right Sidebar - Community & Stats */}
-          <div className="lg:col-span-3 flex flex-col space-y-4 h-full min-h-[800px] order-4 lg:order-3">
-            {/* Wallet Info Card */}
-            {address && (
-              <WalletInfoCard
-                unlockedMooney={MOONEYBalance || 0}
-                lockedMooney={lockedMooneyAmount || 0}
-                isUnlockedLoading={false}
-                isLockedLoading={isLoadingLockedMooney}
-                setSendModalEnabled={setSendModalEnabled}
-              />
-            )}
-
-            {/* Retroactive Rewards Section - Moved from left sidebar */}
-            {address && <ClaimRewardsSection />}
-
-            {/* Open Jobs */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex-grow">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-white text-lg">Open Jobs</h3>
-                <StandardButton
-                  className="text-blue-300 text-sm hover:text-blue-200 transition-all"
-                  link="/jobs"
-                >
-                  See all
-                </StandardButton>
-              </div>
-
-              <div className="space-y-3 h-full overflow-y-auto">
-                {newestJobs && newestJobs.length > 0 ? (
-                  <Link href={newestJobs[0]?.contactInfo || '/jobs'} className="block">
-                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                      <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
-                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                          <BriefcaseIcon className="w-5 h-5" />
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-sm truncate">
-                          {newestJobs[0]?.title}
-                        </h4>
-                        <p className="text-gray-400 text-xs">
-                          {newestJobs.length > 1
-                            ? `+${newestJobs.length - 1} more positions`
-                            : 'Click to apply'}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ) : (
-                  <Link href="/jobs" className="block">
-                    <div className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all cursor-pointer">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">
-                        <BriefcaseIcon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm">No open positions</h4>
-                        <p className="text-gray-400 text-xs">Check back soon for opportunities</p>
-                      </div>
-                    </div>
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Quests Section */}
         <div className="flex-grow order-5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
