@@ -77,6 +77,22 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         maxLength={bytesOfString(citizenData?.twitter) >= 1024 ? citizenData?.twitter.length : 1024}
       />
       <Input
+        id="citizen-instagram-input"
+        label="Instagram"
+        value={citizenData?.instagram}
+        onChange={(e) => setCitizenData((prev: any) => ({ ...prev, instagram: e.target.value }))}
+        placeholder="Enter your Instagram link including https://"
+        maxLength={bytesOfString(citizenData?.instagram) >= 1024 ? citizenData?.instagram.length : 1024}
+      />
+      <Input
+        id="citizen-linkedin-input"
+        label="LinkedIn"
+        value={citizenData?.linkedin}
+        onChange={(e) => setCitizenData((prev: any) => ({ ...prev, linkedin: e.target.value }))}
+        placeholder="Enter your LinkedIn link including https://"
+        maxLength={bytesOfString(citizenData?.linkedin) >= 1024 ? citizenData?.linkedin.length : 1024}
+      />
+      <Input
         id="citizen-website-input"
         label="Website"
         value={citizenData?.website}
@@ -158,6 +174,8 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
         discord: getAttribute(nft.metadata.attributes, 'discord').value,
         twitter: getAttribute(nft.metadata.attributes, 'twitter').value,
         website: getAttribute(nft.metadata.attributes, 'website').value,
+        instagram: getAttribute(nft.metadata.attributes, 'instagram').value,
+        linkedin: getAttribute(nft.metadata.attributes, 'linkedin').value,
         view: 'public',
       }
     })
@@ -342,6 +360,12 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                   const formattedCitizenTwitter = cleanedCitizenData.twitter
                     ? addHttpsIfMissing(cleanedCitizenData.twitter)
                     : ''
+                  const formattedCitizenInstagram = cleanedCitizenData.instagram
+                    ? addHttpsIfMissing(cleanedCitizenData.instagram)
+                    : ''
+                  const formattedCitizenLinkedin = cleanedCitizenData.linkedin
+                    ? addHttpsIfMissing(cleanedCitizenData.linkedin)
+                    : ''
                   const formattedCitizenWebsite = cleanedCitizenData.website
                     ? addHttpsIfMissing(cleanedCitizenData.website)
                     : ''
@@ -364,6 +388,8 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                         'discord',
                         'twitter',
                         'website',
+                        'instagram',
+                        'linkedin',
                         'view',
                         'formId',
                       ],
@@ -375,6 +401,8 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                         formattedCitizenDiscord,
                         formattedCitizenTwitter,
                         formattedCitizenWebsite,
+                        formattedCitizenInstagram,
+                        formattedCitizenLinkedin,
                         cleanedCitizenData.view,
                         formResponseId,
                       ],

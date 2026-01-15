@@ -14,6 +14,14 @@
         "value": "https://twitter.com"
       },
       {
+        "trait_type": "instagram",
+        "value": "https://instagram.com"
+      },
+      {
+        "trait_type": "linkedin",
+        "value": "https://linkedin.com"
+      },
+      {
         "trait_type": "website",
         "value": "https://moondao.com"
       },

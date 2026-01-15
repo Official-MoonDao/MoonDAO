@@ -20,6 +20,8 @@ export type CitizenRow = {
   website: string
   discord: string
   twitter: string
+  instagram: string
+  linkedin: string
   view: string
   formId: string
   owner: string
@@ -72,6 +74,8 @@ export function citizenRowToNFT(row: CitizenRow | Record<string, unknown>) {
     website,
     discord,
     twitter,
+    instagram,
+    linkedin,
     view,
     formId,
     owner,
@@ -97,6 +101,8 @@ export function citizenRowToNFT(row: CitizenRow | Record<string, unknown>) {
         { trait_type: 'website', value: website || '' },
         { trait_type: 'discord', value: discord || '' },
         { trait_type: 'twitter', value: twitter || '' },
+        { trait_type: 'instagram', value: instagram || '' },
+        { trait_type: 'linkedin', value: linkedin || '' },
         { trait_type: 'view', value: view || '' },
         { trait_type: 'formId', value: formId || '' },
       ] as unknown as Record<string, unknown>,
