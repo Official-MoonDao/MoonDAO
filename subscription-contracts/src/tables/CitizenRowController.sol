@@ -73,8 +73,8 @@ contract CitizenRowController is TablelandController, Ownable {
         );
 
 
-        string[] memory updatableColumns = new string[](9);
-        // string[9] memory updatableColumns = ["name", "description", "image", "location", "discord", "twitter", "website", "view", "formId", "owner"];
+        string[] memory updatableColumns = new string[](12);
+        // string[12] memory updatableColumns = ["name", "description", "image", "location", "discord", "twitter", "website", "instagram", "linkedin", "view", "formId", "owner"];
         updatableColumns[0] = "name";
         updatableColumns[1] = "description";
         updatableColumns[2] = "image";
@@ -82,9 +82,11 @@ contract CitizenRowController is TablelandController, Ownable {
         updatableColumns[4] = "discord";
         updatableColumns[5] = "twitter";
         updatableColumns[6] = "website";
-        updatableColumns[7] = "view";
-        updatableColumns[8] = "formId";
-        updatableColumns[9] = "owner";
+        updatableColumns[7] = "instagram";
+        updatableColumns[8] = "linkedin";
+        updatableColumns[9] = "view";
+        updatableColumns[10] = "formId";
+        updatableColumns[11] = "owner";
 
         // Now, return the policy that gates by the WHERE clause & updatable columns
         return

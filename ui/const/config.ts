@@ -23,6 +23,8 @@ interface DeploymentConfig {
   MissionCreator: string
   UniswapV4Router: string
   MissionTable: string
+  CitizenTable: string
+  CitizenNFT: string
 }
 
 type Index = { [key: string]: string }
@@ -105,20 +107,16 @@ export const VMOONEY_ADDRESSES: Index = {
   'base-sepolia-testnet': baseSepoliaConfig.vMOONEYToken,
 }
 
-export const CITIZEN_NFT_ADDRESSES: Index = {
-  ethereum: '',
-  polygon: '0xE8013d1B68FA9faF5C78DE4823f7F076A854407A',
-}
-
+// TODO: This should really be named CITIZEN_NFT_ADDRESSES but we're keeping it for backwards compatibility
 export const CITIZEN_ADDRESSES: Index = {
-  arbitrum: '0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002',
-  sepolia: '0x48A0E8B6A86a05aeA3C544B7A9916F6FaFb88d8a',
+  arbitrum: arbitrumConfig.CitizenNFT,
+  sepolia: sepoliaConfig.CitizenNFT,
   'arbitrum-sepolia': '0x853d6B4BA61115810330c7837FDD24D61CBab855',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x0Eb1dF01b34cEDAFB3148f07D013793b557470d1',
-  sepolia: '0xbddE39D8b7098c9Dfb86b1fA91f7746f3Ff4dAcC',
+  arbitrum: arbitrumConfig.CitizenTable,
+  sepolia: sepoliaConfig.CitizenTable,
   'arbitrum-sepolia': '0xfF3F124D91D6eD6A47e1066473a78AaEde4c2fbe',
 }
 

@@ -34,6 +34,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         onChange={(e) => setCitizenData((prev: any) => ({ ...prev, name: e.target.value }))}
         placeholder="Enter your name"
         maxLength={100}
+        formatNumbers={false}
       />
       <Input
         id="citizen-bio-input"
@@ -49,6 +50,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         maxLength={
           bytesOfString(citizenData?.description) >= 1024 ? citizenData?.description.length : 1024
         }
+        formatNumbers={false}
       />
       <Input
         id="citizen-location-input"
@@ -59,6 +61,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         maxLength={
           bytesOfString(citizenData?.location) >= 1024 ? citizenData?.location.length : 1024
         }
+        formatNumbers={false}
       />
       <Input
         id="citizen-discord-input"
@@ -67,6 +70,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         onChange={(e) => setCitizenData((prev: any) => ({ ...prev, discord: e.target.value }))}
         placeholder="Enter your discord username"
         maxLength={bytesOfString(citizenData?.discord) >= 1024 ? citizenData?.discord.length : 1024}
+        formatNumbers={false}
       />
       <Input
         id="citizen-twitter-input"
@@ -75,6 +79,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         onChange={(e) => setCitizenData((prev: any) => ({ ...prev, twitter: e.target.value }))}
         placeholder="Enter your Twitter link including https://"
         maxLength={bytesOfString(citizenData?.twitter) >= 1024 ? citizenData?.twitter.length : 1024}
+        formatNumbers={false}
       />
       <Input
         id="citizen-instagram-input"
@@ -83,6 +88,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         onChange={(e) => setCitizenData((prev: any) => ({ ...prev, instagram: e.target.value }))}
         placeholder="Enter your Instagram link including https://"
         maxLength={bytesOfString(citizenData?.instagram) >= 1024 ? citizenData?.instagram.length : 1024}
+        formatNumbers={false}
       />
       <Input
         id="citizen-linkedin-input"
@@ -91,6 +97,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         onChange={(e) => setCitizenData((prev: any) => ({ ...prev, linkedin: e.target.value }))}
         placeholder="Enter your LinkedIn link including https://"
         maxLength={bytesOfString(citizenData?.linkedin) >= 1024 ? citizenData?.linkedin.length : 1024}
+        formatNumbers={false}
       />
       <Input
         id="citizen-website-input"
@@ -99,6 +106,7 @@ function CitizenMetadataForm({ citizenData, setCitizenData }: any) {
         onChange={(e) => setCitizenData((prev: any) => ({ ...prev, website: e.target.value }))}
         placeholder="Enter your website link including https://"
         maxLength={bytesOfString(citizenData?.website) >= 1024 ? citizenData?.website.length : 1024}
+        formatNumbers={false}
       />
     </div>
   )
@@ -179,7 +187,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
         view: 'public',
       }
     })
-  }, [nft])
+  }, [nft?.metadata?.id])
 
   return (
     <Modal
@@ -408,7 +416,20 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                       ],
                     ],
                   })
-
+                  console.log(transaction)
+                  console.log([
+                    cleanedCitizenData.name,
+                    cleanedCitizenData.description,
+                    imageIpfsLink,
+                    JSON.stringify(cleanedLocationData),
+                    formattedCitizenDiscord,
+                    formattedCitizenTwitter,
+                    formattedCitizenWebsite,
+                    formattedCitizenInstagram,
+                    formattedCitizenLinkedin,
+                    cleanedCitizenData.view,
+                    formResponseId,
+                  ])
                   const receipt = await sendAndConfirmTransaction({
                     transaction,
                     account,

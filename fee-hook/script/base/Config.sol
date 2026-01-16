@@ -37,6 +37,9 @@ contract Config is Script {
     mapping(uint256 => address) public STARGATE_POOLS;
     mapping(uint256 => address) public MISSION_CREATOR_ADDRESSES;
     mapping(uint256 => address) public MISSION_TABLE_ADDRESSES;
+    mapping(uint256 => address) public CITIZEN_TABLE_ADDRESSES;
+    mapping(uint256 => address) public CITIZEN_NFT_ADDRESSES;
+    mapping(uint256 => address) public CITIZEN_ROW_CONTROLLER_ADDRESSES;
 
     // Juicebox contract addresses are shared across chains
     address constant JB_V5_MULTI_TERMINAL = address(0x2dB6d704058E552DeFE415753465df8dF0361846);
@@ -62,6 +65,12 @@ contract Config is Script {
 
         MOONDAO_TEAM_ADDRESSES[ARBITRUM] = arbJson.readAddress(".MoonDAOTeam");
         MOONDAO_TEAM_ADDRESSES[SEP] = sepJson.readAddress(".MoonDAOTeam");
+
+        CITIZEN_TABLE_ADDRESSES[ARBITRUM] = arbJson.readAddress(".CitizenTable");
+        CITIZEN_TABLE_ADDRESSES[SEP] = sepJson.readAddress(".CitizenTable");
+
+        CITIZEN_NFT_ADDRESSES[ARBITRUM] = arbJson.readAddress(".CitizenNFT");
+        CITIZEN_NFT_ADDRESSES[SEP] = sepJson.readAddress(".CitizenNFT");
 
         // vMOONEY doesn't exist on arbitrum-sepolia
         VMOONEY_ADDRESSES[ARBITRUM] = arbJson.readAddress(".vMOONEYToken");
