@@ -430,7 +430,7 @@ const ProjectsOverview: React.FC<{
                       </svg>
                     </div>
                     <h4 className="text-lg font-bold text-white mb-2">Max Budget/Project</h4>
-                    <p className="text-xl font-bold text-yellow-400">${MAX_BUDGET_ETH} ETH</p>
+                    <p className="text-xl font-bold text-yellow-400">{MAX_BUDGET_ETH} ETH</p>
                     <p className="text-sm text-yellow-300 mt-1">(20% of quarterly budget)</p>
                   </div>
 
