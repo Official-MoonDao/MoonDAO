@@ -39,7 +39,6 @@ contract Config is Script {
     mapping(uint256 => address) public MISSION_TABLE_ADDRESSES;
     mapping(uint256 => address) public CITIZEN_TABLE_ADDRESSES;
     mapping(uint256 => address) public CITIZEN_NFT_ADDRESSES;
-    mapping(uint256 => address) public CITIZEN_ROW_CONTROLLER_ADDRESSES;
 
     // Juicebox contract addresses are shared across chains
     address constant JB_V5_MULTI_TERMINAL = address(0x2dB6d704058E552DeFE415753465df8dF0361846);
