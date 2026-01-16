@@ -301,16 +301,16 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                       )}
                     </div>
                   </div>
-                  <div
-                    id="interactions-container"
-                    className="flex flex-col sm:flex-row items-start gap-4"
-                  >
+                    <div
+                      id="interactions-container"
+                      className="flex flex-col sm:flex-row flex-wrap items-stretch gap-4"
+                    >
                     {(discordLink && !discordLink.includes('/users/undefined')) ||
                     (socials && (socials.twitter || socials.website || socials.instagram || socials.linkedin)) ? (
-                      <div
-                        id="socials-container"
-                        className="flex items-center gap-3 bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12"
-                      >
+                        <div
+                          id="socials-container"
+                          className="flex flex-wrap items-center gap-3 bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 min-h-[52px]"
+                        >
                         {discordLink && !discordLink.includes('/users/undefined') && (
                           <Link
                             className="p-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors"
@@ -365,7 +365,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                     ) : null}
 
                     {citizen || isGuest ? (
-                      <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center">
+                      <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 flex items-center h-[52px]">
                         <Address address={isGuest ? address : nft.owner} />
                       </div>
                     ) : (
@@ -373,7 +373,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                     )}
 
                     {location !== '' && citizen && (
-                      <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-3 h-12 flex items-center gap-2">
+                      <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 flex items-center gap-2 h-[52px]">
                         <MapPinIcon
                           width={20}
                           height={20}
