@@ -1,8 +1,4 @@
-import {
-  PROJECT_SYSTEM_CONFIG,
-  NEXT_QUARTER_PROJECTS_BUDGET_ETH,
-  MAX_BUDGET_ETH,
-} from 'const/config'
+import { PROJECT_SYSTEM_CONFIG, NEXT_QUARTER_FUNDING_ETH, MAX_BUDGET_ETH } from 'const/config'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -20,7 +16,7 @@ export default function ProjectBanner() {
     return null
   }
 
-  const budgetDisplay = `${NEXT_QUARTER_PROJECTS_BUDGET_ETH} ETH`
+  const budgetDisplay = `${NEXT_QUARTER_FUNDING_ETH} ETH`
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-blue-900 via-purple-900 to-blue-900 text-white shadow-2xl border-t border-blue-700/50 backdrop-blur-sm">
