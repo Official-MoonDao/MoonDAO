@@ -1,37 +1,26 @@
-import { PROJECT_SYSTEM_CONFIG } from 'const/config'
+import {
+  PROJECT_SYSTEM_CONFIG,
+  NEXT_QUARTER_PROJECTS_BUDGET_ETH,
+  MAX_BUDGET_ETH,
+} from 'const/config'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 
 const PROJECT_PAGES = ['/projects-overview', '/projects', '/proposals', '/submit']
 
-interface ProjectBannerProps {
-  ethBudget?: number
-  usdBudget?: number
-}
-
-export default function ProjectBanner({ ethBudget, usdBudget }: ProjectBannerProps) {
+export default function ProjectBanner() {
   const router = useRouter()
   const [isVisible, setIsVisible] = useState(true)
 
   // Hide banner if user is on project-related pages
   const isOnProjectPage = PROJECT_PAGES.includes(router.pathname)
 
-  if (
-    !isVisible ||
-    isOnProjectPage ||
-    process.env.NEXT_PUBLIC_HIDE_PROJECT_BANNER === 'true'
-  ) {
+  if (!isVisible || isOnProjectPage || process.env.NEXT_PUBLIC_HIDE_PROJECT_BANNER === 'true') {
     return null
   }
 
-  const budgetDisplay = ethBudget != null && usdBudget != null
-    ? `${ethBudget.toFixed(2)} ETH ($${usdBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })})`
-    : '7.83 ETH'
-
-  const maxBudgetETH = ethBudget != null
-    ? (ethBudget * PROJECT_SYSTEM_CONFIG.maxBudgetPercentage).toFixed(2)
-    : '2.08'
+  const budgetDisplay = `${NEXT_QUARTER_PROJECTS_BUDGET_ETH} ETH`
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-blue-900 via-purple-900 to-blue-900 text-white shadow-2xl border-t border-blue-700/50 backdrop-blur-sm">
@@ -80,7 +69,7 @@ export default function ProjectBanner({ ethBudget, usdBudget }: ProjectBannerPro
                 </span>
                 <span className="mx-1 sm:mx-2">•</span>
                 <span className="text-xs sm:text-sm text-blue-200">
-                  Max per project: {maxBudgetETH} ETH
+                  Max per project: {MAX_BUDGET_ETH} ETH
                 </span>
               </span>
               {/* Duplicate for seamless loop */}
@@ -98,7 +87,7 @@ export default function ProjectBanner({ ethBudget, usdBudget }: ProjectBannerPro
                 </span>
                 <span className="mx-1 sm:mx-2">•</span>
                 <span className="text-xs sm:text-sm text-blue-200">
-                  Max per project: {maxBudgetETH} ETH
+                  Max per project: {MAX_BUDGET_ETH} ETH
                 </span>
               </span>
             </div>
