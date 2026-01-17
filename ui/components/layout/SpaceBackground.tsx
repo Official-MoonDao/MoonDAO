@@ -467,6 +467,7 @@ export default function SpaceBackground() {
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      if (!e.key) return
       const key = e.key.toLowerCase()
 
       if (key.length === 1 && /[a-z]/.test(key)) {
