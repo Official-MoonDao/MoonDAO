@@ -220,10 +220,14 @@ export default function ProjectProfile({
           />
         }
       >
-        <div
-          id="page-container"
-          className="flex flex-col gap-6 p-6 md:p-8 max-w-[1200px]"
-        >
+        <div id="page-container" className="flex flex-col gap-6 p-6 md:p-8 max-w-[1200px]">
+          {finalReportMarkdown && (
+            <SectionCard header="Final Report" iconSrc="/assets/icon-star.svg">
+              <div className="prose prose-invert max-w-none">
+                <MarkdownWithTOC body={finalReportMarkdown} />
+              </div>
+            </SectionCard>
+          )}
           {/* Project Overview */}
           <SectionCard
             header="Proposal"
@@ -274,13 +278,6 @@ export default function ProjectProfile({
               </div>
             </div>
           </SectionCard>
-          {finalReportMarkdown && (
-            <SectionCard header="Final Report" iconSrc="/assets/icon-star.svg">
-              <div className="prose prose-invert max-w-none">
-                <MarkdownWithTOC body={finalReportMarkdown} />
-              </div>
-            </SectionCard>
-          )}
 
           <SectionCard
             header="Meet the Team"
@@ -315,10 +312,7 @@ export default function ProjectProfile({
               </div>
             </SlidingCardMenu>
           </SectionCard>
-          <SectionCard
-            header="Treasury"
-            iconSrc="/assets/icon-treasury.svg"
-          >
+          <SectionCard header="Treasury" iconSrc="/assets/icon-treasury.svg">
             <TeamTreasury
               isSigner={isSigner}
               safeData={safeData}

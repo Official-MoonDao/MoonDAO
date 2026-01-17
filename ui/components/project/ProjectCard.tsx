@@ -120,7 +120,11 @@ const ProjectCardContent = memo(
                   {isMembershipDataLoading ? 'Checking...' : 'Contributed'}
                 </p>
                 {isMembershipDataLoading && (
-                  <LoadingSpinner width="w-4" height="h-4" className="text-gray-400 border-gray-400 border-t-transparent mt-1" />
+                  <LoadingSpinner
+                    width="w-4"
+                    height="h-4"
+                    className="text-gray-400 border-gray-400 border-t-transparent mt-1"
+                  />
                 )}
               </div>
             ) : (
@@ -139,7 +143,7 @@ const ProjectCardContent = memo(
             ))}
           {!distribute && isVotingPeriod && (
             <div className="flex flex-col items-end">
-              <p className="text-gray-400 text-sm">Not Eligible</p>
+              <p className="text-gray-400 text-sm">Ineligible</p>
             </div>
           )}
         </div>
