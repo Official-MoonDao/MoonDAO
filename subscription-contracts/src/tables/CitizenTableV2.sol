@@ -76,7 +76,7 @@ contract MoonDAOCitizenTable is ERC721Holder, Ownable {
     }
 
     // Let anyone insert into the table
-    function insertIntoTable(uint256 id, string memory name, string memory description, string memory image, string memory location, string memory discord, string memory twitter, string memory website, string memory _view, string memory formId, address owner) external onlyOperators {
+    function insertIntoTable(uint256 id, string memory name, string memory description, string memory image, string memory location, string memory discord, string memory twitter, string memory instagram, string memory linkedin, string memory website, string memory _view, string memory formId, address owner) external onlyOperators {
         string memory setters = string.concat(
             string.concat(
                 Strings.toString(id),
@@ -94,6 +94,10 @@ contract MoonDAOCitizenTable is ERC721Holder, Ownable {
             ",",
             SQLHelpers.quote(twitter),
             ",",
+            SQLHelpers.quote(instagram),
+            ",",
+            SQLHelpers.quote(linkedin),
+            ",",
             SQLHelpers.quote(website),
             ",",
             SQLHelpers.quote(_view),
@@ -109,7 +113,7 @@ contract MoonDAOCitizenTable is ERC721Holder, Ownable {
             SQLHelpers.toInsert(
                 _TABLE_PREFIX,
                 _tableId,
-                "id,name,description,image,location,discord,twitter,website,view,formId,owner",
+                "id,name,description,image,location,discord,twitter,instagram,linkedin,website,view,formId,owner",
                 setters
             )
         );

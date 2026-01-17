@@ -23,6 +23,8 @@ interface DeploymentConfig {
   MissionCreator: string
   UniswapV4Router: string
   MissionTable: string
+  CitizenTable: string
+  CitizenNFT: string
 }
 
 type Index = { [key: string]: string }
@@ -105,20 +107,16 @@ export const VMOONEY_ADDRESSES: Index = {
   'base-sepolia-testnet': baseSepoliaConfig.vMOONEYToken,
 }
 
-export const CITIZEN_NFT_ADDRESSES: Index = {
-  ethereum: '',
-  polygon: '0xE8013d1B68FA9faF5C78DE4823f7F076A854407A',
-}
-
+// TODO: This should really be named CITIZEN_NFT_ADDRESSES but we're keeping it for backwards compatibility
 export const CITIZEN_ADDRESSES: Index = {
-  arbitrum: '0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002',
-  sepolia: '0x48A0E8B6A86a05aeA3C544B7A9916F6FaFb88d8a',
+  arbitrum: arbitrumConfig.CitizenNFT,
+  sepolia: sepoliaConfig.CitizenNFT,
   'arbitrum-sepolia': '0x853d6B4BA61115810330c7837FDD24D61CBab855',
 }
 
 export const CITIZEN_TABLE_ADDRESSES: Index = {
-  arbitrum: '0x0Eb1dF01b34cEDAFB3148f07D013793b557470d1',
-  sepolia: '0xbddE39D8b7098c9Dfb86b1fA91f7746f3Ff4dAcC',
+  arbitrum: arbitrumConfig.CitizenTable,
+  sepolia: sepoliaConfig.CitizenTable,
   'arbitrum-sepolia': '0xfF3F124D91D6eD6A47e1066473a78AaEde4c2fbe',
 }
 
@@ -211,7 +209,7 @@ export const CITIZEN_DISCOUNTLIST_ADDRESSES: Index = {
 }
 
 export const CITIZEN_ROW_CONTROLLER_ADDRESSES: Index = {
-  arbitrum: '0x614a00807b1e589E17b5dD2F805906e529Ae686e',
+  arbitrum: '0xC27f44B81057242140DB1a4eE4ADf02b1E193C87',
   sepolia: '0x80620708C104633Ca9Ae6cbCb0768F66d9b13E25',
   'arbitrum-sepolia': '0x18A0f907575b0387CcFEaa40e694FF1E83Fe5F18',
 }
@@ -539,4 +537,23 @@ export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
 export const FREE_MINT_THRESHOLD = 1e16
 
 export const EB_TEAM_ID = '0'
-export const NEXT_ETH_BUDGET = 11.60
+
+// Project System Configuration
+export const PROJECT_SYSTEM_CONFIG = {
+  // Q1 2026 deadline - second Thursday of the quarter
+  submissionDeadline: 'January 15, 2026',
+  // Maximum budget per project is 1/5 (20%) of quarterly budget
+  maxBudgetPercentage: 0.2,
+  // Approval timeline details
+  senateReviewDays: 1, // Senate reviews the day after submission
+  editingDeadline: 'January 22, 2026', // 48 hours before third Thursday
+  votingDate: 'January 22, 2026', // Third Thursday of quarter
+  // Submission link
+  submissionUrl: 'https://moondao.com/propose',
+  // Documentation link
+  docsUrl: 'https://docs.moondao.com/Projects/Project-System',
+  // Total quarterly budget is displayed dynamically on the page
+}
+
+// Quarterly budget in ETH
+export const NEXT_ETH_BUDGET = 7.83

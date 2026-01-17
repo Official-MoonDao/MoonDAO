@@ -26,8 +26,7 @@ module.exports = withBundleAnalyzer(
       reactStrictMode: true,
       swcMinify: true,
       compiler: {
-        removeConsole:
-          process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+        removeConsole: false,
       },
       experimental: {
         serverComponentsExternalPackages: ['thirdweb'],
@@ -134,11 +133,6 @@ module.exports = withBundleAnalyzer(
           {
             source: '/docs/contribute',
             destination: 'https://docs.moondao.com/Onboarding/Contribute',
-            permanent: true,
-          },
-          {
-            source: '/get-mooney',
-            destination: '/mooney',
             permanent: true,
           },
           {

@@ -34,13 +34,15 @@ contract MyScript is Script {
 
         citizenTable.setCitizenAddress(address(citizen));
 
-        string[] memory attributes = new string[](6);
+        string[] memory attributes = new string[](8);
         attributes[0] = "location";
         attributes[1] = "discord";
         attributes[2] = "twitter";
-        attributes[3] = "website";
-        attributes[4] = "view";
-        attributes[5] = "formId";
+        attributes[3] = "instagram";
+        attributes[4] = "linkedin";
+        attributes[5] = "website";
+        attributes[6] = "view";
+        attributes[7] = "formId";
 
         string memory uriTemplate = citizenTable.generateURITemplate(attributes);
         citizen.setURITemplate(uriTemplate);

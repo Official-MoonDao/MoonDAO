@@ -1,5 +1,8 @@
+'use client'
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { JBProjectProvider } from 'juice-sdk-react'
+import { useState, useEffect } from 'react'
 import { createConfig, http, WagmiProvider } from 'wagmi'
 import { mainnet, arbitrum, base, sepolia } from 'wagmi/chains'
 import {
@@ -35,6 +38,16 @@ export default function JuiceProviders({
   selectedChain: any
   children: React.ReactNode
 }) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return <>{children}</>
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <WagmiProvider config={wagmiConfig}>
