@@ -27,6 +27,7 @@ import useAccount from '@/lib/nance/useAccountAddress'
 import { useSignProposal } from '@/lib/nance/useSignProposal'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { classNames } from '@/lib/utils/tailwind'
+import { withTimeout, TimeoutError } from '@/lib/utils/promise-timeout'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
@@ -241,86 +242,132 @@ export default function ProposalEditor() {
       nextSnapshotVote,
     })
 
-    signProposalAsync(proposal, preTitle, nextSnapshotVote)
+    // Wrap signing with 90-second timeout
+    withTimeout(
+      signProposalAsync(proposal, preTitle, nextSnapshotVote),
+      90000,
+      'Signature request timed out after 90 seconds. Please try again.'
+    )
       .then((res) => {
         console.log('signAndSendProposal: Signature received', {
           hasSignature: !!res.signature,
           hasMessage: !!res.message,
           address: res.address,
         })
-        const { signature, message, address } = res
-        trigger({
-          proposal,
-          envelope: {
-            type: 'SnapshotSubmitProposal',
-            address,
-            signature,
-            message,
-          },
+        
+        toast.dismiss(t)
+        const uploadToast = toast.loading('Uploading proposal...', {
+          style: toastStyle,
         })
-          .then(async (res) => {
-            console.log('signAndSendProposal: Upload response', res)
-            if (res.success) {
-              setSigningStatus('success')
-              clearProposalCache()
-              toast.dismiss(t)
-              toast.success('Proposal submitted successfully!', {
-                style: toastStyle,
-              })
-              // Show CTA instead of immediate redirect
-              setSubmittedProposalId(proposalId?.toString())
-              setShowSubmissionCTA(true)
 
-              // Send Discord notification
-              try {
-                const { getAccessToken } = await import('@privy-io/react-auth')
-                const accessToken = await getAccessToken()
-
-                const notificationResponse = await fetch(
-                  '/api/proposal/new-proposal-notification',
-                  {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      proposalId: res.data.uuid,
-                      accessToken: accessToken,
-                      selectedWallet: selectedWallet,
-                    }),
-                  }
-                )
-
-                const notificationData = await notificationResponse.json()
-                if (notificationData?.message) {
-                  console.log('Notification result:', notificationData.message)
-                }
-              } catch (notificationError: any) {
-                console.error('Failed to send notification:', notificationError)
-                // Don't block the user experience if notification fails
-              }
-            } else {
-              console.error('signAndSendProposal: Upload failed', res)
-              setSigningStatus('error')
-              toast.dismiss(t)
-              toast.error(`Error saving proposal: ${res.error || 'Unknown error'}`, {
-                style: toastStyle,
-              })
-            }
-          })
-          .catch((error) => {
-            console.error('signAndSendProposal: Upload error', error)
-            setSigningStatus('error')
-            toast.dismiss(t)
-            toast.error(`[API] Error submitting proposal:\n${error.message || error}`, {
+        const { signature, message, address } = res
+        
+        // Wrap API upload with 30-second timeout
+        return withTimeout(
+          trigger({
+            proposal,
+            envelope: {
+              type: 'SnapshotSubmitProposal',
+              address,
+              signature,
+              message,
+            },
+          }),
+          30000,
+          'Proposal upload timed out after 30 seconds. Please try again.'
+        ).then(async (res) => {
+          console.log('signAndSendProposal: Upload response', res)
+          if (res.success) {
+            setSigningStatus('success')
+            clearProposalCache()
+            toast.dismiss(uploadToast)
+            toast.success('Proposal submitted successfully!', {
               style: toastStyle,
             })
-          })
+            // Show CTA instead of immediate redirect
+            setSubmittedProposalId(proposalId?.toString())
+            setShowSubmissionCTA(true)
+
+            // Send Discord notification
+            try {
+              const { getAccessToken } = await import('@privy-io/react-auth')
+              const accessToken = await getAccessToken()
+
+              const notificationResponse = await fetch(
+                '/api/proposal/new-proposal-notification',
+                {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    proposalId: res.data.uuid,
+                    accessToken: accessToken,
+                    selectedWallet: selectedWallet,
+                  }),
+                }
+              )
+
+              const notificationData = await notificationResponse.json()
+              if (notificationData?.message) {
+                console.log('Notification result:', notificationData.message)
+              }
+            } catch (notificationError: any) {
+              console.error('Failed to send notification:', notificationError)
+              // Don't block the user experience if notification fails
+            }
+          } else {
+            console.error('signAndSendProposal: Upload failed', res)
+            setSigningStatus('error')
+            toast.dismiss(uploadToast)
+            toast.error(`Error saving proposal: ${res.error || 'Unknown error'}`, {
+              style: toastStyle,
+            })
+          }
+        }).catch((error) => {
+          console.error('signAndSendProposal: Upload error', error)
+          setSigningStatus('error')
+          toast.dismiss(uploadToast)
+          
+          if (error instanceof TimeoutError) {
+            toast.error('Upload timed out. Please check your connection and try again.', {
+              style: toastStyle,
+              duration: 5000,
+            })
+          } else {
+            toast.error(`Error submitting proposal: ${error.message || error}`, {
+              style: toastStyle,
+            })
+          }
+        })
       })
       .catch((error) => {
         console.error('signAndSendProposal: Signing error', error)
         setSigningStatus('idle')
         toast.dismiss(t)
-        toast.error(`[Wallet] Error signing proposal:\n${error.message || error}`, {
-          style: toastStyle,
-        })
+        
+        if (error instanceof TimeoutError) {
+          toast.error(
+            'Signature request timed out. Please make sure your wallet is open and try again.',
+            {
+              style: toastStyle,
+              duration: 5000,
+            }
+          )
+        } else if (error.message?.includes('rejected') || error.message?.includes('User rejected')) {
+          toast.error('Signature was rejected. Please try again when ready.', {
+            style: toastStyle,
+          })
+        } else if (error.message?.includes('not support')) {
+          toast.error(
+            'Your wallet does not support the required signing method. Please try a different wallet.',
+            {
+              style: toastStyle,
+              duration: 7000,
+            }
+          )
+        } else {
+          toast.error(`Error signing proposal: ${error.message || error}`, {
+            style: toastStyle,
+          })
+        }
       })
   }
 
