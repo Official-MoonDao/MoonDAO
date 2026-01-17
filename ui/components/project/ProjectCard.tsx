@@ -1,14 +1,19 @@
 //This component dipslays a project card using project data directly from tableland
+import { usePrivy } from '@privy-io/react-auth'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import Link from 'next/link'
 import React, { useContext, memo, useState, useMemo, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
-import { usePrivy } from '@privy-io/react-auth'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
+import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
+import useProposalJSON from '@/lib/nance/useProposalJSON'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { normalizeJsonString } from '@/lib/utils/rewards'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 import NumberStepper from '../layout/NumberStepper'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import StandardButton from '../layout/StandardButton'
@@ -23,6 +28,7 @@ type ProjectCardProps = {
   handleDistributionChange?: (projectId: string, value: number) => void
   userHasVotingPower?: any
   isVotingPeriod?: boolean
+  active?: boolean
 }
 
 const ProjectCardContent = memo(
@@ -30,18 +36,17 @@ const ProjectCardContent = memo(
     project,
     distribution,
     handleDistributionChange,
-    proposalJSON,
     distribute,
     userContributed,
     userHasVotingPower,
     isMembershipDataLoading,
     isVotingPeriod,
+    active,
   }: any) => {
-    const [isExpanded, setIsExpanded] = useState(false)
+    const proposalJSON = useProposalJSON(project)
+    const account = useActiveAccount()
     const description =
-      project && project.MDP < 13
-        ? project.description
-        : proposalJSON?.abstract || project?.description || ''
+      project && project.MDP < 13 ? project.description : project?.description || ''
 
     // Set character limits that better match the new card height
     const [characterLimit, setCharacterLimit] = useState(380)
@@ -61,25 +66,36 @@ const ProjectCardContent = memo(
       }
     }, [])
 
-    const isLongText = description.length > characterLimit
-    const shouldTruncate = isLongText && !isExpanded
-    const truncatedDescription = shouldTruncate
-      ? description.slice(0, characterLimit) + '...'
-      : description
-
     return (
       <div
         id="card-container"
-        className="p-6 pb-6 flex flex-col gap-3 relative w-full h-[280px] min-h-[280px] max-h-[280px] overflow-hidden bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg transition-all duration-300 hover:bg-gradient-to-br hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl hover:scale-[1.02]"
+        className="p-6 pb-6 flex flex-col gap-3 relative w-full h-[200px] max-h-[200px] overflow-hidden bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg transition-all duration-300 hover:bg-gradient-to-br hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl hover:scale-[1.02]"
       >
         <div className="flex justify-between items-start">
           <div className="w-full flex flex-col gap-3">
             <Link href={`/project/${project?.id}`} passHref>
-              <h1 className="font-GoodTimes text-white text-xl hover:text-moon-gold transition-colors cursor-pointer">
-                {project?.name || ''}
-              </h1>
+              <div className="flex justify-between items-start">
+                <h4 className="font-bold text-white leading-tight">{project?.name || ''}</h4>
+                <span
+                  className={`mr-4 px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
+                    project.active == PROJECT_ACTIVE
+                      ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                      : project.active == PROJECT_PENDING
+                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                      : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                  }`}
+                >
+                  {proposalJSON?.nonProjectProposal
+                    ? 'Non-project Proposal'
+                    : project.active == PROJECT_ACTIVE
+                    ? 'Active'
+                    : project.active == PROJECT_PENDING
+                    ? `Budget: ${proposalJSON?.ethBudget} ETH`
+                    : 'Inactive'}
+                </span>
+              </div>
             </Link>
-            {project?.finalReportLink || project?.finalReportIPFS ? (
+            {(project?.finalReportLink || project?.finalReportIPFS) && (
               <StandardButton
                 className={`bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-fit text-sm px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${
                   distribute && 'mr-4'
@@ -95,10 +111,6 @@ const ProjectCardContent = memo(
               >
                 <p className="text-sm font-medium">📋 Final Report</p>
               </StandardButton>
-            ) : (
-              <div className="px-3 py-2 bg-green-600/20 border border-green-500/30 rounded-lg">
-                <p className="text-sm text-green-400 font-medium">🚀 Active Project</p>
-              </div>
             )}
           </div>
           {distribute &&
@@ -139,40 +151,16 @@ const ProjectCardContent = memo(
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="pr-2 break-words flex-1 flex flex-col justify-between">
             <div className="description-container flex-1 overflow-hidden min-h-[80px] max-h-[140px]">
-              <ReactMarkdown
-                components={{
-                  p: ({ node, ...props }) => (
-                    <p
-                      className="font-Lato text-[15px] text-gray-200 break-words m-0 leading-relaxed mb-2"
-                      {...props}
-                    />
-                  ),
-                  a: ({ node, ...props }) => (
-                    <a
-                      className="font-Lato text-[14px] text-blue-400 hover:text-blue-300 underline transition-colors"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      {...props}
-                    />
-                  ),
-                }}
-              >
-                {shouldTruncate ? truncatedDescription : description}
-              </ReactMarkdown>
+              <p className="text-green-100 text-sm leading-relaxed flex-1 overflow-hidden line-clamp-6">
+                {project.description?.length > characterLimit
+                  ? `${project.description.substring(0, characterLimit)}...`
+                  : project.description || 'No description available'}
+              </p>
             </div>
-            <div className="flex-shrink-0 mt-3 min-h-[28px] pb-1">
-              {isLongText && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setIsExpanded(!isExpanded)
-                  }}
-                  className="text-blue-400 hover:text-blue-300 text-sm underline transition-colors font-medium"
-                >
-                  {isExpanded ? '↑ Read less' : '↓ Read more'}
-                </button>
-              )}
+            <div className="mt-4 pt-4 border-t border-green-500/10 flex-shrink-0">
+              <div className="text-green-300 text-xs font-medium hover:text-green-200 transition-colors">
+                Click to view details →
+              </div>
             </div>
           </div>
         </div>
@@ -191,11 +179,12 @@ export default function ProjectCard({
   handleDistributionChange,
   userHasVotingPower,
   isVotingPeriod,
+  active,
 }: ProjectCardProps) {
   const account = useActiveAccount()
   const address = account?.address
 
-  const { adminHatId, proposalJSON } = useProjectData(projectContract, hatsContract, project)
+  const { adminHatId } = useProjectData(projectContract, hatsContract, project)
   const { authenticated } = usePrivy()
 
   const { selectedChain } = useContext(ChainContextV5)
@@ -254,22 +243,22 @@ export default function ProjectCard({
       {distribute ? (
         <ProjectCardContent
           project={project}
-          distribute={distribute && (project!.finalReportLink || project!.finalReportIPFS)}
+          distribute={distribute}
           userContributed={userContributed}
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}
-          proposalJSON={proposalJSON}
           userHasVotingPower={userHasVotingPower}
           isMembershipDataLoading={isMembershipDataLoading}
           isVotingPeriod={isVotingPeriod}
+          active={active}
         />
       ) : (
         <Link href={`/project/${project?.id}`} passHref>
           <ProjectCardContent
             project={project}
-            proposalJSON={proposalJSON}
             userHasVotingPower={userHasVotingPower}
             isVotingPeriod={isVotingPeriod}
+            active={active}
           />
         </Link>
       )}

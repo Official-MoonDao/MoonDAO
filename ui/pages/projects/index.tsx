@@ -1,6 +1,9 @@
 import { DEFAULT_CHAIN_V5, PROJECT_TABLE_NAMES, DISTRIBUTION_TABLE_NAMES } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
+import { getContract, readContract } from 'thirdweb'
+import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
+import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -8,6 +11,7 @@ import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
 import { ProjectRewards, ProjectRewardsProps } from '@/components/nance/ProjectRewards'
 
 export default function Projects({
+  proposals,
   currentProjects,
   pastProjects,
   distributions,
@@ -16,6 +20,7 @@ export default function Projects({
   useChainDefault()
   return (
     <ProjectRewards
+      proposals={proposals}
       currentProjects={currentProjects}
       pastProjects={pastProjects}
       distributions={distributions}
@@ -34,18 +39,25 @@ export async function getStaticProps() {
     const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
     const projects = (await queryTable(chain, projectStatement)) || []
 
-    const currentProjects = []
-    const pastProjects = []
-    for (let i = 0; i < projects.length; i++) {
-      if (projects[i] && !BLOCKED_PROJECTS.has(projects[i].id)) {
-        const current = projects[i].active
-        if (!current) {
-          pastProjects.push(projects[i])
+    const proposals: Project[] = []
+    const currentProjects: Project[] = []
+    const pastProjects: Project[] = []
+    projects.forEach(async (project: Project) => {
+      if (!BLOCKED_PROJECTS.has(project.id)) {
+        const activeStatus = project.active
+        if (activeStatus == PROJECT_PENDING) {
+          const proposalResponse = await fetch(project.proposalIPFS)
+          const proposalJSON = await proposalResponse.json()
+          if (!proposalJSON.nonProjectProposal) {
+            proposals.push(project)
+          }
+        } else if (activeStatus == PROJECT_ACTIVE) {
+          currentProjects.push(project)
         } else {
-          currentProjects.push(projects[i])
+          pastProjects.push(project)
         }
       }
-    }
+    })
     currentProjects.sort((a, b) => {
       if (a.eligible === b.eligible) {
         return 0
@@ -58,9 +70,10 @@ export async function getStaticProps() {
 
     return {
       props: {
-        currentProjects: JSON.parse(JSON.stringify(currentProjects.reverse())),
-        pastProjects: JSON.parse(JSON.stringify(pastProjects.reverse())),
-        distributions: JSON.parse(JSON.stringify(distributions)),
+        proposals: proposals.reverse(),
+        currentProjects: currentProjects.reverse(),
+        pastProjects: pastProjects.reverse(),
+        distributions,
       },
       revalidate: 60,
     }
@@ -68,6 +81,7 @@ export async function getStaticProps() {
     console.error('Error fetching projects or distributions:', error)
     return {
       props: {
+        proposals: [],
         currentProjects: [],
         pastProjects: [],
         distributions: [],

@@ -57,7 +57,7 @@ export const XP_VERIFIERS = [
     title: 'Votes',
     description: 'Participate in governance by voting on a proposal.',
     icon: CheckBadgeIcon,
-    link: '/vote',
+    link: '/projects',
     linkText: 'Vote Now',
   },
   {
