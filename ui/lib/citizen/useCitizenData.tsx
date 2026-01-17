@@ -26,6 +26,8 @@ export function useCitizenData(nft: any, citizenContract: any) {
     const citizenTwitter = getAttribute(attributes, 'twitter')?.value
     const citizenDiscord = getAttribute(attributes, 'discord')?.value
     const citizenWebsite = getAttribute(attributes, 'website')?.value
+    const citizenInstagram = getAttribute(attributes, 'instagram')?.value
+    const citizenLinkedin = getAttribute(attributes, 'linkedin')?.value
 
     const formattedTwitter =
       !citizenTwitter || citizenTwitter === ''
@@ -39,6 +41,8 @@ export function useCitizenData(nft: any, citizenContract: any) {
       twitter: formattedTwitter,
       discord: citizenDiscord?.replace('@', ''),
       website: citizenWebsite ? addHttpsIfMissing(citizenWebsite) : '',
+      instagram: citizenInstagram ? addHttpsIfMissing(citizenInstagram) : '',
+      linkedin: citizenLinkedin ? addHttpsIfMissing(citizenLinkedin) : '',
     }
   }, [attributes])
 

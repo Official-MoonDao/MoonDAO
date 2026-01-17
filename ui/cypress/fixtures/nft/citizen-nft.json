@@ -9,6 +9,8 @@
       { "trait_type": "location", "value": "Test Location" },
       { "trait_type": "discord", "value": "Test Discord" },
       { "trait_type": "twitter", "value": "Test Twitter" },
+      { "trait_type": "instagram", "value": "Test Instagram" },
+      { "trait_type": "linkedin", "value": "Test LinkedIn" },
       { "trait_type": "website", "value": "Test Website" },
       { "trait_type": "view", "value": "public" },
       { "trait_type": "formId", "value": "Test FormId" }

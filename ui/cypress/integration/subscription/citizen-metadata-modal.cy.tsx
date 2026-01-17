@@ -53,6 +53,14 @@ describe('<CitizenMetadataModal /> ', () => {
       'have.value',
       getAttribute(nft.metadata.attributes, 'twitter').value
     )
+    cy.get('#citizen-instagram-input').should(
+      'have.value',
+      getAttribute(nft.metadata.attributes, 'instagram').value
+    )
+    cy.get('#citizen-linkedin-input').should(
+      'have.value',
+      getAttribute(nft.metadata.attributes, 'linkedin').value
+    )
     cy.get('#citizen-website-input').should(
       'have.value',
       getAttribute(nft.metadata.attributes, 'website').value

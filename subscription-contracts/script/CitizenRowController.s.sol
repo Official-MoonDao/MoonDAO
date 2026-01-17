@@ -8,19 +8,19 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import {CitizenRowController} from "../src/tables/CitizenRowController.sol";
-contract MyScript is Script {
+import { Config } from "base/Config.sol";
+
+contract MyScript is Config {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        address CITIZEN_ADDRESS = 0xEb9A6975381468E388C33ebeF4089Be86fe31d78;
-        address CITIZEN_TABLE_ADDRESS = 0x0000000000000000000000000000000000000000;
-
+        address CITIZEN_NFT_ADDRESS = CITIZEN_NFT_ADDRESSES[block.chainid];
+        address CITIZEN_TABLE_ADDRESS = CITIZEN_TABLE_ADDRESSES[block.chainid];
 
         CitizenRowController citizenRowController = new CitizenRowController(CITIZEN_TABLE_ADDRESS);
-
-        citizenRowController.addTableOwner(CITIZEN_ADDRESS);
-
+        // This is created needs to be set on the contract once deployed (multisig txn)
+        citizenRowController.addTableOwner(CITIZEN_NFT_ADDRESS);
 
         vm.stopBroadcast();
     }
