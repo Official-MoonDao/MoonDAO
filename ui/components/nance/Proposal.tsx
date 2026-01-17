@@ -10,8 +10,8 @@ type ProposalProps = {
 }
 
 export default function Proposal({ project }: ProposalProps) {
-  const proposalStatus = project?.status || useProposalStatus(project)
-  const proposalJSON = project?.proposalJSON || useProposalJSON(project)
+  const proposalStatus = useProposalStatus(project) || project?.status
+  const proposalJSON = useProposalJSON(project) || project?.proposalJSON
   return (
     <div
       id="proposal-card"
