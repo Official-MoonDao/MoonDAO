@@ -9,7 +9,7 @@
 0. Use updateTableCol on arbiscan to update
     - eligible to 1
     - finalReportLink (eg. https://docs.google.com/document/d/...)
-    - upfrontPayments (eg. {"0xabcd...0123" :10,"0xefga...4567":5,"vMOONEY": {"0xabcd...0123":10000,"0xefga...4567":20000}})
+    - upfrontPayments (eg. {"0xabcd...0123":10,"0xefga...4567":5,"vMOONEY": {"0xabcd...0123":10000,"0xefga...4567":20000}})
     - rewardDistribution (eg. {"0xabcd...0123":45,"0xefga...4567":55}) based on the final report accounting.
 0. Go to ui/lib/utils/dates.ts and make sure isRewardsCycle returns true to go live on voting.
 0. Publicize the link for people to submit projects votes (moondao.com/projects), and collect votes for community circle.

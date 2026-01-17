@@ -145,14 +145,3 @@ These contract-defined percentages differ from the UI description above.
 
 - Contributions are accepted in ETH (`JBConstants.NATIVE_TOKEN`), verified during `beforePayRecordedWith`.
 - Once the funding goal is reached and the deadline has passed, the approval hook enables payouts. Reserved tokens and ETH are distributed according to the configured splits.
-
-### Observed Inconsistencies
-
-1. **Funding Allocation Percentages**
-   The UI specifies 80% available to the team, with 10% liquidity, 7.5% to MoonDAO, and 2.5% to Juicebox. The contract splits give roughly 90% to the team, 5% to liquidity, and 2.5% to MoonDAO after the Juicebox fee. This indicates the code and UI are not aligned.
-2. **Token Distribution**
-   The UI states 10% of total tokens go to liquidity, 10% to MoonDAO, and 30% to the team. The contract reserves 2.5% to liquidity, 17.5% to MoonDAO, and 30% to the team. Again the values do not match.
-3. **Refund Window**
-   The contracts enforce that refunds must be claimed within `refundPeriod` after the deadline. The UI text does not mention this explicit period, which could cause confusion.
-4. **28 day deadline**
-   We might want something other than a 28 day deadline.
