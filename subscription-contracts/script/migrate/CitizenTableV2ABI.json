@@ -119,6 +119,8 @@
       { "internalType": "string", "name": "location", "type": "string" },
       { "internalType": "string", "name": "discord", "type": "string" },
       { "internalType": "string", "name": "twitter", "type": "string" },
+      { "internalType": "string", "name": "instagram", "type": "string" },
+      { "internalType": "string", "name": "linkedin", "type": "string" },
       { "internalType": "string", "name": "website", "type": "string" },
       { "internalType": "string", "name": "_view", "type": "string" },
       { "internalType": "string", "name": "formId", "type": "string" },

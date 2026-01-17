@@ -416,20 +416,7 @@ export default function CitizenMetadataModal({ nft, selectedChain, setEnabled }:
                       ],
                     ],
                   })
-                  console.log(transaction)
-                  console.log([
-                    cleanedCitizenData.name,
-                    cleanedCitizenData.description,
-                    imageIpfsLink,
-                    JSON.stringify(cleanedLocationData),
-                    formattedCitizenDiscord,
-                    formattedCitizenTwitter,
-                    formattedCitizenWebsite,
-                    formattedCitizenInstagram,
-                    formattedCitizenLinkedin,
-                    cleanedCitizenData.view,
-                    formResponseId,
-                  ])
+
                   const receipt = await sendAndConfirmTransaction({
                     transaction,
                     account,

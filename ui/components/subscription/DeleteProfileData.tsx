@@ -62,7 +62,7 @@ export default function DeleteProfileData({
               'view',
               'formId',
             ],
-            ['', '', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', '', '', ''],
           ],
         })
       } else if (type === 'citizen') {
@@ -91,7 +91,7 @@ export default function DeleteProfileData({
               'view',
               'formId',
             ],
-            ['', '', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', '', '', '', ''],
           ],
         })
       }
