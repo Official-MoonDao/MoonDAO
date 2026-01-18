@@ -1,17 +1,17 @@
 import { NanceProvider } from '@nance/nance-hooks'
-import useETHPrice from '@/lib/etherscan/useETHPrice'
-import RewardAsset from '@/components/project/RewardAsset'
+import { NEXT_QUARTER_FUNDING_ETH, MAX_BUDGET_ETH } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 import { NANCE_API_URL } from '../lib/nance/constants'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '../components/layout/NoticeFooter'
 import ProposalEditor from '../components/nance/ProposalEditor'
-import { NEXT_ETH_BUDGET } from 'const/config'
+import RewardAsset from '@/components/project/RewardAsset'
 
 export default function ProposalsPage() {
   const title = 'Propose Project'
@@ -49,15 +49,15 @@ export default function ProposalsPage() {
                 <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                   <RewardAsset
                     name="ETH"
-                    value={NEXT_ETH_BUDGET.toFixed(4)}
-                    usdValue={ethPrice * NEXT_ETH_BUDGET}
+                    value={NEXT_QUARTER_FUNDING_ETH.toFixed(4)}
+                    usdValue={ethPrice * NEXT_QUARTER_FUNDING_ETH}
                   />
                 </div>
                 <div className="bg-black/20 rounded-lg p-3 border border-white/10">
                   <RewardAsset
                     name="ETH"
-                    value={NEXT_ETH_BUDGET.toFixed(4) / 5}
-                    usdValue={(ethPrice * NEXT_ETH_BUDGET) / 5}
+                    value={MAX_BUDGET_ETH.toFixed(4)}
+                    usdValue={ethPrice * MAX_BUDGET_ETH}
                   />
                 </div>
               </div>
