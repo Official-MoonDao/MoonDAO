@@ -58,10 +58,9 @@ ETHERSCAN_API_KEY=$ETHERSCAN_API_KEY PRIVATE_KEY=$PRIVATE_KEY forge script scrip
 anvil --fork-url https://11155111.rpc.thirdweb.com/$THIRDWEB_CLIENT_ID
 
 # Run all tests
-ETHERSCAN_API_KEY=$ETH forge test --via-ir --fork-url localhost:8545
+ETHERSCAN_API_KEY=$ETH forge test --via-ir --optimize --fork-url localhost:8545
 
 # Run a specific test
-ETHERSCAN_API_KEY=$ETH forge test --via-ir --fork-url localhost:8545
---match-path test/MissionTest.t.sol -vvvv
+ETHERSCAN_API_KEY=$ETH forge test --via-ir --fork-url localhost:8545 --optimize --match-path test/MissionTest.t.sol -vvvv
 ```
 
