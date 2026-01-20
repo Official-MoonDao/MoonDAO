@@ -60,7 +60,6 @@ export async function getStaticProps() {
         }
       })
     )
-    console.log('proposals', proposals)
     currentProjects.sort((a, b) => {
       if (a.eligible === b.eligible) {
         return 0
