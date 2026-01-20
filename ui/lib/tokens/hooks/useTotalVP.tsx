@@ -33,7 +33,7 @@ export function useTotalVP(address: string) {
           method: 'balanceOf' as any,
           params: [address],
         })
-        return Number(vMooneyBalance.toString()) / 1e18
+        return Math.sqrt(Number(vMooneyBalance.toString()) / 1e18)
       }
     }
   )

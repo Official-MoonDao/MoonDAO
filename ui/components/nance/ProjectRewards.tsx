@@ -436,7 +436,7 @@ export function ProjectRewards({
                 {
                   <div>
                     Allocated: {totalAllocated}% &nbsp;&nbsp;Voting Power:{' '}
-                    {Math.round(userVotingPower)}{' '}
+                    {Math.round(userVotingPower) || 0}{' '}
                   </div>
                 }
               </h1>
