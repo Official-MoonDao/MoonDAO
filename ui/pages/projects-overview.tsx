@@ -1,9 +1,11 @@
 import {
   ARBITRUM_ASSETS_URL,
-  ETH_BUDGET,
   POLYGON_ASSETS_URL,
+  MAX_BUDGET_ETH,
   BASE_ASSETS_URL,
   PROJECT_SYSTEM_CONFIG,
+  NEXT_QUARTER_FUNDING_ETH,
+  NEXT_QUARTER_BUDGET_ETH,
 } from 'const/config'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import { GetServerSideProps } from 'next'
@@ -84,7 +86,8 @@ const ProjectsOverview: React.FC<{
   } = useMemo(() => getBudget(tokens, year, quarter), [tokens, year, quarter])
 
   // Use hardcoded value like in RetroactiveRewards for current quarter
-  const usdBudget = ETH_BUDGET * ethPrice
+  const ethBudget = NEXT_QUARTER_BUDGET_ETH
+  const usdBudget = ethBudget * ethPrice
 
   // Calculate MOONEY USD value
   useEffect(() => {
@@ -428,7 +431,7 @@ const ProjectsOverview: React.FC<{
                       </svg>
                     </div>
                     <h4 className="text-lg font-bold text-white mb-2">Max Budget/Project</h4>
-                    <p className="text-xl font-bold text-yellow-400">2.08 ETH</p>
+                    <p className="text-xl font-bold text-yellow-400">{MAX_BUDGET_ETH} ETH</p>
                     <p className="text-sm text-yellow-300 mt-1">(20% of quarterly budget)</p>
                   </div>
 
@@ -464,7 +467,10 @@ const ProjectsOverview: React.FC<{
                       Total Quarterly Retroactive Rewards
                     </p>
                     <p className="text-3xl md:text-4xl font-bold text-white">
-                      11.6 ETH <span className="text-xl text-purple-300">(~$37,000)</span>
+                      {NEXT_QUARTER_BUDGET_ETH} ETH{' '}
+                      <span className="text-xl text-purple-300">
+                        (~${NEXT_QUARTER_BUDGET_ETH * ethPrice.toFixed(2)})
+                      </span>
                     </p>
                     <p className="text-xs text-purple-400 mt-2">
                       Plus{' '}
