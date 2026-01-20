@@ -556,6 +556,7 @@ export const PROJECT_SYSTEM_CONFIG = {
 }
 
 // Quarterly budget in ETH
+export const ETH_BUDGET = 14.15
 export const NEXT_QUARTER_BUDGET_ETH = 11.6
 export const COMMUNITY_CIRCLE_BUDGET_FRACTION = 0.1
 export const AVAILABLE_FOR_FUNDING_FRACTION = 0.75
