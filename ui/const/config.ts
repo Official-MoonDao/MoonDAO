@@ -130,47 +130,25 @@ export const CITIZEN_TABLE_NAMES: Index = {
 
 export const PROJECT_ADDRESSES: Index = {
   arbitrum: '0xCb31829B312923C7502766ef4f36948A7A64cD6A',
-  sepolia: '0xAf8A64BfeD40fF4129e624650B0C48F9036C0FE4',
+  sepolia: '0x19124F594c3BbCb82078b157e526B278C8E9EfFc',
   'arbitrum-sepolia': '0xDC35Dc4F7610678B0389157522734b79ea464101',
 }
 
 export const PROJECT_CREATOR_ADDRESSES: Index = {
   arbitrum: '0x2486149B23447c37932471eA6dF091267ebca953',
-  sepolia: '0x421041750f6fe6Fb00968CC63d5ab7BfFDD35e96',
+  sepolia: '0xd1EfE13758b73F2Db9Ed19921eB756fbe4C26E2D',
   'arbitrum-sepolia': '0xde26EcE3C1Ec58057348e3a7B28359c8cDfae56A',
-}
-
-export const SENATORS_ADDRESSES: Index = {
-  //arbitrum: '...',
-  sepolia: '0x9164AC69B9fa9cA68fcb1f187DEAD57ddEF81E58',
-}
-
-export const NON_PROJECT_PROPOSAL_ADDRESSES: Index = {
-  //arbitrum: '...',
-  sepolia: '0x3804D425a95Ea86cE8B5E260a4f092934C2117b5',
-}
-export const NON_PROJECT_PROPOSAL_TABLE_NAMES: Index = {
-  //arbitrum: '...',
-  sepolia: 'NonProjectProposal_11155111_2037',
-}
-export const PROPOSALS_ADDRESSES: Index = {
-  //arbitrum: '...',
-  sepolia: '0xCB4D10effE13ac3e0DbD7e0Fb4079eD2EE5f2e53',
-}
-export const PROPOSALS_TABLE_NAMES: Index = {
-  //arbitrum: '...',
-  sepolia: 'Proposals_11155111_2036',
 }
 
 export const PROJECT_TABLE_ADDRESSES: Index = {
   arbitrum: '0x83755AF34867a3513ddCE921E9cAd28f0828CDdB',
-  sepolia: '0x784674bEa87F6A6D68970487a48E329F6fDc019E',
+  sepolia: '0x17729AFF287d9873F5610c029A5Db814e428e97a',
   'arbitrum-sepolia': '0x51a5cA8966cA71ac0A0D58DbeF2ec6a932e1490E',
 }
 
 export const PROJECT_TABLE_NAMES: Index = {
   arbitrum: 'PROJECT_42161_122',
-  sepolia: 'PROJECT_11155111_2033',
+  sepolia: 'PROJECT_11155111_1888',
   'arbitrum-sepolia': 'PROJECT_421614_1060',
 }
 
@@ -559,10 +537,6 @@ export const TICK_SPACING = 200
 
 export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
 export const FREE_MINT_THRESHOLD = 1e16
-// 2025q4
-export const ETH_BUDGET = 14.15
-// 2026q1
-export const NEXT_ETH_BUDGET = 11.6
 
 export const EB_TEAM_ID = '0'
 
@@ -570,8 +544,6 @@ export const EB_TEAM_ID = '0'
 export const PROJECT_SYSTEM_CONFIG = {
   // Q1 2026 deadline - second Thursday of the quarter
   submissionDeadline: 'January 15, 2026',
-  // Maximum budget per project is 1/5 (20%) of quarterly budget
-  maxBudgetPercentage: 0.2,
   // Approval timeline details
   senateReviewDays: 1, // Senate reviews the day after submission
   editingDeadline: 'January 22, 2026', // 48 hours before third Thursday
@@ -582,3 +554,14 @@ export const PROJECT_SYSTEM_CONFIG = {
   docsUrl: 'https://docs.moondao.com/Projects/Project-System',
   // Total quarterly budget is displayed dynamically on the page
 }
+
+// Quarterly budget in ETH
+export const NEXT_QUARTER_BUDGET_ETH = 11.6
+export const COMMUNITY_CIRCLE_BUDGET_FRACTION = 0.1
+export const AVAILABLE_FOR_FUNDING_FRACTION = 0.75
+export const MAX_BUDGET_FRACTION = 0.2
+export const NEXT_QUARTER_PROJECTS_BUDGET_ETH =
+  NEXT_QUARTER_BUDGET_ETH * (1 - COMMUNITY_CIRCLE_BUDGET_FRACTION)
+export const NEXT_QUARTER_FUNDING_ETH =
+  NEXT_QUARTER_PROJECTS_BUDGET_ETH * AVAILABLE_FOR_FUNDING_FRACTION
+export const MAX_BUDGET_ETH = NEXT_QUARTER_PROJECTS_BUDGET_ETH * MAX_BUDGET_FRACTION

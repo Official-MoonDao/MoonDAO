@@ -577,7 +577,7 @@ export function ProjectRewards({
                           userHasVotingPower ? handleDistributionChange : undefined
                         }
                         userHasVotingPower={userHasVotingPower}
-                        isVotingPeriod={active}
+                        isVotingPeriod={rewardVotingActive}
                       />
                     ))}
               </div>
