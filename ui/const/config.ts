@@ -162,13 +162,13 @@ export const PROPOSALS_TABLE_NAMES: Index = {
 
 export const PROJECT_TABLE_ADDRESSES: Index = {
   arbitrum: '0x83755AF34867a3513ddCE921E9cAd28f0828CDdB',
-  sepolia: '0x17729AFF287d9873F5610c029A5Db814e428e97a',
+  sepolia: '0x784674bEa87F6A6D68970487a48E329F6fDc019E',
   'arbitrum-sepolia': '0x51a5cA8966cA71ac0A0D58DbeF2ec6a932e1490E',
 }
 
 export const PROJECT_TABLE_NAMES: Index = {
   arbitrum: 'PROJECT_42161_122',
-  sepolia: 'PROJECT_11155111_1888',
+  sepolia: 'PROJECT_11155111_2033',
   'arbitrum-sepolia': 'PROJECT_421614_1060',
 }
 

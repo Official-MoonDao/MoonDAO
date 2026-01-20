@@ -357,7 +357,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     chain: chain,
   })
 
-  const statement = `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`
+  const statement = `SELECT * FROM ${projectTableName} WHERE MDP = ${tokenId}`
 
   const projects = await queryTable(chain, statement)
   const project = projects[0]
