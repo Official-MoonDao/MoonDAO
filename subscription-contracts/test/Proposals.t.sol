@@ -14,7 +14,7 @@ contract ProposalsTest is Test {
     address user4 = address(0x69420);
     function setUp() public {
         senators = new Senators();
-        proposals = new Proposals("Proposals", address(senators), 3, 2);
+        proposals = new Proposals("Proposals", address(senators));
         address[] memory newSenators = new address[](3);
         newSenators[0] = user1;
         newSenators[1] = user2;
@@ -68,6 +68,24 @@ contract ProposalsTest is Test {
         proposals.deleteFromTable(1, 2000);
         proposals.getTableName();
         proposals.getTableId();
+    }
+
+    function testQuorum() public {
+        assertEq(proposals.getQuorum(), 3);
+    }
+
+    function testThreshold() public {
+        assertEq(proposals.getThreshold(), 2);
+    }
+
+    function testQuorumChanges() public {
+        senators.addSenator(user4);
+        assertEq(proposals.getQuorum(), 3);
+    }
+
+    function testThresholdChanges() public {
+        senators.addSenator(user4);
+        assertEq(proposals.getThreshold(), 3);
     }
 }
 
