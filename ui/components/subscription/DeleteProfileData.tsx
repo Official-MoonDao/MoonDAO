@@ -55,12 +55,14 @@ export default function DeleteProfileData({
               'description',
               'image',
               'twitter',
+              'instagram',
+              'linkedin',
               'communications',
               'website',
               'view',
               'formId',
             ],
-            ['', '', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', '', '', ''],
           ],
         })
       } else if (type === 'citizen') {
@@ -83,11 +85,13 @@ export default function DeleteProfileData({
               'location',
               'discord',
               'twitter',
+              'instagram',
+              'linkedin',
               'website',
               'view',
               'formId',
             ],
-            ['', '', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', '', '', '', ''],
           ],
         })
       }
