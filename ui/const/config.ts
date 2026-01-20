@@ -542,8 +542,6 @@ export const EB_TEAM_ID = '0'
 export const PROJECT_SYSTEM_CONFIG = {
   // Q1 2026 deadline - second Thursday of the quarter
   submissionDeadline: 'January 15, 2026',
-  // Maximum budget per project is 1/5 (20%) of quarterly budget
-  maxBudgetPercentage: 0.2,
   // Approval timeline details
   senateReviewDays: 1, // Senate reviews the day after submission
   editingDeadline: 'January 22, 2026', // 48 hours before third Thursday
@@ -556,4 +554,12 @@ export const PROJECT_SYSTEM_CONFIG = {
 }
 
 // Quarterly budget in ETH
-export const NEXT_ETH_BUDGET = 7.83
+export const NEXT_QUARTER_BUDGET_ETH = 11.6
+export const COMMUNITY_CIRCLE_BUDGET_FRACTION = 0.1
+export const AVAILABLE_FOR_FUNDING_FRACTION = 0.75
+export const MAX_BUDGET_FRACTION = 0.2
+export const NEXT_QUARTER_PROJECTS_BUDGET_ETH =
+  NEXT_QUARTER_BUDGET_ETH * (1 - COMMUNITY_CIRCLE_BUDGET_FRACTION)
+export const NEXT_QUARTER_FUNDING_ETH =
+  NEXT_QUARTER_PROJECTS_BUDGET_ETH * AVAILABLE_FOR_FUNDING_FRACTION
+export const MAX_BUDGET_ETH = NEXT_QUARTER_PROJECTS_BUDGET_ETH * MAX_BUDGET_FRACTION
