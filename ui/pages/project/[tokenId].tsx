@@ -413,7 +413,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const safeAddress = await readContract({
     contract: projectContract,
     method: 'ownerOf' as string,
-    params: [tokenId],
+    params: [project.id],
   })
 
   const rpcUrl = getRpcUrlForChain({
