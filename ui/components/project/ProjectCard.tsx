@@ -73,7 +73,7 @@ const ProjectCardContent = memo(
       >
         <div className="flex justify-between items-start">
           <div className="w-full flex flex-col gap-3">
-            <Link href={`/project/${project?.id}`} passHref>
+            <Link href={`/project/${project?.MDP}`} passHref>
               <div className="flex justify-between items-start">
                 <h4 className="font-bold text-white leading-tight">{project?.name || ''}</h4>
                 <span
@@ -101,7 +101,7 @@ const ProjectCardContent = memo(
                   distribute && 'mr-4'
                 }`}
                 link={
-                  project?.finalReportIPFS ? `/project/${project.id}` : project?.finalReportLink
+                  project?.finalReportIPFS ? `/project/${project.MDP}` : project?.finalReportLink
                 }
                 onClick={(e: any) => {
                   e.stopPropagation()
@@ -253,7 +253,7 @@ export default function ProjectCard({
           active={active}
         />
       ) : (
-        <Link href={`/project/${project?.id}`} passHref>
+        <Link href={`/project/${project?.MDP}`} passHref>
           <ProjectCardContent
             project={project}
             userHasVotingPower={userHasVotingPower}

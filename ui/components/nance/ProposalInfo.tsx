@@ -84,7 +84,7 @@ export default function ProposalInfo({
           {showTitle &&
             (!linkDisabled ? (
               <Link
-                href={`/project/${project.id}`}
+                href={`/project/${project.MDP}`}
                 passHref
                 className="text-lg font-semibold text-white hover:text-gray-300 transition-colors"
                 style={{ fontFamily: 'Lato' }}
