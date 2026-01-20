@@ -27,35 +27,31 @@ contract Proposals is ERC721Holder, Ownable {
     mapping(uint256 => bool) public tempCheckApproved;
     mapping(uint256 => uint256) public tempCheckApprovedTimestamp;
     mapping(uint256 => bool) public tempCheckFailed;
-    uint256 public quorum;
-    uint256 public threshold;
 
     uint256 private _tableId;
     string private _TABLE_PREFIX;
     string private constant VOTE_SCHEMA =
         "id integer primary key, quarter integer, year integer, address text, distribution text, unique(quarter, year, address)";
 
-    constructor(string memory _table_prefix, address _senatorsAddress, uint256 _quorum, uint256 _threshold) Ownable(msg.sender)  {
+    constructor(string memory _table_prefix, address _senatorsAddress) Ownable(msg.sender)  {
         _TABLE_PREFIX = _table_prefix;
         _tableId = TablelandDeployments.get().create(
             address(this),
             SQLHelpers.toCreateFromSchema(VOTE_SCHEMA, _TABLE_PREFIX)
         );
         senators = Senators(_senatorsAddress);
-        quorum = _quorum;
-        threshold = _threshold;
-    }
-
-    function setQuorum(uint256 _quorum) external onlyOwner {
-        quorum = _quorum;
-    }
-
-    function setThreshold(uint256 _threshold) external onlyOwner {
-        threshold = _threshold;
     }
 
     function setSenators(address _senatorsAddress) external onlyOwner {
         senators = Senators(_senatorsAddress);
+    }
+
+    function getQuorum() public view returns (uint256) {
+        return  ((senators.senatorCount() * 7) + 9) / 10;
+    }
+
+    function getThreshold() public view returns (uint256) {
+        return ((senators.senatorCount() * 2) + 2) / 3;
     }
 
     function voteTempCheck(uint256 mdp, bool approve) external {
@@ -79,8 +75,8 @@ contract Proposals is ERC721Holder, Ownable {
                 tempCheckApprovalCount[mdp]--;
             }
         }
-        if (tempCheckVoteCount[mdp] >= quorum){
-            if (tempCheckApprovalCount[mdp] >= threshold){
+        if (tempCheckVoteCount[mdp] >= getQuorum()){
+            if (tempCheckApprovalCount[mdp] >= getThreshold()){
                 tempCheckApproved[mdp] = true;
                 tempCheckApprovedTimestamp[mdp] = block.timestamp;
             } else {
@@ -90,8 +86,8 @@ contract Proposals is ERC721Holder, Ownable {
     }
 
     function tallyVotes(uint256 mdp) external {
-        if (tempCheckVoteCount[mdp] >= quorum){
-            if (tempCheckApprovalCount[mdp] >= threshold){
+        if (tempCheckVoteCount[mdp] >= getQuorum()){
+            if (tempCheckApprovalCount[mdp] >= getThreshold()){
                 tempCheckApproved[mdp] = true;
                 tempCheckApprovedTimestamp[mdp] = block.timestamp;
             } else {
