@@ -355,7 +355,6 @@ export function ProjectRewards({
       })
     }
   }
-  console.log('active', active)
   return (
     <section id="projects-container" className="overflow-hidden">
       <Head
@@ -571,7 +570,7 @@ export function ProjectRewards({
                         project={project}
                         projectContract={projectContract}
                         hatsContract={hatsContract}
-                        distribute={active && project.eligible}
+                        distribute={project.eligible}
                         distribution={userHasVotingPower ? distribution : undefined}
                         handleDistributionChange={
                           userHasVotingPower ? handleDistributionChange : undefined
