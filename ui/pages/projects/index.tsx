@@ -42,22 +42,25 @@ export async function getStaticProps() {
     const proposals: Project[] = []
     const currentProjects: Project[] = []
     const pastProjects: Project[] = []
-    projects.forEach(async (project: Project) => {
-      if (!BLOCKED_PROJECTS.has(project.id)) {
-        const activeStatus = project.active
-        if (activeStatus == PROJECT_PENDING) {
-          const proposalResponse = await fetch(project.proposalIPFS)
-          const proposalJSON = await proposalResponse.json()
-          if (!proposalJSON.nonProjectProposal) {
-            proposals.push(project)
+    await Promise.all(
+      projects.map(async (project: Project) => {
+        if (!BLOCKED_PROJECTS.has(project.id)) {
+          const activeStatus = project.active
+          if (activeStatus == PROJECT_PENDING) {
+            const proposalResponse = await fetch(project.proposalIPFS)
+            const proposalJSON = await proposalResponse.json()
+            if (!proposalJSON.nonProjectProposal) {
+              proposals.push(project)
+            }
+          } else if (activeStatus == PROJECT_ACTIVE) {
+            currentProjects.push(project)
+          } else {
+            pastProjects.push(project)
           }
-        } else if (activeStatus == PROJECT_ACTIVE) {
-          currentProjects.push(project)
-        } else {
-          pastProjects.push(project)
         }
-      }
-    })
+      })
+    )
+    console.log('proposals', proposals)
     currentProjects.sort((a, b) => {
       if (a.eligible === b.eligible) {
         return 0
