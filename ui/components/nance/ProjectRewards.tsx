@@ -448,7 +448,7 @@ export function ProjectRewards({
                 {proposals && proposals.length > 0 ? (
                   proposals
                     .filter((project: any, i) => {
-                      return project.status == 'Voting'
+                      return project.tempCheckApproved
                     })
                     .map((project: any, i) => (
                       <div
@@ -504,7 +504,7 @@ export function ProjectRewards({
                   proposals.length > 0 &&
                   proposals
                     .filter((project: any, i) => {
-                      return project.status !== 'Voting'
+                      return project.tempCheckApproved
                     })
                     .map((project: any, i) => (
                       <div

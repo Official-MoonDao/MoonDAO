@@ -56,30 +56,24 @@ export async function getStaticProps() {
     const proposals: Project[] = []
     const currentProjects: Project[] = []
     const pastProjects: Project[] = []
+    const { engineBatchRead } = await import('@/lib/thirdweb/engine')
+    const approveds = await engineBatchRead<string>(
+      PROPOSALS_ADDRESSES[chainSlug],
+      'tempCheckApproved',
+      projects.map((project) => [project.MDP]),
+      ProposalsABI.abi,
+      chain.id
+    )
+
     await Promise.all(
-      projects.map(async (project: Project) => {
+      projects.map(async (project: Project, index) => {
         if (!BLOCKED_PROJECTS.has(project.id)) {
           const activeStatus = project.active
           if (activeStatus == PROJECT_PENDING) {
             const proposalResponse = await fetch(project.proposalIPFS)
             const proposalJSON = await proposalResponse.json()
             if (!proposalJSON?.nonProjectProposal) {
-              const tempCheckApproved = await readContract({
-                contract: proposalContract,
-                method: 'tempCheckApproved' as string,
-                params: [project.MDP],
-              })
-              const tempCheckFailed = await readContract({
-                contract: proposalContract,
-                method: 'tempCheckFailed' as string,
-                params: [project.MDP],
-              })
-              const proposalStatus = getProposalStatus(
-                project.active,
-                tempCheckApproved,
-                tempCheckFailed
-              )
-              project.status = proposalStatus
+              project.tempCheckApproved = approveds[index]
               proposals.push(project)
             }
           } else if (activeStatus == PROJECT_ACTIVE) {
