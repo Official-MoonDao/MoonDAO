@@ -500,33 +500,6 @@ export function ProjectRewards({
                     )}
                   </div>
                 )}
-                {proposals &&
-                  proposals.length > 0 &&
-                  proposals
-                    .filter((project: any, i) => {
-                      return project.tempCheckApproved
-                    })
-                    .map((project: any, i) => (
-                      <div
-                        key={`project-card-${i}`}
-                        className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
-                      >
-                        <ProjectCard
-                          key={`project-card-${i}`}
-                          project={project}
-                          projectContract={projectContract}
-                          hatsContract={hatsContract}
-                          distribute={false}
-                          distribution={userHasVotingPower ? distribution : undefined}
-                          handleDistributionChange={
-                            userHasVotingPower ? handleDistributionChange : undefined
-                          }
-                          userHasVotingPower={userHasVotingPower}
-                          isVotingPeriod={approvalVotingActive}
-                          active={false}
-                        />
-                      </div>
-                    ))}
               </div>
             </div>
 
