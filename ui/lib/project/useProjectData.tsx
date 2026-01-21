@@ -20,6 +20,7 @@ export type Project = {
   rewardDistribution: string
   upfrontPayments: string
   year: number
+  status?: string
 }
 
 export default function useProjectData(

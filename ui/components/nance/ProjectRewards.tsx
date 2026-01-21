@@ -476,6 +476,30 @@ export function ProjectRewards({
                     <p>There are no active Proposals.</p>
                   </div>
                 )}
+                {approvalVotingActive && proposals && proposals.length > 0 && (
+                  <div className="mt-6 w-full flex justify-end">
+                    {userHasVotingPower ? (
+                      <span className="flex flex-col md:flex-row md:items-center gap-2">
+                        <PrivyWeb3Button
+                          action={() => handleSubmit(proposalContract)}
+                          requiredChain={chain}
+                          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                          label={edit ? 'Edit Distribution' : 'Submit Distribution'}
+                        />
+                      </span>
+                    ) : (
+                      <span>
+                        <PrivyWeb3Button
+                          v5
+                          requiredChain={DEFAULT_CHAIN_V5}
+                          label="Get Voting Power"
+                          action={() => router.push('/lock')}
+                          className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
+                        />
+                      </span>
+                    )}
+                  </div>
+                )}
                 {proposals &&
                   proposals.length > 0 &&
                   proposals
@@ -503,30 +527,6 @@ export function ProjectRewards({
                         />
                       </div>
                     ))}
-                {approvalVotingActive && proposals && proposals.length > 0 && (
-                  <div className="mt-6 w-full flex justify-end">
-                    {userHasVotingPower ? (
-                      <span className="flex flex-col md:flex-row md:items-center gap-2">
-                        <PrivyWeb3Button
-                          action={() => handleSubmit(proposalContract)}
-                          requiredChain={chain}
-                          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
-                          label={edit ? 'Edit Distribution' : 'Submit Distribution'}
-                        />
-                      </span>
-                    ) : (
-                      <span>
-                        <PrivyWeb3Button
-                          v5
-                          requiredChain={DEFAULT_CHAIN_V5}
-                          label="Get Voting Power"
-                          action={() => router.push('/lock')}
-                          className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
-                        />
-                      </span>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
 
