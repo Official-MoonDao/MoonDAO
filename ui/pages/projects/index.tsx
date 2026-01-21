@@ -3,6 +3,7 @@ import {
   DEFAULT_CHAIN_V5,
   PROJECT_TABLE_NAMES,
   DISTRIBUTION_TABLE_NAMES,
+  PROPOSALS_TABLE_NAMES,
   PROPOSALS_ADDRESSES,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
@@ -23,7 +24,8 @@ export default function Projects({
   currentProjects,
   pastProjects,
   distributions,
-}: ProjectRewardsProps) {
+  proposalAllocations,
+}: ProjectRewardsProps & { proposalAllocations: any[] }) {
   const router = useRouter()
   useChainDefault()
   return (
@@ -32,6 +34,7 @@ export default function Projects({
       currentProjects={currentProjects}
       pastProjects={pastProjects}
       distributions={distributions}
+      proposalAllocations={proposalAllocations}
       refreshRewards={() => router.reload()}
     />
   )
@@ -60,13 +63,13 @@ export async function getStaticProps() {
     const approveds = await engineBatchRead<string>(
       PROPOSALS_ADDRESSES[chainSlug],
       'tempCheckApproved',
-      projects.map((project) => [project.MDP]),
+      projects.map((project: Project) => [project.MDP]),
       ProposalsABI.abi,
       chain.id
     )
 
     await Promise.all(
-      projects.map(async (project: Project, index) => {
+      projects.map(async (project: Project, index: number) => {
         if (!BLOCKED_PROJECTS.has(project.id)) {
           const activeStatus = project.active
           if (activeStatus == PROJECT_PENDING) {
@@ -94,12 +97,16 @@ export async function getStaticProps() {
     const distributionStatement = `SELECT * FROM ${DISTRIBUTION_TABLE_NAMES[chainSlug]} WHERE year = ${year} AND quarter = ${quarter}`
     const distributions = (await queryTable(chain, distributionStatement)) || []
 
+    const proposalAllocationStatement = `SELECT * FROM ${PROPOSALS_TABLE_NAMES[chainSlug]} WHERE year = ${year} AND quarter = ${quarter}`
+    const proposalAllocations = (await queryTable(chain, proposalAllocationStatement)) || []
+
     return {
       props: {
         proposals: proposals.reverse(),
         currentProjects: currentProjects.reverse(),
         pastProjects: pastProjects.reverse(),
         distributions,
+        proposalAllocations,
       },
       revalidate: 60,
     }
@@ -111,6 +118,7 @@ export async function getStaticProps() {
         currentProjects: [],
         pastProjects: [],
         distributions: [],
+        proposalAllocations: [],
       },
       revalidate: 60,
     }

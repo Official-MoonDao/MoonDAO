@@ -62,6 +62,7 @@ export type ProjectRewardsProps = {
   currentProjects: Project[]
   pastProjects: Project[]
   distributions: Distribution[]
+  proposalAllocations?: Distribution[]
   refreshRewards: () => void
 }
 
@@ -71,6 +72,7 @@ export function ProjectRewards({
   currentProjects,
   pastProjects,
   distributions,
+  proposalAllocations,
   refreshRewards,
 }: ProjectRewardsProps) {
   const router = useRouter()
@@ -88,6 +90,12 @@ export function ProjectRewards({
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>({})
+  const [originalDistribution, setOriginalDistribution] = useState<{ [key: string]: number }>({})
+  
+  // Separate state for proposal allocations
+  const [proposalEdit, setProposalEdit] = useState(false)
+  const [proposalDistribution, setProposalDistribution] = useState<{ [key: string]: number }>({})
+  const [originalProposalDistribution, setOriginalProposalDistribution] = useState<{ [key: string]: number }>({})
 
   //Check if its the approval cycle
   useEffect(() => {
@@ -117,12 +125,31 @@ export function ProjectRewards({
           d.address.toLowerCase() === userAddress.toLowerCase()
         ) {
           setDistribution(d.distribution)
+          setOriginalDistribution(d.distribution)
           setEdit(true)
           break
         }
       }
     }
   }, [userAddress, distributions, quarter, year])
+
+  // Check if the user already has a proposal allocation for the current quarter
+  useEffect(() => {
+    if (proposalAllocations && userAddress) {
+      for (const d of proposalAllocations) {
+        if (
+          d.year === year &&
+          d.quarter === quarter &&
+          d.address.toLowerCase() === userAddress.toLowerCase()
+        ) {
+          setProposalDistribution(d.distribution)
+          setOriginalProposalDistribution(d.distribution)
+          setProposalEdit(true)
+          break
+        }
+      }
+    }
+  }, [userAddress, proposalAllocations, quarter, year])
   const tallyVotes = async () => {
     const res = await fetch(`/api/proposals/vote`, {
       method: 'POST',
@@ -141,6 +168,14 @@ export function ProjectRewards({
   const handleDistributionChange = (projectId: string, value: number) => {
     const newValue = Math.min(100, Math.max(0, +value))
     setDistribution((prev) => ({
+      ...prev,
+      [projectId]: newValue,
+    }))
+  }
+
+  const handleProposalDistributionChange = (projectId: string, value: number) => {
+    const newValue = Math.min(100, Math.max(0, +value))
+    setProposalDistribution((prev) => ({
       ...prev,
       [projectId]: newValue,
     }))
@@ -324,6 +359,12 @@ export function ProjectRewards({
       })
       return
     }
+    if (edit && _.isEqual(distribution, originalDistribution)) {
+      toast.error('No changes detected. Please modify your distribution before resubmitting.', {
+        style: toastStyle,
+      })
+      return
+    }
     try {
       if (!account) throw new Error('No account found')
       let receipt
@@ -342,6 +383,65 @@ export function ProjectRewards({
           contract: contract,
           method: 'insertIntoTable' as string,
           params: [quarter, year, JSON.stringify(distribution)],
+        })
+        receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+      }
+      if (receipt) {
+        toast.success('Distribution submitted successfully!', {
+          style: toastStyle,
+        })
+        confetti({
+          particleCount: 150,
+          spread: 100,
+          origin: { y: 0.6 },
+          shapes: ['circle', 'star'],
+          colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
+        })
+        setTimeout(() => router.push('/projects/thank-you'), 3000)
+      }
+    } catch (error) {
+      console.error('Error submitting distribution:', error)
+      toast.error('Error submitting distribution. Please try again.', {
+        style: toastStyle,
+      })
+    }
+  }
+
+  const handleProposalSubmit = async (contract: any) => {
+    const totalPercentage = Object.values(proposalDistribution).reduce((sum, value) => sum + value, 0)
+    if (totalPercentage !== 100) {
+      toast.error('Total distribution must equal 100%.', {
+        style: toastStyle,
+      })
+      return
+    }
+    if (proposalEdit && _.isEqual(proposalDistribution, originalProposalDistribution)) {
+      toast.error('No changes detected. Please modify your distribution before resubmitting.', {
+        style: toastStyle,
+      })
+      return
+    }
+    try {
+      if (!account) throw new Error('No account found')
+      let receipt
+      if (proposalEdit) {
+        const transaction = prepareContractCall({
+          contract: contract,
+          method: 'updateTableCol' as string,
+          params: [quarter, year, JSON.stringify(proposalDistribution)],
+        })
+        receipt = await sendAndConfirmTransaction({
+          transaction,
+          account,
+        })
+      } else {
+        const transaction = prepareContractCall({
+          contract: contract,
+          method: 'insertIntoTable' as string,
+          params: [quarter, year, JSON.stringify(proposalDistribution)],
         })
         receipt = await sendAndConfirmTransaction({
           transaction,
@@ -464,9 +564,9 @@ export function ProjectRewards({
                           projectContract={projectContract}
                           hatsContract={hatsContract}
                           distribute={approvalVotingActive}
-                          distribution={userHasVotingPower ? distribution : undefined}
+                          distribution={userHasVotingPower ? proposalDistribution : undefined}
                           handleDistributionChange={
-                            userHasVotingPower ? handleDistributionChange : undefined
+                            userHasVotingPower ? handleProposalDistributionChange : undefined
                           }
                           userHasVotingPower={userHasVotingPower}
                           isVotingPeriod={approvalVotingActive}
@@ -482,16 +582,16 @@ export function ProjectRewards({
                 {approvalVotingActive && proposals && proposals.length > 0 && (
                   <div className="mt-6 w-full flex flex-col items-end gap-2">
                     <div className="text-white/80 font-RobotoMono text-sm">
-                      Allocated: {totalAllocated}% &nbsp;&nbsp;Voting Power:{' '}
+                      Allocated: {_.sum(Object.values(proposalDistribution))}% &nbsp;&nbsp;Voting Power:{' '}
                       {Math.round(userVotingPower) || 0}
                     </div>
                     {userHasVotingPower ? (
                       <span className="flex flex-col md:flex-row md:items-center gap-2">
                         <PrivyWeb3Button
-                          action={() => handleSubmit(proposalContract)}
+                          action={() => handleProposalSubmit(proposalContract)}
                           requiredChain={chain}
                           className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0"
-                          label={edit ? 'Edit Distribution' : 'Submit Distribution'}
+                          label={proposalEdit ? 'Edit Distribution' : 'Submit Distribution'}
                         />
                       </span>
                     ) : (
