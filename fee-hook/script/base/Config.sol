@@ -18,6 +18,7 @@ contract Config is Script {
     uint256 POLYGON = 137;
     uint256 OPT_SEP = 11155420;
 
+    mapping(uint256 => string) public CONTRACTS;
     mapping(uint256 => address) public LZ_ENDPOINTS;
     mapping(uint256 => address) public POOL_MANAGERS;
     mapping(uint256 => address) public POSITION_MANAGERS;
@@ -56,6 +57,13 @@ contract Config is Script {
         string memory sepJson = vm.readFile("../contracts/deployments/sepolia.json");
         string memory polygonJson = vm.readFile("../contracts/deployments/polygon.json");
         string memory arbSepJson = vm.readFile("../contracts/deployments/arbitrum-sepolia.json");
+
+        CONTRACTS[MAINNET] = ethJson;
+        CONTRACTS[ARBITRUM] = arbJson;
+        CONTRACTS[BASE] = baseJson;
+        CONTRACTS[SEP] = sepJson;
+        CONTRACTS[POLYGON] = polygonJson;
+        CONTRACTS[ARB_SEP] = arbSepJson;
 
         MOONDAO_TREASURY_ADDRESSES[ARBITRUM] = 0xAF26a002d716508b7e375f1f620338442F5470c0;
         MOONDAO_TREASURY_ADDRESSES[SEP] = 0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b;
@@ -166,6 +174,10 @@ contract Config is Script {
         MISSION_CREATOR_ADDRESSES[SEP] = sepJson.readAddress(".MissionCreator");
         MISSION_TABLE_ADDRESSES[ARBITRUM] = arbJson.readAddress(".MissionTable");
         MISSION_TABLE_ADDRESSES[SEP] = sepJson.readAddress(".MissionTable");
+    }
+
+    function readAddress(string memory name) public returns (address){
+        return CONTRACTS[block.chainid].readAddress(string.concat(".", name));
     }
 
     function currentSalt() public view returns (bytes32) {

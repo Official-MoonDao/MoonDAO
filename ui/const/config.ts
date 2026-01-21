@@ -242,10 +242,6 @@ export const TEAM_WHITELIST_ADDRESSES: Index = {
   arbitrum: '0x203ca831edec28b7657A022b8aFe5d28b6BE6Eda',
   sepolia: '0xBB22b6bfb410e62BC103CA6cAcc342bEe42117aA',
 }
-export const TEAM_DISCOUNTLIST_ADDRESSES: Index = {
-  arbitrum: '0x96E054924258E51d8e3b3aB8A6A27920f6cE53ee',
-  sepolia: '0x1e638C6120d7eF07e0978b68e22CD80bf5E70986',
-}
 
 export const FEATURED_MISSION =
   process.env.NEXT_PUBLIC_FEATURED_MISSION !== 'false'
@@ -539,4 +535,4 @@ export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
 export const FREE_MINT_THRESHOLD = 1e16
 
 export const EB_TEAM_ID = '0'
-export const NEXT_ETH_BUDGET = 11.60
+export const NEXT_ETH_BUDGET = 11.6
