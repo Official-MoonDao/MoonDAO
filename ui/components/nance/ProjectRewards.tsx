@@ -446,32 +446,64 @@ export function ProjectRewards({
               </p>
               <div className="flex flex-col gap-6">
                 {proposals && proposals.length > 0 ? (
-                  proposals.map((project: any, i) => (
-                    <div
-                      key={`project-card-${i}`}
-                      className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
-                    >
-                      <ProjectCard
+                  proposals
+                    .filter((project: any, i) => {
+                      return project.status == 'Voting'
+                    })
+                    .map((project: any, i) => (
+                      <div
                         key={`project-card-${i}`}
-                        project={project}
-                        projectContract={projectContract}
-                        hatsContract={hatsContract}
-                        distribute={approvalVotingActive}
-                        distribution={userHasVotingPower ? distribution : undefined}
-                        handleDistributionChange={
-                          userHasVotingPower ? handleDistributionChange : undefined
-                        }
-                        userHasVotingPower={userHasVotingPower}
-                        isVotingPeriod={approvalVotingActive}
-                        active={false}
-                      />
-                    </div>
-                  ))
+                        className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+                      >
+                        <ProjectCard
+                          key={`project-card-${i}`}
+                          project={project}
+                          projectContract={projectContract}
+                          hatsContract={hatsContract}
+                          distribute={approvalVotingActive}
+                          distribution={userHasVotingPower ? distribution : undefined}
+                          handleDistributionChange={
+                            userHasVotingPower ? handleDistributionChange : undefined
+                          }
+                          userHasVotingPower={userHasVotingPower}
+                          isVotingPeriod={approvalVotingActive}
+                          active={false}
+                        />
+                      </div>
+                    ))
                 ) : (
                   <div className="text-center py-8 text-gray-400">
                     <p>There are no active Proposals.</p>
                   </div>
                 )}
+                {proposals &&
+                  proposals.length > 0 &&
+                  proposals
+                    .filter((project: any, i) => {
+                      return project.status !== 'Voting'
+                    })
+                    .map((project: any, i) => (
+                      <div
+                        key={`project-card-${i}`}
+                        className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+                      >
+                        <ProjectCard
+                          key={`project-card-${i}`}
+                          project={project}
+                          projectContract={projectContract}
+                          hatsContract={hatsContract}
+                          distribute={false}
+                          distribution={userHasVotingPower ? distribution : undefined}
+                          handleDistributionChange={
+                            userHasVotingPower ? handleDistributionChange : undefined
+                          }
+                          userHasVotingPower={userHasVotingPower}
+                          isVotingPeriod={approvalVotingActive}
+                          active={false}
+                        />
+                      </div>
+                    ))}
+                ) : (
                 {approvalVotingActive && proposals && proposals.length > 0 && (
                   <div className="mt-6 w-full flex justify-end">
                     {userHasVotingPower ? (
@@ -507,26 +539,30 @@ export function ProjectRewards({
 
               <div className="flex flex-col gap-6">
                 {currentProjects && currentProjects.length > 0 ? (
-                  currentProjects.map((project: any, i) => (
-                    <ProjectCard
-                      key={`project-card-${i}`}
-                      project={project}
-                      projectContract={projectContract}
-                      hatsContract={hatsContract}
-                      distribute={
-                        rewardVotingActive &&
-                        project.eligible &&
-                        (project!.finalReportLink || project!.finalReportIPFS)
-                      }
-                      distribution={userHasVotingPower ? distribution : undefined}
-                      handleDistributionChange={
-                        userHasVotingPower ? handleDistributionChange : undefined
-                      }
-                      userHasVotingPower={userHasVotingPower}
-                      isVotingPeriod={rewardVotingActive}
-                      active={true}
-                    />
-                  ))
+                  currentProjects
+                    .filter((project: any, i) => {
+                      return project.eligible
+                    })
+                    .map((project: any, i) => (
+                      <ProjectCard
+                        key={`project-card-${i}`}
+                        project={project}
+                        projectContract={projectContract}
+                        hatsContract={hatsContract}
+                        distribute={
+                          rewardVotingActive &&
+                          project.eligible &&
+                          (project!.finalReportLink || project!.finalReportIPFS)
+                        }
+                        distribution={userHasVotingPower ? distribution : undefined}
+                        handleDistributionChange={
+                          userHasVotingPower ? handleDistributionChange : undefined
+                        }
+                        userHasVotingPower={userHasVotingPower}
+                        isVotingPeriod={rewardVotingActive}
+                        active={true}
+                      />
+                    ))
                 ) : (
                   <div className="text-center py-8 text-gray-400">
                     <p>There are no active projects.</p>

@@ -1,11 +1,19 @@
-import { DEFAULT_CHAIN_V5, PROJECT_TABLE_NAMES, DISTRIBUTION_TABLE_NAMES } from 'const/config'
+import ProposalsABI from 'const/abis/Proposals.json'
+import {
+  DEFAULT_CHAIN_V5,
+  PROJECT_TABLE_NAMES,
+  DISTRIBUTION_TABLE_NAMES,
+  PROPOSALS_ADDRESSES,
+} from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { getContract, readContract } from 'thirdweb'
 import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
+import { getProposalStatus } from '@/lib/nance/useProposalStatus'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/client'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
 import { ProjectRewards, ProjectRewardsProps } from '@/components/nance/ProjectRewards'
@@ -38,6 +46,12 @@ export async function getStaticProps() {
 
     const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]}`
     const projects = (await queryTable(chain, projectStatement)) || []
+    const proposalContract = getContract({
+      client: serverClient,
+      address: PROPOSALS_ADDRESSES[chainSlug],
+      abi: ProposalsABI.abi as any,
+      chain: chain,
+    })
 
     const proposals: Project[] = []
     const currentProjects: Project[] = []
@@ -49,7 +63,23 @@ export async function getStaticProps() {
           if (activeStatus == PROJECT_PENDING) {
             const proposalResponse = await fetch(project.proposalIPFS)
             const proposalJSON = await proposalResponse.json()
-            if (!proposalJSON.nonProjectProposal) {
+            const tempCheckApproved = await readContract({
+              contract: proposalContract,
+              method: 'tempCheckApproved' as string,
+              params: [project.MDP],
+            })
+            const tempCheckFailed = await readContract({
+              contract: proposalContract,
+              method: 'tempCheckFailed' as string,
+              params: [project.MDP],
+            })
+            const proposalStatus = getProposalStatus(
+              project.active,
+              tempCheckApproved,
+              tempCheckFailed
+            )
+            project.status = proposalStatus
+            if (!proposalJSON?.nonProjectProposal) {
               proposals.push(project)
             }
           } else if (activeStatus == PROJECT_ACTIVE) {

@@ -368,7 +368,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     }
   }
 
-  const mdp = project.MDP
+  const mdp = project?.MDP
   const tempCheckApproved = await readContract({
     contract: proposalContract,
     method: 'tempCheckApproved' as string,

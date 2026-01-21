@@ -14,8 +14,8 @@ import useProjectData, { Project } from '@/lib/project/useProjectData'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { normalizeJsonString } from '@/lib/utils/rewards'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
-import NumberStepper from '../layout/NumberStepper'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
+import NumberStepper from '../layout/NumberStepper'
 import StandardButton from '../layout/StandardButton'
 
 type ProjectCardProps = {
@@ -73,28 +73,30 @@ const ProjectCardContent = memo(
       >
         <div className="flex justify-between items-start">
           <div className="w-full flex flex-col gap-3">
-            <Link href={`/project/${project?.MDP}`} passHref>
-              <div className="flex justify-between items-start">
-                <h4 className="font-bold text-white leading-tight">{project?.name || ''}</h4>
-                <span
-                  className={`mr-4 px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
-                    project.active == PROJECT_ACTIVE
-                      ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                      : project.active == PROJECT_PENDING
-                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                      : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-                  }`}
-                >
-                  {proposalJSON?.nonProjectProposal
-                    ? 'Non-project Proposal'
-                    : project.active == PROJECT_ACTIVE
-                    ? 'Active'
+            <div className="flex justify-between items-start">
+              <Link href={`/project/${project?.MDP}`} passHref>
+                <h1 className="font-GoodTimes text-white text-xl hover:text-moon-gold transition-colors cursor-pointer">
+                  {project?.name || ''}
+                </h1>
+              </Link>
+              <span
+                className={`mr-4 px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
+                  project.active == PROJECT_ACTIVE
+                    ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                     : project.active == PROJECT_PENDING
-                    ? `Budget: ${proposalJSON?.ethBudget} ETH`
-                    : 'Inactive'}
-                </span>
-              </div>
-            </Link>
+                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                    : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                }`}
+              >
+                {proposalJSON?.nonProjectProposal
+                  ? 'Non-project Proposal'
+                  : project.active == PROJECT_ACTIVE
+                  ? 'Active'
+                  : project.active == PROJECT_PENDING
+                  ? `Budget: ${proposalJSON?.ethBudget} ETH`
+                  : 'Inactive'}
+              </span>
+            </div>
             {(project?.finalReportLink || project?.finalReportIPFS) && (
               <StandardButton
                 className={`bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-fit text-sm px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${
