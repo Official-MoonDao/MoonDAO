@@ -69,18 +69,18 @@ const ProjectCardContent = memo(
     return (
       <div
         id="card-container"
-        className="p-6 pb-6 flex flex-col gap-3 relative w-full h-[200px] max-h-[200px] overflow-hidden bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg transition-all duration-300 hover:bg-gradient-to-br hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl hover:scale-[1.02]"
+        className="p-4 sm:p-6 pb-6 flex flex-col gap-3 relative w-full h-auto min-h-[200px] sm:h-[200px] sm:max-h-[200px] overflow-hidden bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg transition-all duration-300 hover:bg-gradient-to-br hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl hover:scale-[1.02]"
       >
-        <div className="flex justify-between items-start">
-          <div className="w-full flex flex-col gap-3">
-            <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
+          <div className="flex-1 min-w-0 flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
               <Link href={`/project/${project?.MDP}`} passHref>
-                <h1 className="font-GoodTimes text-white text-xl hover:text-moon-gold transition-colors cursor-pointer">
+                <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
                   {project?.name || ''}
                 </h1>
               </Link>
               <span
-                className={`mr-4 px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
+                className={`w-fit sm:mr-4 px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
                   project.active == PROJECT_ACTIVE
                     ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                     : project.active == PROJECT_PENDING
@@ -100,7 +100,7 @@ const ProjectCardContent = memo(
             {(project?.finalReportLink || project?.finalReportIPFS) && (
               <StandardButton
                 className={`bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-fit text-sm px-3 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ${
-                  distribute && 'mr-4'
+                  distribute && 'sm:mr-4'
                 }`}
                 link={
                   project?.finalReportIPFS ? `/project/${project.MDP}` : project?.finalReportLink
@@ -117,7 +117,7 @@ const ProjectCardContent = memo(
           </div>
           {distribute &&
             (userContributed ? (
-              <div className="flex flex-col items-end">
+              <div className="flex flex-col items-start sm:items-end flex-shrink-0">
                 <p className="text-gray-400">
                   {isMembershipDataLoading ? 'Checking...' : 'Contributed'}
                 </p>
@@ -130,21 +130,23 @@ const ProjectCardContent = memo(
                 )}
               </div>
             ) : (
-              <NumberStepper
-                number={distribution?.[project?.id] || 0}
-                setNumber={(value: any) => {
-                  if (distribution && handleDistributionChange) {
-                    handleDistributionChange(String(project?.id), value)
-                  }
-                }}
-                step={1}
-                min={0}
-                max={100}
-                isDisabled={!userHasVotingPower}
-              />
+              <div className="flex-shrink-0">
+                <NumberStepper
+                  number={distribution?.[project?.id] || 0}
+                  setNumber={(value: any) => {
+                    if (distribution && handleDistributionChange) {
+                      handleDistributionChange(String(project?.id), value)
+                    }
+                  }}
+                  step={1}
+                  min={0}
+                  max={100}
+                  isDisabled={!userHasVotingPower}
+                />
+              </div>
             ))}
           {!distribute && isVotingPeriod && (
-            <div className="flex flex-col items-end">
+            <div className="flex flex-col items-start sm:items-end flex-shrink-0">
               <p className="text-gray-400 text-sm">Ineligible</p>
             </div>
           )}

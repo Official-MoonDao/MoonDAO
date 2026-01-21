@@ -1,3 +1,4 @@
+import confetti from 'canvas-confetti'
 import DistributionTableABI from 'const/abis/DistributionTable.json'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
@@ -347,7 +348,19 @@ export function ProjectRewards({
           account,
         })
       }
-      if (receipt) setTimeout(() => router.push('/projects/thank-you'), 5000)
+      if (receipt) {
+        toast.success('Distribution submitted successfully!', {
+          style: toastStyle,
+        })
+        confetti({
+          particleCount: 150,
+          spread: 100,
+          origin: { y: 0.6 },
+          shapes: ['circle', 'star'],
+          colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
+        })
+        setTimeout(() => router.push('/projects/thank-you'), 3000)
+      }
     } catch (error) {
       console.error('Error submitting distribution:', error)
       toast.error('Error submitting distribution. Please try again.', {
@@ -425,20 +438,10 @@ export function ProjectRewards({
               id="projects-container"
               className="bg-black/20 rounded-xl p-6 border border-white/10"
             >
-              <h1
-                className={`font-GoodTimes text-white/80 text-xl mb-6 ${
-                  !isMobile && 'justify-between flex'
-                }`}
-              >
+              <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
                 <Tooltip text="Distribute voting power among the proposals by percentage." wrap>
                   Proposals
                 </Tooltip>
-                {
-                  <div>
-                    Allocated: {totalAllocated}% &nbsp;&nbsp;Voting Power:{' '}
-                    {Math.round(userVotingPower) || 0}{' '}
-                  </div>
-                }
               </h1>
               <p className="mb-4">
                 Distribute 100% of your voting power between eligible projects. Give a higher
@@ -477,7 +480,11 @@ export function ProjectRewards({
                   </div>
                 )}
                 {approvalVotingActive && proposals && proposals.length > 0 && (
-                  <div className="mt-6 w-full flex justify-end">
+                  <div className="mt-6 w-full flex flex-col items-end gap-2">
+                    <div className="text-white/80 font-RobotoMono text-sm">
+                      Allocated: {totalAllocated}% &nbsp;&nbsp;Voting Power:{' '}
+                      {Math.round(userVotingPower) || 0}
+                    </div>
                     {userHasVotingPower ? (
                       <span className="flex flex-col md:flex-row md:items-center gap-2">
                         <PrivyWeb3Button
