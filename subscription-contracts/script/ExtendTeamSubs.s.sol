@@ -7,7 +7,7 @@ import {MoonDAOTeam} from "../src/ERC5643.sol";
 import {Whitelist} from "../src/Whitelist.sol";
 
 contract ExtendTeamSubsScript is Script {
-    address constant TEAM_CONTRACT = 0x21d2C4bEBd1AEb830277F8548Ae30F505551f961;
+    address constant TEAM_CONTRACT = 0xAB2C354eC32880C143e87418f80ACc06334Ff55F;
     address constant DISCOUNT_LIST_CONTRACT = 0x755D48e6C3744B723bd0326C57F99A92a3Ca3287;
     address constant MULTISIG_ADDRESS = 0xB39d2874908F64dB33adde8b4739a9bFe83F9cFC;
     

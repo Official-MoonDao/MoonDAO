@@ -37,6 +37,7 @@ ETHERSCAN_API_KEY=$SEPOLIA_ETHERSCAN_API_KEY PRIVATE_KEY=$PRIVATE_KEY forge scri
 `source .env`
 `forge test --via-ir --fork-url $SEPOLIA_RPC_URL --match-path test/EntityTest.t.sol -vv`
 `forge script script/Project.s.sol:MyScript --via-ir --rpc-url $SEPOLIA_RPC_URL --broadcast --verify -vv`
+forge script script/ExtendTeamSubs.s.sol:ExtendTeamSubsScript --via-ir --optimize --rpc-url 127.0.0.1:8545 --broadcast --verify -vv
 
 ### Running tests locally
 
