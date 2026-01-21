@@ -63,23 +63,23 @@ export async function getStaticProps() {
           if (activeStatus == PROJECT_PENDING) {
             const proposalResponse = await fetch(project.proposalIPFS)
             const proposalJSON = await proposalResponse.json()
-            const tempCheckApproved = await readContract({
-              contract: proposalContract,
-              method: 'tempCheckApproved' as string,
-              params: [project.MDP],
-            })
-            const tempCheckFailed = await readContract({
-              contract: proposalContract,
-              method: 'tempCheckFailed' as string,
-              params: [project.MDP],
-            })
-            const proposalStatus = getProposalStatus(
-              project.active,
-              tempCheckApproved,
-              tempCheckFailed
-            )
-            project.status = proposalStatus
             if (!proposalJSON?.nonProjectProposal) {
+              const tempCheckApproved = await readContract({
+                contract: proposalContract,
+                method: 'tempCheckApproved' as string,
+                params: [project.MDP],
+              })
+              const tempCheckFailed = await readContract({
+                contract: proposalContract,
+                method: 'tempCheckFailed' as string,
+                params: [project.MDP],
+              })
+              const proposalStatus = getProposalStatus(
+                project.active,
+                tempCheckApproved,
+                tempCheckFailed
+              )
+              project.status = proposalStatus
               proposals.push(project)
             }
           } else if (activeStatus == PROJECT_ACTIVE) {
