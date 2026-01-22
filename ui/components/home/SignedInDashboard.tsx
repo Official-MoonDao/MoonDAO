@@ -37,6 +37,7 @@ import {
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
   TEAM_ADDRESSES,
+  ETH_BUDGET,
 } from 'const/config'
 import { BLOCKED_PROJECTS } from 'const/whitelist'
 import dynamic from 'next/dynamic'
@@ -1088,7 +1089,7 @@ export default function SignedInDashboard({
         {/* Active Projects Section - Full Width */}
         <DashboardActiveProjects
           currentProjects={currentProjects}
-          ethBudget={ethBudget}
+          ethBudget={ETH_BUDGET}
           showBudget={true}
           maxProjects={6}
         />
@@ -1299,7 +1300,9 @@ export default function SignedInDashboard({
             </StandardButton>
           </div>
 
-          <div className={`relative w-full h-[400px] sm:h-[500px] lg:h-[650px] xl:h-[700px] ${networkCard.base} overflow-hidden`}>
+          <div
+            className={`relative w-full h-[400px] sm:h-[500px] lg:h-[650px] xl:h-[700px] ${networkCard.base} overflow-hidden`}
+          >
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex items-center justify-center">
                 <LazyEarth
@@ -1311,7 +1314,10 @@ export default function SignedInDashboard({
             </div>
 
             {/* Enhanced Stats overlay with optimized glassmorphism */}
-            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 lg:top-6 lg:left-6 bg-black/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none" style={{ contain: 'paint' }}>
+            <div
+              className="absolute top-3 left-3 sm:top-4 sm:left-4 lg:top-6 lg:left-6 bg-black/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none"
+              style={{ contain: 'paint' }}
+            >
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
                   {citizenSubgraphData?.transfers?.length || '145'}
@@ -1320,7 +1326,10 @@ export default function SignedInDashboard({
               </div>
             </div>
 
-            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 lg:top-6 lg:right-6 bg-black/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none" style={{ contain: 'paint' }}>
+            <div
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 lg:top-6 lg:right-6 bg-black/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none"
+              style={{ contain: 'paint' }}
+            >
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
                   {countUniqueCountries(citizensLocationData)} {/* Unique countries */}
@@ -1329,7 +1338,10 @@ export default function SignedInDashboard({
               </div>
             </div>
 
-            <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 lg:bottom-6 lg:left-6 bg-black/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none" style={{ contain: 'paint' }}>
+            <div
+              className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 lg:bottom-6 lg:left-6 bg-black/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none"
+              style={{ contain: 'paint' }}
+            >
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
                   24/7
@@ -1338,7 +1350,10 @@ export default function SignedInDashboard({
               </div>
             </div>
 
-            <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 lg:bottom-6 lg:right-6 bg-black/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none" style={{ contain: 'paint' }}>
+            <div
+              className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 lg:bottom-6 lg:right-6 bg-black/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/10 max-w-[120px] sm:max-w-none"
+              style={{ contain: 'paint' }}
+            >
               <div className="text-white">
                 <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 leading-tight">
                   {filteredTeams?.length || '0'}
