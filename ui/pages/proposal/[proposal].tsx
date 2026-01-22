@@ -1,4 +1,5 @@
 import { NanceProvider } from '@nance/nance-hooks'
+import { BLOCKED_PROPOSALS } from 'const/whitelist'
 import { ProposalPacket, getActionsFromBody, getProposal } from '@nance/nance-sdk'
 import { GetServerSideProps } from 'next'
 import { createEnumParam, useQueryParams, withDefault } from 'next-query-params'
@@ -140,6 +141,7 @@ export const getServerSideProps: GetServerSideProps<{
     const params = context.params
     const uuid = params?.proposal as string
     if (!uuid) throw new Error('Proposal not found')
+    if (BLOCKED_PROPOSALS.has(Number(uuid))) return { notFound: true }
     const proposalPacket = await getProposal({ space: NANCE_SPACE_NAME, uuid }, NANCE_API_URL)
     return {
       props: {

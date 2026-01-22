@@ -1,4 +1,5 @@
 import { DocumentMagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { BLOCKED_PROPOSALS } from 'const/whitelist'
 import { ChevronRightIcon } from '@heroicons/react/24/solid'
 import { Project } from '@/lib/project/useProjectData'
 import {
