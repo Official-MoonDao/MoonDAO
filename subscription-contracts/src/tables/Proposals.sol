@@ -50,10 +50,6 @@ contract Proposals is ERC721Holder, Ownable {
         return  ((senators.senatorCount() * 7) + 9) / 10;
     }
 
-    function getThreshold() public view returns (uint256) {
-        return ((senators.senatorCount() * 2) + 2) / 3;
-    }
-
     function voteTempCheck(uint256 mdp, bool approve) external {
         require(senators.isSenator(msg.sender), "Must be a senator to vote on temp check");
         require(!tempCheckApproved[mdp], "Temp check already passed");
@@ -75,23 +71,20 @@ contract Proposals is ERC721Holder, Ownable {
                 tempCheckApprovalCount[mdp]--;
             }
         }
-        if (tempCheckVoteCount[mdp] >= getQuorum()){
-            if (tempCheckApprovalCount[mdp] >= getThreshold()){
-                tempCheckApproved[mdp] = true;
-                tempCheckApprovedTimestamp[mdp] = block.timestamp;
-            } else {
-                tempCheckFailed[mdp] = true;
-            }
-        }
+        tallyVotes(mdp);
     }
 
-    function tallyVotes(uint256 mdp) external {
+    function tallyVotes(uint256 mdp) public {
         if (tempCheckVoteCount[mdp] >= getQuorum()){
-            if (tempCheckApprovalCount[mdp] >= getThreshold()){
+            // Check if at least 2/3 of the senators voted in favor of the proposal
+            if (tempCheckApprovalCount[mdp] * 3 >= tempCheckVoteCount[mdp] * 2){
                 tempCheckApproved[mdp] = true;
                 tempCheckApprovedTimestamp[mdp] = block.timestamp;
+                tempCheckFailed[mdp] = false;
             } else {
                 tempCheckFailed[mdp] = true;
+                tempCheckApproved[mdp] = false;
+                tempCheckApprovedTimestamp[mdp] = 0;
             }
         }
     }
