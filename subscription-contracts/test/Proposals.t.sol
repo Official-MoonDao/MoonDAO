@@ -70,13 +70,14 @@ contract ProposalsTest is Test {
         proposals.getTableId();
     }
 
-    function testThreshold() public {
-        assertEq(proposals.getThreshold(), 2);
+    function testQuorum() public {
+        assertEq(proposals.getQuorum(), 3);
     }
 
-    function testThresholdChanges() public {
+    function testQuorumChanges() public {
         senators.addSenator(user4);
-        assertEq(proposals.getThreshold(), 3);
+        assertEq(proposals.getQuorum(), 3);
     }
+
 }
 
