@@ -138,7 +138,7 @@ export default function ProposalList({
                   compact ? 'grid-cols-1' : 'lg:grid-cols-2'
                 }`}
               >
-                {projects.map((project) => (
+                {projects.slice(0, itemsPerPage).map((project) => (
                   <div
                     key={project.id}
                     className={`h-auto bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 hover:scale-[1.02]`}
