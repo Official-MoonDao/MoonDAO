@@ -59,10 +59,7 @@ async function getAbstract(proposalBody: string): Promise<string | null> {
 }
 
 // Parse addresses out of proposal body via LLM
-async function getAddresses(
-  proposalBody: string,
-  patterns: string[]
-): Promise<[string[], string[]]> {
+async function getAddresses(proposalBody: string, patterns: string[]): Promise<string[]> {
   const roleDescription = patterns.join(' or ')
   const thePrompt =
     `You are reading a DAO proposal written in markdown. There will be Team Rocketeers, and Intial Team, and Multi-sig signers. Extract the usernames and corresponding Ethereum addresses for just the ${roleDescription}.\n` +

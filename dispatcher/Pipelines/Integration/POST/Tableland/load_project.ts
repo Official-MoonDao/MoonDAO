@@ -15,6 +15,7 @@ const {
 const {
   PROJECT_TABLE_ADDRESSES,
   PROJECT_CREATOR_ADDRESSES,
+  IPFS_GATEWAY,
 } = require("../../../../../ui/const/config.ts");
 
 // Configuration constants
@@ -65,7 +66,7 @@ async function getAbstract(proposalBody: string): Promise<string | null> {
 async function getAddresses(
   proposalBody: string,
   patterns: string[]
-): Promise<[string[], string[]]> {
+): Promise<string[]> {
   const roleDescription = patterns.join(" or ");
   const thePrompt =
     `You are reading a DAO proposal written in markdown. There will be Team Rocketeers, and Intial Team, and Multi-sig signers. Extract the usernames and corresponding Ethereum addresses for just the ${roleDescription}.\n` +
@@ -103,7 +104,6 @@ async function getAddresses(
       parsed = [];
     }
 
-    const usernames: string[] = [];
     const addresses: string[] = [];
     const provider = new ethers.providers.JsonRpcProvider(
       "https://eth.llamarpc.com"
@@ -123,19 +123,19 @@ async function getAddresses(
         address = await provider.resolveName(ens);
       }
 
-      if (username) usernames.push(username);
       if (address) addresses.push(address);
     }
 
-    return [addresses, usernames];
+    return addresses;
   } catch (error) {
     console.error("LLM address extraction failed:", error);
-    return [[], []];
+    return [];
   }
 }
 
 interface PinResponse {
   cid: string;
+  url: string;
 }
 export async function pinBlobOrFile(
   blob: Blob,
@@ -144,7 +144,9 @@ export async function pinBlobOrFile(
   try {
     const url = "https://api.pinata.cloud/pinning/pinFileToIPFS";
     const formData = new FormData();
-    formData.append("pinataMetadata", JSON.stringify({ name: name }));
+    if (name) {
+      formData.append("pinataMetadata", JSON.stringify({ name: name }));
+    }
     formData.append("pinataOptions", JSON.stringify({ cidVersion: 0 }));
     formData.append("file", blob);
     const response = await fetch(url, {
@@ -161,7 +163,8 @@ export async function pinBlobOrFile(
     }
 
     const jsonData = await response.json();
-    return { cid: jsonData.IpfsHash };
+    const outUrl = `${IPFS_GATEWAY}${jsonData.IpfsHash}`;
+    return { cid: jsonData.IpfsHash, url: outUrl };
   } catch (error) {
     console.error("pinBlobToIPFS failed:", error);
     throw error;
@@ -199,7 +202,7 @@ async function loadProjectData() {
 
     // Get proposals from Nance
     const nextProposalId = await getNextProposalId("moondao");
-    let cycle = 64;
+    let cycle = 82;
     let doneLooping = false;
     while (!doneLooping) {
       const proposals = await getProposals("moondao", cycle++);
@@ -237,24 +240,19 @@ async function loadProjectData() {
           );
           continue;
         }
-        var members = [];
-        var membersUsernames = [];
-        const [leads, leadsUsernames] = await getAddresses(proposal.body, [
-          "Team Rocketeer",
-          "Project Lead",
-        ]);
-        [members, membersUsernames] = await getAddresses(proposal.body, [
-          "Initial Team",
+
+        let [leads, members, signers, abstractFull] = await Promise.all([
+          getAddresses(proposal.body, ["Team Rocketeer", "Project Lead"]),
+          getAddresses(proposal.body, ["Initial Team"]),
+          getAddresses(proposal.body, ["Multi-sig signers"]),
+          getAbstract(proposal.body),
         ]);
         // Only allow the first lead to be the lead for smart contract purposes
+        const lead = leads[0] || proposal.authorAddress;
         if (leads.length > 1) {
           members = [...leads.slice(1), ...members];
-          membersUsernames = [...leadsUsernames.slice(1), ...membersUsernames];
         }
-        const [signers, signersUsernames] = await getAddresses(proposal.body, [
-          "Multi-sig signers",
-        ]);
-        const abstractText = (await getAbstract(proposal.body)).slice(0, 1000);
+        const abstractText = abstractFull?.slice(0, 1000);
 
         // parse out tables from proposal.body which is in markdown format
         const getHatMetadataIPFS = async function (hatType: string) {
@@ -283,13 +281,19 @@ async function loadProjectData() {
         const upfrontPayment = proposal.upfrontPayment
           ? JSON.stringify(proposal.upfrontPayment)
           : "";
+        // FIXME add budgets
+        const budgets = {};
+        if (!(proposal.proposalId in budgets)) {
+          console.log("Skipping due to no budget");
+          continue;
+        }
         // allow keyboard input to confirm the proposal, otherwise skip
         const conf = prompt(
           `Create project for proposal ${proposal.proposalId} ${
             proposal.title
           }?\n\nlead ${leads[0]}\nmembers [${
             members.length > 0 ? members : [proposal.authorAddress]
-          }]\n (${membersUsernames})\nsigners [${signers}]\n (${signersUsernames})\nabstract:\n ${abstractText}\n (y/n)`
+          }]\nsigners [${signers}]\nabstract:\n ${abstractText}\n (y/n)`
         );
         if (conf !== "y") {
           console.log(
@@ -322,20 +326,42 @@ async function loadProjectData() {
           );
           continue;
         }
+
+        const header = `# ${proposal.title}\n\n`;
+        const fileName = `${proposal.title.replace(/\s+/g, "-")}.md`;
+
+        const fileContents = JSON.stringify({
+          body: header + proposal.body,
+          budget: [
+            {
+              amount: String(budgets[proposal.proposalId]),
+              token: "ETH",
+              justification: "dev cost",
+            },
+          ],
+
+          authorAddress: proposal.authorAddress,
+          nonProjectProposal: false,
+        });
+        const file = new File([fileContents], fileName, {
+          type: "application/json",
+        });
+        const { url: proposalIPFS } = await pinBlobOrFile(file, "");
+
         await projectTeamCreatorContract.call("createProjectTeam", [
           adminHatMetadataIpfs.value,
           managerHatMetadataIpfs.value,
           memberHatMetadataIpfs.value,
-          proposal.title,
-          abstractText, // description
+          proposal.title.replace(/'/g, "''"),
+          abstractText.replace(/'/g, "''"), // description
           "", // image
           quarter,
           year,
           proposal.proposalId,
-          "", // proposal ipfs
+          proposalIPFS, // proposal ipfs
           "https://moondao.com/proposal/" + proposal.proposalId,
           upfrontPayment,
-          leads[0] || "", // leadAddress,
+          leads[0] || proposal.authorAddress, // leadAddress,
           members.length > 0 ? members : [proposal.authorAddress], // members
           signers.length > 0 ? signers : [proposal.authorAddress], // signers,
         ]);
