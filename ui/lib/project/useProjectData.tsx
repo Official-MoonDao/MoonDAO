@@ -1,8 +1,10 @@
 //This hook fetches all project data based on a project tableland entry (not an NFT)
 import { useEffect, useMemo, useState } from 'react'
-import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { PROJECT_ACTIVE } from '@/lib/nance/types'
+import ProjectABI from 'const/abis/Project.json'
+import HatsABI from 'const/abis/Hats.json'
+import { engineMulticall, EngineReadParams } from '@/lib/thirdweb/engine'
 
 export type Project = {
   MDP: number
@@ -76,63 +78,103 @@ export default function useProjectData(
   }, [project?.finalReportIPFS])
 
   useEffect(() => {
-    async function checkManager() {
+    async function fetchProjectContractData() {
+      if (!projectContract?.address || !projectContract?.chain?.id || !project?.id) {
+        setIsManager(false)
+        return
+      }
+
+      setIsLoading(true)
       try {
+        const contractAddress = projectContract.address
+        const chainId = projectContract.chain.id
+
+        const params: EngineReadParams[] = [
+          {
+            contractAddress,
+            method: 'teamAdminHat',
+            params: [project.id],
+            abi: ProjectABI,
+          },
+          {
+            contractAddress,
+            method: 'teamManagerHat',
+            params: [project.id],
+            abi: ProjectABI,
+          },
+        ]
+
+        // Only add manager check params if address is available
         if (address) {
-          const isAddressManager: any = await readContract({
-            contract: projectContract,
-            method: 'isManager' as string,
-            params: [project?.id, address],
-          })
-          const owner: any = await readContract({
-            contract: projectContract,
-            method: 'ownerOf' as string,
-            params: [project?.id],
-          })
+          params.push(
+            {
+              contractAddress,
+              method: 'isManager',
+              params: [project.id, address],
+              abi: ProjectABI,
+            },
+            {
+              contractAddress,
+              method: 'ownerOf',
+              params: [project.id],
+              abi: ProjectABI,
+            }
+          )
+        }
+
+        const results = await engineMulticall<{ result: any }>(params, { chainId })
+
+        // Set hat IDs
+        setAdminHatId(results[0]?.result ?? null)
+        setManagerHatId(results[1]?.result ?? null)
+
+        // Set manager status if address was provided
+        if (address && results.length >= 4) {
+          const isAddressManager = results[2]?.result
+          const owner = results[3]?.result
           setIsManager(isAddressManager || owner === address)
         } else {
           setIsManager(false)
         }
-      } catch (err) {
+      } catch (error) {
+        console.error('Failed to fetch project contract data:', error)
         setIsManager(false)
+        setAdminHatId(null)
+        setManagerHatId(null)
+      } finally {
+        setIsLoading(false)
       }
-    }
-    async function getHats() {
-      const results = await Promise.allSettled([
-        readContract({
-          contract: projectContract,
-          method: 'teamAdminHat' as string,
-          params: [project?.id || ''],
-        }),
-        readContract({
-          contract: projectContract,
-          method: 'teamManagerHat' as string,
-          params: [project?.id || ''],
-        }),
-      ])
-
-      const adminHID = results[0].status === 'fulfilled' ? results[0].value : null
-      const managerHID = results[1].status === 'fulfilled' ? results[1].value : null
-
-      setAdminHatId(adminHID)
-      setManagerHatId(managerHID)
     }
 
     if (projectContract) {
-      checkManager()
-      getHats()
+      fetchProjectContractData()
     }
   }, [address, project, projectContract])
 
   useEffect(() => {
     async function getHatTreeId() {
-      const hatTreeId = await readContract({
-        contract: hatsContract,
-        method: 'getTopHatDomain' as string,
-        params: [adminHatId],
-      })
-      setHatTreeId(hatTreeId)
+      if (!hatsContract?.address || !hatsContract?.chain?.id || !adminHatId) return
+
+      try {
+        const params: EngineReadParams[] = [
+          {
+            contractAddress: hatsContract.address,
+            method: 'getTopHatDomain',
+            params: [adminHatId],
+            abi: HatsABI,
+          },
+        ]
+
+        const results = await engineMulticall<{ result: any }>(params, {
+          chainId: hatsContract.chain.id,
+        })
+
+        setHatTreeId(results[0]?.result)
+      } catch (error) {
+        console.error('Failed to fetch hat tree ID:', error)
+      }
     }
+
     if (hatsContract && adminHatId) getHatTreeId()
   }, [adminHatId, hatsContract])
 

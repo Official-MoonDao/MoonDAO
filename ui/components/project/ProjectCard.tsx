@@ -359,7 +359,7 @@ const ProjectCardContent = memo(
               </StandardButton>
             )}
           </div>
-          {IS_SENATE_VOTE && project?.MDP && (
+          {IS_SENATE_VOTE && project?.MDP && project.active === PROJECT_PENDING && (
             <SenateVoteButtons mdp={project.MDP} />
           )}
           {!IS_SENATE_VOTE && distribute &&

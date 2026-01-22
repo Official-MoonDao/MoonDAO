@@ -478,18 +478,14 @@ export function ProjectRewards({
       />
       <Container>
         <ContentLayout
-          header={'Projects'}
-          description={
-            'View active projects and allocate retroactive rewards to completed projects and their contributors based on impact and results.'
-          }
-          headerSize="max(20px, 3vw)"
           preFooter={<NoticeFooter />}
           mainPadding
           mode="compact"
           popOverEffect={false}
           isProfile
+          branded={false}
         >
-          <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px]">
+          <div className="mt-8 md:mt-12 flex flex-col gap-6 px-4 md:px-0 max-w-[1200px]">
             {/* Condensed Top Section - Rewards + Create Button */}
             <div className="bg-black/20 rounded-xl p-4 border border-white/10">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
@@ -543,12 +539,12 @@ export function ProjectRewards({
               <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
                 {IS_SENATE_VOTE ? (
                   <>
-                    Proposals
+                    Project Proposals
                     <span className="ml-2 text-sm font-normal text-orange-400">(Senate Vote)</span>
                   </>
                 ) : (
                   <Tooltip text="Distribute voting power among the proposals by percentage." wrap>
-                    Proposals
+                    Project Proposals
                     {IS_MEMBER_VOTE && (
                       <span className="ml-2 text-sm font-normal text-emerald-400">(Member Vote)</span>
                     )}
@@ -600,7 +596,7 @@ export function ProjectRewards({
                     ))
                 ) : (
                   <div className="text-center py-8 text-gray-400">
-                    <p>There are no active Proposals.</p>
+                    <p>There are no active Project Proposals.</p>
                   </div>
                 )}
                 {approvalVotingActive && !IS_SENATE_VOTE && proposals && proposals.length > 0 && (
