@@ -5,5 +5,6 @@ export const BLOCKED_MISSIONS: any = new Set(
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? [0, 1, 2] : []
 )
 export const BLOCKED_PROJECTS: any = new Set([4, 10, 14])
+export const BLOCKED_PROPOSALS: any = new Set([221])
 
 export const FEATURED_TEAMS: any = [6, 7, 8, 13, 1, 9, 5, 4, 2]
