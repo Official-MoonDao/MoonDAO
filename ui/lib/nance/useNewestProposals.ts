@@ -1,4 +1,5 @@
 import { useProposals } from '@nance/nance-hooks'
+import { BLOCKED_PROPOSALS } from 'const/whitelist'
 import { ProposalsPacket, getActionsFromBody } from '@nance/nance-sdk'
 import {
   BooleanParam,
@@ -9,10 +10,7 @@ import {
 } from 'next-query-params'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
-import {
-  SnapshotGraphqlProposalVotingInfo,
-  useVotingInfoOfProposals,
-} from '../snapshot'
+import { SnapshotGraphqlProposalVotingInfo, useVotingInfoOfProposals } from '../snapshot'
 import { NANCE_SPACE_NAME } from './constants'
 
 export default function useNewestProposals(proposalLimit: number) {
@@ -35,16 +33,15 @@ export default function useNewestProposals(proposalLimit: number) {
   // Process proposals to extract actions from body if not already present
   const proposals = useMemo(() => {
     if (!proposalData?.data.proposals) return undefined
-    
-    return proposalData.data.proposals.map((p: any) => {
-      return {
-        ...p,
-        actions:
-          p.actions && p.actions.length > 0
-            ? p.actions
-            : getActionsFromBody(p.body) || [],
-      }
-    })
+
+    return proposalData.data.proposals
+      .filter((p: any) => !BLOCKED_PROPOSALS.has(p.proposalId))
+      .map((p: any) => {
+        return {
+          ...p,
+          actions: p.actions && p.actions.length > 0 ? p.actions : getActionsFromBody(p.body) || [],
+        }
+      })
   }, [proposalData])
 
   const packet = useMemo(() => {
@@ -55,9 +52,7 @@ export default function useNewestProposals(proposalLimit: number) {
     }
   }, [proposalData, proposals]) as ProposalsPacket
 
-  const snapshotIds = proposals
-    ?.map((p) => p.voteURL)
-    .filter((v) => v !== undefined) as string[]
+  const snapshotIds = proposals?.map((p) => p.voteURL).filter((v) => v !== undefined) as string[]
   const { data: votingInfos } = useVotingInfoOfProposals(snapshotIds)
   const votingInfoMap = useMemo(() => {
     const map: { [key: string]: SnapshotGraphqlProposalVotingInfo } = {}
