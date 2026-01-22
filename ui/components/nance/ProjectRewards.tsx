@@ -13,6 +13,8 @@ import {
   POLYGON_ASSETS_URL,
   BASE_ASSETS_URL,
   ETH_BUDGET,
+  IS_SENATE_VOTE,
+  IS_MEMBER_VOTE,
 } from 'const/config'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import _ from 'lodash'
@@ -539,18 +541,40 @@ export function ProjectRewards({
               className="bg-black/20 rounded-xl p-6 border border-white/10"
             >
               <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
-                <Tooltip text="Distribute voting power among the proposals by percentage." wrap>
-                  Proposals
-                </Tooltip>
+                {IS_SENATE_VOTE ? (
+                  <>
+                    Proposals
+                    <span className="ml-2 text-sm font-normal text-orange-400">(Senate Vote)</span>
+                  </>
+                ) : (
+                  <Tooltip text="Distribute voting power among the proposals by percentage." wrap>
+                    Proposals
+                    {IS_MEMBER_VOTE && (
+                      <span className="ml-2 text-sm font-normal text-emerald-400">(Member Vote)</span>
+                    )}
+                  </Tooltip>
+                )}
               </h1>
-              <p className="mb-4">
-                Distribute 100% of your voting power between eligible projects. Give a higher
-                percent to the projects with a bigger impact, and click Submit Distribution.
-              </p>
+              {!IS_SENATE_VOTE && (
+                <p className="mb-4">
+                  {IS_MEMBER_VOTE
+                    ? 'Member Vote: Distribute 100% of your voting power between eligible projects that have passed the Senate vote. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.'
+                    : 'Distribute 100% of your voting power between eligible projects. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.'}
+                </p>
+              )}
               <div className="flex flex-col gap-6">
                 {proposals && proposals.length > 0 ? (
                   proposals
-                    .filter((project: any, i) => {
+                    .filter((project: any) => {
+                      // Senate Vote: show proposals in "Temperature Check" status (not yet approved)
+                      if (IS_SENATE_VOTE) {
+                        return !project.tempCheckApproved
+                      }
+                      // Member Vote: show proposals in "Voting" status (passed Senate vote)
+                      if (IS_MEMBER_VOTE) {
+                        return project.tempCheckApproved
+                      }
+                      // Default: show all proposals that passed temp check (existing behavior)
                       return project.tempCheckApproved
                     })
                     .map((project: any, i) => (
@@ -579,7 +603,7 @@ export function ProjectRewards({
                     <p>There are no active Proposals.</p>
                   </div>
                 )}
-                {approvalVotingActive && proposals && proposals.length > 0 && (
+                {approvalVotingActive && !IS_SENATE_VOTE && proposals && proposals.length > 0 && (
                   <div className="mt-6 w-full flex flex-col items-end gap-2">
                     <div className="text-white/80 font-RobotoMono text-sm">
                       Allocated: {_.sum(Object.values(proposalDistribution))}% &nbsp;&nbsp;Voting Power:{' '}
