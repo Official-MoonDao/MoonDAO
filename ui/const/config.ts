@@ -575,6 +575,13 @@ export const PROJECT_SYSTEM_CONFIG = {
   // Total quarterly budget is displayed dynamically on the page
 }
 
+// Voting Phase Flags
+// Set IS_SENATE_VOTE to true during Senate Vote phase - shows proposals with "Temperature Check" status
+// Set IS_MEMBER_VOTE to true during Member Vote phase - shows proposals with "Voting" status (passed Senate vote)
+// Only one should be true at a time, or both false when no voting is active
+export const IS_SENATE_VOTE = true
+export const IS_MEMBER_VOTE = false
+
 // Quarterly budget in ETH
 export const ETH_BUDGET = 14.15
 export const NEXT_QUARTER_BUDGET_ETH = 11.6
