@@ -96,7 +96,7 @@ export default function GovernanceSection() {
                 textColor="text-white"
                 borderRadius="rounded-full"
                 hoverEffect={false}
-                link="/vote"
+                link="/projects"
               >
                 See Current Proposals
               </StandardButton>

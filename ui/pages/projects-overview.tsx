@@ -23,6 +23,7 @@ import StandardButton from '../components/layout/StandardButton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import DashboardActiveProjects from '@/components/project/DashboardActiveProjects'
 import ProjectCard from '@/components/project/ProjectCard'
+import { PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
 
 // Project System Explainer Card Component
 const ProjectExplainerCard = ({
@@ -297,7 +298,7 @@ const ProjectsOverview: React.FC<{
                     <h4 className="text-xl font-bold text-white mb-3">ETH Rewards</h4>
                     <div className="bg-gradient-to-r from-orange-500/10 to-yellow-500/10 rounded-lg p-3 mb-3 border border-orange-400/20">
                       <div className="text-2xl font-bold text-orange-400">
-                        {ethBudget.toFixed(2)} ETH{' '}
+                        {ETH_BUDGET.toFixed(2)} ETH{' '}
                         <span className="text-lg text-orange-300">
                           ($
                           {usdBudget.toLocaleString(undefined, {
@@ -664,11 +665,11 @@ export const getServerSideProps: GetServerSideProps = async () => {
       for (let i = 0; i < projects.length; i++) {
         if (projects[i]) {
           const project = projects[i] as any
-          // Use the 'active' field to determine current vs past projects
-          if (project.active) {
-            currentProjects.push(project)
-          } else {
-            pastProjects.push(project)
+          const activeStatus = projects[i].active
+          if (activeStatus == PROJECT_ACTIVE) {
+            currentProjects.push(projects[i])
+          } else if (activeStatus == PROJECT_ENDED) {
+            pastProjects.push(projects[i])
           }
         }
       }

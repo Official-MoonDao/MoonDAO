@@ -71,7 +71,7 @@ export default function DashboardActiveProjects({
           {/* Projects Grid - Larger cards with fewer columns for better visibility */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {currentProjects.slice(0, maxProjects).map((project: any, index: number) => (
-              <Link key={index} href={`/project/${project.id}`} passHref>
+              <Link key={index} href={`/project/${project.MDP}`} passHref>
                 <div className="bg-black/30 rounded-xl p-6 border border-green-500/10 cursor-pointer hover:bg-black/40 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 h-[280px] flex flex-col">
                   <div className="flex justify-between items-start mb-4">
                     <h4 className="font-bold text-white text-lg flex-1 mr-3 leading-tight line-clamp-2">

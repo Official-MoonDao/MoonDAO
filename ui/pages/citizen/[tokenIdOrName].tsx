@@ -7,10 +7,12 @@ import {
   MapPinIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline'
+import { PROJECT_PENDING } from '@/lib/nance/types'
 import { getAccessToken } from '@privy-io/react-auth'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
+  PROJECT_TABLE_NAMES,
   CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   JOBS_TABLE_ADDRESSES,
@@ -33,7 +35,6 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import useNewestProposals from '@/lib/nance/useNewestProposals'
 import { useVotesOfAddress } from '@/lib/snapshot'
 import { generatePrettyLinks } from '@/lib/subscription/pretty-links'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
@@ -74,7 +75,7 @@ import HatsABI from '../../const/abis/Hats.json'
 import JobsABI from '../../const/abis/JobBoardTable.json'
 import MarketplaceABI from '../../const/abis/MarketplaceTable.json'
 
-export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
+export default function CitizenDetailPage({ nft, tokenId, hats, proposals }: any) {
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
@@ -153,9 +154,6 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
     address: HATS_ADDRESS,
     abi: HatsABI as any,
   })
-
-  //Nance
-  const { proposals, packet, votingInfoMap } = useNewestProposals(100)
 
   // Marketplace Listings
   const [newListings, setNewListings] = useState<TeamListingType[]>([])
@@ -500,8 +498,8 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
               <></>
             )}
             {isOwner && (
-              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-                <OpenVotes proposals={proposals} packet={packet} votingInfoMap={votingInfoMap} />
+              <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
+                <OpenVotes proposals={proposals} />
               </div>
             )}
             {hats && hats?.length > 0 && (
@@ -557,7 +555,7 @@ export default function CitizenDetailPage({ nft, tokenId, hats }: any) {
                     </SlidingCardMenu>
                   </div>
                 </div>
-                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
+                <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
                   <LatestJobs teamContract={teamContract} jobTableContract={jobTableContract} />
                 </div>
                 <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30">
@@ -787,11 +785,15 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       hats = []
     }
 
+    const proposalsStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE active = ${PROJECT_PENDING}`
+    const proposals = await queryTable(chain, proposalsStatement)
+
     return {
       props: {
         nft,
         tokenId,
         hats,
+        proposals,
       },
     }
   }
@@ -801,6 +803,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
       nft,
       tokenId,
       hats: [],
+      proposals: [],
     },
   }
 }

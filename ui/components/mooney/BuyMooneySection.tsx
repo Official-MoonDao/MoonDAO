@@ -18,7 +18,7 @@ export default function BuyMooneySection({
   selectedChain,
   swapComponent,
   lockLink = '/lock',
-  voteLink = '/vote',
+  voteLink = '/projects',
 }: BuyMooneySectionProps) {
   return (
     <section

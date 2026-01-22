@@ -5,7 +5,7 @@ import {
   PROPOSALS_ADDRESSES,
   DEFAULT_CHAIN_V5,
   PROJECT_TABLE_ADDRESSES,
-  ETH_BUDGET,
+  NEXT_QUARTER_BUDGET_ETH,
 } from 'const/config'
 import { getRelativeQuarter } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
@@ -98,7 +98,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     })
   }
   const account = await createHSMWallet()
-  const projectIdToApproved = getApprovedProjects(passedProjects, outcome, ethBudgets, ETH_BUDGET)
+  const projectIdToApproved = getApprovedProjects(passedProjects, outcome, ethBudgets, NEXT_QUARTER_BUDGET_ETH)
   for (const projectId in projectIdToApproved) {
     const approved = projectIdToApproved[projectId]
     const transaction = prepareContractCall({

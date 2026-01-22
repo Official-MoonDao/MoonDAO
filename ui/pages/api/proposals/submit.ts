@@ -59,10 +59,7 @@ async function getAbstract(proposalBody: string): Promise<string | null> {
 }
 
 // Parse addresses out of proposal body via LLM
-async function getAddresses(
-  proposalBody: string,
-  patterns: string[]
-): Promise<[string[], string[]]> {
+async function getAddresses(proposalBody: string, patterns: string[]): Promise<string[]> {
   const roleDescription = patterns.join(' or ')
   const thePrompt =
     `You are reading a DAO proposal written in markdown. There will be Team Rocketeers, and Intial Team, and Multi-sig signers. Extract the usernames and corresponding Ethereum addresses for just the ${roleDescription}.\n` +
@@ -302,8 +299,8 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
           'ipfs://QmUMm4rHbbkcfBCszfFHmBNvHSyPGNVXJZHpcCG4BMEaNY',
           'ipfs://QmT7LKxDAzaJsBafMbe2B1thaoqkvKgj7Y72QQiuQusnzE',
           'ipfs://QmVjgE2pPQjueixuUcpo6h3z4NBMB5S6BeH617vHSwW74m',
-          proposalTitle.replace(/'/g, "\\'"),
-          abstractText.replace(/'/g, "\\'"), // description
+          proposalTitle.replace(/'/g, "''"),
+          abstractText.replace(/'/g, "''"), // description
           '', // image
           quarter,
           year,

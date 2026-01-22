@@ -48,7 +48,7 @@ export default function Dashboard({
   revenueData,
   mooneyPrice,
   filteredTeams,
-  currentProjects,
+  allProjects,
   missions,
   featuredMissionData,
   citizensLocationData,
@@ -94,7 +94,7 @@ export default function Dashboard({
         revenueData={revenueData}
         mooneyPrice={mooneyPrice}
         filteredTeams={filteredTeams}
-        currentProjects={currentProjects}
+        projects={allProjects}
         missions={missions}
         featuredMissionData={featuredMissionData}
         citizensLocationData={citizensLocationData}
@@ -140,7 +140,7 @@ export async function getStaticProps() {
   }
   let newestTeams: any = []
   let filteredTeams: any = []
-  let currentProjects: Project[] = []
+  let allProjects: Project[] = []
   let missions: any = []
   let featuredMissionData: any = null
   let citizensLocationData: any[] = []
@@ -356,38 +356,13 @@ export async function getStaticProps() {
     newestListings = listings
     newestJobs = jobs
     newestTeams = teams
-
-    // Process projects data for home page display
-    if (projects && projects.length > 0) {
-      const activeProjects = []
-      for (let i = 0; i < projects.length; i++) {
-        if (projects[i]) {
-          const project = projects[i] as any
-          // Use the 'active' field to determine current projects, excluding blocked ones
-          if (project.active && !BLOCKED_PROJECTS.has(project.id)) {
-            activeProjects.push(project)
-          }
-        }
-      }
-
-      // Sort projects by eligible status
-      activeProjects.sort((a, b) => {
-        if (a.eligible === b.eligible) {
-          return 0
-        }
-        return a.eligible ? 1 : -1
-      })
-
-      currentProjects = activeProjects.reverse() as Project[]
-    }
+    allProjects = projects
 
     // Process missions data - simplified to just pass basic data to client
     if (missionRows && missionRows.length > 0) {
       const filteredMissionRows = missionRows.filter((mission: any) => {
         return !BLOCKED_MISSIONS.has(mission.id) && mission && mission.id
       })
-
-      // Only fetch metadata for the first mission to reduce build time
       if (filteredMissionRows.length > 0 && filteredMissionRows[0]?.projectId) {
         try {
           const chain = DEFAULT_CHAIN_V5
@@ -472,7 +447,7 @@ export async function getStaticProps() {
       revenueData,
       mooneyPrice,
       filteredTeams,
-      currentProjects,
+      allProjects,
       missions,
       featuredMissionData,
       citizensLocationData,

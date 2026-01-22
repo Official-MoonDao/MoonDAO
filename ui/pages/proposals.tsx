@@ -1,7 +1,10 @@
 import { NanceProvider } from '@nance/nance-hooks'
-import { NEXT_QUARTER_FUNDING_ETH, MAX_BUDGET_ETH } from 'const/config'
+import { PROJECT_TABLE_NAMES, DEFAULT_CHAIN_V5, NEXT_QUARTER_FUNDING_ETH, MAX_BUDGET_ETH } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
+import { GetServerSideProps } from 'next'
+import { StringParam, useQueryParams } from 'next-query-params'
+import queryTable from '@/lib/tableland/queryTable'
 import React from 'react'
 import { NANCE_API_URL } from '../lib/nance/constants'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
@@ -11,9 +14,11 @@ import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '../components/layout/NoticeFooter'
 import ProposalEditor from '../components/nance/ProposalEditor'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { Project } from '@/lib/project/useProjectData'
 import RewardAsset from '@/components/project/RewardAsset'
 
-export default function ProposalsPage() {
+export default function ProposalsPage({ project }: { project: Project }) {
   const title = 'Propose Project'
 
   useChainDefault()
@@ -126,9 +131,7 @@ export default function ProposalsPage() {
                   </p>
                 </div>
               </div>
-              <NanceProvider apiUrl={NANCE_API_URL}>
-                <ProposalEditor />
-              </NanceProvider>
+              <ProposalEditor project={project} />
             </div>
           </ContentLayout>
           <NoticeFooter
@@ -144,4 +147,26 @@ export default function ProposalsPage() {
       </section>
     </>
   )
+}
+
+export const getServerSideProps: GetServerSideProps = async ({ query }) => {
+  const tokenId: any = query?.tokenId
+  if (!tokenId) {
+    return {
+      props: {},
+    }
+  }
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
+  const statement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE id = ${tokenId}`
+  const projects = await queryTable(chain, statement)
+  const project = projects[0]
+  if (!projects.length) {
+    return {
+      props: {},
+    }
+  }
+  return {
+    props: { project },
+  }
 }

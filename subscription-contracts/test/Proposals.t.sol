@@ -14,7 +14,7 @@ contract ProposalsTest is Test {
     address user4 = address(0x69420);
     function setUp() public {
         senators = new Senators();
-        proposals = new Proposals("Proposals", address(senators), 3, 2);
+        proposals = new Proposals("Proposals", address(senators));
         address[] memory newSenators = new address[](3);
         newSenators[0] = user1;
         newSenators[1] = user2;
@@ -69,5 +69,15 @@ contract ProposalsTest is Test {
         proposals.getTableName();
         proposals.getTableId();
     }
+
+    function testQuorum() public {
+        assertEq(proposals.getQuorum(), 3);
+    }
+
+    function testQuorumChanges() public {
+        senators.addSenator(user4);
+        assertEq(proposals.getQuorum(), 3);
+    }
+
 }
 

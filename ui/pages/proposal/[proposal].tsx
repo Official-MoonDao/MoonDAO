@@ -10,8 +10,6 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import WebsiteHead from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import ActionLabel from '@/components/nance/ActionLabel'
-import DropDownMenu from '@/components/nance/DropdownMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
 import ProposalInfo from '@/components/nance/ProposalInfo'
 import ProposalVotes from '@/components/nance/ProposalVotes'
@@ -80,9 +78,6 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
         <div className="mt-6 md:mt-10 mb-6 md:mb-10 w-full px-4 md:px-0">
           <div className={`grid ${gridCols} gap-4 md:gap-8 w-full max-w-full`}>
             <div className="lg:col-span-2 relative w-full">
-              <div className="absolute top-2 right-2 md:right-[20px] z-10">
-                <DropDownMenu proposalPacket={proposalPacket} />
-              </div>
               <div className="w-full pr-8 md:pr-0">
                 <MarkdownWithTOC body={proposalPacket.body || '--- No content ---'} />
               </div>
@@ -121,18 +116,6 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
                 )}
               </div>
             )}
-
-            <div className="lg:col-span-2 rounded-[20px] px-4 md:px-0">
-              {proposalPacket.actions && proposalPacket.actions.length > 0 && (
-                <div className="mb-4 break-words">
-                  <div className="text-xs md:text-sm">
-                    {proposalPacket.actions?.map((action, index) => (
-                      <ActionLabel action={action} key={index} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </ContentLayout>

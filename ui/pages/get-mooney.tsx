@@ -71,7 +71,7 @@ export default function GetMooney() {
                       Lock for Voting Power
                     </Link>
                     <Link
-                      href="/vote"
+                      href="/projects"
                       className="block bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 text-center"
                     >
                       View Governance

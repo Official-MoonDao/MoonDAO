@@ -64,10 +64,6 @@ export default function useNavigation(citizen: any) {
             href: '/projects',
           },
           {
-            name: 'Proposals',
-            href: '/vote',
-          },
-          {
             name: 'Submit Contribution',
             href: '/contributions',
           },
