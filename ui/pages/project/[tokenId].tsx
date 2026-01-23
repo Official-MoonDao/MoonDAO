@@ -359,10 +359,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
   const statement = `SELECT * FROM ${projectTableName} WHERE MDP = ${tokenId}`
 
-  const projects = await queryTable(chain, statement)
+  const projects = (await queryTable(chain, statement)).filter(
+    (p) => !BLOCKED_PROJECTS.has(Number(p.id))
+  )
   const project = projects[0]
 
-  if (!project || BLOCKED_PROJECTS.has(Number(tokenId))) {
+  if (!project) {
     return {
       notFound: true,
     }
