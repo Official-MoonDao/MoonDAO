@@ -49,10 +49,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       },
     })
 
-    const subHatsLevel1: any = hat?.subHats
+    const subHatsLevel1: any = hat?.subHats || []
     const subHatsLevel2: any = subHatsLevel1
       ?.map((hat: any) => hat.subHats)
       .flat()
+      .filter(Boolean)
 
     const subHats = subHatsLevel1.concat(subHatsLevel2)
     res.status(200).json(subHats)
