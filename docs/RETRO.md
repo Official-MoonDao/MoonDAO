@@ -14,10 +14,10 @@
 0. Go to ui/lib/utils/dates.ts and make sure isRewardsCycle returns true to go live on voting.
 0. Publicize the link for people to submit projects votes (moondao.com/projects), and collect votes for community circle.
 0. Update the object for community cirle in ui/components/nance/ProjectRewards.tsx:260 (eg. {"0xabcd...0123":20,"0xefga...4567":80}
-0. After voting is finished, open /projects and log projectIdToEstimatedPercentage, humanFormat to view project percentages and contributor payouts respectively.
-0. Log ethPayoutCSV and use result to pay out ETH rewards using CSV Airdrop app on the treasury safe.
+0. After voting is finished, open /projects and log projectIdToEstimatedPercentage, humanFormat to view project percentages and contributor payouts respectively. See ui/scripts/format.ts for formatting output for contracts.
+0. Log ethPayoutCSV and use result to pay out ETH rewards using [CSV Airdrop app](https://app.safe.global/apps/open?safe=arb1:0xAF26a002d716508b7e375f1f620338442F5470c0&appUrl=https%3A%2F%2Fschmanu.infura-ipfs.io%2Fipfs%2FQmTNXEN4f4r9XnFk5QUmsMz1JjvvvGp2Eudv3Y5N5qRWEv) on the treasury safe.
 0. Log mooneyBudget, vMooneyAddresses and vMooneyAmounts for paying out vMOONEY rewards.
-0. Connect the [MOONEY](https://arbiscan.io/address/0x1Fa56414549BdccBB09916f61f0A5827f779a85c) contract to the treasury safe,, and approve the [VotingEscrowDepositor](https://arbiscan.io/address/0xBE19a62384014F103686dfE6D9d50B1D3E81B2d0) contract to spend the MOONEY budget for the quarter.
+0. Connect the [MOONEY](https://arbiscan.io/address/0x1Fa56414549BdccBB09916f61f0A5827f779a85c) contract to the treasury safe,, and approve the [VotingEscrowDepositor](https://arbiscan.io/address/0xBE19a62384014F103686dfE6D9d50B1D3E81B2d0) contract to spend the MOONEY budget for the quarter. Add 18 zeros.
 0. Connect the [VotingEscrowDepositor](https://arbiscan.io/address/0xBE19a62384014F103686dfE6D9d50B1D3E81B2d0) contract to the terasury safe, and call updateWithdrawAmounts with the address and amounts from vMooneyAddresses and vMooneyAmounts.
 0. After payouts are complete, set active to 0 on the project table for the projects which are now complete.
 0. On an ongoing basis, run `Pipelines/Integration/POST/Tableland/load_project.ts` to add new projects into the table.
