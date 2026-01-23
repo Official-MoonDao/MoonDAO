@@ -562,9 +562,9 @@ export function ProjectRewards({
                 {proposals && proposals.length > 0 ? (
                   proposals
                     .filter((project: any) => {
-                      // Senate Vote: show proposals in "Temperature Check" status (not yet approved)
+                      // Senate Vote: show ALL pending proposals (keep them visible until vote is closed)
                       if (IS_SENATE_VOTE) {
-                        return !project.tempCheckApproved
+                        return true
                       }
                       // Member Vote: show proposals in "Voting" status (passed Senate vote)
                       if (IS_MEMBER_VOTE) {
