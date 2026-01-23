@@ -19,7 +19,8 @@ export default function useProposalData(proposalContract: any, mdp: any) {
       const chainId = proposalContract.chain.id
       const abi = ProposalsABI.abi
 
-      const params: EngineReadParams[] = [
+      // Base params that don't require a user address
+      const baseParams: EngineReadParams[] = [
         {
           contractAddress,
           method: 'tempCheckVoteCount',
@@ -30,18 +31,6 @@ export default function useProposalData(proposalContract: any, mdp: any) {
           contractAddress,
           method: 'tempCheckApprovalCount',
           params: [mdp],
-          abi,
-        },
-        {
-          contractAddress,
-          method: 'tempCheckVoteApprove',
-          params: [mdp, address],
-          abi,
-        },
-        {
-          contractAddress,
-          method: 'tempCheckVoteDeny',
-          params: [mdp, address],
           abi,
         },
         {
@@ -58,15 +47,35 @@ export default function useProposalData(proposalContract: any, mdp: any) {
         },
       ]
 
+      // User-specific params that require an address
+      const userParams: EngineReadParams[] = address ? [
+        {
+          contractAddress,
+          method: 'tempCheckVoteApprove',
+          params: [mdp, address],
+          abi,
+        },
+        {
+          contractAddress,
+          method: 'tempCheckVoteDeny',
+          params: [mdp, address],
+          abi,
+        },
+      ] : []
+
+      const params = [...baseParams, ...userParams]
       const results = await engineMulticall<{ result: any }>(params, { chainId })
 
       setProposalData({
         tempCheckVoteCount: results[0]?.result,
         tempCheckApprovalCount: results[1]?.result,
-        tempCheckApprove: results[2]?.result,
-        tempCheckDeny: results[3]?.result,
-        tempCheckApproved: results[4]?.result,
-        tempCheckFailed: results[5]?.result,
+        tempCheckApproved: results[2]?.result,
+        tempCheckFailed: results[3]?.result,
+        // User-specific data only available when signed in
+        ...(address && {
+          tempCheckApprove: results[4]?.result,
+          tempCheckDeny: results[5]?.result,
+        }),
       })
     } catch (error) {
       console.error('Failed to fetch proposal data:', error)
@@ -76,7 +85,7 @@ export default function useProposalData(proposalContract: any, mdp: any) {
   }
 
   useEffect(() => {
-    if (proposalContract && mdp && address) getProposalData()
+    if (proposalContract && mdp) getProposalData()
   }, [mdp, proposalContract, address])
 
   const refetch = () => {
