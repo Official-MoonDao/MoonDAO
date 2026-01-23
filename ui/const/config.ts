@@ -583,8 +583,8 @@ export const IS_SENATE_VOTE = true
 export const IS_MEMBER_VOTE = false
 
 // Quarterly budget in ETH
-export const ETH_BUDGET = 14.15
 export const NEXT_QUARTER_BUDGET_ETH = 11.6
+export const ETH_BUDGET = NEXT_QUARTER_BUDGET_ETH
 export const COMMUNITY_CIRCLE_BUDGET_FRACTION = 0.1
 export const AVAILABLE_FOR_FUNDING_FRACTION = 0.75
 export const MAX_BUDGET_FRACTION = 0.2
