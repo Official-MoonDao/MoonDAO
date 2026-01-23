@@ -25,6 +25,13 @@ import { LoadingSpinner } from '../layout/LoadingSpinner'
 import NumberStepper from '../layout/NumberStepper'
 import StandardButton from '../layout/StandardButton'
 
+// Helper to strip the first H1 heading from markdown body (to avoid title duplication)
+const stripFirstHeading = (body: string): string => {
+  // Match first H1 heading at the start of the body (with optional leading whitespace)
+  const h1Regex = /^\s*#\s+[^\n]*\n?/
+  return body.replace(h1Regex, '').trim()
+}
+
 // Proposal Markdown component with proper table support
 const ProposalMarkdown = ({ body }: { body: string }) => (
   <article className="w-full break-words text-white overflow-x-hidden">
@@ -138,6 +145,7 @@ const useIsSenator = () => {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
   const account = useActiveAccount()
+  const { authenticated } = usePrivy()
   const [isSenator, setIsSenator] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   
@@ -149,7 +157,8 @@ const useIsSenator = () => {
   
   useEffect(() => {
     async function checkSenator() {
-      if (!account?.address || !senatorsContract) {
+      // Only check senator status if user is authenticated via Privy
+      if (!authenticated || !account?.address || !senatorsContract) {
         setIsSenator(false)
         setIsLoading(false)
         return
@@ -171,7 +180,7 @@ const useIsSenator = () => {
     }
     
     checkSenator()
-  }, [account?.address, senatorsContract])
+  }, [authenticated, account?.address, senatorsContract])
   
   return { isSenator, isLoading }
 }
@@ -181,6 +190,7 @@ const SenateVoteButtons = memo(({ mdp }: { mdp: number }) => {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
   const account = useActiveAccount()
+  const { authenticated } = usePrivy()
   const { isSenator, isLoading: isSenatorLoading } = useIsSenator()
   
   const proposalContract = useContract({
@@ -224,8 +234,8 @@ const SenateVoteButtons = memo(({ mdp }: { mdp: number }) => {
     ? (Number(proposalData?.tempCheckVoteCount || 0) - Number(proposalData?.tempCheckApprovalCount || 0)).toString() 
     : '0'
   
-  // Only show voting buttons if user is a Senator
-  if (isSenatorLoading) {
+  // Show loading state while checking senator status or loading proposal data
+  if (isSenatorLoading || isLoading) {
     return (
       <div className="flex items-center gap-2 flex-shrink-0">
         <LoadingSpinner width="w-5" height="h-5" />
@@ -233,24 +243,36 @@ const SenateVoteButtons = memo(({ mdp }: { mdp: number }) => {
     )
   }
   
-  if (!isSenator) {
-    return null
+  // Show interactive voting buttons only for authenticated senators
+  // Use Privy's authenticated state as the source of truth
+  if (isSenator && account && authenticated) {
+    return (
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <PrivyWeb3Button
+          action={handleVote(true)}
+          requiredChain={DEFAULT_CHAIN_V5}
+          className="!px-3 !py-2 !min-w-0 !h-[36px] rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium text-sm transition-all"
+          label={`👍 ${approvalCount}`}
+        />
+        <PrivyWeb3Button
+          action={handleVote(false)}
+          requiredChain={DEFAULT_CHAIN_V5}
+          className="!px-3 !py-2 !min-w-0 !h-[36px] rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-all"
+          label={`👎 ${rejectionCount}`}
+        />
+      </div>
+    )
   }
   
+  // Default: Show read-only vote tally for non-senators and non-authenticated users
   return (
     <div className="flex items-center gap-2 flex-shrink-0">
-      <PrivyWeb3Button
-        action={handleVote(true)}
-        requiredChain={DEFAULT_CHAIN_V5}
-        className="!px-3 !py-2 !min-w-0 !h-[36px] rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium text-sm transition-all"
-        label={`👍 ${approvalCount}`}
-      />
-      <PrivyWeb3Button
-        action={handleVote(false)}
-        requiredChain={DEFAULT_CHAIN_V5}
-        className="!px-3 !py-2 !min-w-0 !h-[36px] rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-all"
-        label={`👎 ${rejectionCount}`}
-      />
+      <div className="px-3 py-2 h-[36px] rounded-lg bg-green-600/50 text-white font-medium text-sm flex items-center">
+        👍 {approvalCount}
+      </div>
+      <div className="px-3 py-2 h-[36px] rounded-lg bg-red-600/50 text-white font-medium text-sm flex items-center">
+        👎 {rejectionCount}
+      </div>
     </div>
   )
 })
@@ -401,9 +423,9 @@ const ProjectCardContent = memo(
         {/* Description Section */}
         <div className="flex-1 flex flex-col">
           {isExpanded && proposalJSON?.body ? (
-            // Expanded view with full proposal
+            // Expanded view with full proposal (strip first heading to avoid title duplication)
             <div className="description-container pr-2">
-              <ProposalMarkdown body={proposalJSON.body} />
+              <ProposalMarkdown body={stripFirstHeading(proposalJSON.body)} />
             </div>
           ) : (
             // Collapsed view with truncated description
