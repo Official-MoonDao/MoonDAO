@@ -20,6 +20,8 @@ import SearchIcon from './SearchIcon'
 import { SolarConfetti } from './SolarConfetti'
 import TreasuryAndMobileLogo from './TreasuryAndMobileLogo'
 import TwitterIcon from './TwitterIcon'
+import YoutubeIcon from './YoutubeIcon'
+import CoinMarketCapIcon from './CoinMarketCapIcon'
 
 export {
   LogoBlack,
@@ -44,4 +46,6 @@ export {
   LogoSmall,
   SolarConfetti,
   GithubIcon,
+  YoutubeIcon,
+  CoinMarketCapIcon,
 }

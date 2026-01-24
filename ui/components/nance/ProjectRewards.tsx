@@ -485,11 +485,11 @@ export function ProjectRewards({
           isProfile
           branded={false}
         >
-          <div className="mt-8 md:mt-12 flex flex-col gap-6 px-4 md:px-0 max-w-[1200px]">
+          <div className="mt-8 md:mt-12 flex flex-col gap-3 sm:gap-6 px-0 sm:px-3 md:px-0 max-w-[1200px]">
             {/* Condensed Top Section - Rewards + Create Button */}
-            <div className="bg-black/20 rounded-xl p-4 border border-white/10">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                <h1 className="font-GoodTimes text-white/80 text-lg">{`Q${quarter}: ${year} Rewards`}</h1>
+            <div className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-4 border-y sm:border border-white/10">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4 px-1 sm:px-0">
+                <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${quarter}: ${year} Rewards`}</h1>
                 {process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' && (
                   <button
                     onClick={tallyVotes}
@@ -513,15 +513,15 @@ export function ProjectRewards({
                 {/*FIXME run on cron */}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-black/20 rounded-lg p-3 border border-white/10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-4 px-1 sm:px-0">
+                <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
                   <RewardAsset
                     name="ETH"
                     value={ETH_BUDGET.toFixed(4)}
                     usdValue={usdBudget.toFixed(2)}
                   />
                 </div>
-                <div className="bg-black/20 rounded-lg p-3 border border-white/10">
+                <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
                   <RewardAsset
                     name="MOONEY"
                     value={Number(mooneyBudget.toPrecision(3)).toLocaleString()}
@@ -534,9 +534,9 @@ export function ProjectRewards({
 
             <div
               id="projects-container"
-              className="bg-black/20 rounded-xl p-6 border border-white/10"
+              className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-6 border-y sm:border border-white/10"
             >
-              <h1 className="font-GoodTimes text-white/80 text-xl mb-6">
+              <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">
                 {IS_SENATE_VOTE ? (
                   <>
                     Project Proposals
@@ -558,13 +558,13 @@ export function ProjectRewards({
                     : 'Distribute 100% of your voting power between eligible projects. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.'}
                 </p>
               )}
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-1.5 sm:gap-6">
                 {proposals && proposals.length > 0 ? (
                   proposals
                     .filter((project: any) => {
-                      // Senate Vote: show proposals in "Temperature Check" status (not yet approved)
+                      // Senate Vote: show ALL pending proposals (keep them visible until vote is closed)
                       if (IS_SENATE_VOTE) {
-                        return !project.tempCheckApproved
+                        return true
                       }
                       // Member Vote: show proposals in "Voting" status (passed Senate vote)
                       if (IS_MEMBER_VOTE) {
@@ -576,7 +576,7 @@ export function ProjectRewards({
                     .map((project: any, i) => (
                       <div
                         key={`project-card-${i}`}
-                        className="bg-black/20 rounded-xl border border-white/10 overflow-hidden"
+                        className="bg-black/20 rounded-lg sm:rounded-xl border border-white/10 overflow-hidden mx-0"
                       >
                         <ProjectCard
                           key={`project-card-${i}`}
@@ -632,11 +632,11 @@ export function ProjectRewards({
 
             <div
               id="projects-container"
-              className="bg-black/20 rounded-xl p-6 border border-white/10"
+              className="bg-black/20 rounded-none sm:rounded-xl px-1 py-2 sm:p-6 border-y sm:border border-white/10"
             >
-              <h1 className="font-GoodTimes text-white/80 text-xl mb-6">Active Projects</h1>
+              <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">Active Projects</h1>
 
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-1.5 sm:gap-6">
                 {currentProjects && currentProjects.length > 0 ? (
                   currentProjects
                     .filter((project: any, i) => {
@@ -716,7 +716,7 @@ export function ProjectRewards({
                     ))}
               </div>
             </div>
-            <div className="bg-black/20 rounded-xl border border-white/10 overflow-hidden">
+            <div className="bg-black/20 rounded-none sm:rounded-xl border-y sm:border border-white/10 overflow-hidden">
               <PastProjects projects={pastProjects} />
             </div>
           </div>

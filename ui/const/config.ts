@@ -143,6 +143,32 @@ export const SENATORS_ADDRESSES: Index = {
   sepolia: '0x3aEd5a0F378A2a20c8d46F30e259A7D9DbC8D304',
 }
 
+// List of senators with their addresses and display names
+export interface Senator {
+  address: string
+  name: string
+}
+
+export const SENATORS_LIST: { [key: string]: Senator[] } = {
+  arbitrum: [
+    { address: '0xf2Befa4B9489c1ef75E069D16A6F829F71B4B988', name: 'Frank' },
+    { address: '0x8687AB2FF3188F961828FC2131b6150Ee97Bedce', name: 'Kara' },
+    { address: '0xB87b8c495d3DAE468d4351621b69d2eC10E656FE', name: 'Alex' },
+    { address: '0x4CBf10c36b481d6afF063070E35b4F42E7Aad201', name: 'EngiBob' },
+    { address: '0x529Bd2351476ba114f9D60E71A020A9F0b99f047', name: 'Anastasia' },
+    { address: '0xe2d3aC725E6FFE2b28a9ED83bedAaf6672f2C801', name: 'Eiman' },
+    { address: '0x8A7fD7F4B1A77A606DFdD229c194B1F22De868Ff', name: 'Daniel' },
+    { address: '0x86c779b3741e83A36A2a236780d436E4EC673Af4', name: 'Titan' },
+    { address: '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89', name: 'Jade' },
+  ],
+  sepolia: [
+    { address: '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89', name: 'Test Senator 1' },
+    { address: '0x80581C6e88Ce00095F85cdf24bB760f16d6eC0D6', name: 'Test Senator 2' },
+    { address: '0x679d87D8640e66778c3419D164998E720D7495f6', name: 'Test Senator 3' },
+    { address: '0xAF6f2A7643A97b849bD9cf6d3f57e142c5BbB0DA', name: 'Test Senator 4' },
+  ],
+}
+
 export const NON_PROJECT_PROPOSAL_ADDRESSES: Index = {
   arbitrum: '0xdf4F4a5f3F1143036be4f42a546F399B7cA93EBC',
   sepolia: '0x3804D425a95Ea86cE8B5E260a4f092934C2117b5',
@@ -579,8 +605,8 @@ export const PROJECT_SYSTEM_CONFIG = {
 // Set IS_SENATE_VOTE to true during Senate Vote phase - shows proposals with "Temperature Check" status
 // Set IS_MEMBER_VOTE to true during Member Vote phase - shows proposals with "Voting" status (passed Senate vote)
 // Only one should be true at a time, or both false when no voting is active
-export const IS_SENATE_VOTE = true
-export const IS_MEMBER_VOTE = false
+export const IS_SENATE_VOTE = false
+export const IS_MEMBER_VOTE = true
 
 // Quarterly budget in ETH
 export const NEXT_QUARTER_BUDGET_ETH = 11.6

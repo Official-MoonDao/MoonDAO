@@ -24,7 +24,7 @@ function TokenLink({ href, label }: TokenLinkProps) {
 export default function Disclaimer({ isCentered = false }: DisclaimerProps) {
   return (
     <div className={`w-full ${isCentered ? 'flex justify-center' : ''}`}>
-      <div className={`text-sm sm:text-base leading-relaxed ${isCentered ? 'text-center' : ''} max-w-none`}>
+      <div className={`text-xs sm:text-sm leading-relaxed ${isCentered ? 'text-center' : ''} max-w-none`}>
         <span className="opacity-[60%]">
           <strong>Disclaimer:</strong> There is no expectation of profit with the $MOONEY token. It is a governance token. You are not receiving fractionalized ownership of the DAO's assets in exchange for the token, check the{' '}
           <u>
@@ -37,7 +37,7 @@ export default function Disclaimer({ isCentered = false }: DisclaimerProps) {
               FAQ
             </Link>
           </u>
-          . Always make sure you are interacting with an{' '}
+          . Always ensure you are interacting with an{' '}
           <TokenLink
             label="official token address"
             href="https://docs.moondao.com/Governance/Governance-Tokens"

@@ -1,4 +1,5 @@
 //This component dipslays a project card using project data directly from tableland
+import { trimActionsFromBody } from '@nance/nance-sdk'
 import { usePrivy } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import ProposalsABI from 'const/abis/Proposals.json'
@@ -171,7 +172,6 @@ const useIsSenator = () => {
           params: [account.address],
         })
         setIsSenator(Boolean(result))
-        console.log("isSenator is", Boolean(result))
       } catch (error) {
         console.error('Error checking senator status:', error)
         setIsSenator(false)
@@ -185,8 +185,64 @@ const useIsSenator = () => {
   return { isSenator, isLoading }
 }
 
+// Senators Status Display component - shows which senators have voted
+const SenatorsStatus = memo(({ senatorVotes, isLoading }: { senatorVotes: any[]; isLoading: boolean }) => {
+  const votedSenators = senatorVotes.filter(s => s.hasVoted)
+  const pendingSenators = senatorVotes.filter(s => !s.hasVoted)
+
+  if (isLoading) {
+    return (
+      <div data-testid="senators-loading" className="flex items-center gap-2">
+        <LoadingSpinner width="w-4" height="h-4" />
+        <span className="text-[11px] text-white/60">Loading senators...</span>
+      </div>
+    )
+  }
+
+  if (senatorVotes.length === 0) return null
+
+  return (
+    <div 
+      data-testid="senators-status"
+      className="p-2 rounded-lg bg-slate-800/40 border border-white/10 w-fit"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div data-testid="senators-count" className="text-[11px] text-white/60 mb-1.5">
+        Senators ({votedSenators.length}/{senatorVotes.length} voted)
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {/* Show voted senators */}
+        {votedSenators.map((senator) => (
+          <div 
+            key={senator.address}
+            data-testid={`senator-voted-${senator.name}`}
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-500/20 border border-green-500/30"
+            title={`${senator.name} has voted`}
+          >
+            <span className="text-[10px]">✓</span>
+            <span className="text-[10px] text-white/90">{senator.name}</span>
+          </div>
+        ))}
+        {/* Show pending senators */}
+        {pendingSenators.map((senator) => (
+          <div 
+            key={senator.address}
+            data-testid={`senator-pending-${senator.name}`}
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-500/20 border border-gray-500/30"
+            title={`${senator.name} has not voted yet`}
+          >
+            <span className="text-[10px]">○</span>
+            <span className="text-[10px] text-white/50">{senator.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+})
+SenatorsStatus.displayName = 'SenatorsStatus'
+
 // Senate Vote component for thumbs up/down voting
-const SenateVoteButtons = memo(({ mdp }: { mdp: number }) => {
+const SenateVoteButtons = memo(({ mdp, budgetLabel, onSenatorVotesChange }: { mdp: number; budgetLabel?: string; onSenatorVotesChange?: (votes: any[], loading: boolean) => void }) => {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
   const account = useActiveAccount()
@@ -199,7 +255,14 @@ const SenateVoteButtons = memo(({ mdp }: { mdp: number }) => {
     abi: ProposalsABI.abi as any,
   })
   
-  const { proposalData, isLoading, refetch } = useProposalData(proposalContract, mdp)
+  const { proposalData, senatorVotes, isLoading, refetch } = useProposalData(proposalContract, mdp)
+
+  // Notify parent of senator votes changes
+  React.useEffect(() => {
+    if (onSenatorVotesChange) {
+      onSenatorVotesChange(senatorVotes, isLoading)
+    }
+  }, [senatorVotes, isLoading, onSenatorVotesChange])
   
   const handleVote = (pass: boolean) => {
     return async () => {
@@ -234,8 +297,8 @@ const SenateVoteButtons = memo(({ mdp }: { mdp: number }) => {
     ? (Number(proposalData?.tempCheckVoteCount || 0) - Number(proposalData?.tempCheckApprovalCount || 0)).toString() 
     : '0'
   
-  // Show loading state while checking senator status or loading proposal data
-  if (isSenatorLoading || isLoading) {
+  // Show loading state while checking senator status
+  if (isSenatorLoading) {
     return (
       <div className="flex items-center gap-2 flex-shrink-0">
         <LoadingSpinner width="w-5" height="h-5" />
@@ -243,35 +306,41 @@ const SenateVoteButtons = memo(({ mdp }: { mdp: number }) => {
     )
   }
   
-  // Show interactive voting buttons only for authenticated senators
-  // Use Privy's authenticated state as the source of truth
-  if (isSenator && account && authenticated) {
-    return (
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <PrivyWeb3Button
-          action={handleVote(true)}
-          requiredChain={DEFAULT_CHAIN_V5}
-          className="!px-3 !py-2 !min-w-0 !h-[36px] rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium text-sm transition-all"
-          label={`👍 ${approvalCount}`}
-        />
-        <PrivyWeb3Button
-          action={handleVote(false)}
-          requiredChain={DEFAULT_CHAIN_V5}
-          className="!px-3 !py-2 !min-w-0 !h-[36px] rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-all"
-          label={`👎 ${rejectionCount}`}
-        />
-      </div>
-    )
-  }
-  
-  // Default: Show read-only vote tally for non-senators and non-authenticated users
-  return (
-    <div className="flex items-center gap-2 flex-shrink-0">
+  const VoteButtons = isSenator && account && authenticated ? (
+    <div className="flex items-center gap-2">
+      <PrivyWeb3Button
+        action={handleVote(true)}
+        requiredChain={DEFAULT_CHAIN_V5}
+        className="!px-3 !py-2 !min-w-0 !h-[36px] rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium text-sm transition-all"
+        label={`👍 ${approvalCount}`}
+      />
+      <PrivyWeb3Button
+        action={handleVote(false)}
+        requiredChain={DEFAULT_CHAIN_V5}
+        className="!px-3 !py-2 !min-w-0 !h-[36px] rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-all"
+        label={`👎 ${rejectionCount}`}
+      />
+    </div>
+  ) : (
+    <div className="flex items-center gap-2">
       <div className="px-3 py-2 h-[36px] rounded-lg bg-green-600/50 text-white font-medium text-sm flex items-center">
         👍 {approvalCount}
       </div>
       <div className="px-3 py-2 h-[36px] rounded-lg bg-red-600/50 text-white font-medium text-sm flex items-center">
         👎 {rejectionCount}
+      </div>
+    </div>
+  )
+  
+  return (
+    <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto sm:flex-shrink-0">
+      <div className="flex flex-wrap items-center gap-2">
+        {budgetLabel && (
+          <span className="px-3 py-1.5 h-[36px] flex items-center rounded-lg text-sm font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+            {budgetLabel}
+          </span>
+        )}
+        {VoteButtons}
       </div>
     </div>
   )
@@ -297,6 +366,15 @@ const ProjectCardContent = memo(
     const description =
       project && project.MDP < 13 ? project.description : project?.description || ''
 
+    // State for senator votes (passed up from SenateVoteButtons)
+    const [senatorVotes, setSenatorVotes] = useState<any[]>([])
+    const [senatorVotesLoading, setSenatorVotesLoading] = useState(false)
+
+    const handleSenatorVotesChange = React.useCallback((votes: any[], loading: boolean) => {
+      setSenatorVotes(votes)
+      setSenatorVotesLoading(loading)
+    }, [])
+
     // Set character limits that better match the new card height
     const [characterLimit, setCharacterLimit] = useState(380)
 
@@ -316,8 +394,8 @@ const ProjectCardContent = memo(
     }, [])
 
     const handleCardClick = (e: React.MouseEvent) => {
-      // Only handle expansion for Senate Vote mode
-      if (IS_SENATE_VOTE && onToggleExpand) {
+      // Handle expansion when onToggleExpand is provided (Senate Vote or distribute mode)
+      if (onToggleExpand) {
         // Don't toggle if clicking on buttons or links
         const target = e.target as HTMLElement
         if (target.closest('button') || target.closest('a')) {
@@ -331,37 +409,46 @@ const ProjectCardContent = memo(
       <div
         id="card-container"
         onClick={handleCardClick}
-        className={`p-4 sm:p-6 pb-4 flex flex-col gap-3 relative w-full transition-all duration-300 bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg hover:bg-gradient-to-br hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl ${
+        className={`p-3 sm:p-6 pb-3 sm:pb-4 flex flex-col gap-2 sm:gap-3 relative w-full transition-all duration-300 bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg hover:bg-gradient-to-br hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl ${
           isExpanded 
             ? 'h-auto' 
             : 'h-auto min-h-[240px] hover:scale-[1.02]'
-        } ${IS_SENATE_VOTE ? 'cursor-pointer' : ''}`}
+        } ${onToggleExpand ? 'cursor-pointer' : ''}`}
       >
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
           <div className="flex-1 min-w-0 flex flex-col gap-3">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-              <Link href={`/project/${project?.MDP}`} passHref>
-                <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
-                  {project?.name || ''}
-                </h1>
-              </Link>
-              <span
-                className={`w-fit sm:mr-4 px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
-                  project.active == PROJECT_ACTIVE
-                    ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                    : project.active == PROJECT_PENDING
-                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                    : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-                }`}
-              >
-                {proposalJSON?.nonProjectProposal
-                  ? 'Non-project Proposal'
-                  : project.active == PROJECT_ACTIVE
-                  ? 'Active'
-                  : project.active == PROJECT_PENDING
-                  ? `Budget: ${proposalJSON?.ethBudget} ETH`
-                  : 'Inactive'}
-              </span>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                <Link href={`/project/${project?.MDP}`} passHref>
+                  <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
+                    {project?.name || ''}
+                  </h1>
+                </Link>
+                {/* Only show status badge inline when NOT in Senate Vote mode */}
+                {!IS_SENATE_VOTE && (
+                  <span
+                    className={`w-fit sm:mr-4 px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 ${
+                      project.active == PROJECT_ACTIVE
+                        ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                        : project.active == PROJECT_PENDING
+                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                        : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                    }`}
+                  >
+                    {proposalJSON?.nonProjectProposal
+                      ? 'Non-project Proposal'
+                      : project.active == PROJECT_ACTIVE
+                      ? 'Active'
+                      : project.active == PROJECT_PENDING
+                      ? `Budget: ${proposalJSON?.ethBudget} ETH`
+                      : 'Inactive'}
+                  </span>
+                )}
+              </div>
+              {/* Senator participation status - aligned with title on the left */}
+              {IS_SENATE_VOTE && project?.MDP && project.active === PROJECT_PENDING && (
+                <SenatorsStatus senatorVotes={senatorVotes} isLoading={senatorVotesLoading} />
+              )}
             </div>
             {(project?.finalReportLink || project?.finalReportIPFS) && (
               <StandardButton
@@ -381,8 +468,18 @@ const ProjectCardContent = memo(
               </StandardButton>
             )}
           </div>
+          {/* Senate Vote mode: show budget badge and vote buttons together on the right (desktop) or below title (mobile) */}
           {IS_SENATE_VOTE && project?.MDP && project.active === PROJECT_PENDING && (
-            <SenateVoteButtons mdp={project.MDP} />
+            <div className="w-full sm:w-auto">
+              <SenateVoteButtons 
+                mdp={project.MDP} 
+                budgetLabel={proposalJSON?.nonProjectProposal 
+                  ? 'Non-project Proposal' 
+                  : `Budget: ${proposalJSON?.ethBudget} ETH`
+                }
+                onSenatorVotesChange={handleSenatorVotesChange}
+              />
+            </div>
           )}
           {!IS_SENATE_VOTE && distribute &&
             (userContributed ? (
@@ -423,9 +520,9 @@ const ProjectCardContent = memo(
         {/* Description Section */}
         <div className="flex-1 flex flex-col">
           {isExpanded && proposalJSON?.body ? (
-            // Expanded view with full proposal (strip first heading to avoid title duplication)
+            // Expanded view with full proposal (strip first heading and actions)
             <div className="description-container pr-2">
-              <ProposalMarkdown body={stripFirstHeading(proposalJSON.body)} />
+              <ProposalMarkdown body={trimActionsFromBody(stripFirstHeading(proposalJSON.body))} />
             </div>
           ) : (
             // Collapsed view with truncated description
@@ -442,11 +539,11 @@ const ProjectCardContent = memo(
         {/* Footer - Always visible */}
         <div className="pt-3 border-t border-green-500/10 flex-shrink-0 mt-auto">
           <div className={`text-xs font-medium transition-colors flex items-center gap-1 ${
-            IS_SENATE_VOTE 
+            onToggleExpand 
               ? 'text-orange-400 hover:text-orange-300' 
               : 'text-green-300 hover:text-green-200'
           }`}>
-            {IS_SENATE_VOTE 
+            {onToggleExpand 
               ? (isExpanded 
                   ? <><span className="text-base">▲</span> Click to collapse</> 
                   : <><span className="text-base">▼</span> Click to expand proposal</>)
