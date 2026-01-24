@@ -4,8 +4,61 @@ import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import {
+  DiscordIcon,
+  TwitterIcon,
+  InstagramIcon,
+  LinkedinIcon,
+  GithubIcon,
+  YoutubeIcon,
+  CoinMarketCapIcon,
+} from '@/components/assets'
 import Disclaimer from './Disclaimer'
 import LegalLinks from './LegalLinks'
+
+type SocialLink = {
+  href: string
+  label: string
+  icon: React.ReactNode
+}
+
+const socialLinks: SocialLink[] = [
+  {
+    href: 'https://x.com/OfficialMoonDAO',
+    label: 'X (Twitter)',
+    icon: <TwitterIcon />,
+  },
+  {
+    href: 'https://discord.gg/moondao',
+    label: 'Discord',
+    icon: <DiscordIcon />,
+  },
+  {
+    href: 'https://www.youtube.com/@officialmoondao',
+    label: 'YouTube',
+    icon: <YoutubeIcon />,
+  },
+  {
+    href: 'https://www.instagram.com/official_moondao/',
+    label: 'Instagram',
+    icon: <InstagramIcon />,
+  },
+  {
+    href: 'https://www.linkedin.com/company/moondao',
+    label: 'LinkedIn',
+    icon: <LinkedinIcon />,
+  },
+  {
+    href: 'https://github.com/Official-MoonDao',
+    label: 'GitHub',
+    icon: <GithubIcon />,
+  },
+  {
+    href: 'https://coinmarketcap.com/currencies/mooney/',
+    label: 'CoinMarketCap',
+    icon: <CoinMarketCapIcon />,
+  },
+]
 
 type LinkItem = {
   text: string
@@ -142,7 +195,7 @@ export function ExpandedFooter({
             id="expanded-menu-container"
             className={`${
               isFullwidth
-                ? 'container mx-auto md:pl-[5vw] lg:pl-[2vw] md:pb-[2vw] md:pt-[5vh]'
+                ? 'container mx-auto md:pl-[5vw] lg:pl-[2vw] md:pb-0 md:pt-[5vh]'
                 : 'pb-[5vw] md:pt-[5vw]'
             } max-w-[1200px] pb-0 flex flex-col lg:grid lg:grid-cols-6 gap-8 relative z-10`}
           >
@@ -212,8 +265,59 @@ export function ExpandedFooter({
             </div>
           </div>
 
+          {/* Social Links */}
+          <div className="container mx-auto px-[5vw] xl:px-[2vw] max-w-[1200px] w-full">
+            <div className="flex flex-col items-center border-t border-white/10 pt-4">
+              <h3 className="text-sm font-medium text-gray-400 uppercase mb-4">
+                Follow Us
+              </h3>
+              <div className="flex items-center gap-4 mb-6">
+                {socialLinks.map((link) => (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-300 opacity-70 hover:opacity-100"
+                    aria-label={link.label}
+                  >
+                    {link.icon}
+                  </Link>
+                ))}
+              </div>
+              <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-400 mb-4">
+                <Link
+                  href="https://docs.moondao.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  Documentation
+                </Link>
+                <span className="text-gray-600">•</span>
+                <Link
+                  href="https://news.moondao.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  Newsletter
+                </Link>
+                <span className="text-gray-600">•</span>
+                <Link
+                  href="https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395&chain=mainnet"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  Trade $MOONEY
+                </Link>
+              </div>
+            </div>
+          </div>
+
           {/* Footer content moved into main section */}
-          <div className="container mx-auto px-[5vw] xl:px-[2vw] flex flex-col items-center pt-8 pb-10 max-w-[1200px] w-full">
+          <div className="container mx-auto px-[5vw] xl:px-[2vw] flex flex-col items-center pt-4 pb-10 max-w-[1200px] w-full">
             <div className="pb-5">
               <Disclaimer isCentered={false} />
             </div>

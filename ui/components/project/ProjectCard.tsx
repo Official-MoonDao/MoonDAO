@@ -1,4 +1,5 @@
 //This component dipslays a project card using project data directly from tableland
+import { trimActionsFromBody } from '@nance/nance-sdk'
 import { usePrivy } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import ProposalsABI from 'const/abis/Proposals.json'
@@ -393,8 +394,8 @@ const ProjectCardContent = memo(
     }, [])
 
     const handleCardClick = (e: React.MouseEvent) => {
-      // Only handle expansion for Senate Vote mode
-      if (IS_SENATE_VOTE && onToggleExpand) {
+      // Handle expansion when onToggleExpand is provided (Senate Vote or distribute mode)
+      if (onToggleExpand) {
         // Don't toggle if clicking on buttons or links
         const target = e.target as HTMLElement
         if (target.closest('button') || target.closest('a')) {
@@ -412,7 +413,7 @@ const ProjectCardContent = memo(
           isExpanded 
             ? 'h-auto' 
             : 'h-auto min-h-[240px] hover:scale-[1.02]'
-        } ${IS_SENATE_VOTE ? 'cursor-pointer' : ''}`}
+        } ${onToggleExpand ? 'cursor-pointer' : ''}`}
       >
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
           <div className="flex-1 min-w-0 flex flex-col gap-3">
@@ -519,9 +520,9 @@ const ProjectCardContent = memo(
         {/* Description Section */}
         <div className="flex-1 flex flex-col">
           {isExpanded && proposalJSON?.body ? (
-            // Expanded view with full proposal (strip first heading to avoid title duplication)
+            // Expanded view with full proposal (strip first heading and actions)
             <div className="description-container pr-2">
-              <ProposalMarkdown body={stripFirstHeading(proposalJSON.body)} />
+              <ProposalMarkdown body={trimActionsFromBody(stripFirstHeading(proposalJSON.body))} />
             </div>
           ) : (
             // Collapsed view with truncated description
@@ -538,11 +539,11 @@ const ProjectCardContent = memo(
         {/* Footer - Always visible */}
         <div className="pt-3 border-t border-green-500/10 flex-shrink-0 mt-auto">
           <div className={`text-xs font-medium transition-colors flex items-center gap-1 ${
-            IS_SENATE_VOTE 
+            onToggleExpand 
               ? 'text-orange-400 hover:text-orange-300' 
               : 'text-green-300 hover:text-green-200'
           }`}>
-            {IS_SENATE_VOTE 
+            {onToggleExpand 
               ? (isExpanded 
                   ? <><span className="text-base">▲</span> Click to collapse</> 
                   : <><span className="text-base">▼</span> Click to expand proposal</>)
