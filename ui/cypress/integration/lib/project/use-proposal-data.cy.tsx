@@ -37,32 +37,30 @@ describe('useProposalData configuration', () => {
 
   describe('Chain Configuration', () => {
     it('should use the correct chain slug based on DEFAULT_CHAIN_V5', () => {
-      let capturedData: any = null
-
       cy.mount(
         <TestnetProviders>
-          <TestHookComponent onData={(data) => { capturedData = data }} />
+          <TestHookComponent onData={() => {}} />
         </TestnetProviders>
       )
 
-      cy.get('[data-testid="chain-slug"]').should('exist').then(() => {
+      // Read the chain slug directly from the DOM instead of relying on callback timing
+      cy.get('[data-testid="chain-slug"]').invoke('text').then((chainSlug) => {
         // Chain slug should be either 'arbitrum' (mainnet) or 'sepolia' (testnet)
-        expect(['arbitrum', 'sepolia', 'arbitrum-sepolia']).to.include(capturedData?.chainSlug)
+        expect(['arbitrum', 'sepolia', 'arbitrum-sepolia']).to.include(chainSlug)
       })
     })
 
     it('should load senators list from the correct chain', () => {
-      let capturedData: any = null
-
       cy.mount(
         <TestnetProviders>
-          <TestHookComponent onData={(data) => { capturedData = data }} />
+          <TestHookComponent onData={() => {}} />
         </TestnetProviders>
       )
 
-      cy.get('[data-testid="senator-count"]').should('exist').then(() => {
+      // Read the senator count directly from the DOM instead of relying on callback timing
+      cy.get('[data-testid="senator-count"]').invoke('text').then((count) => {
         // Should have senators loaded
-        expect(capturedData?.senatorCount).to.be.greaterThan(0)
+        expect(parseInt(count as string, 10)).to.be.greaterThan(0)
       })
     })
   })
