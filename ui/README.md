@@ -57,6 +57,11 @@ Run the integration tests in parrallel (4 workers):
 yarn cy:run-ct:fast
 ```
 
+Run the integration tests for a specific test
+```
+yarn cy:run-ct --spec cypress/integration/lib/project/use-proposal-data.cy.tsx 
+```
+
 Run the integration tests in parrallel with custom worker count:
 ```
 bash scripts/test-parallel.sh 8
