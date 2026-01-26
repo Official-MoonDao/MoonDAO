@@ -9,13 +9,10 @@ import { serverClient } from '@/lib/thirdweb/client'
 import { authOptions } from '../pages/api/auth/[...nextauth]'
 
 export async function isEBManager(req: NextApiRequest, res: NextApiResponse, next: () => void) {
-  // Bypass authentication in testnet or test environments (Cypress)
-  // Check for Cypress user agent or test environment
-  const userAgent = req.headers['user-agent'] || ''
-  const isCypress = userAgent.includes('Cypress') || userAgent.includes('cypress')
+  // Bypass authentication in testnet environment
   const isTestEnv = process.env.NEXT_PUBLIC_CHAIN === 'testnet'
 
-  if (isTestEnv || isCypress) {
+  if (isTestEnv) {
     next()
     return
   }
