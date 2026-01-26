@@ -95,6 +95,54 @@ export default function ProposalEditor({ project }: { project: Project }) {
   // Function to set markdown content from Google Docs import
   const handleSetMarkdown = (markdown: string) => {
     setProposalBody(markdown)
+    
+    // Parse budget from markdown
+    const budgetInfo = parseBudgetFromMarkdown(markdown)
+    if (budgetInfo && budgetInfo.length > 0) {
+      setAttachBudget(true)
+      reset({ budget: budgetInfo })
+    }
+  }
+
+  // Parse budget information from markdown content
+  const parseBudgetFromMarkdown = (markdown: string): Array<{ token: string; amount: string; justification: string }> | null => {
+    const budgetSection = markdown.match(/##?\s*Budget\s*Request[:\s]*([\s\S]*?)(?=\n##|\n#|$)/i)
+    if (!budgetSection) return null
+    
+    const budgetText = budgetSection[1]
+    const budgets: Array<{ token: string; amount: string; justification: string }> = []
+    
+    // Look for patterns like "10 ETH for development" or "Amount: 10 ETH"
+    const amountPattern = /(?:^|\n)[-*]?\s*(?:Amount[:\s]+)?(\d+(?:\.\d+)?)\s*(ETH|USDC|DAI|MOONEY|vMOONEY)(?:\s+(?:for|:|-)?\s*(.+?))?(?=\n|$)/gi
+    let match
+    
+    while ((match = amountPattern.exec(budgetText)) !== null) {
+      budgets.push({
+        amount: match[1],
+        token: match[2].toUpperCase(),
+        justification: match[3]?.trim() || 'Budget request'
+      })
+    }
+    
+    // Also check for table format
+    const tableRows = budgetText.match(/\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|/g)
+    if (tableRows && tableRows.length > 1) {
+      for (let i = 2; i < tableRows.length; i++) { // Skip header and separator
+        const cells = tableRows[i].split('|').map(cell => cell.trim()).filter(cell => cell)
+        if (cells.length >= 2) {
+          const amountMatch = cells[0].match(/(\d+(?:\.\d+)?)\s*(ETH|USDC|DAI|MOONEY|vMOONEY)/i)
+          if (amountMatch) {
+            budgets.push({
+              amount: amountMatch[1],
+              token: amountMatch[2].toUpperCase(),
+              justification: cells[1] || 'Budget request'
+            })
+          }
+        }
+      }
+    }
+    
+    return budgets.length > 0 ? budgets : null
   }
 
   const { wallet } = useAccount()
@@ -297,32 +345,6 @@ export default function ProposalEditor({ project }: { project: Project }) {
             )}
 
             <div className="p-5 rounded-b-[20px] rounded-t-[0px] flex flex-row">
-              <Field as="div" className="\ flex items-center mt-5 pr-4">
-                <Switch
-                  checked={attachBudget}
-                  onChange={(checked) => {
-                    setAttachBudget(checked)
-                    if (checked) {
-                      reset(DEFAULT_REQUEST_BUDGET_VALUES)
-                    }
-                  }}
-                  className={classNames(
-                    attachBudget ? 'bg-indigo-600' : 'bg-gray-200',
-                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2'
-                  )}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={classNames(
-                      attachBudget ? 'translate-x-5' : 'translate-x-0',
-                      'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
-                    )}
-                  />
-                </Switch>
-                <Label as="span" className="ml-3 text-sm">
-                  <span className="font-medium text-gray-900 dark:text-white">Attach Budget</span>{' '}
-                </Label>
-              </Field>
               <Field as="div" className="\ flex items-center mt-5">
                 <Switch
                   checked={nonProjectProposal}
@@ -353,6 +375,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
             {attachBudget && (
               <FormProvider {...methods}>
                 <div className="my-10 p-5 rounded-[20px] bg-dark-cool">
+                  <h3 className="text-white text-lg font-medium mb-4">Budget Request (parsed from document)</h3>
                   <RequestBudgetActionForm disableRequiredFields={false} />
                 </div>
               </FormProvider>
