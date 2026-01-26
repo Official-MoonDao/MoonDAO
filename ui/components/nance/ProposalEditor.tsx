@@ -172,7 +172,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
     const file = new File([fileContents], fileName, {
       type: 'application/json',
     })
-    const { url: proposalIPFS } = await pinBlobOrFile(file)
+    const { url: proposalIPFS } = await pinBlobOrFile(file, '/api/ipfs/pin')
     const res = await fetch(`/api/proposals/submit`, {
       method: 'POST',
       headers: {
