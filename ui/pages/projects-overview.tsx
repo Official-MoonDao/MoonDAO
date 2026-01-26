@@ -298,7 +298,7 @@ const ProjectsOverview: React.FC<{
                     <h4 className="text-xl font-bold text-white mb-3">ETH Rewards</h4>
                     <div className="bg-gradient-to-r from-orange-500/10 to-yellow-500/10 rounded-lg p-3 mb-3 border border-orange-400/20">
                       <div className="text-2xl font-bold text-orange-400">
-                        {ETH_BUDGET.toFixed(2)} ETH{' '}
+                        {ethBudget.toFixed(2)} ETH{' '}
                         <span className="text-lg text-orange-300">
                           ($
                           {usdBudget.toLocaleString(undefined, {
