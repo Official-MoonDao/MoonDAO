@@ -15,7 +15,6 @@ import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
 import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
-import EditorMarkdownUpload from '../nance/EditorMarkdownUpload'
 import MarkdownWithTOC from '../nance/MarkdownWithTOC'
 
 let getMarkdown: GetMarkdown
