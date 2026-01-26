@@ -109,23 +109,22 @@ export default function ProposalsPage({ project }: { project: Project }) {
                 </div>
                 <div className="bg-black/20 rounded-xl p-6 border border-white/10">
                   <p className="text-gray-300 leading-relaxed">
-                    Submit a proposal to receive financing or special permissions from the MoonDAO
-                    community. Please refer to{' '}
-                    <Link
-                      href="/project-system-docs"
-                      className="text-blue-400 hover:text-blue-300 underline transition-colors"
-                    >
-                      our documentation
-                    </Link>{' '}
-                    for more details before getting started. We recommend starting your draft with
-                    the{' '}
+                    To submit a proposal, you must use our{' '}
                     <Link
                       href="https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit?usp=sharing"
                       className="text-blue-400 hover:text-blue-300 underline transition-colors"
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Google doc template
+                      Google Doc template
+                    </Link>
+                    . Make a copy of the template, fill it out, and ensure it&apos;s shared with &quot;Anyone with the link can view&quot;. Then use the{' '}
+                    <span className="text-blue-400 font-medium">&quot;Import from Google Docs&quot;</span> button below to import your proposal. For more details, please refer to{' '}
+                    <Link
+                      href="/project-system-docs"
+                      className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                    >
+                      our documentation
                     </Link>
                     .
                   </p>
