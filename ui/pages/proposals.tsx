@@ -150,6 +150,26 @@ export default function ProposalsPage({ project }: { project: Project }) {
 
 export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const tokenId: any = query?.tokenId
+  const editMDP: any = query?.edit // Get the edit parameter
+  
+  // If editing, fetch the project by MDP number
+  if (editMDP) {
+    const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
+    const statement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE MDP = ${editMDP}`
+    const projects = await queryTable(chain, statement)
+    const project = projects[0]
+    if (!projects.length) {
+      return {
+        props: {},
+      }
+    }
+    return {
+      props: { project },
+    }
+  }
+  
+  // If tokenId is provided (existing flow)
   if (!tokenId) {
     return {
       props: {},

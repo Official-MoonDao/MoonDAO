@@ -233,14 +233,20 @@ export default function ProjectProfile({
             header="Proposal"
             iconSrc="/assets/icon-star.svg"
             action={
-              <Link
-                className="flex gap-2 items-center px-3 py-2 md:px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs md:text-sm"
-                href={`/project/${project.MDP}`}
-                passHref
-              >
-                <Image src="/assets/report.png" alt="Report Icon" width={16} height={16} />
-                <span className="whitespace-nowrap">Review Original Proposal</span>
-              </Link>
+              <div className="flex gap-2">
+                {address && proposalJSON?.authorAddress?.toLowerCase() === address.toLowerCase() && (
+                  <Link
+                    className="flex gap-2 items-center px-3 py-2 md:px-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs md:text-sm"
+                    href={`/proposals?edit=${project.MDP}`}
+                    passHref
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                    </svg>
+                    <span className="whitespace-nowrap">Update Proposal</span>
+                  </Link>
+                )}
+              </div>
             }
           >
             <div className="mt-10 mb-10">

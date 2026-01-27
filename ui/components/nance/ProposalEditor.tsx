@@ -69,7 +69,11 @@ export default function ProposalEditor({ project }: { project: Project }) {
       setProposalBody(proposalBody)
       setProposalTitle(proposalTitle)
       if (proposal.budget) {
+        setAttachBudget(true)
         reset(proposal.budget)
+      }
+      if (proposal.nonProjectProposal) {
+        setNonProjectProposal(proposal.nonProjectProposal)
       }
     }
     if (project?.proposalIPFS) getProposalJSON()
@@ -302,11 +306,26 @@ export default function ProposalEditor({ project }: { project: Project }) {
     }
   }, [proposalBody])
 
+  const isEditing = project?.MDP !== undefined && project?.MDP > 0
+
   return (
     <>
       <div className="flex flex-col justify-center items-start animate-fadeIn w-full md:w-full">
         <div className="px-2 w-full md:max-w-[1200px]">
           <form onSubmit={submitProposal}>
+            {isEditing && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-amber-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                  </svg>
+                  <div>
+                    <h3 className="text-amber-400 font-semibold">Updating MDP-{project.MDP}</h3>
+                    <p className="text-sm text-amber-300/80">Edit your Google Doc, then re-import it below to update your proposal.</p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="">
               <ProposalLocalCache
                 proposalCache={proposalCache}
@@ -467,13 +486,16 @@ export default function ProposalEditor({ project }: { project: Project }) {
                   disabled={buttonsDisabled}
                   data-tip={
                     signingStatus === 'loading'
-                      ? 'Submitting...'
+                      ? isEditing ? 'Updating...' : 'Submitting...'
                       : isUploadingImage
                       ? 'Uploading image...'
                       : 'You need to connect wallet first.'
                   }
                 >
-                  {signingStatus === 'loading' ? 'Submitting...' : 'Submit'}
+                  {signingStatus === 'loading' 
+                    ? (isEditing ? 'Updating...' : 'Submitting...') 
+                    : (isEditing ? 'Update Proposal' : 'Submit Proposal')
+                  }
                 </button>
               </div>
             </div>
