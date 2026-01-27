@@ -340,7 +340,8 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       // Send confirmation email to the author
       if (authorEmail) {
         try {
-          await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/proposals/send-confirmation-email`, {
+          console.log('Attempting to send confirmation email to:', authorEmail)
+          const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/proposals/send-confirmation-email`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -351,10 +352,19 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
               proposalTitle: proposalTitle,
             }),
           })
+          
+          const emailResult = await emailResponse.json()
+          if (!emailResponse.ok) {
+            console.error('Failed to send confirmation email:', emailResult)
+          } else {
+            console.log('Confirmation email sent successfully to:', authorEmail)
+          }
         } catch (emailError) {
           console.error('Failed to send confirmation email:', emailError)
           // Don't fail the whole request if email fails
         }
+      } else {
+        console.log('No author email provided, skipping confirmation email')
       }
 
       res.status(200).json({

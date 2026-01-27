@@ -128,7 +128,10 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
   try {
     const { email, proposalId, proposalTitle } = req.body
 
+    console.log('Email API called with:', { email, proposalId, proposalTitle })
+
     if (!email || !proposalId || !proposalTitle) {
+      console.error('Missing required fields:', { email: !!email, proposalId: !!proposalId, proposalTitle: !!proposalTitle })
       return res.status(400).json({ 
         error: 'Missing required fields: email, proposalId, and proposalTitle are required' 
       })
@@ -137,6 +140,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
+      console.error('Invalid email format:', email)
       return res.status(400).json({ error: 'Invalid email format' })
     }
 
