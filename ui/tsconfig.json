@@ -92,7 +92,6 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "noEmit": true,
-    "incremental": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -113,6 +112,8 @@
     "components/marketplace/r3f/Profile/BannerScene.jsx",
     "components/marketplace/r3f/Profile/BannerScene.jsx",
     "pages/api/nodemailer",
+    "pages/api/proposals/send-confirmation-email.ts",
+    "pages/api/privy/user-email.ts",
     "next-sitemap.config.js"
   ],
   "exclude": ["node_modules", "archive"]

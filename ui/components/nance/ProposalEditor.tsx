@@ -57,6 +57,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false)
   const [showSubmissionCTA, setShowSubmissionCTA] = useState<boolean>(false)
   const [submittedProposalId, setSubmittedProposalId] = useState<string | undefined>()
+  const [authorEmail, setAuthorEmail] = useState<string>('')
 
   useEffect(() => {
     async function getProposalJSON() {
@@ -77,6 +78,40 @@ export default function ProposalEditor({ project }: { project: Project }) {
   const [proposalCache, setProposalCache, clearProposalCache] = useLocalStorage<ProposalCache>(
     `NanceProposalCacheV1-${project?.id || 'new'}`
   )
+
+  // Fetch user's email from Privy if available
+  useEffect(() => {
+    async function fetchUserEmail() {
+      try {
+        const { getAccessToken } = await import('@privy-io/react-auth')
+        const accessToken = await getAccessToken()
+        
+        if (accessToken) {
+          const response = await fetch('/api/privy/user-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ accessToken }),
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data.email && !authorEmail) {
+              setAuthorEmail(data.email)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch user email:', error)
+        // Don't block the user if this fails
+      }
+    }
+    
+    if (address && !authorEmail) {
+      fetchUserEmail()
+    }
+  }, [address])
 
   const methods = useForm<RequestBudget>({
     mode: 'onBlur',
@@ -160,6 +195,14 @@ export default function ProposalEditor({ project }: { project: Project }) {
       setSigningStatus('error')
       return
     }
+    if (!authorEmail || !authorEmail.includes('@')) {
+      console.error('submitProposal: Invalid email provided')
+      toast.error('Please enter a valid email address.', {
+        style: toastStyle,
+      })
+      setSigningStatus('error')
+      return
+    }
     const header = `# ${proposalTitle}\n\n`
     const fileName = `${proposalTitle.replace(/\s+/g, '-')}.md`
 
@@ -185,6 +228,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
         proposalId: project?.MDP || 0,
         body: body,
         budget: getValues()['budget'],
+        authorEmail: authorEmail,
       }),
     })
     if (!res.ok) {
@@ -270,36 +314,64 @@ export default function ProposalEditor({ project }: { project: Project }) {
                 restoreProposalCache={restoreFromTitleAndBody}
               />
             </div>
-            <div className="py-0 rounded-[20px] flex flex-row gap-4 items-center">
-              <div
-                className={`flex-1 ${
-                  isUploadingImage ? 'pointer-events-none opacity-50' : ''
-                }`}
-              >
-                <ProposalTitleInput
-                  value={proposalTitle}
-                  onChange={(s) => {
-                    if (isUploadingImage) return // Prevent changes during upload
-                    setProposalTitle(s)
-                    console.debug('setProposalTitle', s)
-                    const cache = proposalCache || {
-                      body: proposalBody || '',
-                    }
-                    setProposalCache({
-                      ...cache,
-                      title: s,
-                      timestamp: getUnixTime(new Date()),
-                    })
-                  }}
-                />
-              </div>
-              <div className={`flex-shrink-0 ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
-                <GoogleDocsImport 
-                  setMarkdown={handleSetMarkdown} 
-                  setTitle={setProposalTitle}
-                  onImportStart={() => setIsUploadingImage(true)}
-                  onImportEnd={() => setIsUploadingImage(false)}
-                />
+            {/* Import and Title Section */}
+            <div className="bg-gradient-to-br from-dark-cool/50 to-transparent border border-white/10 rounded-2xl p-6 mb-6">
+              <div className="flex flex-col lg:flex-row gap-6">
+                {/* Left Column - Title and Email */}
+                <div className="flex-1 space-y-6">
+                  <div className={isUploadingImage ? 'pointer-events-none opacity-50' : ''}>
+                    <ProposalTitleInput
+                      value={proposalTitle}
+                      onChange={(s) => {
+                        if (isUploadingImage) return
+                        setProposalTitle(s)
+                        console.debug('setProposalTitle', s)
+                        const cache = proposalCache || {
+                          body: proposalBody || '',
+                        }
+                        setProposalCache({
+                          ...cache,
+                          title: s,
+                          timestamp: getUnixTime(new Date()),
+                        })
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="author-email" className="block text-sm font-medium text-white mb-2">
+                      Your Email <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      id="author-email"
+                      type="email"
+                      required
+                      value={authorEmail}
+                      onChange={(e) => setAuthorEmail(e.target.value)}
+                      placeholder="your.email@example.com"
+                      className="w-full px-4 py-3 bg-dark-cool border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all autofill:bg-dark-cool autofill:text-white autofill:shadow-[inset_0_0_0px_1000px_rgb(17,24,39)]"
+                      disabled={isUploadingImage}
+                      style={{
+                        WebkitTextFillColor: 'white',
+                      }}
+                    />
+                    <p className="mt-2 text-xs text-gray-400">
+                      We'll send you a confirmation email with your proposal link and next steps.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right Column - Import Button */}
+                <div className="lg:w-auto flex items-start lg:pt-0">
+                  <div className={`w-full lg:w-auto ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
+                    <GoogleDocsImport 
+                      setMarkdown={handleSetMarkdown} 
+                      setTitle={setProposalTitle}
+                      onImportStart={() => setIsUploadingImage(true)}
+                      onImportEnd={() => setIsUploadingImage(false)}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 

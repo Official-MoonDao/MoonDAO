@@ -4,6 +4,7 @@ export interface PrivyUserData {
   walletAddresses: string[]
   discordAccount: any
   userData: any
+  email?: string
 }
 
 export async function getPrivyUserData(
@@ -36,6 +37,7 @@ export async function getPrivyUserData(
     const userData = await userResponse.json()
     const walletAddresses: string[] = []
     let discordAccount: any = null
+    let email: string | undefined = undefined
 
     // Extract wallet addresses from the user's linked accounts
     if (userData.linked_accounts) {
@@ -47,6 +49,10 @@ export async function getPrivyUserData(
         if (account.type === 'discord_oauth') {
           discordAccount = account
         }
+        // Extract email
+        if (account.type === 'email' && account.address) {
+          email = account.address
+        }
       }
     }
 
@@ -54,6 +60,7 @@ export async function getPrivyUserData(
       walletAddresses,
       discordAccount,
       userData,
+      email,
     }
   } catch (error) {
     console.error('Error fetching Privy user data:', error)

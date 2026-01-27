@@ -18,7 +18,6 @@ export default function GoogleDocsImport({
 }: GoogleDocsImportProps) {
   const [url, setUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [showInput, setShowInput] = useState(false)
 
   const isValidGoogleDocsUrl = (url: string): boolean => {
     return url.includes('docs.google.com/document/d/') || /^[a-zA-Z0-9_-]{25,}$/.test(url)
@@ -63,7 +62,6 @@ export default function GoogleDocsImport({
 
       toast.success('Document imported successfully!', { style: toastStyle })
       setUrl('')
-      setShowInput(false)
     } catch (error: any) {
       console.error('Error importing Google Doc:', error)
       toast.error(error.message || 'Failed to import document', { style: toastStyle })
@@ -80,67 +78,42 @@ export default function GoogleDocsImport({
     }
   }
 
-  if (!showInput) {
-    return (
+  return (
+    <div className="flex flex-col gap-3 w-full lg:min-w-[300px]">
+      <label className="block text-sm font-medium text-white">
+        Import from Google Docs
+      </label>
+      <div className="relative">
+        <LinkIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Paste Google Docs URL..."
+          disabled={isLoading}
+          className="w-full pl-10 pr-3 py-3 bg-dark-cool border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all disabled:opacity-50"
+        />
+      </div>
       <button
         type="button"
-        onClick={() => setShowInput(true)}
-        className="px-6 py-4 w-auto whitespace-nowrap bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 border border-blue-500/30 hover:border-blue-500/50 text-blue-400 hover:text-blue-300 font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl text-sm flex items-center justify-center gap-2"
+        onClick={handleImport}
+        disabled={isLoading || !url.trim()}
+        className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-RobotoMono rounded-xl transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
       >
-        <DocumentTextIcon className="w-4 h-4" />
-        Import from Google Docs
+        {isLoading ? (
+          <>
+            <ArrowPathIcon className="w-5 h-5 animate-spin" />
+            Importing...
+          </>
+        ) : (
+          <>
+            <DocumentTextIcon className="w-5 h-5" />
+            Import Document
+          </>
+        )}
       </button>
-    )
-  }
-
-  return (
-    <div className="flex flex-col gap-2 w-full min-w-[200px]">
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <LinkIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Paste Google Docs URL..."
-            disabled={isLoading}
-            className="w-full pl-10 pr-3 py-2 bg-dark-cool border border-white/20 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all disabled:opacity-50"
-          />
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={handleImport}
-          disabled={isLoading || !url.trim()}
-          className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-RobotoMono rounded-lg transition-all duration-300 text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? (
-            <>
-              <ArrowPathIcon className="w-4 h-4 animate-spin" />
-              Importing...
-            </>
-          ) : (
-            <>
-              <DocumentTextIcon className="w-4 h-4" />
-              Import
-            </>
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setShowInput(false)
-            setUrl('')
-          }}
-          disabled={isLoading}
-          className="px-3 py-2 bg-gray-600/30 hover:bg-gray-600/50 text-gray-300 font-RobotoMono rounded-lg transition-all duration-300 text-sm disabled:opacity-50"
-        >
-          Cancel
-        </button>
-      </div>
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-gray-400 text-center">
         Make sure the document is shared with &quot;Anyone with the link&quot;
       </p>
     </div>

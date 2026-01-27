@@ -153,7 +153,7 @@ async function pinBlobOrFile(blob: Blob, name: string): Promise<PinResponse> {
 // Submit a proposal, project based on non-project. Creates a new entry in the table and a new discord thread.
 async function POST(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { address, proposalTitle, proposalIPFS, body } = req.body
+    const { address, proposalTitle, proposalIPFS, body, authorEmail } = req.body
     const session = await getServerSession(req, res, authOptions)
     if (!session?.accessToken) {
       res.status(401).json({ error: 'Unauthorized' })
@@ -336,6 +336,27 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         const responseJson = await discordResponse.json()
         console.error('Failed to create thread on discord: ', responseJson?.message)
       }
+
+      // Send confirmation email to the author
+      if (authorEmail) {
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/proposals/send-confirmation-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: authorEmail,
+              proposalId: proposalId,
+              proposalTitle: proposalTitle,
+            }),
+          })
+        } catch (emailError) {
+          console.error('Failed to send confirmation email:', emailError)
+          // Don't fail the whole request if email fails
+        }
+      }
+
       res.status(200).json({
         proposalId: proposalId,
       })
