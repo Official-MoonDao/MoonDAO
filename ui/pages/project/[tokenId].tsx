@@ -403,12 +403,16 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
     const voteAddresses = votes.map((v) => v.address)
     const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
-    const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, 1764016844)
-    const addressToQuadraticVotingPower = Object.fromEntries(
-      voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
-    )
-    const SUM_TO_ONE_HUNDRED = 100
-    voteOutcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
+    
+    // Only fetch vMOONEY balances if there are votes
+    if (voteAddresses.length > 0) {
+      const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)
+      const addressToQuadraticVotingPower = Object.fromEntries(
+        voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index] || 0)])
+      )
+      const SUM_TO_ONE_HUNDRED = 100
+      voteOutcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
+    }
   }
 
   const projectContract = getContract({
