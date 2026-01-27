@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThirdwebProvider } from 'thirdweb/react'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
-import { arbitrum, sepolia, ethereum } from '@/lib/rpc/chains'
+import { arbitrum, sepolia, ethereum, polygon, Chain } from '@/lib/rpc/chains'
 
 const queryClient = new QueryClient()
 
@@ -13,7 +13,7 @@ function createMockWallet(
   walletType: string,
   chainId: number,
   switchChainSpy: Cypress.Agent<sinon.SinonStub>,
-  getBalanceSpy?: Cypress.Agent<sinon.SinonStub>
+  getBalanceSpy?: sinon.SinonStub | Cypress.Agent<sinon.SinonStub>
 ) {
   return {
     address: '0x1234567890123456789012345678901234567890',
@@ -29,10 +29,12 @@ function createMockWallet(
 // Helper component to test the hook behavior
 function NativeBalanceTestComponent({
   onBalanceFetched,
+  onWalletChainFetched,
 }: {
   onBalanceFetched?: (balance: any) => void
+  onWalletChainFetched?: (chain: Chain | undefined) => void
 }) {
-  const { nativeBalance, refetch } = useNativeBalance()
+  const { nativeBalance, walletChain, refetch } = useNativeBalance()
 
   useEffect(() => {
     if (nativeBalance !== undefined && onBalanceFetched) {
@@ -40,9 +42,17 @@ function NativeBalanceTestComponent({
     }
   }, [nativeBalance, onBalanceFetched])
 
+  useEffect(() => {
+    if (onWalletChainFetched) {
+      onWalletChainFetched(walletChain)
+    }
+  }, [walletChain, onWalletChainFetched])
+
   return (
     <div data-testid="native-balance-component">
       <span data-testid="balance-value">{nativeBalance ?? 'Loading...'}</span>
+      <span data-testid="wallet-chain-id">{walletChain?.id ?? 'unknown'}</span>
+      <span data-testid="wallet-chain-symbol">{walletChain?.nativeCurrency?.symbol ?? 'unknown'}</span>
       <button data-testid="refetch-button" onClick={() => refetch()}>
         Refetch
       </button>
@@ -146,7 +156,8 @@ describe('useNativeBalance - No Auto Chain Switching', () => {
 
   describe('Balance fetching works regardless of chain mismatch', () => {
     it('should fetch balance from wallet current chain without switching', () => {
-      const getBalanceSpy = cy.stub().resolves({ toString: () => '2500000000000000000' }).as('getBalanceSpy')
+      const getBalanceSpy = cy.stub().resolves({ toString: () => '2500000000000000000' })
+      cy.wrap(getBalanceSpy).as('getBalanceSpy')
       const switchChainSpy = cy.stub().as('switchChainSpy')
       const mockWallets = [createMockWallet('metamask', ethereum.id, switchChainSpy, getBalanceSpy)]
 
@@ -178,7 +189,8 @@ describe('useNativeBalance - No Auto Chain Switching', () => {
     })
 
     it('should handle getBalance errors gracefully', () => {
-      const getBalanceSpy = cy.stub().rejects(new Error('Network error')).as('getBalanceSpy')
+      const getBalanceSpy = cy.stub().rejects(new Error('Network error'))
+      cy.wrap(getBalanceSpy).as('getBalanceSpy')
       const switchChainSpy = cy.stub().as('switchChainSpy')
       const mockWallets = [createMockWallet('metamask', ethereum.id, switchChainSpy, getBalanceSpy)]
 
@@ -204,6 +216,132 @@ describe('useNativeBalance - No Auto Chain Switching', () => {
 
       // Component should still render even with errors (graceful degradation)
       cy.get('[data-testid="balance-value"]').should('exist')
+    })
+  })
+
+  describe('walletChain returns the correct chain info for native token display', () => {
+    it('should return ETH as native token symbol when wallet is on Ethereum', () => {
+      const switchChainSpy = cy.stub().as('switchChainSpy')
+      const mockWallets = [createMockWallet('metamask', ethereum.id, switchChainSpy)]
+
+      cy.stub(PrivyAuth, 'useWallets').returns({ wallets: mockWallets })
+
+      cy.mount(
+        <QueryClientProvider client={queryClient}>
+          <PrivyWalletContext.Provider
+            value={{
+              selectedWallet: 0,
+              setSelectedWallet: () => {},
+            }}
+          >
+            <ThirdwebProvider>
+              <NativeBalanceTestComponent />
+            </ThirdwebProvider>
+          </PrivyWalletContext.Provider>
+        </QueryClientProvider>
+      )
+
+      cy.get('[data-testid="native-balance-component"]').should('exist')
+      cy.wait(500)
+
+      // walletChain should reflect Ethereum
+      cy.get('[data-testid="wallet-chain-id"]').should('have.text', String(ethereum.id))
+      cy.get('[data-testid="wallet-chain-symbol"]').should('have.text', 'ETH')
+    })
+
+    it('should return MATIC as native token symbol when wallet is on Polygon', () => {
+      const switchChainSpy = cy.stub().as('switchChainSpy')
+      const mockWallets = [createMockWallet('metamask', polygon.id, switchChainSpy)]
+
+      cy.stub(PrivyAuth, 'useWallets').returns({ wallets: mockWallets })
+
+      cy.mount(
+        <QueryClientProvider client={queryClient}>
+          <PrivyWalletContext.Provider
+            value={{
+              selectedWallet: 0,
+              setSelectedWallet: () => {},
+            }}
+          >
+            <ThirdwebProvider>
+              <NativeBalanceTestComponent />
+            </ThirdwebProvider>
+          </PrivyWalletContext.Provider>
+        </QueryClientProvider>
+      )
+
+      cy.get('[data-testid="native-balance-component"]').should('exist')
+      cy.wait(500)
+
+      // walletChain should reflect Polygon
+      cy.get('[data-testid="wallet-chain-id"]').should('have.text', String(polygon.id))
+      cy.get('[data-testid="wallet-chain-symbol"]').should('have.text', 'MATIC')
+    })
+
+    it('should return ETH for Arbitrum (L2 with ETH native token)', () => {
+      const switchChainSpy = cy.stub().as('switchChainSpy')
+      const mockWallets = [createMockWallet('metamask', arbitrum.id, switchChainSpy)]
+
+      cy.stub(PrivyAuth, 'useWallets').returns({ wallets: mockWallets })
+
+      cy.mount(
+        <QueryClientProvider client={queryClient}>
+          <PrivyWalletContext.Provider
+            value={{
+              selectedWallet: 0,
+              setSelectedWallet: () => {},
+            }}
+          >
+            <ThirdwebProvider>
+              <NativeBalanceTestComponent />
+            </ThirdwebProvider>
+          </PrivyWalletContext.Provider>
+        </QueryClientProvider>
+      )
+
+      cy.get('[data-testid="native-balance-component"]').should('exist')
+      cy.wait(500)
+
+      // walletChain should reflect Arbitrum with ETH as native token
+      cy.get('[data-testid="wallet-chain-id"]').should('have.text', String(arbitrum.id))
+      cy.get('[data-testid="wallet-chain-symbol"]').should('have.text', 'ETH')
+    })
+
+    it('should correctly label ETH balance even when selectedChain is Polygon (fixes mislabeling bug)', () => {
+      // This is the specific bug scenario:
+      // - MetaMask wallet is on Ethereum
+      // - User selected Polygon in the UI
+      // - Previously: balance showed as "MATIC" (wrong!)
+      // - After fix: balance should show as "ETH" (correct!)
+
+      const switchChainSpy = cy.stub().as('switchChainSpy')
+      // Wallet is on Ethereum
+      const mockWallets = [createMockWallet('metamask', ethereum.id, switchChainSpy)]
+
+      cy.stub(PrivyAuth, 'useWallets').returns({ wallets: mockWallets })
+
+      cy.mount(
+        <QueryClientProvider client={queryClient}>
+          <PrivyWalletContext.Provider
+            value={{
+              selectedWallet: 0,
+              setSelectedWallet: () => {},
+            }}
+          >
+            <ThirdwebProvider>
+              {/* Note: The hook no longer uses selectedChain from context */}
+              <NativeBalanceTestComponent />
+            </ThirdwebProvider>
+          </PrivyWalletContext.Provider>
+        </QueryClientProvider>
+      )
+
+      cy.get('[data-testid="native-balance-component"]').should('exist')
+      cy.wait(500)
+
+      // Even though selectedChain could be Polygon, the native token symbol
+      // should reflect the wallet's actual chain (Ethereum = ETH)
+      cy.get('[data-testid="wallet-chain-symbol"]').should('have.text', 'ETH')
     })
   })
 })

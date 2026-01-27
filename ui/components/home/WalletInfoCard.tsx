@@ -34,15 +34,6 @@ type WalletInfoCardProps = {
   setSendModalEnabled?: (enabled: boolean) => void
 }
 
-const selectedNativeToken: any = {
-  arbitrum: 'ETH',
-  ethereum: 'ETH',
-  base: 'ETH',
-  sepolia: 'ETH',
-  'base-sepolia-testnet': 'ETH',
-  polygon: 'MATIC',
-}
-
 function formatToken(value: number | null | undefined): string {
   if (value === null || value === undefined) return '0'
   if (value === 0) return '0'
@@ -71,8 +62,13 @@ export default function WalletInfoCard({
   const [copied, setCopied] = useState(false)
   const { selectedChain, setSelectedChain }: any = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
-  const { nativeBalance } = useNativeBalance()
+  const { nativeBalance, walletChain } = useNativeBalance()
   const [networkDropdownOpen, setNetworkDropdownOpen] = useState(false)
+
+  // Use the wallet's actual chain for native token display, fall back to selectedChain
+  const nativeTokenChain = walletChain || selectedChain
+  const nativeTokenSlug = getChainSlug(nativeTokenChain)
+  const nativeTokenSymbol = nativeTokenChain?.nativeCurrency?.symbol || 'ETH'
 
   const availableChains = [
     arbitrum,
@@ -194,15 +190,15 @@ export default function WalletInfoCard({
             <div className="flex items-center gap-2">
               <Image
                 src={`/icons/networks/${
-                  chainSlug === 'polygon' ? 'polygon' : 'ethereum'
+                  nativeTokenSlug === 'polygon' ? 'polygon' : 'ethereum'
                 }.svg`}
-                alt={selectedNativeToken[chainSlug]}
+                alt={nativeTokenSymbol}
                 width={20}
                 height={20}
                 className="rounded-full"
               />
               <span className="text-sm text-gray-400">
-                {selectedNativeToken[chainSlug]}
+                {nativeTokenSymbol}
               </span>
             </div>
             <span className="text-white font-semibold">

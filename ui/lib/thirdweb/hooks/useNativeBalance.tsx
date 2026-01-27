@@ -1,11 +1,14 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useContext, useEffect, useState, useCallback } from 'react'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { getChainById } from '@/lib/thirdweb/chain'
+import { Chain } from '@/lib/rpc/chains'
 
 export function useNativeBalance() {
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const [nativeBalance, setNativeBalance] = useState<any>()
+  const [walletChain, setWalletChain] = useState<Chain | undefined>()
 
   const getNativeBalance = useCallback(async () => {
     const wallet = wallets[selectedWallet]
@@ -23,6 +26,12 @@ export function useNativeBalance() {
     // This hook simply fetches the balance from whatever chain the wallet is currently on.
 
     try {
+      // Extract the wallet's current chain ID
+      const walletChainId = wallet.chainId ? +wallet.chainId.split(':')[1] : null
+      if (walletChainId) {
+        setWalletChain(getChainById(walletChainId))
+      }
+
       const provider = await wallet.getEthersProvider()
       const balance = await provider.getBalance(wallet.address)
       setNativeBalance(Number(+balance?.toString() / 10 ** 18).toFixed(7))
@@ -39,5 +48,5 @@ export function useNativeBalance() {
     return () => clearInterval(interval)
   }, [getNativeBalance])
 
-  return { nativeBalance, refetch: getNativeBalance }
+  return { nativeBalance, walletChain, refetch: getNativeBalance }
 }

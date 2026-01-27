@@ -50,3 +50,18 @@ export function v4SlugToV5Chain(slug: string) {
 
   return slugsToChains?.[slug]
 }
+
+export function getChainById(chainId: number): Chain | undefined {
+  const chainsById: Record<number, Chain> = {
+    1: ethereum,
+    42161: arbitrum,
+    8453: base,
+    137: polygon,
+    11155111: sepolia,
+    421614: arbitrumSepolia,
+    84532: baseSepolia,
+    11155420: optimismSepolia,
+  }
+
+  return chainsById[chainId]
+}
