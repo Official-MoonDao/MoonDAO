@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { PrivyProvider } from '@privy-io/react-auth'
+import * as PrivyAuth from '@privy-io/react-auth'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThirdwebProvider } from 'thirdweb/react'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
@@ -7,6 +7,24 @@ import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
 import { arbitrum, sepolia, ethereum } from '@/lib/rpc/chains'
 
 const queryClient = new QueryClient()
+
+// Helper function to create a mock wallet
+function createMockWallet(
+  walletType: string,
+  chainId: number,
+  switchChainSpy: Cypress.Agent<sinon.SinonStub>,
+  getBalanceSpy?: Cypress.Agent<sinon.SinonStub>
+) {
+  return {
+    address: '0x1234567890123456789012345678901234567890',
+    chainId: `eip155:${chainId}`,
+    walletClientType: walletType,
+    switchChain: switchChainSpy,
+    getEthersProvider: cy.stub().resolves({
+      getBalance: getBalanceSpy ?? cy.stub().resolves({ toString: () => '1000000000000000000' }),
+    }),
+  }
+}
 
 // Helper component to test the hook behavior
 function NativeBalanceTestComponent({
@@ -56,20 +74,10 @@ describe('useNativeBalance - No Auto Chain Switching', () => {
     walletTypes.forEach((walletType) => {
       it(`should NOT call switchChain for ${walletType} wallets`, () => {
         const switchChainSpy = cy.stub().as('switchChainSpy')
+        const mockWallets = [createMockWallet(walletType, ethereum.id, switchChainSpy)]
 
-        cy.window().then((win) => {
-          ;(win as any).__CYPRESS_MOCK_WALLETS__ = [
-            {
-              address: '0x1234567890123456789012345678901234567890',
-              chainId: `eip155:${ethereum.id}`, // Wallet on Ethereum
-              walletClientType: walletType,
-              switchChain: switchChainSpy,
-              getEthersProvider: cy.stub().resolves({
-                getBalance: cy.stub().resolves({ toString: () => '1000000000000000000' }),
-              }),
-            },
-          ]
-        })
+        // Stub useWallets to inject mock wallets
+        cy.stub(PrivyAuth, 'useWallets').returns({ wallets: mockWallets })
 
         cy.mount(
           <QueryClientProvider client={queryClient}>
@@ -79,11 +87,9 @@ describe('useNativeBalance - No Auto Chain Switching', () => {
                 setSelectedWallet: () => {},
               }}
             >
-              <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-                <ThirdwebProvider>
-                  <NativeBalanceTestComponent />
-                </ThirdwebProvider>
-              </PrivyProvider>
+              <ThirdwebProvider>
+                <NativeBalanceTestComponent />
+              </ThirdwebProvider>
             </PrivyWalletContext.Provider>
           </QueryClientProvider>
         )
@@ -108,20 +114,10 @@ describe('useNativeBalance - No Auto Chain Switching', () => {
       // - Neither should try to auto-switch the shared wallet
 
       const switchChainSpy = cy.stub().as('switchChainSpy')
+      const mockWallets = [createMockWallet('coinbase_wallet', sepolia.id, switchChainSpy)]
 
-      cy.window().then((win) => {
-        ;(win as any).__CYPRESS_MOCK_WALLETS__ = [
-          {
-            address: '0x1234567890123456789012345678901234567890',
-            chainId: `eip155:${sepolia.id}`, // Wallet on Sepolia
-            walletClientType: 'coinbase_wallet', // Even auto-switch wallets shouldn't switch
-            switchChain: switchChainSpy,
-            getEthersProvider: cy.stub().resolves({
-              getBalance: cy.stub().resolves({ toString: () => '1000000000000000000' }),
-            }),
-          },
-        ]
-      })
+      // Stub useWallets to inject mock wallets
+      cy.stub(PrivyAuth, 'useWallets').returns({ wallets: mockWallets })
 
       cy.mount(
         <QueryClientProvider client={queryClient}>
@@ -131,11 +127,9 @@ describe('useNativeBalance - No Auto Chain Switching', () => {
               setSelectedWallet: () => {},
             }}
           >
-            <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-              <ThirdwebProvider>
-                <NativeBalanceTestComponent />
-              </ThirdwebProvider>
-            </PrivyProvider>
+            <ThirdwebProvider>
+              <NativeBalanceTestComponent />
+            </ThirdwebProvider>
           </PrivyWalletContext.Provider>
         </QueryClientProvider>
       )
@@ -153,20 +147,11 @@ describe('useNativeBalance - No Auto Chain Switching', () => {
   describe('Balance fetching works regardless of chain mismatch', () => {
     it('should fetch balance from wallet current chain without switching', () => {
       const getBalanceSpy = cy.stub().resolves({ toString: () => '2500000000000000000' }).as('getBalanceSpy')
+      const switchChainSpy = cy.stub().as('switchChainSpy')
+      const mockWallets = [createMockWallet('metamask', ethereum.id, switchChainSpy, getBalanceSpy)]
 
-      cy.window().then((win) => {
-        ;(win as any).__CYPRESS_MOCK_WALLETS__ = [
-          {
-            address: '0x1234567890123456789012345678901234567890',
-            chainId: `eip155:${ethereum.id}`, // Wallet on Ethereum
-            walletClientType: 'metamask',
-            switchChain: cy.stub(),
-            getEthersProvider: cy.stub().resolves({
-              getBalance: getBalanceSpy,
-            }),
-          },
-        ]
-      })
+      // Stub useWallets to inject mock wallets
+      cy.stub(PrivyAuth, 'useWallets').returns({ wallets: mockWallets })
 
       cy.mount(
         <QueryClientProvider client={queryClient}>
@@ -176,11 +161,9 @@ describe('useNativeBalance - No Auto Chain Switching', () => {
               setSelectedWallet: () => {},
             }}
           >
-            <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-              <ThirdwebProvider>
-                <NativeBalanceTestComponent />
-              </ThirdwebProvider>
-            </PrivyProvider>
+            <ThirdwebProvider>
+              <NativeBalanceTestComponent />
+            </ThirdwebProvider>
           </PrivyWalletContext.Provider>
         </QueryClientProvider>
       )
@@ -196,20 +179,11 @@ describe('useNativeBalance - No Auto Chain Switching', () => {
 
     it('should handle getBalance errors gracefully', () => {
       const getBalanceSpy = cy.stub().rejects(new Error('Network error')).as('getBalanceSpy')
+      const switchChainSpy = cy.stub().as('switchChainSpy')
+      const mockWallets = [createMockWallet('metamask', ethereum.id, switchChainSpy, getBalanceSpy)]
 
-      cy.window().then((win) => {
-        ;(win as any).__CYPRESS_MOCK_WALLETS__ = [
-          {
-            address: '0x1234567890123456789012345678901234567890',
-            chainId: `eip155:${ethereum.id}`,
-            walletClientType: 'metamask',
-            switchChain: cy.stub(),
-            getEthersProvider: cy.stub().resolves({
-              getBalance: getBalanceSpy,
-            }),
-          },
-        ]
-      })
+      // Stub useWallets to inject mock wallets
+      cy.stub(PrivyAuth, 'useWallets').returns({ wallets: mockWallets })
 
       cy.mount(
         <QueryClientProvider client={queryClient}>
@@ -219,11 +193,9 @@ describe('useNativeBalance - No Auto Chain Switching', () => {
               setSelectedWallet: () => {},
             }}
           >
-            <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-              <ThirdwebProvider>
-                <NativeBalanceTestComponent />
-              </ThirdwebProvider>
-            </PrivyProvider>
+            <ThirdwebProvider>
+              <NativeBalanceTestComponent />
+            </ThirdwebProvider>
           </PrivyWalletContext.Provider>
         </QueryClientProvider>
       )

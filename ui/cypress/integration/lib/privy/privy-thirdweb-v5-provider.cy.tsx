@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react'
+import * as PrivyAuth from '@privy-io/react-auth'
 import { PrivyProvider } from '@privy-io/react-auth'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThirdwebProvider } from 'thirdweb/react'
@@ -8,6 +9,14 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { arbitrum, sepolia } from '@/lib/rpc/chains'
 
 const queryClient = new QueryClient()
+
+// Default mock for usePrivy - used across all tests
+const defaultUsePrivyMock = {
+  user: { id: 'test-user-id' },
+  ready: true,
+  authenticated: true,
+  getAccessToken: cy.stub().resolves('mock-access-token'),
+}
 
 describe('PrivyThirdwebV5Provider - Chain Switch Race Condition Prevention', () => {
   // Test to ensure switchChain is not called when wallet is already on target chain
@@ -31,6 +40,10 @@ describe('PrivyThirdwebV5Provider - Chain Switch Race Condition Prevention', () 
         },
       ]
 
+      // Stub useWallets to inject mock wallets
+      cy.stub(PrivyAuth, 'useWallets').returns({ wallets: mockWallets })
+      cy.stub(PrivyAuth, 'usePrivy').returns(defaultUsePrivyMock)
+
       // Create a test component that uses the provider
       const TestComponent = () => {
         return <div data-testid="test-component">Provider Loaded</div>
@@ -50,13 +63,11 @@ describe('PrivyThirdwebV5Provider - Chain Switch Race Condition Prevention', () 
                 setSelectedWallet: () => {},
               }}
             >
-              <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-                <ThirdwebProvider>
-                  <PrivyThirdwebV5Provider selectedChain={arbitrum}>
-                    <TestComponent />
-                  </PrivyThirdwebV5Provider>
-                </ThirdwebProvider>
-              </PrivyProvider>
+              <ThirdwebProvider>
+                <PrivyThirdwebV5Provider selectedChain={arbitrum}>
+                  <TestComponent />
+                </PrivyThirdwebV5Provider>
+              </ThirdwebProvider>
             </PrivyWalletContext.Provider>
           </ChainContextV5.Provider>
         </QueryClientProvider>
@@ -72,7 +83,8 @@ describe('PrivyThirdwebV5Provider - Chain Switch Race Condition Prevention', () 
     })
 
     it('should call switchChain when wallet is on different chain (for auto-switch wallets)', () => {
-      const switchChainSpy = cy.stub().resolves().as('switchChainSpy')
+      const switchChainSpy = cy.stub().resolves()
+      cy.wrap(switchChainSpy).as('switchChainSpy')
       const currentChainId = sepolia.id // 11155111 - wallet on Sepolia
       const targetChainId = arbitrum.id // 42161 - target is Arbitrum
 
@@ -90,6 +102,10 @@ describe('PrivyThirdwebV5Provider - Chain Switch Race Condition Prevention', () 
           }),
         },
       ]
+
+      // Stub useWallets to inject mock wallets
+      cy.stub(PrivyAuth, 'useWallets').returns({ wallets: mockWallets })
+      cy.stub(PrivyAuth, 'usePrivy').returns(defaultUsePrivyMock)
 
       const TestComponent = () => {
         return <div data-testid="test-component">Provider Loaded</div>
@@ -109,19 +125,23 @@ describe('PrivyThirdwebV5Provider - Chain Switch Race Condition Prevention', () 
                 setSelectedWallet: () => {},
               }}
             >
-              <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-                <ThirdwebProvider>
-                  <PrivyThirdwebV5Provider selectedChain={arbitrum}>
-                    <TestComponent />
-                  </PrivyThirdwebV5Provider>
-                </ThirdwebProvider>
-              </PrivyProvider>
+              <ThirdwebProvider>
+                <PrivyThirdwebV5Provider selectedChain={arbitrum}>
+                  <TestComponent />
+                </PrivyThirdwebV5Provider>
+              </ThirdwebProvider>
             </PrivyWalletContext.Provider>
           </ChainContextV5.Provider>
         </QueryClientProvider>
       )
 
       cy.get('[data-testid="test-component"]').should('exist')
+
+      // Wait to ensure the effect has time to run
+      cy.wait(500)
+
+      // switchChain SHOULD have been called since wallet is on different chain and is auto-switch type
+      cy.get('@switchChainSpy').should('have.been.calledWith', targetChainId)
     })
 
     it('should NOT call switchChain for MetaMask wallets (non-auto-switch)', () => {
@@ -144,6 +164,10 @@ describe('PrivyThirdwebV5Provider - Chain Switch Race Condition Prevention', () 
         },
       ]
 
+      // Stub useWallets to inject mock wallets
+      cy.stub(PrivyAuth, 'useWallets').returns({ wallets: mockWallets })
+      cy.stub(PrivyAuth, 'usePrivy').returns(defaultUsePrivyMock)
+
       const TestComponent = () => {
         return <div data-testid="test-component">Provider Loaded</div>
       }
@@ -162,13 +186,11 @@ describe('PrivyThirdwebV5Provider - Chain Switch Race Condition Prevention', () 
                 setSelectedWallet: () => {},
               }}
             >
-              <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-                <ThirdwebProvider>
-                  <PrivyThirdwebV5Provider selectedChain={arbitrum}>
-                    <TestComponent />
-                  </PrivyThirdwebV5Provider>
-                </ThirdwebProvider>
-              </PrivyProvider>
+              <ThirdwebProvider>
+                <PrivyThirdwebV5Provider selectedChain={arbitrum}>
+                  <TestComponent />
+                </PrivyThirdwebV5Provider>
+              </ThirdwebProvider>
             </PrivyWalletContext.Provider>
           </ChainContextV5.Provider>
         </QueryClientProvider>
@@ -188,12 +210,33 @@ describe('PrivyThirdwebV5Provider - Chain Switch Race Condition Prevention', () 
     it('should not cause infinite loop when wallets array updates during chain switch', () => {
       const switchChainCallCount = { count: 0 }
       const maxExpectedCalls = 1 // Should only switch once, not loop
+      const currentChainId = sepolia.id // Start on different chain to trigger switch
 
       const switchChainSpy = cy.stub().callsFake(async () => {
         switchChainCallCount.count++
         // Simulate the wallet updating its chainId after switch
         await new Promise((resolve) => setTimeout(resolve, 100))
-      }).as('switchChainSpy')
+      })
+      cy.wrap(switchChainSpy).as('switchChainSpy')
+
+      // Mock wallet that starts on a different chain (to trigger switch attempt)
+      const mockWallets = [
+        {
+          address: '0x1234567890123456789012345678901234567890',
+          chainId: `eip155:${currentChainId}`, // Start on Sepolia
+          walletClientType: 'coinbase_wallet', // Auto-switch wallet type
+          switchChain: switchChainSpy,
+          getEthersProvider: cy.stub().resolves({
+            getSigner: cy.stub().returns({
+              getAddress: cy.stub().resolves('0x1234567890123456789012345678901234567890'),
+            }),
+          }),
+        },
+      ]
+
+      // Stub useWallets to inject mock wallets
+      cy.stub(PrivyAuth, 'useWallets').returns({ wallets: mockWallets })
+      cy.stub(PrivyAuth, 'usePrivy').returns(defaultUsePrivyMock)
 
       const TestComponent = () => {
         return <div data-testid="test-component">Provider Loaded</div>
@@ -213,13 +256,11 @@ describe('PrivyThirdwebV5Provider - Chain Switch Race Condition Prevention', () 
                 setSelectedWallet: () => {},
               }}
             >
-              <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-                <ThirdwebProvider>
-                  <PrivyThirdwebV5Provider selectedChain={arbitrum}>
-                    <TestComponent />
-                  </PrivyThirdwebV5Provider>
-                </ThirdwebProvider>
-              </PrivyProvider>
+              <ThirdwebProvider>
+                <PrivyThirdwebV5Provider selectedChain={arbitrum}>
+                  <TestComponent />
+                </PrivyThirdwebV5Provider>
+              </ThirdwebProvider>
             </PrivyWalletContext.Provider>
           </ChainContextV5.Provider>
         </QueryClientProvider>
@@ -242,6 +283,26 @@ describe('PrivyThirdwebV5Provider - Chain Switch Race Condition Prevention', () 
       // This prevents background tabs from trying to switch the wallet chain
       
       const switchChainSpy = cy.stub().as('switchChainSpy')
+      const currentChainId = sepolia.id // On different chain to potentially trigger switch
+
+      // Mock wallet that would trigger switch if conditions are met
+      const mockWallets = [
+        {
+          address: '0x1234567890123456789012345678901234567890',
+          chainId: `eip155:${currentChainId}`,
+          walletClientType: 'coinbase_wallet', // Auto-switch wallet type
+          switchChain: switchChainSpy,
+          getEthersProvider: cy.stub().resolves({
+            getSigner: cy.stub().returns({
+              getAddress: cy.stub().resolves('0x1234567890123456789012345678901234567890'),
+            }),
+          }),
+        },
+      ]
+
+      // Stub useWallets to inject mock wallets
+      cy.stub(PrivyAuth, 'useWallets').returns({ wallets: mockWallets })
+      cy.stub(PrivyAuth, 'usePrivy').returns(defaultUsePrivyMock)
 
       const TestComponent = () => {
         return <div data-testid="test-component">Provider Loaded</div>
@@ -262,13 +323,11 @@ describe('PrivyThirdwebV5Provider - Chain Switch Race Condition Prevention', () 
                 setSelectedWallet: () => {},
               }}
             >
-              <PrivyProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}>
-                <ThirdwebProvider>
-                  <PrivyThirdwebV5Provider selectedChain={arbitrum}>
-                    <TestComponent />
-                  </PrivyThirdwebV5Provider>
-                </ThirdwebProvider>
-              </PrivyProvider>
+              <ThirdwebProvider>
+                <PrivyThirdwebV5Provider selectedChain={arbitrum}>
+                  <TestComponent />
+                </PrivyThirdwebV5Provider>
+              </ThirdwebProvider>
             </PrivyWalletContext.Provider>
           </ChainContextV5.Provider>
         </QueryClientProvider>
@@ -276,8 +335,12 @@ describe('PrivyThirdwebV5Provider - Chain Switch Race Condition Prevention', () 
 
       cy.get('[data-testid="test-component"]').should('exist')
 
-      // Verify the component loads correctly
-      // The actual visibility check happens inside the provider
+      // Wait for effect to run
+      cy.wait(500)
+
+      // When tab is visible, switchChain should be called for auto-switch wallets on different chain
+      cy.get('@switchChainSpy').should('have.been.calledWith', arbitrum.id)
+
       cy.log('Tab visibility check is implemented in PrivyThirdwebV5Provider')
       cy.log('Background tabs will not attempt to switch chains')
     })
