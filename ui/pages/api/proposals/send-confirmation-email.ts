@@ -184,13 +184,25 @@ The MoonDAO Team
       html: htmlContent,
     }
 
-    await transporter.sendMail(mailOptions)
+    console.log('Attempting to send email with options:', { 
+      from: mailOptions.from, 
+      to: mailOptions.to, 
+      subject: mailOptions.subject 
+    })
 
-    console.log(`Confirmation email sent to ${email} for proposal MDP-${proposalId}`)
+    const info = await transporter.sendMail(mailOptions)
+
+    console.log(`Confirmation email sent successfully:`, {
+      messageId: info.messageId,
+      response: info.response,
+      email: email,
+      proposalId: proposalId
+    })
 
     return res.status(200).json({ 
       success: true, 
-      message: 'Confirmation email sent successfully' 
+      message: 'Confirmation email sent successfully',
+      messageId: info.messageId
     })
   } catch (error: any) {
     console.error('Error sending confirmation email:', error)
