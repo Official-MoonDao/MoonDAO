@@ -234,14 +234,17 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
 
       const membersValid = members.map((address) => ethers.utils.isAddress(address)).every(Boolean)
       if (!membersValid) {
+        const invalidMembers = members.filter(addr => !ethers.utils.isAddress(addr))
         return res.status(400).json({
-          error: `Could not parse team members. Found: ${members}`,
+          error: `Could not parse team members. Invalid addresses found: ${invalidMembers.join(', ')}. Please ensure all Ethereum addresses in your Initial Team section are FULL addresses (42 characters starting with 0x), not abbreviated. Example: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e`,
         })
       }
       const signersValid = signers.map((address) => ethers.utils.isAddress(address)).every(Boolean)
       if (!signersValid) {
+        const invalidSigners = signers.filter(addr => !ethers.utils.isAddress(addr))
+        const invalidDetails = invalidSigners.map(addr => `${addr} (length: ${addr.length})`).join(', ')
         return res.status(400).json({
-          error: `Could not parse multi-sig signers. Found: ${signers}`,
+          error: `Could not parse multi-sig signers. Invalid addresses found: ${invalidDetails}. Ethereum addresses must be exactly 42 characters (including 0x prefix). Example: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e. Please update your Google Doc with full, valid Ethereum addresses.`,
         })
       }
       const abstractValid =

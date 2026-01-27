@@ -191,58 +191,64 @@ export default function ProposalEditor({ project }: { project: Project }) {
     let body = proposalBody || ''
     e.preventDefault()
     setSigningStatus('loading')
-    if (!proposalTitle) {
-      console.error('submitProposal: No title provided')
-      toast.error('Please enter a title for the proposal.', {
-        style: toastStyle,
-      })
-      setSigningStatus('error')
-      return
-    }
-    if (!authorEmail || !authorEmail.includes('@')) {
-      console.error('submitProposal: Invalid email provided')
-      toast.error('Please enter a valid email address.', {
-        style: toastStyle,
-      })
-      setSigningStatus('error')
-      return
-    }
-    const header = `# ${proposalTitle}\n\n`
-    const fileName = `${proposalTitle.replace(/\s+/g, '-')}.md`
+    
+    try {
+      if (!proposalTitle) {
+        console.error('submitProposal: No title provided')
+        toast.error('Please enter a title for the proposal.', {
+          style: toastStyle,
+        })
+        setSigningStatus('error')
+        return
+      }
+      if (!authorEmail || !authorEmail.includes('@')) {
+        console.error('submitProposal: Invalid email provided')
+        toast.error('Please enter a valid email address.', {
+          style: toastStyle,
+        })
+        setSigningStatus('error')
+        return
+      }
+      const header = `# ${proposalTitle}\n\n`
+      const fileName = `${proposalTitle.replace(/\s+/g, '-')}.md`
 
-    const fileContents = JSON.stringify({
-      body: header + body,
-      budget: getValues()['budget'],
-      authorAddress: address,
-      nonProjectProposal: nonProjectProposal
-    })
-    const file = new File([fileContents], fileName, {
-      type: 'application/json',
-    })
-    const { url: proposalIPFS } = await pinBlobOrFile(file, '/api/ipfs/pin')
-    const res = await fetch(`/api/proposals/submit`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json', // Important: Specify the content type
-      },
-      body: JSON.stringify({
-        address: address,
-        proposalTitle: proposalTitle,
-        proposalIPFS: proposalIPFS,
-        proposalId: project?.MDP || 0,
-        body: body,
+      const fileContents = JSON.stringify({
+        body: header + body,
         budget: getValues()['budget'],
-        authorEmail: authorEmail,
-      }),
-    })
-    if (!res.ok) {
-      const { error } = await res.json() // Or response.json()
-      toast.error(error, {
-        style: toastStyle,
+        authorAddress: address,
+        nonProjectProposal: nonProjectProposal
       })
-      console.error(error)
-      setSigningStatus('error')
-    } else {
+      const file = new File([fileContents], fileName, {
+        type: 'application/json',
+      })
+      const { url: proposalIPFS } = await pinBlobOrFile(file, '/api/ipfs/pin')
+      const res = await fetch(`/api/proposals/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json', // Important: Specify the content type
+        },
+        body: JSON.stringify({
+          address: address,
+          proposalTitle: proposalTitle,
+          proposalIPFS: proposalIPFS,
+          proposalId: project?.MDP || 0,
+          body: body,
+          budget: getValues()['budget'],
+          authorEmail: authorEmail,
+        }),
+      })
+      if (!res.ok) {
+        const errorData = await res.json()
+        const errorMessage = errorData.error || 'Failed to submit proposal'
+        toast.error(errorMessage, {
+          style: toastStyle,
+          duration: 8000, // Show error longer so user can read it
+        })
+        console.error('Submission error:', errorMessage)
+        setSigningStatus('error')
+        return
+      }
+      
       const response = await res.json()
       setSubmittedProposalId(response.proposalId)
       setSigningStatus('success')
@@ -269,6 +275,13 @@ export default function ProposalEditor({ project }: { project: Project }) {
         // Don't block the user experience if notification fails
       }
       return response.url
+    } catch (error: any) {
+      console.error('Error submitting proposal:', error)
+      toast.error(error.message || 'An unexpected error occurred while submitting the proposal', {
+        style: toastStyle,
+        duration: 8000,
+      })
+      setSigningStatus('error')
     }
   }
 
