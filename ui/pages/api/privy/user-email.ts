@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { accessToken } = req.body
 
     if (!accessToken) {
-      return res.status(400).json({ error: 'Access token is required' })
+      return res.status(400).json({ error: 'Access token required' })
     }
 
     const privyUserData = await getPrivyUserData(accessToken)
@@ -19,14 +19,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Invalid access token' })
     }
 
-    return res.status(200).json({ 
-      email: privyUserData.email || null 
-    })
+    return res.status(200).json({ email: privyUserData.email || null })
   } catch (error: any) {
     console.error('Error fetching user email:', error)
-    return res.status(500).json({ 
-      error: 'Failed to fetch user email',
-      details: error.message 
-    })
+    return res.status(500).json({ error: 'Failed to fetch user email' })
   }
 }

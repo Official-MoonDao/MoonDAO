@@ -20,6 +20,7 @@ import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/client'
 import { authOptions } from '@/pages/api/auth/[...nextauth]'
+import { transporter, opEmail } from '@/lib/nodemailer/nodemailer'
 
 const chain = DEFAULT_CHAIN_V5
 const chainSlug = getChainSlug(chain)
@@ -346,31 +347,34 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       // Send confirmation email to the author
       if (authorEmail) {
         try {
-          console.log('Attempting to send confirmation email to:', authorEmail)
-          const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/proposals/send-confirmation-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: authorEmail,
-              proposalId: proposalId,
-              proposalTitle: proposalTitle,
-            }),
-          })
-          
-          const emailResult = await emailResponse.json()
-          if (!emailResponse.ok) {
-            console.error('Failed to send confirmation email:', emailResult)
-          } else {
-            console.log('Confirmation email sent successfully to:', authorEmail)
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+          if (emailRegex.test(authorEmail)) {
+            await transporter.sendMail({
+              from: opEmail,
+              to: authorEmail,
+              subject: `MoonDAO Proposal MDP-${proposalId} Submitted`,
+              html: `
+                <div style="max-width:600px;margin:0 auto;padding:30px;font-family:Arial,sans-serif">
+                  <h1 style="color:#667eea">Proposal Submitted</h1>
+                  <p>Your proposal has been submitted to MoonDAO.</p>
+                  <div style="background:#f8f9fa;padding:15px;border-radius:6px;margin:20px 0">
+                    <strong>MDP-${proposalId}</strong><br/>${proposalTitle}
+                  </div>
+                  <a href="https://moondao.com/proposal/${proposalId}" style="background:#667eea;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block">View Proposal</a>
+                  <p style="margin-top:20px"><strong>Next Steps:</strong></p>
+                  <ol>
+                    <li>Join the Discord thread for your proposal</li>
+                    <li>Engage with community feedback</li>
+                    <li>Monitor voting when it begins</li>
+                  </ol>
+                </div>
+              `,
+              text: `Your proposal MDP-${proposalId} "${proposalTitle}" has been submitted.\n\nView: https://moondao.com/proposal/${proposalId}\n\nNext Steps:\n1. Join the Discord thread\n2. Engage with community feedback\n3. Monitor voting when it begins`,
+            })
           }
         } catch (emailError) {
-          console.error('Failed to send confirmation email:', emailError)
-          // Don't fail the whole request if email fails
+          console.error('Email send failed:', emailError)
         }
-      } else {
-        console.log('No author email provided, skipping confirmation email')
       }
 
       res.status(200).json({
