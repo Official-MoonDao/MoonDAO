@@ -41,7 +41,10 @@ function formatToken(
   const num = typeof value === 'string' ? Number(value) : value
   if (num === null || num === undefined || Number.isNaN(num)) return '0'
   if (num === 0) return '0'
-  if (num < 0.01) return '<0.01'
+
+  // Dynamic threshold based on maxDecimals (e.g., maxDecimals=2 → 0.01, maxDecimals=4 → 0.0001)
+  const threshold = Math.pow(10, -maxDecimals)
+  if (num < threshold) return `<${threshold}`
 
   // Use toLocaleString for comma formatting
   return num.toLocaleString(undefined, {
