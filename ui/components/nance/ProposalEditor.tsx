@@ -83,7 +83,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
     `NanceProposalCacheV1-${project?.id || 'new'}`
   )
 
-  // Fetch user's email from Privy if available
+  // Fetch user's email from Privy
   useEffect(() => {
     async function fetchUserEmail() {
       try {
@@ -93,28 +93,21 @@ export default function ProposalEditor({ project }: { project: Project }) {
         if (accessToken) {
           const response = await fetch('/api/privy/user-email', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ accessToken }),
           })
           
           if (response.ok) {
             const data = await response.json()
-            if (data.email && !authorEmail) {
-              setAuthorEmail(data.email)
-            }
+            if (data.email && !authorEmail) setAuthorEmail(data.email)
           }
         }
       } catch (error) {
         console.error('Failed to fetch user email:', error)
-        // Don't block the user if this fails
       }
     }
     
-    if (address && !authorEmail) {
-      fetchUserEmail()
-    }
+    if (address && !authorEmail) fetchUserEmail()
   }, [address])
 
   const methods = useForm<RequestBudget>({
@@ -242,15 +235,10 @@ export default function ProposalEditor({ project }: { project: Project }) {
         try {
           const errorData = await res.json()
           errorMessage = errorData.error || errorMessage
-          console.error('API Error Response:', errorData)
         } catch (parseError) {
-          console.error('Could not parse error response')
+          // Could not parse error
         }
-        toast.error(errorMessage, {
-          style: toastStyle,
-          duration: 8000, // Show error longer so user can read it
-        })
-        console.error('Submission error:', errorMessage)
+        toast.error(errorMessage, { style: toastStyle, duration: 5000 })
         setSigningStatus('error')
         return
       }
@@ -259,11 +247,12 @@ export default function ProposalEditor({ project }: { project: Project }) {
       setSubmittedProposalId(response.proposalId)
       setSigningStatus('success')
       setShowSubmissionCTA(true)
+      
       try {
         const { getAccessToken } = await import('@privy-io/react-auth')
         const accessToken = await getAccessToken()
 
-        const notificationResponse = await fetch('/api/proposal/new-proposal-notification', {
+        await fetch('/api/proposal/new-proposal-notification', {
           method: 'POST',
           body: JSON.stringify({
             proposalId: response.proposalId,
@@ -271,21 +260,16 @@ export default function ProposalEditor({ project }: { project: Project }) {
             selectedWallet: selectedWallet,
           }),
         })
-
-        const notificationData = await notificationResponse.json()
-        if (notificationData?.message) {
-          console.log('Notification result:', notificationData.message)
-        }
-      } catch (notificationError: any) {
-        console.error('Failed to send notification:', notificationError)
-        // Don't block the user experience if notification fails
+      } catch (notificationError) {
+        console.error('Notification failed:', notificationError)
       }
+      
       return response.url
     } catch (error: any) {
       console.error('Error submitting proposal:', error)
-      toast.error(error.message || 'An unexpected error occurred while submitting the proposal', {
+      toast.error(error.message || 'Failed to submit proposal', {
         style: toastStyle,
-        duration: 8000,
+        duration: 5000,
       })
       setSigningStatus('error')
     }

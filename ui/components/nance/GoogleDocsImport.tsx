@@ -30,7 +30,7 @@ export default function GoogleDocsImport({
     }
 
     if (!isValidGoogleDocsUrl(url)) {
-      toast.error('Please enter a valid Google Docs URL', { style: toastStyle })
+      toast.error('Invalid Google Docs URL', { style: toastStyle })
       return
     }
 
@@ -40,31 +40,20 @@ export default function GoogleDocsImport({
     try {
       const response = await fetch('/api/google/docs/fetch', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
       })
 
       const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch document')
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch document')
-      }
-
-      // Set the content in the editor
       setMarkdown(data.content)
-      
-      // Optionally set the title if provided
-      if (setTitle && data.title) {
-        setTitle(data.title)
-      }
+      if (setTitle && data.title) setTitle(data.title)
 
-      toast.success('Document imported successfully!', { style: toastStyle })
+      toast.success('Document imported', { style: toastStyle })
       setUrl('')
     } catch (error: any) {
-      console.error('Error importing Google Doc:', error)
-      toast.error(error.message || 'Failed to import document', { style: toastStyle })
+      toast.error(error.message || 'Failed to import', { style: toastStyle })
     } finally {
       setIsLoading(false)
       onImportEnd?.()
@@ -92,14 +81,14 @@ export default function GoogleDocsImport({
           onKeyPress={handleKeyPress}
           placeholder="Paste Google Docs URL..."
           disabled={isLoading}
-          className="w-full pl-10 pr-3 py-3 bg-dark-cool border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all disabled:opacity-50"
+          className="w-full pl-10 pr-3 py-3 bg-dark-cool border border-white/20 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 disabled:opacity-50"
         />
       </div>
       <button
         type="button"
         onClick={handleImport}
         disabled={isLoading || !url.trim()}
-        className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-RobotoMono rounded-xl transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+        className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
           <>

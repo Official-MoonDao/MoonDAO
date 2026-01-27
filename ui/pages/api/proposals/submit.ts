@@ -238,8 +238,6 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         getAbstract(body),
       ])
       
-      console.log('Parsed addresses:', { leads, members, signers })
-      
       // Only allow the first lead to be the lead for smart contract purposes
       const lead = leads[0] || address
       if (leads.length > 1) {
@@ -248,17 +246,9 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
 
       const abstractText = abstractFull?.slice(0, 1000)
 
-      // Removed strict address validation - if users provide invalid addresses, that's on them
-      // Just log warnings for invalid addresses but don't block submission
-      const invalidMembers = members.filter(addr => !ethers.utils.isAddress(addr))
-      if (invalidMembers.length > 0) {
-        console.warn('Warning: Invalid team member addresses:', invalidMembers)
-      }
-      
-      const invalidSigners = signers.filter(addr => !ethers.utils.isAddress(addr))
-      if (invalidSigners.length > 0) {
-        console.warn('Warning: Invalid multi-sig signer addresses:', invalidSigners)
-      }
+      // Skip address validation - user's responsibility
+      if (members.filter(addr => !ethers.utils.isAddress(addr)).length > 0) console.warn('Invalid member addresses detected')
+      if (signers.filter(addr => !ethers.utils.isAddress(addr)).length > 0) console.warn('Invalid signer addresses detected')
       
       const abstractValid =
         abstractText !== undefined && abstractText !== null && abstractText !== 'null'
