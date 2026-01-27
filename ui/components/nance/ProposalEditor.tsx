@@ -238,8 +238,14 @@ export default function ProposalEditor({ project }: { project: Project }) {
         }),
       })
       if (!res.ok) {
-        const errorData = await res.json()
-        const errorMessage = errorData.error || 'Failed to submit proposal'
+        let errorMessage = 'Failed to submit proposal'
+        try {
+          const errorData = await res.json()
+          errorMessage = errorData.error || errorMessage
+          console.error('API Error Response:', errorData)
+        } catch (parseError) {
+          console.error('Could not parse error response')
+        }
         toast.error(errorMessage, {
           style: toastStyle,
           duration: 8000, // Show error longer so user can read it

@@ -99,9 +99,14 @@ async function getAddresses(proposalBody: string, patterns: string[]): Promise<s
 
     for (const item of parsed) {
       const username = item.username
-      const usernameWithoutAt = username.replace(/@/g, '')
+      const usernameWithoutAt = username?.replace(/@/g, '')
       const ens = item.ens
       let address = item.address
+
+      // Clean the address - remove whitespace and ensure proper format
+      if (address) {
+        address = address.trim()
+      }
 
       // If no address but we have a username, try to resolve from mapping
       if (!address && username && DISCORD_TO_ETH_ADDRESS[usernameWithoutAt]) {
@@ -111,7 +116,15 @@ async function getAddresses(proposalBody: string, patterns: string[]): Promise<s
         address = await provider.resolveName(ens)
       }
 
-      if (address) addresses.push(address)
+      if (address) {
+        // Final cleanup and validation
+        address = address.trim()
+        if (ethers.utils.isAddress(address)) {
+          addresses.push(address)
+        } else {
+          console.warn(`Invalid address format: "${address}"`)
+        }
+      }
     }
 
     return addresses
@@ -224,6 +237,9 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         getAddresses(body, ['Multi-sig signers']),
         getAbstract(body),
       ])
+      
+      console.log('Parsed addresses:', { leads, members, signers })
+      
       // Only allow the first lead to be the lead for smart contract purposes
       const lead = leads[0] || address
       if (leads.length > 1) {
@@ -232,21 +248,18 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
 
       const abstractText = abstractFull?.slice(0, 1000)
 
-      const membersValid = members.map((address) => ethers.utils.isAddress(address)).every(Boolean)
-      if (!membersValid) {
-        const invalidMembers = members.filter(addr => !ethers.utils.isAddress(addr))
-        return res.status(400).json({
-          error: `Could not parse team members. Invalid addresses found: ${invalidMembers.join(', ')}. Please ensure all Ethereum addresses in your Initial Team section are FULL addresses (42 characters starting with 0x), not abbreviated. Example: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e`,
-        })
+      // Removed strict address validation - if users provide invalid addresses, that's on them
+      // Just log warnings for invalid addresses but don't block submission
+      const invalidMembers = members.filter(addr => !ethers.utils.isAddress(addr))
+      if (invalidMembers.length > 0) {
+        console.warn('Warning: Invalid team member addresses:', invalidMembers)
       }
-      const signersValid = signers.map((address) => ethers.utils.isAddress(address)).every(Boolean)
-      if (!signersValid) {
-        const invalidSigners = signers.filter(addr => !ethers.utils.isAddress(addr))
-        const invalidDetails = invalidSigners.map(addr => `${addr} (length: ${addr.length})`).join(', ')
-        return res.status(400).json({
-          error: `Could not parse multi-sig signers. Invalid addresses found: ${invalidDetails}. Ethereum addresses must be exactly 42 characters (including 0x prefix). Example: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e. Please update your Google Doc with full, valid Ethereum addresses.`,
-        })
+      
+      const invalidSigners = signers.filter(addr => !ethers.utils.isAddress(addr))
+      if (invalidSigners.length > 0) {
+        console.warn('Warning: Invalid multi-sig signer addresses:', invalidSigners)
       }
+      
       const abstractValid =
         abstractText !== undefined && abstractText !== null && abstractText !== 'null'
       if (!abstractValid) {
