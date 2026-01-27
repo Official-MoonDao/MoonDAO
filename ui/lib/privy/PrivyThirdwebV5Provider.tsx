@@ -26,11 +26,20 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
 
         try {
           const walletClientType = wallet?.walletClientType
-          if (
-            walletClientType === 'coinbase_wallet' ||
-            walletClientType === 'privy'
-          )
+          // Only switch chain if wallet is not already on the target chain
+          // This prevents the race condition where wallets array updates trigger
+          // repeated switchChain calls
+          const currentWalletChainId = wallet?.chainId
+            ? +wallet.chainId.split(':')[1]
+            : null
+          const shouldSwitchChain =
+            (walletClientType === 'coinbase_wallet' ||
+              walletClientType === 'privy') &&
+            currentWalletChainId !== selectedChain.id
+
+          if (shouldSwitchChain) {
             await wallet?.switchChain(selectedChain.id)
+          }
         } catch (switchError: any) {
           console.warn('Chain switch failed:', switchError.message)
         }

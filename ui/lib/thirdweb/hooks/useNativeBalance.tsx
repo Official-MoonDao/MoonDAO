@@ -12,7 +12,30 @@ export function useNativeBalance() {
   const getNativeBalance = useCallback(async () => {
     const wallet = wallets[selectedWallet]
     if (!wallet) return
-    await wallet.switchChain(selectedChain.id)
+
+    // Get the wallet's current chain ID
+    const currentWalletChainId = wallet?.chainId
+      ? +wallet.chainId.split(':')[1]
+      : null
+
+    // Only switch chain for auto-switch wallets (Coinbase/Privy) and only if not already on target chain
+    // This prevents the race condition where repeated switchChain calls cause oscillation
+    const isAutoSwitchWallet =
+      wallet?.walletClientType === 'coinbase_wallet' ||
+      wallet?.walletClientType === 'privy'
+
+    if (
+      isAutoSwitchWallet &&
+      currentWalletChainId !== null &&
+      currentWalletChainId !== selectedChain.id
+    ) {
+      try {
+        await wallet.switchChain(selectedChain.id)
+      } catch (switchError: any) {
+        console.warn('Chain switch failed in useNativeBalance:', switchError.message)
+      }
+    }
+
     const provider = await wallet.getEthersProvider()
     const balance = await provider.getBalance(wallet.address)
     setNativeBalance(Number(+balance?.toString() / 10 ** 18).toFixed(7))
