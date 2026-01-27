@@ -26,11 +26,29 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
 
         try {
           const walletClientType = wallet?.walletClientType
-          if (
+          // Only switch chain if:
+          // 1. Wallet is not already on the target chain (prevents single-tab race condition)
+          // 2. Wallet is an auto-switch type (Coinbase/Privy embedded wallets)
+          // 3. This tab is visible (prevents multi-tab race condition where background tabs fight over the wallet chain)
+          const currentWalletChainId = wallet?.chainId
+            ? +wallet.chainId.split(':')[1]
+            : null
+          const isAutoSwitchWallet =
             walletClientType === 'coinbase_wallet' ||
             walletClientType === 'privy'
-          )
+          const isTabVisible =
+            typeof document === 'undefined' ||
+            document.visibilityState === 'visible'
+
+          const shouldSwitchChain =
+            isAutoSwitchWallet &&
+            isTabVisible &&
+            currentWalletChainId !== null &&
+            currentWalletChainId !== selectedChain.id
+
+          if (shouldSwitchChain) {
             await wallet?.switchChain(selectedChain.id)
+          }
         } catch (switchError: any) {
           console.warn('Chain switch failed:', switchError.message)
         }
