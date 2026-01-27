@@ -1,2 +1,2 @@
-@openzeppelin/contracts=node_modules/openzeppelin-contracts/contracts/
-@rari-capital/solmate=node_modules/solmate/
+@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
+@rari-capital/solmate/=node_modules/solmate/
