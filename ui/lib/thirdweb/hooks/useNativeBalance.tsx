@@ -1,11 +1,9 @@
 import { useWallets } from '@privy-io/react-auth'
 import { useContext, useEffect, useState, useCallback } from 'react'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
-import ChainContextV5 from '../chain-context-v5'
 
 export function useNativeBalance() {
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const { selectedChain } = useContext(ChainContextV5)
   const { wallets } = useWallets()
   const [nativeBalance, setNativeBalance] = useState<any>()
 
@@ -13,33 +11,25 @@ export function useNativeBalance() {
     const wallet = wallets[selectedWallet]
     if (!wallet) return
 
-    // Get the wallet's current chain ID
-    const currentWalletChainId = wallet?.chainId
-      ? +wallet.chainId.split(':')[1]
-      : null
+    // IMPORTANT: Do NOT auto-switch chains here!
+    // This hook runs in the background (every 5 seconds) and is used across the app.
+    // Auto-switching chains in a background hook causes race conditions:
+    // 1. Single-tab: The wallets array updates trigger repeated effect runs
+    // 2. Multi-tab: Different tabs with different selectedChain values fight over the wallet's chain
+    // 
+    // Chain switching should ONLY happen in response to explicit user actions
+    // (e.g., clicking a "Switch Network" button), not automatically.
+    //
+    // This hook simply fetches the balance from whatever chain the wallet is currently on.
 
-    // Only switch chain for auto-switch wallets (Coinbase/Privy) and only if not already on target chain
-    // This prevents the race condition where repeated switchChain calls cause oscillation
-    const isAutoSwitchWallet =
-      wallet?.walletClientType === 'coinbase_wallet' ||
-      wallet?.walletClientType === 'privy'
-
-    if (
-      isAutoSwitchWallet &&
-      currentWalletChainId !== null &&
-      currentWalletChainId !== selectedChain.id
-    ) {
-      try {
-        await wallet.switchChain(selectedChain.id)
-      } catch (switchError: any) {
-        console.warn('Chain switch failed in useNativeBalance:', switchError.message)
-      }
+    try {
+      const provider = await wallet.getEthersProvider()
+      const balance = await provider.getBalance(wallet.address)
+      setNativeBalance(Number(+balance?.toString() / 10 ** 18).toFixed(7))
+    } catch (error: any) {
+      console.warn('Failed to fetch native balance:', error.message)
     }
-
-    const provider = await wallet.getEthersProvider()
-    const balance = await provider.getBalance(wallet.address)
-    setNativeBalance(Number(+balance?.toString() / 10 ** 18).toFixed(7))
-  }, [wallets, selectedWallet, selectedChain])
+  }, [wallets, selectedWallet])
 
   useEffect(() => {
     const interval = setInterval(() => {
