@@ -31,16 +31,23 @@ export function useNativeBalance() {
     // This hook simply fetches the balance from whatever chain the wallet is currently on.
 
     try {
-      // Extract the wallet's current chain ID and always update walletChain
-      // (set to undefined if chainId is falsy to avoid stale data)
+      // Extract the wallet's current chain ID
       const walletChainId = wallet.chainId ? +wallet.chainId.split(':')[1] : null
-      setWalletChain(walletChainId ? getChainById(walletChainId) : undefined)
+      const chain = walletChainId ? getChainById(walletChainId) : undefined
 
+      // Fetch balance - do all async operations before updating state
       const provider = await wallet.getEthersProvider()
       const balance = await provider.getBalance(wallet.address)
-      setNativeBalance(Number(+balance?.toString() / 10 ** 18).toFixed(7))
+      const formattedBalance = Number(+balance?.toString() / 10 ** 18).toFixed(7)
+
+      // Only update state after all operations succeed to ensure atomicity
+      // This prevents mismatches where walletChain shows "MATIC" but nativeBalance
+      // contains a stale ETH value from a previous fetch
+      setWalletChain(chain)
+      setNativeBalance(formattedBalance)
     } catch (error: any) {
       console.warn('Failed to fetch native balance:', error.message)
+      // Don't update state on error - keep previous consistent values
     }
   }, [wallets, selectedWallet])
 

@@ -34,15 +34,19 @@ type WalletInfoCardProps = {
   setSendModalEnabled?: (enabled: boolean) => void
 }
 
-function formatToken(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '0'
-  if (value === 0) return '0'
-  if (value < 0.01) return '<0.01'
-  
+function formatToken(
+  value: number | string | null | undefined,
+  maxDecimals = 2
+): string {
+  const num = typeof value === 'string' ? Number(value) : value
+  if (num === null || num === undefined || Number.isNaN(num)) return '0'
+  if (num === 0) return '0'
+  if (num < 0.01) return '<0.01'
+
   // Use toLocaleString for comma formatting
-  return value.toLocaleString(undefined, {
+  return num.toLocaleString(undefined, {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: maxDecimals,
   })
 }
 
@@ -202,10 +206,7 @@ export default function WalletInfoCard({
               </span>
             </div>
             <span className="text-white font-semibold">
-              {Number(nativeBalance).toLocaleString(undefined, {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 4,
-              })}
+              {formatToken(nativeBalance, 4)}
             </span>
           </div>
         </div>
