@@ -64,9 +64,9 @@ function htmlToMarkdown(html: string): string {
   let listCounter = 0
   markdown = markdown.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (match, content) => {
     listCounter = 0
-    return content.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, () => {
+    return content.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (liMatch: string, liContent: string) => {
       listCounter++
-      return `${listCounter}. `
+      return `${listCounter}. ${liContent}\n`
     }) + '\n'
   })
 
