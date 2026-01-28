@@ -18,7 +18,6 @@ export default function GoogleDocsImport({
 }: GoogleDocsImportProps) {
   const [url, setUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [showInput, setShowInput] = useState(false)
 
   const isValidGoogleDocsUrl = (url: string): boolean => {
     return url.includes('docs.google.com/document/d/') || /^[a-zA-Z0-9_-]{25,}$/.test(url)
@@ -63,7 +62,6 @@ export default function GoogleDocsImport({
 
       toast.success('Document imported successfully!', { style: toastStyle })
       setUrl('')
-      setShowInput(false)
     } catch (error: any) {
       console.error('Error importing Google Doc:', error)
       toast.error(error.message || 'Failed to import document', { style: toastStyle })
@@ -78,19 +76,6 @@ export default function GoogleDocsImport({
       e.preventDefault()
       handleImport()
     }
-  }
-
-  if (!showInput) {
-    return (
-      <button
-        type="button"
-        onClick={() => setShowInput(true)}
-        className="px-6 py-4 w-auto whitespace-nowrap bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 border border-blue-500/30 hover:border-blue-500/50 text-blue-400 hover:text-blue-300 font-RobotoMono rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl text-sm flex items-center justify-center gap-2"
-      >
-        <DocumentTextIcon className="w-4 h-4" />
-        Import from Google Docs
-      </button>
-    )
   }
 
   return (
@@ -127,17 +112,6 @@ export default function GoogleDocsImport({
               Import
             </>
           )}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setShowInput(false)
-            setUrl('')
-          }}
-          disabled={isLoading}
-          className="px-3 py-2 bg-gray-600/30 hover:bg-gray-600/50 text-gray-300 font-RobotoMono rounded-lg transition-all duration-300 text-sm disabled:opacity-50"
-        >
-          Cancel
         </button>
       </div>
       <p className="text-xs text-gray-400">
