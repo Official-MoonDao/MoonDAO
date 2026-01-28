@@ -327,117 +327,143 @@ export default function ProjectProfile({
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-  const tokenId: any = params?.tokenId
+  try {
+    const tokenId: any = params?.tokenId
 
-  const chain = DEFAULT_CHAIN_V5
-  const chainSlug = getChainSlug(chain)
+    const chain = DEFAULT_CHAIN_V5
+    const chainSlug = getChainSlug(chain)
 
-  if (tokenId === undefined) {
-    return {
-      notFound: true,
+    if (tokenId === undefined) {
+      return {
+        notFound: true,
+      }
     }
-  }
 
-  const projectTableContract = getContract({
-    client: serverClient,
-    address: PROJECT_TABLE_ADDRESSES[chainSlug],
-    abi: ProjectTableABI as any,
-    chain: chain,
-  })
+    const projectTableContract = getContract({
+      client: serverClient,
+      address: PROJECT_TABLE_ADDRESSES[chainSlug],
+      abi: ProjectTableABI as any,
+      chain: chain,
+    })
 
-  const projectTableName = await readContract({
-    contract: projectTableContract,
-    method: 'getTableName' as string,
-    params: [],
-  })
-  const proposalContract = getContract({
-    client: serverClient,
-    address: PROPOSALS_ADDRESSES[chainSlug],
-    abi: ProposalsABI.abi as any,
-    chain: chain,
-  })
+    const projectTableName = await readContract({
+      contract: projectTableContract,
+      method: 'getTableName' as string,
+      params: [],
+    })
+    const proposalContract = getContract({
+      client: serverClient,
+      address: PROPOSALS_ADDRESSES[chainSlug],
+      abi: ProposalsABI.abi as any,
+      chain: chain,
+    })
 
-  const statement = `SELECT * FROM ${projectTableName} WHERE MDP = ${tokenId}`
+    const statement = `SELECT * FROM ${projectTableName} WHERE MDP = ${tokenId}`
 
-  const projects = (await queryTable(chain, statement)).filter(
-    (p) => !BLOCKED_PROJECTS.has(Number(p.id))
-  )
-  const project = projects[0]
-
-  if (!project) {
-    return {
-      notFound: true,
-    }
-  }
-
-  const mdp = project?.MDP
-  const tempCheckApproved = await readContract({
-    contract: proposalContract,
-    method: 'tempCheckApproved' as string,
-    params: [mdp],
-  })
-  const tempCheckFailed = await readContract({
-    contract: proposalContract,
-    method: 'tempCheckFailed' as string,
-    params: [mdp],
-  })
-  const tempCheckApprovedTimestamp = await readContract({
-    contract: proposalContract,
-    method: 'tempCheckApprovedTimestamp' as string,
-    params: [mdp],
-  })
-  const proposalStatus = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
-  const proposalResponse = await fetch(project.proposalIPFS)
-  const proposalJSON = await proposalResponse.json()
-
-  let votes: DistributionVote[] = []
-  let voteOutcome = {}
-  if (proposalJSON?.nonProjectProposal) {
-    const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
-    votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
-    const voteAddresses = votes.map((v) => v.address)
-    const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
-    const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, 1764016844)
-    const addressToQuadraticVotingPower = Object.fromEntries(
-      voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
+    const projects = (await queryTable(chain, statement)).filter(
+      (p) => !BLOCKED_PROJECTS.has(Number(p.id))
     )
-    const SUM_TO_ONE_HUNDRED = 100
-    voteOutcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
-  }
+    const project = projects[0]
 
-  const projectContract = getContract({
-    client: serverClient,
-    address: PROJECT_ADDRESSES[chainSlug],
-    abi: ProjectABI as any,
-    chain: chain,
-  })
+    if (!project) {
+      return {
+        notFound: true,
+      }
+    }
 
-  const safeAddress = await readContract({
-    contract: projectContract,
-    method: 'ownerOf' as string,
-    params: [project.id],
-  })
+    const mdp = project?.MDP
+    const tempCheckApproved = await readContract({
+      contract: proposalContract,
+      method: 'tempCheckApproved' as string,
+      params: [mdp],
+    })
+    const tempCheckFailed = await readContract({
+      contract: proposalContract,
+      method: 'tempCheckFailed' as string,
+      params: [mdp],
+    })
+    const tempCheckApprovedTimestamp = await readContract({
+      contract: proposalContract,
+      method: 'tempCheckApprovedTimestamp' as string,
+      params: [mdp],
+    })
+    const proposalStatus = getProposalStatus(project.active, tempCheckApproved, tempCheckFailed)
+    
+    let proposalJSON: any = {}
+    try {
+      const proposalResponse = await fetch(project.proposalIPFS)
+      if (!proposalResponse.ok) {
+        console.error(`Failed to fetch proposal IPFS: ${proposalResponse.status}`)
+      } else {
+        proposalJSON = await proposalResponse.json()
+      }
+    } catch (error) {
+      console.error('Error fetching proposal IPFS:', error)
+    }
 
-  const rpcUrl = getRpcUrlForChain({
-    client: serverClient,
-    chain: chain,
-  })
+    let votes: DistributionVote[] = []
+    let voteOutcome = {}
+    if (proposalJSON?.nonProjectProposal) {
+      const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
+      votes = (await queryTable(chain, voteStatement)) as DistributionVote[]
+      const voteAddresses = votes.map((v) => v.address)
+      const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 7
+      
+      // Only fetch vMOONEY if there are votes
+      if (voteAddresses.length > 0) {
+        const vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)
+        const addressToQuadraticVotingPower = Object.fromEntries(
+          voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
+        )
+        const SUM_TO_ONE_HUNDRED = 100
+        voteOutcome = runQuadraticVoting(votes, addressToQuadraticVotingPower, SUM_TO_ONE_HUNDRED)
+      }
+    }
 
-  const safe = await Safe.init({
-    provider: rpcUrl,
-    safeAddress: safeAddress,
-  })
+    const projectContract = getContract({
+      client: serverClient,
+      address: PROJECT_ADDRESSES[chainSlug],
+      abi: ProjectABI as any,
+      chain: chain,
+    })
 
-  const safeOwners = await safe.getOwners()
-  return {
-    props: {
-      project,
-      tokenId,
-      safeOwners,
-      votes,
-      proposalStatus,
-      proposalJSON,
-      voteOutcome,
-    },
+    const safeAddress = await readContract({
+      contract: projectContract,
+      method: 'ownerOf' as string,
+      params: [project.id],
+    })
+
+    const rpcUrl = getRpcUrlForChain({
+      client: serverClient,
+      chain: chain,
+    })
+
+    let safeOwners: string[] = []
+    try {
+      const safe = await Safe.init({
+        provider: rpcUrl,
+        safeAddress: safeAddress,
+      })
+      safeOwners = await safe.getOwners()
+    } catch (error) {
+      console.error('Error initializing Safe:', error)
+    }
+
+    return {
+      props: {
+        project,
+        tokenId,
+        safeOwners,
+        votes,
+        proposalStatus,
+        proposalJSON,
+        voteOutcome,
+      },
+    }
+  } catch (error) {
+    console.error('Error in getServerSideProps:', error)
+    return {
+      notFound: true,
+    }
   }
 }
