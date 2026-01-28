@@ -1,7 +1,5 @@
 import { Field, Label, Switch } from '@headlessui/react'
-import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
 import { ProposalStatus } from '@/lib/nance/useProposalStatus'
-import { useProposal, useProposalUpload, useSpaceInfo } from '@nance/nance-hooks'
 import {
   Action,
   RequestBudget,
@@ -20,39 +18,19 @@ import { useLocalStorage } from 'react-use'
 import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { TEMPLATE } from '@/lib/nance'
 import useAccount from '@/lib/nance/useAccountAddress'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { classNames } from '@/lib/utils/tailwind'
-import '@nance/nance-editor/lib/css/dark.css'
-import '@nance/nance-editor/lib/css/editor.css'
-import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
-import EditorMarkdownUpload from './EditorMarkdownUpload'
+import GoogleDocsImport from './GoogleDocsImport'
 import ProposalSubmissionCTA from './ProposalSubmissionCTA'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
-
-// FIXME what is this for?
-const DRAFTS_ENABLED = false
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
 const ProposalLocalCache = dynamic(import('@/components/nance/ProposalLocalCache'), { ssr: false })
-
-let getMarkdown: GetMarkdown
-let setMarkdown: SetMarkdown
-
-const NanceEditor = dynamic(
-  async () => {
-    getMarkdown = (await import('@nance/nance-editor')).getMarkdown
-    setMarkdown = (await import('@nance/nance-editor')).setMarkdown
-    return import('@nance/nance-editor').then((mod) => mod.NanceEditor)
-  },
-  {
-    ssr: false,
-    loading: () => <LoadingSpinner />,
-  }
-)
 
 const DEFAULT_REQUEST_BUDGET_VALUES: RequestBudget = {
   budget: [{ token: 'ETH', amount: '', justification: 'dev cost' }],
@@ -89,7 +67,6 @@ export default function ProposalEditor({ project }: { project: Project }) {
       const proposalBody = proposalLines.slice(1).join('\n')
       setProposalBody(proposalBody)
       setProposalTitle(proposalTitle)
-      setMarkdown?.(proposalBody)
       if (proposal.budget) {
         reset(proposal.budget)
       }
@@ -108,18 +85,71 @@ export default function ProposalEditor({ project }: { project: Project }) {
 
   function restoreFromTitleAndBody(t: string, b: string) {
     setProposalTitle(t)
-    setMarkdown?.(trimActionsFromBody(b))
+    setProposalBody(trimActionsFromBody(b))
     const actions = getActionsFromBody(b)
     if (!actions) return
     setAttachBudget(true)
     reset(actions[0].payload as RequestBudget)
   }
 
+  // Function to set markdown content from Google Docs import
+  const handleSetMarkdown = (markdown: string) => {
+    setProposalBody(markdown)
+    
+    // Parse budget from markdown
+    const budgetInfo = parseBudgetFromMarkdown(markdown)
+    if (budgetInfo && budgetInfo.length > 0) {
+      setAttachBudget(true)
+      reset({ budget: budgetInfo })
+    }
+  }
+
+  // Parse budget information from markdown content
+  const parseBudgetFromMarkdown = (markdown: string): Array<{ token: string; amount: string; justification: string }> | null => {
+    const budgetSection = markdown.match(/##?\s*Budget\s*Request[:\s]*([\s\S]*?)(?=\n##|\n#|$)/i)
+    if (!budgetSection) return null
+    
+    const budgetText = budgetSection[1]
+    const budgets: Array<{ token: string; amount: string; justification: string }> = []
+    
+    // Look for patterns like "10 ETH for development" or "Amount: 10 ETH"
+    const amountPattern = /(?:^|\n)[-*]?\s*(?:Amount[:\s]+)?(\d+(?:\.\d+)?)\s*(ETH|USDC|DAI|MOONEY|vMOONEY)(?:\s+(?:for|:|-)?\s*(.+?))?(?=\n|$)/gi
+    let match
+    
+    while ((match = amountPattern.exec(budgetText)) !== null) {
+      budgets.push({
+        amount: match[1],
+        token: match[2].toUpperCase(),
+        justification: match[3]?.trim() || 'Budget request'
+      })
+    }
+    
+    // Also check for table format
+    const tableRows = budgetText.match(/\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|/g)
+    if (tableRows && tableRows.length > 1) {
+      for (let i = 2; i < tableRows.length; i++) { // Skip header and separator
+        const cells = tableRows[i].split('|').map(cell => cell.trim()).filter(cell => cell)
+        if (cells.length >= 2) {
+          const amountMatch = cells[0].match(/(\d+(?:\.\d+)?)\s*(ETH|USDC|DAI|MOONEY|vMOONEY)/i)
+          if (amountMatch) {
+            budgets.push({
+              amount: amountMatch[1],
+              token: amountMatch[2].toUpperCase(),
+              justification: cells[1] || 'Budget request'
+            })
+          }
+        }
+      }
+    }
+    
+    return budgets.length > 0 ? budgets : null
+  }
+
   const { wallet } = useAccount()
   const buttonsDisabled = !address || signingStatus === 'loading' || isUploadingImage
 
   async function submitProposal(e: any) {
-    let body = getMarkdown()
+    let body = proposalBody || ''
     e.preventDefault()
     setSigningStatus('loading')
     if (!proposalTitle) {
@@ -195,7 +225,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
   }
 
   const saveProposalBodyCache = function () {
-    let body = getMarkdown()
+    let body = proposalBody || ''
     if (attachBudget) {
       const action = {
         type: 'Request Budget',
@@ -221,6 +251,13 @@ export default function ProposalEditor({ project }: { project: Project }) {
     return () => subscription.unsubscribe()
   }, [watch])
 
+  // Save cache when proposalBody changes
+  useEffect(() => {
+    if (proposalBody) {
+      saveProposalBodyCache()
+    }
+  }, [proposalBody])
+
   return (
     <>
       <div className="flex flex-col justify-center items-start animate-fadeIn w-full md:w-full">
@@ -233,9 +270,9 @@ export default function ProposalEditor({ project }: { project: Project }) {
                 restoreProposalCache={restoreFromTitleAndBody}
               />
             </div>
-            <div className="py-0 rounded-[20px] flex flex-col md:flex-row justify-between gap-4">
+            <div className="py-0 rounded-[20px] flex flex-row gap-4 items-center">
               <div
-                className={`mb-4 flex-shrink-0 w-full md:w-2/3 ${
+                className={`flex-1 ${
                   isUploadingImage ? 'pointer-events-none opacity-50' : ''
                 }`}
               >
@@ -246,7 +283,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
                     setProposalTitle(s)
                     console.debug('setProposalTitle', s)
                     const cache = proposalCache || {
-                      body: proposalBody || TEMPLATE,
+                      body: proposalBody || '',
                     }
                     setProposalCache({
                       ...cache,
@@ -256,71 +293,58 @@ export default function ProposalEditor({ project }: { project: Project }) {
                   }}
                 />
               </div>
-              <div className={`${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
-                <EditorMarkdownUpload setMarkdown={setMarkdown} />
+              <div className={`flex-shrink-0 ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
+                <GoogleDocsImport 
+                  setMarkdown={handleSetMarkdown} 
+                  setTitle={setProposalTitle}
+                  onImportStart={() => setIsUploadingImage(true)}
+                  onImportEnd={() => setIsUploadingImage(false)}
+                />
               </div>
             </div>
-            <div className="pt-2 rounded-b-[0px] bg-gradient-to-b from-[#0b0c21] from-50% to-transparent to-50% relative">
-              <NanceEditor
-                initialValue={proposalBody || TEMPLATE}
-                fileUploadExternal={async (val) => {
-                  try {
-                    setIsUploadingImage(true)
-                    const res = await pinBlobOrFile(val)
-                    return res.url
-                  } finally {
-                    setIsUploadingImage(false)
-                  }
-                }}
-                darkMode={true}
-                onEditorChange={(m) => {
-                  saveProposalBodyCache()
-                }}
-              />
 
-              {/* Image Upload Loading Overlay */}
-              {isUploadingImage && (
-                <div className="absolute inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50 rounded-b-[0px]">
-                  <img
-                    src="/assets/MoonDAO-Loading-Animation.svg"
-                    alt="Uploading..."
-                    className="w-16 h-16 mb-4"
-                  />
-                  <p className="text-white text-lg font-medium">Uploading image...</p>
-                  <p className="text-gray-300 text-sm mt-2">
-                    Please wait, do not close this window
-                  </p>
-                </div>
-              )}
+            {/* Proposal Preview */}
+            <div className="mt-4 rounded-xl border border-white/10 bg-dark-cool overflow-hidden">
+              <div className="px-4 py-3 border-b border-white/10 bg-black/20">
+                <h3 className="text-white font-medium">Proposal Preview</h3>
+              </div>
+              <div className="p-6 min-h-[300px] max-h-[600px] overflow-y-auto">
+                {proposalBody ? (
+                  <div className="prose prose-invert prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {proposalBody}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[250px] text-gray-400">
+                    <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p className="text-lg font-medium">No proposal content yet</p>
+                    <p className="text-sm mt-2 text-center max-w-md">
+                      Click &quot;Import from Google Docs&quot; above to import your proposal from a Google Doc.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
+            {/* Loading Overlay */}
+            {isUploadingImage && (
+              <div className="fixed inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50">
+                <img
+                  src="/assets/MoonDAO-Loading-Animation.svg"
+                  alt="Importing..."
+                  className="w-16 h-16 mb-4"
+                />
+                <p className="text-white text-lg font-medium">Importing document...</p>
+                <p className="text-gray-300 text-sm mt-2">
+                  Please wait, do not close this window
+                </p>
+              </div>
+            )}
+
             <div className="p-5 rounded-b-[20px] rounded-t-[0px] flex flex-row">
-              <Field as="div" className="\ flex items-center mt-5 pr-4">
-                <Switch
-                  checked={attachBudget}
-                  onChange={(checked) => {
-                    setAttachBudget(checked)
-                    if (checked) {
-                      reset(DEFAULT_REQUEST_BUDGET_VALUES)
-                    }
-                  }}
-                  className={classNames(
-                    attachBudget ? 'bg-indigo-600' : 'bg-gray-200',
-                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2'
-                  )}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={classNames(
-                      attachBudget ? 'translate-x-5' : 'translate-x-0',
-                      'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
-                    )}
-                  />
-                </Switch>
-                <Label as="span" className="ml-3 text-sm">
-                  <span className="font-medium text-gray-900 dark:text-white">Attach Budget</span>{' '}
-                </Label>
-              </Field>
               <Field as="div" className="\ flex items-center mt-5">
                 <Switch
                   checked={nonProjectProposal}
@@ -351,6 +375,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
             {attachBudget && (
               <FormProvider {...methods}>
                 <div className="my-10 p-5 rounded-[20px] bg-dark-cool">
+                  <h3 className="text-white text-lg font-medium mb-4">Budget Request (parsed from document)</h3>
                   <RequestBudgetActionForm disableRequiredFields={false} />
                 </div>
               </FormProvider>

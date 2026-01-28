@@ -24,7 +24,7 @@ import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
 import ProjectsDropdown from '@/components/project/ProjectsDropdown'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
-import EditorMarkdownUpload from './EditorMarkdownUpload'
+import GoogleDocsImport from './GoogleDocsImport'
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -250,7 +250,7 @@ export default function FinalReportEditor({ projectsFromLastQuarter }: FinalRepo
                 selectedProject={selectedProject}
                 setSelectedProject={setSelectedProject}
               />
-              <EditorMarkdownUpload setMarkdown={setMarkdown} />
+              <GoogleDocsImport setMarkdown={setMarkdown} />
             </div>
           </div>
           <div className="pt-0 rounded-t-[20px] rounded-b-[0px] bg-dark-cool relative">
