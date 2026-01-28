@@ -638,30 +638,50 @@ export function ProjectRewards({
 
               <div className="flex flex-col gap-1.5 sm:gap-6">
                 {currentProjects && currentProjects.length > 0 ? (
-                  currentProjects
-                    .filter((project: any, i) => {
-                      return project.eligible
-                    })
-                    .map((project: any, i) => (
-                      <ProjectCard
-                        key={`project-card-${i}`}
-                        project={project}
-                        projectContract={projectContract}
-                        hatsContract={hatsContract}
-                        distribute={
-                          rewardVotingActive &&
-                          project.eligible &&
-                          (project!.finalReportLink || project!.finalReportIPFS)
-                        }
-                        distribution={userHasVotingPower ? distribution : undefined}
-                        handleDistributionChange={
-                          userHasVotingPower ? handleDistributionChange : undefined
-                        }
-                        userHasVotingPower={userHasVotingPower}
-                        isVotingPeriod={rewardVotingActive}
-                        active={true}
-                      />
-                    ))
+                  <>
+                    {/* Show eligible projects first */}
+                    {currentProjects
+                      .filter((project: any) => project.eligible)
+                      .map((project: any, i) => (
+                        <ProjectCard
+                          key={`project-card-eligible-${i}`}
+                          project={project}
+                          projectContract={projectContract}
+                          hatsContract={hatsContract}
+                          distribute={
+                            rewardVotingActive &&
+                            project.eligible &&
+                            (project!.finalReportLink || project!.finalReportIPFS)
+                          }
+                          distribution={userHasVotingPower ? distribution : undefined}
+                          handleDistributionChange={
+                            userHasVotingPower ? handleDistributionChange : undefined
+                          }
+                          userHasVotingPower={userHasVotingPower}
+                          isVotingPeriod={rewardVotingActive}
+                          active={true}
+                        />
+                      ))}
+                    {/* Show non-eligible projects after */}
+                    {currentProjects
+                      .filter((project: any) => !project.eligible)
+                      .map((project: any, i) => (
+                        <ProjectCard
+                          key={`project-card-noneligible-${i}`}
+                          project={project}
+                          projectContract={projectContract}
+                          hatsContract={hatsContract}
+                          distribute={false}
+                          distribution={userHasVotingPower ? distribution : undefined}
+                          handleDistributionChange={
+                            userHasVotingPower ? handleDistributionChange : undefined
+                          }
+                          userHasVotingPower={userHasVotingPower}
+                          isVotingPeriod={rewardVotingActive}
+                          active={true}
+                        />
+                      ))}
+                  </>
                 ) : (
                   <div className="text-center py-8 text-gray-400">
                     <p>There are no active projects.</p>
@@ -693,27 +713,6 @@ export function ProjectRewards({
                   </div>
                 )}
 
-                {currentProjects &&
-                  currentProjects.length > 0 &&
-                  currentProjects
-                    .filter((project: any, i) => {
-                      return !project.eligible
-                    })
-                    .map((project: any, i) => (
-                      <ProjectCard
-                        key={`project-card-${i}`}
-                        project={project}
-                        projectContract={projectContract}
-                        hatsContract={hatsContract}
-                        distribute={project.eligible}
-                        distribution={userHasVotingPower ? distribution : undefined}
-                        handleDistributionChange={
-                          userHasVotingPower ? handleDistributionChange : undefined
-                        }
-                        userHasVotingPower={userHasVotingPower}
-                        isVotingPeriod={rewardVotingActive}
-                      />
-                    ))}
               </div>
             </div>
             <div className="bg-black/20 rounded-none sm:rounded-xl border-y sm:border border-white/10 overflow-hidden">
