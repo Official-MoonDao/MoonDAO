@@ -792,7 +792,7 @@ export default function SignedInDashboard({
           {/* Center Column - Main Feed */}
           <div className="lg:col-span-6 flex flex-col space-y-6 h-full min-h-[800px] order-1 lg:order-2">
             {/* Quick Actions */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-1">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-full overflow-hidden">
                   {citizen?.metadata?.image ? (
@@ -846,8 +846,17 @@ export default function SignedInDashboard({
               </div>
             </div>
 
+            {/* Quests Section - Compact */}
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <TrophyIcon className="w-5 h-5 text-yellow-400" />
+                <h3 className="text-lg font-semibold text-white">Your Next Quest</h3>
+              </div>
+              <DashboardQuests selectedChain={selectedChain} />
+            </div>
+
             {/* Activity Feed */}
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 order-2">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
                 <h3 className="text-xl font-bold text-white whitespace-nowrap">
                   Recent Newsletters
@@ -1068,21 +1077,6 @@ export default function SignedInDashboard({
                 )}
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Quests Section */}
-        <div className="flex-grow order-5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mt-8 mb-8">
-          <div className="flex flex-col gap-4">
-            <div>
-              <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                <TrophyIcon className="w-7 h-7 text-yellow-400" />
-                Quests
-              </h3>
-              <p className="text-slate-300 text-sm mt-2">Complete quests to earn XP and level up</p>
-            </div>
-
-            <DashboardQuests selectedChain={selectedChain} />
           </div>
         </div>
 
