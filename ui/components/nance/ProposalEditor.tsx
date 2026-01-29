@@ -261,54 +261,55 @@ export default function ProposalEditor({ project }: { project: Project }) {
   return (
     <>
       <div className="flex flex-col justify-center items-start animate-fadeIn w-full md:w-full">
-        <div className="px-2 w-full md:max-w-[1200px]">
+        <div className="w-full md:max-w-[1200px]">
           <form onSubmit={submitProposal}>
-            <div className="">
-              <ProposalLocalCache
-                proposalCache={proposalCache}
-                clearProposalCache={clearProposalCache}
-                restoreProposalCache={restoreFromTitleAndBody}
-              />
-            </div>
-            <div className="py-0 rounded-[20px] flex flex-row gap-4 items-center">
-              <div
-                className={`flex-1 ${
-                  isUploadingImage ? 'pointer-events-none opacity-50' : ''
-                }`}
-              >
-                <ProposalTitleInput
-                  value={proposalTitle}
-                  onChange={(s) => {
-                    if (isUploadingImage) return // Prevent changes during upload
-                    setProposalTitle(s)
-                    console.debug('setProposalTitle', s)
-                    const cache = proposalCache || {
-                      body: proposalBody || '',
-                    }
-                    setProposalCache({
-                      ...cache,
-                      title: s,
-                      timestamp: getUnixTime(new Date()),
-                    })
-                  }}
-                />
-              </div>
-              <div className={`flex-shrink-0 ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
-                <GoogleDocsImport 
-                  setMarkdown={handleSetMarkdown} 
-                  setTitle={setProposalTitle}
-                  onImportStart={() => setIsUploadingImage(true)}
-                  onImportEnd={() => setIsUploadingImage(false)}
-                />
+            {/* Local Cache Restore/Clear */}
+            <ProposalLocalCache
+              proposalCache={proposalCache}
+              clearProposalCache={clearProposalCache}
+              restoreProposalCache={restoreFromTitleAndBody}
+            />
+
+            {/* Google Docs Import Section - Made Prominent */}
+            <div className="mb-6 p-5 bg-gradient-to-r from-indigo-900/40 to-blue-900/40 border border-indigo-500/30 rounded-xl">
+              <div className="flex flex-col gap-4">
+                <div className={`${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
+                  <GoogleDocsImport 
+                    setMarkdown={handleSetMarkdown} 
+                    setTitle={setProposalTitle}
+                    onImportStart={() => setIsUploadingImage(true)}
+                    onImportEnd={() => setIsUploadingImage(false)}
+                  />
+                </div>
               </div>
             </div>
 
+            {/* Title Input */}
+            <div className={`mb-4 ${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Proposal Title</label>
+              <ProposalTitleInput
+                value={proposalTitle}
+                onChange={(s) => {
+                  if (isUploadingImage) return
+                  setProposalTitle(s)
+                  console.debug('setProposalTitle', s)
+                  const cache = proposalCache || {
+                    body: proposalBody || '',
+                  }
+                  setProposalCache({
+                    ...cache,
+                    title: s,
+                    timestamp: getUnixTime(new Date()),
+                  })
+                }}
+              />
+            </div>
             {/* Proposal Preview */}
-            <div className="mt-4 rounded-xl border border-white/10 bg-dark-cool overflow-hidden">
+            <div className="rounded-xl border border-white/10 bg-dark-cool overflow-hidden">
               <div className="px-4 py-3 border-b border-white/10 bg-black/20">
                 <h3 className="text-white font-medium">Proposal Preview</h3>
               </div>
-              <div className="p-6 min-h-[300px] max-h-[600px] overflow-y-auto">
+              <div className="p-6 min-h-[250px] max-h-[500px] overflow-y-auto">
                 {proposalBody ? (
                   <div className="prose prose-invert prose-sm max-w-none">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -316,13 +317,13 @@ export default function ProposalEditor({ project }: { project: Project }) {
                     </ReactMarkdown>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-[250px] text-gray-400">
-                    <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex flex-col items-center justify-center h-[200px] text-gray-400">
+                    <svg className="w-12 h-12 mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <p className="text-lg font-medium">No proposal content yet</p>
-                    <p className="text-sm mt-2 text-center max-w-md">
-                      Click &quot;Import from Google Docs&quot; above to import your proposal from a Google Doc.
+                    <p className="text-base font-medium">No content yet</p>
+                    <p className="text-sm mt-1 text-center max-w-sm text-gray-500">
+                      Import your Google Doc above to see a preview here
                     </p>
                   </div>
                 )}
@@ -344,16 +345,17 @@ export default function ProposalEditor({ project }: { project: Project }) {
               </div>
             )}
 
-            <div className="p-5 rounded-b-[20px] rounded-t-[0px] flex flex-row">
-              <Field as="div" className="\ flex items-center mt-5">
+            {/* Options Row */}
+            <div className="mt-5 p-4 rounded-xl bg-black/20 border border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <Field as="div" className="flex items-center">
                 <Switch
                   checked={nonProjectProposal}
                   onChange={(checked) => {
                     setNonProjectProposal(checked)
                   }}
                   className={classNames(
-                    nonProjectProposal ? 'bg-indigo-600' : 'bg-gray-200',
-                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2'
+                    nonProjectProposal ? 'bg-indigo-600' : 'bg-gray-600',
+                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 focus:ring-offset-gray-900'
                   )}
                 >
                   <span
@@ -365,46 +367,40 @@ export default function ProposalEditor({ project }: { project: Project }) {
                   />
                 </Switch>
                 <Label as="span" className="ml-3 text-sm">
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    Non Project Proposal
-                  </span>{' '}
+                  <span className="text-gray-300">
+                    Non-Project Proposal
+                  </span>
                 </Label>
               </Field>
+              
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className={classNames(
+                  buttonsDisabled && 'tooltip',
+                  'px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0'
+                )}
+                disabled={buttonsDisabled}
+                data-tip={
+                  signingStatus === 'loading'
+                    ? 'Submitting...'
+                    : isUploadingImage
+                    ? 'Uploading image...'
+                    : 'You need to connect wallet first.'
+                }
+              >
+                {signingStatus === 'loading' ? 'Submitting...' : 'Submit Proposal'}
+              </button>
             </div>
 
             {attachBudget && (
               <FormProvider {...methods}>
-                <div className="my-10 p-5 rounded-[20px] bg-dark-cool">
+                <div className="my-6 p-5 rounded-xl bg-dark-cool border border-white/10">
                   <h3 className="text-white text-lg font-medium mb-4">Budget Request (parsed from document)</h3>
                   <RequestBudgetActionForm disableRequiredFields={false} />
                 </div>
               </FormProvider>
             )}
-
-            <div className="mt-6 flex flex-col gap-4">
-              {/* Submit buttons */}
-              <div className="flex justify-end space-x-4">
-                {/* SUBMIT */}
-                <button
-                  type="submit"
-                  className={classNames(
-                    buttonsDisabled && 'tooltip',
-                    'px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-0'
-                  )}
-                  onClick={() => {}}
-                  disabled={buttonsDisabled}
-                  data-tip={
-                    signingStatus === 'loading'
-                      ? 'Submitting...'
-                      : isUploadingImage
-                      ? 'Uploading image...'
-                      : 'You need to connect wallet first.'
-                  }
-                >
-                  {signingStatus === 'loading' ? 'Submitting...' : 'Submit'}
-                </button>
-              </div>
-            </div>
           </form>
         </div>
       </div>
