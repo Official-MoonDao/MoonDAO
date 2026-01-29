@@ -41,29 +41,28 @@ export default function TempCheck({ mdp }: TempCheckProps) {
   }
 
   return (
-    <div className="m-4">
-      <p className="text-sm text-blue-400 font-medium">🤔 Proposal</p>
-      <div>Temp check</div>
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-gray-400 mr-1">Temp Check:</span>
       <PrivyWeb3Button
         action={handleSubmit(true)}
         requiredChain={DEFAULT_CHAIN_V5}
-        className="rounded-full bg-red-500 hover:bg-red-600 mr-2"
+        className="rounded-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 px-3 py-1.5 text-xs font-medium transition-all"
         label={
-          '👍' +
+          '👍 ' +
           ('tempCheckApprovalCount' in proposalData
             ? proposalData?.tempCheckApprovalCount?.toString()
-            : '')
+            : '0')
         }
       />
       <PrivyWeb3Button
         action={handleSubmit(false)}
         requiredChain={DEFAULT_CHAIN_V5}
-        className="rounded-full bg-red-500 hover:bg-red-600"
+        className="rounded-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-3 py-1.5 text-xs font-medium transition-all"
         label={
-          '👎' +
+          '👎 ' +
           ('tempCheckApprovalCount' in proposalData
             ? (proposalData?.tempCheckVoteCount - proposalData?.tempCheckApprovalCount)?.toString()
-            : '')
+            : '0')
         }
       />
     </div>

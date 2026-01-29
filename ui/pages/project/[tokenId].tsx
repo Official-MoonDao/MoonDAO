@@ -184,8 +184,6 @@ export default function ProjectProfile({
       </Frame>
     </div>
   )
-  const gridCols =
-    proposalStatus !== PROJECT_PENDING ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2'
 
   return (
     <Container>
@@ -233,51 +231,46 @@ export default function ProjectProfile({
             header="Proposal"
             iconSrc="/assets/icon-star.svg"
             action={
-              <Link
-                className="flex gap-2 items-center px-3 py-2 md:px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-xs md:text-sm"
-                href={`/project/${project.MDP}`}
-                passHref
-              >
-                <Image src="/assets/report.png" alt="Report Icon" width={16} height={16} />
-                <span className="whitespace-nowrap">Review Original Proposal</span>
-              </Link>
+              <div className="flex gap-2 items-center">
+                {(project.active == PROJECT_PENDING &&
+                  proposalStatus === 'Temperature Check') || true && (
+                  <div className="flex items-center gap-2">
+                    <TempCheck mdp={project.MDP} />
+                  </div>
+                )}
+                {project.active == PROJECT_PENDING &&
+                  proposalStatus === 'Voting' &&
+                  proposalJSON?.nonProjectProposal && (
+                    <div className="flex items-center">
+                      <ProposalVotes
+                        project={project}
+                        votes={votes}
+                        proposalStatus={proposalStatus}
+                      />
+                    </div>
+                  )}
+                <DropDownMenu project={project} proposalStatus={proposalStatus} />
+              </div>
             }
           >
             <div className="mt-10 mb-10">
-              <div className={`grid ${gridCols} gap-8`}>
-                <div className="lg:col-span-2 relative">
-                  <div className="absolute top-2 right-[20px]">
-                    <DropDownMenu project={project} proposalStatus={proposalStatus} />
-                  </div>
-                  <div>
-                    <MarkdownWithTOC body={proposalJSON.body || ''} />
-                  </div>
-                </div>
-                <div className="mt-[-40px] md:mt-0 bg-dark-cool lg:bg-darkest-cool rounded-[20px] flex flex-col h-fit">
-                  <div className="px-[10px] p-5">
-                    {project.active == PROJECT_PENDING &&
-                      proposalStatus === 'Temperature Check' && <TempCheck mdp={project.MDP} />}
-                    {project.active == PROJECT_PENDING &&
-                      proposalStatus === 'Voting' &&
-                      proposalJSON?.nonProjectProposal && (
-                        <>
-                          <ProposalVotes
-                            project={project}
-                            votes={votes}
-                            proposalStatus={proposalStatus}
-                          />
-                          {/*FIXME run on cron */}
-                          <button onClick={tallyVotes}>Tally votes</button>
-                        </>
-                      )}
-                    {project.active !== PROJECT_PENDING && proposalJSON?.nonProjectProposal && (
-                      <VotingResults voteOutcome={voteOutcome} votes={votes} threshold={0} />
-                    )}
-                  </div>
-                </div>
+              <div className="prose prose-invert max-w-none">
+                <MarkdownWithTOC body={proposalJSON.body || ''} />
               </div>
             </div>
           </SectionCard>
+
+          {/* Voting Results Section - Only show for completed proposals */}
+          {project.active !== PROJECT_PENDING && proposalJSON?.nonProjectProposal && (
+            <SectionCard
+              header="Voting Results"
+              iconSrc="/assets/icon-star.svg"
+            >
+              <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-5">
+                <VotingResults voteOutcome={voteOutcome} votes={votes} threshold={0} />
+              </div>
+            </SectionCard>
+          )}
 
           <SectionCard
             header="Meet the Team"
@@ -360,10 +353,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
     const statement = `SELECT * FROM ${projectTableName} WHERE MDP = ${tokenId}`
 
-    const projects = (await queryTable(chain, statement)).filter(
-      (p) => !BLOCKED_PROJECTS.has(Number(p.id))
-    )
-    const project = projects[0]
+  const projects = (await queryTable(chain, statement)).filter(
+    (p: any) => !BLOCKED_PROJECTS.has(Number(p.id))
+  )
+  const project = projects[0]
 
     if (!project) {
       return {
